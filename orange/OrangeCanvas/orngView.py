@@ -45,7 +45,7 @@ class SchemaView(QCanvasView):
         self.linePopup = QPopupMenu(self, "Link")
         self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
         self.linePopup.insertSeparator()
-        self.linePopup.insertItem( "Remove",  self.deleteSelectedLink)
+        self.linePopup.insertItem( "Remove",  self.deleteSelectedLine)
         self.linePopup.insertSeparator() 
 
    
@@ -99,14 +99,14 @@ class SchemaView(QCanvasView):
         self.doc.enableSave(TRUE)
 
     # popMenuAction - delete selected link
-    def deleteSelectedLink(self):
-        self.deleteLink(self.selectedLine)
+    def deleteSelectedLine(self):
+        self.deleteLine(self.selectedLine)
         self.selectedLine = None
         self.canvas().update()
     
-    def deleteLink(self, link):
-        if link != None:
-            self.doc.removeLine1(link)
+    def deleteLine(self, line):
+        if line != None:
+            self.doc.removeLine1(line)
       
 
     # ###########################################
@@ -248,14 +248,12 @@ class SchemaView(QCanvasView):
                 if count > 1: item.invalidPosition = TRUE
                 else:         item.invalidPosition = FALSE
                 item.updateLineCoords()
-                #item.repaintAllLines()
             self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
-            #self.canvas().update()
             
 
         elif self.bLineDragging:
             self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
-            #self.tempLine.show()
+
 
         elif self.bMultipleSelection:
             rect = QRect(min (self.moving_start.x(), ev.pos().x()), min (self.moving_start.y(), ev.pos().y()), abs(self.moving_start.x() - ev.pos().x()), abs(self.moving_start.y() - ev.pos().y()))
@@ -325,7 +323,7 @@ class SchemaView(QCanvasView):
                 self.tempLine.setCanvas(None)
                 self.tempLine = None
 
-                line = self.doc.addLine(outWidget, inWidget, setSignals = 1)
+                line = self.doc.addLine(outWidget, inWidget)
                 if line:
                     line.repaintLine(self)
                 
@@ -352,7 +350,7 @@ class SchemaView(QCanvasView):
             self.tempWidget = widget
             self.openActiveWidget()
         elif line != None:
-            self.doc.resetActiveSignals(line, enabled = self.doc.signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
+            self.doc.resetActiveSignals(line.outWidget, line.inWidget, enabled = self.doc.signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
 
 
     # if we scroll the view, we have to update tooltips for widgets

@@ -205,10 +205,10 @@ class CanvasLine(QCanvasLine):
         p1 = self.startPoint()
         p2 = self.endPoint()
 
-        string = "<b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b><br><hr>Signals:<br>"
+        string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
         for i in range(len(self.signals)):
             (outSignal, inSignal) = self.signals[i]
-            string += "- " + outSignal + " --> " + inSignal + "<br>"
+            string += "<nobr>- " + outSignal + " --> " + inSignal + "</nobr><br>"
 
         xDiff = p2.x() - p1.x()
         yDiff = p2.y() - p1.y()
@@ -294,11 +294,15 @@ class CanvasWidget(QCanvasRectangle):
     def getOutSignalInfo(self, outSignal):
         for signal in self.instance.outputs:
             if signal[0] == outSignal: return signal
+        print self.instance.outputs
+        print "Warning - name ", outSignal, " was not found in outputs"
         return None
 
     def getInSignalInfo(self, inSignal):
         for signal in self.instance.inputs:
             if signal[0] == inSignal: return signal
+        print self.instance.inputs
+        print "Warning - name ", inSignal, " was not found in inputs"
         return None
         
 
@@ -495,19 +499,19 @@ class CanvasWidget(QCanvasRectangle):
 
     def updateTooltip(self):
         self.removeTooltip()
-        string = "<b>" + self.caption + "</b><br><hr>Inputs:<br>"
+        string = "<nobr><b>" + self.caption + "</b></nobr><br><hr>Inputs:<br>"
 
         if self.widget.inList == []: string += "None<br>"
         else:
             for (signal, type, handler, single) in self.widget.inList:
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal)
                 if len(widgets) > 0:
-                    string += "- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (from "
+                    string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (from "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
-                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")<br>"
+                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "- " + self.canvasDlg.getChannelName(signal) + "<br>"
+                    string += "<nobr>- " + self.canvasDlg.getChannelName(signal) + "</nobr><br>"
 
         string += "<hr>Outputs:<br>"
         if self.widget.outList == []: string += "None"
@@ -515,12 +519,12 @@ class CanvasWidget(QCanvasRectangle):
             for (signal, type) in self.widget.outList:
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal)
                 if len(widgets) > 0:
-                    string += "- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (to "
+                    string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (to "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
-                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")<br>"
+                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "- " + self.canvasDlg.getChannelName(signal) + "<br>"
+                    string += "<nobr>- " + self.canvasDlg.getChannelName(signal) + "</nobr><br>"
                    
         self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)

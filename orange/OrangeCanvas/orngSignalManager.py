@@ -95,6 +95,7 @@ class SignalManager:
         # no need to update topology, just remove the link
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
+                #print "signal Manager - remove link. removing ", widgetFrom, widgetTo, signalFrom, signalTo
                 self.send(widgetFrom, signalNameFrom, None, None)
                 self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
 

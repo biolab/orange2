@@ -15,8 +15,10 @@ import orngTabs
 from orngDlgs import *
 from orngSignalManager import SignalManager
 import cPickle
+
 TRUE  = 1
 FALSE = 0
+
 
 class SchemaDoc(QMainWindow):
     def __init__(self, canvasDlg, *args):
@@ -30,9 +32,9 @@ class SchemaDoc(QMainWindow):
         
         self.enableSave(FALSE)
         self.setIcon(QPixmap(orngResources.file_new))
-        self.lines = []
-        self.widgets = []
-        self.signalManager = SignalManager()
+        self.lines = []                         # list of orngCanvasItems.CanvasLine items
+        self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
+        self.signalManager = SignalManager()    # signal manager to correctly process signals
 
         self.documentpath = os.getcwd()
         self.documentname = str(self.caption())
@@ -72,150 +74,151 @@ class SchemaDoc(QMainWindow):
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
-    def addLine(self, outWidget, inWidget, setSignals = TRUE, enabled = TRUE):
+    def addLine(self, outWidget, inWidget, enabled = TRUE):
         # check if line already exists
-        for line in self.lines:
-            if line.inWidget == inWidget and line.outWidget == outWidget:
-                QMessageBox.information( None, "Orange Canvas", "This connection already exists.", QMessageBox.Ok + QMessageBox.Default )
-                return None
-
-        line = None
-        #try:
-        line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
-        
-        if setSignals:
-            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-            #dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
-            dialog.setOutInWidgets(outWidget, inWidget)
-            canConnect = dialog.addDefaultLinks()
-            if not canConnect:
-                QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
-                line.remove()
-                return None
-
-            # if there are multiple choices, how to connect this two widget, then show the dialog
+        line = self.getLine(outWidget, inWidget)
+        if line:
+            self.resetActiveSignals(outWidget, inWidget, None, enabled)
+            return
             
-            if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
-                res = dialog.exec_loop()
-                if dialog.result() == QDialog.Rejected:
-                    line.remove()
-                    return None
-                
-            connected = []
-            self.signalManager.setFreeze(1)
-            signals = dialog.getLinks()
-            for (outName, inName) in signals:
-                widget = inWidget.instance.removeExistingSingleLink(inName)
-                if widget:
-                    existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
-                    existingOutName = None
-                    for (outN, inN) in existingSignals:
-                        if inN == inName: existingOutName = outN
-                    self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
-                ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
-                if ok: connected.append((outName, inName))
+        dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+        dialog.setOutInWidgets(outWidget, inWidget)
+        canConnect = dialog.addDefaultLinks()
+        if not canConnect:
+            QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
+            return
 
-            if connected == []:
-                print "Error. No connections were maid."
-                line.remove()
-                self.signalManager.setFreeze(0)
-                return None
-
-            line.setSignals(connected)
-            self.signalManager.setFreeze(0, outWidget.instance)
+        # if there are multiple choices, how to connect this two widget, then show the dialog
+        if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
+            res = dialog.exec_loop()
+            if dialog.result() == QDialog.Rejected:
+                return
+            
+        self.signalManager.setFreeze(1)
+        signals = dialog.getLinks()
+        for (outName, inName) in signals:
+            self.addLink(outWidget, inWidget, outName, inName, enabled)
+        
+        self.signalManager.setFreeze(0, outWidget.instance)
 
         # if signals were set correctly create the line, update widget tooltips and show the line
-        self.lines.append(line)
-        outWidget.addOutLine(line)
-        outWidget.updateTooltip()
-        inWidget.addInLine(line)
-        inWidget.updateTooltip()
-        line.show()
-        line.setEnabled(enabled)
+        line = self.getLine(outWidget, inWidget)
+        if line:
+            outWidget.updateTooltip()
+            inWidget.updateTooltip()
 
         self.enableSave(TRUE)
-        
         return line
-        """
-        except Exception, msg:
-            print "Exception occured. Additional message: ", msg
-            if line != None:
-                print "Failed to connect widgets. Removing connection."
-                self.removeLine1(line)
-            return None
-        """
 
-    def resetActiveSignals(self, line, newSignals = None, enabled = 1):
-        signals = line.getSignals()
+    # ####################################
+    # reset signals of an already created line
+    def resetActiveSignals(self, outWidget, inWidget, newSignals = None, enabled = 1):
+        #print "orngDoc.resetActiveSignals - ", outWidget, inWidget, newSignals
+        signals = []
+        for line in self.lines:
+            if line.outWidget == outWidget and line.inWidget == inWidget:
+                signals = line.getSignals()
+            
         if newSignals == None:
             dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-            #dialog.addSignalList(line.outWidget.caption, line.inWidget.caption, line.outWidget.widget.outList, line.inWidget.widget.inList, line.outWidget.widget.iconName, line.inWidget.widget.iconName)
-            dialog.setOutInWidgets(line.outWidget, line.inWidget)
+            dialog.setOutInWidgets(outWidget, inWidget)
             for (outName, inName) in signals:
+                #print "orngDoc.addLink - adding signal to dialog: ", outName, inName
                 dialog.addLink(outName, inName)
 
             # if there are multiple choices, how to connect this two widget, then show the dialog
             res = dialog.exec_loop()
-            if dialog.result() == QDialog.Rejected: return line
+            if dialog.result() == QDialog.Rejected: return
                 
-            connected = []
             newSignals = dialog.getLinks()
             
         for (outName, inName) in signals:
             if (outName, inName) not in newSignals:
-                line.inWidget.instance.removeInputConnection(line.outWidget.instance, inName)
-                self.removeWidgetSignal(line.outWidget.instance, line.inWidget.instance, outName, inName)
+                self.removeLink(outWidget, inWidget, outName, inName)
                 signals.remove((outName, inName))
         
-        connected = []
         self.signalManager.setFreeze(1)
         for (outName, inName) in newSignals:
             if (outName, inName) not in signals:
-                ok = self.signalManager.addLink(line.outWidget.instance, line.inWidget.instance, outName, inName, enabled)
-                if ok: connected.append((outName, inName))
-        self.signalManager.setFreeze(0, line.outWidget.instance)
+                self.addLink(outWidget, inWidget, outName, inName, enabled)
+        self.signalManager.setFreeze(0, outWidget.instance)
             
-        line.outWidget.updateTooltip()
-        line.inWidget.updateTooltip()
-        line.setSignals(signals + connected)
+        outWidget.updateTooltip()
+        inWidget.updateTooltip()
+
+        self.enableSave(TRUE)
+        
+
+    # #####################################
+    # add one link (signal) from outWidget to inWidget. if line doesn't exist yet, we create it
+    def addLink(self, outWidget, inWidget, outSignalName, inSignalName, enabled = 1):
+        #print "adding link", outWidget, inWidget, outSignalName, inSignalName
+        # in case there already exists link to inSignalName in inWidget that is single, we first delete it
+        widgetInstance = inWidget.instance.removeExistingSingleLink(inSignalName)
+        if widgetInstance:
+            widget = self.findWidgetFromInstance(widgetInstance)
+            existingSignals = self.signalManager.findSignals(widgetInstance, inWidget.instance)
+            for (outN, inN) in existingSignals:
+                if inN == inSignalName:
+                    self.removeLink(widget, inWidget, outN, inSignalName)
+
+        # if line does not exist yet, we must create it
+        existingSignals = self.signalManager.findSignals(outWidget.instance, inWidget.instance)
+        if not existingSignals:
+            #print "creating new line"
+            line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
+            self.lines.append(line)
+            line.setEnabled(enabled)
+            line.show()
+            outWidget.addOutLine(line)
+            outWidget.updateTooltip()
+            inWidget.addInLine(line)
+            inWidget.updateTooltip()
+        else:
+            line = self.getLine(outWidget, inWidget)
+
+        ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outSignalName, inSignalName, enabled)
+        if not ok: print "orngDoc.addLink - Error. Unable to add link."
+        line.setSignals(line.getSignals() + [(outSignalName, inSignalName)])
+
+    # ####################################
+    # remove only one signal from connected two widgets. If no signals are left, delete the line
+    def removeLink(self, outWidget, inWidget, outSignalName, inSignalName):
+        #print "orngDoc.removeLink - ", outWidget, inWidget, outSignalName, inSignalName
+        self.signalManager.removeLink(outWidget.instance, inWidget.instance, outSignalName, inSignalName)
+        
+        otherSignals = 0
+        for (widget, signalFrom, signalTo, enabled) in self.signalManager.links[outWidget.instance]:
+            if widget == inWidget.instance: otherSignals = 1
+        if not otherSignals:
+            self.removeLine(outWidget, inWidget)
 
         self.enableSave(TRUE)
 
-        return line
-
-
+    # ####################################
     # remove line line
     def removeLine1(self, line):
         for (outName, inName) in line.signals:
             self.signalManager.removeLink(line.outWidget.instance, line.inWidget.instance, outName, inName)   # update SignalManager
 
+        self.lines.remove(line)
         line.inWidget.removeLine(line)
         line.outWidget.removeLine(line)
         line.inWidget.updateTooltip()
         line.outWidget.updateTooltip()
-        self.lines.remove(line)
+        line.hide()
         line.remove()
-        #line.repaintLine(self)
         self.enableSave(TRUE)        
 
+    # ####################################
     # remove line, connecting two widgets
-    def removeLine(self, widgetFrom, widgetTo):
-        for line in self.lines:
-            if line.outWidget.instance == widgetFrom and line.inWidget.instance == widgetTo:
-                self.removeLine1(line)
+    def removeLine(self, outWidget, inWidget):
+        #print "orngDoc.removeLine - ", outWidget, inWidget
+        line = self.getLine(outWidget, inWidget)
+        if line: self.removeLine1(line)
         
-    # remove only one signal from connected two widgets. If no signals are left, delete the line
-    def removeWidgetSignal(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
-        self.signalManager.removeLink(widgetFrom, widgetTo, signalNameFrom, signalNameTo)
-
-        otherSignals = 0
-        for (widget, signalFrom, signalTo, enabled) in self.signalManager.links[widgetFrom]:
-            if widget == widgetTo: otherSignals = 1
-        if not otherSignals:
-            self.removeLine(widgetFrom, widgetTo)
-
-        self.enableSave(TRUE)
-
+    # ####################################
+    # add new widget
     def addWidget(self, widget):
         newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
         x = self.canvasView.contentsX() + 10
@@ -247,6 +250,8 @@ class SchemaDoc(QMainWindow):
         self.canvas.update()    
         return newwidget
 
+    # ####################################
+    # remove widget
     def removeWidget(self, widget):
         if widget.instance:
             widget.instance.saveSettings()
@@ -302,6 +307,21 @@ class SchemaDoc(QMainWindow):
         print "Error. Invalid widget instance : ", widgetInstance
         return ""
 
+    # ####################################
+    # get line from outWidget to inWidget
+    def getLine(self, outWidget, inWidget):
+        for line in self.lines:
+            if line.outWidget == outWidget and line.inWidget == inWidget: return line
+        return None
+
+    # ####################################
+    # find orngCanvasItems.CanvasWidget from widget instance
+    def findWidgetFromInstance(self, widgetInstance):
+        for widget in self.widgets:
+            if widget.instance == widgetInstance:
+                return widget
+        return None
+
     # ###########################################
     # SAVING, LOADING, ....
     # ###########################################
@@ -324,6 +344,7 @@ class SchemaDoc(QMainWindow):
         self.documentnameValid = TRUE
         self.save()        
 
+    # ####################################
     # save the file            
     def save(self):
         self.enableSave(FALSE)
@@ -387,7 +408,8 @@ class SchemaDoc(QMainWindow):
             widget.instance.activateLoadedSettings()
 
         file.close()
-                    
+
+    # ####################################                    
     # load a scheme with name "filename"
     def loadDocument(self, filename):
             
@@ -431,14 +453,13 @@ class SchemaDoc(QMainWindow):
                 print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
                 continue
 
-            tempLine = self.addLine(outWidget, inWidget, setSignals = FALSE)
-            if not tempLine: continue
             signalList = eval(signals)
-            self.resetActiveSignals(tempLine, signalList, Enabled)
-            #tempLine.updateLinePos()
-            #tempLine.setRightColors(self.canvasDlg)
-            tempLine.setEnabled(Enabled)
-            #tempLine.repaintLine(self.canvasView)
+            for (outName, inName) in signalList:
+                self.addLink(outWidget, inWidget, outName, inName, Enabled)
+            #self.resetActiveSignals(outWidget, inWidget, signalList, Enabled)
+            #line = self.getLine(outWidget, inWidget)
+            #if line:
+            #    line.setEnabled(Enabled)
 
         self.canvas.update()
         self.enableSave(FALSE)

@@ -309,6 +309,7 @@ class SignalDialog(QDialog):
 
     def addDefaultLinks(self):
         canConnect = 0
+        addedLinks = []
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
         for (outName, outType) in self.outWidget.widget.outList:
             (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
@@ -318,9 +319,11 @@ class SignalDialog(QDialog):
                 if issubclass(outClass, inClass):
                     canConnect = 1
                     canConnectCount += 1
-                    
-                if issubclass(outClass, inClass) and (outName == inName or (inName, inType) not in self.outWidget.widget.outList):
-                    self.addLink(outName, inName)
+                    if (outName == inName or (inName, inType) not in self.outWidget.widget.outList):
+                        if inName not in addedLinks:
+                            self.addLink(outName, inName)
+                            addedLinks.append(inName)
+                        else: self.multiplePossibleConnections = 1      # this happens when a widget sends two signals of same type
             if canConnectCount > 1:
                 self.multiplePossibleConnections = 1
         return canConnect
@@ -329,6 +332,7 @@ class SignalDialog(QDialog):
         if (outName, inName) in self._links: return
 
         # check if correct types
+        print self.inWidget, self.outWidget
         (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
         (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
         if not issubclass(outClass, inClass): return 0
