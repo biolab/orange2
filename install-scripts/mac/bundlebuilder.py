@@ -284,6 +284,9 @@ resdir = os.path.join(os.path.dirname(execdir), "Resources")
 libdir = os.path.join(os.path.dirname(execdir), "Frameworks")
 mainprogram = os.path.join(resdir, "%(origmainprogram)s")
 
+if len(sys.argv) > 1 and sys.argv[1].startswith("-psn"):
+    sys.argv.pop(1)
+
 sys.argv.insert(1, mainprogram)
 if %(standalone)s or %(semi_standalone)s:
     os.environ["PYTHONPATH"] = resdir
