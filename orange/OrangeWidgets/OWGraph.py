@@ -15,6 +15,7 @@ class subBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
         QwtPlotCurve.__init__(self, parent, text)
         self.color = Qt.black
+        self.penColor = Qt.black
 
     def draw(self, p, xMap, yMap, f, t):
         # save ex settings
@@ -25,7 +26,7 @@ class subBarQwtPlotCurve(QwtPlotCurve):
         p.setBackgroundMode(Qt.OpaqueMode)
         p.setBackgroundColor(self.color)
         p.setBrush(self.color)
-        p.setPen(Qt.black)
+        p.setPen(self.penColor)
         
         if t < 0: t = self.dataSize() - 1
         if divmod(f, 2)[1] != 0: f -= 1
