@@ -15,6 +15,7 @@ from OWParallelCoordinatesOptions import *
 from random import betavariate 
 from OWParallelGraph import *
 from OData import *
+import orngFSS
 
 class OWParallelCoordinates(OWWidget):
     settingsList = ["jitteringType", "GraphCanvasColor"]
@@ -153,6 +154,7 @@ class OWParallelCoordinates(OWWidget):
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
         self.updateGraph()
+        self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -163,12 +165,13 @@ class OWParallelCoordinates(OWWidget):
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
         self.updateGraph()
+        self.graph.replot()
 
     # #####################
 
     def updateGraph(self):
         self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
-        self.graph.replot()
+        #self.graph.replot()
         self.repaint()
 
     # set combo box values with attributes that can be used for coloring the data

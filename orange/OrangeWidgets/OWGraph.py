@@ -73,7 +73,9 @@ class OWGraph(QwtPlot):
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
-
+        saveToFile(fileName, ext)
+        
+    def saveToFile(self, fileName, ext):
         buffer = QPixmap(self.size()) # any size can do, now using the window size
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background

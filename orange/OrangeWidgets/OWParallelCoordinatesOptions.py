@@ -32,7 +32,7 @@ class OWParallelCoordinatesOptions(OWOptions):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    w=OW2DInteractionsOptions()
+    w=OWParallelCoordinatesOptions()
     a.setMainWidget(w)
     w.show()
     a.exec_loop()
