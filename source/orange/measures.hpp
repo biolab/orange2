@@ -95,8 +95,8 @@ class TMeasureAttributeFromProbabilities : public TMeasureAttribute {
 public: 
   __REGISTER_ABSTRACT_CLASS
 
-  PProbabilityEstimatorConstructor estimator; //P probability estimator (none by default)
-  PConditionalProbabilityEstimatorConstructor conditionalEstimator; //P conditional probability estimator (none by default)
+  PProbabilityEstimatorConstructor estimatorConstructor; //P probability estimator (none by default)
+  PConditionalProbabilityEstimatorConstructor conditionalEstimatorConstructor; //P conditional probability estimator (none by default)
 
   int unknownsTreatment; //P treatment of unknown values
 
@@ -138,7 +138,6 @@ public:
 };
 
 
-
 class TMeasureAttribute_gini : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
@@ -147,6 +146,17 @@ public:
 
   virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities);
   virtual float operator()(const TDiscDistribution &) const;
+};
+
+
+class TMeasureAttribute_relevance : public TMeasureAttributeFromProbabilities {
+public:
+  __REGISTER_CLASS
+
+  TMeasureAttribute_relevance(const int &unkTreat = ReduceByUnknowns);
+
+  virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities);
+  float valueRelevance(const TDiscDistribution &dval, const TDiscDistribution &classProbabilities);
 };
 
 

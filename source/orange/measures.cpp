@@ -201,16 +201,16 @@ float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistrib
   if (unknownsTreatment == IgnoreUnknowns)
     classDistribution = cont->innerDistribution;
 
-  if (estimator) {
-    classDistribution = estimator->call(classDistribution, aprior)->call();
+  if (estimatorConstructor) {
+    classDistribution = estimatorConstructor->call(classDistribution, aprior)->call();
     if (!classDistribution)
-      raiseError("'estimator' cannot return the distribution");
+      raiseError("'estimatorConstructor' cannot return the distribution");
   }
 
-  if (conditionalEstimator) {
-    cont = conditionalEstimator->call(cont, aprior)->call();
+  if (conditionalEstimatorConstructor) {
+    cont = conditionalEstimatorConstructor->call(cont, aprior)->call();
     if (!cont)
-      raiseError("'conditionalEstimator cannot return contingency matrix");
+      raiseError("'conditionalEstimatorConstructor cannot return contingency matrix");
   }
 
   return operator()(cont, CAST_TO_DISCDISTRIBUTION(classDistribution));
@@ -415,6 +415,91 @@ float TMeasureAttribute_gini::operator()(const TDiscDistribution &dist) const
 
 
 
+TMeasureAttribute_relevance::TMeasureAttribute_relevance(const int &unk)
+: TMeasureAttributeFromProbabilities(true, false, unk)
+{}
+
+
+
+float TMeasureAttribute_relevance::valueRelevance(const TDiscDistribution &dval, const TDiscDistribution &classDist)
+{ 
+
+  TDiscDistribution::const_iterator ci(classDist.begin()), ce(classDist.end()), hci(ci);
+  TDiscDistribution::const_iterator di(dval.begin()), de(dval.end());
+
+  for (; (di!=de) && (ci!=ce) && (*ci<1e-20); ci++, di++);
+  if ((ci==ce) || (di==de))
+    return 0.0;
+
+  /* 'leftout' is the element for the most probable class encountered so far
+      If a more probable class appears, 'leftout' is added and new leftout taken
+      If there is more than one most probable class, the one with higher aprior probability
+      is taken (as this gives higher relevance). If there is more than one such class,
+      it doesn't matter which one we take. */  
+  float relev = 0.0;
+  float highestProb = *di;
+  float leftout = *di / *ci;
+
+  while(++ci!=ce && ++di!=de) 
+    if (*ci>=1e-20) {
+      const float &tras = *di / *ci;
+      if (   (*di >  highestProb)
+          || (*di == highestProb) && (leftout < tras)) {
+        relev += leftout;
+        leftout = tras;
+        highestProb = *di;
+      }
+      else
+        relev += tras;
+    }
+
+  return relev;
+}
+
+
+float TMeasureAttribute_relevance::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_relevance");
+  
+  const TDistribution &outer = probabilities->outerDistribution.getReference();
+  if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
+    return 0.0;
+ 
+  int C = 0;
+  const_ITERATE(TDiscDistribution, di, classProbabilities)
+    if (*di > 1e-20)
+      C++;
+  if (C<=1)
+    return 0.0;
+
+  TDistributionVector::const_iterator mostCommon (unknownsTreatment == UnknownsToCommon
+    ? probabilities->discrete->begin() + outer.highestProbIntIndex()
+    : probabilities->discrete->end());
+ 
+  float relevance = 0.0;
+  const_ITERATE(TDistributionVector, ci, *probabilities->discrete) {
+    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
+    if (ci == mostCommon) {
+      TDiscDistribution dist2 = dist;
+      dist2 += probabilities->innerDistributionUnknown;
+      relevance += valueRelevance(dist2, classProbabilities);
+    }
+    else {
+      relevance += valueRelevance(dist, classProbabilities);
+    }
+  }
+
+  if (unknownsTreatment == TMeasureAttribute::UnknownsAsValue)
+    relevance += valueRelevance(CAST_TO_DISCDISTRIBUTION(probabilities->innerDistributionUnknown), classProbabilities);
+
+  relevance = 1.0 - relevance / float(C-1);
+
+  if (unknownsTreatment == TMeasureAttribute::ReduceByUnknowns)
+    relevance *= (outer.cases / (outer.unknowns + outer.cases));
+  return round0(relevance);
+}
+
+
 TMeasureAttribute_cost::TMeasureAttribute_cost(PCostMatrix costs)
 : TMeasureAttributeFromProbabilities(true, false),
   cost(costs)
@@ -554,9 +639,15 @@ float TMeasureAttribute_MSE::operator()(PContingency cont, PDistribution classDi
     else {
       if (tdist.abs>0) {
         I += tdist.sum2 - tdist.sum*tdist.sum/tdist.abs;
-       downW += tdist.abs;
+        downW += tdist.abs;
       }
     }
+  }
+
+  if (unknownsTreatment == UnknownsAsValue) {
+    const TContDistribution &tdist = CAST_TO_CONTDISTRIBUTION(cont->innerDistributionUnknown);
+    I += tdist.sum2 - tdist.sum*tdist.sum/tdist.abs;
+    downW += tdist.abs;
   }
 
   if (apriorClass && (m>0)) {

@@ -36,7 +36,7 @@ public:
     float k; //P number of neighbours
     float m; //P number of reference examples
 
-    TMeasureAttribute_relief(int ak=1, int am=100);
+    TMeasureAttribute_relief(int ak=5, int am=100);
     virtual float operator()(int attrNo, PExampleGenerator, PDistribution apriorClass=PDistribution(), int weightID=0);
 
     void reset();

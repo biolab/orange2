@@ -34,13 +34,12 @@ class TCostMatrix : public TOrange {
 public:
   __REGISTER_CLASS
 
-  PVariable classVar;
+  PVariable classVar; //P attribute to which the matrix applies
+
   VECTOR_INTERFACE(PFloatList, costs)
 
-  TCostMatrix(const int &dimension, const float &inside);
-  TCostMatrix(const int &dimension);
-  TCostMatrix(PVariable, const float &inside);
-  TCostMatrix(PVariable);
+  TCostMatrix(const int &dimension, const float &inside = 1.0);
+  TCostMatrix(PVariable, const float &inside = 1.0);
   	  
   inline const float &getCost(const int &predicted, const int &correct)
     { return at(predicted)->at(correct); }
