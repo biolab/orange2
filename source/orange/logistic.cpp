@@ -26,7 +26,6 @@
 
 
 TLogisticLearner::TLogisticLearner() 
-: showSingularity(true)
 {}
 
 // TODO: najdi pametno mesto za naslednji dve funkciji
@@ -71,6 +70,14 @@ PFloatList TLogisticLearner::computeP(PFloatList &waldZ)
 
 PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weight)
 { 
+  int error;
+  PVariable var;
+  return fitModel(gen, weight, true, error, var);
+}
+
+
+PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight, const bool &exception_at_singularity, int &error, PVariable &errorAt)
+{ 
   
    // check for class variable	
   if (!gen->domain->classVar)
@@ -89,13 +96,16 @@ PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weigh
   PClassifier cl = lrc;
 
   // construct a LR fitter
-  fitter = PLogisticFitter(mlnew TLogisticFitterMinimization(showSingularity));
+  fitter = fitter?fitter:PLogisticFitter(mlnew TLogisticFitter_Cholesky());
 
   // fit logistic regression 
   // mogoce bi bilo bolje poslati kar celotni classifier fitterju ?	
-  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, lrc->error, lrc->error_att);
-  if (lrc->error == 6 || lrc->error == 5) // singularity & we did not throw error
-      return cl;
+  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, error, errorAt, exception_at_singularity);
+  lrc->fit_status = error;
+  if (error >= TLogisticFitter::Constant) {
+    return cl;      
+  }
+
   lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
   lrc->P = computeP(lrc->wald_Z);
 

@@ -35,9 +35,12 @@ class TLogisticFitter : public TOrange {
 public:
 	__REGISTER_ABSTRACT_CLASS
 
+  // Don't change the order (<= Divergence means that model is fitted, > means error)
+	enum {OK, Infinity, Divergence, Constant, Singularity};
+
 	// main function call, fits LR, returns coefficients and their 
 	// corres. standard errors
-	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &)=0;
+	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &, const bool &)=0;
 
 	// transforms orange PExampleGenerator attributes in a classic C double 2D array
 	// returns number of examples and number of attributes as well
@@ -85,7 +88,7 @@ public:
 // Logistic regression fitter via minimization of log-likelihood
 // orange integration of Aleks Jakulin version of LR
 // based on Alan Miller's(1992) F90 logistic regression code
-class TLogisticFitterMinimization : public TLogisticFitter {
+class TLogisticFitter_Cholesky : public TLogisticFitter {
 public:
 	__REGISTER_CLASS
 
@@ -95,15 +98,13 @@ public:
 	double eps; //difference in `-2  log' likelihood for declaring convergence.
 	double penalty; //penalty (scalar), substract from ML beta'×penalty×beta. Set if 
 				    //model doesnt converge */
-	bool throwSingularity;
-
 
 	// constructor
-	TLogisticFitterMinimization();
-	TLogisticFitterMinimization(bool showErrors);
+	TLogisticFitter_Cholesky();
+	TLogisticFitter_Cholesky(bool showErrors);
 
 	// Public main function, use it for fitting LR
-	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
+	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &, const bool &);
 
 
 private:

@@ -657,9 +657,88 @@ C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 /************* Logistic Regression ************/
 
 #include "logistic.hpp"
-C_CALL(LogisticLearner, Learner, "([examples] [, weight=, estimate=] -/-> Classifier")
+C_CALL(LogisticLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
 C_NAMED(LogisticClassifier, ClassifierFD, "([probabilities=])")
 
+BASED_ON(LogisticFitter, Orange)
+C_CALL(LogisticFitter_Cholesky, LogisticFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
+
+PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
+{
+  PyTRY
+      PExampleGenerator egen;
+      PyObject *pyweight = NULL;
+      if (!PyArg_ParseTuple(args, "O&|O:LogisticLearner", pt_ExampleGenerator, &egen, &pyweight))
+	    return PYNULL;
+
+      int weight;
+
+      if (!pyweight || (pyweight == Py_None))
+        weight = 0;
+	  else if (PyInt_Check(pyweight))
+		weight = (int)PyInt_AsLong(pyweight);
+	  else {
+		PVariable var = varFromArg_byDomain(pyweight, egen->domain);
+		if (!var) 
+		  PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
+
+		weight = egen->domain->getVarNum(var);
+	  }
+
+	  CAST_TO(TLogisticLearner, loglearn)
+
+	  int error;
+	  PVariable variable;
+	  PClassifier classifier;
+
+	  classifier = loglearn->fitModel(egen, weight, false, error, variable);
+	  if (error == 0)
+		  return Py_BuildValue("NiN", WrapOrange(classifier));
+	  else 
+		  return Py_BuildValue("NiN", WrapOrange(variable));
+  PyCATCH
+}
+
+
+PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, weightID) -> Classifier")
+{
+  PyTRY
+    SETATTRIBUTES
+
+    PExampleGenerator egen;
+    PyObject *pyweight = NULL;
+    if (!PyArg_ParseTuple(args, "O&|O:LogisticFitter.__call__", pt_ExampleGenerator, &egen, &pyweight))
+      return PYNULL;
+
+    int weight = 0;
+
+    if (!pyweight || (pyweight == Py_None))
+      weight = 0;
+    else if (PyInt_Check(pyweight))
+	    weight = (int)PyInt_AsLong(pyweight);
+    else {
+      PVariable var = varFromArg_byDomain(pyweight, egen->domain);
+    if (!var) 
+      PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
+      weight = egen->domain->getVarNum(var);
+    }
+
+    CAST_TO(TLogisticFitter, fitter)
+
+    PFloatList beta, beta_se;
+    float likelihood;
+    int error;
+    PVariable attribute;
+    
+    beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute, false);
+
+    if (error <= TLogisticFitter::Divergence)
+      return Py_BuildValue("iNNf", error, WrapOrange(beta), WrapOrange(beta_se), likelihood);
+    else
+      return Py_BuildValue("iN", error, WrapOrange(attribute));
+
+  PyCATCH
+}
 
 /************* SVM ************/
 

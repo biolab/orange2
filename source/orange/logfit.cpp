@@ -23,16 +23,12 @@
 #include "converts.hpp"
 #include "../external/logreg/logreg.hpp"
 
-TLogisticFitterMinimization::TLogisticFitterMinimization()
-: throwSingularity(true)
+TLogisticFitter_Cholesky::TLogisticFitter_Cholesky()
 {}
 
-TLogisticFitterMinimization::TLogisticFitterMinimization(bool throwSingularity)
-: throwSingularity(throwSingularity)
-{}
 
 // set error values thrown by logistic fitter
-const char *TLogisticFitterMinimization::errors[] =
+const char *TLogisticFitter_Cholesky::errors[] =
 	{"LogisticFitter: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
 	               "LogisticFitter: n[i]<0",
 				   "LogisticFitter: r[i]<0",
@@ -56,7 +52,7 @@ double *ones(int n) {
 }
 
 
-PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
+PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att, const bool &exception_at_singularity) {
 	// get all needed/necessarily attributes and set
 	LRInput input = LRInput();
 	LRInfo O = LRInfo();
@@ -90,12 +86,21 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, const
 	);
 
 	// set error code
-	error = O.error;
+	if (O.error == 5)
+    error = Constant;
+  else if (O.error == 6)
+    error = Singularity;
+  else if (O.error == 7) 
+    error = Infinity;
+  else if (O.error == 8)
+    error = Divergence;
+  else 
+    error = OK;
 
 	// error at computing/fitting logistic regression model
-	if (O.error==7) // infinitive beta
-		raiseWarning(errors[O.error-1]);
-	else if (O.error == 6 || O.error == 5) // singularity in data or constant variable
+//	if (O.error==7) // infinitive beta
+//		raiseWarning(errors[O.error-1]);
+	if (O.error == 6 || O.error == 5) // singularity in data or constant variable
 	{
 		int i=1;
 		PITERATE(TVarList, vli, gen->domain->attributes) {
@@ -105,7 +110,7 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, const
 			}
 			i++;
 		}
-		if (throwSingularity) { // throw singularity error
+		if (exception_at_singularity) { // throw singularity error
 			string error_str;
 			if (O.error == 6)
 				error_str = "singularity in ";
@@ -118,7 +123,7 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, const
 											    // the likelihood of majority learner	
 		return PFloatList(mlnew TFloatList);
 	}
-	else if (O.error>0) {
+	else if (O.error>0 && O.error<5) {
 		raiseError(errors[O.error-1]);
 	}
 
