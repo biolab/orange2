@@ -344,7 +344,7 @@ class BasicBayesClassifier(orange.Classifier):
         return -sum
 
     def __call__(self, example, format = orange.GetValue):
-        sum = self.getmargin(example)
+        sum = -self.getmargin(example)
 
         # print sum, example
         if sum > 10000:
