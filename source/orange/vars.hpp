@@ -83,9 +83,12 @@ public:
   virtual bool str2val_try(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
 
-  virtual bool   firstValue(TValue &val) const =0;
-  virtual bool   nextValue(TValue &val) const =0;
-  virtual TValue randomValue(const int &rand=-1) =0;
+  virtual void val2filestr(const TValue &val, string &str) const;
+  virtual void filestr2val(const string &valname, TValue &valu);
+
+  virtual bool   firstValue(TValue &val) const;
+  virtual bool   nextValue(TValue &val) const;
+  virtual TValue randomValue(const int &rand=-1);
 
   // Returns the number of different values, -1 if it cannot be done (for example, if variable is continuous)
   virtual int  noOfValues() const =0;
@@ -176,6 +179,7 @@ public:
   virtual void val2str(const TValue &val, string &str) const;
   virtual void str2val(const string &valname, TValue &valu);
   virtual bool str2val_try(const string &valname, TValue &valu);
+  int str2val_low(const string &valname, TValue &valu);
 };
 
 #endif

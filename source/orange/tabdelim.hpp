@@ -74,6 +74,14 @@ public:
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
   bool csv; //P also allow ',' as a separator
 
+  typedef struct {
+    char *identifier;
+    int matchRoot;
+    int varType;
+  } TIdentifierDeclaration;
+
+  static const TIdentifierDeclaration typeIdentifiers[] ;
+
   TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
   TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
   virtual bool readExample (TFileExampleIteratorData &, TExample &);

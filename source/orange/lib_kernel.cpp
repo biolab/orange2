@@ -202,8 +202,53 @@ C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, g
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
 C_NAMED(FloatVariable, Variable, "([name=, startValue=, endValue=, stepValue=, distributed=, getValueFrom=])")
 
+
 #include "stringvars.hpp"
 C_NAMED(StringVariable, Variable, "([name=])")
+
+#include "pythonvars.hpp"
+C_NAMED(PythonVariable, Variable, "([name=])")
+
+PyObject *PythonValue_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(SomeValue, "([object])")
+{
+  if (!PyTuple_Size(args))
+    return WrapNewOrange(mlnew TPythonValue(), type);
+
+  if (PyTuple_Size(args)==1) {
+    Py_INCREF(PyTuple_GET_ITEM(args, 0));
+    return WrapNewOrange(mlnew TPythonValue(PyTuple_GET_ITEM(args, 0)), type);
+  }
+
+  else
+    PYERROR(PyExc_TypeError, "PythonValue.__init__ expects up to one Python object", PYNULL);
+}
+
+
+PyObject *PythonValueSpecial_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(int)")
+{
+  int vtype;
+  if (!PyArg_ParseTuple(args, "i:PythonValueSpecial.__init__", &vtype))
+    return PYNULL;
+
+  return WrapNewOrange(mlnew TPythonValueSpecial(vtype), type);
+}
+
+
+int PythonValue_set_value(PyObject *self, PyObject *value)
+{
+  Py_INCREF(value);
+  SELF_AS(TPythonValue).value = value;
+  return 0;
+}
+
+
+PyObject *PythonValue_get_value(PyObject *self)
+{
+  PyObject *res = SELF_AS(TPythonValue).value;
+  Py_INCREF(res);
+  return res;
+}
+
 
 PyObject *Variable_randomvalue(PyObject *self, PyObject *args) PYARGS(0, "() -> Value")
 { PyTRY

@@ -60,6 +60,17 @@ PyObject *setWarningLevel(PyObject *, PyObject *arg) PYARGS(METH_O, "(bool) -> N
 }
 
 
+void registerVariableType(PyObject *variable);
+
+PyObject *registerPythonVariable(PyObject *, PyObject *vartype) PYARGS(METH_O, "(class) -> None")
+{
+  PyTRY
+    registerVariableType(vartype);
+    RETURN_NONE;
+  PyCATCH
+}
+
+
 PyObject *setoutput(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, format-name, function) -> None")
 { PyTypeObject *type;
   char *formatname;

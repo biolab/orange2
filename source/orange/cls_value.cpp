@@ -28,6 +28,7 @@
 #include "cls_orange.hpp"
 #include "vars.hpp"
 #include "stringvars.hpp"
+#include "pythonvars.hpp"
 #include "values.hpp"
 
 #include "vectortemplates.hpp"
@@ -158,7 +159,19 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
         return false;
       }
     }
-    value = TValue(PyOrange_AsSomeValue(args));
+    int vtype;
+    if (PyOrDiscDistribution_Check(args))
+      vtype = TValue::INTVAR;
+    else if (PyOrContDistribution_Check(args))
+      vtype = TValue::FLOATVAR;
+    else if (PyOrStringValue_Check(args))
+      vtype = STRINGVAR;
+    else if (PyOrPythonValue_Check(args))
+      vtype = PYTHONVAR;
+    else
+      raiseError("unknovn variable type");
+
+    value = TValue(PyOrange_AsSomeValue(args), vtype);
     return true;
   }
   

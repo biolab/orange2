@@ -430,6 +430,10 @@ SOURCE=.\orange\progress.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\pythonvars.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\random.cpp
 # End Source File
 # Begin Source File
@@ -811,6 +815,10 @@ SOURCE=.\orange\preprocessors.hpp
 # Begin Source File
 
 SOURCE=.\orange\progress.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\pythonvars.hpp
 # End Source File
 # Begin Source File
 

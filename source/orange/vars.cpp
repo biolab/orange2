@@ -118,7 +118,7 @@ bool TVariable::special2str(const TValue &val, string &str) const
     case valueDK : str="?"; break;
     default: str = ".";
   }
-  return false;
+  return true;
 }
 
 
@@ -135,6 +135,14 @@ bool TVariable::str2val_try(const string &valname, TValue &valu)
 
 void TVariable::str2val_add(const string &valname, TValue &valu)
 { str2val(valname, valu); }
+
+
+void TVariable::filestr2val(const string &valname, TValue &valu)
+{ str2val_add(valname, valu); }
+
+
+void TVariable::val2filestr(const TValue &val, string &str) const
+{ val2str(val, str); }
 
 
 // Calls classifier, specified in getValueFrom, if one is available
@@ -160,6 +168,25 @@ TValue TVariable::computeValue(const TExample &ex)
     }
   else
     return DK();
+}
+
+
+bool TVariable::firstValue(TValue &val) const
+{ 
+  raiseError("attribute '%s' does not support 'firstValue' method", name.c_str());
+  return false;
+}
+
+bool TVariable::nextValue(TValue &val) const
+{ 
+  raiseError("attribute '%s' does not support 'nextValue' method", name.c_str());
+  return false;
+}
+
+TValue TVariable::randomValue(const int &rand)
+{ 
+  raiseError("attribute '%s' does not support 'randomValue' method", name.c_str());
+  return TValue();
 }
 
 
@@ -463,58 +490,74 @@ inline int getNumberOfDecimals(const char *vals, bool &hasE)
 }
 
 
-void TFloatVariable::str2val(const string &valname, TValue &valu)
-{ if (str2special(valname, valu))
-    return;
+int TFloatVariable::str2val_low(const string &valname, TValue &valu)
+{
+  if (str2special(valname, valu))
+    return 1;
 
-  const char *vals = valname.c_str();
-  float f;
-  if (!sscanf(vals, "%f", &f))
-    raiseError("invalid argument (a number expected)");
-  if ((startValue<=endValue) && (stepValue>0) && ((f<startValue) || (f>endValue)))
-    raiseError("value %5.3f out of range %5.3f-%5.3f", f, startValue, endValue);
+  const char *vals;
+  char *tmp = NULL;
 
-  valu = TValue(f);
-
-  int decimals;
-  switch (adjustDecimals) {
-    case 2:
-      numberOfDecimals = getNumberOfDecimals(vals, scientificFormat);
-      adjustDecimals = 1;
-      break;
-    case 1:
-      decimals = getNumberOfDecimals(vals, scientificFormat);
-      if (decimals > numberOfDecimals)
-        numberOfDecimals = decimals;
+  int cp = valname.find(',');
+  if (cp!=string::npos) {
+    vals = tmp = strcpy(new char[valname.size()+1], valname.c_str());
+    tmp[cp] = '.';
   }
+  else
+    vals = valname.c_str();
+
+  float f;
+  int ssr = sscanf(vals, "%f", &f);
+
+  int res;
+
+  if (!ssr || (ssr==EOF)) {
+    res = -1;
+  }
+  else {
+    valu = TValue(f);
+
+    if (((startValue<=endValue) && (stepValue>0) && ((f<startValue) || (f>endValue)))) {
+      res = -2;
+    }
+
+    else {
+      res = 1;
+
+      valu = TValue(f);
+
+      int decimals;
+      switch (adjustDecimals) {
+        case 2:
+          numberOfDecimals = getNumberOfDecimals(vals, scientificFormat);
+          adjustDecimals = 1;
+          break;
+        case 1:
+          decimals = getNumberOfDecimals(vals, scientificFormat);
+          if (decimals > numberOfDecimals)
+            numberOfDecimals = decimals;
+      }
+    }
+  }
+
+  if (tmp)
+    delete tmp;
+
+  return res;
 }
 
 
-bool TFloatVariable::str2val_try(const string &valname, TValue &valu)
-{ if (str2special(valname, valu))
-    return true;
-
-  const char *vals = valname.c_str();
-  float f;
-  int ssr = sscanf(vals, "%f", &f);
-  if (!ssr || (ssr==EOF) || ((startValue<=endValue) && (stepValue>0) && ((f<startValue) || (f>endValue))))
-    return false;
-
-  valu = TValue(f);
-
-  int decimals;
-  switch (adjustDecimals) {
-    case 2:
-      numberOfDecimals = getNumberOfDecimals(vals, scientificFormat);
-      adjustDecimals = 1;
-      break;
-    case 1:
-      decimals = getNumberOfDecimals(vals, scientificFormat);
-      if (decimals > numberOfDecimals)
-        numberOfDecimals = decimals;
+void TFloatVariable::str2val(const string &valname, TValue &valu)
+{ 
+  switch (str2val_low(valname, valu)) {
+    case -1: raiseError("'%s' is not a legal value for the continuous class", valname.c_str());
+    case -2: raiseError("value %5.3f out of range %5.3f-%5.3f", valu.floatV, startValue, endValue);
   }
+}
 
-  return true;
+bool TFloatVariable::str2val_try(const string &valname, TValue &valu)
+{ 
+  return str2val_low(valname, valu) == 1;
 }
 
 

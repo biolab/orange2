@@ -27,6 +27,58 @@
 #include "stringvars.hpp"
 
 
+extern TOrangeType PyOrVariable_Type;
+extern TOrangeType PyOrPythonVariable_Type;
+#include "pythonvars.hpp"
+#include "c2py.hpp"
+
+typedef vector<pair<string, PyObject *> > TPythonVariablesRegistry;
+
+TPythonVariablesRegistry pythonVariables;
+
+void registerVariableType(PyObject *variable)
+{
+  const char *varname;
+
+  if (!PyType_IsSubtype((PyTypeObject *)variable, (PyTypeObject *)&PyOrPythonVariable_Type))
+    raiseErrorWho("registerVariableType", "variable type must be derived from PythonVariable");
+
+  PyObject *pyclassname = PyObject_GetAttrString(variable, "__name__");
+  if (!pyclassname)
+    raiseErrorWho("registerVariableType", "variable type misses the '__name__'");
+  varname = PyString_AsString(pyclassname);
+  // it won't go away
+  Py_DECREF(pyclassname);
+
+  TPythonVariablesRegistry::iterator bi(pythonVariables.begin()), be(pythonVariables.end());
+  for(; (bi != be) && ((*bi).first != varname); bi++);
+
+  Py_INCREF(variable);
+  if (bi==be)
+    pythonVariables.push_back(make_pair(string(varname), variable));
+  else {
+    Py_DECREF((*bi).second);
+    (*bi).second = variable;
+  }
+}
+
+void pythonVariables_unsafeInitializion()
+{
+  pythonVariables.push_back(make_pair(string("PythonVariable"), (PyObject *)&PyOrPythonVariable_Type));
+}
+
+bool pythonDeclarationMatches(const string &declaration, PVariable var)
+{
+  PyObject *classname = PyObject_GetAttrString((PyObject *)(var.counter), "__class__");
+  PyObject *typenamee = PyObject_GetAttrString(classname, "__name__");
+  bool res = !strcmp(PyString_AsString(typenamee), (declaration.size()>6) ? declaration.c_str()+7 : "PythonVariable");
+  Py_DECREF(classname);
+  Py_DECREF(typenamee);
+  return res;
+}
+
+
+
 PDomain combineDomains(PDomainList sources, TDomainMultiMapping &mapping)
 {
   PVariable classVar;
@@ -101,10 +153,19 @@ void computeMapping(PDomain destination, PDomainList sources, TDomainMultiMappin
 
 
 
-TDomainDepot::TAttributeDescription::TAttributeDescription(const string &n, const int &vt, bool ord)
+TDomainDepot::TAttributeDescription::TAttributeDescription(const string &n, const int &vt, const string &td, bool ord)
 : name(n),
   varType(vt),
+  typeDeclaration(td),
   ordered(ord)
+{}
+
+
+TDomainDepot::TAttributeDescription::TAttributeDescription(const string &n, const int &vt)
+: name(n),
+  varType(vt),
+  typeDeclaration(),
+  ordered(false)
 {}
 
 
@@ -142,7 +203,9 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
   TVarList::const_iterator vi(domain->variables->begin());
   const_PITERATE(TAttributeDescriptions, ai, attributes)
     if (    ((*ai).name != (*vi)->name)
-         || ((*ai).varType>0) && ((*ai).varType != (*vi)->varType))
+         || ((*ai).varType>0) && ((*ai).varType != (*vi)->varType)
+         || (((*ai).varType==PYTHONVAR) && !pythonDeclarationMatches((*ai).typeDeclaration, *vi))
+       )
       return false;
     else
       vi++;
@@ -153,6 +216,7 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
       PVariable var = domain->getMetaVar((*mi).name, false);
       if (    !var
            || (((*mi).varType > 0) && ((*mi).varType != var->varType))
+           || (((*mi).varType==PYTHONVAR) && !pythonDeclarationMatches((*mi).typeDeclaration, *vi))
          )
         return false;
       if (metaIDs)
@@ -180,7 +244,7 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
   TVarList attrList;
   int foo;
   const_PITERATE(TAttributeDescriptions, ai, attributes) {
-    PVariable newvar = makeVariable((*ai).name, (*ai).varType, (*ai).values, foo, knownVars, knownMetas, false, false);
+    PVariable newvar = makeVariable(*ai, foo, knownVars, knownMetas, false, false);
     if ((*ai).ordered)
       newvar->ordered = true;
     attrList.push_back(newvar);
@@ -199,7 +263,7 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
   if (metas)
     const_PITERATE(TAttributeDescriptions, mi, metas) {
       int id;
-      PVariable var = makeVariable((*mi).name, (*mi).varType, (*mi).values, id, knownVars, knownMetas, false, true);
+      PVariable var = makeVariable(*mi, id, knownVars, knownMetas, false, true);
       if (!id)
         id = getMetaID();
       newDomain->metas.push_back(TMetaDescriptor(id, var));
@@ -218,54 +282,120 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
   return newDomain;
 }
 
-
-PVariable createVariable(const string &name, const int &varType, PStringList values)
+PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, const string &name)
 {
-  switch (varType) {
-    case TValue::INTVAR:  return mlnew TEnumVariable(name, values ? values : PStringList(mlnew TStringList()));
-    case TValue::FLOATVAR: return mlnew TFloatVariable(name);
-    case STRINGVAR: return mlnew TStringVariable(name);
+  const char *vartypename = typeDeclaration.c_str()+7;
+  char *parpos = strchr(vartypename, '(');
+  PyObject *var = NULL;
+
+  if (!parpos) {
+    TPythonVariablesRegistry::iterator bi(pythonVariables.begin()), be(pythonVariables.end());
+    for(; (bi != be) && strcmp((*bi).first.c_str(), vartypename); bi++);
+
+    if (bi!=be) {
+      var = PyObject_CallFunction((*bi).second, NULL);
+      if (!var)
+        throw pyexception();
+    }
   }
 
-  if (varType==-1)
-    ::raiseErrorWho("makeVariable", "unknown type for attribute '%s'", name.c_str());
+  if (!var) {
+    PyObject *globals = PyEval_GetGlobals();
+    PyObject *locals = PyEval_GetLocals();
+
+    var = PyRun_String(vartypename, Py_eval_input, globals, locals);
+    if (!parpos && (!var || PyType_Check(var))) {
+      PyErr_Clear();
+      const int slen = strlen(vartypename);
+      char *wPar = strcpy(new char [slen + 3], vartypename);
+      strcpy(wPar+slen, "()");
+      var = PyRun_String(wPar, Py_eval_input, globals, locals);
+    }
+  
+    if (!var)
+      // if parentheses were given, this is the exception from the first call, else from the second
+      throw pyexception();
+  }
+
+  if (!PyObject_TypeCheck(var, (PyTypeObject *)&PyOrVariable_Type))
+    ::raiseErrorWho("makeVariable", "PythonVariable's constructor is expected to return a 'PythonVariable', not '%s'", var->ob_type->tp_name);
+
+  PVariable pvar = GCPtr<TOrange>((TPyOrange *)var, true);
+  Py_DECREF(var);
+
+  pvar->name = name;
+  return pvar;
+}
+
+PVariable TDomainDepot::createVariable(const TAttributeDescription &desc)
+{
+  switch (desc.varType) {
+    case TValue::INTVAR: {
+      TEnumVariable *evar = mlnew TEnumVariable(desc.name, desc.values ? desc.values : PStringList(mlnew TStringList()));
+      if (desc.ordered)
+        evar->ordered = true;
+      return evar;
+    }
+
+    case TValue::FLOATVAR:
+      return mlnew TFloatVariable(desc.name);
+
+    case STRINGVAR:
+      return mlnew TStringVariable(desc.name);
+
+    case PYTHONVAR:
+      return createVariable_Python(desc.typeDeclaration, desc.name);
+  }
+
+  if (desc.varType==-1)
+    ::raiseErrorWho("makeVariable", "unknown type for attribute '%s'", desc.name.c_str());
 
   return (TVariable *)NULL;
 }
 
 
-PVariable makeVariable(const string &name, unsigned char varType, PStringList values, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
-{ if (!preferMetas && knownVars)
+PVariable TDomainDepot::makeVariable(const TAttributeDescription &desc, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
+{ 
+  if (!preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
-      if (   ((*vi)->name==name)
-          && (    (varType==-1)
-               || (varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
-               || ((*vi)->varType==varType))) {
+      if (   ((*vi)->name==desc.name)
+          && (    (desc.varType==-1)
+               || (desc.varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
+               || ((*vi)->varType==desc.varType)
+             )
+          && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, *vi))
+         ) {
         id = 0;
         return *vi;
       }
 
   if (metas)
     const_PITERATE(TMetaVector, mi, metas)
-      if (   ((*mi).variable->name == name)
-          && (    (varType == -1)
-               || (varType==STRINGVAR) && (*mi).variable.is_derived_from(TStringVariable)
-               || ((*mi).variable->varType==varType))) {
+      if (   ((*mi).variable->name == desc.name)
+          && (    (desc.varType == -1)
+               || (desc.varType==STRINGVAR) && (*mi).variable.is_derived_from(TStringVariable)
+               || ((*mi).variable->varType==desc.varType)
+             )
+          && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, (*mi).variable))
+         ) {
         id = (*mi).id;
         return (*mi).variable;
       }
 
   if (preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
-      if (   ((*vi)->name==name)
-          && (    (varType==-1)
-               || (varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
-               || ((*vi)->varType==varType))) {
+      if (   ((*vi)->name==desc.name)
+          && (    (desc.varType==-1)
+               || (desc.varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
+               || ((*vi)->varType==desc.varType)
+             )
+          && ((desc.varType!=PYTHONVAR) || pythonDeclarationMatches(desc.typeDeclaration, *vi))
+         ) {
         id = 0;
         return *vi;
       }
   
   id = 0;
 
-  return dontCreateNew ? PVariable() : createVariable(name, varType, values);
+  return dontCreateNew ? PVariable() : createVariable(desc);
 }

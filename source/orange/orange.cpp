@@ -30,10 +30,12 @@
 
 void tdidt_cpp_gcUnsafeInitialization();
 void random_cpp_gcUnsafeInitialization();
+void pythonVariables_unsafeInitializion();
 
 void gcUnsafeStaticInitialization()
 { tdidt_cpp_gcUnsafeInitialization();
   random_cpp_gcUnsafeInitialization();
+  pythonVariables_unsafeInitializion();
 }
 
 #include "Python.h"

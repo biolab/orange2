@@ -50,10 +50,12 @@ public:
   public:
     string name;
     int varType;
+    string typeDeclaration;
     bool ordered;
     PStringList values; // not always used, but often comes handy...
 
-    TAttributeDescription(const string &, const int &, bool = false);
+    TAttributeDescription(const string &, const int &, const string &, bool = false);
+    TAttributeDescription(const string &, const int &);
   };
 
   ~TDomainDepot();
@@ -70,19 +72,22 @@ public:
 
   static void destroyNotifier(TDomain *domain, void *);
 
+  /* Creates a variable with given name and type. */
+  static PVariable createVariable(const TAttributeDescription &);
+  static PVariable createVariable_Python(const string &typeDeclaration, const string &name);
+
+  /* Tries to find a variable the given name and type in knownVars or metaVector.
+     Any of these (or both) can be omitted. If the variable is found in metaVector,
+     the id is set as well; if not, id is set to 0. If the variable is not found,
+     a new one is created unless dontCreateNew is set to false. */
+  static PVariable makeVariable(const TAttributeDescription &, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
+
+
 private:
   list<TDomain *> knownDomains;
 };
 
 
-/* Creates a variable with given name and type. */
-PVariable createVariable(const string &name, const int &varType, PStringList values);
-
-/* Tries to find a variable the given name and type in knownVars or metaVector.
-   Any of these (or both) can be omitted. If the variable is found in metaVector,
-   the id is set as well; if not, id is set to 0. If the variable is not found,
-   a new one is created unless dontCreateNew is set to false. */
-PVariable makeVariable(const string &name, unsigned char varType, PStringList values, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
 
 
 

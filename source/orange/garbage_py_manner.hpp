@@ -320,11 +320,6 @@ public:
 
 
   template<class U>
-  inline bool is(const U *) const
-  { return (typeid(U)==typeid(T)) != 0; }
-
-
-  template<class U>
   U *as(U *)
   { return counter ? dynamic_cast<U *>(counter->ptr) : NULL; }
 
@@ -503,11 +498,6 @@ public:
 
 
   template<class U>
-  inline bool is(const U *) const
-  { return (typeid(U)==typeid(T))!=0; }
-
-
-  template<class U>
   U *as(U *)
   { return counter ? dynamic_cast<U *>(counter->ptr) : NULL; }
 
@@ -525,7 +515,6 @@ TGCCounterNML<type>::TDestructor GCPtrNML<type>::destructor = type##_destructor;
 
 
 #define is_derived_from(x) castable_to((x *)NULL)
-#define IS(x) is((x *)NULL)
 #define AS(x) as((x *)NULL)
 
 #define WRAPPER(x) class T##x; typedef GCPtr<T##x> P##x;
@@ -533,8 +522,3 @@ TGCCounterNML<type>::TDestructor GCPtrNML<type>::destructor = type##_destructor;
 #define WRAPPEDNML(x) GCPtrNML<T##x>
 #define WRAPPERNML(x) typedef WRAPPEDNML(x) P##x;
 #define WRAPPEDVECTOR(x) GCPtrNML<vector<x> >
-
-
-// This is defined by Python but then redefined by STLPort
-#undef LONGLONG_MAX
-#undef ULONGLONG_MAX

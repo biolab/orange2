@@ -30,10 +30,6 @@
 #include "cls_value.hpp"
 #include "valuelisttemplate.hpp"
 
-/*
-PyObject *convertToPython(const TValue &)
-{ raiseError("convertToPython(TValue &) undefined"); }
-*/
 
 int ccn_Variable(PyObject *, void *);
 

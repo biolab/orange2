@@ -32,6 +32,7 @@
 #include "values.hpp"
 #include "vars.hpp"
 #include "stringvars.hpp"
+#include "pythonvars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
 
@@ -43,6 +44,14 @@ bool atomsEmpty(const TIdList &atoms);
 
 TDomainDepot TTabDelimExampleGenerator::domainDepot_tab;
 TDomainDepot TTabDelimExampleGenerator::domainDepot_txt;
+
+
+const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerator::typeIdentifiers[] =
+ {{"d", 0, TValue::INTVAR},   {"discrete", 0, TValue::INTVAR},     {"e", 0, TValue::INTVAR},   {"enum", 0, TValue::INTVAR},
+  {"c", 0, TValue::FLOATVAR}, {"continuous", 0, TValue::FLOATVAR}, {"f", 0, TValue::FLOATVAR}, {"float", 0, TValue::FLOATVAR},
+  {"string", 0, STRINGVAR},   {"s", 0, STRINGVAR},
+  {"python", 0, PYTHONVAR},   {"python:", 7, PYTHONVAR},
+  {NULL, 0}};
 
 
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
@@ -76,7 +85,6 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   startDataPos = ftell(fei.file);
   startDataLine = fei.line;
 }
-
 
 
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
@@ -133,58 +141,32 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
             valstr[0]='~';
       }
 
-      if (*si==-1)
-        if (pos==classPos) { // if this is class value
-          TValue cval;
-          if (domain->classVar->varType == TValue::FLOATVAR) {
-            int cp = valstr.find(',');
-            if (cp!=string::npos)
-              valstr[cp] = '.';
-            if (!domain->classVar->str2val_try(valstr, cval))
-              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous class", fei.filename.c_str(), fei.line, valstr.c_str());
+      try {
+        if (*si==-1)
+          if (pos==classPos) { // if this is class value
+            TValue cval;
+            domain->classVar->filestr2val(valstr, cval);
+            exam.setClass(cval);
           }
-          else
-            domain->classVar->str2val_add(valstr, cval);
-
-          exam.setClass(cval);
-        }
-        else { // if this is a normal value
-          // replace the first ',' with '.'
-          // (if there is more than one, it's an error anyway
-          if ((*vi)->varType == TValue::FLOATVAR) {
-            int cp = valstr.find(',');
-            if (cp!=string::npos)
-              valstr[cp] = '.';
-            if (!(*vi)->str2val_try(valstr, *ei))
-              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous attribute '%s'", fei.filename.c_str(), fei.line, valstr.c_str(), (*vi)->name.c_str());
+          else { // if this is a normal value
+            (*vi++)->filestr2val(valstr, *ei++);
           }
-          else
-            (*vi)->str2val_add(valstr, *ei);
+        else { // if this is a meta value
+          TMetaDescriptor *md = domain->metas[*si];
+          _ASSERT(md!=NULL);
+          TValue mval;
+          md->variable->filestr2val(valstr, mval);
 
-          vi++;
-          ei++;
+          exam.setMeta(*si, mval);
         }
-      else { // if this is a meta value
-        TMetaDescriptor *md = domain->metas[*si];
-        _ASSERT(md!=NULL);
-        TValue mval;
-
-        if (md->variable->varType == TValue::FLOATVAR) {
-          int cp = valstr.find(',');
-          if (cp!=string::npos)
-            valstr[cp] = '.';
-          if (!md->variable->str2val_try(valstr, mval))
-            raiseError("file '%s', line %i: '%s' is not a legal value for the continuous attribute '%s'", fei.filename.c_str(), fei.line, md->variable->name.c_str());
-        }
-        else
-          md->variable->str2val_add(valstr, mval);
-
-        exam.setMeta(*si, mval);
+      }
+      catch (mlexception &err) {
+        raiseError("file '%s', line '%i': %s", fei.filename.c_str(), fei.line, err.what());
       }
     }
 
   if (pos==classPos) // if class is the last value in the line, it is set here
-    domain->classVar->str2val_add(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1]);
+    domain->classVar->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1]);
 
   while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
 
@@ -246,11 +228,12 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
       sprintf(res, "empty type entry for attribute '%s'", (*vi).c_str());
       return res;
     }
-    if (!c[1] && ((*c == 'd') || (*c == 'c') || (*c == 's')))
+
+    const TIdentifierDeclaration *tid = typeIdentifiers;
+    for(; tid->identifier && (tid->matchRoot ? strncmp(tid->identifier, c, tid->matchRoot) : strcmp(tid->identifier, c)); tid++);
+    if (tid->identifier)
       continue;
-    if (!strcmp(c, "continuous") || !strcmp(c, "discrete") || !strcmp(c, "string")) 
-      continue;
-      
+
     for(; *c && (*c!=' '); c++);
       if (!*c) {
         char *res= mlnew char[128 + (*vi).size() + (*ai).size()];
@@ -665,11 +648,11 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
 
     if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
       if (*ati==1) {
-        metas.push_back(TDomainDepot::TAttributeDescription(*vni, -1, ordered));
+        metas.push_back(TDomainDepot::TAttributeDescription(*vni, -1, *ti, ordered));
         attributeDescription = &metas.back();
       }
       else {
-        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*vni, -1, ordered));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*vni, -1, *ti, ordered));
         attributeDescription = &attributeDescriptions.back();
       }
     }
@@ -679,13 +662,14 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
     if (!(*ti).length())
       ::raiseError("type for attribute '%s' is missing", (*vni).c_str());
 
-    if ((*ti=="c") || (*ti=="continuous") || (*ti=="float") || (*ti=="f"))
-      attributeDescription->varType = TValue::FLOATVAR;
-    else if ((*ti=="d") || (*ti=="discrete") || (*ti=="e") || (*ti=="enum"))
-      attributeDescription->varType = TValue::INTVAR;
-    else if (*ti=="string")
-      attributeDescription->varType = STRINGVAR;
-    else {
+    const TIdentifierDeclaration *tid = typeIdentifiers;
+    for(; tid->identifier; tid++)
+      if (!(tid->matchRoot ? strncmp(tid->identifier, (*ti).c_str(), tid->matchRoot)
+                           : strcmp(tid->identifier, (*ti).c_str()))) {
+        attributeDescription->varType = tid->varType;
+        break;
+      }
+    if (!tid->identifier) {
       attributeDescription->varType = TValue::INTVAR;
       attributeDescription->values = mlnew TStringList;
 
@@ -805,8 +789,11 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
         break;
 
       case '\\':
-        if (escapeSpaces)
+        if (escapeSpaces) {
           c = fgetc(fei.file);
+          if (c != ' ')
+            atom += '\\';
+        }
 
       default:
         if ((c>=' ') || (c<0))
@@ -838,13 +825,13 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
   bool ho = false;
   for(; vi!=ve; vi++, ri++) {
     PUTDELIM;
-    (*vi)->val2str(*ri, st);
+    (*vi)->val2filestr(*ri, st);
     fprintf(file, st.c_str());
   }
 
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
     PUTDELIM;
-    (*mi).variable->val2str(ex[(*mi).id], st);
+    (*mi).variable->val2filestr(ex[(*mi).id], st);
     fprintf(file, "%s", st.c_str());
   }
   fprintf(file, "\n");
@@ -888,6 +875,15 @@ void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
     fprintf(file, "continuous");
   else if (var.is_derived_from(TStringVariable))
     fprintf(file, "string");
+  else if (var.is_derived_from(TPythonVariable)) {
+    if (typeid(*var.counter->ptr) == typeid(TPythonVariable))
+      fprintf(file, "python");
+    else {
+      PyObject *pyclassname = PyObject_GetAttrString((PyObject *)(var.counter)->ob_type, "__name__");
+      fprintf(file, "python:%s", PyString_AsString(pyclassname));
+      Py_DECREF(pyclassname);
+    }
+  }  
   else
     raiseErrorWho("tabDelim_writeDomain", "tabDelim format supports only discrete, continuous and string variables");
 }

@@ -173,7 +173,7 @@ FILE *openExtended(const char *filename, const char *defaultExtension)
   FILE *ostr = fopen(extended, "wt");
   if (!ostr)
     PyErr_Format(PyExc_SystemError, "cannot open file '%s'", extended);
-  if (extension)
+  if (!extension)
     mldelete const_cast<char *>(extended);
   return ostr;
 }
