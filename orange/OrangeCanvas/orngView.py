@@ -193,12 +193,13 @@ class SchemaView(QCanvasView):
 
                 # did we click inside the boxes to draw connections
                 if ev.button() == QMouseEvent.LeftButton and (widget.mouseInsideLeftChannel(rect) or widget.mouseInsideRightChannel(rect)):
-                    self.bLineDragging = TRUE
-                    pos = widget.getEdgePoint(rect)
-                    self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvas)
-                    self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
-                    self.tempLine.show()
-                    self.canvas().update()
+                    if not self.doc.signalManager.signalProcessingInProgress:  # if we are processing some signals, don't allow to add lines
+                        self.bLineDragging = TRUE
+                        pos = widget.getEdgePoint(rect)
+                        self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvas)
+                        self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
+                        self.tempLine.show()
+                        self.canvas().update()
                     
                 # we clicked inside the widget and we start dragging it
                 elif ev.button() == QMouseEvent.LeftButton:

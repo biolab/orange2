@@ -429,23 +429,17 @@ class CanvasWidget(QCanvasRectangle):
 
     # draw the widget        
     def drawShape(self, painter):
-        painter.setBrush(QBrush(self.NoBrush))
-        painter.setPen(QPen(self.black))
-        painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
-
         if self.isProcessing:
             painter.setPen(QPen(self.blue))
-            painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
+            painter.setBrush(QBrush(self.blue))
             painter.drawRect(self.x()+8, self.y(), 52, 52)
         elif self.selected:
-            if self.invalidPosition:
-                painter.setPen(QPen(self.red))
-            else:
-                painter.setPen(QPen(self.green))
+            if self.invalidPosition: painter.setPen(QPen(self.red))
+            else:                    painter.setPen(QPen(self.green))
             painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
             painter.drawRect(self.x()+8, self.y(), 52, 52)
 
-        #painter.drawRect(self.x()+8, self.y(), 52, 52)
+        painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
 
         if self.imageEdge != None:
             if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
@@ -454,11 +448,6 @@ class CanvasWidget(QCanvasRectangle):
             painter.setBrush(QBrush(self.blue))
             if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
             if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
-
-        painter.setPen(QPen(self.black))
-        #rect = painter.boundingRect(0,0,200,20,0,self.caption)
-        #self.captionWidth = rect.width() + 50
-        #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, self.captionWidth, rect.height(), 0, self.caption)
 
     def printShape(self, painter):
         painter.setPen(QPen(self.black))
