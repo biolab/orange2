@@ -373,6 +373,9 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
         continue;
     
       for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()), we(searchWarranties.end()); wi!=we; wi++) {
+        if ((*wi).posInFile >= atoms.size())
+          raiseError("line %i too short", fei.line);
+
         const string &atom = atoms[(*wi).posInFile];
 
         // only discrete attributes can have values longer than 63 characters

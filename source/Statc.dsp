@@ -58,7 +58,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "c:\python23\lib\site-packages\orange\statc.pyd"	"c:\program files\upx" "c:\temp\orange\release\statc.pyd" -o "c:\python23\lib\site-packages\orange\statc.pyd"
+PostBuild_Cmds=del "d:\ai\orange\statc.pyd"	"c:\program files\upx" "c:\temp\orange\release\statc.pyd" -o "d:\ai\orange\statc.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Statc - Win32 Debug"

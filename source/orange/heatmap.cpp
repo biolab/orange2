@@ -194,19 +194,20 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
           col = 253;
         else if (*intensity > absHigh)
           col = 254;
+        else {
+          float norm = colorFact * (*intensity - colorBase);
+          if ((norm > -0.008) && (norm < 0.008))
+            norm = 125;
+          else
+            norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm))));
 
-        float norm = colorFact * (*intensity - colorBase);
-        if ((norm > -0.008) && (norm < 0.008))
-          norm = 125;
-        else
-          norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm))));
-
-        if (norm<0)
-          col = 0;
-        else if (norm>249)
-          col = 249;
-        else
-          col = int(floor(norm));
+          if (norm<0)
+            col = 0;
+          else if (norm>249)
+            col = 249;
+          else  
+            col = int(floor(norm));
+        }
 
         for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
       }
