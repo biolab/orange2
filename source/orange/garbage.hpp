@@ -52,6 +52,7 @@ object receiving the wrapper will die before the wrapped object.
 #include <typeinfo>
 #include <stdio.h>
 #include <Python.h>
+using namespace std;
 
 // This is not the perfect place for this macros, but it's convenient
 #ifdef _MSC_VER
@@ -80,11 +81,10 @@ object receiving the wrapper will die before the wrapped object.
 
 #ifdef _MSC_VER
   #include <crtdbg.h>
-  #pragma warning (disable : 4786 4114 4018 4267)
-  #pragma warning (disable : 4127) // conditional expression is constant (reported by _ASSERT without debug)
+  #pragma warning (disable : 4786 4114 4018 4267 4127)
   #define TYPENAME(x) (x).name()+7
 
-#else // !_MSC_VER
+#else
   #include <assert.h>
   #define _ASSERT assert
   char *demangle(const type_info &type);

@@ -1,12 +1,11 @@
-all:	objdir ../orangeom.so
+all:	objdir $(OLD)/orangeom.so
 
-MODULENAME = ORANGEOM
+MODULENAME=ORANGEOM
 include ../makefile.defs
 include makefile.deps
 
-objdir:
-	-@mkdir -p obj > /dev/null
+$(OLD)/orangeom.so:	px/stamp $(ORANGEOM_OBJECTS)
+	gcc $(ORANGEOM_OBJECTS) $(LINKOPTIONS) -o $(OLD)/orangeom.so
 
-../orangeom.so:	ppp/stamp px/stamp $(ORANGEOM_OBJECTS)
-	gcc $(ORANGEOM_OBJECTS) $(LINKOPTIONS) -o ../orangeom.so
-
+clean:	cleantemp
+	rm -f $(OLD)/orangeom.so

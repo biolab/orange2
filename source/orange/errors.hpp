@@ -32,7 +32,7 @@ extern bool exhaustiveWarnings;
 #ifdef _MSC_VER
 #define mlexception exception
 #else
-class ORANGE_API mlexception : public exception {
+class mlexception : public exception {
 public:
    string err_desc;
 

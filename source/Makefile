@@ -1,11 +1,11 @@
-# You need to set ORANGE_LIBDIR to some other directory if
-# this is a vfat file-system, which doesn't support symbolic
-# links (not common, but I need it :-)
+# Set ORANGE_LIBDIR to some other directory if ../.. is on
+# a vfat file-system (not common, but I need it)
+# (This is needed because vfat doesn't support symbolic links)
 ifndef ORANGE_LIBDIR
   ORANGE_LIBDIR=../..
 endif
 
-MODULES=include orange orangeom orangene
+MODULES=include orange orangeom orangene corn statc
 ACTIONS=all clean cleantemp
 	
 $(ACTIONS):

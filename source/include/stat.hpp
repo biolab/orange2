@@ -99,6 +99,150 @@ public:
 
 
 
+/* *********** SUPPORT FUNCTIONS ************/
+
+
+
+template<class T>
+T sum(const vector<T> &x, const T &init=0.0)
+{ DEFINE_TYPENAME
+  T sum=init;
+  const_SITERATE(ii, x)
+    sum += *ii;
+  return sum;
+}
+
+template<class T>
+void cumsum(const vector<T> &x, vector<T> &res, const T &init=0.0)
+{ DEFINE_TYPENAME
+  T sum=init;
+  const_SITERATE(ii, x) {
+    sum += *ii;
+    res.push_back(sum);
+  }
+}
+
+template<class T>
+T ss(const vector<T> &x, const T &init=0.0)
+{ DEFINE_TYPENAME
+  T sum=init;
+  const_SITERATE(ii, x)
+    sum+=sqr(*ii);
+  return sum;
+}
+
+
+template<class T>
+T summult(const vector<T> &x, const vector<T> &y, const T &init=0.0)
+{ DEFINE_TYPENAME
+  
+  if (x.size() != y.size())
+    throw StatException("summult: lists of different sizes");
+
+  T sum=init;
+  for(const_iterator xi(x.begin()), xe(x.end()), yi(y.begin());
+      xi!=xe; sum+= *(xi++) * *(yi++));
+  return sum;
+}
+
+
+template<class T>
+T sumdiffsquared(const vector<T> &flist1, const vector<T> &flist2, const T &init=0.0)
+{ DEFINE_TYPENAME
+
+  if (flist1.size() != flist2.size())
+    throw StatException("sumdiffsquared: lists of different sizes");
+
+  T sum=init;
+  for(const_iterator i1(flist1.begin()), e1(flist1.end()), i2(flist2.begin()); i1!=e1; sum+=sqr(*(i1++)-*(i2++)));
+  return sum;
+}
+
+
+template<class T>
+T sumsquared(vector<T> &x, const T &init=0.0)
+{ return sqr(sum(x, init)); }
+
+template<class T>
+bool shellsort(const vector<T> &flist, vector<int> &indices, vector<T> &slist)
+{ DEFINE_TYPENAME
+  
+  int len=flist.size();
+  indices=vector<int>(len);
+  vector<int>::iterator ii=indices.begin();
+  for(int idx=0; idx<len; idx++)
+    *(ii++)=idx;
+
+  stable_sort(indices.begin(), indices.end(), CompareByIndex<T>(flist));
+
+  slist=vector<T>(len);
+  iterator si(slist.begin());
+  ITERATE(vector<int>, i2, indices)
+    *(si++)=flist[*i2];
+    
+  return true;
+}
+
+
+template<class T, class U>
+bool shellsort(const vector<T> &flist, vector<int> &indices, vector<T> &slist, const U &cf)
+{ DEFINE_TYPENAME
+  
+  int len=flist.size();
+  indices=vector<int>(len);
+  vector<int>::iterator ii=indices.begin();
+  for(int idx=0; idx<len; idx++)
+    *(ii++)=idx;
+
+  stable_sort(indices.begin(), indices.end(), CompareByIndex_pred<T, U>(flist, cf));
+
+  slist=vector<T>();
+  slist.reserve(len);
+  ITERATE(vector<int>, i2, indices)
+    slist.push_back(flist[*i2]);
+    
+  return true;
+}
+
+
+template<class T>
+bool rankdata(const vector<T> &flist, vector<double> &ranks)
+{ vector<T> items;
+  vector<int> indices;
+  shellsort(flist, indices, items);
+
+  int sumranks=0, dupcount=0, n=indices.size();
+  ranks=vector<double>(n);
+  for(int beg=0, en; beg<n; beg=en) {
+    const T &begi=items[beg];
+    for(en=beg+1; (en<n) && (begi==items[en]); en++);
+    double averank=double((en-1)+beg)/2 + 1;
+    while(beg<en)
+      ranks[indices[beg++]]=averank;
+  }
+
+  return true;
+}
+
+
+template<class T, class U>
+bool rankdata(const vector<T> &flist, vector<double> &ranks, U cf)
+{ vector<T> items;
+  vector<int> indices;
+  shellsort(flist, indices, items, cf);
+
+  int sumranks=0, dupcount=0, n=indices.size();
+  ranks=vector<double>(n);
+  for(int beg=0, en; beg<n; beg=en) {
+    for(en=beg+1; (en<n) && (!cf(items[beg], items[en])); en++);
+    double averank=double((en-1)+beg)/2 + 1;
+    while(beg<en)
+      ranks[indices[beg++]]=averank;
+  }
+
+  return true;
+}
+
 /* *********** CENTRAL TENDENCY ************/
 
 
@@ -522,6 +666,232 @@ void trim1 (const vector<T> &flist, double proportion, vector<T> &clist, bool ri
     clist=vector<T>(flist.begin()+tocut, flist.end());
 }
 
+
+
+/* *********** PROBABILITY CALCS ************/
+
+template<class T>
+T gammln(const T &xx)
+{
+    static T cof[6] = {76.18009173, -86.50532033, 24.01409822, -1.231739516, 0.120858003e-2, -0.536382e-5};
+
+    T x=xx, y=xx, tmp=x+5.5;
+    tmp-=(x+0.5)*log(tmp);
+    T ser=1.000000000190015;
+    for(int j=0; j<6; j++)
+     ser+=cof[j]/++y;
+    return -tmp + log(T(2.5066282746310005)*ser/x);
+}
+
+
+template<class T>
+T gammcf(const T &a, const T &x, T &gln)
+{ const T FPMIN(1.0e-30);
+  const int ITMAX= 100;
+  const T EPS=3.0e-7;
+
+  gln = gammln(a);
+  T b=x+1.0-a;
+  T c=T(1.0)/FPMIN;
+  T d=T(1.0)/b;
+  T h=d;
+  for(int i=1; i<=ITMAX; i++) {
+    T an=(a-double(i))*i;
+    b += 2.0;
+    d=an*d+b;
+    if (abs(d) < FPMIN) d=FPMIN;
+    c=b+an/c;
+    if (abs(c) < FPMIN) c=FPMIN;
+    d=T(1.0)/d;
+    T del=d*c;
+    h *= del;
+    if (abs(del-1.0) < EPS)
+      return exp(-x+a*log(x)-gln)*h;
+  }
+
+  throw StatException("gcf: a too large, ITMAX too small");
+}
+
+
+template<class T>
+T gammser(const T &a, const T &x, T &gln)
+{ const int ITMAX=100;
+  const T EPS=3.0e-7;
+  gln=gammln(a);
+  if (x<=0.0)
+    throw StatException("gser: negative x");
+
+  T ap=a;
+  T sum=T(1.0)/a;
+  T del=sum;
+  for(int n=1; n<=ITMAX; n++) {
+    ++ap;
+    del *= x/ap;
+    sum += del;
+    if (abs(del) < fabs(sum)*EPS)
+      return sum*exp(-x+a*log(x)-gln);
+  }
+      
+  throw StatException("gcf: a too large, ITMAX too small");
+}
+   
+
+template<class T>
+T gammp(const T &a, const T &x)
+{ if ((x<0.0) || (a<=0.0))
+    throw StatException("gammp: invalid arguments");
+
+  T gln;
+  return (x<(a+1.0)) ? gammser(a, x, gln) : -gammcf(a, x, gln)+1.0;
+}
+
+
+template<class T>
+T gammq(const T &a, const T &x)
+{ if ((x<0.0) || (a<=0.0))
+    throw StatException("gammp: invalid arguments");
+
+  T gln;
+  return (x<(a+1.0)) ? -gammser(a, x, gln)+1.0 : gammcf(a, x, gln);
+}
+
+      
+template<class T>
+T erf(const T &x)
+{ return (x<0.0) ? -gammp(T(0.5), x*x) : gammp(T(0.5), x*x); }
+
+
+template<class T>
+T erfc(const T &x)
+{ return (x<0.0) ? T(1.0) + gammp(T(0.5), x*x) : gammq(T(0.5), x*x); }
+
+
+template<class T>
+T chisqprob(const T &x, const T &df)
+{ return gammq(df*0.5, x*0.5);
+}
+
+
+
+template<class T>
+T betacf(const T &a, const T &b, const T &x)
+{   const int ITMAX = 200;
+    const double EPS = 3.0e-7;
+
+    T bm=1.0, az=1.0, am=1.0;
+
+    T qab=a+b;
+    T qap=a+1.0;
+    T qam=a-1.0;
+    T bz= -qab*x/qap + 1.0;
+    for(int i=0; i<=ITMAX; i++) {
+	    T em = i+1;
+	    T tem = em*2;
+	    T d = em*(b-em)*x/((qam+tem)*(a+tem));
+	    T ap = az + d*am;
+	    T bp = bz+d*bm;
+	    d = -(a+em)*(qab+em)*x/((qap+tem)*(a+tem));
+	    T app = ap+d*az;
+	    T bpp = bp+d*bz;
+	    T aold = az;
+	    am = ap/bpp;
+	    bm = bp/bpp;
+	    az = app/bpp;
+	    bz = 1.0;
+	    if (abs(az-aold)<(fabs(az)*EPS))
+	      return az;
+    }
+
+    throw StatException("betacf: a or b too big, or ITMAX too small.");
+    return -1.0;
+}
+
+template<class T>
+T betai(const T &a, const T &b, const T &x)
+{ if ((x<0.0) || (x>1.0))
+    throw StatException("betai: bad x");
+
+  T bt= ((x==0.0) || (x==1.0)) ? 0.0 : exp(gammln(a+b)-gammln(a)-gammln(b)+a*log(x)+b*log(- x + 1.0));
+  return (x < (a+1.0)/(a+b+2.0)) ? bt*betacf(a,b,x)/a : -bt*betacf(b,a, -x+1.0)/b + 1.0;
+}
+
+
+template<class T>
+T zprob(const T &z)
+{ const T Z_MAX = 6.0;
+  
+  T x;
+
+  if (z == 0.0)
+    x = 0.0;
+
+  else {
+    T y = abs(z) * 0.5;
+    if (y >= Z_MAX*0.5)
+      x = 1.0;
+    else if (y < 1.0) {
+      T w = sqr(y);
+	    x = ((((((((w * 0.000124818987
+                  -0.001075204047) * w +0.005198775019) * w
+                -0.019198292004) * w +0.059054035642) * w
+              -0.151968751364) * w +0.319152932694) * w
+            -0.531923007300) * w +0.797884560593) * y * 2.0;
+    }
+	  else {
+	    y -= 2.0;
+	    x = (((((((((((((y * -0.000045255659
+                       +0.000152529290) * y -0.000019538132) * y
+                     -0.000676904986) * y +0.001390604284) * y
+                   -0.000794620820) * y -0.002034254874) * y
+                 +0.006549791214) * y -0.010557625006) * y
+               +0.011630447319) * y -0.009279453341) * y
+             +0.005353579108) * y -0.002141268741) * y
+           +0.000535310849) * y +0.999936657524;
+    }
+  }
+
+  return (z > 0.0) ? (x+1.0)*0.5 : (-x+1.0)*0.5;
+}
+
+
+inline double fprob(const int &dfnum, const int &dfden, const double &F)
+{ return betai(dfden*0.5, dfnum*0.5, dfden/(dfden+dfnum*F)); }
+
+
+template<class T>
+T erfcc(const T& x)
+{ T z = abs(x);
+  T t = T(1.0) / (z*0.5+1.0);
+  T ans = t * exp(-z*z-1.26551223 + t*(t*(t*(t*(t*(t*(t*(t*(t*0.17087277-0.82215223)+1.48851587)-1.13520398)+0.27886807)-0.18628806)+0.9678418)+0.37409196)+1.00002368));
+  return (x >= 0.0) ?  ans : -ans +2.0;
+}
+
+
+/* *********** RANDOM NUMBERS ***************/
+
+template<class T>
+T gasdev(const T &mean, const T &dev)
+{ float r, v1, v2;
+  do {
+    v1=float(rand())/RAND_MAX*2-1;
+    v2=float(rand())/RAND_MAX*2-1;
+    r=v1*v1+v2*v2;
+  } while ((r>1.0) || (r<0.0));
+
+  return mean + dev * v1 * sqrt(T(-2.0*log(r)/r));
+}
+
+template<class T, class RF>
+T gasdev(const T &mean, const T &dev, RF &randfunc)
+{ float r, v1, v2;
+  do {
+    v1=randfunc(-1.0, 1.0);
+    v2=randfunc(-1.0, 1.0);
+    r=v1*v1+v2*v2;
+  } while ((r>1.0) || (r<0.0));
+
+  return mean + dev * v1 * sqrt(-2.0*log(r)/r);
+}
 
 
 /* *********** CORRELATION FNCS ************/
@@ -1006,376 +1376,6 @@ double wilcoxont(const vector<T> &x, const vector<T> &y, double &prob)
   double z  = fabs(wt-N*(N+1)*0.25)/se;
   prob=1.0-zprob(z);
   return wt;
-}
-
-
-/* *********** PROBABILITY CALCS ************/
-
-template<class T>
-T gammln(const T &xx)
-{
-    static T cof[6] = {76.18009173, -86.50532033, 24.01409822, -1.231739516, 0.120858003e-2, -0.536382e-5};
-
-    T x=xx, y=xx, tmp=x+5.5;
-    tmp-=(x+0.5)*log(tmp);
-    T ser=1.000000000190015;
-    for(int j=0; j<6; j++)
-     ser+=cof[j]/++y;
-    return -tmp + log(T(2.5066282746310005)*ser/x);
-}
-
-
-template<class T>
-T gammcf(const T &a, const T &x, T &gln)
-{ const T FPMIN(1.0e-30);
-  const int ITMAX= 100;
-  const T EPS=3.0e-7;
-
-  gln = gammln(a);
-  T b=x+1.0-a;
-  T c=T(1.0)/FPMIN;
-  T d=T(1.0)/b;
-  T h=d;
-  for(int i=1; i<=ITMAX; i++) {
-    T an=(a-double(i))*i;
-    b += 2.0;
-    d=an*d+b;
-    if (abs(d) < FPMIN) d=FPMIN;
-    c=b+an/c;
-    if (abs(c) < FPMIN) c=FPMIN;
-    d=T(1.0)/d;
-    T del=d*c;
-    h *= del;
-    if (abs(del-1.0) < EPS)
-      return exp(-x+a*log(x)-gln)*h;
-  }
-
-  throw StatException("gcf: a too large, ITMAX too small");
-}
-
-
-template<class T>
-T gammser(const T &a, const T &x, T &gln)
-{ const int ITMAX=100;
-  const T EPS=3.0e-7;
-  gln=gammln(a);
-  if (x<=0.0)
-    throw StatException("gser: negative x");
-
-  T ap=a;
-  T sum=T(1.0)/a;
-  T del=sum;
-  for(int n=1; n<=ITMAX; n++) {
-    ++ap;
-    del *= x/ap;
-    sum += del;
-    if (abs(del) < fabs(sum)*EPS)
-      return sum*exp(-x+a*log(x)-gln);
-  }
-      
-  throw StatException("gcf: a too large, ITMAX too small");
-}
-   
-
-template<class T>
-T gammp(const T &a, const T &x)
-{ if ((x<0.0) || (a<=0.0))
-    throw StatException("gammp: invalid arguments");
-
-  T gln;
-  return (x<(a+1.0)) ? gammser(a, x, gln) : -gammcf(a, x, gln)+1.0;
-}
-
-
-template<class T>
-T gammq(const T &a, const T &x)
-{ if ((x<0.0) || (a<=0.0))
-    throw StatException("gammp: invalid arguments");
-
-  T gln;
-  return (x<(a+1.0)) ? -gammser(a, x, gln)+1.0 : gammcf(a, x, gln);
-}
-
-      
-template<class T>
-T erf(const T &x)
-{ return (x<0.0) ? -gammp(T(0.5), x*x) : gammp(T(0.5), x*x); }
-
-
-template<class T>
-T erfc(const T &x)
-{ return (x<0.0) ? T(1.0) + gammp(T(0.5), x*x) : gammq(T(0.5), x*x); }
-
-
-template<class T>
-T chisqprob(const T &x, const T &df)
-{ return gammq(df*0.5, x*0.5);
-}
-
-
-
-template<class T>
-T betacf(const T &a, const T &b, const T &x)
-{   const int ITMAX = 200;
-    const double EPS = 3.0e-7;
-
-    T bm=1.0, az=1.0, am=1.0;
-
-    T qab=a+b;
-    T qap=a+1.0;
-    T qam=a-1.0;
-    T bz= -qab*x/qap + 1.0;
-    for(int i=0; i<=ITMAX; i++) {
-	    T em = i+1;
-	    T tem = em*2;
-	    T d = em*(b-em)*x/((qam+tem)*(a+tem));
-	    T ap = az + d*am;
-	    T bp = bz+d*bm;
-	    d = -(a+em)*(qab+em)*x/((qap+tem)*(a+tem));
-	    T app = ap+d*az;
-	    T bpp = bp+d*bz;
-	    T aold = az;
-	    am = ap/bpp;
-	    bm = bp/bpp;
-	    az = app/bpp;
-	    bz = 1.0;
-	    if (abs(az-aold)<(fabs(az)*EPS))
-	      return az;
-    }
-
-    throw StatException("betacf: a or b too big, or ITMAX too small.");
-    return -1.0;
-}
-
-template<class T>
-T betai(const T &a, const T &b, const T &x)
-{ if ((x<0.0) || (x>1.0))
-    throw StatException("betai: bad x");
-
-  T bt= ((x==0.0) || (x==1.0)) ? 0.0 : exp(gammln(a+b)-gammln(a)-gammln(b)+a*log(x)+b*log(- x + 1.0));
-  return (x < (a+1.0)/(a+b+2.0)) ? bt*betacf(a,b,x)/a : -bt*betacf(b,a, -x+1.0)/b + 1.0;
-}
-
-
-template<class T>
-T zprob(const T &z)
-{ const T Z_MAX = 6.0;
-  
-  T x;
-
-  if (z == 0.0)
-    x = 0.0;
-
-  else {
-    T y = abs(z) * 0.5;
-    if (y >= Z_MAX*0.5)
-      x = 1.0;
-    else if (y < 1.0) {
-      T w = sqr(y);
-	    x = ((((((((w * 0.000124818987
-                  -0.001075204047) * w +0.005198775019) * w
-                -0.019198292004) * w +0.059054035642) * w
-              -0.151968751364) * w +0.319152932694) * w
-            -0.531923007300) * w +0.797884560593) * y * 2.0;
-    }
-	  else {
-	    y -= 2.0;
-	    x = (((((((((((((y * -0.000045255659
-                       +0.000152529290) * y -0.000019538132) * y
-                     -0.000676904986) * y +0.001390604284) * y
-                   -0.000794620820) * y -0.002034254874) * y
-                 +0.006549791214) * y -0.010557625006) * y
-               +0.011630447319) * y -0.009279453341) * y
-             +0.005353579108) * y -0.002141268741) * y
-           +0.000535310849) * y +0.999936657524;
-    }
-  }
-
-  return (z > 0.0) ? (x+1.0)*0.5 : (-x+1.0)*0.5;
-}
-
-
-inline double fprob(const int &dfnum, const int &dfden, const double &F)
-{ return betai(dfden*0.5, dfnum*0.5, dfden/(dfden+dfnum*F)); }
-
-
-template<class T>
-T erfcc(const T& x)
-{ T z = abs(x);
-  T t = T(1.0) / (z*0.5+1.0);
-  T ans = t * exp(-z*z-1.26551223 + t*(t*(t*(t*(t*(t*(t*(t*(t*0.17087277-0.82215223)+1.48851587)-1.13520398)+0.27886807)-0.18628806)+0.9678418)+0.37409196)+1.00002368));
-  return (x >= 0.0) ?  ans : -ans +2.0;
-}
-
-
-/* *********** RANDOM NUMBERS ***************/
-
-template<class T>
-T gasdev(const T &mean, const T &dev)
-{ float r, v1, v2;
-  do {
-    v1=float(rand())/RAND_MAX*2-1;
-    v2=float(rand())/RAND_MAX*2-1;
-    r=v1*v1+v2*v2;
-  } while ((r>1.0) || (r<0.0));
-
-  return mean + dev * v1 * sqrt(T(-2.0*log(r)/r));
-}
-
-template<class T, class RF>
-T gasdev(const T &mean, const T &dev, RF &randfunc)
-{ float r, v1, v2;
-  do {
-    v1=randfunc(-1.0, 1.0);
-    v2=randfunc(-1.0, 1.0);
-    r=v1*v1+v2*v2;
-  } while ((r>1.0) || (r<0.0));
-
-  return mean + dev * v1 * sqrt(-2.0*log(r)/r);
-}
-
-/* *********** SUPPORT FUNCTIONS ************/
-
-
-
-template<class T>
-T sum(const vector<T> &x, const T &init=0.0)
-{ DEFINE_TYPENAME
-  T sum=init;
-  const_SITERATE(ii, x)
-    sum += *ii;
-  return sum;
-}
-
-template<class T>
-void cumsum(const vector<T> &x, vector<T> &res, const T &init=0.0)
-{ DEFINE_TYPENAME
-  T sum=init;
-  const_SITERATE(ii, x) {
-    sum += *ii;
-    res.push_back(sum);
-  }
-}
-
-template<class T>
-T ss(const vector<T> &x, const T &init=0.0)
-{ DEFINE_TYPENAME
-  T sum=init;
-  const_SITERATE(ii, x)
-    sum+=sqr(*ii);
-  return sum;
-}
-
-
-template<class T>
-T summult(const vector<T> &x, const vector<T> &y, const T &init=0.0)
-{ DEFINE_TYPENAME
-  
-  if (x.size() != y.size())
-    throw StatException("summult: lists of different sizes");
-
-  T sum=init;
-  for(const_iterator xi(x.begin()), xe(x.end()), yi(y.begin());
-      xi!=xe; sum+= *(xi++) * *(yi++));
-  return sum;
-}
-
-
-template<class T>
-T sumdiffsquared(const vector<T> &flist1, const vector<T> &flist2, const T &init=0.0)
-{ DEFINE_TYPENAME
-
-  if (flist1.size() != flist2.size())
-    throw StatException("sumdiffsquared: lists of different sizes");
-
-  T sum=init;
-  for(const_iterator i1(flist1.begin()), e1(flist1.end()), i2(flist2.begin()); i1!=e1; sum+=sqr(*(i1++)-*(i2++)));
-  return sum;
-}
-
-
-template<class T>
-T sumsquared(vector<T> &x, const T &init=0.0)
-{ return sqr(sum(x, init)); }
-
-template<class T>
-bool shellsort(const vector<T> &flist, vector<int> &indices, vector<T> &slist)
-{ DEFINE_TYPENAME
-  
-  int len=flist.size();
-  indices=vector<int>(len);
-  vector<int>::iterator ii=indices.begin();
-  for(int idx=0; idx<len; idx++)
-    *(ii++)=idx;
-
-  stable_sort(indices.begin(), indices.end(), CompareByIndex<T>(flist));
-
-  slist=vector<T>(len);
-  iterator si(slist.begin());
-  ITERATE(vector<int>, i2, indices)
-    *(si++)=flist[*i2];
-    
-  return true;
-}
-
-
-template<class T, class U>
-bool shellsort(const vector<T> &flist, vector<int> &indices, vector<T> &slist, const U &cf)
-{ DEFINE_TYPENAME
-  
-  int len=flist.size();
-  indices=vector<int>(len);
-  vector<int>::iterator ii=indices.begin();
-  for(int idx=0; idx<len; idx++)
-    *(ii++)=idx;
-
-  stable_sort(indices.begin(), indices.end(), CompareByIndex_pred<T, U>(flist, cf));
-
-  slist=vector<T>();
-  slist.reserve(len);
-  ITERATE(vector<int>, i2, indices)
-    slist.push_back(flist[*i2]);
-    
-  return true;
-}
-
-
-template<class T>
-bool rankdata(const vector<T> &flist, vector<double> &ranks)
-{ vector<T> items;
-  vector<int> indices;
-  shellsort(flist, indices, items);
-
-  int sumranks=0, dupcount=0, n=indices.size();
-  ranks=vector<double>(n);
-  for(int beg=0, en; beg<n; beg=en) {
-    const T &begi=items[beg];
-    for(en=beg+1; (en<n) && (begi==items[en]); en++);
-    double averank=double((en-1)+beg)/2 + 1;
-    while(beg<en)
-      ranks[indices[beg++]]=averank;
-  }
-
-  return true;
-}
-
-
-template<class T, class U>
-bool rankdata(const vector<T> &flist, vector<double> &ranks, U cf)
-{ vector<T> items;
-  vector<int> indices;
-  shellsort(flist, indices, items, cf);
-
-  int sumranks=0, dupcount=0, n=indices.size();
-  ranks=vector<double>(n);
-  for(int beg=0, en; beg<n; beg=en) {
-    for(en=beg+1; (en<n) && (!cf(items[beg], items[en])); en++);
-    double averank=double((en-1)+beg)/2 + 1;
-    while(beg<en)
-      ranks[indices[beg++]]=averank;
-  }
-
-  return true;
 }
 
 
