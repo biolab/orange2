@@ -307,6 +307,11 @@ class updateOrangeDlg(QMainWindow):
 
         self.writeVersionFile()
         self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles))
+
+        # remove widgetregistry.xml in orangeCanvas directory
+        if os.path.exists("./OrangeCanvas/widgetregistry.xml"):
+            os.remove("./OrangeCanvas/widgetregistry.xml")
+        
         self.statusBar.message("Finished...")
         
 
