@@ -47,7 +47,7 @@ def getRounding(d):
     
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size"]
+    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent"]
 
     def __init__(self,parent=None):
         OWWidget.__init__(self,
@@ -76,6 +76,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.histogram_size = 10
         self.data = None
         self.cl = None
+        self.confidence_check = 0
+        self.confidence_percent = 95
         
         self.loadSettings()
 
@@ -91,21 +93,21 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         # GENERAL TAB
         GeneralTab = QVGroupBox(self)
 
-        self.alignRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'Align', ['Left', '0-point'], 'alignType',
+        self.alignRadio = OWGUI.radioButtonsInBox(GeneralTab, self,  'alignType', ['Left', '0-point'], box='Align',
                                                   tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
                                                   callback=self.showNomogram)
         self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log odds'], 'yAxis',  
                                 tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
                                 callback=self.showNomogram)
-        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'Continuous', ['1D', '2D'], 'contType',  
+        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous',
                                 tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
                                 callback=self.showNomogram)
 
         #self.yAxisRadio.setDisabled(True)
-        self.probabilityCheck = OWGUI.checkOnly(GeneralTab, self, 'Show prediction', 'probability', tooltip='', callback = self.setProbability)
+        self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability','Show prediction',  tooltip='', callback = self.setProbability)
         #self.probabilityCheck.setDisabled(True)
-        self.tableCheck = OWGUI.checkOnly(GeneralTab, self, 'Show table', 'table', tooltip='Show table of selected attribute values?')
-        self.bubbleCheck = OWGUI.checkOnly(GeneralTab, self, 'Show details bubble', 'bubble', tooltip='Show details of selected attribute value in a roll-over blob.')
+        self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table','Show table',  tooltip='Show table of selected attribute values?')
+        self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
         self.tableCheck.setDisabled(True)
         
         self.tabs.insertTab(GeneralTab, "General")
@@ -113,16 +115,25 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         # TREE TAB
         NomogramStyleTab = QVGroupBox(self)
 
-        self.verticalSpacingLabel = OWGUI.labelWithSpin(NomogramStyleTab, self, 'Vertical spacing:', min=15, max=100, value='verticalSpacing', step = 1, tooltip='Define space (pixels) between adjacent attributes.')
+        self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 100, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.')
         self.verticalSpacingLabel.setDisabled(True)
-        self.fontSizeLabel = OWGUI.labelWithSpin(NomogramStyleTab, self, 'Font size:', min=4, max=14, value='fontSize', step = 1, tooltip='Font size of nomogram labels.')
+        self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.')
         self.fontSizeLabel.setDisabled(True)
-        self.lineWidthLabel = OWGUI.labelWithSpin(NomogramStyleTab, self, 'Line width:', min=1, max=10, value='lineWidth', step = 1, tooltip='Define width of lines shown in nomogram.')
+        self.lineWidthLabel = OWGUI.spin(NomogramStyleTab, self, 'lineWidth', 1, 10, box = 'Line width:',  tooltip='Define width of lines shown in nomogram.')
         self.lineWidthLabel.setDisabled(True)
         self.histogramCheck, self.histogramLabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Histogram, max. size:', min=1, max=30, checked='histogram', value='histogram_size', step = 1, tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
         self.histogramCheck.setChecked(False)
         self.histogramCheck.setDisabled(True)
         self.histogramLabel.setDisabled(True)
+
+        # save button
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+
+        # objects/gui widgets in settings tab for showing and adjusting confidence intervals properties       
+        self.CICheck, self.CILabel = OWGUI.checkWithSpin(NomogramStyleTab, self, 'Confidence Interval (%):', min=1, max=99, step = 1, checked='confidence_check', value='confidence_percent', tooltip='-(TODO)-', checkCallback=self.showNomogram, spinCallback = self.showNomogram)
+        self.CICheck.setChecked(False)
+        self.CICheck.setDisabled(True)
+        self.CILabel.setDisabled(True)
         
         self.tabs.insertTab(NomogramStyleTab, "Settings")
         
@@ -150,6 +161,17 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     # Input channel: the Bayesian classifier   
     def nbClassifier(self, cl):
+        # thisd subroutine computes standard error of estimated beta /for the time being use it only with discrete data
+        def err(e, priorError, key, data):
+            inf = 0.0
+            sume = e[0]+e[1]
+            for d in data:
+                if d[at]==key:
+                    inf += (e[0]*e[1]/sume/sume)
+            inf = max(inf, 0.00000001)
+            var = 1/inf - priorError*priorError
+            return (math.sqrt(var))
+
         classVal = cl.domain.classVar
         att = cl.domain.attributes
 
@@ -157,7 +179,12 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         dist1 = max(0.00000001, cl.distribution[classVal[1]])
         dist0 = max(0.00000001, cl.distribution[classVal[0]])
         prior = dist0/dist1
-        self.bnomogram = BasicNomogram(self, AttValue("Constant", Numeric.log(prior)))
+        if self.data:
+            sumd = dist1+dist0
+            priorError = math.sqrt(1/((dist1*dist0/sumd/sumd)*len(self.data)))
+        else:
+            priorError = 0
+        self.bnomogram = BasicNomogram(self, AttValue("Constant", Numeric.log(prior), error = priorError))
 
         if self.data:
             stat = orange.DomainBasicAttrStat(self.data)
@@ -167,14 +194,18 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if att[at].varType == orange.VarTypes.Discrete:
                 for cd in cl.conditionalDistributions[at].keys():
                     # calculuate thickness
+                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[0]], 0.00000001)
+                    conditional1 = max(cl.conditionalDistributions[at][cd][classVal[1]], 0.00000001)
+                    beta = Numeric.log(conditional0/conditional1/prior)
                     if self.data:
                         #thickness = int(round(4.*float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))))
                         thickness = float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))
+                        se = err(cl.conditionalDistributions[at][cd], priorError, cd, self.data) # standar error of beta 
                     else:
                         thickness = 0
-                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[0]], 0.00000001)
-                    conditional1 = max(cl.conditionalDistributions[at][cd][classVal[1]], 0.00000001)
-                    a.addAttValue(AttValue(str(cd), Numeric.log(conditional0/conditional1/prior), lineWidth=thickness))
+                        se = 0
+                        
+                    a.addAttValue(AttValue(str(cd), beta, lineWidth=thickness, error = se))
             else:
                 numOfPartitions = 50 
 
@@ -352,9 +383,14 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.histogramCheck.setChecked(False)
             self.histogramCheck.setDisabled(True)
             self.histogramLabel.setDisabled(True)
+            self.CICheck.setChecked(False)
+            self.CICheck.setDisabled(True)
+            self.CILabel.setDisabled(True)
         else:
             self.histogramCheck.setEnabled(True)
             self.histogramLabel.setEnabled(True)
+            self.CICheck.setEnabled(True)
+            self.CILabel.setEnabled(True)
         self.updateNomogram()
         
 
@@ -386,8 +422,55 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
     def setProbability(self):
         if self.probability and self.bnomogram:
             self.bnomogram.showAllMarkers()
-        else:
+        elif self.bnomogram:
             self.bnomogram.hideAllMarkers()
+
+    def saveToFileCanvas(self):
+        sizeW = self.graph.canvas().pright
+        sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()
+        size = QSize(sizeW, sizeH)
+
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        fileName = str(qfileName)
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+
+        # create buffers and painters
+        headerBuffer = QPixmap(self.header.canvas().size())
+        graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom))
+        footerBuffer = QPixmap(self.footer.canvas().size())
+        
+        headerPainter = QPainter(headerBuffer)
+        graphPainter = QPainter(graphBuffer)
+        footerPainter = QPainter(footerBuffer)
+
+        # fill painters
+        headerPainter.fillRect(headerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        graphPainter.fillRect(graphBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        footerPainter.fillRect(footerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        
+        self.header.drawContents(headerPainter, 0, 0, sizeW, self.header.canvas().size().height())
+        self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.canvas().gbottom)
+        self.footer.drawContents(footerPainter, 0, 0, sizeW, self.footer.canvas().size().height())
+
+        
+
+        buffer = QPixmap(size) # any size can do, now using the window size
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+
+        bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.canvas().size().height(), Qt.CopyROP)
+        bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom, Qt.CopyROP)
+        bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
+
+        painter.end()
+        headerPainter.end()
+        graphPainter.end()
+        footerPainter.end()
+        
+        buffer.save(fileName, ext)
 
         
     # Callbacks
@@ -403,7 +486,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
     data = orange.ExampleTable("titanic")
     bayes = orange.BayesLearner(data)
-    logistic = orngLR.LogRegLearner(data)
+    #logistic = orngLR.LogRegLearner(data)
     ow.classifier(bayes)
     ow.cdata(data)
 

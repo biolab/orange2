@@ -3,7 +3,21 @@
 from OWWidget import *
 from Numeric import *
 from qtcanvas import *
-import time
+import time, statc
+
+def norm_factor(p):
+    max = 10.
+    min = -10.
+    z = 0.
+    eps = 0.001
+    while ((max-min)>eps):
+        pval = statc.zprob(z)
+        if pval>p:
+            max = z
+        if pval<p:
+            min = z
+        z = (max + min)/2.
+    return z
 
 def unique(lst):
     d = {}
@@ -279,6 +293,8 @@ class AttValue:
         self.text.setTextFlags(Qt.AlignCenter)
         self.labelMarker = QCanvasLine(canvas)
         self.errorLine = QCanvasLine(canvas)
+        self.errorLine.setPen(QPen(Qt.blue))
+        self.errorLine.setZ(10)
         self.attCreation = False
 
     def hide(self):
@@ -287,6 +303,13 @@ class AttValue:
         self.errorLine.hide()
             
     def paint(self, canvas, rect, mapper):
+        def errorCollision(line,z=10):
+            col = line.collisions(True)
+            for obj in col:
+                if obj.z() == z:
+                    return True
+            return False
+        
         if self.attCreation:
             self.setCreation(canvas)
         self.text.setX(self.x)
@@ -301,7 +324,19 @@ class AttValue:
                 self.text.setY(rect.bottom()+4*canvas.fontSize/3)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-lineLength)
             if self.showErr:
-                self.errorLine.setPoints(self.x-self.errorX, rect.bottom()+1, self.x+self.errorX, rect.bottom()+1)
+                if self.over:
+                    add = 2
+                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                    while errorCollision(self.errorLine):
+                        add +=2
+                        self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                else:
+                    add = -2
+                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                    while errorCollision(self.errorLine):
+                        add +=2
+                        self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                self.errorLine.show()
             else:
                 self.errorLine.hide()
             self.text.show()
@@ -453,7 +488,7 @@ class AttrLine:
         if not self.initialized:
             self.initializeBeforePaint(canvas)
         self.label.setText(self.name)
-        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
         self.label.setX(1)
         self.label.setY(rect.bottom()-canvas.fontSize)
 
@@ -482,7 +517,6 @@ class AttrLine:
                     if val[j].over==val[i].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
                         val[i].enable = False
                 val[i].x = atValues_mapped[i]
-                val[i].errorX = atErrors_mapped[i]
                 val[i].paint(canvas, rect, mapper)
                 self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
             
@@ -492,7 +526,12 @@ class AttrLine:
             for i in range(len(val)):
                 # check attribute name that will not cover another name
                 val[i].x = atValues_mapped[i]
-                val[i].errorX = atErrors_mapped[i]
+                val[i].high_errorX = atErrors_mapped[i][0]
+                val[i].low_errorX = atErrors_mapped[i][1]
+                if canvas.parent.confidence_check:
+                    val[i].showErr = True
+                else:
+                    val[i].showErr = False
                 val[i].paint(canvas, rect, mapper)
                 
                 for j in range(i):
@@ -683,6 +722,19 @@ class BasicNomogramFooter(QCanvas):
         self.parent = parent
         self.connectedLine = QCanvasLine(self)
         self.connectedLine.setPen(QPen(Qt.blue))
+        self.errorLine = QCanvasLine(self)
+        self.errorPercentLine = QCanvasLine(self)
+        self.leftArc = QCanvasPolygon(self)
+        self.rightArc = QCanvasPolygon(self)
+        self.leftPercentArc = QCanvasPolygon(self)
+        self.rightPercentArc = QCanvasPolygon(self)
+        self.cilist = [self.errorLine, self.errorPercentLine, self.leftArc, self.rightArc, self.leftPercentArc, self.rightPercentArc]
+        for obj in self.cilist:
+            obj.setPen(QPen(Qt.blue, 3))
+            obj.setZ(100)
+        
+    
+        
        
     def paintFooter(self, rect, alignType, yAxis, mapper):
         # set height for each scale        
@@ -732,19 +784,66 @@ class BasicNomogramFooter(QCanvas):
         self.update()
         
     def updateMarkers(self):
+        # finds neares beta; use only discrete data
+        def getNearestAtt(selectedBeta, at):
+            nearestLeft = filter(lambda x: x.betaValue == max([v.betaValue for v in filter(lambda x: x.betaValue <= selectedBeta, at.attValues)]) ,at.attValues)[0]
+            nearestRight = filter(lambda x: x.betaValue == min([v.betaValue for v in filter(lambda x: x.betaValue >= selectedBeta, at.attValues)]) ,at.attValues)[0]
+            return (nearestLeft, nearestRight)
+        
         sum = self.nomogram.constant.betaValue
         for at in self.nomogram.attributes:
             sum += at.selectedValue[2]
 
+        variance = math.pow(self.nomogram.constant.error,2)
+        for at in self.nomogram.attributes:
+            if at.continuous == False:
+                (nleft, nright) = getNearestAtt(at.selectedValue[2], at)
+                if nright.betaValue>nleft.betaValue:
+                    prop = (at.selectedValue[2]-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
+                else:
+                    prop = 0
+                if prop == 0:
+                    variance += math.pow(nleft.error, 2)
+                elif prop == 1:
+                    variance += math.pow(nright.error, 2)
+                else:
+                    variance += math.pow(nleft.error, 2)*(1-prop)
+                    variance += math.pow(nright.error, 2)*prop
+        standard_error = math.sqrt(variance)
+
         ax=self.m.mapBeta(sum, self.footer)
+        # get CI
+        ax_maxError = self.m.mapBeta(sum+standard_error*norm_factor(1-((1-float(self.parent.confidence_percent)/100.)/2.)), self.footer)
+        ax_minError = self.m.mapBeta(sum-standard_error*norm_factor(1-((1-float(self.parent.confidence_percent)/100.)/2.)), self.footer)
+        a = QPointArray()
+        a.makeArc(ax_minError, self.footer.marker.y()+10, 10, 10, 0, 180*16)
+        self.leftArc.setPoints(a)
+        #self.leftArc.setBrush(QBrush(Qt.blue))
+    
+        a = QPointArray()
+        a.makeArc(ax_maxError-10, self.footer.marker.y()-5, 10, 10, 90*16, -90*16)
+        self.rightArc.setPoints(a)
+        a.makeArc(ax_minError, self.footerPercent.marker.y()-5, 10, 10, 90*16, 180*16)
+        self.leftPercentArc.setPoints(a)
+        a.makeArc(ax_maxError-10, self.footerPercent.marker.y()-5, 10, 10, 90*16, -90*16)
+        self.rightPercentArc.setPoints(a)
+
+        
         axPercentMin=self.m.mapBeta(self.footerPercent.minValue, self.footer)
         axPercentMax=self.m.mapBeta(self.footerPercent.maxValue, self.footer)
         axMin=self.m.mapBeta(self.footer.minValue, self.footer)
         axMax=self.m.mapBeta(self.footer.maxValue, self.footer)
-        if ax>axMax:
-            ax=axMax
-        if ax<axMin:
-            ax=axMin
+
+        ax = max(ax, axMin)
+        ax = min(ax, axMax)
+        self.errorLine.setPoints(ax_minError, self.footer.marker.y(), ax_maxError, self.footer.marker.y())
+        ax_minError = min(ax_minError, axPercentMax)
+        ax_minError = max(ax_minError, axPercentMin)        
+        ax_maxError = min(ax_maxError, axPercentMax)
+        ax_maxError = max(ax_maxError, axPercentMin)        
+        
+        self.errorPercentLine.setPoints(ax_minError, self.footerPercent.marker.y(), ax_maxError, self.footerPercent.marker.y())
+        
         self.footer.marker.setX(ax)
 
         if ax>axPercentMax:
@@ -762,8 +861,28 @@ class BasicNomogramFooter(QCanvas):
                 self.connectedLine.show()
             else:
                 self.connectedLine.hide()
-        self.update()        
-            
+            if self.parent.confidence_check:
+                self.showCI()
+            else:
+                self.hideCI()
+        self.update()
+        
+    def showCI(self):
+        self.errorLine.show()
+        self.errorPercentLine.show()
+        #self.leftArc.show()
+        #self.rightArc.show()
+        #self.leftPercentArc.show()
+        #self.rightPercentArc.show()
+
+    def hideCI(self):
+        self.errorLine.hide()
+        self.errorPercentLine.hide()
+        self.leftArc.hide()
+        self.rightArc.hide()
+        self.leftPercentArc.hide()
+        self.rightPercentArc.hide()
+
 
 class BasicNomogram(QCanvas):
     def __init__(self, parent, constant, *args):
@@ -803,7 +922,8 @@ class BasicNomogram(QCanvas):
             at.marker.hide()
         self.footerCanvas.footer.marker.hide()
         self.footerCanvas.footerPercent.marker.hide()
-        self.footerCanvas.connectedLine.hide()        
+        self.footerCanvas.connectedLine.hide()
+        self.footerCanvas.hideCI()
         self.update()
         self.footerCanvas.update()
 
@@ -812,6 +932,8 @@ class BasicNomogram(QCanvas):
             at.marker.show()
         self.footerCanvas.footer.marker.show()
         self.footerCanvas.footerPercent.marker.show()
+        if self.parent.confidence_check:
+            self.footerCanvas.showCI()
         if self.footerCanvas.footer.marker.x() == self.footerCanvas.footerPercent.marker.x():
             self.footerCanvas.connectedLine.setPoints(self.footerCanvas.footer.marker.x(), self.footerCanvas.footer.marker.y(), self.footerCanvas.footerPercent.marker.x(), self.footerCanvas.footerPercent.marker.y())
             self.footerCanvas.connectedLine.show()
@@ -1025,7 +1147,7 @@ class Mapper_Linear_Fixed:
         self.minGraphBeta = self.minBeta
         self.maxGraphBeta = self.maxBeta
 
-    def __call__(self, attrLine):
+    def __call__(self, attrLine, error_factor = 1.96):
         beta = []
         b_error = []
         max_mapped = self.left
@@ -1037,8 +1159,9 @@ class Mapper_Linear_Fixed:
                 max_mapped = self.left+k*(self.right-self.left)
             if self.left+k*(self.right-self.left)<min_mapped:
                 min_mapped = self.left+k*(self.right-self.left)
-            k1 = self.propBeta(at.betaValue+at.error, attrLine)
-            b_error.append((k1-k)*(self.right-self.left))
+            k1 = self.propBeta(at.betaValue-error_factor*at.error, attrLine)
+            k2 = self.propBeta(at.betaValue+error_factor*at.error, attrLine)
+            b_error.append([self.left+k1*(self.right-self.left), self.left+k2*(self.right-self.left)])
         if max_mapped<min_mapped+5:
             max_mapped=min_mapped+5
         return (beta, b_error, min_mapped, max_mapped)
@@ -1151,7 +1274,7 @@ class Mapper_Linear_Center:
         self.minGraphBeta = self.minBeta
         self.maxGraphBeta = self.maxBeta
 
-    def __call__(self, attrLine):
+    def __call__(self, attrLine, error_factor = 1.96):
         beta = []
         b_error = []
         max_mapped = self.left
@@ -1163,8 +1286,10 @@ class Mapper_Linear_Center:
                 max_mapped = self.left+k*(self.right-self.left)
             if self.left+k*(self.right-self.left)<min_mapped:
                 min_mapped = self.left+k*(self.right-self.left)
-            k1 = self.propBeta(at.betaValue+at.error, attrLine)
-            b_error.append((k1-k)*(self.right-self.left))
+            k1 = self.propBeta(at.betaValue-error_factor*at.error, attrLine)
+            k2 = self.propBeta(at.betaValue+error_factor*at.error, attrLine)
+#            print k1, k2
+            b_error.append([self.left+k1*(self.right-self.left), self.left+k2*(self.right-self.left)])
         if max_mapped<min_mapped+5:
             max_mapped=min_mapped+5
         return (beta, b_error, min_mapped, max_mapped)
@@ -1256,7 +1381,7 @@ class Mapper_Linear_Left:
         self.right = right
         self.maxLinearValue = maxLinearValue
     
-    def __call__(self, attrLine):
+    def __call__(self, attrLine, error_factor = 1.96):
         beta = []
         b_error = []
         minb = self.right
@@ -1268,8 +1393,10 @@ class Mapper_Linear_Left:
                 maxb = self.left + k*(self.right-self.left)
             if self.left + k*(self.right-self.left)<minb:
                 minb = self.left + k*(self.right-self.left)
-            k1 = at.error/self.max_difference
-            b_error.append(k1*(self.right-self.left))
+            k1 = (at.betaValue-error_factor*at.error-attrLine.minValue)/self.max_difference
+            k2 = (at.betaValue+error_factor*at.error-attrLine.minValue)/self.max_difference
+            b_error.append([self.left + k1*(self.right-self.left), self.left + k2*(self.right-self.left)])
+
         if maxb<minb+5:
             maxb=minb+5
         return (beta, b_error, minb, maxb)
