@@ -161,13 +161,28 @@ indicated by <CODE>-1</CODE>.</DD> </DL>
 <H2>FloatVariable</H2>
 
 <P><CODE>FloatVariable</CODE> is a descriptor for continuous 
-attributes. It defines three additional fields, 
-<CODE>startValue</CODE>, <CODE>endValue</CODE> and 
-<CODE>stepValue</CODE> that set the range of attribute. This is 
-used for returning random values and for iteration. You can leave 
-the three values at defaults (<CODE>stepValue=-1</CODE>, which is 
+attributes.
+
+<DL class=attributes>
+<DT>startValue, endValue, stepValue</DT>
+<DD>The range of attribute, used for returning random values and for iteration. You can leave 
+the three values at defaults (<CODE>-1</CODE>, which is 
 interpreted as undefined), if you don't need randoms and 
-iterations. (I can't recall ever using them...)</P>
+iterations. (I can't recall ever using them...)</DD>
+
+<DT>numberOfDecimals</DT>
+<DD>The number of decimals used when the value is printed, converted to a string or saved to a file</DD>
+
+<DT>scientificFormat</DT>
+<DD>If <CODE>True</CODE>, the value is printed in scientific format whenever it would have more than 5 digits. In this case, <CODE>numberOfDecimals</CODE> is ignored.</DD>
+
+<DT>adjustDecimals</DT>
+<DD>Tells Orange to monitor the number of decimals when the value is converted from a string (either by setting the attribute values, <I>e.g.</I> <CODE>example[0]="3.14"</CODE> or when reading from file). The value of 0 means that the number of decimals should not be adjusted, while 1 and 2 mean that adjustments are on, with 2 denoting that no values have been converted yet.</DD>
+</DL>
+
+<P>By default, adjustment of number of decimals goes as follows. If the attribute was constructed when examples were read from a file, it will be printed with the same number of decimals as the largest number of decimals encountered in the file. If scientific notation occurs in the file, <CODE>scientificFormat</CODE> will be set to True and scientific format will be used for values too large or too small.</P>
+
+<P>If the attribute is created in a script, it will have, by default, three decimals places. This can be changed either by setting the attribute value from a string (<I>e.g.</I> <CODE>example[0]="3.14"</CODE>, but not <CODE>example[0]=3.14</CODE>) or by manually setting the <CODE>numberOfDecimals</CODE> (<I>e.g.</I> <CODE>attr.numberOfDecimals=1</CODE>).</P>
 
 <H2>StringVariable</H2>
 
