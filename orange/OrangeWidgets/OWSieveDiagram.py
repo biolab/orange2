@@ -1,6 +1,6 @@
 """
 <name>Sieve Diagram</name>
-<description>Show sieve diagram (mosaic plot)</description>
+<description>Show sieve diagram</description>
 <category>Classification</category>
 <icon>icons/SieveDiagram.png</icon>
 <priority>4100</priority>
@@ -19,6 +19,9 @@ import statc
 import os
 from orngCI import FeatureByCartesianProduct
 
+######################################################################
+## QVERTICALCANVASTEXT - shows verical text in canvas
+## NOTE: rotated text is lower quality
 class QVerticalCanvasText(QCanvasText):
     def __init__(self, *args):
         apply(QCanvasText.__init__,(self,)+ args)
@@ -52,8 +55,10 @@ class OWSieveDiagram(OWWidget):
         self.rects = []
         self.texts = []
         self.lines = []
+        self.tooltips = []
 
         self.addInput("cdata")
+        self.addInput("view")
 
         #load settings
         self.showLines = 1
@@ -72,6 +77,11 @@ class OWSieveDiagram(OWWidget):
         
         #GUI
         #add controls to self.controlArea widget
+        self.shownCriteriaGroup = QVGroupBox(self.controlArea)
+        self.shownCriteriaGroup.setTitle("Shown criteria")
+        self.criteriaCombo = QComboBox(self.shownCriteriaGroup)
+        self.connect(self.criteriaCombo, SIGNAL('activated ( const QString & )'), self.updateData)
+        
         self.attrSelGroup = QVGroupBox(self.controlArea)
         self.attrSelGroup.setTitle("Shown attributes")
 
@@ -87,7 +97,8 @@ class OWSieveDiagram(OWWidget):
         self.kvocLabel = QLabel('Quotient', self.hbox)
         self.kvocCombo = QComboBox(self.hbox)
         self.connect(self.kvocCombo, SIGNAL('activated ( const QString & )'), self.updateData)
-        
+        QToolTip.add(self.hbox, "What is maximum expected ratio between p(x,y) and p(x)*p(y). Greater the ratio, brighter the colors.")
+
         self.showLinesCB = QCheckBox('Show lines', self.controlArea)
         self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
 
@@ -102,22 +113,67 @@ class OWSieveDiagram(OWWidget):
     def activateLoadedSettings(self):
         self.showLinesCB.setChecked(self.showLines)
 
+        # quotien combo box values        
         for item in self.kvocList: self.kvocCombo.insertItem(item)
         index = self.kvocNums.index(self.kvoc)
         self.kvocCombo.setCurrentItem(index)
+
+        # criteria combo values
+        self.criteriaCombo.insertItem("Attribute independence")
+        self.criteriaCombo.insertItem("Attribute interactions")
+        self.criteriaCombo.setCurrentItem(0)
+        
+    ##################################################
+    # initialize lists for shown and hidden attributes
+    def initCombos(self, data):
+        self.attrX.clear()
+        self.attrY.clear()
+
+        for attr in data.domain.attributes:
+            if attr.varType == orange.VarTypes.Discrete:
+                self.attrX.insertItem(attr.name)
+                self.attrY.insertItem(attr.name)
+
+        if self.attrX.count() > 0:
+            self.attrX.setCurrentItem(0)
+        if self.attrY.count() > 1:
+            self.attrY.setCurrentItem(1)
 
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         self.updateData()
 
-    ####### CDATA ################################
+    ######################################################################
+    ## VIEW signal
+    def view(self, (attr1, attr2)):
+        if self.data == None:
+            return
+
+        ind1 = 0; ind2 = 0; classInd = 0
+        for i in range(self.attrX.count()):
+            if str(self.attrX.text(i)) == attr1: ind1 = i
+            if str(self.attrX.text(i)) == attr2: ind2 = i
+
+        if ind1 == ind2 == 0:
+            print "no valid attributes found"
+            return    # something isn't right
+
+        self.attrX.setCurrentItem(ind1)
+        self.attrY.setCurrentItem(ind2)
+        self.updateData()
+
+    ######################################################################
+    ## CDATA signal
     # receive new data and update all fields
     def cdata(self, data):
         self.data = orange.Preprocessor_dropMissing(data.data)
         self.initCombos(self.data)
         self.updateData()
-        
+
+
+    ######################################################################
+    ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self):
         if self.data == None : return
 
@@ -128,20 +184,13 @@ class OWSieveDiagram(OWWidget):
         attrY = str(self.attrY.currentText())
 
         # hide all rectangles
-        for rect in self.rects:
-            rect.hide()
-        self.rects = []
-
-        for text in self.texts:
-            text.hide()
-        self.texts = []
-
-        for line in self.lines:
-            line.hide()
-        self.lines = []
+        for rect in self.rects: rect.hide()
+        for text in self.texts: text.hide()
+        for line in self.lines: line.hide()
+        for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
+        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
     
-        if attrX == "" or attrY == "":
-            return
+        if attrX == "" or attrY == "": return
 
         total = len(self.data)
         valsX = []
@@ -168,20 +217,17 @@ class OWSieveDiagram(OWWidget):
         # compute probabilities
         sum = 0
         probs = {}
-        for val in valsX:
-            sum += val
+        for val in valsX: sum += val
 
         for i in range(len(valsX)):
             valx = valsX[i]
             for j in range(len(valsY)):
                 valy = valsY[j]
-                independentProb = float(valx*valy)/float(sum*sum)
+
                 actualProb = 0
-                
                 for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]:
                     actualProb += val
-                actualProb = float(actualProb) /float(sum)
-                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = (independentProb, actualProb, sum)
+                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, sum)
        
         # get text width of Y attribute name        
         text = QCanvasText(self.data.domain[attrY].name, self.canvas);
@@ -191,6 +237,7 @@ class OWSieveDiagram(OWWidget):
         sqareSize = min(self.canvasView.size().width() - xOff - 20, self.canvasView.size().height() - yOff - 30)
         if sqareSize < 0: return    # canvas is too small to draw rectangles
 
+        criteriaText = str(self.criteriaCombo.currentText())
         currX = xOff
         for i in range(len(valsX)):
             itemX = valsX[i]
@@ -198,10 +245,18 @@ class OWSieveDiagram(OWWidget):
             width = int(float(sqareSize * itemX)/float(total))
 
             for j in range(len(valsY)):
-                (independent, actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
+                ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
                 itemY = valsY[j]
                 height = int(float(sqareSize * itemY)/float(total))
-                self.addRectLines(currX + 1, currY + 1, width-2, height-2, independent, actual, sum)
+
+                # create rectangle
+                rect = QCanvasRectangle(currX+1, currY+1, width-2, height-2, self.canvas)
+                rect.setZ(-10)
+                rect.show()
+                self.rects.append(rect)
+
+                if criteriaText == "Attribute independence":  self.addRectIndependence(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+
                 currY += height
                 if currX == xOff:
                     text = QCanvasText(self.data.domain[attrY].values[j], self.canvas);
@@ -233,76 +288,44 @@ class OWSieveDiagram(OWWidget):
 
         self.canvas.update()
 
-    ##################################################
-    # initialize lists for shown and hidden attributes
-    def initCombos(self, data):
-        self.attrX.clear()
-        self.attrY.clear()
 
-        for attr in data.domain.attributes:
-            if attr.varType == orange.VarTypes.Discrete:
-                self.attrX.insertItem(attr.name)
-                self.attrY.insertItem(attr.name)
-
-        if self.attrX.count() > 0:
-            self.attrX.setCurrentItem(0)
-        if self.attrY.count() > 1:
-            self.attrY.setCurrentItem(1)
-
-
-    ##################################################
-    # SAVING GRAPHS
-    ##################################################
-    def saveToFileCanvas(self):
-        size = self.canvas.size()
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-        
-        buffer = QPixmap(size) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter, 0,0, size.width(), size.height())
-        painter.end()
-        buffer.save(fileName, ext)
-
-    def addRectLines(self, x, y, w, h, independent, actual, sum):
-        # create rectangle
-        rect = QCanvasRectangle(x, y, w, h, self.canvas)
-        rect.setZ(-10)
-        rect.show()
-        self.rects.append(rect)
-
-        if (independent*sum < 5) and (actual*sum < 5): return   # in case we have too little examples we don't estimate the deviation from independence
+    ######################################################################
+    ## show deviations from attribute independence
+    def addRectIndependence(self, rect, x, y, w, h, (xAttr, xVal), (yAttr, yVal), actual, sum):
+        independentProb = float(xVal*yVal)/float(sum*sum)
+        actualProb = float(actual) /float(sum)
+        if (xVal*yVal < 5) and (actual < 5): return   # in case we have too little examples we don't estimate the deviation from independence
 
         constA = -205.0 / float(self.kvoc)
         constB = 255 - constA
 
         # set color
-        if actual > independent:
+        if actualProb > independentProb:
             pen = QPen(QColor(0,0,255))
             b = 255
-            if independent == 0: r = g = constA*actual*len(self.data)+ 255
-            else:                r = g = constA*actual/independent + 255 - constA   # if actual/independent = 10 --> r=g=255; actual==independent --> r=g=0
+            if independentProb == 0: r = g = constA*actualProb*len(self.data)+ 255
+            else:                r = g = constA*actualProb/independentProb + 255 - constA   # if actual/independent = 10 --> r=g=255; actual==independent --> r=g=0
             r = g = max(r, 50)   # if actual/independent > 10 --> r=g=50     -- we don't go under 50
         else:
             pen = QPen(QColor(255,0,0))
             r = 255
-            if actual == 0: g = b = constA*independent*len(self.data) + 255  
-            else:           g = b = constA*independent/actual + 255 - constA   # if independent/actual= 10 --> g=b=255; actual==independent --> r=g=0
+            if actualProb == 0: g = b = constA*independentProb*len(self.data) + 255  
+            else:           g = b = constA*independentProb/actualProb + 255 - constA   # if independent/actual= 10 --> g=b=255; actual==independent --> r=g=0
             g = b = max(g, 50)  # if actual/independent > 10 --> b=g=50     -- we don't go under 50
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
 
+        tipRect = QRect(x, y, w, h)
+        tooltipText = "<b>X attribute</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><br><hr><b>Y attribute</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><br><hr><b>Number of examples (probabilities)</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)<b>" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), float(xVal*yVal)/float(sum), 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum) )
+        QToolTip.add(self.canvasView, tipRect, tooltipText)
+        self.tooltips.append(tipRect)
+
         if self.showLines == 0: return
-        if actual == 0: return
+        if (xVal == 0) or (yVal == 0) or (actualProb == 0): return
 
         # create lines
         dist = 20   # original distance between two lines in pixels
-        dist = dist * (independent/actual)
+        dist = dist * (independentProb/actualProb)
         temp = dist
         while (temp < w):
             line = QCanvasLine(self.canvas)
@@ -320,8 +343,27 @@ class OWSieveDiagram(OWWidget):
             line.show()
             self.lines.append(line)
             temp += dist
-            
 
+    ##################################################
+    ## SAVING GRAPHS
+    ##################################################
+    def saveToFileCanvas(self):
+        size = self.canvas.size()
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        fileName = str(qfileName)
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+        
+        buffer = QPixmap(size) # any size can do, now using the window size
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        self.canvasView.drawContents(painter, 0,0, size.width(), size.height())
+        painter.end()
+        buffer.save(fileName, ext)
+
+        
 
 #test widget appearance
 if __name__=="__main__":
