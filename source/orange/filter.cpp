@@ -115,20 +115,54 @@ TValueFilter::TValueFilter(const int &pos, const int &accs)
 {}
 
 
+TValueFilter_continuous::TValueFilter_continuous()
+: TValueFilter(ILLEGAL_INT, -1),
+  min(0.0),
+  max(0.0),
+  outside(false),
+  oper(None)
+{}
+
 TValueFilter_continuous::TValueFilter_continuous(const int &pos, const float &amin, const float &amax, const bool &outs, const int &accs)
 : TValueFilter(pos, accs),
   min(amin),
   max(amax),
-  outside(outs)
+  outside(outs),
+  oper(None)
 {}
 
+
+TValueFilter_continuous::TValueFilter_continuous(const int &pos, const int &op, const float &amin, const float &amax, const int &accs)
+: TValueFilter(pos, accs),
+  min(amin),
+  max(amax),
+  oper(op)
+{}
+
+
+#define EQUAL(x,y)  (fabs(x-y) <= y*1e-10) ? 1 : 0
+#define LESS_EQUAL(x,y) (x-y < y*1e-10) ? 1 : 0
+#define TO_BOOL(x) (x) ? 1 : 0;
 
 int TValueFilter_continuous::operator()(const TExample &example) const
 { const TValue &val = example[position];
   if (val.isSpecial())
     return acceptSpecial;
 
-  return ((val.floatV>=min) && (val.floatV<=max)) != outside ? 1 : 0;
+  switch (oper) {
+    case None:         return TO_BOOL(((val.floatV>=min) && (val.floatV<=max)) != outside);
+
+    case Equal:        return EQUAL(val.floatV, min);
+    case NotEqual:     return 1 - EQUAL(val.floatV, min);
+    case Less:         return TO_BOOL(val.floatV < min);
+    case LessEqual:    return LESS_EQUAL(val.floatV, min);
+    case Greater:      return TO_BOOL(min < val.floatV);
+    case GreaterEqual: return LESS_EQUAL(min, val.floatV);
+    case Between:      return (LESS_EQUAL(min, val.floatV)) * (LESS_EQUAL(val.floatV, max));
+    case Outside:      return TO_BOOL((val.floatV < min) || (val.floatV > max));
+
+    default:  return -1;
+  }
 }
 
 
@@ -157,31 +191,80 @@ int TValueFilter_discrete::operator()(const TExample &example) const
 }
 
 
-TValueFilter_string::TValueFilter_string(const int &pos, PStringList bl, const int &accs)
-: TValueFilter(pos, accs),
-  values(bl)
+TValueFilter_string::TValueFilter_string()
+: TValueFilter(ILLEGAL_INT, -1),
+  min(),
+  max(),
+  oper(None)
 {}
 
 
-TValueFilter_string::TValueFilter_string(const int &pos, PVariable var, const int &accs)
+
+TValueFilter_string::TValueFilter_string(const int &pos, const int &op, const string &amin, const string &amax, const int &accs)
 : TValueFilter(pos, accs),
-  values(mlnew TStringList(var))
+  min(amin),
+  max(amax),
+  oper(op)
 {}
 
 
 int TValueFilter_string::operator()(const TExample &example) const
-{ const TValue &val = example[position];
+{ 
+  const TValue &val = example[position];
   if (val.isSpecial())
     return acceptSpecial;
 
   const string &value = val.svalV.AS(TStringValue)->value;
+  const string &ref = min;
+
+  switch(oper) {
+    case Equal:        return TO_BOOL(value == ref);
+    case NotEqual:     return TO_BOOL(value != ref);
+    case Less:         return TO_BOOL(value < ref);
+    case LessEqual:    return TO_BOOL(value <= ref);
+    case Greater:      return TO_BOOL(value > ref);
+    case GreaterEqual: return TO_BOOL(value >= ref);
+    case Contains:     return TO_BOOL(value.find(ref) != string::npos);
+    case NotContains:  return TO_BOOL(value.find(ref) == string::npos);
+    case BeginsWith:   return TO_BOOL(!strncmp(value.c_str(), ref.c_str(), ref.size()));
+    case Between:       return TO_BOOL((value >= min) && (value <= max));
+    case Outside:      return TO_BOOL((value < min) && (value > max));
+
+    case EndsWith:
+      { const int vsize = value.size(), rsize = ref.size();
+        return TO_BOOL((vsize >= rsize) && !strcmp(value.c_str() + (vsize-rsize), ref.c_str()));
+      }
+
+    default:
+      return -1;
+  }
+}
+
+
+
+TValueFilter_stringList::TValueFilter_stringList(const int &pos, PStringList bl, const int &accs, const int &op)
+: TValueFilter(pos, accs),
+  values(bl)
+{}
+
+int TValueFilter_stringList::operator()(const TExample &example) const
+{ 
+  const TValue &val = example[position];
+  if (val.isSpecial())
+    return acceptSpecial;
+
+  const string &value = val.svalV.AS(TStringValue)->value;
+
   const_PITERATE(TStringList, vi, values)
     if (value == *vi)
       return 1;
-
   return 0;
 }
 
+
+#undef DIFFERENT
+#undef LESS_EQUAL
+#undef TO_BOOL
 
 TFilter_values::TFilter_values(bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
@@ -211,6 +294,16 @@ TValueFilterList::iterator TFilter_values::findCondition(PVariable var, const in
 
   return condi;
 }
+
+void TFilter_values::updateCondition(PVariable var, const int &varType, PValueFilter filter)
+{
+  TValueFilterList::iterator condi = findCondition(var, varType, filter->position);
+  if (condi==conditions->end())
+    conditions->push_back(filter);
+  else
+    *condi = filter;
+}
+
 
 void TFilter_values::addCondition(PVariable var, const TValue &val)
 {
@@ -256,22 +349,21 @@ void TFilter_values::addCondition(PVariable var, PValueList vallist)
 }
 
 
-void TFilter_values::addCondition(PVariable var, const float &min, const float &max, const bool outs)
+void TFilter_values::addCondition(PVariable var, const int &oper, const float &min, const float &max)
 {
-  int position;
-  TValueFilterList::iterator condi = findCondition(var, TValue::FLOATVAR, position);
+  updateCondition(var, TValue::FLOATVAR, mlnew TValueFilter_continuous(ILLEGAL_INT, oper, min, max));
+}
 
-  if (condi==conditions->end())
-    conditions->push_back(mlnew TValueFilter_continuous(position, min, max, outs));
 
-  else {
-    TValueFilter_continuous *valueFilter = (*condi).AS(TValueFilter_continuous);
-    if (!valueFilter)
-      raiseError("addCondition(Value) con only be used for setting ValueFilter_continuous");
-    valueFilter->min = min;
-    valueFilter->max = max;
-    valueFilter->outside = outs;
-  }
+void TFilter_values::addCondition(PVariable var, const int &oper, const string &min, const string &max)
+{
+  updateCondition(var, STRINGVAR, mlnew TValueFilter_string(ILLEGAL_INT, oper, min, max));
+}
+
+
+void TFilter_values::addCondition(PVariable var, PStringList slist)
+{
+  updateCondition(var, STRINGVAR, mlnew TValueFilter_stringList(ILLEGAL_INT, slist));
 }
 
 

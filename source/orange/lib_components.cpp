@@ -31,6 +31,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #endif
 
 #include "vars.hpp"
+#include "stringvars.hpp"
 #include "distvars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
@@ -1270,8 +1271,36 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 #include "filter.hpp"
 
 BASED_ON(ValueFilter, Orange)
-C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, acceptableValues=, acceptSpecial=])")
-C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, min=, max=, acceptSpecial=])")
+C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, oper=, values=, acceptSpecial=])")
+C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, oper=, min=, max=, acceptSpecial=])")
+C_NAMED(ValueFilter_string, ValueFilter, "([position=, oper=, values=])");
+
+
+PYCLASSCONSTANT_INT(ValueFilter, Equal, int(TValueFilter::Equal))
+PYCLASSCONSTANT_INT(ValueFilter, NotEqual, int(TValueFilter::NotEqual))
+PYCLASSCONSTANT_INT(ValueFilter, Less, int(TValueFilter::Less))
+PYCLASSCONSTANT_INT(ValueFilter, LessEqual, int(TValueFilter::LessEqual))
+PYCLASSCONSTANT_INT(ValueFilter, Greater, int(TValueFilter::Greater))
+PYCLASSCONSTANT_INT(ValueFilter, GreaterEqual, int(TValueFilter::GreaterEqual))
+PYCLASSCONSTANT_INT(ValueFilter, Between, int(TValueFilter::Between))
+PYCLASSCONSTANT_INT(ValueFilter, Outside, int(TValueFilter::Outside))
+PYCLASSCONSTANT_INT(ValueFilter, Contains, int(TValueFilter::Contains))
+PYCLASSCONSTANT_INT(ValueFilter, NotContains, int(TValueFilter::NotContains))
+PYCLASSCONSTANT_INT(ValueFilter, BeginsWith, int(TValueFilter::BeginsWith))
+PYCLASSCONSTANT_INT(ValueFilter, EndsWith, int(TValueFilter::EndsWith))
+
+PYCLASSCONSTANT_INT(Filter_values, Equal, int(TValueFilter::Equal))
+PYCLASSCONSTANT_INT(Filter_values, NotEqual, int(TValueFilter::NotEqual))
+PYCLASSCONSTANT_INT(Filter_values, Less, int(TValueFilter::Less))
+PYCLASSCONSTANT_INT(Filter_values, LessEqual, int(TValueFilter::LessEqual))
+PYCLASSCONSTANT_INT(Filter_values, Greater, int(TValueFilter::Greater))
+PYCLASSCONSTANT_INT(Filter_values, GreaterEqual, int(TValueFilter::GreaterEqual))
+PYCLASSCONSTANT_INT(Filter_values, Between, int(TValueFilter::Between))
+PYCLASSCONSTANT_INT(Filter_values, Outside, int(TValueFilter::Outside))
+PYCLASSCONSTANT_INT(Filter_values, Contains, int(TValueFilter::Contains))
+PYCLASSCONSTANT_INT(Filter_values, NotContains, int(TValueFilter::NotContains))
+PYCLASSCONSTANT_INT(Filter_values, BeginsWith, int(TValueFilter::BeginsWith))
+PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 
 BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
@@ -1356,10 +1385,15 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 #include "valuelisttemplate.hpp"
 
 
+PStringList PStringList_FromArguments(PyObject *arg);
+
 int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
 {
   PyTRY
     CAST_TO_err(TFilter_values, filter, -1);
+
+    if (!filter->domain)
+      PYERROR(PyExc_IndexError, "Filter_values.__getitem__ cannot work if 'domain' is not set", -1);
 
     PVariable var = varFromArg_byDomain(pyvar, filter->domain);
     if (!var)
@@ -1389,15 +1423,56 @@ int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
     }
 
     else if (var->varType == TValue::FLOATVAR) {
-      PyObject *outs = NULL;
-      float minv, maxv;
-      if (PyArg_ParseTuple(args, "ff|O:addCondition", &minv, &maxv, &outs))
+      if (PyTuple_Check(args)) {
+        int oper;
+        float minv, maxv;
+        if (!PyArg_ParseTuple(args, "if|f:Filter_values.__setitem__", &oper, &minv, &maxv))
+          return -1;
+        if ((PyTuple_Size(args) == 3) && (oper != TValueFilter::Between) && (oper != TValueFilter::Outside))
+          PYERROR(PyExc_TypeError, "Filter_values.__setitem__: only one reference value expected for the given operator", -1);
+
+        filter->addCondition(var, oper, minv, maxv);
+      }
+      else {
+        float f;
+        if (!PyNumber_ToFloat(args, f)) {
+          PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->name.c_str());
+          return -1;
+        }
+        filter->addCondition(var, TValueFilter::Equal, f, f);
+      }
+    }
+
+    else if (var->varType == STRINGVAR) {
+      if (PyString_Check(args))
+        filter->addCondition(var, TValueFilter::Equal, PyString_AsString(args), string());
+
+      else if (PyList_Check(args)) {
+        PStringList slist = PStringList_FromArguments(args);
+        if (!slist)
+          return -1;
+        filter->addCondition(var, slist);
+      }
+
+      else if (PyTuple_Check(args) && PyTuple_Size(args)) {
+        char *mins, *maxs;
+        int oper;
+        if (!PyArg_ParseTuple(args, "is|s:Filter_values.__setitem__", &oper, &mins, &maxs))
+          return -1;
+        if ((PyTuple_Size(args) == 3) && (oper != TValueFilter::Between) && (oper != TValueFilter::Outside))
+          PYERROR(PyExc_TypeError, "Filter_values.__setitem__: only one reference value expected for the given operator", -1);
+
+        filter->addCondition(var, oper, mins, maxs);
+      }
+        
+      else {
+        PyErr_Format(PyExc_TypeError, "Filter_values.__setitem__: invalid condition for attribute '%s'", var->name.c_str());
         return -1;
-      filter->addCondition(var, minv, maxv, outs && PyObject_IsTrue(outs));
+      }
     }
 
     else
-      PYERROR(PyExc_TypeError, "unsupported attribute type", -1);
+      PYERROR(PyExc_TypeError, "Filter_values.__setitem__: unsupported attribute type", -1);
 
     return 0;
   PyCATCH_1

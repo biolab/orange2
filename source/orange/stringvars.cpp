@@ -78,7 +78,7 @@ bool TStringValue::operator > (const TSomeValue &v) const
 
 
 TStringVariable::TStringVariable()
-{}
+{ varType = STRINGVAR; }
 
 
 TStringVariable::TStringVariable(const string &aname)

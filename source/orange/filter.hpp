@@ -97,6 +97,8 @@ class TValueFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
+  enum { None, Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, Between, Outside, Contains, NotContains, BeginsWith, EndsWith, Listed };
+
   int position; //P attribute's position in domain
   int acceptSpecial; //P tells whether a special value (DK, DC...) is accepted (1), rejected (0) or ignored (-1)
 
@@ -110,11 +112,14 @@ class TValueFilter_continuous : public TValueFilter {
 public:
   __REGISTER_CLASS
 
-  float min; //P minimal acceptable value
-  float max; //P maximal acceptable value
-  bool outside; //P it true, the filter accepts the values outside the interval, not inside
+  float min; //P (+ref) reference value (lower bound for interval operators)
+  float max; //P upper bound for interval operators
+  bool outside; //P obsolete: if true, the filter accepts the values outside the interval, not inside
+  int oper; //P operator
 
-  TValueFilter_continuous(const int &pos = ILLEGAL_INT, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = -1);
+  TValueFilter_continuous();
+  TValueFilter_continuous(const int &pos, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = -1);
+  TValueFilter_continuous(const int &pos, const int &op, const float &min=0.0, const float &max=0.0, const int &accs = -1);
   virtual int operator()(const TExample &) const;
 };
 
@@ -123,7 +128,7 @@ class TValueFilter_discrete : public TValueFilter {
 public:
   __REGISTER_CLASS
 
-  PValueList values; //P acceptable values
+  PValueList values; //P accepted values
 
   TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1);
   TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1);
@@ -135,10 +140,23 @@ class TValueFilter_string : public TValueFilter {
 public:
   __REGISTER_CLASS
 
-  PStringList values; //P acceptable values
+  string min; //P (+ref) reference value (lower bound for interval operators)
+  string max; //P upper bound for interval operators
+  int oper;
 
-  TValueFilter_string(const int &pos = ILLEGAL_INT, PStringList = PStringList(), const int &accs = -1);
-  TValueFilter_string(const int &pos, PVariable, const int &accs = -1);
+  TValueFilter_string();
+  TValueFilter_string(const int &pos, const int &op, const string &min, const string &max, const int &accs = -1);
+  virtual int operator()(const TExample &) const;
+};
+
+
+class TValueFilter_stringList : public TValueFilter {
+public:
+  __REGISTER_CLASS
+
+  PStringList values; //P accepted values
+
+  TValueFilter_stringList(const int &pos, PStringList, const int &accs = -1, const int &op = Equal);
   virtual int operator()(const TExample &) const;
 };
 
@@ -167,9 +185,13 @@ public:
   virtual bool operator()(const TExample &);
 
   TValueFilterList::iterator findCondition(PVariable var, const int &varType, int &position);
+  void updateCondition(PVariable var, const int &varType, PValueFilter filter);
+
   void addCondition(PVariable var, const TValue &val);
-  void addCondition(PVariable var, PValueList vallist);
-  void addCondition(PVariable var, const float &min, const float &max, const bool outs = false);
+  void addCondition(PVariable var, PValueList);
+  void addCondition(PVariable var, const int &oper, const float &min, const float &max);
+  void addCondition(PVariable var, const int &oper, const string &min, const string &maxs);
+  void addCondition(PVariable var, PStringList);
   void removeCondition(PVariable var);
 };
 
