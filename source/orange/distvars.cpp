@@ -1316,16 +1316,19 @@ TDomainDistributions::TDomainDistributions()
 {}
 
 
-TDomainDistributions::TDomainDistributions(PExampleGenerator gen, const long weightID)
-{ reserve(gen->domain->variables->size());
+TDomainDistributions::TDomainDistributions(PExampleGenerator gen, const long weightID, bool skipDiscrete, bool skipContinuous)
+{
+  reserve(gen->domain->variables->size());
   PITERATE(TVarList, vi, gen->domain->variables)
-    push_back(TDistribution::create(*vi));
+    push_back(   skipDiscrete && ((*vi)->varType == TValue::INTVAR)
+              || skipContinuous && ((*vi)->varType == TValue::FLOATVAR) ? PDistribution() : TDistribution::create(*vi));
 
   for(TExampleIterator fi(gen->begin()); fi; ++fi) {
     TExample::iterator ei=(*fi).begin();
     float weight=WEIGHT(*fi);
     for(iterator di=begin(); di!=end(); di++, ei++)
-      (*di)->add(*ei, weight);
+      if (*di)
+        (*di)->add(*ei, weight);
   }
 }
 

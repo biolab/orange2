@@ -91,16 +91,18 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized()
 {}
 
 
-TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, const bool &no, const bool &iu, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
+TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, const bool &no, const bool &iu, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
 : normalizers(mlnew TFloatList()),
   bases(mlnew TFloatList()),
+  averages(mlnew TFloatList()),
+  variances(mlnew TFloatList()),
   domainVersion(egen ? egen->domain->version : -1),
   normalize(no),
   ignoreUnknowns(iu)
 { TFloatList &unormalizers = normalizers.getReference();
 
   if (!bstat && !ddist && egen)
-    bstat = mlnew TDomainBasicAttrStat(egen);
+    bstat = mlnew TDomainBasicAttrStat(egen, weightID);
 
   if (bstat && egen) {
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
@@ -116,10 +118,14 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
         if (*si && ((*si)->n>0)) {
           normalizers->push_back((*si)->max!=(*si)->min ? 1.0/((*si)->max-(*si)->min) : 0.0);
           bases->push_back((*si)->min);
+          averages->push_back((*si)->avg);
+          variances->push_back((*si)->dev * (*si)->dev);
         }
         else {
           normalizers->push_back(0.0);
           bases->push_back(0.0);
+          averages->push_back(0.0);
+          variances->push_back(0.0);
         }
       }
       else if ((*vi)->varType==TValue::INTVAR) {
@@ -131,10 +137,14 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
         else
           normalizers->push_back(-1.0);
         bases->push_back(0.0);
+        averages->push_back(0.0);
+        variances->push_back(0.0);
       }
       else {
         normalizers->push_back(0.0);
         bases->push_back(0.0);
+        averages->push_back(0.0);
+        variances->push_back(0.0);
       }
     }
 
@@ -149,24 +159,43 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
         if (vi->varType==TValue::FLOATVAR) {
           TContDistribution *dcont = (*ci).AS(TContDistribution);
           if (dcont && (dcont->begin() != dcont->end())) {
-            const float dif = (*dcont->distribution.rbegin()).first - (*dcont->distribution.begin()).first;
+            const float min = (*dcont->distribution.begin()).first;
+            const float dif = (*dcont->distribution.rbegin()).first - min;
             normalizers->push_back(dif > 0.0 ? 1.0/dif : 0.0);
+            bases->push_back(min);
+            averages->push_back(dcont->average());
+            variances->push_back(dcont->var());
           }
-          else
+          else {
             normalizers->push_back(0.0);
+            averages->push_back(0.0);
+            variances->push_back(0.0);
+          }
         }
         else if (vi->varType==TValue::INTVAR) {
           if (vi->ordered) {
             const int nval = vi->noOfValues();
             normalizers->push_back(nval ? 1.0/float(nval) : 0.0);
           }
-          else normalizers->push_back(-1.0);
+          else
+            normalizers->push_back(-1.0);
+            bases->push_back(0.0);
+            averages->push_back(0.0);
+            variances->push_back(0.0);
         }
-        else
+        else {
           normalizers->push_back(0.0);
+          bases->push_back(0.0);
+          averages->push_back(0.0);
+          variances->push_back(0.0);
+        }
       }
-      else
+      else {
         normalizers->push_back(0.0);
+        bases->push_back(0.0);
+        averages->push_back(0.0);
+        variances->push_back(0.0);
+      }
     }
 
   else if (bstat) {
@@ -178,10 +207,18 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
     for(; si!=ei; si++) {
       if (!*si)
         raiseError("cannot compute normalizers from BasicAttrStat in presence of non-continuous attributes");
-      if (((*si)->n>0) && ((*si)->max!=(*si)->min))
+      if (((*si)->n>0) && ((*si)->max!=(*si)->min)) {
         normalizers->push_back(1.0/((*si)->max-(*si)->min));
-      else
+        bases->push_back((*si)->min);
+        averages->push_back((*si)->avg);
+        variances->push_back((*si)->dev * (*si)->dev);
+      }
+      else {
         normalizers->push_back(0.0);
+        bases->push_back(0.0);
+        averages->push_back(0.0);
+        variances->push_back(0.0);
+      }
     }
   }
 
@@ -283,16 +320,16 @@ TExamplesDistanceConstructor_Manhattan::TExamplesDistanceConstructor_Manhattan()
 {}
 
 
-PExamplesDistance TExamplesDistanceConstructor_Maximal::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Maximal(ignoreClass, normalize, ignoreUnknowns, egen, ddist, bstat); }
+PExamplesDistance TExamplesDistanceConstructor_Maximal::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
+{ return mlnew TExamplesDistance_Maximal(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat); }
 
 
-PExamplesDistance TExamplesDistanceConstructor_Manhattan::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Manhattan(ignoreClass, normalize, ignoreUnknowns, egen, ddist, bstat); }
+PExamplesDistance TExamplesDistanceConstructor_Manhattan::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
+{ return mlnew TExamplesDistance_Manhattan(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat); }
 
 
-PExamplesDistance TExamplesDistanceConstructor_Euclidean::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Euclidean(ignoreClass, normalize, ignoreUnknowns, egen, ddist, bstat); }
+PExamplesDistance TExamplesDistanceConstructor_Euclidean::operator()(PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
+{ return mlnew TExamplesDistance_Euclidean(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, bstat); }
 
 
 
@@ -309,31 +346,48 @@ TExamplesDistance_Euclidean::TExamplesDistance_Euclidean()
 
 
 
-TExamplesDistance_Maximal::TExamplesDistance_Maximal(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, ddist, dstat)
+TExamplesDistance_Maximal::TExamplesDistance_Maximal(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, dstat)
 {}
 
 
-TExamplesDistance_Manhattan::TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, ddist, dstat)
+TExamplesDistance_Manhattan::TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, dstat)
 {}
 
 
-TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, ddist, dstat)
-{}
+TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, dstat),
+  distributions(mlnew TDomainDistributions(egen, weightID, false, true)),
+  bothSpecialDist(mlnew TFloatList())
+{
+  PITERATE(TDomainDistributions, di, distributions) {
+    if (*di) {
+      float sum2 = 0;
+      TDiscDistribution *distr = (*di).AS(TDiscDistribution);
+      ITERATE(vector<float>, pi, distr->distribution)
+        sum2 += (*pi) * (*pi);
+      sum2 /= distr->abs * distr->abs;
+      bothSpecialDist->push_back(1-sum2);
+    }
+    else
+      bothSpecialDist->push_back(0.0);
+  }
+}
 
 
 
 float TExamplesDistance_Maximal::operator ()(const TExample &e1, const TExample &e2) const 
-{ vector<float> difs;
+{ 
+  vector<float> difs;
   getDifs(e1, e2, difs);
   return difs.size() ? *max_element(difs.begin(), difs.end()) : 0.0;
 }
 
 
 float TExamplesDistance_Manhattan::operator ()(const TExample &e1, const TExample &e2) const 
-{ vector<float> difs;
+{ 
+  vector<float> difs;
   getDifs(e1, e2, difs);
   float dist = 0.0;
   const_ITERATE(vector<float>, di, difs)
@@ -343,11 +397,50 @@ float TExamplesDistance_Manhattan::operator ()(const TExample &e1, const TExampl
 
 
 float TExamplesDistance_Euclidean::operator ()(const TExample &e1, const TExample &e2) const 
-{ vector<float> difs;
+{ 
+  vector<float> difs;
   getDifs(e1, e2, difs);
   float dist = 0.0;
-  const_ITERATE(vector<float>, di, difs)
-    dist += (*di)*(*di);
+  TExample::const_iterator e1i(e1.begin()), e2i(e2.begin());
+  TFloatList::const_iterator avgi(averages->begin()), vari(variances->begin());
+  vector<float>::const_iterator di(difs.begin()), de(difs.end());
+  TDomainDistributions::const_iterator disti(distributions->begin());
+  TFloatList::const_iterator bsi(bothSpecialDist->begin());
+
+  for(; di!=de; di++, e1i++, e2i++, avgi++, vari++)
+    if ((*e1i).varType == TValue::FLOATVAR) {
+      if ((*e1i).isSpecial())
+        if ((*e2i).isSpecial())
+          dist += 2 * *vari;
+        else {
+          const float e2a = (*e2i).floatV - *avgi;
+          dist += e2a*e2a + *vari;
+        }
+      else // e1i is not special
+        if ((*e2i).isSpecial()) {
+          const float e2a = (*e1i).floatV - *avgi;
+          dist += e2a*e2a + *vari;
+        }
+      else // none is special
+        dist += (*di) * (*di);
+    }
+
+    else if ((*e1i).varType == TValue::INTVAR) {
+      if ((*e1i).isSpecial())
+        if ((*e2i).isSpecial())
+          dist += *bsi;
+        else
+          dist += 1 - (*disti)->p((*e2i).intV);
+      else // e1i is not special
+        if ((*e2i).isSpecial())
+          dist += 1 - (*disti)->p((*e1i).intV);
+        else
+          if ((*e1i).intV != (*e2i).intV)
+            dist += 1;
+    }
+    else
+      dist += (*di)*(*di);
+
   return sqrt(dist);
 }
 

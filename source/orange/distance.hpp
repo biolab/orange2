@@ -96,13 +96,15 @@ public:
 
   PFloatList normalizers; //P normalizing factors for attributes
   PFloatList bases; //P lowest values for attributes
+  PFloatList averages; //P average values for continuous attribute values
+  PFloatList variances; //P variations for continuous attribute values
   int domainVersion; //P version of domain on which the ranges were computed
   bool normalize; //P tells whether to normalize distances between attributes
   bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
 
   TExamplesDistance_Normalized();
-  TExamplesDistance_Normalized(const bool &ic, const bool &no, const bool &iu, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Normalized(const bool &ic, const bool &no, const bool &iu, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
 
   void getDifs(const TExample &ex1, const TExample &ex2, vector<float> &difs) const;
   void getNormalized(const TExample &e1, vector<float> &normalized) const;
@@ -130,7 +132,7 @@ public:
   __REGISTER_CLASS
 
   TExamplesDistance_Maximal();
-  TExamplesDistance_Maximal(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Maximal(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
@@ -152,7 +154,7 @@ public:
   __REGISTER_CLASS
 
   TExamplesDistance_Manhattan();
-  TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
@@ -173,8 +175,11 @@ class TExamplesDistance_Euclidean : public TExamplesDistance_Normalized {
 public:
   __REGISTER_CLASS
 
+  PDomainDistributions distributions; //P distributions (of discrete attributes only)
+  PFloatList bothSpecialDist; //P distances between discrete attributes if both values are unknown
+
   TExamplesDistance_Euclidean();
-  TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
