@@ -92,7 +92,7 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
-        self.optimizationDlg = kNNOptimization(None)
+        self.optimizationDlg = kNNOptimization(None, self.graph)
         self.optimizationDlg.parentName = "ScatterPlot"
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()

@@ -90,7 +90,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
 
-        self.optimizationDlg = kNNOptimization(None)
+        self.optimizationDlg = kNNOptimization(None, self.graph)
         self.optimizationDlg.parentName = "Polyviz"
         self.graph.kNNOptimization = self.optimizationDlg
 
