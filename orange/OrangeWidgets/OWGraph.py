@@ -20,29 +20,34 @@ colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135
 class ColorPaletteHSV:
     maxHueVal = 300
     
-    def __init__(self, numberOfColors = -1):
-        self.colors = []
-        self.hueValues = []
+    def __init__(self, numberOfColors = -1, brightness = 255):
+        self.brightness = brightness
         self.numberOfColors = numberOfColors
         
-        if numberOfColors == -1: return  # used for coloring continuous variables
-        elif numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
-            for i in range(numberOfColors):
+        self.rebuildColors()
+
+    def rebuildColors(self):
+        self.colors = []
+        self.hueValues = []
+        if self.numberOfColors == -1: return  # used for coloring continuous variables
+        elif self.numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
+            for i in range(self.numberOfColors):
                 col = QColor()
-                col.setHsv(colorHueValues[i], 255, 255)
+                col.setHsv(colorHueValues[i], self.brightness, 255)
                 self.colors.append(col)
-            self.hueValues = colorHueValues[:self.numberOfColors]
+            self.hueValues = list(colorHueValues[:self.numberOfColors])
         else:   
             self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
                 col = QColor()
-                col.setHsv(hue, 255, 255)
+                col.setHsv(hue, self.brightness, 255)
                 self.colors.append(col)
+        
 
     def __getitem__(self, index):
         if self.numberOfColors == -1:                # is this color for continuous attribute?
             col = QColor()
-            col.setHsv(index*self.maxHueVal, 255, 255)     # index must be between 0 and 1
+            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
             return col
         else:                                   # get color for discrete attribute
             return self.colors[index]           # index must be between 0 and self.numberofColors
@@ -53,6 +58,13 @@ class ColorPaletteHSV:
             return index * self.maxHueVal
         else:
             return self.hueValues[index]
+
+    def getBrightness(self):
+        return self.brightness
+
+    def setBrightness(self, brightness):
+        self.brightness = brightness
+        self.rebuildColors()
 
     # get QColor instance for given index
     def getColor(self, index):
