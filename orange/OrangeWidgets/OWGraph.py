@@ -11,6 +11,8 @@ from OWTools import *
 from qwt import *
 from Numeric import *
 from OWBaseWidget import *
+import popen2
+import time
 
 class subBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
@@ -521,6 +523,68 @@ class OWGraph(QwtPlot):
     def setCanvasColor(self, c):
         self.setCanvasBackground(c)
         self.repaint()
+
+
+    def gracePlot(self, pause=5):
+        """Clone the plot into Grace for very high quality hard copy output.
+
+        Know bug: Grace does not scale the data correctly when Grace cannot
+        cannot keep up with gracePlot.  This happens when it takes too long
+        to load Grace in memory (exit the Grace process and try again) or
+        when 'pause' is too short.
+        """
+        g = GracePlotter(debug = 0)
+        g('subtitle "%s"' % self.title())
+
+        # curves
+        keys = self.curveKeys()
+        for key in keys:
+            index = keys.index(key)
+            curve = self.curve(key)
+            if not curve.enabled():
+                continue
+            g('s%s legend "%s"' % (index, curve.title()))
+            if curve.symbol().style():
+                g('s%s symbol 1;'
+                  's%s symbol size 0.4;'
+                  's%s symbol fill pattern 1'
+                  % (index, index, index))
+            if curve.style():
+                g('s%s line linestyle 1' % index)
+            else:
+                g('s%s line linestyle 0' % index)
+            for i in range(curve.dataSize()):
+                g('%s.s%s point %g, %g'
+                  % ("g0", index, curve.x(i), curve.y(i)))
+
+        # finalize
+        g('redraw')
+        
+    # gracePlot()
+
+
+class GracePlotter:
+    def __init__ (self, sleep = 5, debug = None):
+        self.debug = debug
+        r, self.p, e = popen2.popen3 ("grace -nosafe -noask -dpipe 0") 
+        #self.command("view xmin 0.15")
+        #self.command("view xmax 0.85")
+        #self.command("view ymin 0.15")
+        #self.command("view ymax 0.85")
+        #self.flush()
+        time.sleep(sleep) 
+
+    def command(self, cmd):
+        if self.debug: print cmd
+        self.p.write(cmd + '\n')
+        self.flush()
+
+    def flush(self):
+        self.p.flush()
+
+    def __call__(self, cmd):
+        self.command(cmd)
+ 
 
 if __name__== "__main__":
     #Draw a simple graph
