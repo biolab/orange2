@@ -307,6 +307,7 @@ class kNNOptimization(OWBaseWidget):
 			(acc, lenTable, attrList, strList) = eval(line)
 			self.insertItem(acc, lenTable, attrList, ind, strList)
 			line = file.readline()[:-1]
+			ind+=1
 		file.close()
 
 		# update loaded results
