@@ -26,7 +26,7 @@ class OWScatterPlot3DGraph(QGLWidget):
         self.rawdata = []
         self.pointWidth = 5
         self.scaledData = []
-        self.scaledDataAttributes = []
+        self.attributeNames = []
         self.jitteringType = 'none'
         self.jitterSize = 10
         self.globalValueScaling = 0
@@ -152,7 +152,7 @@ class OWScatterPlot3DGraph(QGLWidget):
         min = -1; max = -1; first = TRUE
         for attr in attrList:
             if data.domain[attr].varType == orange.VarTypes.Discrete: continue
-            index = self.scaledDataAttributes.index(attr)
+            index = self.attributeNames.index(attr)
             (minVal, maxVal) = self.getMinMaxVal(data, index)
             if first == TRUE:
                 min = minVal; max = maxVal
@@ -162,7 +162,7 @@ class OWScatterPlot3DGraph(QGLWidget):
                 if maxVal > max: max = maxVal
 
         for attr in attrList:
-            index = self.scaledDataAttributes.index(attr)
+            index = self.attributeNames.index(attr)
             scaled, values = self.scaleData(data, index, min, max)
             self.scaledData[index] = scaled
             self.attrValues[attr] = values
@@ -214,14 +214,14 @@ class OWScatterPlot3DGraph(QGLWidget):
 
         self.rawdata = data
         self.scaledData = []
-        self.scaledDataAttributes = []
+        self.attributeNames = []
         
         if data == None: return
 
         self.attrVariance = []
         for index in range(len(data.domain)):
             attr = data.domain[index]
-            self.scaledDataAttributes.append(attr.name)
+            self.attributeNames.append(attr.name)
             (scaled, variance)= self.scaleData(data, index)
             self.scaledData.append(scaled)
             self.attrVariance.append(variance)
@@ -274,9 +274,9 @@ class OWScatterPlot3DGraph(QGLWidget):
         # show data
         if len(self.scaledData) == 0: return
 
-        xIndex = self.scaledDataAttributes.index(self.xAttr)
-        yIndex = self.scaledDataAttributes.index(self.yAttr)
-        zIndex = self.scaledDataAttributes.index(self.zAttr)
+        xIndex = self.attributeNames.index(self.xAttr)
+        yIndex = self.attributeNames.index(self.yAttr)
+        zIndex = self.attributeNames.index(self.zAttr)
 
         for i in range(len(self.rawdata)):
             x = self.scaledData[xIndex][i]*0.5
@@ -305,9 +305,9 @@ class OWScatterPlot3DGraph(QGLWidget):
     # update shown data. Set labels, coloring by className ....
     #
     def updateData(self, xAttr, yAttr, zAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None):
-        (xVarMin, xVarMax) = self.attrVariance[self.scaledDataAttributes.index(xAttr)]
-        (yVarMin, yVarMax) = self.attrVariance[self.scaledDataAttributes.index(yAttr)]
-        (zVarMin, zVarMax) = self.attrVariance[self.scaledDataAttributes.index(zAttr)]
+        (xVarMin, xVarMax) = self.attrVariance[self.attributeNames.index(xAttr)]
+        (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
+        (zVarMin, zVarMax) = self.attrVariance[self.attributeNames.index(zAttr)]
         self.xVar = xVarMax - xVarMin
         self.yVar = yVarMax - yVarMin
         self.zVar = zVarMax - zVarMin
@@ -326,12 +326,12 @@ class OWScatterPlot3DGraph(QGLWidget):
         self.MAX_HUE_VALUE = 300
         self.colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
-            self.colorIndex = self.scaledDataAttributes.index(colorAttr)
+            self.colorIndex = self.attributeNames.index(colorAttr)
             if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: self.MAX_HUE_VAL = 360
 
         self.sizeShapeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
-            self.sizeShapeIndex = self.scaledDataAttributes.index(sizeShapeAttr)
+            self.sizeShapeIndex = self.attributeNames.index(sizeShapeAttr)
 
         # create hash tables in case of discrete X axis attribute
         self.attrXIndices = {}

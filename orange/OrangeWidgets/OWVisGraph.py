@@ -10,19 +10,43 @@ import orange
 import os.path
 from OWTools import *
 
+# ####################################################################
+# calculate Euclidean distance between two points
+def EuclDist(v1, v2):
+    val = 0
+    for i in range(len(v1)):
+        val += (v1[i]-v2[i])**2
+    return sqrt(val)
+        
+
+# ####################################################################
+# add val to sorted list list. if len > maxLen delete last element
+def addToList(list, val, ind, maxLen):
+    i = 0
+    for i in range(len(list)):
+        (val2, ind2) = list[i]
+        if val < val2:
+            list.insert(i, (val, ind))
+            if len(list) > maxLen:
+                list.remove(list[maxLen])
+            return
+    if len(list) < maxLen:
+        list.insert(len(list), (val, ind))
+
 
 class OWVisGraph(OWGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
 
-        self.rawdata = []
+        self.rawdata = []                   # input data
+        self.scaledData = []                # scaled data to the interval 0-1
+        self.attributeNames = []      # list of attribute names from self.rawdata
+        self.domainDataStat = []
         self.pointWidth = 5
-        self.scaledData = []
-        self.scaledDataAttributes = []
         self.jitteringType = 'none'
         self.jitterSize = 10
-        self.globalValueScaling = 0
+        self.globalValueScaling = 0         # do we want to scale data globally
         self.setCanvasColor(QColor(Qt.white.name()))
 
         self.enableGridX(FALSE)
@@ -38,6 +62,190 @@ class OWVisGraph(OWGraph):
         self.zoomStack = []
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
+
+
+    #####################################################################
+    #####################################################################
+    # set new data and scale its values
+    def setData(self, data):
+        self.rawdata = data
+        self.domainDataStat = orange.DomainBasicAttrStat(data)
+        self.scaledData = []
+        self.attrValues = {}
+        self.attributeNames = []
+        for attr in data.domain: self.attributeNames.append(attr.name)
+        
+        if data == None: return
+
+        min = -1; max = -1
+        if self.globalValueScaling == 1:
+            (min, max) =  self.getMinMaxValDomain(data, self.attributeNames)
+            
+        for index in range(len(data.domain)):
+            scaled, values = self.scaleData(data, index, min, max)
+            self.scaledData.append(scaled)
+            self.attrValues[data.domain[index].name] = values
+    #####################################################################
+    #####################################################################
+
+
+    
+    # ####################################################################
+    # compute min and max value for a list of attributes 
+    def getMinMaxValDomain(self, data, attrList):
+        first = TRUE
+        min = -1; max = -1
+        for attr in attrList:
+            if data.domain[attr].varType == orange.VarTypes.Discrete: continue
+            (minVal, maxVal) = self.getMinMaxVal(data, attr)
+            if first == TRUE:
+                min = minVal; max = maxVal
+                first = FALSE
+            else:
+                if minVal < min: min = minVal
+                if maxVal > max: max = maxVal
+        return (min, max)
+
+    
+
+    # ####################################################################
+    # get min and max value of data attribute at index index
+    def getMinMaxVal(self, data, index):
+        attr = data.domain[index]
+
+        # is the attribute discrete
+        if attr.varType == orange.VarTypes.Discrete:
+            print "warning. Computing min, max value for discrete attribute."
+            return (0, float(len(attr.values))-1)
+        else:
+            return (self.domainDataStat[index].min, self.domainDataStat[index].max)
+        
+    # ####################################################################
+    # scale data at index index to the interval 0 to 1
+    # min, max - if booth -1 --> scale to interval 0 to 1, else scale inside interval [min, max]
+    # forColoring - if TRUE we don't scale from 0 to 1 but a little less (e.g. [0.2, 0.8]) so that the colours won't overlap
+    # jitteringEnabled - jittering enabled or not
+    # ####################################################################
+    def scaleData(self, data, index, min = -1, max = -1, forColoring = 0, jitteringEnabled = 1):
+        attr = data.domain[index]
+        temp = []; values = []
+
+        # is the attribute discrete
+        if attr.varType == orange.VarTypes.Discrete:
+            # we create a hash table of variable values and their indices
+            variableValueIndices = self.getVariableValueIndices(data, index)
+            count = float(len(attr.values))
+            values = [0, count-1]
+
+            if forColoring == 1:
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
+                    val = float(variableValueIndices[data[i][index].value]) / float(count)
+                    temp.append(val)
+            elif jitteringEnabled == 1:
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(self.jitterSize/(100.0*count))
+                    temp.append(val)
+            else:
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count)
+                    temp.append(val)
+                    
+        # is the attribute continuous
+        else:
+            min = self.domainDataStat[index].min
+            max = self.domainDataStat[index].max
+            diff = max - min
+            values = [min, max]
+
+            if forColoring == 1:
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
+                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
+            else:
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
+                    temp.append((data[i][attr].value - min) / diff)
+        return (temp, values)
+
+    # ####################################################################
+    # scale data with no jittering
+    def scaleDataNoJittering(self):
+        # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
+        self.noJitteringScaledData = []
+        for i in range(len(self.rawdata.domain)): self.noJitteringScaledData.append([])        
+
+        # if global value scaling is selected, compute min and max values
+        min = -1; max = -1
+        if self.globalValueScaling == 1:
+            (min, max) = self.getMinMaxValDomain(self.rawdata, self.attributeNames)
+
+        # compute scaled data
+        for i in range(len(self.rawdata.domain)):
+            scaled, vals = self.scaleData(self.rawdata, i, jitteringEnabled = 0)
+            self.noJitteringScaledData[i] = scaled
+
+
+    def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
+        if len(attrList) == 0: return
+        # find min, max values
+        (Min, Max) = self.getMinMaxValDomain(data, attrList)
+
+        # scale data values inside min and max
+        for attr in attrList:
+            index = self.attributeNames.index(attr)
+            scaled, values = self.scaleData(data, index, Min, Max, jitteringEnabled = jittering)
+            self.scaledData[index] = scaled
+            self.attrValues[attr] = values
+
+
+    # ####################################################################    
+    # return a list of sorted values for attribute at index index
+    # EXPLANATION: if variable values have values 1,2,3,4,... then their order in orange depends on when they appear first
+    # in the data. With this function we get a sorted list of values
+    def getVariableValuesSorted(self, data, index):
+        if data.domain[index].varType == orange.VarTypes.Continuous:
+            print "Invalid index for getVariableValuesSorted"
+            return []
+        
+        values = list(data.domain[index].values)
+        intValues = []
+        i = 0
+        # do all attribute values containt integers?
+        try:
+            while i < len(values):
+                temp = int(values[i])
+                intValues.append(temp)
+                i += 1
+        except: pass
+
+        # if all values were intergers, we first sort them ascendently
+        if i == len(values):
+            intValues.sort()
+            values = intValues
+        out = []
+        for i in range(len(values)):
+            out.append(str(values[i]))
+
+        return out
+
+    # ####################################################################
+    # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
+    # in case all values are integers, we also sort them
+    def getVariableValueIndices(self, data, index):
+        if data.domain[index].varType == orange.VarTypes.Continuous:
+            print "Invalid index for getVariableValueIndices"
+            return {}
+
+        values = self.getVariableValuesSorted(data, index)
+
+        dict = {}
+        for i in range(len(values)):
+            dict[values[i]] = i
+        return dict
+
 
     def setJitteringOption(self, jitteringType):
         self.jitteringType = jitteringType
@@ -75,6 +283,7 @@ class OWVisGraph(OWGraph):
         self.enableLegend(enableLegend, newCurveKey)
         return newCurveKey
 
+    # ####################################################################
     # return string with attribute names and their values for example example
     def getExampleText(self, data, example):
         text = ""
@@ -84,184 +293,12 @@ class OWVisGraph(OWGraph):
             else:
                 text = "%s%s = %.3f ; " % (text, data.domain[i].name, example[i].value)
         return text
+
     
-    # return a list of sorted values for attribute at index index
-    def getVariableValuesSorted(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValuesSorted"
-            return []
-        
-        values = list(data.domain[index].values)
-        intValues = []
-        i = 0
-        # do all attribute values containt integers?
-        try:
-            while i < len(values):
-                temp = int(values[i])
-                intValues.append(temp)
-                i += 1
-        except: pass
 
-        # if all values were intergers, we first sort them ascendently
-        if i == len(values):
-            intValues.sort()
-            values = intValues
-        out = []
-        for i in range(len(values)):
-            out.append(str(values[i]))
-
-        return out
-
-    # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
-    # in case all values are integers, we also sort them
-    def getVariableValueIndices(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValueIndices"
-            return {}
-
-        values = self.getVariableValuesSorted(data, index)
-
-        dict = {}
-        for i in range(len(values)):
-            dict[values[i]] = i
-        return dict
-
-    #
-    # get min and max value of data attribute at index index
-    #
-    def getMinMaxVal(self, data, index):
-        attr = data.domain[index]
-
-        # is the attribute discrete
-        if attr.varType == orange.VarTypes.Discrete:
-            count = float(len(attr.values))
-            return (0, count-1)
-                    
-        # is the attribute continuous
-        else:
-            # first find min and max value
-            i = 0
-            while data[i][attr].isSpecial() == 1: i+=1
-            min = data[i][attr].value
-            max = data[i][attr].value
-            for item in data:
-                if item[attr].isSpecial() == 1: continue
-                if item[attr].value < min:
-                    min = item[attr].value
-                elif item[attr].value > max:
-                    max = item[attr].value
-            return (min, max)
-        print "incorrect attribute type for scaling"
-        return (0, 1)
-        
-    #
-    # scale data at index index to the interval 0 to 1
-    #
-    def scaleData(self, data, index, min = -1, max = -1, forColoring = 0, jitteringEnabled = 1):
-        attr = data.domain[index]
-        temp = []; values = []
-
-        # is the attribute discrete
-        if attr.varType == orange.VarTypes.Discrete:
-            # we create a hash table of variable values and their indices
-            variableValueIndices = self.getVariableValueIndices(data, index)
-
-            count = float(len(attr.values))
-            if len(attr.values) > 1: num = float(len(attr.values)-1)
-            else: num = float(1)
-
-            if forColoring == 1:
-                for i in range(len(data)):
-                    val = float(variableValueIndices[data[i][index].value]) / float(count)
-                    temp.append(val)
-            elif jitteringEnabled == 1:
-                for i in range(len(data)):
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(self.jitterSize/(100.0*count))
-                    temp.append(val)
-            else:
-                for i in range(len(data)):
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count)
-                    temp.append(val)
-                    
-        # is the attribute continuous
-        else:
-            # if we don't use global normalisation then we first find min and max value
-            if min == -1 and max == -1:
-                i = 0
-                while data[i][attr].isSpecial() == 1: i+=1
-                min = data[i][attr].value
-                max = data[i][attr].value
-
-                for item in data:
-                    if item[attr].isSpecial() == 1: continue
-                    if item[attr].value < min:   min = item[attr].value
-                    elif item[attr].value > max: max = item[attr].value
-            
-            diff = max - min
-            values = [min, max]
-
-            if forColoring == 1:
-                for i in range(len(data)):
-                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
-            else:
-                for i in range(len(data)):
-                    temp.append((data[i][attr].value - min) / diff)
-        return (temp, values)
-
-
-    def rescaleAttributesGlobaly(self, data, attrList):
-        min = -1; max = -1; first = TRUE
-        for attr in attrList:
-            if data.domain[attr].varType == orange.VarTypes.Discrete: continue
-            index = self.scaledDataAttributes.index(attr)
-            (minVal, maxVal) = self.getMinMaxVal(data, index)
-            if first == TRUE:
-                min = minVal; max = maxVal
-                first = FALSE
-            else:
-                if minVal < min: min = minVal
-                if maxVal > max: max = maxVal
-
-        for attr in attrList:
-            index = self.scaledDataAttributes.index(attr)
-            scaled, values = self.scaleData(data, index, min, max)
-            self.scaledData[index] = scaled
-            self.attrValues[attr] = values
-
-    #
-    # set new data and scale its values
-    #
-    def setData(self, data):
-        self.rawdata = data
-        self.scaledData = []
-        self.attrValues = {}
-        self.scaledDataAttributes = []
-        
-        if data == None: return
-
-        min = -1; max = -1; first = TRUE
-        if self.globalValueScaling == 1:
-            for index in range(len(data.domain)):
-                if data.domain[index].varType == orange.VarTypes.Discrete: continue
-                (minVal, maxVal) = self.getMinMaxVal(data, index)
-                if first == TRUE:
-                    min = minVal; max = maxVal
-                    first = FALSE
-                else:
-                    if minVal < min: min = minVal
-                    if maxVal > max: max = maxVal
-
-        for index in range(len(data.domain)):
-            attr = data.domain[index]
-            self.scaledDataAttributes.append(attr.name)
-            scaled, values = self.scaleData(data, index, min, max)
-            self.scaledData.append(scaled)
-            self.attrValues[attr.name] = values
-
-
-    ################################################
+    # ###############################################
     # HANDLING MOUSE EVENTS
-    ################################################
+    # ###############################################
     def onMousePressed(self, e):
         if Qt.LeftButton == e.button():
             # Python semantics: self.pos = e.pos() does not work; force a copy

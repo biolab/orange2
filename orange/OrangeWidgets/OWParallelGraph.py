@@ -75,7 +75,7 @@ class OWParallelGraph(OWVisGraph):
 
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
-            index = self.scaledDataAttributes.index(label)
+            index = self.attributeNames.index(label)
             indices.append(index)
 
         # create a table of class values that will be used for coloring the lines
@@ -94,7 +94,7 @@ class OWParallelGraph(OWVisGraph):
         dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
         
         if className != "(One color)":
-            classIndex = self.scaledDataAttributes.index(className)
+            classIndex = self.attributeNames.index(className)
 
         if self.hidePureExamples == 1 and className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             # add a meta attribute if it doesn't exist yet
@@ -147,6 +147,12 @@ class OWParallelGraph(OWVisGraph):
         #############################################
         # draw the data
         for i in range(dataSize):
+            validData = 1
+            # check for missing values
+            for index in indices:
+                if self.scaledData[index][i] == "?": validData = 0; break;
+            if not validData: continue
+            
             newCurveKey = self.insertCurve(str(i))
             self.curveKeys.append(newCurveKey)
             newColor = QColor()
@@ -249,6 +255,13 @@ class OWParallelGraph(OWVisGraph):
         classValueIndices = self.getVariableValueIndices(data, className)
         classValueSorted  = self.getVariableValuesSorted(data, className)
 
+        # compute what data values are valid
+        indicesLen = len(indices)
+        dataValid = [1]*len(data)
+        for i in range(len(data)):
+            for j in range(indicesLen):
+                if data[i][j].isSpecial(): dataValid[i] = 0
+
         self.toolInfo = []        
         for graphAttrIndex in range(len(indices)):
             index = indices[graphAttrIndex]
@@ -269,6 +282,7 @@ class OWParallelGraph(OWVisGraph):
                 stop = indices[:graphAttrIndex]
                 for i in range(len(data)):
                     if self.hidePureExamples == 1 and dataStop[i] in stop: continue
+                    if dataValid[i] == 0: continue
                     if not data[i][index].isSpecial():
                         # processing for distributions
                         attrIndex = variableValueIndices[data[i][index].value]
@@ -326,6 +340,7 @@ class OWParallelGraph(OWVisGraph):
     def addTooltips(self):
         for i in range(len(self.toolInfo)):
             (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
+            if total == 0: continue
             tooltipText = "Attribute: <b>%s</b><br>Value: <b>%s</b><br>Total instances: <b>%i</b> (%.1f%%)<br>Class distribution:<br>" % (name, value, total, 100.0*float(total)/float(sumTotals))
             for j in range(len(lista)):
                 (val, count) = lista[j]

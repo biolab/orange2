@@ -368,7 +368,8 @@ class OWParallelCoordinates(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        #self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = data.data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()

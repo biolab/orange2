@@ -13,6 +13,7 @@
 from OWWidget import *
 from OWScatterPlotOptions import *
 from OWScatterPlotGraph import *
+from OWVisTools import *
 
 
 ###########################################################################################
@@ -25,6 +26,8 @@ class OWScatterPlot(OWWidget):
     spreadType=["none","uniform","triangle","beta"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40']
+    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ]
 
     def __init__(self,parent=None):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
@@ -34,6 +37,7 @@ class OWScatterPlot(OWWidget):
        
         #set default settings
         self.pointWidth = 7
+        self.kNeighbours = 1 
         self.jitteringType = "uniform"
         self.showXAxisTitle = 1
         self.showYAxisTitle = 1
@@ -65,8 +69,6 @@ class OWScatterPlot(OWWidget):
         self.addInput("cdata")
         self.addInput("view")
 
-        self.activateLoadedSettings()        
-        
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)        
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
@@ -114,8 +116,29 @@ class OWScatterPlot(OWWidget):
         self.connect(self.attrSizeShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrSizeShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
+
+        # optimization
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea)
+        self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
+        #self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
+        self.interestingProjectionsButton = QPushButton('List of interesting projections', self.attrOrderingButtons)
+        self.connect(self.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
+
+
+        self.hbox2 = QHBox(self.attrOrderingButtons)
+        self.attrOrdLabel = QLabel('Number of neighbours (k):', self.hbox2)
+        self.attrKNeighbour = QComboBox(self.hbox2)
+
+        self.interestingprojectionsDlg = InterestingProjections(None)
+        self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
+        self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+        self.connect(self.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
+        
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
+
+        self.activateLoadedSettings()
+        self.resize(900, 700)        
 
     # #########################
     # OPTIONS
@@ -135,6 +158,11 @@ class OWScatterPlot(OWWidget):
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
+
+        # set items in k neighbours combo
+        for i in range(len(self.kNeighboursList)):
+            self.attrKNeighbour.insertItem(self.kNeighboursList[i])
+        self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
 
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
@@ -232,6 +260,44 @@ class OWScatterPlot(OWWidget):
         self.showVerticalGridlines = b
         self.graph.enableGridYL(b)
         if self.data != None: self.updateGraph()
+
+    def setKNeighbours(self, n):
+        self.kNeighbours = self.kNeighboursNums[n]
+
+    # ####################################
+    # find optimal class separation for shown attributes
+    def optimizeSeparation(self):
+        if self.data != None:
+            self.graph.scaleDataNoJittering()
+            (list, value, fullList) = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours)
+            if list == []: return
+
+            # fill the "interesting visualizations" list box
+            self.optimizedList = []
+            self.interestingprojectionsDlg.interestingList.clear()
+            for i in range(min(100, len(fullList))):
+                (val, list) = max(fullList)
+                self.optimizedList.append((val, list))
+                fullList.remove((val, list))
+                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                
+            self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
+
+    def showSelectedAttributes(self):
+        if self.interestingprojectionsDlg.interestingList.count() == 0: return
+        index = self.interestingprojectionsDlg.interestingList.currentItem()
+        (val, list) = self.optimizedList[index]
+
+        self.setText(self.attrX, list[0])
+        self.setText(self.attrY, list[1])
+        if len(list)>2: self.setText(self.attrShape, list[2])
+        else: self.attrShapeCB.setChecked(0)
+        if len(list)>3: self.setText(self.attrSizeShape, list[2])
+        else: self.attrSizeShapeCB.setChecked(0)
+        self.setText(self.attrColor, self.data.domain.classVar.name)        
+        
+        self.updateGraph()
+
         
     # #############################
     # ATTRIBUTE SELECTION
@@ -336,7 +402,8 @@ class OWScatterPlot(OWWidget):
             self.repaint()
             return
         
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        #self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = data.data
         self.initAttrValues()
         self.graph.setData(self.data)
         self.updateGraph()

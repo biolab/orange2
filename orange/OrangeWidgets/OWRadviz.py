@@ -15,17 +15,15 @@ from OWRadvizOptions import *
 from random import betavariate 
 from OWRadvizGraph import *
 from OData import *
-import orngFSS
-import statc
-import orngCI
 import OWVisAttrSelection
+from OWVisTools import *
 
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -46,6 +44,7 @@ class OWRadviz(OWWidget):
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
+        self.optimizedList = []
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -90,6 +89,7 @@ class OWRadviz(OWWidget):
         self.selClass.setTitle("Class attribute")
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        
 
         self.classCombo = QComboBox(self.selClass)
         self.showContinuousCB = QCheckBox('show continuous', self.selClass)
@@ -103,13 +103,18 @@ class OWRadviz(OWWidget):
 
         self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
         self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
+        self.interestingProjectionsButton = QPushButton('List of interesting projections', self.attrOrderingButtons)
+        
         self.hbox2 = QHBox(self.attrOrderingButtons)
         self.attrOrdLabel = QLabel('Number of neighbours (k):', self.hbox2)
         self.attrKNeighbour = QComboBox(self.hbox2)
+
+        self.interestingprojectionsDlg = InterestingProjections(None)
+        self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
+        self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+
         
         self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
-        #self.attrButtonGroup.setFrameStyle(QFrame.NoFrame)
-        #self.attrButtonGroup.setMargin(0)
         self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
         self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
 
@@ -131,8 +136,9 @@ class OWRadviz(OWWidget):
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
 
-        #self.repaint()
+        self.resize(900, 700)
 
+    
     # #########################
     # OPTIONS
     # #########################
@@ -182,7 +188,6 @@ class OWRadviz(OWWidget):
 
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
-        #self.optimizeSeparation()
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
@@ -198,25 +203,69 @@ class OWRadviz(OWWidget):
             self.setShownAttributeList(self.data)
         self.updateGraph()
 
+    # ####################################
+    # find optimal class separation for shown attributes
     def optimizeSeparation(self):
         if self.data != None:
-            (list, value) = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
+            if len(self.getShownAttributeList()) > 7:
+                res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                if res != 0: return
+            self.graph.scaleDataNoJittering()
+            (list, value, fullList) = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
+            if list == []: return
+
+            # fill the "interesting visualizations" list box
+            self.optimizedList = []
+            self.interestingprojectionsDlg.interestingList.clear()
+            for i in range(min(100, len(fullList))):
+                (val, list) = max(fullList)
+                self.optimizedList.append((val, list))
+                fullList.remove((val, list))
+                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                
             self.shownAttribsLB.clear()
             for item in list:
                 self.shownAttribsLB.insertItem(item)
             self.updateGraph()
 
+    # #############################################
+    # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data != None:
-            (list,val) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
-            exshown = self.getShownAttributeList()
+            if len(self.getShownAttributeList()) > 7:
+                res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                if res != 0: return
+            self.graph.scaleDataNoJittering()
+            (list,val, fullList) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours)
+            if list == []: return
+            
+            # fill the "interesting visualizations" list box
+            self.optimizedList = []
+            self.interestingprojectionsDlg.interestingList.clear()
+            for i in range(min(100, len(fullList))):
+                (val, list) = max(fullList)
+                self.optimizedList.append((val, list))
+                fullList.remove((val, list))
+                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                
             self.shownAttribsLB.clear()
             for item in list:
                 self.shownAttribsLB.insertItem(item)
-            for item in exshown:
-                if item not in list:
-                    self.hiddenAttribsLB.insertItem(item)
             self.updateGraph()
+
+    # ####################################
+    # show selected interesting projection
+    def showSelectedAttributes(self):
+        if self.interestingprojectionsDlg.interestingList.count() == 0: return
+        index = self.interestingprojectionsDlg.interestingList.currentItem()
+        (val, list) = self.optimizedList[index]
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+        for attr in list: self.shownAttribsLB.insertItem(attr)
+        for attr in self.data.domain:
+            if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
+        self.updateGraph()
+
         
     def setCanvasColor(self, c):
         self.graphCanvasColor = c
@@ -232,6 +281,7 @@ class OWRadviz(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
             
         self.updateGraph()
+
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -288,7 +338,6 @@ class OWRadviz(OWWidget):
 
     def updateGraph(self):
         self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)
-        #self.graph.replot()
         self.graph.update()
         self.repaint()
 
@@ -339,13 +388,15 @@ class OWRadviz(OWWidget):
         for i in range(self.shownAttribsLB.count()):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
-    ##############################################
+    # #############################################
     
     
-    ####### CDATA signal ################################
+    # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        self.interestingprojectionsDlg.interestingList.clear()
+        #self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = data.data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
@@ -357,10 +408,10 @@ class OWRadviz(OWWidget):
         
         self.setShownAttributeList(self.data)
         self.updateGraph()
-    #################################################
+    # ################################################
 
 
-    ####### SELECTION signal ################################
+    # ###### SELECTION signal ################################
     # receive info about which attributes to show
     def selection(self, list):
         self.shownAttribsLB.clear()
@@ -379,7 +430,7 @@ class OWRadviz(OWWidget):
                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
-    #################################################
+    # ################################################
 
 #test widget appearance
 if __name__=="__main__":

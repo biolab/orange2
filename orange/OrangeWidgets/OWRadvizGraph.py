@@ -4,33 +4,9 @@
 # the base for all parallel graphs
 
 from OWVisGraph import *
-from copy import copy       # used to copy arrays
+from copy import copy
 
-###########################################################################################
-##### FUNCTIONS FOR CALCULATING PERMUTATIONS, DISTANCES, ...
-###########################################################################################
-
-# calculate Euclidean distance between two points
-def EuclDist(v1, v2):
-    val = 0
-    for i in range(len(v1)):
-        val += (v1[i]-v2[i])**2
-    return sqrt(val)
-        
-
-# add val to sorted list list. if len > maxLen delete last element
-def addToList(list, val, ind, maxLen):
-    i = 0
-    for i in range(len(list)):
-        (val2, ind2) = list[i]
-        if val < val2:
-            list.insert(i, (val, ind))
-            if len(list) > maxLen:
-                list.remove(list[maxLen])
-            return
-    if len(list) < maxLen:
-        list.insert(len(list), (val, ind))
-
+# ####################################################################
 # get a list of all different permutations
 def getPermutationList(elements, tempPerm, currList):
     for i in range(len(elements)):
@@ -48,22 +24,19 @@ def getPermutationList(elements, tempPerm, currList):
         for i in range(len(temp)):
             el = temp.pop()
             temp.insert(0, el)
-            try:
-                index = currList[str(temp)]
-                return
-            except: pass
+            if str(temp) in currList: return
             
         # also try the reverse permutation
         temp.reverse()
         for i in range(len(temp)):
             el = temp.pop()
             temp.insert(0, el)
-            try:
-                index = currList[str(temp)]
-                return
-            except: pass
+            if str(temp) in currList: return
         currList[str(tempPerm)] = copy(tempPerm)
     
+
+
+
 
 
 ###########################################################################################
@@ -73,11 +46,9 @@ class OWRadvizGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
-        self.kNeighbours = 1
 
-    #
+    # ####################################################################
     # update shown data. Set labels, coloring by className ....
-    #
     def updateData(self, labels, className, statusBar):
         self.removeCurves()
         self.removeMarkers()
@@ -101,13 +72,13 @@ class OWRadvizGraph(OWVisGraph):
         indices = []
         xs = []
 
-        ###########
+        # ##########
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
-            index = self.scaledDataAttributes.index(label)
+            index = self.attributeNames.index(label)
             indices.append(index)
 
-        ###########
+        # ##########
         # create anchor for every attribute
         anchors = [[],[]]
         for i in range(length):
@@ -116,7 +87,7 @@ class OWRadvizGraph(OWVisGraph):
             anchors[0].append(float(strX))  # this might look stupid, but this way we get rid of rounding errors
             anchors[1].append(float(strY))
 
-        ###########
+        # ##########
         # draw "circle"
         xData = []; yData = []
         circResol = 100
@@ -131,7 +102,7 @@ class OWRadvizGraph(OWVisGraph):
         self.setCurveStyle(newCurveKey, QwtCurve.Lines)
         self.setCurveData(newCurveKey, xData, yData) 
 
-        ###########
+        # ##########
         # draw dots at anchors
         newCurveKey = self.insertCurve("dots")
         newColor = QColor()
@@ -140,7 +111,7 @@ class OWRadvizGraph(OWVisGraph):
         self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(10, 10)))
         self.setCurveData(newCurveKey, anchors[0]+[anchors[0][0]], anchors[1]+[anchors[1][0]]) 
 
-        ###########
+        # ##########
         # draw text at anchors
         for i in range(length):
             mkey = self.insertMarker(labels[i])
@@ -175,8 +146,15 @@ class OWRadvizGraph(OWVisGraph):
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
 
+        validData = [1] * dataSize
+        for i in range(dataSize):
+            for j in range(length):
+                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+
         RECT_SIZE = 0.01    # size of rectangle
         for i in range(dataSize):
+            if validData[i] == 0: continue
+            
             sum_i = 0.0
             for j in range(length):
                 sum_i += self.scaledData[indices[j]][i]
@@ -233,10 +211,6 @@ class OWRadvizGraph(OWVisGraph):
                 self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
 
 
-        # -----------------------------------------------------------
-        # -----------------------------------------------------------
-        
-
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
@@ -249,32 +223,6 @@ class OWRadvizGraph(OWVisGraph):
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
         classValsCount = len(self.rawdata.domain[className].values)
-        attr = self.rawdata.domain[className]
-
-        # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
-        selectedScaledData = []
-        for i in range(len(self.rawdata.domain)): selectedScaledData.append([])        
-
-        # if global value scaling is selected, compute min and max values
-        min = -1; max = -1; first = TRUE
-        if self.globalValueScaling == 1:
-            for attr in attrList:
-                if self.rawdata.domain[attr].varType == orange.VarTypes.Discrete: continue
-                (minVal, maxVal) = self.getMinMaxVal(self.rawdata, attr)
-                if first == TRUE:
-                    min = minVal; max = maxVal
-                    first = FALSE
-                else:
-                    if minVal < min: min = minVal
-                    if maxVal > max: max = maxVal
-
-        # compute scaled data
-        indices = [];
-        for label in attrList:
-            index = self.scaledDataAttributes.index(label)
-            indices.append(index)
-            scaled, vals = self.scaleData(self.rawdata, index, jitteringEnabled = 0)
-            selectedScaledData[index] = scaled
 
         # create anchor for every attribute
         anchors = [[],[]]
@@ -284,107 +232,147 @@ class OWRadvizGraph(OWVisGraph):
             anchors[0].append(float(strX))  # this might look stupid, but this way we get rid of rounding errors
             anchors[1].append(float(strY))
 
-        # store all sums
-        sum_i=[]
-        for i in range(dataSize):
-            temp = 0
-            for j in range(attrListLength):
-                temp += selectedScaledData[indices[j]][i]
-            if temp == 0.0: temp = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
-            sum_i.append(temp)
+
+        indices = []
+        for attr in attrList:
+            indices.append(self.attributeNames.index(attr))
+
 
         # create all possible circular permutations of this indices
+        print "----------------------------"
+        print "generating permutations. Please wait"
         indPermutations = {}
         getPermutationList(indices, [], indPermutations)
 
-        print "all permutations: ", str(len(indPermutations.values()))
+        print "Total permutations: ", str(len(indPermutations.values()))
 
         bestPerm = []; bestPermValue = 0  # we search for maximum bestPermValue
+        fullList = []
+
+        permutationIndex = 0 # current permutation index
+        totalPermutations = len(indPermutations.values())
+
+        validData = [1] * dataSize
+        for i in range(dataSize):
+            for j in range(attrListLength):
+                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+
+        # store all sums
+        sum_i=[]
+        for i in range(dataSize):
+            if validData[i] == 0:
+                sum_i.append(1.0)
+                continue
+
+            temp = 0    
+            for j in range(attrListLength):
+                temp += self.noJitteringScaledData[indices[j]][i]
+            if temp == 0.0: temp = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
+            sum_i.append(temp)
+
+        # variables and domain for the table
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+        
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
+            permutationIndex += 1
             curveData = []
-            xData = []
-            yData = []
             tempPermValue = 0
+
+            table = orange.ExampleTable(domain)
            
             for i in range(dataSize):
+                if validData[i] == 0: continue
+                
                 # calculate projections
                 x_i = 0.0; y_i = 0.0
                 for j in range(attrListLength):
                     index = permutation[j]
-                    x_i = x_i + anchors[0][j]*(selectedScaledData[index][i] / sum_i[i])
-                    y_i = y_i + anchors[1][j]*(selectedScaledData[index][i] / sum_i[i])
+                    x_i = x_i + anchors[0][j]*(self.noJitteringScaledData[index][i] / sum_i[i])
+                    y_i = y_i + anchors[1][j]*(self.noJitteringScaledData[index][i] / sum_i[i])
                 
-                #curveData.append([x_i, y_i])
-                xData.append(x_i)
-                yData.append(y_i)
-
-            xVar = orange.FloatVariable("xVar")
-            yVar = orange.FloatVariable("yVar")
-            domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
-            table = orange.ExampleTable(domain)
-            for i in range(len(xData)):
-                example = orange.Example(domain, [xData[i], yData[i], self.rawdata[i][className]])
+                example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
                 table.append(example)
 
+            #orange.saveTabDelimited("E:\\temp\\data.tab", table)
+
             classValues = list(self.rawdata.domain[className].values)
-            knn = orange.kNNLearner(table, k = kNeighbours)
+            classValNum = len(classValues)
+            
+            exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
+            near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
+            euclidean = orange.ExamplesDistance_Euclidean()
+            euclidean.normalizers = [1,1]   # our table has attributes x,y, and class
             for i in range(len(table)):
-                out = knn(table[i], orange.GetProbabilities)
-                index = classValues.index(self.rawdata[i][className].value)
-                if knn(table[i]) == table[i][2]:
-                    tempPermValue += out[index]
+                prob = [0]*classValNum
+                neighbours = near(kNeighbours, table[i])
+                for neighbour in neighbours:
+                    dist = euclidean(table[i], neighbour)
+                    val = math.exp(-(dist*dist))
+                    index = classValues.index(neighbour.getclass().value)
+                    prob[index] += val
 
-            """
-            #for every point we find k nearest neighbours and calculate major class value. If this value
-            # is the same as the tested value then ok, else we made a mistake.
-            # In all possible permutations we choose the one that made the least mistakes
-            for i1 in range(len(curveData)):
-                neighbours = []
-                for i2 in range(len(curveData)):
-                    if i1 == i2: continue
-                    val = EuclDist([curveData[i1][0], curveData[i1][1]], [curveData[i2][0], curveData[i2][1]])
-                    addToList(neighbours, val, i2, kNeighbours);
-
-                # calculate the major class
-                classes = [0]*classValsCount
-                for (val, ind) in neighbours:
-                    classes[self.rawdata.domain[className].values.index(self.rawdata[ind][className].value)]+=1
-                max = 0
-                for val in classes:
-                    if max < val: max = val
+                # calculate sum for normalization
+                sum = 0
+                for val in prob: sum += val
                 
-                #classes.sort(); classes.reverse()
-                if classes.count(max) == 1:
-                    if self.rawdata[i1][className].value == list(self.rawdata.domain[className].values)[classes.index(max)]: tempPermValue+=1
-                else:
-                    count = classes.count(max)
-                    ind = list(self.rawdata.domain[className].values).index(self.rawdata[i1][className].value)
-                    if classes[ind] == max: tempPermValue += 1.0/float(count)
-            """
+                index = classValues.index(table[i].getclass().value)
+                tempPermValue += float(prob[index])/float(sum)
 
-            #for ind in permutation:
-            #    print self.rawdata.domain[ind].name
-            print "permutation value :", str(tempPermValue)
+            """
+            # to bo delalo, ko bo popravljen orangov kNNLearner
+            classValues = list(self.rawdata.domain[className].values)
+            print kNeighbours
+            knn = orange.kNNLearner(table, k=40)
+            print knn.k, len(table)
+            for j in range(len(table)):
+                out = knn(table[i], orange.GetProbabilities)
+                index = classValues.index(table[i][2].value)
+                if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
+            """
+            
+            print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (permutationIndex, totalPermutations, tempPermValue, tempPermValue*100.0/float(len(table)) )
 
             if tempPermValue > bestPermValue:
                 bestPermValue = tempPermValue
                 bestPerm = permutation
-                                                   
+
+            # save the permutation
+            tempList = []
+            for i in permutation:
+                tempList.append(self.attributeNames[i])
+            fullList.append((tempPermValue*100.0/float(len(table)), tempList))
+
         # return best permutation
         retList = []
         for i in bestPerm:
-            retList.append(self.scaledDataAttributes[i])
-        return (retList, bestPermValue)
+            retList.append(self.attributeNames[i])
+        return (retList, bestPermValue, fullList)
 
     def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours):
-        if attrList == []: return ([], 0)
-        (list1, v1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
-        subsetList.insert(0, attrList[0])
-        (list2, v2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
-        if (v1 > v2): return (list1, v1)
-        else:         return (list2, v2)
-    
+        if attrList == []:
+            if len(subsetList) < 2: return ([], 0, [])
+            return self.getOptimalSeparation(subsetList, className, kNeighbours)
+        (list1, v1, full1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
+        subsetList2 = copy(subsetList)
+        subsetList2.insert(0, attrList[0])
+        (list2, v2, full2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours)
+
+        # find max values in booth lists
+        full = full1 + full2
+        small = []
+        for i in range(min(100, len(full))):
+            (val, list) = max(full)
+            small.append((val, list))
+            full.remove((val, list))
+            
+        if (v1 > v2): return (list1, v1, small)
+        else:         return (list2, v2, small)
+
+
+
 if __name__== "__main__":
     #Draw a simple graph
     a = QApplication(sys.argv)        

@@ -19,12 +19,6 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.statusBar = statusBar
         self.tips.removeAll()
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
-        
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        self.setAxisScale(QwtPlot.yLeft, 0, len(self.rawdata), len(self.rawdata))
-        self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
-        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
         length = len(labels)
         indices = []
@@ -32,9 +26,23 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
-            index = self.scaledDataAttributes.index(label)
+            index = self.attributeNames.index(label)
             indices.append(index)
 
+        validData = [1] * len(self.rawdata)
+        for i in range(len(self.rawdata)):
+            for j in range(length):
+                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+        totalValid = 0
+        for val in validData: totalValid += val
+        
+        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
+        self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
+        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
+        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
+
+        
         # create a table of class values that will be used for coloring the lines
         scaledClassData = []
         if className != "(One color)":
@@ -50,7 +58,10 @@ class OWSurveyPlotGraph(OWVisGraph):
             
         xs = range(length)
         count = len(self.rawdata)
+        pos = 0
         for i in range(count):
+            if validData[i] == 0: continue
+            
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
             if scaledClassData != []:
@@ -63,14 +74,15 @@ class OWSurveyPlotGraph(OWVisGraph):
                 width = self.scaledData[indices[j]][i] * 0.45
                 xData.append(j-width)
                 xData.append(j+width)
-                yData.append(i)
-                yData.append(i+1)
+                yData.append(pos)
+                yData.append(pos+1)
 
             ##########
             # we add a tooltip for this point
-            r = QRectFloat(-0.5, i, length, 1)
+            r = QRectFloat(-0.5, pos, length, 1)
             text = self.getExampleText(self.rawdata, self.rawdata[i])
             self.tips.addToolTip(r, text)
+            pos += 1
             ##########
 
             ckey = self.insertCurve(curve)

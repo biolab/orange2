@@ -31,76 +31,34 @@ class OWScatterPlotGraph(OWVisGraph):
     def setShowAttributeValues(self, show):
         self.showAttributeValues = show
         
-    #
-    # scale data at index index to the interval 0 - 1
-    #
-    def scaleData(self, data, index):
-        attr = data.domain[index]
-        temp = [];
-        # is the attribute discrete
-        if attr.varType == orange.VarTypes.Discrete:
-            # we create a hash table of variable values and their indices
-            variableValueIndices = self.getVariableValueIndices(data, index)
-
-            count = float(len(attr.values))
-            for i in range(len(data)):
-                #val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count)
-                val = float(variableValueIndices[data[i][index].value]) / float(count)
-                temp.append(val)
-            return (temp, (0, count-1))
-
-                    
-        # is the attribute continuous
-        else:
-            # first find min and max value
-            i = 0
-            while data[i][attr].isSpecial() == 1: i+=1
-            min = data[i][attr].value
-            max = data[i][attr].value
-            for item in data:
-                if item[attr].isSpecial() == 1: continue
-                if item[attr].value < min:
-                    min = item[attr].value
-                elif item[attr].value > max:
-                    max = item[attr].value
-
-            diff = max - min
-            # create new list with values scaled from 0 to 1
-            for i in range(len(data)):
-                temp.append((data[i][attr].value - min) / diff)
-
-            return (temp, (min, max))
-
-    #
+    ########################################################
     # set new data and scale its values
-    #
     def setData(self, data):
-
         self.rawdata = data
+        self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.scaledData = []
-        self.scaledDataAttributes = []
+        self.attributeNames = []
         
         if data == None: return
 
         self.attrVariance = []
         for index in range(len(data.domain)):
             attr = data.domain[index]
-            self.scaledDataAttributes.append(attr.name)
-            (scaled, variance)= self.scaleData(data, index)
+            self.attributeNames.append(attr.name)
+            (scaled, variance)= self.scaleData(data, index, jitteringEnabled = 0)
             self.scaledData.append(scaled)
             self.attrVariance.append(variance)
 
 
-    #
+    #########################################################
     # update shown data. Set labels, coloring by className ....
-    #
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None):
         self.clear()
         self.enableLegend(0)
         self.statusBar = statusBar
 
-        (xVarMin, xVarMax) = self.attrVariance[self.scaledDataAttributes.index(xAttr)]
-        (yVarMin, yVarMax) = self.attrVariance[self.scaledDataAttributes.index(yAttr)]
+        (xVarMin, xVarMax) = self.attrVariance[self.attributeNames.index(xAttr)]
+        (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
         MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
@@ -139,18 +97,20 @@ class OWScatterPlotGraph(OWVisGraph):
         
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
-            colorIndex = self.scaledDataAttributes.index(colorAttr)
             if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: MAX_HUE_VAL = 360
+            colorIndex = self.attributeNames.index(colorAttr)
+            (colorData, vals) = self.scaleData(self.rawdata, colorIndex, forColoring = 1)
+            
 
         shapeIndex = -1
         shapeIndices = {}
         if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
-            shapeIndex = self.scaledDataAttributes.index(shapeAttr)
+            shapeIndex = self.attributeNames.index(shapeAttr)
             shapeIndices = self.getVariableValueIndices(self.rawdata, shapeAttr)
 
         sizeShapeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
-            sizeShapeIndex = self.scaledDataAttributes.index(sizeShapeAttr)
+            sizeShapeIndex = self.attributeNames.index(sizeShapeAttr)
 
         shapeList = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.Triangle, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.Cross, QwtSymbol.XCross, QwtSymbol.StyleCnt]
 
@@ -170,6 +130,12 @@ class OWScatterPlotGraph(OWVisGraph):
         
         self.curveKeys = []
         for i in range(len(self.rawdata)):
+            if self.rawdata[i][xAttr].isSpecial() == 1: continue
+            if self.rawdata[i][yAttr].isSpecial() == 1: continue
+            if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
+            if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
+            if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
+            
             if discreteX == 1:
                 x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
             elif self.jitterContinuous == 1:
@@ -186,8 +152,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
             newColor = QColor(0,0,0)
             if colorIndex != -1:
-                newColor.setHsv(self.scaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
-
+                #newColor.setHsv(self.scaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
+                newColor.setHsv(colorData[i]*MAX_HUE_VAL, 255, 255)
+                
             symbol = shapeList[0]
             if shapeIndex != -1:
                 symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
@@ -251,6 +218,75 @@ class OWScatterPlotGraph(OWVisGraph):
         # -----------------------------------------------------------
         # -----------------------------------------------------------
         
+    def getOptimalSeparation(self, attrCount, className, kNeighbours):
+        if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
+            print "incorrect class name for computing optimal ordering"
+            return None
+
+        # define lenghts and variables
+        dataSize = len(self.rawdata)
+        attrCount = len(self.rawdata.domain.attributes)
+        classValsCount = len(self.rawdata.domain[className].values)
+
+        fullList = []
+        tempValue= 0
+        testIndex = 0
+        totalTestCount = attrCount * (attrCount-1) / 2.0
+
+        # variables and domain for the table
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+
+        classValues = list(self.rawdata.domain[className].values)
+        classValNum = len(classValues)
+
+        for x in range(attrCount):
+            for y in range(x+1, attrCount):
+                testIndex += 1
+                tempValue = 0
+                table = orange.ExampleTable(domain)
+
+                for i in range(dataSize):
+                    xValue = self.noJitteringScaledData[x][i]
+                    yValue = self.noJitteringScaledData[y][i]
+                    if xValue == '?' or yValue == '?': continue
+                    
+                    example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
+                    table.append(example)
+
+                #orange.saveTabDelimited("E:\\temp\\data.tab", table)
+
+                exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
+                near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
+                euclidean = orange.ExamplesDistance_Euclidean()
+                euclidean.normalizers = [1,1]   # our table has attributes x,y, and class
+                for i in range(len(table)):
+                    prob = [0]*classValNum
+                    neighbours = near(kNeighbours, table[i])
+                    for neighbour in neighbours:
+                        dist = euclidean(table[i], neighbour)
+                        val = math.exp(-(dist*dist))
+                        index = classValues.index(neighbour.getclass().value)
+                        prob[index] += val
+
+                    # calculate sum for normalization
+                    sum = 0
+                    for val in prob: sum += val
+                    
+                    index = classValues.index(table[i].getclass().value)
+                    tempValue += float(prob[index])/float(sum)
+
+                print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (testIndex, totalTestCount, tempValue, tempValue*100.0/float(len(table)) )
+
+                # save the permutation
+                tempList = [self.attributeNames[x], self.attributeNames[y]]
+                fullList.append((tempValue*100.0/float(len(table)), tempList))
+
+        # return best permutation
+        (bestVal, bestList) = max(fullList)
+        return (bestList, bestVal, fullList)
+
     
 if __name__== "__main__":
     #Draw a simple graph
