@@ -21,7 +21,7 @@ import OWGUI
 ##############################################################################
 
 class OWNaiveBayes(OWWidget):
-    settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation"]
+    settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation", "adjustThreshold"]
     
     def __init__(self, parent=None, name='NaiveBayes'):
         OWWidget.__init__(self, parent, name, "Constructs a Naive Bayesian learner, or,\nif given a data set, Naive Bayesian classifier.")
@@ -35,6 +35,7 @@ class OWNaiveBayes(OWWidget):
         self.probEstimation = 0             # relative frequency
         self.condProbEstimation = 0         # relative frequency
         self.condProbContEstimation = 0     # relative frequency
+        self.adjustThreshold = 0            # adjust threshold (for binary classes)
 
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
@@ -82,6 +83,10 @@ class OWNaiveBayes(OWWidget):
         self.refreshControls()
 
         OWGUI.separator(self.controlArea)
+
+        OWGUI.checkBox(self.controlArea, self, "adjustThreshold", "Adjust threshold (for binary classes)", box = "Threshold")
+        
+        OWGUI.separator(self.controlArea)
         self.applyBtn = OWGUI.button(self.controlArea, self, "&Apply", callback=self.setLearner)
         
         self.resize(150,100)
@@ -114,7 +119,9 @@ class OWNaiveBayes(OWWidget):
                 setattr(self.learner, attr, cons)
                 if hasattr(cons, "m"):
                     setattr(cons, "m", float(self.m))
-                    
+
+        self.learner.adjustThreshold = self.adjustThreshold
+        
         self.send("Learner", self.learner)
         if self.data <> None:
             try:
