@@ -320,7 +320,7 @@ class AttributeRedundanciesRemover:
 
     for attr in ordered:
       newattr = inducer(data, [attr], weight)[0]
-      if len(newattr.values) < len(attr.values):
+      if len(newattr.values)==1 or (not self.noMinimization and (len(newattr.values) < len(attr.values))):
         newset = filter(lambda x: x!=attr, data.domain.attributes)
         if len(newattr.values)>1:
           newset.append(newattr)
