@@ -31,13 +31,13 @@
 
 #include "../external/c45/defns.i"
 
+DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
+
 #ifdef _MSC_VER
 
 #ifdef IGNORE
 #undef IGNORE
 #endif
-
-DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
 
 //#include "../../external/c45/c45.h"
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
