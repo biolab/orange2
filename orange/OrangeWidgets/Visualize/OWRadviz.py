@@ -251,7 +251,7 @@ class OWRadviz(OWWidget):
             self.graph.triedPossibilities = 0
         
             if self.graph.totalPossibilities > 20000:
-                res = QMessageBox.information(self,'Radviz','There are %d possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?','Yes','No', QString.null,0,1)
+                res = QMessageBox.information(self,'Radviz','There are %d possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (self.graph.totalPossibilities),'Yes','No', QString.null,0,1)
                 if res == 0: return []
             
             self.progressBarInit()
