@@ -78,7 +78,7 @@ bininstall:
 	$(INSTALL_DATA) ../*.pyc $(DESTDIR)
 	$(INSTALL_DATA) ../COPYING $(DESTDIR)
 	$(INSTALL_SHARED) ../*.so $(DESTDIR)
-	$(INSTALL_DATA) orange.pth $(PYTHONSITEPKGS)/..
+	$(INSTALL_DATA) orange.pth $(DESTDIR)/..
 	$(INSTALL_SCRIPT) canvas $(SCRIPTDIR)
 	cd $(DESTDIR)/OrangeCanvas; \
 	python xmlParse.py
