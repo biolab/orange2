@@ -43,6 +43,7 @@ import orng2Array
 import orngCRS
 import math
 
+MAX_EXP = 100
 
 # BEWARE: these routines do not work with orange tables and are not orange-compatible
 class BLogisticLearner(orange.Learner):
@@ -104,9 +105,9 @@ class BLogisticClassifier(orange.Classifier):
         for i in range(len(self.beta)-1):
             sum = sum + example[i]*self.beta[i+1]
         # print sum, example
-        if sum > 10000:
+        if sum > MAX_EXP:
             return (1,1.0)
-        elif sum < -10000:
+        elif sum < -MAX_EXP:
             return (0,1.0)
         else:
             sum = math.exp(sum)
@@ -358,9 +359,9 @@ class BasicBayesClassifier(orange.Classifier):
         sum = -self.getmargin(example)
 
         # print sum, example
-        if sum > 10000:
+        if sum > MAX_EXP:
             r = (1,1.0)
-        elif sum < -10000:
+        elif sum < -MAX_EXP:
             r = (0,1.0)
         else:
             sum = math.exp(sum)
