@@ -5,6 +5,11 @@
 
 from OWVisGraph import *
 
+DONT_SHOW_TOOLTIPS = 0
+VISIBLE_ATTRIBUTES = 1
+ALL_ATTRIBUTES = 2
+
+
 class OWSurveyPlotGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
@@ -13,19 +18,24 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.selectedRectangle = 0
         self.exampleTracking = 1
         self.length = 0 # number of shown attributes - we need it also in mouse movement
-        self.enabledLegend = 0 
+        self.enabledLegend = 0
+        self.tooltipKind = 1
+        self.yDataIndices = []  # array of indices that show the index in self.rawdata - if there are no missing values then array[i] = i
+        self.attrLabels = []
         
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, statusBar = None):
-        self.statusBar = statusBar
+    def updateData(self, labels):
         self.removeCurves()
         self.tips.removeAll()
-        
+
+        self.attrLabels = labels        
         self.length = len(labels)
         indices = []
         xs = []
+        #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
+
 
         if len(self.scaledData) == 0 or len(labels) == 0:
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
@@ -65,6 +75,8 @@ class OWSurveyPlotGraph(OWVisGraph):
         xs = range(self.length)
         count = len(self.rawdata)
         pos = 0
+        self.yDataIndices = []
+        
         for i in range(count):
             if validData[i] == 0: continue
             
@@ -81,12 +93,8 @@ class OWSurveyPlotGraph(OWVisGraph):
                 yData += [pos, pos+1]
 
             ##########
-            # we add a tooltip for this point
-            r = QRectFloat(-0.5, pos, self.length, 1)
-            text = self.getExampleText(self.rawdata, self.rawdata[i])
-            self.tips.addToolTip(r, text)
             pos += 1
-            ##########
+            self.yDataIndices.append(pos)
 
             ckey = self.insertCurve(curve)
             self.setCurveStyle(ckey, QwtCurve.UserCurve)
@@ -102,22 +110,37 @@ class OWSurveyPlotGraph(OWVisGraph):
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):
-        if self.mouseCurrentlyPressed or not self.rawdata: return
-        else:
-            self.hideSelectedRectangle()
-            if not self.exampleTracking:
-                OWVisGraph.onMouseMoved(self, e)
-                self.replot()
-                return
-            width = 0.49
-            y = floor(self.invTransform(QwtPlot.yLeft, e.y()))
-            xData = [-width, self.length+width-1, self.length+width-1, -width, -width]
-            yData = [y, y, y+1, y+1, y]
-            self.selectedRectangle = self.insertCurve("test")
-            self.setCurveData(self.selectedRectangle, xData, yData)
-            self.setCurveStyle(self.selectedRectangle, QwtCurve.Lines)
+        self.hideSelectedRectangle()
+        if self.mouseCurrentlyPressed:
             OWVisGraph.onMouseMoved(self, e)
-            self.replot()
+        elif not self.rawdata:
+            return
+        else:
+            yFloat = floor(self.invTransform(QwtPlot.yLeft, e.y()))
+            if self.exampleTracking:
+                width = 0.49
+                xData = [-width, self.length+width-1, self.length+width-1, -width, -width]
+                yData = [yFloat, yFloat, yFloat+1, yFloat+1, yFloat]
+                self.selectedRectangle = self.insertCurve("test")
+                self.setCurveData(self.selectedRectangle, xData, yData)
+                self.setCurveStyle(self.selectedRectangle, QwtCurve.Lines)
+                self.replot()
+            else:
+                OWVisGraph.onMouseMoved(self, e)
+
+            if (self.tooltipKind == VISIBLE_ATTRIBUTES and self.attrLabels != []) or self.tooltipKind == ALL_ATTRIBUTES:
+                if int(yFloat) >= len(self.rawdata): return
+                if self.tooltipKind == VISIBLE_ATTRIBUTES:
+                    text = self.getShortExampleText(self.rawdata, self.rawdata[int(yFloat)], self.attrLabels)
+                else:
+                    text = self.getShortExampleText(self.rawdata, self.rawdata[int(yFloat)], [attr.name for attr in self.rawdata.domain])
+                y1Int = self.transform(QwtPlot.yLeft, yFloat)
+                y2Int = self.transform(QwtPlot.yLeft, yFloat+1.0)
+                MyQToolTip.tip(self.tooltip, QRect(e.x()+self.canvas().frameGeometry().x()-10, y2Int+self.canvas().frameGeometry().y(), 20, y1Int-y2Int), text[:-2].replace("; ", "\n"))
+                OWVisGraph.onMouseMoved(self, e)
+
+            
+            
 
     def hideSelectedRectangle(self):
         if self.selectedRectangle != 0:

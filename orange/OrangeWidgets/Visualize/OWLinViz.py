@@ -60,14 +60,10 @@ class OWLinViz(OWWidget):
              
     def setScaleFactor(self, n):
         self.scaleFactor = float(self.scaleFactorList[n])
-        self.graph.setScaleFactor(self.scaleFactor)
+        self.graph.scaleFactor = self.scaleFactor
         self.updateGraph()
 
-    def setPointWidth(self, n):
-        self.pointWidth = n
-        self.graph.setPointWidth(n)
-        self.updateGraph()
-        
+       
     # jittering options
     def setSpreadType(self, n):
         self.jitteringType = self.spreadType[n]
@@ -78,7 +74,7 @@ class OWLinViz(OWWidget):
     # jittering options
     def setJitteringSize(self, n):
         self.jitterSize = self.jitterSizeNums[n]
-        self.graph.setJitterSize(self.jitterSize)
+        self.graph.jitterSize = self.jitterSize
         self.graph.setData(self.data)
         self.updateGraph()
 

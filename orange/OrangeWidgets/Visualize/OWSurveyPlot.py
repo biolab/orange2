@@ -13,15 +13,15 @@
 from OWWidget import *
 from OWSurveyPlotGraph import *
 import OWVisAttrSelection
-
+import OWGUI
            
 ###########################################################################################
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "exampleTracking", "showLegend"]
-    attributeContOrder = ["None","ReliefF","Correlation"]
-    attributeDiscOrder = ["None","ReliefF","GainRatio","Gini", "Oblivious decision graphs"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "exampleTracking", "showLegend", "tooltipKind"]
+    attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
+    attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
 
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE, icon = "SurveyPlot.png")
@@ -30,13 +30,13 @@ class OWSurveyPlot(OWWidget):
         self.outputs = [("Selection", list)] 
 
         #set default settings
-        self.attrDiscOrder = "ReliefF"
-        self.attrContOrder = "ReliefF"
-        self.GraphCanvasColor = str(Qt.white.name())
         self.data = None
         self.globalValueScaling = 0
         self.exampleTracking = 1
         self.showLegend = 1
+        self.attrDiscOrder = "None"
+        self.attrContOrder = "None"
+        self.tooltipKind = 1
         self.graphCanvasColor = str(Qt.white.name())
 
         #load settings
@@ -45,18 +45,10 @@ class OWSurveyPlot(OWWidget):
         #GUI
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = OWSurveyPlotOptions(self, "Settings")
+        self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
-        #connect settingsbutton to show options
-        self.connect(self.SettingsTab.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
-        self.connect(self.SettingsTab.exampleTracking, SIGNAL("toggled(bool)"), self.setExampleTracking)
-        self.connect(self.SettingsTab.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
-        self.connect(self.SettingsTab.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
-        self.connect(self.SettingsTab.showLegend, SIGNAL("toggled(bool)"), self.setLegend)
-        self.connect(self.SettingsTab, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
-        
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWSurveyPlotGraph(self.mainArea)
@@ -105,9 +97,24 @@ class OWSurveyPlot(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        self.statusBar = QStatusBar(self.mainArea)
-        self.box.addWidget(self.statusBar)
-        
+        # ##################################
+        # survey plot settings
+        # ####
+        box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
+        OWGUI.checkBox(box, self, "globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
+        OWGUI.checkBox(box, self, "exampleTracking", "Enable example tracking", callback = self.updateValues)
+        OWGUI.checkBox(box, self, "showLegend", "Show legend", callback = self.updateValues)
+
+        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+
+        box = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
+        OWGUI.comboBox(box, self, "tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
+
+
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(700,700)
@@ -116,60 +123,13 @@ class OWSurveyPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.SettingsTab.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
-        self.SettingsTab.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
-        self.SettingsTab.globalValueScaling.setChecked(self.globalValueScaling)
-        self.SettingsTab.showLegend.setChecked(self.showLegend)
-        self.SettingsTab.exampleTracking.setChecked(self.exampleTracking)
-
-        self.graph.updateSettings(enabledLegend = self.showLegend)        
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.updateSettings(exampleTracking = self.exampleTracking)
+        self.graph.exampleTracking = self.exampleTracking
+        self.graph.enabledLegend = self.showLegend
+        self.graph.globalValueScaling = self.globalValueScaling
+        self.graph.tooltipKind = self.tooltipKind
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
-
-    # just tell the graph to hide the selected rectangle
-    def enterEvent(self, e):
-        self.graph.hideSelectedRectangle()
-        self.graph.replot()
-
-    # continuous attribute ordering
-    def setAttrContOrderType(self, n):
-        self.attrContOrder = self.attributeContOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
-    # discrete attribute ordering
-    def setAttrDiscOrderType(self, n):
-        self.attrDiscOrder = self.attributeDiscOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
-    def setGlobalValueScaling(self, b):
-        self.globalValueScaling = b
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setData(self.data)
-
-        # this is not optimal, because we do the rescaling twice (TO DO)
-        if self.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-
-        self.updateGraph()
-
-    def setExampleTracking(self, b):
-        self.exampleTracking = b
-        self.graph.updateSettings(exampleTracking = b)
         
-    def setCanvasColor(self, c):
-        self.GraphCanvasColor = c
-        self.graph.setCanvasColor(c)
 
-    def setLegend(self, b):
-        self.showLegend = b
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.updateGraph()
-        
     # ####################
     # LIST BOX FUNCTIONS
     # ####################
@@ -244,7 +204,7 @@ class OWSurveyPlot(OWWidget):
         return data
         
     def updateGraph(self, *args):
-        self.graph.updateData(self.getShownAttributeList(), self.statusBar)
+        self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
         self.repaint()
 
@@ -324,48 +284,31 @@ class OWSurveyPlot(OWWidget):
         self.updateGraph()
     #################################################
 
-class OWSurveyPlotOptions(QVGroupBox):
-    def __init__(self,parent=None,name=None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
+    def updateValues(self):
+        self.graph.exampleTracking = self.exampleTracking
+        self.graph.enabledLegend = self.showLegend
+        self.graph.tooltipKind = self.tooltipKind
+        self.updateGraph()
 
-        # ####
-        # attribute value scaling
-        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self)
-        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
+    # update attribute ordering
+    def updateShownAttributeList(self):
+        self.setShownAttributeList(self.data)
+        self.updateGraph()
 
-        # ####
-        # visual settings
-        self.visualSettingsButtons = QVButtonGroup("Visual settings", self)
-        self.exampleTracking = QCheckBox("Enable example tracking", self.visualSettingsButtons)
-        self.showLegend = QCheckBox('show legend', self.visualSettingsButtons)
-        
+    # just tell the graph to hide the selected rectangle
+    def enterEvent(self, e):
+        self.graph.hideSelectedRectangle()
+        self.graph.replot()
 
-        # ####        
-        # continuous attribute ordering
-        self.attrContButtons = QVButtonGroup("Continuous attribute ordering", self)
-        QToolTip.add(self.attrContButtons, "Select the measure for continuous attribute ordering")
-        self.attrContButtons.setExclusive(TRUE)
-        
-        self.attrContNone = QRadioButton('None', self.attrContButtons)
-        self.attrContRelieF = QRadioButton('ReliefF', self.attrContButtons)
-        self.attrCorrelation = QRadioButton('Correlation', self.attrContButtons)
+    def setGlobalValueScaling(self):
+        self.graph.globalValueScaling = self.globalValueScaling
+        self.graph.setData(self.data)
 
-        # ####
-        # discrete attribute ordering
-        self.attrDiscButtons = QVButtonGroup("Discrete attribute ordering", self)
-        QToolTip.add(self.attrDiscButtons, "Select the measure for discrete attribute ordering")
-        self.attrDiscButtons.setExclusive(TRUE)
+        # this is not optimal, because we do the rescaling twice (TO DO)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
 
-        self.attrDiscNone = QRadioButton('None', self.attrDiscButtons)
-        self.attrDiscRelieF = QRadioButton('ReliefF', self.attrDiscButtons)
-        self.attrDiscGainRatio = QRadioButton('GainRatio', self.attrDiscButtons)
-        self.attrDiscGini = QRadioButton('Gini', self.attrDiscButtons)
-        self.attrDiscFD   = QRadioButton('Oblivious decision graphs', self.attrDiscButtons)
-
-        # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+        self.updateGraph()
 
     def setGraphCanvasColor(self):
         newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))

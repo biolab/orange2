@@ -21,7 +21,7 @@ from sys import getrecursionlimit, setrecursionlimit
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -43,7 +43,6 @@ class OWParallelCoordinates(OWWidget):
         self.showDistributions = 1
         self.showAttrValues = 1
         self.hidePureExamples = 1
-        self.showCorrelations = 1
         
         self.globalValueScaling = 0
         self.useSplines = 0
@@ -134,12 +133,12 @@ class OWParallelCoordinates(OWWidget):
         # ####
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setDistributions, tooltip = "Show bars with distribution of class values")
-        OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.setAttrValues)
-        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.setHidePureExamples, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
-        OWGUI.checkBox(box, self, 'useSplines', 'Show splines', callback = self.setUseSplines, tooltip  = "Show lines using splines")
-        OWGUI.checkBox(box, self, 'lineTracking', 'Line tracking', callback = self.setLineTracking, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
-        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setLegend)
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values")
+        OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
+        OWGUI.checkBox(box, self, 'useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
+        OWGUI.checkBox(box, self, 'lineTracking', 'Line tracking', callback = self.updateValues, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
+        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
         
         
@@ -168,10 +167,11 @@ class OWParallelCoordinates(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         self.graph.updateSettings(enabledLegend = self.showLegend, useSplines = self.useSplines, lineTracking = self.lineTracking)
-        self.graph.setShowDistributions(self.showDistributions)
-        self.graph.setShowAttrValues(self.showAttrValues)
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setJitterSize(self.jitterSize)
+        self.graph.showDistributions = self.showDistributions
+        self.graph.showAttrValues = self.showAttrValues
+        self.graph.hidePureExamples = self.hidePureExamples
+        self.graph.globalValueScaling = self.globalValueScaling
+        self.graph.jitterSize = self.jitterSize
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
 
     # send signals with selected and unselected examples as two datasets
@@ -414,6 +414,12 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
     #################################################
 
+    def updateValues(self):
+        self.isResizing = 0
+        self.graph.updateSettings(showDistributions = self.showDistributions, useSplines = self.useSplines, enabledLegend = self.showLegend, lineTracking = self.lineTracking)
+        self.graph.showAttrValues = self.showAttrValues
+        self.graph.hidePureExamples = self.hidePureExamples
+        self.updateGraph()
 
     def resizeEvent(self, e):
         self.isResizing = 1
@@ -421,47 +427,22 @@ class OWParallelCoordinates(OWWidget):
 
     # jittering options
     def setJitteringSize(self):
-        self.graph.setJitterSize(self.jitterSize)
+        self.isResizing = 0
+        self.graph.jitterSize = self.jitterSize
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setDistributions(self):
-        self.graph.updateSettings(showDistributions = self.showDistributions)
-        self.updateGraph()
-
-    def setAttrValues(self):
-        self.graph.setShowAttrValues(self.showAttrValues)
-        self.updateGraph()
-
-    def setHidePureExamples(self):
-        self.graph.setHidePureExamples(self.hidePureExamples)
-        self.updateGraph()
-        
-    def setShowCorrelations(self):
-        self.graph.setShowCorrelations(self.showCorrelations)
-        self.updateGraph()
-
-    def setUseSplines(self):
-        self.graph.updateSettings(useSplines = self.useSplines)
-        self.updateGraph()
-
-    def setLegend(self):
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.updateGraph()
-
-    def setLineTracking(self):
-        self.graph.updateSettings(lineTracking = self.lineTracking)
-        self.updateGraph()
-
     def setGlobalValueScaling(self):
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.isResizing = 0
+        self.graph.globalValueScaling = self.globalValueScaling
         self.graph.setData(self.data)
         if self.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
-    # continuous attribute ordering
+    # update attribute ordering
     def updateShownAttributeList(self):
+        self.isResizing = 0
         self.setShownAttributeList(self.data)
         self.updateGraph()
 

@@ -41,6 +41,7 @@ class OWScatterPlot(OWWidget):
         self.showLegend = 1
         self.showDistributions = 0
         self.optimizedDrawing = 1
+        self.tooltipKind = 1
         
         self.jitterContinuous = 0
         self.jitterSize = 5
@@ -122,15 +123,15 @@ class OWScatterPlot(OWWidget):
         # SETTINGS TAB
 
         # point width
-        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point Width', minValue=1, maxValue=20, step=1, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point Width', minValue=1, maxValue=20, step=1, callback = self.updateValues, ticks=1)
 
         # #####
         # jittering options
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box2)
-        self.jitterSizeCombo = OWGUI.comboBox(box2, self, "jitterSize", callback = self.setJitterSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
-        OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.setJitterCont, tooltip = "Does jittering apply also on continuous attributes?")
+        self.jitterSizeCombo = OWGUI.comboBox(box2, self, "jitterSize", callback = self.updateValues, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.updateValues, tooltip = "Does jittering apply also on continuous attributes?")
         
         # general graph settings
         box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
@@ -138,10 +139,13 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box, self, 'showYAxisTitle', 'Y axis title', callback = self.updateAxisTitle)
         OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
         OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
-        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setShowDistributions, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
-        OWGUI.checkBox(box, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setFilledSymbols)
-        OWGUI.checkBox(box, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
+        OWGUI.checkBox(box, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
+        OWGUI.comboBox(box3, self, "tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
 
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
@@ -151,9 +155,6 @@ class OWScatterPlot(OWWidget):
         self.connect(self.gSetGridColorB, SIGNAL("clicked()"), self.setGraphGridColor)
         self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
         
-        self.statusBar = QStatusBar(self.mainArea)
-        self.box.addWidget(self.statusBar)
-
         self.activateLoadedSettings()
         self.resize(900, 700)
 
@@ -162,17 +163,15 @@ class OWScatterPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.setPointWidth(self.pointWidth)
-        self.graph.setJitterSize(self.jitterSize)
+        self.graph.pointWidth = self.pointWidth
+        self.graph.jitterSize = self.jitterSize
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.graph.enableGridXB(self.showVerticalGridlines)
         self.graph.enableGridYL(self.showHorizontalGridlines)
 
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.graph.updateSettings(showDistributions = self.showDistributions)
-        self.graph.updateSettings(jitterContinuous = self.jitterContinuous)
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
+        self.graph.updateSettings(enabledLegend = self.showLegend, showDistributions = self.showDistributions)
+        self.graph.updateSettings(jitterContinuous = self.jitterContinuous, showFilledSymbols = self.showFilledSymbols, tooltipKind = self.tooltipKind)
         
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
@@ -197,13 +196,13 @@ class OWScatterPlot(OWWidget):
          
     # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
     def showKNNCorect(self):
-        self.graph.updateData(self.attrX, self.attrY, "", "", "", 0, self.statusBar, showKNNModel = 1, showCorrect = 1)
+        self.graph.updateData(self.attrX, self.attrY, "", "", "", 0, showKNNModel = 1, showCorrect = 1)
         self.graph.update()
         self.repaint()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
-        self.graph.updateData(self.attrX, self.attrY, "", "", "", 0, self.statusBar, showKNNModel = 1, showCorrect = 0)
+        self.graph.updateData(self.attrX, self.attrY, "", "", "", 0, showKNNModel = 1, showCorrect = 0)
         self.graph.update()
         self.repaint()
 
@@ -343,7 +342,7 @@ class OWScatterPlot(OWWidget):
         self.updateGraph()
 
     def updateGraph(self, *args):
-        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.statusBar)
+        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend)
         self.graph.repaint()
 
     # send signals with selected and unselected examples as two datasets
@@ -386,40 +385,28 @@ class OWScatterPlot(OWWidget):
     # #######################################
     # SCATTERPLOT SETTINGS
     # #######################################
+
+    def updateValues(self):
+        self.graph.jitterSize = self.jitterSize
+        self.graph.showFilledSymbols = self.showFilledSymbols
+        self.graph.pointWidth = self.pointWidth
+        self.graph.jitterContinuous = self.jitterContinuous
+        self.graph.enabledLegend = self.showLegend
+        self.graph.showDistributions = self.showDistributions
+        self.graph.optimizedDrawing = self.optimizedDrawing
+        self.graph.tooltipKind = self.tooltipKind
+        self.updateGraph()
+        
     def updateAxisTitle(self):
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.updateGraph()
-    
+
     def setVerticalGridlines(self):
         self.graph.enableGridXB(self.showVerticalGridlines)
 
     def setHorizontalGridlines(self):
         self.graph.enableGridYL(self.showHorizontalGridlines)
-
-    def setJitterCont(self):
-        self.graph.updateSettings(jitterContinuous = self.jitterContinuous)
-        self.updateGraph()
-
-    def setJitterSize(self):
-        self.graph.setJitterSize(self.jitterSize)
-        self.updateGraph()
-
-    def setFilledSymbols(self):
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        self.updateGraph()
-
-    def setPointWidth(self):
-        self.graph.setPointWidth(self.pointWidth)
-        self.updateGraph()
-
-    def setShowLegend(self):
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.updateGraph()
-
-    def setShowDistributions(self):
-        self.graph.updateSettings(showDistributions = self.showDistributions)
-        self.updateGraph()
 
     def setAutoSendSelection(self):
         if self.autoSendSelection:
@@ -427,10 +414,6 @@ class OWScatterPlot(OWWidget):
             self.sendSelections()
         else:
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-
-    def setOptmizedDrawing(self):
-        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
-        self.updateGraph() 
 
     def setGraphCanvasColor(self):
         newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
@@ -443,8 +426,6 @@ class OWScatterPlot(OWWidget):
         if newColor.isValid():
             self.graphGridColor = str(newColor.name())
             self.graph.setGridColor(newColor)
-
-
 
 
 #test widget appearance

@@ -13,8 +13,6 @@ from LinearAlgebra import *
 from statc import pearsonr
 
 
-
-
 class OWParallelGraph(OWVisGraph):
     def __init__(self, parallelDlg, parent = None, name = None):
         "Constructs the graph"
@@ -23,7 +21,6 @@ class OWParallelGraph(OWVisGraph):
         self.parallelDlg = parallelDlg
         self.showDistributions = 0
         self.hidePureExamples = 1
-        self.showCorrelations = 1
         self.metaid = -1
         self.toolInfo = []
         self.toolRects = []
@@ -34,17 +31,6 @@ class OWParallelGraph(OWVisGraph):
         self.lineTracking = 0
         self.dataKeys = []
         
-    def setShowDistributions(self, showDistributions):
-        self.showDistributions = showDistributions
-
-    def setShowAttrValues(self, showAttrValues):
-        self.showAttrValues = showAttrValues
-
-    def setHidePureExamples(self, hide):
-        self.hidePureExamples = hide
-
-    def setShowCorrelations(self, show):
-        self.showCorrelations = show
 
     def setData(self, data):
         OWVisGraph.setData(self, data)
@@ -70,11 +56,12 @@ class OWParallelGraph(OWVisGraph):
             return
 
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
-            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
+            #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
+            self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)   # changed because of qwtplot's bug. only every second attribute label was shown is -0.5 was used
         else:
             self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
 
-        if self.showAttrValues or self.showCorrelations:
+        if self.showAttrValues or midLabels:
             self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
         else:
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
@@ -98,7 +85,8 @@ class OWParallelGraph(OWVisGraph):
 
         xs = range(length)
         dataSize = len(self.scaledData[0])
-        continuousClass = (self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
+        continuousClass = (self.rawdata.domain.classVar != None and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
+        
         if not continuousClass and self.rawdata.domain.classVar:
             colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
@@ -425,10 +413,8 @@ class OWParallelGraph(OWVisGraph):
                     ind = self.dataKeys.index(key)
                     colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
                     classValueSorted  = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-                    
                     self.setCurvePen(key, QPen(colorPalette[classValueSorted.index(self.rawdata[ind].getclass().value)], 3))
                     self.lastSelectedKey = key
-
             else:
                 OWVisGraph.onMouseMoved(self, e)
                 return

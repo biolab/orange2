@@ -23,7 +23,7 @@ import OWToolbars
 ###########################################################################################
 class OWPolyviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "useDifferentColors"]
+    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "useDifferentColors", "tooltipKind", "tooltipValue"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -51,6 +51,8 @@ class OWPolyviz(OWWidget):
         self.autoSendSelection = 1
         self.sendShownAttributes = 0
         self.rotateAttributes = 0
+        self.tooltipKind = 0
+        self.tooltipValue = 0
         self.graphCanvasColor = str(Qt.white.name())
         
         self.data = None
@@ -108,26 +110,30 @@ class OWPolyviz(OWWidget):
         # ####################################
         # SETTINGS TAB
         # #####
-        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback=self.setPointWidth, ticks=1)
-        OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box='Line length', minValue=1, maxValue=5, step=1, callback=self.setLineLength, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback = self.updateValues, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box='Line length', minValue=1, maxValue=5, step=1, callback = self.updateValues, ticks=1)
 
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
         OWGUI.comboBoxWithCaption(box, self, "jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
 
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.setScaleFactor, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.updateValues, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
-        OWGUI.checkBox(box2, self, 'enhancedTooltips', 'Use enhanced tooltips', callback = self.setEnhancedTooltips)
-        OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
+        OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.updateValues)
         OWGUI.checkBox(box2, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling, tooltip = "Scale values of all attributes based on min and max value of all attributes. Usually unchecked.")
-        OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
-        OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.setDifferentSymbols, tooltip = "Show different class values using different symbols")
-        OWGUI.checkBox(box2, self, 'useDifferentColors', 'Use different colors', callback = self.setDifferentColors, tooltip = "Show different class values using different colors")
-        OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setShowFilledSymbols)
+        OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.updateValues, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box2, self, 'useDifferentColors', 'Use different colors', callback = self.updateValues, tooltip = "Show different class values using different colors")
+        OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
 
-        box3 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
-        OWGUI.checkBox(box3, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
-        OWGUI.checkBox(box3, self, 'sendShownAttributes', 'Send only shown attributes')
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
+        OWGUI.comboBox(box3, self, "tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
+        OWGUI.comboBox(box3, self, "tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateValues, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
+
+
+        box4 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(box4, self, 'sendShownAttributes', 'Send only shown attributes')
 
         # ####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
@@ -167,14 +173,15 @@ class OWPolyviz(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        self.graph.setPointWidth(self.pointWidth)
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setJitterSize(self.jitterSize)
-        self.graph.setScaleFactor(self.scaleFactor)
+        self.graph.pointWidth = self.pointWidth
+        self.graph.globalValueScaling = self.globalValueScaling
+        self.graph.jitterSize = self.jitterSize
+        self.graph.scaleFactor = self.scaleFactor
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.useDifferentSymbols = self.useDifferentSymbols
         self.graph.useDifferentColors = self.useDifferentColors
+        self.graph.tooltipKind = self.tooltipKind
+        self.graph.tooltipValue = self.tooltipValue
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -205,12 +212,14 @@ class OWPolyviz(OWWidget):
     # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
     def showKNNCorect(self):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 1)
-        #self.repaint()
+        self.graph.update()
+        self.repaint()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 0)
-        #self.repaint()
+        self.graph.update()
+        self.repaint()
         
     # reevaluate projections in result list with different k values
     def reevaluateProjections(self):
@@ -549,50 +558,20 @@ class OWPolyviz(OWWidget):
     # #########################
     # POLYVIZ EVENTS
     # #########################
-    def setPointWidth(self):
-        self.graph.setPointWidth(self.pointWidth)
-        self.updateGraph()
-
-    def setLineLength(self):
+    def updateValues(self):
         self.graph.setLineLength(self.lineLength)
+        self.graph.updateSettings(pointWidth = self.pointWidth, showFilledSymbols = self.showFilledSymbols, useDifferentSymbols = self.useDifferentSymbols)
+        self.graph.updateSettings(useDifferentColors = self.useDifferentColors, showLegend = self.showLegend, optimizedDrawing = self.optimizedDrawing, scaleFactor = self.scaleFactor)
+        self.graph.updateSettings(tooltipKind = self.tooltipKind, tooltipValue = self.tooltipValue)
         self.updateGraph()
-
+    
     def setJitteringSize(self):
-        self.graph.setJitterSize(self.jitterSize)
+        self.graph.jitterSize = self.jitterSize
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setScaleFactor(self):
-        self.graph.setScaleFactor(self.scaleFactor)
-        self.updateGraph()
-
-    def setEnhancedTooltips(self):
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        self.updateGraph()
-
-    def setShowFilledSymbols(self):
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        self.updateGraph()
-
-    def setDifferentSymbols(self):
-        self.graph.useDifferentSymbols = self.useDifferentSymbols
-        self.updateGraph()
-
-    def setDifferentColors(self):
-        self.graph.updateSettings(useDifferentColors = self.useDifferentColors)
-        self.updateGraph()
-
-    def setShowLegend(self):
-        self.graph.updateSettings(showLegend = self.showLegend)
-        self.updateGraph()
-
-    def setOptmizedDrawing(self):
-        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
-        self.updateGraph()
-
-
     def setGlobalValueScaling(self):
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.globalValueScaling = self.globalValueScaling
         self.graph.setData(self.data)
         self.updateGraph()
 

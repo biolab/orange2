@@ -139,18 +139,17 @@ class OWScatterPlotMatrix(OWWidget):
         graph.setJitteringOption(self.jitteringType)
         graph.setShowXaxisTitle(self.showXAxisTitle)
         graph.setShowYLaxisTitle(self.showYAxisTitle)
-        graph.setPointWidth(self.pointWidth)
         graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
         graph.setShowMainTitle(self.showTitle)
         graph.setMainTitle(title)
-        graph.setPointWidth(self.pointWidth)
+        graph.pointWidth = self.pointWidth
         graph.setCanvasBackground(QColor(self.graphCanvasColor))
         graph.setGridPen(QPen(QColor(self.graphGridColor)))
 
     def setPointWidth(self, n):
         self.pointWidth = n
         for graph in self.graphs:
-            graph.setPointWidth(n)
+            graph.pointWidth = n
         self.updateGraph()
         
     # jittering options
@@ -171,9 +170,9 @@ class OWScatterPlotMatrix(OWWidget):
         if self.graphs == []: return
         self.graphs[0].setJitteringOption(self.jitteringType)
         self.graphs[0].setJitterContinuous(self.jitterContinuous)
-        self.graphs[0].setJitterSize(self.jitterSize)
+        self.graphs[0].jitterSize = self.jitterSize
         for graph in self.graphs[1:]:
-            graph.setJitterSize(self.jitterSize)
+            graph.jitterSize = self.jitterSize
             graph.setJitterContinuous(self.jitterContinuous)
             graph.setJitteringOption(self.jitteringType)
             graph.scaledData = self.graphs[0].scaledData

@@ -44,7 +44,6 @@ class OWGraph(QwtPlot):
         self.tipLeft = None
         self.tipRight = None
         self.tipBottom = None
-        self.dynamicToolTip = DynamicToolTip(self)
 
         self.showMainTitle = FALSE
         self.mainTitle = None
@@ -124,9 +123,6 @@ class OWGraph(QwtPlot):
 
     def updateToolTips(self):
         pass
-#        self.dynamicToolTip.addToolTip(self.yRight, self.tipRight)
-#        self.dynamicToolTip.addToolTip(self.yLeft, self.tipLeft)
-#        self.dynamicToolTip.addToolTip(self.xBottom, self.tipBottom)
 
     def setRightTip(self,explain):
         "Sets the tooltip for the right y axis"

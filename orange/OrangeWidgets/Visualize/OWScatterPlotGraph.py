@@ -39,6 +39,9 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
         p.setPen(pen)
         p.setBrush(brush)
 
+DONT_SHOW_TOOLTIPS = 0
+VISIBLE_ATTRIBUTES = 1
+ALL_ATTRIBUTES = 2
 
 
 ###########################################################################################
@@ -57,18 +60,20 @@ class OWScatterPlotGraph(OWVisGraph):
         self.tooltipData = []
         self.showManualAxisScale = 0
         self.optimizedDrawing = 1
+        self.tooltipKind = 1
         self.scatterWidget = scatterWidget
         self.optimizeForPrinting = 0
         self.kNNOptimization = None
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None, **args):
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, **args):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
         self.enableLegend(0)
         self.removeTooltips()
+        self.tooltipData = []
 
         if len(self.scaledData) == 0:
             self.setAxisScale(QwtPlot.xBottom, 0, 1, 1)
@@ -76,8 +81,8 @@ class OWScatterPlotGraph(OWVisGraph):
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             return
         
-        self.statusBar = statusBar
         toolTipList = [xAttr, yAttr]
+        if colorAttr != "" and colorAttr != "(One color)": toolTipList.append(colorAttr)
         if shapeAttr != "" and shapeAttr != "(One shape)": toolTipList.append(shapeAttr)
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)": toolTipList.append(sizeShapeAttr)
 
@@ -157,9 +162,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
         #######
         # show the distributions
-        #print colorIndex
         if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete and not self.showKNNModel:
-            #print "color attr is discrete"
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
             contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
@@ -167,6 +170,7 @@ class OWScatterPlotGraph(OWVisGraph):
             yValues = getVariableValuesSorted(self.rawdata, yAttr)
             classValuesSorted = getVariableValuesSorted(self.rawdata, colorIndex)
             classValues = list(self.rawdata.domain[colorIndex].values)
+            self.tooltipData = []
 
             sum = 0
             for table in contXY:
@@ -190,6 +194,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.setCurveData(key, [i, j] + [0]*(len(out)-2), out)
                     self.curve(key).percentOfTotalData = float(tempSum) / float(sum)
                     self.tooltipData.append((tooltipText, i, j))
+            self.addTooltips()
 
         # show normal scatterplot with dots
         else:
@@ -217,8 +222,8 @@ class OWScatterPlotGraph(OWVisGraph):
                     key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    text= self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList)
-                    self.addTip(x,y,xVar,yVar, toolTipList, self.rawdata[j], text + "; " + qualityMeasure + " : " + "%.2f"%(kNNValues[j]))
+                    text = self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList) + "; " + qualityMeasure + " : " + "%.3f; "%(kNNValues[j])
+                    self.addTip(x, y, text = text)
 
             # create a small number of curves which will make drawing much faster
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1:
@@ -247,7 +252,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     pos[index][2].append(i)
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, xVar, yVar, toolTipList, self.rawdata[i])
+                    self.addTip(x, y, toolTipList, i)
                 
                 for i in range(classCount):
                     newColor = QColor(0,0,0)
@@ -284,7 +289,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, xVar, yVar, toolTipList, self.rawdata[i])
+                    self.addTip(x, y, toolTipList, i)
 
                 
 
@@ -346,14 +351,16 @@ class OWScatterPlotGraph(OWVisGraph):
             self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x1 + xVar/50, yVarMin + yVar*0.96, Qt.AlignRight)
 
         
-        self.addTooltips()
-
     # -----------------------------------------------------------
     # -----------------------------------------------------------
-    def addTip(self, x, y, xVar, yVar, toolTipList, dataitem, text = None):
-        r = QRectFloat(x-xVar/150.0, y-yVar/150.0, xVar/75.0, yVar/75.0)
-        if not text: text= self.getShortExampleText(self.rawdata, dataitem, toolTipList)
-        self.tips.addToolTip(r, text)
+    def addTip(self, x, y, toolTipList = None, dataindex = None, text = None):
+        if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
+        if text == None:
+            if self.tooltipKind == VISIBLE_ATTRIBUTES:
+                text = self.getShortExampleText(self.rawdata, self.rawdata[dataindex], toolTipList)
+            elif self.tooltipKind == ALL_ATTRIBUTES:
+                text = self.getShortExampleText(self.rawdata, self.rawdata[dataindex], self.attributeNames)
+        self.tips.addToolTip(x, y, text)
 
 
     # compute how good is a specific projection with given xAttr and yAttr
@@ -478,18 +485,15 @@ class OWScatterPlotGraph(OWVisGraph):
 
     def addTooltips(self):
         for (text, i, j) in self.tooltipData:
-            x_1 = self.transform(QwtPlot.xBottom, i-0.5)
-            x_2 = self.transform(QwtPlot.xBottom, i+0.5)
-            y_1 = self.transform(QwtPlot.yLeft, j+0.5)
-            y_2 = self.transform(QwtPlot.yLeft, j-0.5)
+            x_1 = self.transform(QwtPlot.xBottom, i-0.5); x_2 = self.transform(QwtPlot.xBottom, i+0.5)
+            y_1 = self.transform(QwtPlot.yLeft, j+0.5);   y_2 = self.transform(QwtPlot.yLeft, j-0.5)
             rect = QRect(x_1, y_1, x_2-x_1, y_2-y_1)
             self.toolRects.append(rect)            
             QToolTip.add(self, rect, text)
             
 
     def removeTooltips(self):
-        for rect in self.toolRects:
-            QToolTip.remove(self, rect)
+        for rect in self.toolRects: QToolTip.remove(self, rect)
         self.toolRects = []
 
     def updateLayout(self):

@@ -11,6 +11,8 @@ from math import *
 from OWkNNOptimization import *
 import orange
 
+
+
 # ####################################################################
 # get a list of all different permutations
 def getPermutationList(elements, tempPerm, currList):
@@ -58,8 +60,12 @@ SYMBOL = 3
 PENCOLOR = 4
 BRUSHCOLOR = 5
 
-RECT_SIZE = 0.01    # size of rectangle
+LINE_TOOLTIPS = 0
+VISIBLE_ATTRIBUTES = 1
+ALL_ATTRIBUTES = 2
 
+TOOLTIPS_SHOW_DATA = 0
+TOOLTIPS_SHOW_SPRINGS = 1
 
 ###########################################################################################
 ##### CLASS : OWRADVIZGRAPH
@@ -82,14 +88,10 @@ class OWRadvizGraph(OWVisGraph):
         self.showLegend = 1
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
-        self.enhancedTooltips = 0
+        self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
+        self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
         self.scaleFactor = 1.0
-        self.tooltipsShowScaledValues = 0
         
-
-    def setEnhancedTooltips(self, enhanced):
-        self.enhancedTooltips = enhanced
-        self.anchorData = []
 
     # create anchors around the circle
     def createAnchors(self, numOfAttr, labels = None):
@@ -109,7 +111,6 @@ class OWRadvizGraph(OWVisGraph):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         #self.removeCurves()
         self.removeMarkers()
-        self.tips.removeAll()
 
         # initial var values
         self.showKNNModel = 0
@@ -244,8 +245,6 @@ class OWRadvizGraph(OWVisGraph):
                 fillColor = bwColors.getColor(kNNValues[j])
                 edgeColor = classColors.getColor(classValueIndices[table[j].getclass().value])
                 key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
-                r = QRectFloat(table[j][0].value - RECT_SIZE, table[j][1].value -RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
-                self.tips.addToolTip(r, preText + "%.2f "%(accuracy[j]))
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -257,7 +256,6 @@ class OWRadvizGraph(OWVisGraph):
                 curveData[i][BRUSHCOLOR] = newColor
 
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
                 self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], newColor, i)
 
         # DISCRETE class + optimize drawing
@@ -268,11 +266,10 @@ class OWRadvizGraph(OWVisGraph):
                 pos[classValueIndices[self.rawdata[i].getclass().value]][0].append(curveData[i][XPOS])
                 pos[classValueIndices[self.rawdata[i].getclass().value]][1].append(curveData[i][YPOS])
                 pos[classValueIndices[self.rawdata[i].getclass().value]][2].append(i)
-                self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
 
             colors = ColorPaletteHSV(valLen)
             for i in range(valLen):
-                newColor = colors.getColor(i)
+                newColor = colors[i]
                 if not self.useDifferentColors: newColor = QColor(0,0,0)
                 
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
@@ -283,15 +280,14 @@ class OWRadvizGraph(OWVisGraph):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], newColor, pos[i][2][k])
 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            colors = ColorPaletteHSV(valLen)
             for i in range(dataSize):
                 if not curveData[i][VALID]: continue
-                newColor = QColor(0,0,0)
-                if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[classValueIndices[self.rawdata[i].getclass().value]], 255, 255)
-                else:                                 newColor.setHsv((classValueIndices[self.rawdata[i].getclass().value])/valLen, 255, 255)
+                newColor = colors[classValueIndices[self.rawdata[i].getclass().value]]
+                if not self.useDifferentColors: newColor = QColor(0,0,0)
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                 else: curveSymbol = self.curveSymbols[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
                 self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], newColor, i)
                     
         
@@ -337,6 +333,8 @@ class OWRadvizGraph(OWVisGraph):
         self.dataMap[dictValue].append((x, y, color, index))
 
 
+    # ##############
+    # draw tooltips
     def onMouseMoved(self, e):
         redraw = 0
         if self.tooltipCurveKeys != [] or self.tooltipMarkers != []: redraw = 1
@@ -353,41 +351,56 @@ class OWRadvizGraph(OWVisGraph):
             if redraw: self.replot()
             return 
             
-        x = self.invTransform(QwtPlot.xBottom, e.x())
-        y = self.invTransform(QwtPlot.yLeft, e.y())
-        dictValue = "%.1f-%.1f"%(x, y)
-        if self.dataMap.has_key(dictValue) and self.enhancedTooltips:
+        xFloat = self.invTransform(QwtPlot.xBottom, e.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+        dictValue = "%.1f-%.1f"%(xFloat, yFloat)
+        if self.dataMap.has_key(dictValue):
             points = self.dataMap[dictValue]
             bestDist = 100.0
             nearestPoint = ()
             for (x_i, y_i, color, index) in points:
-                currDist = sqrt((x-x_i)*(x-x_i)+(y-y_i)*(y-y_i))
+                currDist = sqrt((xFloat-x_i)*(xFloat-x_i) + (yFloat-y_i)*(yFloat-y_i))
                 if currDist < bestDist:
                     bestDist = currDist
                     nearestPoint = (x_i, y_i, color, index)
-           
-            if bestDist < 0.05:
-                (x_i, y_i, color, index) = nearestPoint
+
+            (x_i, y_i, color, index) = nearestPoint
+            if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 for (xAnchor,yAnchor,label) in self.anchorData:
                     # draw lines
                     key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                     self.tooltipCurveKeys.append(key)
 
                     # draw text
-                    if self.tooltipsShowScaledValues:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(label)][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
-                    else:
+                    marker = None
+                    if self.tooltipValue == TOOLTIPS_SHOW_DATA:
                         marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)].value), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                    elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(label)][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
 
                     self.tooltipMarkers.append(marker)
+            elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
+                intX = self.transform(QwtPlot.xBottom, x_i)
+                intY = self.transform(QwtPlot.yLeft, y_i)
+                text = ""
+                if self.tooltipKind == VISIBLE_ATTRIBUTES:
+                    labels = [s for (xA, yA, s) in self.anchorData]
+                else:
+                    labels = self.attributeNames
+
+                if self.tooltipValue == TOOLTIPS_SHOW_DATA:
+                    text = self.getShortExampleText(self.rawdata, self.rawdata[index], labels)
+                elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
+                    for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNames.index(label)][index])
+                        
+                self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
                 
         OWVisGraph.onMouseMoved(self, e)
         self.replot()
-
-
+ 
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
