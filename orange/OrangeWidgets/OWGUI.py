@@ -9,31 +9,60 @@ from qt import *
 from qttable import *
 import qwt
 
+##############################################################################
+# Some common rutines
+
+# constructs a box (frame) if not none, and returns the right master widget
+def widgetBox(widget, box=None, orientation='vertical'):
+    if box:
+        if orientation == 'horizontal':
+            b = QHGroupBox(widget)
+        else:
+            b = QVGroupBox(widget)
+        b.setTitle(box)
+    else:
+        if orientation == 'horizontal':
+            b = QHBox(widget)
+        else:
+            b = QVBox(widget)
+    return b
+
+def widgetLabel(widget, label=None, labelWidth=None):
+    if label:
+        lbl = QLabel(label, widget)
+        if labelWidth:
+            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
+    else:
+        lbl = None
+    return lbl
 
 ##############################################################################
+# Orange GUI Widgets
 
-def labelWithSpin(widget, master, text, min, max, value, step=1, tooltip=None, callback=None):
-    hb = QHBox(widget)
-    QLabel(text, hb)
-    wa = QSpinBox(min, max, step, hb)
+# before labelWithSpin
+def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
+    b = widgetBox(widget, box, orientation)
+    widgetLabel(b, label, labelWidth)
+    
+    wa = QSpinBox(min, max, step, b)
     wa.setValue(getattr(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
 
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))    
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-    return hb
+    return b
 
-def labelWithSpin_hb(widget, master, text, min, max, value, step = 1, callback=None):
-    hb = QHBox(widget)
-    QLabel(text, hb)
-    wa = QSpinBox(min, max, step, hb)
-    wa.setValue(getattr(master, value))
-
-    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))    
-    if callback:
-        master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-    return hb
+##def labelWithSpin_hb(widget, master, text, min, max, value, step = 1, callback=None):
+##    hb = QHBox(widget)
+##    QLabel(text, hb)
+##    wa = QSpinBox(min, max, step, hb)
+##    wa.setValue(getattr(master, value))
+##
+##    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))    
+##    if callback:
+##        master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
+##    return hb
 
 def checkOnly(widget, master, text, value, tooltip=None, callback=None, getwidget=None, id=None):
     wa = QCheckBox(text, widget)
@@ -44,27 +73,17 @@ def checkOnly(widget, master, text, value, tooltip=None, callback=None, getwidge
         master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     return wa
 
-def lineEditOnly(widget, master, text, value):
-    if text:
-        hb = QHBox(widget)
-        QLabel(text, hb)
-    wa = QLineEdit(widget)
-    wa.setText(str(getattr(master,value)))
-    master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
-    return wa
-
-def boxedLineEdit(widget, master, text, value, boxText, space=None):
-    nb = QVGroupBox(widget)
-    nb.setTitle(boxText)
-    if text:
-        hb = QHBox(nb)
-        QLabel(text, hb)
-    wa = QLineEdit(nb)
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, space=None, tooltip=None, callback=None):
+    b = widgetBox(widget, box, orientation)
+    widgetLabel(b, label, labelWidth)
+    wa = QLineEdit(b)
     wa.setText(getattr(master,value))
+    if tooltip: QToolTip.add(wa, tooltip)
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
-    if space:
-        QWidget(widget).setFixedSize(0, space)
-    return nb
+    if callback:
+        master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
+    if space: QWidget(widget).setFixedSize(0, space)
+    return wa
 
 def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None):
     hb = QHBox(widget)
@@ -93,11 +112,12 @@ def button(widget, master, text, callback, disabled=0):
     return btn
 
 # btnLabels is a list of either char strings or pixmaps
-def radioButtonsInBox(widget, master, groupLabel, btnLabels, value, tooltips=None, callback=None):
-    if groupLabel:
-        bg = QVButtonGroup(groupLabel, widget)
+def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
+    if box:
+        bg = QVButtonGroup(box, widget)
     else:
         bg = widget
+
     bg.setRadioButtonExclusive(1)
     for i in range(len(btnLabels)):
         if type(btnLabels[i])==type("string"):
