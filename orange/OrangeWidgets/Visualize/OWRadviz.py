@@ -438,13 +438,6 @@ class OWRadviz(OWWidget):
         return list
     
     def setShownAttributes(self, attributes):
-        attrNames = [attr.name for attr in self.data.domain]
-        
-        for item in attributes:
-            if not item in attrNames:
-                print "invalid settings"
-                return 0
-        
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
         for attr in attributes: self.shownAttribsLB.insertItem(attr)
