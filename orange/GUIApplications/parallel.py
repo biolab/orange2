@@ -1,37 +1,67 @@
 import sys
 import os
+from orngSignalManager import *
 from OWFile import *
-from OW2DInteractions import *
 from OWParallelCoordinates import *
 
 
 class parallel(QVBox):
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        self.setCaption("Orange Widgets Panes")
-        self.setIcon(QPixmap("OrangeWidgetsIcon.gif"))
-        self.tabs = QTabWidget(self, 'tabWidget')
-        self.bottom=QHBox(self)
-        self.resize(640,480)
-        exitButton=QPushButton("E&xit",self.bottom)
+        self.setCaption("Qt parallel")
 
         # create widget instances
-        self.owFile = OWFile(self.tabs)
-        #self.ow2D_Interactions = OW2DInteractions(self.tabs)
-        self.owParallel_coordinates = OWParallelCoordinates(self.tabs)
+        self.owFile = OWFile()
+        self.owParallel_coordinates = OWParallelCoordinates()
+        self.owFile.progressBarSetHandler(self.progressHandler)
+        self.owParallel_coordinates.progressBarSetHandler(self.progressHandler)
+        
+        signalManager.addWidget(self.owFile)
+        signalManager.addWidget(self.owParallel_coordinates)
+        
+        # create widget buttons
+        owButtonFile = QPushButton("File", self)
+        owButtonParallel_coordinates = QPushButton("Parallel coordinates", self)
+        exitButton = QPushButton("E&xit",self)
+        self.connect(exitButton,SIGNAL("clicked()"),a,SLOT("quit()"))
         
 
-        # add tabs
-        self.tabs.insertTab (self.owFile,"File")
-        #self.tabs.insertTab (self.ow2D_Interactions,"2D Interactions")
-        self.tabs.insertTab (self.owParallel_coordinates,"Parallel coordinates")
+        statusBar = QStatusBar(self)
+        self.caption = QLabel('', statusBar)
+        self.caption.setMaximumWidth(200)
+        self.caption.hide()
+        self.progress = QProgressBar(100, statusBar)
+        self.progress.setMaximumWidth(100)
+        self.progress.hide()
+        self.progress.setCenterIndicator(1)
+        statusBar.addWidget(self.caption, 1)
+        statusBar.addWidget(self.progress, 1)
+        #connect GUI buttons to show widgets
+        self.connect( owButtonFile,SIGNAL("clicked()"), self.owFile.reshow)
+        self.connect( owButtonParallel_coordinates,SIGNAL("clicked()"), self.owParallel_coordinates.reshow)
+        
+        # add widget signals
+        signalManager.setFreeze(1)
+        signalManager.addLink( self.owFile, self.owParallel_coordinates, 'Examples', 'Examples', 1)
+        signalManager.setFreeze(0)
         
 
-        #self.ow2D_Interactions.link(self.owFile, "cdata")
-        self.owParallel_coordinates.link(self.owFile, "cdata")
-        
+
+    def progressHandler(self, widget, val):
+        if val < 0:
+            self.caption.setText("<nobr>Processing: <b>" + str(widget.caption()) + "</b></nobr>")
+            self.caption.show()
+            self.progress.setProgress(0)
+            self.progress.show()
+        elif val >100:
+            self.caption.hide()
+            self.progress.hide()
+        else:
+            self.progress.setProgress(val)
+            self.update()
 
     def exit(self):
+        self.owFile.saveSettings()
         self.owParallel_coordinates.saveSettings()
         
 
@@ -39,6 +69,6 @@ class parallel(QVBox):
 a=QApplication(sys.argv)
 ow=parallel()
 a.setMainWidget(ow)
-QObject.connect(a, SIGNAL('aboutToQuit()'),ow.exit)
+QObject.connect(a, SIGNAL('aboutToQuit()'),ow.exit) 
 ow.show()
 a.exec_loop()
