@@ -174,9 +174,6 @@ class OWScatterPlot(OWWidget):
         
         self.activateLoadedSettings()
         self.resize(900, 700)
-        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self), 0)
-        self.send("Cluster learner", clusterLearner(self.clusterDlg, self), 1)
-
 
     # #########################
     # OPTIONS

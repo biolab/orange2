@@ -168,8 +168,7 @@ class OWRadviz(OWWidget):
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(900, 700)
-        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self), 0)
-        self.send("Cluster learner", clusterLearner(self.clusterDlg, self), 1)
+
 
     # #########################
     # OPTIONS
@@ -185,7 +184,7 @@ class OWRadviz(OWWidget):
         self.graph.showClusters = self.showClusters
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
-        
+
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -409,9 +408,9 @@ class OWRadviz(OWWidget):
 
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
         else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
         print "---------------------------"
         
 
