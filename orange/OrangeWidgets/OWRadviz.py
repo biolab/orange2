@@ -23,7 +23,7 @@ import time
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -41,6 +41,7 @@ class OWRadviz(OWWidget):
         self.attrContOrder = "RelieF"
         self.jitteringType = "uniform"
         self.attrOrdering = "Original"
+        self.enhancedTooltips = 1
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
@@ -75,6 +76,7 @@ class OWRadviz(OWWidget):
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
+        self.connect(self.options.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -120,6 +122,11 @@ class OWRadviz(OWWidget):
         self.progressGroup.setTitle("Optimization progress")
         self.progressBar = QProgressBar(100, self.progressGroup, "progress bar")
         self.progressBar.setCenterIndicator(1)
+
+        self.showGnuplotButton = QPushButton("Show with Gnuplot", self.space)
+        self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
+        self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
+        self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
             
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
@@ -138,6 +145,12 @@ class OWRadviz(OWWidget):
 
         self.resize(900, 700)
 
+
+    def drawGnuplot(self):
+        self.graph.drawGnuplot(self.getShownAttributeList(), str(self.classCombo.currentText()))
+
+    def saveGnuplot(self):
+        self.graph.saveGnuplot(self.getShownAttributeList(), str(self.classCombo.currentText()))
     
     # #########################
     # OPTIONS
@@ -150,6 +163,7 @@ class OWRadviz(OWWidget):
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
 
         # set items in jitter size combo
         for i in range(len(self.jitterSizeList)):
@@ -160,7 +174,8 @@ class OWRadviz(OWWidget):
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
-        
+
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)        
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
@@ -177,6 +192,11 @@ class OWRadviz(OWWidget):
         self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
+        self.updateGraph()
+
+    def setUseEnhancedTooltips(self):
+        self.enhancedTooltips = self.options.useEnhancedTooltips.isChecked()
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.updateGraph()
 
     # jittering options
@@ -212,7 +232,8 @@ class OWRadviz(OWWidget):
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
             self.graph.scaleDataNoJittering()
-            
+
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if text == "ALL":
                 fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
@@ -238,6 +259,7 @@ class OWRadviz(OWWidget):
                 fullList.remove((accuracy, tableLen, list))
                 
             self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
             self.optimizationDlg.interestingList.setCurrentItem(0)
 
    
@@ -266,6 +288,7 @@ class OWRadviz(OWWidget):
             self.graph.possibleSubsetsTable = table
             self.graph.totalPossibleSubsets = total
             self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, self.progressBar)
             if len(fullList) == 0: return
@@ -278,6 +301,7 @@ class OWRadviz(OWWidget):
                 fullList.remove((accuracy, itemCount, list))
                 
             self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
             self.optimizationDlg.interestingList.setCurrentItem(0)
 
 

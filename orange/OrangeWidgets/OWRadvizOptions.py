@@ -40,6 +40,9 @@ class OWRadvizOptions(OWOptions):
         self.jitterSize = QComboBox(self.hbox)
 
 
+        self.tooltipsOptionsBG = QVButtonGroup("Tooltips", self.top)
+        self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.tooltipsOptionsBG)
+
         #####
         # attribute value scaling
         self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)

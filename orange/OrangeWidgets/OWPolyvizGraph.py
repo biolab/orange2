@@ -63,7 +63,21 @@ class OWPolyvizGraph(OWVisGraph):
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
+        self.percentDataUsed = 100
         self.minExamples = 0
+        self.enhancedTooltips = 1
+
+        self.exLabelData = [[],[]] 	# form: [[labels],[indices]]
+        self.exAnchorData =[]	# form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
+        self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
+        self.tooltipCurveKeys = []
+        self.tooltipMarkers   = []
+
+    def setEnhancedTooltips(self, enhanced):
+        self.enhancedTooltips = enhanced
+        self.dataMap = {}
+        self.exLabelData = [[],[]]
+        self.exAnchorData = []
 
     def setLineLength(self, len):
         self.lineLength = len*0.05
@@ -138,15 +152,27 @@ class OWPolyvizGraph(OWVisGraph):
         indices = []
         xs = []
 
-        ###########
-        # create a table of indices that stores the sequence of variable indices
-        for label in labels:
-            index = self.attributeNames.index(label)
-            indices.append(index)
+        if self.exLabelData[0] != labels:
+            # ##########
+            # create a table of indices that stores the sequence of variable indices
+            for label in labels:
+                index = self.attributeNames.index(label)
+                indices.append(index)
 
-        # create anchor for two edges of every attribute
-        anchors = self.createAnchors(len(labels))
-        
+            self.exLabelData = [labels, indices]
+            self.exAnchorData = []
+            self.dataMap = {}
+
+            # ##########
+            # create anchor for every attribute
+            for i in range(length):
+                x1 = math.cos(2*math.pi * float(i) / float(length)); strX1 = "%.4f" % (x1)
+                y1 = math.sin(2*math.pi * float(i) / float(length)); strY1 = "%.4f" % (y1)
+                x2 = math.cos(2*math.pi * float(i+1) / float(length)); strX2 = "%.4f" % (x2)
+                y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
+                self.exAnchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
+        else:
+            indices = self.exLabelData[1]
 
         # ##########
         # draw polygon
@@ -167,8 +193,8 @@ class OWPolyvizGraph(OWVisGraph):
         for i in range(length):
             # print attribute name
             mkey = self.insertMarker(labels[i])
-            self.marker(mkey).setXValue(0.6*(anchors[0][i]+anchors[0][(i+1)%length]))
-            self.marker(mkey).setYValue(0.6*(anchors[1][i]+anchors[1][(i+1)%length]))
+            self.marker(mkey).setXValue(0.6*(self.exAnchorData[i][0]+ self.exAnchorData[i][2]))
+            self.marker(mkey).setYValue(0.6*(self.exAnchorData[i][1]+ self.exAnchorData[i][3]))
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
             font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
 
@@ -181,24 +207,24 @@ class OWPolyvizGraph(OWVisGraph):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
                     mkey = self.insertMarker(values[j])
                     if attributeReverse[labels[i]] == 0:
-                        self.marker(mkey).setXValue(k*(1-pos)*anchors[0][i]+k*pos*anchors[0][(i+1)%length])
-                        self.marker(mkey).setYValue(k*(1-pos)*anchors[1][i]+k*pos*anchors[1][(i+1)%length])
+                        self.marker(mkey).setXValue(k*(1-pos)*self.exAnchorData[i][0]+k*pos*self.exAnchorData[i][2])
+                        self.marker(mkey).setYValue(k*(1-pos)*self.exAnchorData[i][1]+k*pos*self.exAnchorData[i][3])
                     else:
-                        self.marker(mkey).setXValue(k*pos*anchors[0][i]+k*(1-pos)*anchors[0][(i+1)%length])
-                        self.marker(mkey).setYValue(k*pos*anchors[1][i]+k*(1-pos)*anchors[1][(i+1)%length])
+                        self.marker(mkey).setXValue(k*pos*self.exAnchorData[i][0]+k*(1-pos)*self.exAnchorData[i][2])
+                        self.marker(mkey).setYValue(k*pos*self.exAnchorData[i][1]+k*(1-pos)*self.exAnchorData[i][3])
                     self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
             else:
                 # min value
                 names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
                 if attributeReverse[labels[i]] == 1: names.reverse()
                 mkey = self.insertMarker(names[0])
-                self.marker(mkey).setXValue(0.95*anchors[0][i]+0.15*anchors[0][(i+1)%length])
-                self.marker(mkey).setYValue(0.95*anchors[1][i]+0.15*anchors[1][(i+1)%length])
+                self.marker(mkey).setXValue(0.95*self.exAnchorData[i][0]+0.15*self.exAnchorData[i][2])
+                self.marker(mkey).setYValue(0.95*self.exAnchorData[i][1]+0.15*self.exAnchorData[i][3])
                 self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
                 # max value
                 mkey = self.insertMarker(names[1])
-                self.marker(mkey).setXValue(0.15*anchors[0][i]+0.95*anchors[0][(i+1)%length])
-                self.marker(mkey).setYValue(0.15*anchors[1][i]+0.95*anchors[1][(i+1)%length])
+                self.marker(mkey).setXValue(0.15*self.exAnchorData[i][0]+0.95*self.exAnchorData[i][2])
+                self.marker(mkey).setYValue(0.15*self.exAnchorData[i][1]+0.95*self.exAnchorData[i][3])
                 self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
 
 
@@ -244,8 +270,8 @@ class OWPolyvizGraph(OWVisGraph):
                 index = indices[j]
                 val = self.localScaledData[index][i]
                 if attributeReverse[labels[j]] == 1: val = 1-val
-                xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%length]*val
-                yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%length]*val
+                xDataAnchor = self.exAnchorData[j][0]*(1-val) + self.exAnchorData[j][2]*val
+                yDataAnchor = self.exAnchorData[j][1]*(1-val) + self.exAnchorData[j][3]*val
                 x_i += xDataAnchor * (self.scaledData[index][i] / sum[i])
                 y_i += yDataAnchor * (self.scaledData[index][i] / sum[i])
                 xDataAnchors.append(xDataAnchor)
@@ -284,6 +310,14 @@ class OWPolyvizGraph(OWVisGraph):
                     y_j = (1.0 - kvoc)*yDataAnchors[j] + kvoc*y_i
                 key = self.addCurve('line' + str(i), lineColor, lineColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None)
                 self.setCurveData(key, [xDataAnchors[j], x_j], [yDataAnchors[j], y_j])
+
+            if self.enhancedTooltips == 1:
+                # create a dictionary value so that tooltips will be shown faster
+                data = self.rawdata[i]
+                dictValue = "%.1f-%.1f"%(x_i, y_i)
+                if not self.dataMap.has_key(dictValue):
+                    self.dataMap[dictValue] = []
+                self.dataMap[dictValue].append((x_i, y_i, xDataAnchors, yDataAnchors, lineColor, data))
                 
 
         if valLen == 1 or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
@@ -319,7 +353,41 @@ class OWPolyvizGraph(OWVisGraph):
                 self.marker(mkey).setYValue(y)
                 self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
 
+    def onMouseMoved(self, e):
+        for key in self.tooltipCurveKeys:  self.removeCurve(key)
+        for marker in self.tooltipMarkers: self.removeMarker(marker)
+            
+        x = self.invTransform(QwtPlot.xBottom, e.x())
+        y = self.invTransform(QwtPlot.yLeft, e.y())
+        dictValue = "%.1f-%.1f"%(x, y)
+        if self.dataMap.has_key(dictValue):
+            points = self.dataMap[dictValue]
+            dist = 100.0
+            nearestPoint = ()
+            for (x_i, y_i, xAnchors, yAnchors, color, data) in points:
+                if abs(x-x_i)+abs(y-y_i) < dist:
+                    dist = abs(x-x_i)+abs(y-y_i)
+                    nearestPoint = (x_i, y_i, xAnchors, yAnchors, color, data)
+           
+            if dist < 0.05:
+                x_i = nearestPoint[0]; y_i = nearestPoint[1]; xAnchors = nearestPoint[2]; yAnchors = nearestPoint[3]; color = nearestPoint[4]; data = nearestPoint[5]
+                for i in range(len(self.exAnchorData)):
+                    (xAnchor1, yAnchor1, xAnchor2, yAnchor2, label) = self.exAnchorData[i]
 
+                    # draw lines
+                    key = self.addCurve("Tooltip curve", color, color, 1)
+                    self.setCurveStyle(key, QwtCurve.Lines)
+                    self.tooltipCurveKeys.append(key)
+                    self.setCurveData(key, [x_i, xAnchors[i]], [y_i, yAnchors[i]])
+
+                    # draw text
+                    marker = self.insertMarker(str(data[self.attributeNames.index(label)].value))
+                    self.tooltipMarkers.append(marker)
+                    self.marker(marker).setXValue((x_i + xAnchors[i])/2.0)
+                    self.marker(marker).setYValue((y_i + yAnchors[i])/2.0)
+                    self.marker(marker).setLabelAlignment(Qt.AlignVCenter + Qt.AlignHCenter)
+
+        OWVisGraph.onMouseMoved(self, e)    
         # -----------------------------------------------------------
         # -----------------------------------------------------------
 
@@ -472,20 +540,26 @@ class OWPolyvizGraph(OWVisGraph):
                 """
 
                 # to bo delalo, ko bo popravljen orangov kNNLearner
+                selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
+                experiments = 0
+                for i in range(len(table)):
+                    if selection[i] == 1: experiments += 1
+            
                 classValues = list(self.rawdata.domain[className].values)
                 knn = orange.kNNLearner(table, k=kNeighbours)
                 for j in range(len(table)):
+                    if selection[j] == 0: continue
                     out = knn(table[j], orange.GetProbabilities)
                     index = classValues.index(table[j][2].value)
                     tempPermValue += out[index]
 
-                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(len(table)) )
+                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(experiments))
 
                 # save the permutation
                 tempList = []
                 for i in permutation:
                     tempList.append(self.attributeNames[i])
-                fullList.append((tempPermValue*100.0/float(len(table)), len(table), tempList, attrOrder))
+                fullList.append((tempPermValue*100.0/float(experiments), len(table), tempList, attrOrder))
 
         if printTime:
             secs = time.time() - t
@@ -525,7 +599,7 @@ class OWPolyvizGraph(OWVisGraph):
                 secs = int(time.time() - self.startTime)
                 totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
                 restSecs = totalExpectedSecs - secs
-                print "Used time: %d:%d:%d, Remaining time: %d:%d:%d (total experiments: %d, rest: %d" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
+                print "Used time: %d:%02d:%02d, Remaining time: %d:%02d:%02d (total experiments: %d, rest: %d)" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
             self.triedPossibilities += 1
             return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
 

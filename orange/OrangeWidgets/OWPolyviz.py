@@ -23,7 +23,7 @@ from OWVisTools import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -42,6 +42,7 @@ class OWPolyviz(OWWidget):
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         self.jitteringType = "uniform"
+        self.enhancedTooltips = 1
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
@@ -77,6 +78,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
+        self.connect(self.options.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
@@ -170,6 +172,7 @@ class OWPolyviz(OWWidget):
         self.options.lengthSlider.setValue(self.lineLength)
         self.options.widthLCD.display(self.pointWidth)
         self.options.lengthLCD.display(self.lineLength)
+        self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
@@ -179,12 +182,18 @@ class OWPolyviz(OWWidget):
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
-        
+
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
+
+    def setUseEnhancedTooltips(self):
+        self.enhancedTooltips = self.options.useEnhancedTooltips.isChecked()
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
+        self.updateGraph()
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -242,7 +251,8 @@ class OWPolyviz(OWWidget):
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if self.tryReverse.isChecked() == 1: reverseList = None
             else: reverseList = self.attributeReverse
-            
+
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             if text == "ALL":
                 fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList, str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
             else:
@@ -267,6 +277,7 @@ class OWPolyviz(OWWidget):
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
 
             self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
             self.showSelectedAttributes()
 
     # #############################################
@@ -293,6 +304,7 @@ class OWPolyviz(OWWidget):
 
             self.graph.possibleSubsetsTable = table
             self.graph.totalPossibleSubsets = total
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             if self.tryReverse.isChecked() == 1:
@@ -308,6 +320,7 @@ class OWPolyviz(OWWidget):
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
 
             self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
     
     def interestingProjectionsAddItem(self, accuracy, tableLen, attrList, reverse):
         strList = "["
