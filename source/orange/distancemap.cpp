@@ -335,7 +335,11 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
     else {// no order && no squeeze
       const int &dim = distMat.dim;
       PDistanceMap dm = mlnew TDistanceMap(dim);
+      dm->elementIndices = new TIntList();
+      vector<int> &squeezedIndices = dm->elementIndices->__orvector;
+
       for(int row = 0; row < dim; row++) {
+        squeezedIndices.push_back(row);
         for(int column = 0; column < row; column++) {
           const float &incell = distMat.getref(row, column);
           dm->cells[row*dim+column] = dm->cells[column*dim+row] = incell;
@@ -345,6 +349,8 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
         dm->cells[row*(dim+1)] = incell;
         UPDATE_LOW_HIGH;
       }
+
+      squeezedIndices.push_back(row);
 
       return dm;
     }
