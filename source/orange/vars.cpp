@@ -515,7 +515,7 @@ void TFloatVariable::val2str(const TValue &valu, string &vname) const
   else {
     char buf[64];
     const float f = fabs(valu.floatV);
-    if ((f>1e-6) && (f<1e6))
+    if ((f==0.0) || ((f>1e-6) && (f<1e6)))
       sprintf(buf, "%.*f", numberOfDecimals, valu.floatV);
     else
       sprintf(buf, "%e", valu.floatV);
