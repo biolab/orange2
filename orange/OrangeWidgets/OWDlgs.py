@@ -33,7 +33,7 @@ class OWAttributeOrder(OWBaseWidget):
         
         
 class OWChooseImageSizeDlg(OWBaseWidget):
-    settingsList = ["selectedSize", "customX", "customY", "saveAllSizes", "lastSaveDirName"]
+    settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName"]
     def __init__(self, graph):
         OWBaseWidget.__init__(self, None, "Image settings", "Set size of output image", TRUE, FALSE, FALSE, modal = TRUE)
 
@@ -65,7 +65,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.customHeight = QLabel('Height:', self.boxY)
         self.ySize = QLineEdit(self.boxY)
         self.sizeOriginal.setChecked(1)
-        self.allSizes = QCheckBox("Save all sizes", self.group)
         
         self.printButton = QPushButton("Print", self.space)
         self.okButton = QPushButton("Save image", self.space)
@@ -74,7 +73,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
                 
-        if self.saveAllSizes == 1: self.allSizes.setChecked(1)
 
         if self.selectedSize == 0: self.sizeOriginal.setChecked(1)
         elif self.selectedSize == 1: self.size400.setChecked(1)
@@ -91,7 +89,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif self.size800.isChecked(): self.selectedSize = 3
         self.customX = int(str(self.xSize.text()))
         self.customY = int(str(self.ySize.text()))
-        self.saveAllSizes = self.allSizes.isChecked()
         self.saveToFile()
         self.saveSettings()
         QDialog.accept(self)
@@ -124,15 +121,6 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         QDialog.accept(self)
 
     def saveToFile(self):
-        if self.sizeOriginal.isChecked(): size = self.graph.size()
-        elif self.size400.isChecked(): size = QSize(400,400)
-        elif self.size600.isChecked(): size = QSize(600,600)
-        elif self.size800.isChecked(): size = QSize(800,800)
-        elif self.custom.isChecked():  size = QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
-        else:
-            print "error"
-            return
-
         qfileName = QFileDialog.getSaveFileName(self.lastSaveDirName + "graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
@@ -144,20 +132,17 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         dirName, shortFileName = os.path.split(fileName)
         self.lastSaveDirName = dirName + "/"
+        self.saveToFileDirect(fileName, ext, self.getSize())
 
-        if not self.allSizes.isChecked():
-            self.saveToFileDirect(fileName, ext, size)
-        else:
-            if not os.path.isdir(dirName + "\\400\\"): os.mkdir(dirName + "\\400\\")
-            if not os.path.isdir(dirName + "\\600\\"): os.mkdir(dirName + "\\600\\")
-            if not os.path.isdir(dirName + "\\800\\"): os.mkdir(dirName + "\\800\\")
-            if not os.path.isdir(dirName + "\\Original\\"): os.mkdir(dirName + "\\Original\\")
-            self.saveToFileDirect(dirName + "\\400\\" + shortFileName, ext, QSize(400,400))
-            self.saveToFileDirect(dirName + "\\600\\" + shortFileName, ext, QSize(600,600))
-            self.saveToFileDirect(dirName + "\\800\\" + shortFileName, ext, QSize(800,800))
-            self.saveToFileDirect(dirName + "\\Original\\" + shortFileName, ext, self.graph.size())
+    def getSize(self):
+        if self.sizeOriginal.isChecked(): return self.graph.size()
+        elif self.size400.isChecked(): return QSize(400,400)
+        elif self.size600.isChecked(): return QSize(600,600)
+        elif self.size800.isChecked(): return QSize(800,800)
+        elif self.custom.isChecked():  return QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
+        else: return QSize(400,400)
         
-    def saveToFileDirect(self, fileName, ext, size = QSize()):
+    def saveToFileDirect(self, fileName, ext, size):
         if os.path.exists(fileName):
             res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
             if res == 1: return
