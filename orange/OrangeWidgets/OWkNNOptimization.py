@@ -20,7 +20,7 @@ class kNNOptimization(OWBaseWidget):
 
     def __init__(self,parent=None):
         #QWidget.__init__(self, parent)
-        OWBaseWidget.__init__(self, parent, "Optimization Dialog", "optimize visualization impression and manage result", TRUE, FALSE, FALSE)
+        OWBaseWidget.__init__(self, parent, "Optimization Dialog", "optimize visualization impression and manage result", FALSE, FALSE, FALSE)
 
         self.setCaption("Qt kNN Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
