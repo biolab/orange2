@@ -22,22 +22,29 @@ class ColorPaletteHSV:
         elif self.numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
             for i in range(self.numberOfColors):
                 col = QColor()
-                col.setHsv(colorHueValues[i], self.brightness, self.brightness)
+                col.setHsv(colorHueValues[i], self.brightness, 255)
                 self.colors.append(col)
             self.hueValues = list(colorHueValues[:self.numberOfColors])
         else:   
             self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
                 col = QColor()
-                col.setHsv(hue, self.brightness, self.brightness)
+                col.setHsv(hue, self.brightness, 255)
                 self.colors.append(col)
         
 
-    def __getitem__(self, index):
-        if self.numberOfColors == -1:                # is this color for continuous attribute?
+    def __getitem__(self, index, brightness = None):
+        # is this color for continuous attribute?
+        if self.numberOfColors == -1:                
             col = QColor()
-            col.setHsv(index*self.maxHueVal, self.brightness, self.brightness)     # index must be between 0 and 1
+            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
             return col
+        # if we want a standard color, just with a specific brightness value
+        elif brightness != None:    
+            col = QColor()
+            col.setHsv(colorHueValues[index], brightness, 255)
+            return col
+        # return a color from the built table
         else:                                   # get color for discrete attribute
             return self.colors[index]           # index must be between 0 and self.numberofColors
 
@@ -56,8 +63,8 @@ class ColorPaletteHSV:
         self.rebuildColors()
 
     # get QColor instance for given index
-    def getColor(self, index):
-        return self.__getitem__(index)
+    def getColor(self, index, brightness = None):
+        return self.__getitem__(index, brightness)
             
 
 # black and white color palette
