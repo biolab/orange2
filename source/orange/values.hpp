@@ -75,7 +75,7 @@ public:
        FLOATVAR
          floatV stores a continuous value
          sval can contain a continuous PDistribution
-       OTHERVAR (eg STRINGVAR?)
+       other (eg STRINGVAR?)
          sval stores some PSomeValue
 
      If valueType==valueDC or valueDK
@@ -84,7 +84,7 @@ public:
          something else, depending on value of varType
   */
 
-  enum {NONE=0, INTVAR, FLOATVAR, OTHERVAR};
+  enum {NONE=0, INTVAR, FLOATVAR};
   unsigned char varType;
 
   #define valueRegular 0
@@ -141,7 +141,7 @@ public:
     svalV(v)
   {}
 
-  explicit TValue(PSomeValue v, const unsigned char &t = OTHERVAR, const signed char &spec = valueRegular)
+  explicit TValue(PSomeValue v, const unsigned char &t, const signed char &spec = valueRegular)
   : varType(t), 
     valueType(spec), 
     intV(numeric_limits<int>::max()),

@@ -314,7 +314,7 @@ PyObject *Value_FromArguments(PyTypeObject *type, PyObject *args)
     }
     else if (PyInt_Check(obj1) && PyInt_Check(obj2)) {
       int vartype = int(PyInt_AsLong(obj1));
-      if (vartype>=TValue::OTHERVAR) {
+      if (vartype > TValue::FLOATVAR) {
         PyErr_Format(PyExc_IndexError, "invalid value type (%i)", vartype);
         return PYNULL;
       }
@@ -363,7 +363,7 @@ void Value_clear(TPyValue *self)
    - If value is 
      - FLOATVAR, convert a floatV
      - INTVAR, print a intV in brackets
-     - OTHERVAR and svalV is given, it should take care of itself
+     - else if svalV is given, it should take care of itself
      - else, we return "###"
 */
 
@@ -404,8 +404,7 @@ const char *TPyValue2string(TPyValue *self)
 
 
 /* Compares two values. The first is always TPyValue.
-   Comparison are always based on intV or floatV, never on string representations
-   (this does not hold for OTHERVAR; StringValues are compared as strings...)
+   Comparisons of discrete are based on intV not on string representations
    If both are TPyValue, the values must be of same type
      - If both are special, they are equal/different if the valueType is
        equal/different. Operators >, <, <= and >= are not defined.
@@ -942,7 +941,7 @@ PyObject *VarTypes()
   PyModule_AddIntConstant(vartypes, "None", (int)TValue::NONE);
   PyModule_AddIntConstant(vartypes, "Discrete", (int)TValue::INTVAR);
   PyModule_AddIntConstant(vartypes, "Continuous", (int)TValue::FLOATVAR);
-  PyModule_AddIntConstant(vartypes, "Other", (int)TValue::OTHERVAR);
+  PyModule_AddIntConstant(vartypes, "Other", (int)TValue::FLOATVAR+1); // for compatibility; don't use!
   PyModule_AddIntConstant(vartypes, "String", (int)STRINGVAR);
   return vartypes;
 }

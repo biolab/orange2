@@ -118,7 +118,7 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
   else if (distributionForUnknown->supportsContinuous)
     varType = TValue::FLOATVAR;
   else
-    varType = TValue::OTHERVAR;
+    varType = TValue::NONE;
     
   return TValue(CLONE(TDistribution, distributionForUnknown), varType, valueDK);
 }

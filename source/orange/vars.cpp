@@ -99,7 +99,7 @@ TValue  TVariable::specialValue(int spec) const
     TVariable::str2val_add interprets ? as DK and ~ as DC; otherwise it sets val.varType to varType, other fields
     are left intact.*/
 bool TVariable::str2special(const string &valname, TValue &valu) const
-{ if (valname=="?") {
+{ if ((valname=="?") || !valname.length()){
     valu = DK();
     return true;
   }

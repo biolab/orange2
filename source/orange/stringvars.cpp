@@ -100,7 +100,7 @@ bool TStringVariable::nextValue(TValue &) const
 
 
 TValue TStringVariable::randomValue(const int &rand)
-{ return TValue(mlnew TStringValue("")); }
+{ return TValue(mlnew TStringValue(""), STRINGVAR); }
 
 
 int TStringVariable::noOfValues() const
@@ -108,7 +108,7 @@ int TStringVariable::noOfValues() const
 
 
 void TStringVariable::str2val(const string &valname, TValue &valu)
-{ valu = TValue(mlnew TStringValue(valname)); }
+{ valu = TValue(mlnew TStringValue(valname), STRINGVAR); }
 
 
 void TStringVariable::val2str(const TValue &valu, string &vname) const

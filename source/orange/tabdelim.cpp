@@ -880,55 +880,56 @@ void printVarType(FILE *file, PVariable var)
 void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
 { 
   char delims[2] = {delim, 0};
+  TVarList::const_iterator vi, vb(dom->variables->begin()), ve(dom->variables->end());
+  TMetaVector::const_iterator mi, mb(dom->metas.begin()), me(dom->metas.end());
 
-  { int notFirst = 0;
-    const_PITERATE(TVarList, vi, dom->variables) {
-      if (notFirst++)
-        fprintf(file, "%c%s", delim, (*vi)->name.c_str());
-      else
-        fprintf(file, "%s", (*vi)->name.c_str());
-    }
-
-    const_ITERATE(TMetaVector, mi, dom->metas) {
-      if (notFirst++)
-        fprintf(file, "%c%s", delim, (*mi).variable->name.c_str());
-      else
-        fprintf(file, "%s", (*mi).variable->name.c_str());
-    }
-    fprintf(file, "\n");
+  // First line: attribute names
+  for(vi = vb; vi!=ve; vi++) {
+    if (vi!=vb)
+      fprintf(file, "%c%s", delim, (*vi)->name.c_str());
+    else
+      fprintf(file, "%s", (*vi)->name.c_str());
   }
+  for(mi = mb; mi!=me; mi++) {
+    if (mi!=mb)
+      fprintf(file, "%c%s", delim, (*mi).variable->name.c_str());
+    else
+      fprintf(file, "%s", (*mi).variable->name.c_str());
+    }
+  fprintf(file, "\n");
 
-  { int notFirst=0;
-    const_PITERATE(TVarList, vi, dom->variables) {
-      if (notFirst++)
-        fprintf(file, delims);
-      printVarType(file, *vi);
-    }
-    const_ITERATE(TMetaVector, mi, dom->metas) {
-      if (notFirst++)
-        fprintf(file, delims);
-      printVarType(file, (*mi).variable);
-    }
-    fprintf(file, "\n");
+  
+  // Second line: types
+  for(vi = vb; vi!=ve; vi++) {
+    if (vi!=vb)
+      fprintf(file, delims);
+    printVarType(file, *vi);
   }
+  for(mi = mb; mi!=me; mi++) {
+    if (mi!=mb)
+      fprintf(file, delims);
+    printVarType(file, (*mi).variable);
+  }
+  fprintf(file, "\n");
 
-  { if (dom->attributes->size())
-      for(int i = dom->attributes->size()-1; i--; )
-        fprintf(file, delims);
 
-    if (dom->classVar)
-      fprintf(file, "%cclass", delim);
-
-    int notFirst=dom->variables->size();
-    
-    { const_ITERATE(TMetaVector, mi, dom->metas) {
-        if (notFirst++)
-          fprintf(file, delims);
-        fprintf(file, "meta");
-      }
-    }
+  // Third line: "meta" and "-ordered"
+  for(vb = vi = dom->attributes->begin(), ve = dom->attributes->end(); vi!=ve; vi++) {
+    if (vi!=vb)
+      fprintf(file, delims);
+    if ((*vi)->ordered)
+      fprintf(file, "-ordered");
+  }
+  if (dom->classVar)
+    fprintf(file, "%cclass", delim);
+  for(mi = mb; mi!=me; mi++) {
+    if (mi!=mb)
+      fprintf(file, delims);
+      fprintf(file, "meta");
+      if ((*mi).variable->ordered)
+        fprintf(file, " -ordered");
+   }
    fprintf(file, "\n");
-  }
 }
 
 

@@ -20,8 +20,6 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <math.h>
 #include "errors.hpp"
 #include "stladdon.hpp"
@@ -117,6 +115,8 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var)
   TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
+  evar->ordered = true;
+
   if (numberOfIntervals<2)
     evar->addValue("C");
 
@@ -178,6 +178,8 @@ PVariable TThresholdDiscretizer::constructVar(PVariable var)
   TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
+  evar->ordered = true;
+
   char s[10];
   sprintf(s, "<= %5.3f", threshold);
   evar->values->push_back(s);
@@ -217,6 +219,8 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var)
 
   TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
+
+  evar->ordered = true;
 
   if (high<=low)
     raiseError("invalid interval: (%5.3f, %5.3f]", low, high);
@@ -281,6 +285,8 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
 
   TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
+
+  evar->ordered = true;
 
   if (!points->size())
     evar->addValue("C");
