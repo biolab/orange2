@@ -1,29 +1,5 @@
 from qt import *
-from OWBaseWidget import *
 import os.path
-
-test = [
-    '16 13 5 1',
-    '. c #040404',
-    '# c #808304',
-    'a c None',
-    'b c #f3f704',
-    'c c #f3f7f3',
-    'aaaaaaaaa...aaaa',
-    'aaaaaaaa.aaa.a.a',
-    'aaaaaaaaaaaaa..a',
-    'a...aaaaaaaa...a',
-    '.bcb.......aaaaa',
-    '.cbcbcbcbc.aaaaa',
-    '.bcbcbcbcb.aaaaa',
-    '.cbcb...........',
-    '.bcb.#########.a',
-    '.cb.#########.aa',
-    '.b.#########.aaa',
-    '..#########.aaaa',
-    '...........aaaaa'
-]
-
 
 dir = os.path.dirname(__file__) + "/icons/"
 dlg_zoom = dir + "Dlg_zoom.png"
@@ -39,6 +15,7 @@ def createButton(parent, text, action = None, icon = None, toggle = 0):
     btn.setToggleButton(toggle)
     if action: parent.connect(btn, SIGNAL("clicked()"), action)
     if icon:   btn.setPixmap(icon)
+    QToolTip.add(btn, text)
     return btn
     
 
