@@ -123,6 +123,10 @@ SOURCE=.\include\cMersenneTwister.h
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\crc.h
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\lcomb.hpp
 # End Source File
 # Begin Source File

@@ -46,7 +46,7 @@ DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
 
 bool c45Loaded = false;
 
-double **rClassSum;
+float **rClassSum;
 short		*rMaxAtt, *rMaxClass, *rMaxDiscrVal;
 ItemNo *rMaxItem;
 Description	**rItem;
@@ -56,7 +56,7 @@ String **rClassName, **rAttName, ***rAttValName, *rFileName;
 short *rVERBOSITY, *rTRIALS;
 Boolean	*rGAINRATIO, *rSUBSET, *rBATCH, *rUNSEENS, *rPROBTHRESH;
 ItemNo *rMINOBJS, *rWINDOW, *rINCREMENT;
-double *rCF;
+float *rCF;
 Tree **rPruned, **rRaw;
 Boolean *rAllKnown;
 ItemNo **rTargetClassFreq;
@@ -193,7 +193,7 @@ extern "C" {
   int InitialiseWeights();
 }
 
-extern double *ClassSum;		/* ClassSum[c] = total weight of class c */
+extern float *ClassSum;		/* ClassSum[c] = total weight of class c */
 
 extern  short MaxAtt = 0 , MaxClass = 0, MaxDiscrVal = 2;
 extern  ItemNo		MaxItem = 0;
@@ -204,12 +204,12 @@ extern  String *ClassName = NULL, *AttName = NULL, **AttValName = NULL, FileName
 extern  short VERBOSITY = 0, TRIALS = 10;
 extern  Boolean		GAINRATIO  = true, SUBSET = false, BATCH = true, UNSEENS = false, PROBTHRESH = false;
 extern  ItemNo		MINOBJS   = 2, WINDOW = 0, INCREMENT = 0;
-extern  double		CF = 0.25;
+extern  float		CF = 0.25;
 extern  Tree		*Pruned = NULL, *Raw = NULL;
 extern  Boolean		AllKnown = true;
 extern  ItemNo *TargetClassFreq;
 
-extern double atof();
+extern float atof();
 
 #endif // else of ifdef _MSC_VER
 
@@ -357,10 +357,11 @@ bool TC45Learner::convertExamples(PExampleGenerator table)
 { Item = mlnew Description[table->numberOfExamples()];
   Description *Itemi = Item;
   MaxItem = 0;
-  PEITERATE(ei, table) {
-    *(Itemi++) = convertExample(*ei);
-    MaxItem ++;
-  }
+  PEITERATE(ei, table)
+    if (!(*ei).getClass().isSpecial()) {
+      *(Itemi++) = convertExample(*ei);
+      MaxItem ++;
+    }
 
   MaxItem--;
   return true;

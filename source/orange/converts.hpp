@@ -57,7 +57,7 @@ string convertToString(const PContingency &);
 
 bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
 
-float PyNumber_AsFloat(PyObject *o);
+bool PyNumber_ToFloat(PyObject *o, float &);
 
 template<class T>
 PyObject *convertToPython(const T &);

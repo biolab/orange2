@@ -583,7 +583,7 @@ public:
     }
 };
 
-
+/*
 PyObject *py_sort_random(PyObject *, PyObject *arg)
 { PyTRY
     PyObject *pylist, *compfunc;
@@ -612,7 +612,7 @@ PyObject *py_sort_random(PyObject *, PyObject *arg)
 
 PyObject *py_ref(PyObject *, PyObject *arg)
 { return PyInt_FromLong((long)arg); }
-  
+*/
     
 
 /* *********** EXPORT DECLARATIONS ************/
@@ -623,10 +623,10 @@ PyObject *py_ref(PyObject *, PyObject *arg)
 PyMethodDef corn_functions[] = {
      DECLARE(compare2ROCs)
      DECLARE(computeROCCumulative)
-     DECLARE(sort_random)
+//     DECLARE(sort_random)
      DECLARE(computeCDT)
 
-     {"ref", py_ref, METH_O},
+//     {"ref", py_ref, METH_O},
 
      {NULL, NULL}
 };

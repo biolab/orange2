@@ -56,44 +56,44 @@ public:
         return mt.Random(); }
 
 
-    #define crand ( (unsigned long)operator()() >> 1 )
-    #define irand ( (unsigned int)operator()() >> 1 )
+    #define crand ( (unsigned long)operator()() )
+    #define irand ( (unsigned int)operator()() )
 
-    int randbool(int y=2)
-    { return (irand%y) == 0; }
+    int randbool(const unsigned int &y=2)
+    { return (irand % y) == 0; }
 
     inline int randint()
-    { return int(irand); }
+    { return int(irand >> 1); }
 
-    inline int randint(int y)
-    { return int(irand%y); }
+    inline int randint(const unsigned int &y)
+    { return int(irand % y); }
 
-    inline int randint(int x, int y)
-    { return int(irand%(y-x+1) + x); }
+    inline int randint(const int &x, const int &y)
+    { return int(irand % ((unsigned int)(y-x+1)) + x); }
 
     inline long randlong()
-    { return crand; }
+    { return long(crand >> 1); }
 
-    inline long randlong(long y)
-    { return crand%y; }
+    inline long randlong(const unsigned long y)
+    { return crand % y; }
 
-    inline long randlong(long x, long y)
-    { return crand%(y-x+1) + x; }
+    inline long randlong(const long &x, const long &y)
+    { return crand % ((unsigned long)(y-x+1)) + x; }
 
-    inline double randdouble(double x, double y)
-    { return double(crand)/double(2147483648.0)*(y-x) + x; }
+    inline double randdouble(const double &x, const double &y)
+    { return double(crand)/double(4294967296.0)*(y-x) + x; }
 
-    inline float randfloat(double x, double y)
-    { return float(double(crand)/double(2147483648.0)*(y-x) + x); }
+    inline float randfloat(const double &x, const double &y)
+    { return float(randdouble(x, y)); }
 
     inline float operator()(const double &x, const double &y)
-    { return randfloat(x, y); }
+    { return randdouble(x, y); }
 
-    inline double randdouble(double y=1.0)
-    { return double(crand)/double(2147483648.0)*y; }
+    inline double randdouble(const double &y=1.0)
+    { return double(crand)/double(4294967296.0)*y; }
 
-    inline float randfloat(double y=1.0)
-    { return float(double(crand)/double(2147483648.0)*y); }
+    inline float randfloat(const float &y=1.0)
+    { return float(randdouble(y)); }
 };
 
 
@@ -113,14 +113,17 @@ class TSimpleRandomGenerator {
 public:
   int seed;
   
-  TSimpleRandomGenerator(int aseed)
+  TSimpleRandomGenerator(int aseed = 0)
   : seed(aseed)
   {}
 
   int rand ()
   { return(((seed = seed * 214013L + 2531011L) >> 16) & 0x7fff); }
 
-  int randbool(int y=2)
+  int operator()(const int &y)
+  { return rand() % y; }
+  
+  int randbool(const int &y=2)
   { return (rand()%y) == 0; }
 
   int randsemilong()

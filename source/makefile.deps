@@ -2,18 +2,18 @@ ORANGE_OBJECTS =\
 	 $(ODIR)/assistant.o $(ODIR)/assoc.o $(ODIR)/basstat.o $(ODIR)/bayes.o $(ODIR)/boolcnt.o $(ODIR)/boosting.o\
 	 $(ODIR)/c2py.o $(ODIR)/c4.5.o $(ODIR)/c45inter.o $(ODIR)/callback.o $(ODIR)/cartesian.o $(ODIR)/clas_gen.o\
 	 $(ODIR)/classfromvar.o $(ODIR)/classifier.o $(ODIR)/cls_example.o $(ODIR)/cls_orange.o $(ODIR)/cls_value.o $(ODIR)/common.o\
-	 $(ODIR)/contingency.o $(ODIR)/converts.o $(ODIR)/cost.o $(ODIR)/costwrapper.o $(ODIR)/decomposition.o $(ODIR)/discretize.o\
-	 $(ODIR)/dist_clustering.o $(ODIR)/distance.o $(ODIR)/distvars.o $(ODIR)/domain.o $(ODIR)/errors.o $(ODIR)/estimateprob.o\
-	 $(ODIR)/exampleclustering.o $(ODIR)/examplegen.o $(ODIR)/examples.o $(ODIR)/excel.o $(ODIR)/filegen.o $(ODIR)/filter.o\
-	 $(ODIR)/functions.o $(ODIR)/garbage.o $(ODIR)/getarg.o $(ODIR)/induce.o $(ODIR)/knn.o $(ODIR)/lcomb.o\
-	 $(ODIR)/learn.o $(ODIR)/lib_components.o $(ODIR)/lib_io.o $(ODIR)/lib_kernel.o $(ODIR)/lib_learner.o $(ODIR)/lib_preprocess.o\
-	 $(ODIR)/lib_vectors.o $(ODIR)/lookup.o $(ODIR)/majority.o $(ODIR)/measures.o $(ODIR)/meta.o $(ODIR)/minimal_complexity.o\
-	 $(ODIR)/minimal_error.o $(ODIR)/mod_list_plugins.o $(ODIR)/nearest.o $(ODIR)/obsolete.o $(ODIR)/orange.o $(ODIR)/orvector.o\
-	 $(ODIR)/preprocessors.o $(ODIR)/random.o $(ODIR)/readdata.o $(ODIR)/redundancy.o $(ODIR)/retisinter.o $(ODIR)/root.o\
-	 $(ODIR)/rule_conditions.o $(ODIR)/spec_contingency.o $(ODIR)/spec_gen.o $(ODIR)/statexceptions.o $(ODIR)/stringvars.o $(ODIR)/subsets.o\
-	 $(ODIR)/survival.o $(ODIR)/svm.o $(ODIR)/svm_filtering.o $(ODIR)/tabdelim.o $(ODIR)/table.o $(ODIR)/tdidt.o\
-	 $(ODIR)/tdidt_split.o $(ODIR)/tdidt_stop.o $(ODIR)/transdomain.o $(ODIR)/transval.o $(ODIR)/trindex.o $(ODIR)/valuelisttemplate.o\
-	 $(ODIR)/values.o $(ODIR)/vars.o
+	 $(ODIR)/contingency.o $(ODIR)/converts.o $(ODIR)/cost.o $(ODIR)/costwrapper.o $(ODIR)/crc32.o $(ODIR)/decomposition.o\
+	 $(ODIR)/discretize.o $(ODIR)/dist_clustering.o $(ODIR)/distance.o $(ODIR)/distvars.o $(ODIR)/domain.o $(ODIR)/errors.o\
+	 $(ODIR)/estimateprob.o $(ODIR)/exampleclustering.o $(ODIR)/examplegen.o $(ODIR)/examples.o $(ODIR)/excel.o $(ODIR)/filegen.o\
+	 $(ODIR)/filter.o $(ODIR)/functions.o $(ODIR)/garbage.o $(ODIR)/getarg.o $(ODIR)/induce.o $(ODIR)/knn.o\
+	 $(ODIR)/lcomb.o $(ODIR)/learn.o $(ODIR)/lib_components.o $(ODIR)/lib_io.o $(ODIR)/lib_kernel.o $(ODIR)/lib_learner.o\
+	 $(ODIR)/lib_preprocess.o $(ODIR)/lib_vectors.o $(ODIR)/lookup.o $(ODIR)/majority.o $(ODIR)/measures.o $(ODIR)/meta.o\
+	 $(ODIR)/minimal_complexity.o $(ODIR)/minimal_error.o $(ODIR)/mod_list_plugins.o $(ODIR)/nearest.o $(ODIR)/obsolete.o $(ODIR)/orange.o\
+	 $(ODIR)/orvector.o $(ODIR)/preprocessors.o $(ODIR)/random.o $(ODIR)/readdata.o $(ODIR)/redundancy.o $(ODIR)/retisinter.o\
+	 $(ODIR)/root.o $(ODIR)/rule_conditions.o $(ODIR)/spec_contingency.o $(ODIR)/spec_gen.o $(ODIR)/statexceptions.o $(ODIR)/stringvars.o\
+	 $(ODIR)/subsets.o $(ODIR)/survival.o $(ODIR)/svm.o $(ODIR)/svm_filtering.o $(ODIR)/tabdelim.o $(ODIR)/table.o\
+	 $(ODIR)/tdidt.o $(ODIR)/tdidt_split.o $(ODIR)/tdidt_stop.o $(ODIR)/transdomain.o $(ODIR)/transval.o $(ODIR)/trindex.o\
+	 $(ODIR)/valuelisttemplate.o $(ODIR)/values.o $(ODIR)/vars.o
 
 CORN_OBJECTS = $(ODIR)/corn.o $(ODIR)/c2py.o
 
@@ -42,6 +42,7 @@ $(ODIR)/converts.o : orange/converts.cpp Python.h c2py.hpp converts.cpp converts
 $(ODIR)/corn.o : corn/corn.cpp Python.h c2py.hpp corn.cpp corn.hpp pywrapper.hpp stladdon.hpp
 $(ODIR)/cost.o : orange/cost.cpp cost.cpp cost.hpp distvars.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
 $(ODIR)/costwrapper.o : orange/costwrapper.cpp cMersenneTwister.h classify.hpp cost.hpp costwrapper.cpp costwrapper.hpp distvars.hpp domain.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp values.hpp vars.hpp
+$(ODIR)/crc32.o : include/crc32.cpp crc32.cpp
 $(ODIR)/decomposition.o : orange/decomposition.cpp basstat.hpp cMersenneTwister.h contingency.hpp decomposition.cpp decomposition.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
 $(ODIR)/discretize.o : orange/discretize.cpp basstat.hpp cMersenneTwister.h classfromvar.hpp classify.hpp contingency.hpp discretize.cpp discretize.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp transval.hpp values.hpp vars.hpp
 $(ODIR)/dist_clustering.o : orange/dist_clustering.cpp basstat.hpp cMersenneTwister.h classify.hpp contingency.hpp cost.hpp decomposition.hpp dist_clustering.cpp dist_clustering.hpp distance.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp exampleclustering.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp induce.hpp learn.hpp measures.hpp meta.hpp orvector.hpp pqueue_i.hpp random.hpp root.hpp slist.hpp stladdon.hpp table.hpp values.hpp vars.hpp
@@ -52,7 +53,7 @@ $(ODIR)/errors.o : orange/errors.cpp errors.cpp errors.hpp garbage.hpp garbage_p
 $(ODIR)/estimateprob.o : orange/estimateprob.cpp cMersenneTwister.h contingency.hpp distvars.hpp domain.hpp errors.hpp estimateprob.cpp estimateprob.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stat.hpp statexceptions.hpp stladdon.hpp values.hpp vars.hpp
 $(ODIR)/exampleclustering.o : orange/exampleclustering.cpp bayes.hpp cMersenneTwister.h classify.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp exampleclustering.cpp exampleclustering.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp lookup.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
 $(ODIR)/examplegen.o : orange/examplegen.cpp domain.hpp errors.hpp examplegen.cpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
-$(ODIR)/examples.o : orange/examples.cpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.cpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
+$(ODIR)/examples.o : orange/examples.cpp crc.h distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.cpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
 $(ODIR)/excel.o : orange/excel.cpp cMersenneTwister.h domain.hpp errors.hpp examplegen.hpp examples.hpp excel.cpp filegen.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp stringvars.hpp table.hpp values.hpp vars.hpp
 $(ODIR)/filegen.o : orange/filegen.cpp domain.hpp errors.hpp examplegen.hpp examples.hpp filegen.cpp filegen.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp stringvars.hpp values.hpp vars.hpp
 $(ODIR)/filter.o : orange/filter.cpp cMersenneTwister.h distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp filter.cpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp trindex.hpp values.hpp vars.hpp
@@ -109,9 +110,9 @@ $(ODIR)/values.o : orange/values.cpp errors.hpp garbage.hpp garbage_py_manner.hp
 $(ODIR)/vars.o : orange/vars.cpp cMersenneTwister.h classify.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp values.hpp vars.cpp vars.hpp
 
 
-$(PPPDIR)/stamp: learn.hpp trindex.hpp basstat.hpp c4.5.hpp boosting.hpp values.hpp filegen.hpp subsets.hpp distance.hpp tabdelim.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp cost.hpp examplegen.hpp svm_filtering.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp estimateprob.hpp knn.hpp examples.hpp svm.hpp lookup.hpp root.hpp induce.hpp majority.hpp spec_contingency.hpp tdidt.hpp costwrapper.hpp table.hpp transdomain.hpp domain.hpp contingency.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp assistant.hpp minimal_error.hpp classfromvar.hpp filter.hpp preprocessors.hpp assoc.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp dist_clustering.hpp decomposition.hpp
+$(PPPDIR)/stamp: learn.hpp trindex.hpp basstat.hpp boosting.hpp values.hpp subsets.hpp distance.hpp tabdelim.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp examplegen.hpp svm_filtering.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp cost.hpp c4.5.hpp estimateprob.hpp knn.hpp examples.hpp svm.hpp lookup.hpp root.hpp majority.hpp spec_contingency.hpp tdidt.hpp costwrapper.hpp table.hpp transdomain.hpp domain.hpp contingency.hpp induce.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp assistant.hpp minimal_error.hpp classfromvar.hpp filter.hpp preprocessors.hpp assoc.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp filegen.hpp dist_clustering.hpp decomposition.hpp
 	python $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) 
 
-$(PXDIR)/stamp: lib_vectors.cpp lib_io.cpp cls_orange.cpp orange.cpp cls_example.cpp cls_value.cpp lib_learner.cpp lib_kernel.cpp lib_components.cpp obsolete.cpp callback.cpp lib_preprocess.cpp
+$(PXDIR)/stamp: lib_io.cpp lib_vectors.cpp cls_orange.cpp orange.cpp cls_example.cpp cls_value.cpp lib_learner.cpp lib_kernel.cpp lib_components.cpp obsolete.cpp callback.cpp lib_preprocess.cpp
 	python $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)
 

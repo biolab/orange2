@@ -101,7 +101,7 @@ PRandomIndices TMakeRandomIndices2::operator()(const int &n, const float &p0)
      *(ii++)=0;
 
    rsrgen rg(randomGenerator, randseed);
-   random_shuffle(indices->begin(), indices->end(), rg);
+   or_random_shuffle(indices->begin(), indices->end(), rg);
    return indices;
  }
 
@@ -251,7 +251,7 @@ PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
     for(ss++, no = props ? int(*pi*n+0.5) : int(*pi+0.5); no-- && (ii!=ie); *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);
-  random_shuffle(indices->begin(), indices->end(), rg);
+  or_random_shuffle(indices->begin(), indices->end(), rg);
 
   return indices;
 }
@@ -291,7 +291,7 @@ PRandomIndices TMakeRandomIndicesCV::operator()(const int &n, const int &afolds)
     for(int no=int(floor(n/afolds))+(ss<n%afolds); no--; *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);
-  random_shuffle(indices->begin(), indices->end(), rg);
+  or_random_shuffle(indices->begin(), indices->end(), rg);
 
   return indices;
 }
@@ -468,7 +468,7 @@ PRandomIndices TMakeRandomIndicesMultiple::operator()(PExampleGenerator gen, con
     while (int(indices->size())<no)
       indices->push_back(rg(nexamples));
 
-  random_shuffle(indices->begin(), indices->end(), rg);
+  or_random_shuffle(indices->begin(), indices->end(), rg);
 
   return indices;
 }

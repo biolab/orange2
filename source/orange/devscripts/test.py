@@ -1,7 +1,9 @@
 import os, os.path, sys, traceback
+from string import rstrip
 
 startdir = os.getcwd()
-dir = r"d:\ai\orange\doc\modules"
+dir = r"d:\ai\orange\doc\reference"
+#dir = "/home/janez/doc/reference"
 
 os.chdir(dir)
 sys.path = [dir] + sys.path
@@ -11,15 +13,16 @@ newscripts, modified, israndom, errors = [], [], [], []
 skip = []
 
 outputdir = "outputs"
-newname = outputdir + "\\%s.new.txt"
-oldname = outputdir + "\\%s.txt"
-oldoldname = outputdir + "\\%s.old.txt"
+newname = outputdir + "/%s.new.txt"
+oldname = outputdir + "/%s.txt"
+oldoldname = outputdir + "/%s.old.txt"
 
 NO_RANDOMNESS = 1 # prevent random parts of scripts to run
 
 def samefiles(name):
+    equal = 1
     fnew, fold = open(newname % name, "rt"), open(oldname % name, "rt")
-    equal = fnew.read() == fold.read()
+    equal = [rstrip(x) for x in fnew.readlines()] == [rstrip(x) for x in fold.readlines()]
     fnew.close()
     fold.close()
     return equal

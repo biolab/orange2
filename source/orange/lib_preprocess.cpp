@@ -57,9 +57,11 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "discretize.hpp"
 
 
-C_NAMED(EquiDistDiscretizer, TransformValue, "([numberOfIntervals=, firstVal=, step=])")
-C_NAMED(IntervalDiscretizer, TransformValue, "([points=])")
-C_NAMED(ThresholdDiscretizer, TransformValue, "([threshold=])")
+BASED_ON(Discretizer, TransformValue)
+C_NAMED(EquiDistDiscretizer, Discretizer, "([numberOfIntervals=, firstCut=, step=])")
+C_NAMED(IntervalDiscretizer, Discretizer, "([points=])")
+C_NAMED(ThresholdDiscretizer, Discretizer, "([threshold=])")
+C_NAMED(BiModalDiscretizer, Discretizer, "([low=, high=])")
 
 BASED_ON(Discretization, Orange)
 BASED_ON(DiscretizedDomain, Domain)
@@ -92,14 +94,15 @@ PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords
 }
 
 
-PyObject *IntervalDiscretizer_constructVariable(PyObject *self, PyObject *var) PYARGS(METH_O, "(variable) -> variable")
+PyObject *Discretizer_constructVariable(PyObject *self, PyObject *var) PYARGS(METH_O, "(variable) -> variable")
 { PyTRY
-    if (!PyOrIntervalDiscretizer_Check(self) || !PyOrVariable_Check(var))
+    if (!PyOrVariable_Check(var))
       PYERROR(PyExc_TypeError, "invalid parameters (variable expected)", PYNULL);
 
-    return WrapOrange(TIntervalDiscretizer::constructVar(PyOrange_AsVariable(var), PyOrange_AsIntervalDiscretizer(self)));
+    return WrapOrange(PyOrange_AsDiscretizer(self)->constructVar(PyOrange_AsVariable(var)));
   PyCATCH
 }
+
 
 /* ************ SVM FILTERS ************** */
 

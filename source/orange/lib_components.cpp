@@ -74,12 +74,13 @@ bool convertFromPython(PyObject *args, PCostMatrix &matrix, bool, PyTypeObject *
       for(int corr=0; corr<pao->dimensions[0]; corr++) {
         PyObject *el=pao->descr->getitem(sdata);
         sdata+=pao->strides[1];
-        if (!PyNumber_Check(el)) {
+        float f;
+        if (!PyNumber_ToFloat(el, f)) {
           Py_XDECREF(el);
           matrix=NULL;
           PYERROR(PyExc_TypeError, "invalid element in CostMatrix", false);
         }
-        matrix->setCost(pred, corr, PyNumber_AsFloat(el));
+        matrix->setCost(pred, corr, f);
         Py_DECREF(el);
       }
       data+=pao->strides[0];
@@ -99,11 +100,12 @@ bool convertFromPython(PyObject *args, PCostMatrix &matrix, bool, PyTypeObject *
       }
       for(int j=0; j<dim; j++) {
         PyObject *elel=PyList_GetItem(el, j);
-        if (!PyNumber_Check(elel)) {
+        float f;
+        if (!PyNumber_ToFloat(elel, f)) {
           matrix=PCostMatrix();
           PYERROR(PyExc_TypeError, "invalid element in CostMatrix", false);
         }
-        matrix->setCost(i, j, PyNumber_AsFloat(elel));
+        matrix->setCost(i, j, f);
       }
     }
   }
@@ -409,13 +411,11 @@ PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
       return &cont->discrete->at(ind);
   }
   else if (cont->outerVariable->varType==TValue::FLOATVAR) {
-    float ind=numeric_limits<float>::quiet_NaN();
-    if (PyNumber_Check(index))
-      ind=(float)PyNumber_AsFloat(index);
-    else {
+    float ind = numeric_limits<float>::quiet_NaN();
+    if (!PyNumber_ToFloat(index, ind)) {
       TValue val;
       if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial())
-        ind=float(val);
+        ind = float(val);
     }
 
     TDistributionMap::iterator mi=cont->continuous->find(ind);

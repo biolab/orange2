@@ -75,6 +75,17 @@ public:
 };
 
 
+class TDiscretizer : public TTransformValue {
+public:
+  __REGISTER_ABSTRACT_CLASS
+
+  /* If you want to avoid rewrapping, you should write this as static and
+     pass the discretizer as PDiscretizer. */
+  virtual PVariable constructVar(PVariable) = 0;
+};
+
+WRAPPER(Discretizer)
+
 
 class TDomainDiscretization : public TOrange {
 public:
@@ -92,27 +103,22 @@ protected:
 };
 
 
-
-class TEquiDistDiscretizer : public TTransformValue {
+class TEquiDistDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
   int   numberOfIntervals; //P number of intervals
-  float firstVal; //P the lowest possible value
+  float firstCut; //P the first cut-off point
   float step; //P step (width of interval)
 
   TEquiDistDiscretizer(const int=-1, const float=-1.0, const float=-1.0);
 
   virtual void transform(TValue &);
-
-  /* This is static since it requires a wrapped EquiDiscDiscretizer;
-     (it will be stored in constructed Variable!)
-     'this' pointer would not suffice - there's a danger of it being rewrapped */
-  static  PVariable constructVar(PVariable, PEquiDistDiscretizer);
+  virtual PVariable constructVar(PVariable);
 };
 
 
-class TThresholdDiscretizer : public TTransformValue {
+class TThresholdDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
@@ -120,10 +126,12 @@ public:
 
   TThresholdDiscretizer(const float &threshold = 0.0);
   virtual void transform(TValue &);
+
+  virtual PVariable constructVar(PVariable);
 };
 
 
-class TIntervalDiscretizer : public TTransformValue  {
+class TIntervalDiscretizer : public TDiscretizer  {
 public:
   __REGISTER_CLASS
 
@@ -134,7 +142,20 @@ public:
   TIntervalDiscretizer(const string &boundaries);
 
   virtual void      transform(TValue &);
-  static PVariable constructVar(PVariable var, PIntervalDiscretizer);
+  PVariable constructVar(PVariable var);
+};
+
+
+class TBiModalDiscretizer : public TDiscretizer {
+public:
+  __REGISTER_CLASS
+
+  float low; //P low threshold
+  float high; //P high threshold
+
+  TBiModalDiscretizer(const float & = 0.0, const float & = 0.0);
+  virtual void transform(TValue &);
+  PVariable constructVar(PVariable var);
 };
 
 
@@ -196,6 +217,7 @@ public:
   __REGISTER_CLASS
 
   int maxNumberOfIntervals; //P maximal number of intervals; default = 0 (no limits)
+  bool forceAttribute; //P minimal number of intervals; default = 0 (no limits)
 
   TEntropyDiscretization();
   typedef map<float, TDiscDistribution> TS;
@@ -204,14 +226,20 @@ public:
   virtual PVariable operator()(const TS &, const TDiscDistribution &, PVariable, const long &weightID, TSimpleRandomGenerator &rgen) const;
 
 protected:
-  void divide(const TS::const_iterator &, const TS::const_iterator &, const TDiscDistribution &, float entropy, int k, vector<pair<float, float> > &, TSimpleRandomGenerator &rgen) const;
+  void divide(const TS::const_iterator &, const TS::const_iterator &, const TDiscDistribution &,
+              float entropy, int k, vector<pair<float, float> > &, TSimpleRandomGenerator &rgen) const;
 };
+
 
 
 
 class TBiModalDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
+
+  bool splitInTwo; //P if true (default), flanks are merged into a single interval
+
+  TBiModalDiscretization(const bool = true);
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID=0);
 };
 

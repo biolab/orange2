@@ -819,10 +819,7 @@ bool TDiscDistribution::noDeviation() const
 
 int TDiscDistribution::randomInt(const long &random)
 { 
-  TSimpleRandomGenerator rg(random);
-  for (int i = 10; i--; rg.randbool());
-
-  float ri = rg.randfloat()*abs;
+  float ri = (random & 0x7fffffff) / float(0x7fffffff);
   const_iterator di(begin());
   while (ri > *di)
     ri -= *(di++);
@@ -1164,10 +1161,7 @@ float TContDistribution::randomFloat()
 
 float TContDistribution::randomFloat(const long &random)
 { 
-  TSimpleRandomGenerator rg(random);
-  for (int i = 10; i--; rg.randbool());
-
-  float ri = rg.randfloat()*abs;
+  float ri = (random & 0x7fffffff) / float(0x7fffffff);
   const_iterator di(begin());
   while (ri > (*di).first)
     ri -= (*(di++)).first;

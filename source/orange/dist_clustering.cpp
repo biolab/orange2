@@ -181,7 +181,7 @@ PExampleClusters TClustersFromDistributionsByAssessor::operator()(PExampleDistVe
   ITERATE(vector<T_ExampleDist>, edvi, edv->values)
     nex += (*edvi).distribution->cases;
 
-  TSimpleRandomGenerator rgen(nex);
+  TSimpleRandomGenerator rgen;
 
   try {
     TDistProfitQueue profitQueue;

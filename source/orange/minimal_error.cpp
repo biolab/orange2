@@ -153,7 +153,7 @@ PExampleClusters TClustersFromIMByAssessor::operator()(PIM pim)
   TIMClusterNode *clusters = NULL;
   float baseQuality, N, initialQuality;
 
-  TSimpleRandomGenerator rgen(0); // will be set later, when N is known (in computeQualities)
+  TSimpleRandomGenerator rgen; // seed will be set later, when N is known (in computeQualities)
 
   try {
     TProfitQueue profitQueue;

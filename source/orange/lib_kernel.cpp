@@ -2104,42 +2104,6 @@ PyObject *TransformValue_call(PyObject *self, PyObject *args, PyObject *keywords
 
 #include "distvars.hpp"
 
-PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(attribute[, examples[, weightID]])")
-{
-  PyTRY
-    PExampleGenerator gen;
-    PyObject *pyvar;
-    int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O|O&i:Distribution.new", &pyvar, &pt_ExampleGenerator, &gen, &weightID))
-      return PYNULL;
-
-    TDistribution *dist;
-
-    if (!gen) {
-      if (PyOrVariable_Check(pyvar))
-        dist = TDistribution::create(PyOrange_AsVariable(pyvar));
-      else
-        raiseError("invalid arguments");
-    }
-    else {
-      if (PyOrVariable_Check(pyvar))
-        dist = TDistribution::fromGenerator(gen, PyOrange_AsVariable(pyvar), weightID);
-      else {
-        PVariable var = varFromArg_byDomain(pyvar, gen->domain, false);
-        if (!var)
-          return PYNULL;
-
-        dist = TDistribution::fromGenerator(gen, var, weightID);
-      }
-    }
-
-    /* We need to override the type (don't want to lie it's Distribution).
-       The exception is if another type is prescribed. */
-    return type==(PyTypeObject *)(&PyOrDistribution_Type) ? WrapOrange(dist) : WrapNewOrange(dist, type);
-  PyCATCH
-}
-
-
 PyObject *convertToPythonNative(const TDiscDistribution &disc)
 { int e = disc.size();
   PyObject *pylist = PyList_New(e);
@@ -2161,6 +2125,22 @@ PyObject *convertToPythonNative(const TContDistribution &cont)
 }
 
 
+bool convertFromPython(PyObject *pylist, TDiscDistribution &disc)
+{
+  if (!PyList_Check(pylist))
+    PYERROR(PyExc_TypeError, "list expected", false);
+    
+  disc.clear();
+  float d;
+  for(int i = 0, e = PyList_Size(pylist); i!=e; i++) {
+    if (!PyNumber_ToFloat(PyList_GET_ITEM(pylist, i), d))
+      PYERROR(PyExc_TypeError, "non-number in DiscDistribution as list", false);
+    disc.set(TValue(i), d);
+  }
+
+  return true;
+}
+
 
 PyObject *convertToPythonNative(const TDistribution &dist, int)
 { const TDiscDistribution *disc = dynamic_cast<const TDiscDistribution *>(&dist);
@@ -2172,6 +2152,51 @@ PyObject *convertToPythonNative(const TDistribution &dist, int)
     return convertToPythonNative(*cont);
 
   PYERROR(PyExc_TypeError, "cannot convert to native python object", PYNULL);
+}
+
+
+PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(attribute[, examples[, weightID]])")
+{
+  PyTRY
+    PExampleGenerator gen;
+    PyObject *pyvar;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "O|O&i:Distribution.new", &pyvar, &pt_ExampleGenerator, &gen, &weightID))
+      return PYNULL;
+
+    TDistribution *dist;
+
+    if (!gen) {
+      if (PyOrVariable_Check(pyvar))
+        dist = TDistribution::create(PyOrange_AsVariable(pyvar));
+      else if (PyList_Check(pyvar)) {
+        TDiscDistribution *ddist = mlnew TDiscDistribution();
+        if (!convertFromPython(pyvar, *ddist)) {
+          mldelete ddist;
+          raiseError("invalid arguments");
+        }
+        else
+          dist = ddist;
+      }
+      else
+        raiseError("invalid arguments");
+    }
+    else {
+      if (PyOrVariable_Check(pyvar))
+        dist = TDistribution::fromGenerator(gen, PyOrange_AsVariable(pyvar), weightID);
+      else {
+        PVariable var = varFromArg_byDomain(pyvar, gen->domain, false);
+        if (!var)
+          return PYNULL;
+
+        dist = TDistribution::fromGenerator(gen, var, weightID);
+      }
+    }
+
+    /* We need to override the type (don't want to lie it's Distribution).
+       The exception is if another type is prescribed. */
+    return type==(PyTypeObject *)(&PyOrDistribution_Type) ? WrapOrange(dist) : WrapNewOrange(dist, type);
+  PyCATCH
 }
 
 
@@ -2228,8 +2253,7 @@ float *Distribution_getItemRef(PyObject *self, PyObject *index, float *float_idx
   TContDistribution *cont = PyOrange_AS_Orange(self).AS(TContDistribution);
   if (cont) {
     float ind = numeric_limits<float>::quiet_NaN();
-    if (PyNumber_Check(index)) {
-      ind = PyNumber_AsFloat(index);
+    if (PyNumber_ToFloat(index, ind)) {
       if (float_idx)
         *float_idx = ind;
     }
@@ -2663,8 +2687,9 @@ PyObject *ContDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARAR
     if (!PyArg_ParseTuple(args, "O|f", &index, &weight))
       PYERROR(PyExc_TypeError, "DiscDistribution.add: invalid arguments", PYNULL);
 
-    if (PyNumber_Check(index)) {
-      dist->addfloat(PyNumber_AsFloat(index));
+    float f;
+    if (PyNumber_ToFloat(index, f)) {
+      dist->addfloat(f);
       RETURN_NONE;
     }
 

@@ -94,8 +94,9 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
         }
       }
       else if ((*vi)->varType==TValue::FLOATVAR) {
-        if (PyNumber_Check(li)) 
-          *(ei++)=TValue(PyNumber_AsFloat(li));
+        float f;
+        if (PyNumber_ToFloat(li, f))
+          *(ei++) = TValue(f);
         else {
           PyErr_Format(PyExc_TypeError, "attribute no. %i (%s) is continuous, float value expected", pos, (*vi)->name.c_str());
           return false;
@@ -485,7 +486,6 @@ PyObject *Example_setclass(TPyExample *pex, PyObject *val) PYARGS(METH_O, "(valu
 }
 
 
-
 PyObject *Example_compatible(TPyExample *pex, PyObject *obj) PYARGS(METH_O, "(example); Returns true if examples are compatible")
 { PyTRY
     if (!PyOrExample_Check(obj))
@@ -699,6 +699,13 @@ PyObject *Example_get_domain(TPyExample *self)
 int Example_cmp(TPyExample *one, TPyExample *another)
 { PyTRY
     return PyExample_AS_Example(one)->compare(PyExample_AS_ExampleReference(another));
+  PyCATCH_1
+}
+
+
+int Example_hash(TPyExample *ex)
+{ PyTRY
+    return PyExample_AS_Example(ex)->sumValues();
   PyCATCH_1
 }
 

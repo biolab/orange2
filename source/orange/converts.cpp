@@ -132,11 +132,13 @@ string convertToString(const string &str)
 { return str; }
 
 
-float PyNumber_AsFloat(PyObject *o)
+bool PyNumber_ToFloat(PyObject *o, float &res)
 { PyObject *number=PyNumber_Float(o);
-  float res=(float)PyFloat_AsDouble(number);
+  if (!number)
+    return false;
+  res = (float)PyFloat_AsDouble(number);
   Py_DECREF(number);
-  return res;
+  return true;
 }
 
 

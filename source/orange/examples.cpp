@@ -212,5 +212,5 @@ int TExample::sumValues() const
   }
 
   FINISH_CRC(crc);
-  return abs(crc);
+  return int(crc & 0x7fffffff);
 }

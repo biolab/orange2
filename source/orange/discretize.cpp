@@ -44,12 +44,12 @@
 
 TEquiDistDiscretizer::TEquiDistDiscretizer(const int noi, const float fv, const float st)
 : numberOfIntervals(noi),
-  firstVal(fv),
+  firstCut(fv),
   step(st)
 {}
 
 
-// Transforms the value; results is floor((val.floatV-firstVal)/step); 0 or numberOfIntervals if it is out of the range
+// Transforms the value; results is 1+floor((val.floatV-firstCut)/step); 0 if below firstCut, numberOfIntervals if above range 
 void TEquiDistDiscretizer::transform(TValue &val)
 { if (val.varType!=TValue::FLOATVAR)
     raiseError("discrete value expected");
@@ -57,11 +57,14 @@ void TEquiDistDiscretizer::transform(TValue &val)
   if (!val.isSpecial()) {
     if (step<0)
       raiseError("'step' not set");
+    if (numberOfIntervals<1)
+      raiseError("invalid number of intervals (%i)", numberOfIntervals);
 
-    if (step==0)
+    if ((step==0) || (numberOfIntervals==1))
       val.intV = 0;
+
     else {
-      val.intV = (val.floatV<firstVal) ? 0 : int(floor((val.floatV-firstVal)/step));
+      val.intV = (val.floatV<firstCut) ? 0 : 1+int(floor((val.floatV-firstCut)/step));
       if (val.intV>=numberOfIntervals)
         val.intV = numberOfIntervals-1;
     }
@@ -100,42 +103,45 @@ string mcvt(double f, int decs)
 /*  Constructs a new TEnumVariable. Its values represent the intervals for values of passed variable var;
     getValueFrom points to a classifier which gets a value of the original variable (var) and transforms it using
     'this' transformer. */
-PVariable TEquiDistDiscretizer::constructVar(PVariable var, PEquiDistDiscretizer discretizer)
-{ TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
-
-  float &firstVal = discretizer->firstVal,
-        &step = discretizer->step;
-
-  float roundfactor;
-  int decs = numDecs(step, roundfactor);
-
-  roundToFactor(firstVal, roundfactor);
-  roundToFactor(step, roundfactor);
-
-  float f = firstVal+step;
-  string pval;
-
-  pval = mcvt(f, decs);
-  evar->addValue(string("<") + pval);
-
-  int steps = discretizer->numberOfIntervals-2;
-  while (steps--) {
-    string s("[");
-    s += pval;
-    f += step;
-    s += ", ";
-    pval = mcvt(f, decs);
-    s += pval;
-    s += ")";
-    evar->addValue(s);
-  }
-
-  evar->addValue(string(">") + pval);
-  
+PVariable TEquiDistDiscretizer::constructVar(PVariable var)
+{ 
+  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
-  TClassifierFromVar *tcfv=mlnew TClassifierFromVar(revar, var);
-  tcfv->transformer=discretizer;
-  revar->getValueFrom=tcfv;
+
+  if (numberOfIntervals<2)
+    evar->addValue("C");
+
+  else {
+    float roundfactor;
+    int decs = numDecs(step, roundfactor);
+
+    roundToFactor(firstCut, roundfactor);
+    roundToFactor(step, roundfactor);
+
+    float f = firstCut;
+    string pval;
+
+    pval = mcvt(f, decs);
+    evar->addValue(string("<") + pval);
+
+    int steps = numberOfIntervals-2;
+    while (steps--) {
+      string s("[");
+      s += pval;
+      f += step;
+      s += ", ";
+      pval = mcvt(f, decs);
+      s += pval;
+      s += ")";
+      evar->addValue(s);
+    }
+
+    evar->addValue(string(">") + pval);
+  }
+  
+  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformer = this; // rewrapping
+  revar->getValueFrom = tcfv;
   return revar;
 }
 
@@ -153,6 +159,67 @@ void TThresholdDiscretizer::transform(TValue &val)
 }
 
 
+PVariable TThresholdDiscretizer::constructVar(PVariable var)
+{ 
+  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
+  PVariable revar(evar);
+
+  char s[10];
+  sprintf(s, "<= %5.3f", threshold);
+  evar->values->push_back(s);
+  sprintf(s, "> %5.3f", threshold);
+  evar->values->push_back(s);
+
+  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformer = this; // rewrapping
+  revar->getValueFrom = tcfv;
+  return revar;
+}
+
+
+TBiModalDiscretizer::TBiModalDiscretizer(const float &al, const float &ah)
+: low(al),
+  high(ah)
+{}
+
+
+void TBiModalDiscretizer::transform(TValue &val)
+{ 
+  if (val.varType != TValue::FLOATVAR)
+    raiseError("continuous value expected");
+
+  if (!val.isSpecial())
+    val.intV = ((val.intV > low) && (val.intV > high)) ? 1 : 0;
+
+  val.varType = TValue::INTVAR;
+}
+
+
+PVariable TBiModalDiscretizer::constructVar(PVariable var)
+{ 
+  TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
+  PVariable revar(evar);
+
+  if (high<=low)
+    raiseError("invalid interval: (%5.3f, %5.3f]", low, high);
+
+  float roundfactor;
+  int decs = numDecs(high-low, roundfactor);
+  roundToFactor(low, roundfactor);
+  roundToFactor(high, roundfactor);
+  string lstr = mcvt(low, decs);
+  string hstr = mcvt(high, decs);
+
+  evar->values->push_back("<=" + lstr + " or >" + hstr);
+  evar->values->push_back("between "+lstr+" and "+hstr);
+
+  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformer = this; // rewrapping
+  revar->getValueFrom = tcfv;
+  return revar;
+}
+
+
 TIntervalDiscretizer::TIntervalDiscretizer()
 : points(mlnew TFloatList())
 {}
@@ -161,6 +228,7 @@ TIntervalDiscretizer::TIntervalDiscretizer()
 TIntervalDiscretizer::TIntervalDiscretizer(PFloatList apoints)
 : points(apoints)
 {};
+
 
 
 void TIntervalDiscretizer::transform(TValue &val)
@@ -181,10 +249,10 @@ void TIntervalDiscretizer::transform(TValue &val)
     values of passed variable var; getValueFrom points to a classifier which
     gets a value of the original variable (var) and transforms it using
     'this' transformer. */
-PVariable TIntervalDiscretizer::constructVar(PVariable var, PIntervalDiscretizer discretizer)
-{ TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
-
-  PFloatList &points = discretizer->points;
+PVariable TIntervalDiscretizer::constructVar(PVariable var)
+{
+  TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
+  PVariable revar(evar);
 
   if (!points->size())
     evar->addValue("C");
@@ -222,11 +290,9 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var, PIntervalDiscretizer
     evar->addValue(string(">")+ostr);
   }
 
-
-  PVariable revar(evar);
-  TClassifierFromVar *tcfv=mlnew TClassifierFromVar(revar, var);
-  tcfv->transformer=discretizer;
-  revar->getValueFrom=tcfv;
+  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  tcfv->transformer = this; // rewrapping
+  revar->getValueFrom = tcfv;
   return revar;
 }
 
@@ -239,17 +305,21 @@ TEquiDistDiscretization::TEquiDistDiscretization(const int anumber)
 {}
 
 
-// Sets the firstVal and step according to the min and max fields of valStat.
+// Sets the firstCut and step according to the min and max fields of valStat.
 PVariable TEquiDistDiscretization::operator()(PBasicAttrStat valStat, PVariable var) const
-{ PEquiDistDiscretizer discretizer = mlnew TEquiDistDiscretizer(numberOfIntervals, valStat->min, (valStat->max-valStat->min)/numberOfIntervals);
-  return TEquiDistDiscretizer::constructVar(var, discretizer);
+{ float step = (valStat->max-valStat->min)/numberOfIntervals;
+  PEquiDistDiscretizer discretizer = mlnew TEquiDistDiscretizer(numberOfIntervals, valStat->min+step, step);
+  return discretizer->constructVar(var);
 }
 
 
-// Sets the firstVal and step according to the range of values that occur in gen for variable var.
+// Sets the firstCut and step according to the range of values that occur in gen for variable var.
 PVariable TEquiDistDiscretization::operator()(PExampleGenerator gen, PVariable var, const long &)
 { if (var->varType!=TValue::FLOATVAR)
     raiseError("attribute '%s' is not continuous", var->name.c_str());
+
+  if (numberOfIntervals<=0)
+    raiseError("invalid number of intervals (%i)", numberOfIntervals);
 
   int varPos=gen->domain->getVarNum(var);
 
@@ -270,8 +340,9 @@ PVariable TEquiDistDiscretization::operator()(PExampleGenerator gen, PVariable v
         min = val;
     };
 
-  PEquiDistDiscretizer discretizer = mlnew TEquiDistDiscretizer(numberOfIntervals, min, (max-min)/numberOfIntervals);
-  return TEquiDistDiscretizer::constructVar(var, discretizer);
+  float step = (max-min)/numberOfIntervals;
+  PEquiDistDiscretizer discretizer = mlnew TEquiDistDiscretizer(numberOfIntervals, min+step, step);
+  return discretizer->constructVar(var);
 }
 
 
@@ -298,7 +369,7 @@ TFixedDiscretization::TFixedDiscretization(const string &boundaries)
 
 PVariable TFixedDiscretization::operator ()(PExampleGenerator, PVariable var, const long &)
 { PIntervalDiscretizer discretizer = mlnew TIntervalDiscretizer (mlnew TFloatList(points));
-  return TIntervalDiscretizer::constructVar(var, discretizer);
+  return discretizer->constructVar(var);
 }
 
 
@@ -317,7 +388,7 @@ PVariable TEquiNDiscretization::operator()(const TContDistribution &distr, PVari
   else
     cutoffsByCounting(discretizer, distr);
 
-  return TIntervalDiscretizer::constructVar(var, discretizer);
+  return discretizer->constructVar(var);
 }
 
 void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
@@ -444,7 +515,8 @@ float getEntropy(const vector<float> &);
 
 
 TEntropyDiscretization::TEntropyDiscretization()
-: maxNumberOfIntervals(0)
+: maxNumberOfIntervals(0),
+  forceAttribute(false)
 {}
 
 
@@ -463,7 +535,6 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
   TS S;
   TDiscDistribution all;
 
-  int nex = 0;
   PEITERATE(ei, gen) {
     TValue &val = (*ei)[varPos];
     if (!val.isSpecial()) {
@@ -474,10 +545,11 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
 	      all.addint(int(eclass), weight);
       }
     }
-    nex++;
   }
 
-  TSimpleRandomGenerator rgen(nex);
+  /* No need to initialize seed by number of examples.
+     Different number will obviously result in different decisions. */
+  TSimpleRandomGenerator rgen;
   return operator()(S, all, var, weightID, rgen);
 }
 
@@ -496,8 +568,10 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
   vector<pair<float, float> > points;
   divide(S.begin(), S.end(), all, float(getEntropy(all)), k, points, rgen);
 
+  /* This is not correct: if, for instance, we have two cut-off points we should always remove
+     the one that was added later... */
   if ((maxNumberOfIntervals>0) && (int(points.size())+1>maxNumberOfIntervals)) {
-    random_sort(points.begin(), points.end(), predOn2nd<pair<float, float>, less<float> >(), predOn2nd<pair<float, float>, equal_to<float> >());
+    random_sort(points.begin(), points.end(), predOn2nd<pair<float, float>, less<float> >(), predOn2nd<pair<float, float>, equal_to<float> >(), rgen);
     points.erase(points.begin()+maxNumberOfIntervals-1, points.end());
     sort(points.begin(), points.end(), predOn1st<pair<float, float>, less<float> >());
   }
@@ -512,7 +586,7 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
         discretizer->points->push_back((*fi).first);
   }
 
-  return TIntervalDiscretizer::constructVar(var, discretizer);
+  return discretizer->constructVar(var);
 }
 
 
@@ -576,11 +650,19 @@ void TEntropyDiscretization::divide(
     if ((k2>1) && (bestT!=last))
       divide(bestT, last, bestS2, entropy2, k2, points, rgen);
   }
+  else if (forceAttribute && !points.size())
+    points.push_back(pair<float, float>(cutoff, gain-MDL));
 }
 
 
 template<class T> inline T sqr(const T &t)
 { return t*t; }
+
+
+TBiModalDiscretization::TBiModalDiscretization(const bool sit)
+: splitInTwo(sit)
+{}
+
 
 PVariable TBiModalDiscretization::operator()(PExampleGenerator gen, PVariable var, const long &weightID)
 { if (var->varType!=TValue::FLOATVAR)
@@ -590,51 +672,51 @@ PVariable TBiModalDiscretization::operator()(PExampleGenerator gen, PVariable va
   
   TContingencyAttrClass ccont(gen, var, weightID);
   int nClasses = gen->domain->classVar->noOfValues();
-  TDiscDistribution low(nClasses), middle(nClasses), high(nClasses);
   float best1, best2;
-  float bestEval = 99999;
+  float bestEval = -99999;
 
   PDistribution classDist = getClassDistribution(gen, weightID);
   TDiscDistribution &totDist = dynamic_cast<TDiscDistribution &>(classDist.getReference());
   totDist.normalize();
 
-  low += (*ccont.continuous->begin()).second;
-  for(TDistributionMap::iterator cut1(ccont.continuous->begin()), cute(ccont.continuous->end()); (++cut1)!=cute; ) {
-    PDistribution highClassDist = getClassDistribution(gen, weightID);
-    high = dynamic_cast<TDiscDistribution &>(highClassDist.getReference());
-    high -= low;
-    middle = TDiscDistribution((*cut1).second);
-    high -= middle;
-    for(TDistributionMap::iterator cut2(ccont.continuous->begin()), cute(ccont.continuous->end()); (++cut2)!=cute; ) {
-      TDiscDistribution flank = high;
-      flank += low;
+  // middle will contain sum of distributions from cut1 (exclusive) to cut2 (inclusive)
+  for(TDistributionMap::iterator cut1(ccont.continuous->begin()), cute(ccont.continuous->end()); cut1!=cute; cut1++) {
+    TDiscDistribution middle(nClasses);
 
-      float tmeas = 0;
-      TDiscDistribution::iterator di, de, toti;
-      float tabs;
-      for(tabs = flank.abs,  toti = totDist.begin(), di = flank.begin(),  de = flank.end();  di!=de; toti++, di++)
-        tmeas += sqr(fabs(tabs**toti - *di)-0.5) / (tabs**toti);
-      for(tabs = flank.abs,  toti = totDist.begin(), di = middle.begin(), de = middle.end(); di!=de; toti++, di++)
-        tmeas += sqr(fabs(tabs**toti - *di)-0.5) / (tabs**toti);
-       
-      for(TDiscDistribution::iterator d1(flank.begin()), d2(middle.begin()), d1e(flank.end()); d1!=d1e; d1++, d2++)
-        tmeas += *d1**d2;
+    TDistributionMap::iterator cut2 = cut1;
+    for(cut2++; cut2!=cute; cut2++) {
+      middle += (*cut2).second;
 
-      if (tmeas < bestEval) {
-        bestEval=tmeas;
-        best1=(*cut1).first;
-        best2=(*cut2).first;
+      float chisq = 0.0;
+      float tabs = middle.abs;
+      int N = nClasses;
+      for(TDiscDistribution::const_iterator toti = totDist.begin(), midi = middle.begin();  N--; toti++, midi++) {
+        const float E = tabs**toti;
+        const float &n = *midi;
+        chisq += sqr( fabs(E - n) - 0.5 ) / E;
       }
 
-      middle += (*cut2).second;
-      high   -= (*cut2).second;
+      if (chisq > bestEval) {
+        bestEval = chisq;
+        best1 = (*cut1).first;
+        best2 = (*cut2).first;
+      }
     }
   }
 
-  PIntervalDiscretizer discretizer = mlnew TIntervalDiscretizer;
-  discretizer->points->push_back(best1);
-  discretizer->points->push_back(best2);
-  return TIntervalDiscretizer::constructVar(var, discretizer);
+  PDiscretizer discretizer;
+
+  if (splitInTwo)
+    discretizer = mlnew TBiModalDiscretizer(best1, best2);
+
+  else {
+    TIntervalDiscretizer *idisc = mlnew TIntervalDiscretizer;
+    discretizer = idisc;
+    idisc->points->push_back(best1);
+    idisc->points->push_back(best2);
+  }
+
+  return discretizer->constructVar(var);
 }
   
  
