@@ -48,7 +48,7 @@ python removeCVS.py %SNAPSHOTDIR
 
 del %DOWNLOADDIR\orange-win-snap-*.exe
 nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
-del snapshotfiles_*.inc
+rem del snapshotfiles_*.inc
 
 pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
@@ -71,4 +71,4 @@ call updateVersionsPy__.btm
 
 popd
 
-start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0
+rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0

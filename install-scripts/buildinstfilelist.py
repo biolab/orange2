@@ -17,9 +17,21 @@ def computeMD(filename):
     currmd = md5.new()
     currmd.update(existing.read())
     existing.close()
-    return currmd
+    return currmd.hexdigest()
 
-def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
+def excluded(fname):
+    fname = fname.lower()
+    for ex in exclude:
+        if ex==fname[:len(ex)]:
+            print "Excluded %s (as %s)" % (fname, ex)
+            return 1
+
+outfs = ""
+hass = ""
+
+def buildListLow(root_dir, here_dir, there_dir, regexp, recursive):
+    global outfs, hass
+    
     if not os.path.exists(root_dir+here_dir):
         return
     
@@ -28,7 +40,7 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
     for fle in os.listdir(root_dir+here_dir):
         tfle = root_dir+here_dir+fle
         #print there_dir+fle
-        if fle == "CVS" or ("orange\\"+there_dir+fle).lower() in exclude:
+        if fle == "CVS" or excluded("orange\\"+there_dir+fle):
             continue
         if os.path.isdir(tfle):
             if recursive:
@@ -36,7 +48,14 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
         else:
             if not regexp or regexp.match(fle):
                 if not whatsDownEntries:
-                    outf.write('\nSetOutPath "$INSTDIR\\%s"\n' % there_dir)
+                    outfs += '\nSetOutPath "$INSTDIR\\%s"\n' % there_dir
+                    if not there_dir:
+                        hass += 'FileWrite $6 "+Orange Root$\\r$\\n"\n'
+                    elif there_dir[:3] == "doc" and (len(there_dir)==3 or there_dir[3]=="\\"):
+                        if len(there_dir)==3:
+                            hass += 'FileWrite $6 "+Orange Documentation$\\r$\\n"\n'
+                    else:
+                        hass += 'FileWrite $6 "+%s$\\r$\\n"\n' % there_dir[:-1]
 
                     entriesfile = open(root_dir+here_dir+"CVS\\Entries", "rt")
                     whatsDownEntries = {}
@@ -47,28 +66,36 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
                             whatsDownEntries[fname] = (there_dir+fname, version, computeMD(root_dir+here_dir+fname))
                     entriesfile.close()
                                                 
-                outf.write('File "%s"\n' % tfle)
-                outf.write('FileWrite $6 "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle])
+                outfs += 'File "%s"\n' % tfle
+                outfs += 'FileWrite $6 "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle]
 
     for here_dir, there_dir, fle in directories:
-        buildListLow(root_dir, here_dir+fle+"\\", there_dir+fle+"\\", regexp, outf, recursive)
+        buildListLow(root_dir, here_dir+fle+"\\", there_dir+fle+"\\", regexp, recursive)
 
 
-def buildList(root, here, there, regexp, fname, recursive=1, mode="wt"):
-    outf = open(fileprefix+"_"+fname+".inc", mode)
-    buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), outf, recursive)
-    outf.close()
-    
+def buildList(root, here, there, regexp, fname, recursive=1):
+    global outfs, hass
+    outfs = hass = ""
+    buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), recursive)
+    open(fileprefix+"_"+fname+".inc", "wt").write(hass+outfs)
+
+def buildLists(rhter, fname):
+    global outfs, hass
+    outfs = hass = ""
+    for root, here, there, regexp, recursive in rhter:
+        buildListLow(root, here, there, regexp and re.compile(regexp, re.IGNORECASE), recursive)
+    open(fileprefix+"_"+fname+".inc", "wt").write(hass+outfs)
+        
 buildList(basedir, "orange\\", "", ".*[.]pyd?\Z", "base", 0)
 buildList(basedir, "orange\\orangeWidgets\\", "orangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
 buildList(basedir, "orange\\orangeCanvas\\", "orangeCanvas\\", ".*[.]((py)|(png))\\Z", "canvas")
 
-buildList(basedir, "genomics\\", "orangeWidgets\\Genomics\\", ".*[.]py\\Z", "genomics", 0)
-buildList(basedir, "genomics\\GO\\", "orangeWidgets\\Genomics\\GO\\", "", "genomics", 0, "at")
-buildList(basedir, "genomics\\Annotation\\", "orangeWidgets\\Genomics\\Annotation\\", "", "genomics", 0, "at")
-buildList(basedir, "genomics\\Genome Map\\", "orangeWidgets\\Genomics\\Genome Map\\", "", "genomics", 0, "at")
+buildLists([(basedir, "genomics\\", "orangeWidgets\\Genomics\\", ".*[.]py\\Z", 0),
+            (basedir, "genomics\\GO\\", "orangeWidgets\\Genomics\\GO\\", "", 0),
+            (basedir, "genomics\\Annotation\\", "orangeWidgets\\Genomics\\Annotation\\", "", 0),
+            (basedir, "genomics\\Genome Map\\", "orangeWidgets\\Genomics\\Genome Map\\", "", 0)], "genomics")
 
-buildList(basedir, "orange\\doc\\", "doc\\", "style.css\\Z", "doc", 0)
-buildList(basedir, "orange\\doc\\reference\\", "doc\\reference\\", "", "doc", 0, "at")
-buildList(basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", "doc", 0, "at")
-buildList(basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", "doc", 0, "at")
+buildLists([(basedir, "orange\\doc\\", "doc\\", "style.css\\Z", 0),
+            (basedir, "orange\\doc\\reference\\", "doc\\reference\\", "", 0),
+            (basedir, "orange\\doc\\modules\\", "doc\\modules\\", "", 0),
+            (basedir, "orange\\doc\\ofb\\", "doc\\ofb\\", "", 0)], "doc")
