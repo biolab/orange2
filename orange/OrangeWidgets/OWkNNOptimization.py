@@ -345,13 +345,14 @@ class kNNOptimization(OWBaseWidget):
         
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
             classValues = list(table.domain.classVar.values)
+            lenClassValues = len(classValues)
             for j in range(len(table)):
                 qApp.processEvents()        # allow processing of other events
                 out = knn(table[j], orange.GetProbabilities)
                 sum = 0
                 for val in out: sum += val*val
                 temp = sum + 1 - 2*out[table[j].getclass()]
-                returnTable.append(1-temp)
+                returnTable.append(1-(temp/float(lenClassValues)))
         else:
             for j in range(len(table)):
                 qApp.processEvents()        # allow processing of other events
