@@ -343,6 +343,7 @@ class SchemaView(QCanvasView):
                         count = count+1
 
                 if count == 0:
+                    self.tempLine.hide()
                     QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
                 else:
                     line = self.doc.addLine(outWidget, inWidget)
