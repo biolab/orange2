@@ -32,10 +32,25 @@ class OWDistributionsOptions(OWOptions):
         self.bxLCD=QLCDNumber(3,self.bx)
         self.bxLCD.display(50)
         self.connect(self.barSize,SIGNAL("valueChanged(int)"),self.bxLCD,SLOT("display(int)"))
+
+        self.graphSettings = QVButtonGroup("General graph settings", self.top)
+        QToolTip.add(self.graphSettings, "Enable/disable axis title")
+        self.gSetMainTitle = QHBox(self.graphSettings, "main title group")
+        self.gSetMainTitleCB = QCheckBox('Show Main Title', self.gSetMainTitle)
+        self.gSetMainTitleLE = QLineEdit('Main Title', self.gSetMainTitle)
+        self.gSetXaxis = QHBox(self.graphSettings, "X Axis Group")
+        self.gSetXaxisCB = QCheckBox('Show X Axis Title ', self.gSetXaxis)
+        self.gSetXaxisLE = QLineEdit('X Axis Title', self.gSetXaxis)
+        self.gSetYaxis = QHBox(self.graphSettings, "Y Axis Group")
+        self.gSetYaxisCB = QCheckBox('Show Y Axis Title ', self.gSetYaxis)
+        self.gSetYaxisLE = QLineEdit('Y Axis Title', self.gSetYaxis)
+
         self.pg=QVGroupBox(self.top)
         self.pg.setTitle("Probability graph")
         self.showprob=QCheckBox("Show Probabilities",self.pg)
-        self.showprob.setChecked(1)
+        self.gSetYPaxis = QHBox(self.pg, "y prob. axis group")
+        self.gSetYPaxisCB = QCheckBox('Show Axis Title ', self.gSetYPaxis)
+        self.gSetYPaxisLE = QLineEdit('Axis Title', self.gSetYPaxis)
         self.showcoin=QCheckBox("Show Confidence Intervals",self.pg)
         self.smooth=QCheckBox("Smooth probability lines",self.pg)
         self.lw=QHGroupBox(self.pg)
@@ -54,6 +69,7 @@ class OWDistributionsOptions(OWOptions):
         if state==0:
             self.showcoin.setChecked(0)
         self.showcoin.setEnabled(state)
+        self.gSetYPaxis.setEnabled(state)
    
 if __name__=="__main__":
     a=QApplication(sys.argv)

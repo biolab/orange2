@@ -47,7 +47,7 @@ class distribErrorBarQwtPlotCurve(QwtPlotCurve):
 
 
 class OWDistributions(OWWidget):
-    settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth"]
+    settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth", "ShowMainTitle", "ShowXaxisTitle", "ShowYaxisTitle", "ShowYPaxisTitle"]
 
     def __init__(self,parent=None):
         "Constructor"
@@ -68,9 +68,19 @@ distribution of classes for each attribute.
         self.ShowConfidenceIntervals = 0
         self.SmoothLines = 0
         self.LineWidth = 1
+        self.ShowMainTitle = 0
+        self.ShowXaxisTitle = 1
+        self.ShowYaxisTitle = 1
+        self.ShowYPaxisTitle = 1
 
         #load settings
         self.loadSettings()
+
+        # tmp values
+        self.MainTitle = ""
+        self.XaxisTitle = ""
+        self.YaxisTitle = "frequency"
+        self.YPaxisTitle = ""
 
         # GUI
         self.box = QVBoxLayout(self.mainArea)
@@ -114,6 +124,14 @@ distribution of classes for each attribute.
         # GUI connections
             # options dialog connections
         self.connect(self.options.barSize, SIGNAL("valueChanged(int)"), self.setBarSize)
+        self.connect(self.options.gSetMainTitleCB, SIGNAL("stateChanged(int)"), self.setShowMainTitle)
+        self.connect(self.options.gSetMainTitleLE, SIGNAL("textChanged(const QString &)"), self.setMainTitle)
+        self.connect(self.options.gSetXaxisCB, SIGNAL("stateChanged(int)"), self.setShowXaxisTitle)
+        self.connect(self.options.gSetXaxisLE, SIGNAL("textChanged(const QString &)"), self.setXaxisTitle)
+        self.connect(self.options.gSetYaxisCB, SIGNAL("stateChanged(int)"), self.setShowYaxisTitle)
+        self.connect(self.options.gSetYaxisLE, SIGNAL("textChanged(const QString &)"), self.setYaxisTitle)
+        self.connect(self.options.gSetYPaxisCB, SIGNAL("stateChanged(int)"), self.setShowYPaxisTitle)
+        self.connect(self.options.gSetYPaxisLE, SIGNAL("textChanged(const QString &)"), self.setYPaxisTitle)
         self.connect(self.options.showprob, SIGNAL("stateChanged(int)"), self.setShowProbabilities)
         self.connect(self.options.numberOfBars, SIGNAL("valueChanged(int)"), self.setNumberOfBars)
         self.connect(self.options.smooth, SIGNAL("stateChanged(int)"), self.setSmoothLines)
@@ -132,6 +150,43 @@ distribution of classes for each attribute.
         #connect controls to appropriate functions
         self.connect(self.outcomesQLB, SIGNAL("selectionChanged()"), self.outcomeSelectionChange)
         self.connect(self.variablesQCB, SIGNAL('activated (const QString &)'), self.setVariable)
+
+    def setShowMainTitle(self, b):
+        self.ShowMainTitle = b
+        self.graph.setShowMainTitle(b)
+    def setMainTitle(self, t):
+        self.MainTitle = t
+        if self.options.gSetMainTitleLE.text() <> t:
+            self.options.gSetMainTitleLE.setText(QString(t))
+        self.graph.setMainTitle(str(t))
+
+    def setShowXaxisTitle(self, b):
+        self.ShowXaxisTitle = b
+        self.graph.setShowXaxisTitle(b)
+    def setXaxisTitle(self, t):
+        self.XaxisTitle = t
+        if self.options.gSetXaxisLE.text() <> t:
+            self.options.gSetXaxisLE.setText(QString(t))
+        self.graph.setXaxisTitle(str(t))
+
+    def setShowYaxisTitle(self, b):
+        self.ShowYaxisTitle = b
+        self.graph.setShowYLaxisTitle(b)
+    def setYaxisTitle(self, t):
+        self.YaxisTitle = t
+        if self.options.gSetYaxisLE.text() <> t:
+            self.options.gSetYaxisLE.setText(QString(t))
+        self.graph.setYLaxisTitle(str(t))
+
+
+    def setShowYPaxisTitle(self, b):
+        self.ShowYPaxisTitle = b
+        self.graph.setShowYRaxisTitle(b)
+    def setYPaxisTitle(self, t):
+        self.YPaxisTitle = t
+        if self.options.gSetYPaxisLE.text() <> t:
+            self.options.gSetYPaxisLE.setText(QString(t))
+        self.graph.setYRaxisTitle(str(t))
 
     def setBarSize(self, n):
         self.BarSize = n
@@ -182,8 +237,19 @@ distribution of classes for each attribute.
         #
         self.options.barSize.setValue(self.BarSize)
         #
+        self.options.gSetMainTitleLE.setText(self.MainTitle)
+        self.options.gSetMainTitleCB.setChecked(self.ShowMainTitle)
+        
+        self.options.gSetXaxisLE.setText(self.XaxisTitle)
+        self.options.gSetXaxisCB.setChecked(self.ShowXaxisTitle)
+
+        self.options.gSetYaxisLE.setText(self.YaxisTitle)
+        self.options.gSetYaxisCB.setChecked(self.ShowYaxisTitle)
+
+        self.options.gSetYPaxisLE.setText(self.YPaxisTitle)
+        self.options.gSetYPaxisCB.setChecked(self.ShowYPaxisTitle)
+        #
         self.options.showprob.setChecked(self.ShowProbabilities)
-        self.setShowProbabilities(self.ShowProbabilities)
         #
         self.options.showcoin.setChecked(self.ShowConfidenceIntervals)
         #
@@ -191,9 +257,24 @@ distribution of classes for each attribute.
         #
         self.options.lineWidth.setValue(self.LineWidth)
 
+        self.setMainTitle(self.MainTitle)
+        self.setShowMainTitle(self.ShowMainTitle)
+        self.setXaxisTitle(self.XaxisTitle)
+        self.setShowXaxisTitle(self.ShowXaxisTitle)
+        self.setYaxisTitle(self.YaxisTitle)
+        self.setShowYaxisTitle(self.ShowYaxisTitle)
+        self.setYPaxisTitle(self.YPaxisTitle)
+        self.setShowYPaxisTitle(self.ShowYPaxisTitle)
+        self.setShowProbabilities(self.ShowProbabilities)
+
     def target(self, targetValue):
         self.targetValue = targetValue
         self.refreshProbGraph()
+
+        outcomeName = str(self.data.getOutcomeName())
+        values = self.data.getVarValues(outcomeName)
+        
+        self.setYPaxisTitle("P( " + outcomeName + " = " + values[int(targetValue)] + " )")
 
     def cdata(self, data):
         self.data = data
@@ -259,7 +340,7 @@ distribution of classes for each attribute.
             self.graph.setAxisScale(QwtPlot.xBottom, -0.5, len(labels) - 0.5, 1)
 
         self.refreshVisibleOutcomes()
-        self.graph.replot()
+        self.setXaxisTitle(str(varName))
         self.repaint()
 
     def calcHistogramAndProbGraph(self):
