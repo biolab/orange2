@@ -1,5 +1,5 @@
 """
-<name>k-Nearest Neighbours</name>
+<name>k Nearest Neighbours</name>
 <description>Constructs a k nearest neighbours learner</description>
 <category>Classification</category>
 <icon>icons/kNN.png</icon>
@@ -78,7 +78,7 @@ class OWKNN(OWWidget):
 
     def learn(self):
         if self.data and self.learner:
-            self.classifier = self.learner(data)
+            self.classifier = self.learner(self.data)
             self.classifier.name = self.name
             self.send("Classifier", self.classifier)
             self.send("KNN Classificatier", self.classifier)

@@ -5,13 +5,6 @@
 <priority>300</priority>
 """
 
-# OWDataTable.py
-#
-# wishes:
-# ignore attributes, filter examples by attribute values, do
-# all sorts of preprocessing (including discretization) on the table,
-# output a new table and export it in variety of formats.
-
 from qttable import *
 from OWWidget import *
 import OWGUI
@@ -30,19 +23,20 @@ class colorItem(QTableItem):
 ##############################################################################
 
 class OWClassifiedDataTable(OWWidget):
-    settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod"]
+    settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod", "sendDataType", "commitOnChange"]
 
     def __init__(self, parent=None):
         OWWidget.__init__(self, parent, "Classifications", "Shows predictions of one or more classifiers.")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1),("Classifier", orange.Classifier, self.classifier, 0)]
-        self.outputs = []
+        self.inputs = [("Examples", ExampleTable, self.dataset, 1),("Classifiers", orange.Classifier, self.classifier, 0)]
+        self.outputs = [("Selected Examples", ExampleTable)]
         self.classifiers = {}
 
         # saveble settings
         self.ShowProb = 1; self.ShowClass = 1; self.ShowTrueClass = 0
         self.ShowAttributeMethod = 0
+        self.sendDataType = 0; self.commitOnChange = 0
         self.loadSettings()
 
         self.freezeAttChange = 0 # 1 to block table update followed by changes in attribute list box
@@ -57,14 +51,23 @@ class OWClassifiedDataTable(OWWidget):
         self.lbClasses.setSelectionMode(QListBox.Multi)
         self.connect(self.lbClasses, SIGNAL("selectionChanged()"), self.updateTableOutcomes)
         
-        OWGUI.checkBox(self.options, self, 'ShowClass', "Show predicted class", callback=self.updateTableOutcomes)
-        self.trueClassCheckBox = OWGUI.checkBox(self.options, self, 'ShowTrueClass', "Show true class", callback=self.updateTrueClass)
-        self.trueClassCheckBox.setDisabled(1)
+        OWGUI.checkBox(self.options, self, 'ShowClass', "Show predicted class", callback=[self.updateTableOutcomes, self.checkenable])
+        self.trueClassCheckBox = OWGUI.checkBox(self.options, self, 'ShowTrueClass', "Show true class", callback=self.updateTrueClass, disabled=1)
 
         OWGUI.separator(self.controlArea)
         self.att = QVButtonGroup("Data Attributes", self.controlArea)
         OWGUI.radioButtonsInBox(self.att, self, 'ShowAttributeMethod', ['Show all', 'Hide all'], callback=self.updateAttributes)
         self.att.setDisabled(1)
+
+        OWGUI.separator(self.controlArea)
+        self.outBox = QVButtonGroup("Output", self.controlArea)
+        OWGUI.radioButtonsInBox(self.outBox, self, 'sendDataType', ['None', 'Data with class conflict', 'Data with class agreement'], box='Data Selection',
+                                tooltips=['No data will be sent to the output channel', 'Send data for which the predicted (and true class, if shown) are different.', 'Send data for which the predicted (and true class, if shown) match.'],
+                                callback=self.checksenddata)
+        OWGUI.checkBox(self.outBox, self, 'commitOnChange', 'Commit data on any change')
+        self.commitBtn = OWGUI.button(self.outBox, self, "Commit", callback=self.senddata)
+
+        self.outBox.setDisabled(1)
 
         # GUI - Table        
         self.layout = QVBoxLayout(self.mainArea)
@@ -94,6 +97,7 @@ class OWClassifiedDataTable(OWWidget):
             for (cid, c) in enumerate(self.classifiers.values()):
                 for (i, d) in enumerate(self.data):
                     (cl, p) = c(d, orange.GetBoth)
+                    self.classifications[i].append(cl)
                     s = ''
                     if self.ShowProb and showatt:
                         s += reduce(lambda x,y: x+' : '+y, map(lambda x: "%8.6f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
@@ -154,12 +158,17 @@ class OWClassifiedDataTable(OWWidget):
             for j in range(len(self.data.domain.attributes)):
                 self.table.setText(i, j+1, str(self.data[i][j].native()))
         col = 1+len(self.data.domain.attributes)
-        # column for the true class
-        for i in range(len(self.data)):
-            item = colorItem(self.table, QTableItem.WhenCurrent, self.data[i].getclass().native())
-            self.table.setItem(i, col, item)
-        col += 1
 
+        self.classifications = [[]] * len(self.data)
+        if self.data.domain.classVar:
+            # column for the true class
+            for i in range(len(self.data)):
+                c = self.data[i].getclass()
+                item = colorItem(self.table, QTableItem.WhenCurrent, c.native())
+                self.table.setItem(i, col, item)
+                self.classifications[i] = [c]
+            col += 1
+    
         for i in range(col):
             self.table.adjustColumn(i)
 
@@ -180,18 +189,16 @@ class OWClassifiedDataTable(OWWidget):
         for (i, indx) in enumerate(self.rindx):
             self.vheader.setLabel(i, self.table.item(i,0).text())
         
+    ##############################################################################
     # Input signals
+
     def dataset(self,data):
         self.data = data
         if not data:
-            self.options.setDisabled(1)
-            self.att.setDisabled(1)
             self.table.hide()
         else:
             if not self.classifiers:
                 self.ShowTrueClass = 1
-            if self.data.domain.classVar and len(self.classifiers):
-                self.trueClassCheckBox.setEnabled(1)
             
             lb = self.lbClasses
             lb.clear()
@@ -206,7 +213,7 @@ class OWClassifiedDataTable(OWWidget):
             self.rindx = range(len(self.data))
             self.setTable()
             self.table.show()
-            self.att.setEnabled(1)
+            self.checkenable()
 
     def classifier(self, c, id):
         if not c:
@@ -216,10 +223,52 @@ class OWClassifiedDataTable(OWWidget):
             self.classifiers[id] = c
         if self.data:
             self.setTable()
-            if len(self.classifiers):
-                if self.data.domain.classVar:
-                    self.trueClassCheckBox.setEnabled(1)
-                self.options.setEnabled(1)
+        self.checkenable()
+
+    # based on the data and classifiers enables/disables the control boxes
+    def checkenable(self):
+        # following should be more complicated and depends on what data are we showing
+        cond = self.data<>None and (len(self.classifiers)>1 or len(self.classifiers)>0 and self.ShowTrueClass)
+        self.outBox.setEnabled(cond)
+        if cond and self.commitOnChange:
+            self.senddata()
+
+        self.trueClassCheckBox.setEnabled(self.data<>None and self.data.domain.classVar<>None)
+##        self.options.setEnabled(len(self.classifiers)>0)
+        self.att.setEnabled(self.data<>None)            
+        self.options.setEnabled(self.data<>None)            
+        
+
+    ##############################################################################
+    # Ouput signals
+
+    def checksenddata(self):
+        if self.commitOnChange and self.outBox.isEnabled():
+            self.senddata()
+
+    # assumes that the data and display conditions (enough classes are displayed) have been checked
+    def senddata(self):
+        def cmpclasses(clist):
+            ref = clist[0]
+            for c in clist[1:]:
+                if c<>ref: return 0
+            return 1
+        
+        if not self.sendDataType:
+            self.send("Selected Examples", None)
+            return
+
+        # list of columns to check
+        selclass = [[],[0]][self.ShowTrueClass>0]
+        for (i, classifier) in enumerate(self.classifiers):
+            selclass.append(i+1)
+        
+##        s = [reduce(lambda x,y: [x, None][x==None or x<>y],  map(lambda x: cls[x], selclass)) <> None for cls in self.classifications]
+        s = [cmpclasses(map(lambda x: cls[x], selclass)) for cls in self.classifications]
+        if self.sendDataType == 1:
+            s = [not x for x in s]
+        data_selection = self.data.select(s)
+        self.send("Selected Examples", data_selection)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -250,12 +299,15 @@ if __name__=="__main__":
         data = orange.ExampleTable('sailing.txt')
         bayes = orange.BayesLearner(data)
         bayes.name = 'Naive Bayes'
-        ow.dataset(data)
         ow.classifier(bayes, 1)
-        import orngTree
-        tree = orngTree.TreeLearner(data)
-        tree.name = 'Tree'
-        ow.classifier(tree, 2)
+##        import orngTree
+##        tree = orngTree.TreeLearner(data)
+##        tree.name = 'Tree'
+##        ow.classifier(tree, 2)
+        maj = orange.MajorityLearner(data)
+        maj.name = 'Default'
+        ow.classifier(maj, 2)
+        ow.dataset(data)
 
     a.exec_loop()
     ow.saveSettings()

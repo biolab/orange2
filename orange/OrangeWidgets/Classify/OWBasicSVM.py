@@ -1,5 +1,5 @@
 """
-<name>Basic SVM</name>
+<name>SVM</name>
 <description>Basic SVM</description>
 <category>Classification</category>
 <icon>icons/BasicSVM.png</icon>
@@ -27,7 +27,7 @@ preprocessors to filter/change the data.
         FALSE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
-        self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier)]
+        self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Support Vectors", ExampleTable)]
 
         self.kernelMethod = 0                
         self.data = None
@@ -199,6 +199,8 @@ preprocessors to filter/change the data.
                 self.classifier.name = self.name
                 self.classifier.domain = self.data.domain
                 self.send("Classifier", self.classifier)
+                vectors = self.data.getitemsref(self.classifier.classifier.model["SVi"])
+                self.send("Support Vectors", vectors)
             except Exception, (errValue):
                 self.classifier = None
                 QMessageBox("SVM error:", str(errValue), QMessageBox.Warning,

@@ -292,7 +292,7 @@ class ValueCallback:
 			if self.f: setattr(self.widget, self.attribute, self.f(value))
 			else: 	   setattr(self.widget, self.attribute, value)
 		except:
-			print "invalid value ", value, type(value)
+			print "OWGUI ValueCallback: invalid value", value, type(value), "for", self.attribute
 
 class ValueCallbackLineEdit:
 	def __init__(self, control, widget, attribute, f = None):
