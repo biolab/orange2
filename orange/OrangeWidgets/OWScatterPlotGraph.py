@@ -3,47 +3,21 @@
 #
 # the base for scatterplot
 
-import sys
-import math
-import orange
-import os.path
-from OWGraph import *
-from OWDistributions import *
-from qt import *
-from OWTools import *
-from qwt import *
-from Numeric import *
+from OWVisGraph import *
 
 
 ###########################################################################################
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
-class OWScatterPlotGraph(OWGraph):
+class OWScatterPlotGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        OWGraph.__init__(self, parent, name)
+        OWVisGraph.__init__(self, parent, name)
 
-        self.pointWidth = 4
-        self.scaledData = []
-        self.scaledDataAttributes = []
-        self.jitteringType = 'none'
         self.jitterContinuous = 0
         self.jitterSize = 1
-        self.graphCanvasColor = str(Qt.white.name())
-
-        self.enableGridX(FALSE)
-        self.enableGridY(FALSE)
-
-        self.noneSymbol = QwtSymbol()
-        self.noneSymbol.setStyle(QwtSymbol.None)
-
+        
         self.enabledLegend = 0
-
-    def setJitteringOption(self, jitteringType):
-        self.jitteringType = jitteringType
-
-    def setPointWidth(self, width):
-        self.pointWidth = width
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
@@ -122,9 +96,10 @@ class OWScatterPlotGraph(OWGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, showColorLegend):
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, showColorLegend, statusBar):
         self.clear()
         self.enableLegend(0)
+        self.statusBar = statusBar
 
         (xVarMin, xVarMax) = self.attrVariance[self.scaledDataAttributes.index(xAttr)]
         (yVarMin, yVarMax) = self.attrVariance[self.scaledDataAttributes.index(yAttr)]
@@ -211,7 +186,7 @@ class OWScatterPlotGraph(OWGraph):
 
             size = self.pointWidth
             if sizeShapeIndex != -1:
-                size = 4 + round(self.scaledData[sizeShapeIndex][i] * 20)
+                size = 10 + round(self.scaledData[sizeShapeIndex][i] * 10)
 
             newCurveKey = self.insertCurve(str(i))
 
@@ -222,6 +197,16 @@ class OWScatterPlotGraph(OWGraph):
             self.setCurveSymbol(newCurveKey, newSymbol)
             self.setCurveData(newCurveKey, [x], [y])
             self.curveKeys.append(newCurveKey)
+
+            ##########
+            # we add a tooltip for this point
+            r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
+            text= ""
+            for j in range(len(self.rawdata.domain)):
+                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
+            self.tips.addToolTip(r, text)
+            ##########
+            
 
         # show legend if necessary
         if self.enabledLegend == 1:
@@ -268,21 +253,6 @@ class OWScatterPlotGraph(OWGraph):
         # -----------------------------------------------------------
         # -----------------------------------------------------------
         
-
-    def rndCorrection(self, max):
-        """
-        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
-        function is used to plot data points for categorical variables
-        """    
-        if self.jitteringType == 'none': 
-            return 0.0
-        elif self.jitteringType  == 'uniform': 
-            return (random() - 0.5)*2*max
-        elif self.jitteringType  == 'triangle': 
-            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
-        elif self.jitteringType  == 'beta': 
-            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
-
     
 if __name__== "__main__":
     #Draw a simple graph

@@ -3,18 +3,8 @@
 #
 # the base for all parallel graphs
 
-import sys
-import math
-import orange
-import os.path
-from OWGraph import *
-from OWDistributions import *
-from qt import *
-from OWTools import *
-from qwt import *
-from Numeric import *
-from copy import copy
-
+from OWVisGraph import *
+from copy import copy       # used to copy arrays
 
 ###########################################################################################
 ##### FUNCTIONS FOR CALCULATING PERMUTATIONS, DISTANCES, ...
@@ -78,112 +68,11 @@ def getPermutationList(elements, tempPerm, currList):
 ###########################################################################################
 ##### CLASS : OWRADVIZGRAPH
 ###########################################################################################
-class OWRadvizGraph(OWGraph):
+class OWRadvizGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        OWGraph.__init__(self, parent, name)
+        OWVisGraph.__init__(self, parent, name)
 
-        self.pointWidth = 4
-        self.scaledData = []
-        self.scaledDataAttributes = []
-        self.jitteringType = 'none'
-        self.showDistributions = 0
-        self.graphCanvasColor = str(Qt.white.name())
-
-        self.enableGridX(FALSE)
-        self.enableGridY(FALSE)
-
-        self.noneSymbol = QwtSymbol()
-        self.noneSymbol.setStyle(QwtSymbol.None)        
-        self.curveIndex = 0
-        self.tips = DynamicToolTip(self)
-        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.plotMouseMoved)
-        self.statusBar = None
-
-
-        r = QRect(-100,-100,200,200)
-        QToolTip.add(self, r, "test tooltipov")
-
-
-    def setShowDistributions(self, showDistributions):
-        self.showDistributions = showDistributions
-
-    def setJitteringOption(self, jitteringType):
-        self.jitteringType = jitteringType
-
-    def setPointWidth(self, width):
-        self.pointWidth = width
-    
-    #
-    # scale data at index index to the interval 0 - 1
-    #
-    def scaleData(self, data, index):
-        attr = data.domain[index]
-        temp = [];
-        # is the attribute discrete
-        if attr.varType == orange.VarTypes.Discrete:
-            # we create a hash table of variable values and their indices
-            variableValueIndices = {}
-            for i in range(len(attr.values)):
-                variableValueIndices[attr.values[i]] = i
-
-            count = float(len(attr.values))
-            for i in range(len(data)):
-                val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.1 * self.rndCorrection(1.0/count)
-                temp.append(val)
-
-                    
-        # is the attribute continuous
-        else:
-            # first find min and max value
-            i = 0
-            while data[i][attr].isSpecial() == 1: i+=1
-            min = data[i][attr].value
-            max = data[i][attr].value
-            for item in data:
-                if item[attr].isSpecial() == 1: continue
-                if item[attr].value < min:
-                    min = item[attr].value
-                elif item[attr].value > max:
-                    max = item[attr].value
-
-            diff = max - min
-            # create new list with values scaled from 0 to 1
-            for i in range(len(data)):
-                temp.append((data[i][attr].value - min) / diff)
-        return temp
-
-    #
-    # set new data and scale its values
-    #
-    def setData(self, data):
-        self.rawdata = data
-        self.scaledData = []
-        self.scaledDataAttributes = []
-        
-        if data == None: return
-
-        self.distributions = []; self.totals = []
-        for index in range(len(data.domain)):
-            attr = data.domain[index]
-            self.scaledDataAttributes.append(attr.name)
-            scaled = self.scaleData(data, index)
-            self.scaledData.append(scaled)
-
-        """
-        # save scaled data...
-        print "saving file..."
-        file = open("E:/scaledData.tab", "wt")
-        for i in range(len(self.scaledData[0])):
-            for j in range(len(self.scaledData)):
-                file.write(str(self.scaledData[j][i]))
-                file.write("\t")
-            file.write("\n")
-                
-        file.flush()
-        file.close()
-        """
-        
     #
     # update shown data. Set labels, coloring by className ....
     #
@@ -286,32 +175,28 @@ class OWRadvizGraph(OWGraph):
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
 
-        RECT_SIZE = self.pointWidth/2
+        RECT_SIZE = 0.01    # size of rectangle
         for i in range(dataSize):
             sum_i = 0.0
             for j in range(length):
-                sum_i = sum_i + self.scaledData[indices[j]][i]
+                sum_i += self.scaledData[indices[j]][i]
 
             if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
 
-            x_i = 0.0
-            y_i = 0.0
+            x_i = 0.0; y_i = 0.0
             for j in range(length):
                 index = indices[j]
-                x_i = x_i + anchors[0][j]*(self.scaledData[index][i] / sum_i)
-                y_i = y_i + anchors[1][j]*(self.scaledData[index][i] / sum_i)
+                x_i += anchors[0][j]*(self.scaledData[index][i] / sum_i)
+                y_i += anchors[1][j]*(self.scaledData[index][i] / sum_i)
 
             ##########
             # we add a tooltip for this point
-            xVal = self.transform(QwtPlot.xBottom, x_i)
-            yVal = self.transform(QwtPlot.yLeft, y_i)
-            #print "x_i = " + str(x_i) + " ; y_i = " + str(y_i) + " ; xVal = " + str(xVal) + " ; yVal = " + str(yVal)
-            r = QRect(xVal-RECT_SIZE, yVal-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             text= ""
             for j in range(len(self.rawdata.domain)):
                 text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
+                #text += self.rawdata.domain[j].name + ' = ' + str(self.scaledData[j][i]) + ' ; '
+            r = QRectFloat(x_i, y_i, RECT_SIZE, RECT_SIZE)
             self.tips.addToolTip(r, text)
-            QToolTip.add(self, r, text)
             ##########
 
             if valLen == 1:
@@ -358,21 +243,6 @@ class OWRadvizGraph(OWGraph):
         # -----------------------------------------------------------
         # -----------------------------------------------------------
         
-
-    def rndCorrection(self, max):
-        """
-        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
-        function is used to plot data points for categorical variables
-        """    
-        if self.jitteringType == 'none': 
-            return 0.0
-        elif self.jitteringType  == 'uniform': 
-            return (random() - 0.5)*2*max
-        elif self.jitteringType  == 'triangle': 
-            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
-        elif self.jitteringType  == 'beta': 
-            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
-
 
     # #######################################
     # try to find the optimal attribute order
@@ -477,31 +347,6 @@ class OWRadvizGraph(OWGraph):
         for i in bestPerm:
             retList.append(self.scaledDataAttributes[i])
         return retList
-
-
-    def plotMouseMoved(self, e):
-        #print "testing collisions"
-        x = e.x()
-        y = e.y()
-
-        #print "x = " + str(x) + " ; y = " + str(y)
-        #dx = self.invTransform(QwtPlot.xBottom, x)
-        #dy = self.invTransform(QwtPlot.yLeft, y)
-        #print "dx = " + str(dx) + " ; dy = " + str(dy)
-        
-        #self.tips.maybeTip(QPoint(x,y))
-
-        found = 0
-        p = QPoint(x,y)
-        for i in range(len(self.tips.rects)):
-            if self.tips.rects[i].contains(p):
-                found = 1
-                if self.statusBar != None:
-                    self.statusBar.message(self.tips.texts[i])
-                    return
-        if found == 0:
-            self.statusBar.message("")
-                
 
     
 if __name__== "__main__":

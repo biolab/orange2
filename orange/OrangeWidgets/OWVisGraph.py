@@ -1,0 +1,190 @@
+#
+# OWVisGraph.py
+#
+# extension for the base graph class that is used in all visualization widgets
+from OWGraph import *
+from Numeric import *
+import sys
+import math
+import orange
+import os.path
+from OWTools import *
+
+
+class OWVisGraph(OWGraph):
+    def __init__(self, parent = None, name = None):
+        "Constructs the graph"
+        OWGraph.__init__(self, parent, name)
+
+        self.rawdata = []
+        self.pointWidth = 5
+        self.scaledData = []
+        self.scaledDataAttributes = []
+        self.jitteringType = 'none'
+        self.globalValueScaling = 0
+        self.GraphCanvasColor = str(Qt.white.name())
+
+        self.enableGridX(FALSE)
+        self.enableGridY(FALSE)
+
+        self.noneSymbol = QwtSymbol()
+        self.noneSymbol.setStyle(QwtSymbol.None)
+        self.tips = DynamicToolTipFloat()
+        self.statusBar = None
+        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.plotMouseMoved)
+
+    def setJitteringOption(self, jitteringType):
+        self.jitteringType = jitteringType
+
+    def setPointWidth(self, pointWidth):
+        self.pointWidth = pointWidth
+
+    def setGlobalValueScaling(self, globalScale):
+        self.globalValueScaling = globalScale
+        
+    def rndCorrection(self, max):
+        """
+        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
+        function is used to plot data points for categorical variables
+        """    
+        if self.jitteringType == 'none': 
+            return 0.0
+        elif self.jitteringType  == 'uniform': 
+            return (random() - 0.5)*2*max
+        elif self.jitteringType  == 'triangle': 
+            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
+        elif self.jitteringType  == 'beta': 
+            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
+                     
+
+    #
+    # get min and max value of data attribute at index index
+    #
+    def getMinMaxVal(self, data, index):
+        attr = data.domain[index]
+
+        # is the attribute discrete
+        if attr.varType == orange.VarTypes.Discrete:
+            count = float(len(attr.values))
+            return (0, count-1)
+                    
+        # is the attribute continuous
+        else:
+            # first find min and max value
+            i = 0
+            while data[i][attr].isSpecial() == 1: i+=1
+            min = data[i][attr].value
+            max = data[i][attr].value
+            for item in data:
+                if item[attr].isSpecial() == 1: continue
+                if item[attr].value < min:
+                    min = item[attr].value
+                elif item[attr].value > max:
+                    max = item[attr].value
+            return (min, max)
+        print "incorrect attribute type for scaling"
+        return (0, 1)
+        
+    #
+    # scale data at index index to the interval 0 to 1
+    #
+    def scaleData(self, data, index, min = -1, max = -1, forColoring = 0):
+        attr = data.domain[index]
+        temp = []; values = []
+
+        # is the attribute discrete
+        if attr.varType == orange.VarTypes.Discrete:
+            # we create a hash table of variable values and their indices
+            variableValueIndices = {}
+            for i in range(len(attr.values)):
+                variableValueIndices[attr.values[i]] = i
+                values.append(attr.values[i])
+
+            count = float(len(attr.values))
+            if len(attr.values) > 1: num = float(len(attr.values)-1)
+            else: num = float(1)
+
+            if forColoring == 1:
+                for i in range(len(data)):
+                    val = float(variableValueIndices[data[i][index].value]) / float(count)
+                    temp.append(val)
+            else:
+                for i in range(len(data)):
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(0.2/count)
+                    temp.append(val)
+                    
+        # is the attribute continuous
+        else:
+            # if we don't use global normalisation then we first find min and max value
+            if min == -1 and max == -1:
+                i = 0
+                while data[i][attr].isSpecial() == 1: i+=1
+                min = data[i][attr].value
+                max = data[i][attr].value
+
+                for item in data:
+                    if item[attr].isSpecial() == 1: continue
+                    if item[attr].value < min:   min = item[attr].value
+                    elif item[attr].value > max: max = item[attr].value
+            
+            diff = max - min
+            values = [min, max]
+
+            if forColoring == 1:
+                for i in range(len(data)):
+                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
+            else:
+                for i in range(len(data)):
+                    temp.append((data[i][attr].value - min) / diff)
+        return (temp, values)
+
+    #
+    # set new data and scale its values
+    #
+    def setData(self, data):
+        self.rawdata = data
+        self.scaledData = []
+        self.attrValues = {}
+        self.scaledDataAttributes = []
+        
+        if data == None: return
+
+        min = -1; max = -1
+        if self.globalValueScaling == 1:
+            for index in range(len(data.domain)):
+                (minVal, maxVal) = self.getMinMaxVal(data, index)
+                if index == 0:
+                    min = minVal; max = maxVal
+                else:
+                    if minVal < min: min = minVal
+                    if maxVal > max: max = maxVal
+
+        self.distributions = []; self.totals = []
+        for index in range(len(data.domain)):
+            attr = data.domain[index]
+            self.scaledDataAttributes.append(attr.name)
+            scaled, values = self.scaleData(data, index, min, max)
+            self.scaledData.append(scaled)
+            self.attrValues[attr.name] = values
+
+    def plotMouseMoved(self, e):
+        x = e.x()
+        y = e.y()
+        """
+        found = 0
+        p = QPoint(x,y)
+        for i in range(len(self.tips.rects)):
+            if self.tips.rects[i].contains(p):
+                found = 1
+                if self.statusBar != None:
+                    self.statusBar.message(self.tips.texts[i])
+                    return
+        if found == 0 and self.statusBar != None:
+            self.statusBar.message("")
+        """
+        fx = self.invTransform(QwtPlot.xBottom, x)
+        fy = self.invTransform(QwtPlot.yLeft, y)
+        if self.statusBar != None:
+            text = self.tips.maybeTip(fx,fy)
+            self.statusBar.message(text)
+        #print "fx = " + str(fx) + " ; fy = " + str(fy) + " ; text = " + text

@@ -36,6 +36,12 @@ class OWRadvizOptions(OWOptions):
         self.attrContNone = QRadioButton('Original', self.attrOrderingButtons)
         self.attrContRelieF = QRadioButton('Optimized class separation', self.attrOrderingButtons)
         self.attrOrderingButtons.setExclusive(TRUE)
+
+        #####
+        # attribute value scaling
+        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
+        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
+
         
         # continuous attribute selection
         self.attrContButtons = QVButtonGroup("Continuous attribute selection", self.top)

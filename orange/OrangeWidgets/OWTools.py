@@ -44,3 +44,41 @@ class DynamicToolTip (QToolTip):
     def removeAll(self):
         self.rects=[]
         self.texts=[]
+
+
+class QPointFloat:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class QRectFloat:
+    def __init__(self, x, y, width, height):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        
+
+#A dynamic tool tip class      
+class DynamicToolTipFloat:
+    def __init__(self):
+        self.rects=[]
+        self.texts=[]
+    
+    def addToolTip(self,rect,text):
+        "Adds a tool tip. If a tooltip with the same name already exists, it updates it instead of adding a new one."
+        self.rects.append(rect)
+        self.texts.append(text)
+    
+    def maybeTip(self, x, y):
+        "Decides whether to pop up a tool tip and which text to pop up"
+        for i in range(len(self.rects)):
+            rect = self.rects[i]
+            if x > rect.x and y > rect.y and x < rect.x + rect.width and y < rect.y + rect.height:
+                return self.texts[i]
+        return ""
+
+                    
+    def removeAll(self):
+        self.rects=[]
+        self.texts=[]        

@@ -24,7 +24,7 @@ import orngCI
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "graphCanvasColor"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "graphCanvasColor", "globalValueScaling"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF"]
@@ -43,6 +43,7 @@ class OWRadviz(OWWidget):
         self.attrContOrder = "RelieF"
         self.jitteringType = "none"
         self.attrOrdering = "Original"
+        self.globalValueScaling = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -71,6 +72,7 @@ class OWRadviz(OWWidget):
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
+        self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options.attrOrderingButtons, SIGNAL("clicked(int)"), self.setAttrOrdering)
@@ -130,10 +132,12 @@ class OWRadviz(OWWidget):
         self.options.attrOrderingButtons.setButton(self.attributeOrdering.index(self.attrOrdering))
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
+        self.options.globalValueScaling.setChecked(self.globalValueScaling)
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -183,6 +187,12 @@ class OWRadviz(OWWidget):
     def setCanvasColor(self, c):
         self.graphCanvasColor = c
         self.graph.setCanvasColor(c)
+
+    def setGlobalValueScaling(self):
+        self.globalValueScaling = self.options.globalValueScaling.isChecked()
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        self.updateGraph()
         
     # ####################
     # LIST BOX FUNCTIONS

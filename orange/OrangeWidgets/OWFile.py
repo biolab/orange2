@@ -80,8 +80,8 @@ class OWFile(OWWidget):
         "Open a file, create data from it and send it over the data channel"
         if fn!="(none)":
             fileExt=lower(os.path.splitext(fn)[1])
-            if fileExt in (".txt",".tab"):
-                tab=orange.TabDelimExampleGenerator(fn)
+            if fileExt in (".txt",".tab",".xls"):
+                tab=orange.ExampleTable(fn)
             elif fileExt in (".c45",):
                 tab=orange.C45ExampleGenerator(fn)
             else:

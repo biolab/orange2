@@ -3,126 +3,32 @@
 #
 # the base for all parallel graphs
 
-import sys
-import math
-import orange
-import os.path
-from OWGraph import *
+from OWVisGraph import *
 from OWDistributions import *
 from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
 
-class OWParallelGraph(OWGraph):
+class OWParallelGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        OWGraph.__init__(self, parent, name)
+        OWVisGraph.__init__(self, parent, name)
 
-        self.scaledData = []
-        self.scaledDataAttributes = []
-        self.jitteringType = 'none'
         self.showDistributions = 0
-        self.hidePureExamples = 1 
-        self.GraphCanvasColor = str(Qt.white.name())
-
-        self.enableGridX(FALSE)
-        self.enableGridY(FALSE)
-
-        self.noneSymbol = QwtSymbol()
-        self.noneSymbol.setStyle(QwtSymbol.None)        
-        self.curveIndex = 0
+        self.hidePureExamples = 1
+        self.metaid = -1
+        
 
     def setShowDistributions(self, showDistributions):
         self.showDistributions = showDistributions
 
-    def setJitteringOption(self, jitteringType):
-        self.jitteringType = jitteringType
-
     def setShowAttrValues(self, showAttrValues):
         self.showAttrValues = showAttrValues
-
 
     def setHidePureExamples(self, hide):
         self.hidePureExamples = hide
         
-    #
-    # scale data at index index to the interval 0 to 1
-    #
-    def scaleData(self, data, index, forColoring = 0):
-        attr = data.domain[index]
-        temp = [];
-        values = []
-        # is the attribute discrete
-        if attr.varType == orange.VarTypes.Discrete:
-            # we create a hash table of variable values and their indices
-            variableValueIndices = {}
-            for i in range(len(attr.values)):
-                variableValueIndices[attr.values[i]] = i
-                values.append(attr.values[i])
-
-            count = float(len(attr.values))
-            if len(attr.values) > 1: num = float(len(attr.values)-1)
-            else: num = float(1)
-
-
-            if forColoring == 1:
-                for i in range(len(data)):
-                    val = float(variableValueIndices[data[i][index].value]) / float(count)
-                    temp.append(val)
-            else:
-                for i in range(len(data)):
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(0.2/count)
-                    temp.append(val)
-                    
-        # is the attribute continuous
-        else:
-            # first find min and max value
-            i = 0
-            while data[i][attr].isSpecial() == 1: i+=1
-            min = data[i][attr].value
-            max = data[i][attr].value
-            for item in data:
-                if item[attr].isSpecial() == 1: continue
-                if item[attr].value < min:
-                    min = item[attr].value
-                elif item[attr].value > max:
-                    max = item[attr].value
-
-            diff = max - min
-            values = [min, max]
-
-            # create new list with values scaled from 0 to 1
-            #for i in range(len(data)):
-            #    if data[i][attr].isSpecial() == 1:  temp.append(0)
-            #    else:                               temp.append((data[i][attr].value - min) / diff)
-            if forColoring == 1:
-                for i in range(len(data)):
-                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
-            else:
-                for i in range(len(data)):
-                    temp.append((data[i][attr].value - min) / diff)
-        return (temp, values)
-
-    #
-    # set new data and scale its values
-    #
-    def setData(self, data):
-        self.rawdata = data
-        self.scaledData = []
-        self.attrValues = {}
-        self.scaledDataAttributes = []
-        
-        if data == None: return
-
-        self.distributions = []; self.totals = []
-        for index in range(len(data.domain)):
-            attr = data.domain[index]
-            self.scaledDataAttributes.append(attr.name)
-            scaled, values = self.scaleData(data, index)
-            self.scaledData.append(scaled)
-            self.attrValues[attr.name] = values
-
     #
     # update shown data. Set labels, coloring by className ....
     #
@@ -166,7 +72,7 @@ class OWParallelGraph(OWGraph):
         if className != "(One color)" and className != '':
             ex_jitter = self.jitteringType
             self.setJitteringOption('none')
-            scaledClassData, classValues = self.scaleData(self.rawdata, className, 1)
+            scaledClassData, classValues = self.scaleData(self.rawdata, className, -1,-1, 1)
             self.setJitteringOption(ex_jitter)
 
         xs = range(length)
@@ -179,19 +85,18 @@ class OWParallelGraph(OWGraph):
         for i in range(dataSize): dataStop.append(lastIndex)
         classIndex = self.scaledDataAttributes.index(className)
         if self.hidePureExamples == 1 and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            newData = self.rawdata.select(self.rawdata.domain)
-            metaid = orange.newmetaid()
-            metavar = orange.IntVariable("ItemIndex")
-            newData.domain.addmeta(metaid, metavar)
-
-            for i in range(dataSize): newData[i].setmeta(metaid, i)
+            if self.metaid == -1:
+                self.metaid = orange.newmetaid()
+                metavar = orange.IntVariable("ItemIndex")
+                self.rawdata.domain.addmeta(self.metaid, metavar)
+                for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
 
             for i in range(length-1,-1,-1):
-                if newData.domain[indices[i]].varType != orange.VarTypes.Discrete or labels[i] == className: continue
+                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Discrete or labels[i] == className: continue
 
-                attr = newData.domain[indices[i]]                
+                attr = self.rawdata.domain[indices[i]]                
                 for attrVal in attr.values:
-                    tempData = newData.select({attr.name:attrVal})
+                    tempData = self.rawdata.select({attr.name:attrVal})
                     ind = 0
                     while ind < len(tempData):
                         if tempData[0][classIndex] != tempData[ind][classIndex]: break
@@ -200,7 +105,7 @@ class OWParallelGraph(OWGraph):
                     if ind == len(tempData):
                         val = indices[i]
                         for item in tempData:
-                            index = int(item.getmeta(metaid))
+                            index = int(item.getmeta(self.metaid))
                             dataStop[index] = val
 
 
@@ -350,20 +255,7 @@ class OWParallelGraph(OWGraph):
                     self.setCurveData(ckey, xData, yData)
 
 
-    def rndCorrection(self, max):
-        """
-        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
-        function is used to plot data points for categorical variables
-        """    
-        if self.jitteringType == 'none': 
-            return 0.0
-        elif self.jitteringType  == 'uniform': 
-            return (random() - 0.5)*2*max
-        elif self.jitteringType  == 'triangle': 
-            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
-        elif self.jitteringType  == 'beta': 
-            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
-             
+    
     
 if __name__== "__main__":
     #Draw a simple graph

@@ -24,9 +24,13 @@ import orngCI
 ##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING FUNCTIONAL DECOMPOSITION
 ###########################################################################################
 def replaceAttributes(index1, index2, merged, data):
-    data.domain.attributes.remove(data.domain[index1])
-    data.domain.attributes.remove(data.domain[index2])
-    return data.select([merged] + data.domain.attributes + [data.domain.classVar], data)
+    #data.domain.attributes.remove(data.domain[index1])
+    #data.domain.attributes.remove(data.domain[index2])
+    attrs = list(data.domain.attributes)
+    attrs.remove(data.domain[index1])
+    attrs.remove(data.domain[index2])
+    #return data.select([merged] + list(data.domain.attributes) + [data.domain.classVar])
+    return data.select([merged] + attrs + [data.domain.classVar])
 
 
 def getFunctionalList(data):
@@ -35,32 +39,38 @@ def getFunctionalList(data):
     testAttrs = []
     outList = []
 
+    remover = orngCI.AttributeRedundanciesRemover(noMinimization = 1)
+    newData = remover(data)
+
+    # ####
     # compute the best attribute combination
-    for i in range(len(data.domain)):
-        if data.domain[i].varType != orange.VarTypes.Discrete: continue
-        testAttrs.append(i)
-        for j in range(i+1, len(data.domain)):
-            if data.domain[j].varType != orange.VarTypes.Discrete: continue
-            vals, qual = orngCI.FeatureByMinComplexity(data, [data.domain[i].name, data.domain[j].name])
+    # ####
+    for i in range(len(newData.domain.attributes)):
+        if newData.domain.attributes[i].varType != orange.VarTypes.Discrete: continue
+        testAttrs.append(newData.domain.attributes[i].name)
+        for j in range(i+1, len(newData.domain.attributes)):
+            if data.domain.attributes[j].varType != orange.VarTypes.Discrete: continue
+            vals, qual = orngCI.FeatureByMinComplexity(data, [newData.domain.attributes[i], newData.domain.attributes[j]])
             if qual > bestQual:
                 bestQual = qual
-                bestAttrs = [i, j, vals]
+                bestAttrs = [newData.domain.attributes[i].name, newData.domain.attributes[j].name, vals]
 
     if bestAttrs == []: return []
-    outList.append(data.domain[bestAttrs[0]].name)
-    outList.append(data.domain[bestAttrs[1]].name)
-    dataNew = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], data)
+    outList.append(bestAttrs[0])
+    outList.append(bestAttrs[1])
+    newData = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], newData)
     testAttrs.remove(bestAttrs[0])
     testAttrs.remove(bestAttrs[1])
+    
     while (testAttrs != []):
         bestQual = -10000000
-        for i in testAttrs:
-            vals, qual = orangCI.FeatureByMinComplexity(dataNew, [dataNew.domain[0].name, data.domain[i].name])
+        for attrName in testAttrs:
+            vals, qual = orngCI.FeatureByMinComplexity(newData, [newData.domain[0], attrName])
             if qual > bestQual:
                 bestqual = qual
-                bestAttrs = [0, i, dataNew]
-        dataNew = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], dataNew)
-        outList.append(dataNew.domain[bestAttrs[1]].name)
+                bestAttrs = [0, attrName, vals]
+        newData = replaceAttributes(0, bestAttrs[1], bestAttrs[2], newData)
+        outList.append(bestAttrs[1])
         testAttrs.remove(bestAttrs[1])
         
     return outList
@@ -267,6 +277,7 @@ class OWParallelCoordinates(OWWidget):
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.showDistributions.setChecked(self.showDistributions)
         self.options.showAttrValues.setChecked(self.showAttrValues)
+        self.options.hidePureExamples.setChecked(self.hidePureExamples)
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
@@ -463,9 +474,13 @@ class OWParallelCoordinates(OWWidget):
                     self.shownAttribsLB.insertItem(item[0])
 
         elif self.attrDiscOrder == "Functional decomposition":
+            self.shownAttribsLB.insertItem(data.domain.classVar.name)
             list = getFunctionalList(data)
             for item in list:
-                self.shownAttribsLB.insertItem(item[0])
+                self.shownAttribsLB.insertItem(item)
+            for attr in data.domain.attributes:
+                if attr.name not in list:
+                    self.hiddenAttribsLB.insertItem(attr.name)
         else:
             print "Incorrect value for attribute order"
 

@@ -112,6 +112,9 @@ class OWSurveyPlot(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
+        self.statusBar = QStatusBar(self.mainArea)
+        self.box.addWidget(self.statusBar)
+        
         # add a settings dialog and initialize its values
         self.setOptions()
 
@@ -255,7 +258,7 @@ class OWSurveyPlot(OWWidget):
         return data
         
     def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)
         #self.graph.replot()
         self.graph.update()
         self.repaint()

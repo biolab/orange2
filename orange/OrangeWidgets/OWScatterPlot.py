@@ -112,6 +112,8 @@ class OWScatterPlot(OWWidget):
         self.connect(self.attrSizeShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrSizeShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
+        self.statusBar = QStatusBar(self.mainArea)
+        self.box.addWidget(self.statusBar)
         #self.repaint()
 
     # #########################
@@ -278,7 +280,7 @@ class OWScatterPlot(OWWidget):
         if self.attrSizeShapeCB.isOn():
             sizeShapeAttr = str(self.attrSizeShape.currentText())
 
-        self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn())
+        self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn(), self.statusBar)
         self.graph.update()
         self.repaint()
 
