@@ -705,7 +705,7 @@ class InteractionMatrix:
                 if simple_metric:
                     t = 1-self.simple[(y,x)]
                 else:
-                t = self.corr[(y,x)]
+                    t = self.corr[(y,x)]
                 if jaccard:
                     l = self.ents[(y,x)]
                     if l > 1e-6:
