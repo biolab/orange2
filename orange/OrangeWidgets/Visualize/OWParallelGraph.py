@@ -350,23 +350,6 @@ class OWParallelGraph(OWVisGraph):
                 self.setCurveData(ckey, xData, yData)
         self.addTooltips()
         
-
-    def getCorrelation(self, attr1, attr2):
-        ind1 = self.attributeNames.index(attr1)
-        ind2 = self.attributeNames.index(attr2)
-        if self.rawdata.domain[ind1].varType == orange.VarTypes.Discrete or self.rawdata.domain[ind2].varType == orange.VarTypes.Discrete: return None
-        array1 = list(self.noJitteringScaledData[ind1])
-        array2 = list(self.noJitteringScaledData[ind2])
-        # we have to remove missing values
-        for i in range(array1.count("?")):
-            ind = array1.index("?")
-            array1.pop(ind); array2.pop(ind)
-        for i in range(array2.count("?")):
-            ind = array2.index("?")
-            array1.pop(ind); array2.pop(ind)
-        (corr, b) = pearsonr(array1, array2)
-        return corr
-
     def addTooltips(self):
         for i in range(len(self.toolInfo)):
             (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
@@ -453,7 +436,9 @@ class OWParallelGraph(OWVisGraph):
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     def getSelectionsAsExampleTables(self):
-        if not self.rawdata: return (None, None, None)
+        if not self.rawdata:
+            print "no data"
+            return (None, None, None)
         selected = orange.ExampleTable(self.rawdata.domain)
         unselected = orange.ExampleTable(self.rawdata.domain)
 

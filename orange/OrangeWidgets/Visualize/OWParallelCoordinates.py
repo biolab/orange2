@@ -38,7 +38,7 @@ class OWParallelCoordinates(OWWidget):
         self.data = None
 
         self.jitterSize = 10
-        self.linesDistance = 40
+        self.linesDistance = 60
         
         self.showDistributions = 1
         self.showAttrValues = 1
@@ -49,8 +49,8 @@ class OWParallelCoordinates(OWWidget):
         self.useSplines = 0
         self.lineTracking = 0
         self.showLegend = 1
-        self.autoSendSelection = 0
-        self.sendShownAttributes = 1
+        self.autoSendSelection = 1
+        self.sendShownAttributes = 0
         self.attrDiscOrder = "None"
         self.attrContOrder = "None"
         self.graphCanvasColor = str(Qt.white.name())
@@ -111,7 +111,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow)
 
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         #connect controls to appropriate functions
@@ -145,7 +145,7 @@ class OWParallelCoordinates(OWWidget):
         
         box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
-        OWGUI.checkBox(box2, self, 'sendShownAttributes', 'Send only shown attributes')
+        OWGUI.checkBox(box2, self, 'sendShownAttributes', 'Send only shown attributes', callback = self.setAutoSendSelection, tooltip = "Send dataset with all attributes or just attributes that are currently shown.")
 
         OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
         
@@ -176,11 +176,16 @@ class OWParallelCoordinates(OWWidget):
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
-        if not self.data: return
+        if not self.data:
+            self.send("Selected Examples", None)
+            self.send("Unselected Examples", None)
+            self.send("Example Distribution", None)
+            return
+        
         (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables()
         if not self.sendShownAttributes:
-            self.send("Selected Examples",selected)
-            self.send("Unselected Examples",unselected)
+            self.send("Selected Examples", selected)
+            self.send("Unselected Examples", unselected)
             self.send("Example Distribution", merged)
         else:
             attrs = self.getShownAttributeList()
@@ -291,9 +296,9 @@ class OWParallelCoordinates(OWWidget):
                 if attrs[i] + "-" + attrs[i+1] in self.correlationDict.keys():   corr = self.correlationDict[attrs[i] + "-" + attrs[i+1]]
                 elif attrs[i+1] + "-" + attrs[i] in self.correlationDict.keys(): corr = self.correlationDict[attrs[i+1] + "-" + attrs[i]]
                 else:
-                    corr = self.graph.getCorrelation(attrs[i], attrs[i+1])
+                    corr = OWVisAttrSelection.computeCorrelation(self.data, attrs[i], attrs[i+1])
                     self.correlationDict[attrs[i] + "-" + attrs[i+1]] = corr
-                if corr: labels.append("%2.3f" % (corr))
+                if corr != None: labels.append("%2.3f" % (corr))
                 else: labels.append("")
         elif self.middleLabels == "VizRank":
             for i in range(len(attrs)-1):
@@ -328,6 +333,8 @@ class OWParallelCoordinates(OWWidget):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
 
+    # #############################
+    # if user clicks new attribute list in optimization dialog, we update shown attributes
     def showSelectedAttributes(self):
         attrList = self.optimizationDlg.getSelectedAttributes()
         if not attrList: return
@@ -352,6 +359,7 @@ class OWParallelCoordinates(OWWidget):
         else:
             self.middleLabels = "Correlations"
         self.updateGraph()
+        if self.sendShownAttributes: self.sendSelections()  # if we send only shown attributes, we also have to send new dataset with possibly new attributes
     
     # #############################################
 
@@ -360,7 +368,7 @@ class OWParallelCoordinates(OWWidget):
         OWWidget.show(self)
         self.updateGraph()
     
-    ####### DATA ################################
+    # ###### DATA ################################
     # receive new data and update all fields
     def data(self, data):
         self.projections = None
@@ -387,10 +395,11 @@ class OWParallelCoordinates(OWWidget):
             self.setShownAttributeList(self.data)
 
         self.updateGraph()
+        self.sendSelections()
     #################################################
 
     
-    ####### SELECTION ################################
+    # ###### SELECTION ################################
     # receive a list of attributes we wish to show
     def selection(self, list):
         self.shownAttribsLB.clear()
@@ -548,7 +557,11 @@ class ParallelOptimization(OWBaseWidget):
 
         self.numberOfAttributesCombo = OWGUI.comboBoxWithCaption(self.optimizeBox, self, "numberOfAttributes", "Number of visualized attributes: ", tooltip = "Projections with this number of attributes will be evaluated", items = [x for x in range(3, 12)], sendSelectedValue = 1, valueType = int)
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, " Start optimization ", callback = self.startOptimization)
+        f = self.startOptimizationButton.font()
+        f.setBold(1)
+        self.startOptimizationButton.setFont(f)
         self.stopOptimizationButton = OWGUI.button(self.optimizeBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
+        self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
 
@@ -688,6 +701,7 @@ class ParallelOptimization(OWBaseWidget):
         if self.optimizationMeasure == CORRELATION:
             attrList = [attr.name for attr in self.parallelWidget.data.domain.attributes]
             attrInfo = OWVisAttrSelection.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList)
+            #attrInfo = OWVisAttrSelection.computeCorrelationInsideClassesBetweenAttributes(self.parallelWidget.data, attrList)
         elif self.optimizationMeasure == VIZRANK:
             for (val, [a1, a2]) in self.projections:
                 attrInfo.append((val, a1, a2))

@@ -48,8 +48,8 @@ class OWPolyviz(OWWidget):
         self.optimizedDrawing = 1
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
-        self.autoSendSelection = 0
-        self.sendShownAttributes = 1
+        self.autoSendSelection = 1
+        self.sendShownAttributes = 0
         self.rotateAttributes = 0
         self.graphCanvasColor = str(Qt.white.name())
         

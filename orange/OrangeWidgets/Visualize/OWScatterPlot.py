@@ -46,7 +46,7 @@ class OWScatterPlot(OWWidget):
         self.jitterSize = 5
 
         self.showFilledSymbols = 1
-        self.autoSendSelection = 0
+        self.autoSendSelection = 1
 
         self.graphCanvasColor = str(Qt.white.name())
         self.graphGridColor = str(Qt.black.name())
