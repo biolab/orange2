@@ -42,7 +42,7 @@ class BasicSVMLearner:
       # ONE_CLASS: only one class -- is something in or out
       # epsilon-SVR: epsilon-regression
       # epsilon-SVR: nu-regression
-      self.type = -1
+      self.type = -1 # -1: classical, -2: NU, -3: OC
 
       # kernel type: (LINEAR=0, POLY, RBF, SIGMOID=3)
       # linear: x[i].x[j]
@@ -91,11 +91,18 @@ class BasicSVMLearner:
       # for discrete class
       assert(data.domain.classVar.varType == 1 or data.domain.classVar.varType == 2)
       type = self.type
-      if type == -1:
+      if type == -1: # Classical
         if data.domain.classVar.varType == 2: # continuous class
           type = 3 # regression
         else: # discrete class
           type = 0 # classification
+      elif type == -2: # Nu
+        if data.domain.classVar.varType == 2: # continuous class
+          type = 4 # regression
+        else: # discrete class
+          type = 1 # classification
+      elif type == -3: # OC
+        type = 2 # one-class, class is ignored.
 
       # do error checking
       assert(type in [0,1,2,3,4])
