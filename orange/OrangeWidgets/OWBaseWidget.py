@@ -28,10 +28,12 @@ class SignalWrapper:
 
     def __call__(self, *k):
         signalManager.signalProcessingInProgress += 1
-        apply(self.method, k)
-        signalManager.signalProcessingInProgress -= 1
-        if not signalManager.signalProcessingInProgress:
-            signalManager.processNewSignals(self.widget)
+        try:
+            apply(self.method, k)
+        finally:
+            signalManager.signalProcessingInProgress -= 1
+            if not signalManager.signalProcessingInProgress:
+                signalManager.processNewSignals(self.widget)
 
 
 class OWBaseWidget(QDialog):
@@ -81,6 +83,7 @@ class OWBaseWidget(QDialog):
         self.wrappers =[]    # stored wrappers for widget events
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: (signalData, id)
+        self.connections = {}   # dictionary where keys are (control, signal) and values are wrapper instances. Used in connect/disconnect
         self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
         self.callbackDeposit = []
@@ -229,10 +232,17 @@ class OWBaseWidget(QDialog):
     # ########################################################################
     def connect(self, control, signal, method):
         wrapper = SignalWrapper(self, method)
+        self.connections[(control, signal)] = wrapper   # save for possible disconnect
         self.wrappers.append(wrapper)
         QDialog.connect(control, signal, wrapper)
         #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
 
+  
+    def disconnect(self, control, signal, method):
+        wrapper = self.connections[(control, signal)]
+        QDialog.disconnect(control, signal, wrapper)
+
+    
     def findSignalTypeFrom(self, signalName):
         for (signal, dataType) in self.outputs:
             if signal == signalName: return dataType
