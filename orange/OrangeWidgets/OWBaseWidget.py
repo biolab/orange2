@@ -135,7 +135,7 @@ class OWBaseWidget(QDialog):
     def loadSettings(self, file = None):
         if hasattr(self, "settingsList"):
             if file==None:
-                if os.path.exists(self.outputDir + self.title + ".ini"):
+                if os.path.exists(os.path.join(self.outputDir, self.title + ".ini")):
                     file = os.path.join(self.outputDir, self.title + ".ini")
                 else:
                     return
