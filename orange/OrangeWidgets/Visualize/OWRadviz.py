@@ -3,7 +3,7 @@
 <description>Shows data using radviz visualization method</description>
 <category>Visualization</category>
 <icon>icons/Radviz.png</icon>
-<priority>1100</priority>
+<priority>3100</priority>
 """
 # Radviz.py
 #

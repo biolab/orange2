@@ -3,7 +3,7 @@
 <description>Shows data using survey plot visualization method</description>
 <category>Visualization</category>
 <icon>icons/SurveyPlot.png</icon>
-<priority>2200</priority>
+<priority>3250</priority>
 """
 # OWSurveyPlot.py
 #

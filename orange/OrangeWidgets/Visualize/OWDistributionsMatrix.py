@@ -3,7 +3,7 @@
 <description>Create a matrix with distributions.</description>
 <category>Standard Visualizations</category>
 <icon>icons/Distribution.png</icon>
-<priority>2510</priority>
+<priority>1050</priority>
 """
 
 #

@@ -4,7 +4,7 @@
 examples.</description>
 <category>Standard Visualizations</category>
 <icon>icons/Distribution.png</icon>
-<priority>2500</priority>
+<priority>1000</priority>
 """
 
 #

@@ -3,7 +3,7 @@
 <description>Shows data using Polyviz visualization method</description>
 <category>Visualization</category>
 <icon>icons/Polyviz.png</icon>
-<priority>1150</priority>
+<priority>3150</priority>
 """
 # Polyviz.py
 #

@@ -1,5 +1,5 @@
 """
-<name>Scatterplot3D</name>
+<name->Scatterplot3D</name->
 <description>Shows data using scatterplot<br>Requirements: <b>PyOpenGL</b></description>
 <category>Visualization</category>
 <icon>icons/ScatterPlot.png</icon>
