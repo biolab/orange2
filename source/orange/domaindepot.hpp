@@ -32,6 +32,7 @@ VWRAPPER(VarList)
 WRAPPER(Domain)
 class TMetaVector;
 
+//VECTOR: TDomainList (of PDomain)
 #define TDomainList TOrangeVector<PDomain> 
 VWRAPPER(DomainList)
 

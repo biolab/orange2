@@ -65,6 +65,7 @@ public:
 
 WRAPPER(C45TreeNode)
 
+//VECTOR: C45TreeNodeList (of PC45TreeNode)
 #define TC45TreeNodeList TOrangeVector<PC45TreeNode> 
 VWRAPPER(C45TreeNodeList)
 

@@ -33,7 +33,8 @@ WRAPPER(ProgressCallback);
 
 WRAPPER(HierarchicalCluster)
 
-#define THierarchicalClusterList TOrangeVector<PHierarchicalCluster> 
+//VECTOR: HierarchicalClusterList (of PProbabilityEstimator)
+#define THierarchicalClusterList TOrangeVector<PHierarchicalCluster>
 VWRAPPER(HierarchicalClusterList)
 
 class THierarchicalCluster : public TOrange {

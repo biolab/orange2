@@ -92,7 +92,7 @@ public:
   TPropertyDescription const *properties;
   size_t const *components;
 
-  TClassDescription(const char *, const type_info *, const TClassDescription * = NULL, TPropertyDescription const * = NULL, size_t const * = NULL);
+  TClassDescription(const char * = NULL, const type_info * = NULL, const TClassDescription * = NULL, TPropertyDescription const * = NULL, size_t const * = NULL);
 };
 
 

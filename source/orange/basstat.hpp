@@ -53,6 +53,7 @@ WRAPPER(BasicAttrStat);
 WRAPPER(ExampleGenerator);
 
 // Minimal, maximal, average value of attribute, and deviation for all attributes from the generator
+//VECTOR: BasicAttrStatList (of PBasicAttrStat)
 class TDomainBasicAttrStat : public TOrangeVector<PBasicAttrStat> {
 public:
   __REGISTER_CLASS

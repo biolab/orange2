@@ -50,6 +50,7 @@ public:
 
 WRAPPER(Weight_Classifier)
 
+//VECTOR: Weight_ClassifierList (of PWeight_Classifier)
 #define TWeight_ClassifierList TOrangeVector<PWeight_Classifier> 
 VWRAPPER(Weight_ClassifierList)
 

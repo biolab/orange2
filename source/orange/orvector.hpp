@@ -90,29 +90,8 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
 #include "root.hpp"
 #include "stladdon.hpp"
 
-#ifdef _MSC_VER
-#define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME) \
-  TClassDescription TOrangeVector< _TYPE >::st_classDescription(_NAME, &typeid(TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components);
-
-#define DEFINE__TOrangeVector_classDescription(_TYPE, _NAME) \
-  TClassDescription _TOrangeVector< _TYPE >::st_classDescription(_NAME, &typeid(_TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components);
-
-#else 
-
-#define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME) \
-  template <> \
-  TClassDescription TOrangeVector< _TYPE >::st_classDescription; \
-  template \
-  TClassDescription TOrangeVector< _TYPE >::st_classDescription(_NAME, &typeid(TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components);
-
-#define DEFINE__TOrangeVector_classDescription(_TYPE, _NAME) \
-  template <> \
-  TClassDescription _TOrangeVector< _TYPE >::st_classDescription; \
-  template \
-  TClassDescription _TOrangeVector< _TYPE >::st_classDescription(_NAME, &typeid(_TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components);
-
-#endif
-
+#define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME)
+#define DEFINE__TOrangeVector_classDescription(_TYPE, _NAME)
 
 template<class T>
 class _TOrangeVector : public TOrange
@@ -249,7 +228,7 @@ class _TOrangeVector<TValue> : public TOrange
   }
 };
 
-#define TValueList _TOrangeVector<TValue>
+#define /*manual*/ TValueList _TOrangeVector<TValue>
 VWRAPPER(ValueList)
 
 

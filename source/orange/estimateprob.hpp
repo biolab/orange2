@@ -37,9 +37,11 @@ WRAPPER(ProbabilityEstimatorConstructor)
 WRAPPER(ConditionalProbabilityEstimator)
 WRAPPER(ConditionalProbabilityEstimatorConstructor)
 
+//VECTOR: ProbabilityEstimatorList (of PProbabilityEstimator)
 #define TProbabilityEstimatorList TOrangeVector<PProbabilityEstimator>
 VWRAPPER(ProbabilityEstimatorList)
 
+//VECTOR: ConditionalProbabilityEstimatorList (of PConditionalProbabilityEstimator)
 #define TConditionalProbabilityEstimatorList TOrangeVector<PConditionalProbabilityEstimator>
 VWRAPPER(ConditionalProbabilityEstimatorList)
 

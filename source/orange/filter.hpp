@@ -42,6 +42,8 @@ public:
 };
 
 WRAPPER(Filter);
+
+//VECTOR: FilterList (of PFilter)
 #define TFilterList TOrangeVector<PFilter>
 VWRAPPER(FilterList)
 
@@ -178,6 +180,7 @@ public:
 };
 
 
+//VECTOR: ValueFilterList (of PValueFilter)
 #define TValueFilterList TOrangeVector<PValueFilter>
 VWRAPPER(ValueFilterList)
 
