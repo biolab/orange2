@@ -58,6 +58,7 @@ class OWPolyvizOptions(OWOptions):
         self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
         self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
         self.showLegend = QCheckBox('Show legend', self.graphSettingsBG)
+        self.optimizedDrawing = QCheckBox('Optimize drawing (biased)', self.graphSettingsBG)
 
         # continuous attribute selection
         self.attrContButtons = QVButtonGroup("Continuous attribute selection", self.top)

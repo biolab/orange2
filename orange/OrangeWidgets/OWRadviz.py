@@ -24,7 +24,7 @@ from qt import *
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -50,6 +50,7 @@ class OWRadviz(OWWidget):
         self.scaleFactor = 1.0
         self.showLegend = 1
         self.showFilledSymbols = 1
+        self.optimizedDrawing = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -82,6 +83,7 @@ class OWRadviz(OWWidget):
         self.connect(self.options.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
         self.connect(self.options.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)
         self.connect(self.options.showLegend, SIGNAL("clicked()"), self.setShowLegend)
+        self.connect(self.options.optimizedDrawing, SIGNAL("clicked()"), self.setOptmizedDrawing)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -171,6 +173,7 @@ class OWRadviz(OWWidget):
         self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
         self.options.showFilledSymbols.setChecked(self.showFilledSymbols)
         self.options.showLegend.setChecked(self.showLegend)
+        self.options.optimizedDrawing.setChecked(self.optimizedDrawing)
 
         # set items in jitter size combo
         self.options.jitterSize.clear()
@@ -183,7 +186,7 @@ class OWRadviz(OWWidget):
             self.options.scaleCombo.insertItem(self.scaleFactorList[i])
         self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
 
-        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols)
+        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)        
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -463,7 +466,7 @@ class OWRadviz(OWWidget):
 
     # #####################
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
         self.repaint()
@@ -471,6 +474,11 @@ class OWRadviz(OWWidget):
     def setShowLegend(self):
         self.showLegend = self.options.showLegend.isChecked()
         self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
+
+    def setOptmizedDrawing(self):
+        self.optimizedDrawing = self.options.optimizedDrawing.isChecked()
+        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
         self.updateGraph()
 
     # ###### SHOWN ATTRIBUTE LIST ##############
@@ -525,15 +533,9 @@ class OWRadviz(OWWidget):
 
         if self.data == None: return
 
-        if self.data.domain.classVar.name not in list:
-            self.hiddenAttribsLB.insertItem(self.data.domain.classVar.name)
-            
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
-
-        for attr in self.data.domain.attributes:
-            if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
+        for attr in self.data.domain:
+            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
+            else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
     # ################################################

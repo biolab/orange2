@@ -23,7 +23,7 @@ from OWkNNOptimization import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -51,6 +51,7 @@ class OWPolyviz(OWWidget):
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
         self.showLegend = 1
         self.showFilledSymbols = 1
+        self.optimizedDrawing = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -84,6 +85,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.options.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)        
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.showLegend, SIGNAL("clicked()"), self.setShowLegend)
+        self.connect(self.options.optimizedDrawing, SIGNAL("clicked()"), self.setOptmizedDrawing)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -158,6 +160,7 @@ class OWPolyviz(OWWidget):
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         self.options.showFilledSymbols.setChecked(self.showFilledSymbols)
         self.options.showLegend.setChecked(self.showLegend)
+        self.options.optimizedDrawing.setChecked(self.optimizedDrawing)
 
         self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
@@ -169,7 +172,7 @@ class OWPolyviz(OWWidget):
             self.options.scaleCombo.insertItem(self.scaleFactorList[i])
         self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
         
-        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols)
+        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -500,7 +503,7 @@ class OWPolyviz(OWWidget):
 
     # #####################
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse)
         #self.graph.update()
         self.repaint()
@@ -508,6 +511,11 @@ class OWPolyviz(OWWidget):
     def setShowLegend(self):
         self.showLegend = self.options.showLegend.isChecked()
         self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
+
+    def setOptmizedDrawing(self):
+        self.optimizedDrawing = self.options.optimizedDrawing.isChecked()
+        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
         self.updateGraph()
 
 
@@ -569,15 +577,9 @@ class OWPolyviz(OWWidget):
 
         if self.data == None: return
 
-        if self.data.domain.classVar.name not in list:
-            self.hiddenAttribsLB.insertItem(self.data.domain.classVar.name)
-            
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
-
-        for attr in self.data.domain.attributes:
-            if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
+        for attr in self.data.domain:
+            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
+            else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
     #################################################

@@ -267,7 +267,7 @@ class OWRadvizGraph(OWVisGraph):
 
             if self.showKNNModel == 1:
                 table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
-            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizedDrawing:
                 curveData[classValueIndices[self.rawdata[i].getclass().value]][0].append(x_i)
                 curveData[classValueIndices[self.rawdata[i].getclass().value]][1].append(y_i)
                 newColor = QColor()

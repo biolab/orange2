@@ -271,7 +271,7 @@ class OWPolyvizGraph(OWVisGraph):
             lineColor = QColor(0,0,0)
             if self.showKNNModel == 1:
                 table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
-            elif classIsDiscrete:
+            elif classIsDiscrete and self.optimizedDrawing:
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
@@ -298,7 +298,7 @@ class OWPolyvizGraph(OWVisGraph):
                 if self.showKNNModel:
                     polyvizLineCoordsX[j][0] += [xDataAnchors[j], lineX2]
                     polyvizLineCoordsY[j][0] += [yDataAnchors[j], lineY2]
-                elif classIsDiscrete:
+                elif classIsDiscrete and self.optimizedDrawing:
                     index = classValueIndices[self.rawdata[i].getclass().value]
                     polyvizLineCoordsX[j][index] += [xDataAnchors[j], lineX2, xDataAnchors[j]]
                     polyvizLineCoordsY[j][index] += [yDataAnchors[j], lineY2, yDataAnchors[j]]
@@ -327,7 +327,7 @@ class OWPolyvizGraph(OWVisGraph):
                     self.addCurve('line' + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
 
         ###### ONE COLOR OR DISCRETE CLASS ATTRIBUTE
-        elif classIsDiscrete:        
+        elif classIsDiscrete and self.optimizedDrawing:        
             # create data curves for dots
             for i in range(valLen):
                 newColor = QColor()
