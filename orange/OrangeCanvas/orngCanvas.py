@@ -6,8 +6,6 @@ from qt import *
 import sys, os, cPickle, webbrowser
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
 
-
-
 TRUE  = 1
 FALSE = 0
 
@@ -37,9 +35,12 @@ class OrangeCanvasDlg(QMainWindow):
                 fullName = os.path.join(widgetDir, name)
                 if os.path.isdir(fullName): 
                     sys.path.append(fullName)
-        
-        self.defaultPic = self.picsDir + "Unknown.png"
+
         self.registryFileName = self.canvasDir + "widgetregistry.xml"
+        self.defaultPic = self.picsDir + "Unknown.png"
+
+        if os.path.exists("./icons/CanvasIcon.png"):
+            self.setIcon(QPixmap("./icons/CanvasIcon.png"))
         
         if sys.path.count(self.widgetDir) == 0:
             sys.path.append(self.widgetDir)
