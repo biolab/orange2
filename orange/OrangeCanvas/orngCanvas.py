@@ -114,8 +114,8 @@ class OrangeCanvasDlg(QMainWindow):
         
         # create new schema
         win = self.menuItemNewSchema()
-        if len(sys.argv) > 1:
-            win.loadDocument(sys.argv[1])
+        if len(sys.argv) > 1 and os.path.splitext(sys.argv[-1])[1].lower() == ".ows":
+            win.loadDocument(sys.argv[-1])
         self.workspace.cascade()
 
     def createWidgetsToolbar(self, rebuildRegistry):
@@ -123,7 +123,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.tabs = orngTabs.WidgetTabs(self.widgetInfo, self.widgetsToolBar, 'tabs')
         
         if hasattr(self, "addDockWindow") : self.addDockWindow(self.widgetsToolBar, "Widgets", Qt.DockTop, TRUE)
-        else:                  self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
+        else:                               self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
 
         
         self.tabs.setCanvasDlg(self)
@@ -292,6 +292,7 @@ class OrangeCanvasDlg(QMainWindow):
             return
         win = self.menuItemNewSchema()
         win.loadDocument(str(name))
+        print str(name)
         self.addToRecentMenu(str(name))
 
     def menuItemClose(self):
@@ -359,6 +360,9 @@ class OrangeCanvasDlg(QMainWindow):
         recentDocs = []
         if self.settings.has_key("RecentFiles"):
             recentDocs = self.settings["RecentFiles"]
+
+        # convert to a valid file name
+        name = os.path.realpath(name)
         
         if name in recentDocs:
             recentDocs.remove(name)
@@ -483,10 +487,14 @@ class OrangeCanvasDlg(QMainWindow):
             win.close()
             
     def menuMinimizeAll(self):
-        win.showMinimized()
+        wins = self.workspace.windowList()
+        for win in wins:
+            win.showMinimized()
             
     def menuRestoreAll(self):
-        win.showNormal()
+        wins = self.workspace.windowList()
+        for win in wins:
+            win.showNormal()
 
     def menuOpenLocalOrangeHelp(self):
         webbrowser.open(os.path.join(self.orangeDir, "doc/reference/default.htm"))
@@ -695,7 +703,6 @@ class WidgetWorkspace(QWorkspace):
             if isinstance(item, orngOutput.OutputWindow):
                 item.parentWidget().move((k+1)*self.off,(k+1)*self.off)
                 item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
-
 
 app = QApplication(sys.argv)
 dlg = OrangeCanvasDlg(None, "", Qt.WDestructiveClose)

@@ -9,22 +9,10 @@ from string import strip
 import sys
 from orngCanvasItems import *
 from qttable import *
-
+from orngSignalManager import ExampleTable, ExampleTableWithClass
 
 TRUE  = 1
 FALSE = 0
-
-# only needed if we have here definitions of ExampleTable(WithClass)
-import orange
-
-##################
-### TO DO: to je treba izbrisati!!!
-class ExampleTable(orange.ExampleTable):
-    pass
-
-class ExampleTableWithClass(ExampleTable):
-    pass
-
 
 class QCanvasIcon(QCanvasRectangle):
     def __init__(self, canvas, fileName):
@@ -59,7 +47,7 @@ class SignalCanvasView(QCanvasView):
 
         #self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
 
-    def addSignalList(self, outName, inName, outList, inList, outIconName, inIconName):
+    def addSignalList(self, outName, inName, outputs, inputs, outIconName, inIconName):
         xSpaceBetweenWidgets = 100  # space between widgets
         xWidgetOff = 10     # offset for widget position
         yWidgetOffTop = 10     # offset for widget position
@@ -70,20 +58,20 @@ class SignalCanvasView(QCanvasView):
         xSignalSize = 20    # width of the signal box
         xIconOff = 10
         
-        count = max(len(inList), len(outList))
+        count = max(len(inputs), len(outputs))
         height = max ((count)*ySignalSpace, 70)
         
 
         # calculate needed sizes of boxes to show text
         maxLeft = 0
-        for i in range(len(inList)):
-            maxLeft = max(maxLeft, self.getTextWidth("("+inList[i][0]+")", 1))
-            maxLeft = max(maxLeft, self.getTextWidth(inList[i][1]))
+        for i in range(len(inputs)):
+            maxLeft = max(maxLeft, self.getTextWidth("("+inputs[i].name+")", 1))
+            maxLeft = max(maxLeft, self.getTextWidth(inputs[i].type))
 
         maxRight = 0
-        for i in range(len(outList)):
-            maxRight = max(maxRight, self.getTextWidth("("+outList[i][0]+")", 1))
-            maxRight = max(maxRight, self.getTextWidth(outList[i][1]))
+        for i in range(len(outputs)):
+            maxRight = max(maxRight, self.getTextWidth("("+outputs[i].name+")", 1))
+            maxRight = max(maxRight, self.getTextWidth(outputs[i].type))
 
         width = max(maxLeft, maxRight) + 70 # we add 70 to show icons beside signal names
 
@@ -112,27 +100,25 @@ class SignalCanvasView(QCanvasView):
         # show signal boxes and text labels
         #signalSpace = (count)*ySignalSpace
         signalSpace = height
-        for i in range(len(outList)):
-            y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(outList)+1)
+        for i in range(len(outputs)):
+            y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(outputs)+1)
             box = QCanvasRectangle(xWidgetOff + width, y - ySignalSize/2.0, xSignalSize, ySignalSize, self.dlg.canvas)
             box.setBrush(QBrush(QColor(0,0,255)))
             box.show()
-            self.outBoxes.append((outList[i][0], box))
+            self.outBoxes.append((outputs[i].name, box))
 
-            self.texts.append(MyCanvasText(self.dlg.canvas, outList[i][0], xWidgetOff + width - 5, y - 7, Qt.AlignRight + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(MyCanvasText(self.dlg.canvas, outList[i][1], xWidgetOff + width - 5, y + 7, Qt.AlignRight + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].name, xWidgetOff + width - 5, y - 7, Qt.AlignRight + Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, outputs[i].type, xWidgetOff + width - 5, y + 7, Qt.AlignRight + Qt.AlignVCenter, bold =0, show=1))
 
-        for i in range(len(inList)):
-            name = inList[i][0]
-            type = inList[i][1]
-            y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(inList)+1)
+        for i in range(len(inputs)):
+            y = yWidgetOffTop + ((i+1)*signalSpace)/float(len(inputs)+1)
             box = QCanvasRectangle(xWidgetOff + width + xSpaceBetweenWidgets - xSignalSize, y - ySignalSize/2.0, xSignalSize, ySignalSize, self.dlg.canvas)
             box.setBrush(QBrush(QColor(0,0,255)))
             box.show()
-            self.inBoxes.append((inList[i][0], box))
+            self.inBoxes.append((inputs[i].name, box))
 
-            self.texts.append(MyCanvasText(self.dlg.canvas, inList[i][0], xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft + Qt.AlignVCenter, bold =1, show=1))
-            self.texts.append(MyCanvasText(self.dlg.canvas, inList[i][1], xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft + Qt.AlignVCenter, bold =0, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].name, xWidgetOff + width + xSpaceBetweenWidgets + 5, y - 7, Qt.AlignLeft + Qt.AlignVCenter, bold =1, show=1))
+            self.texts.append(MyCanvasText(self.dlg.canvas, inputs[i].type, xWidgetOff + width + xSpaceBetweenWidgets + 5, y + 7, Qt.AlignLeft + Qt.AlignVCenter, bold =0, show=1))
 
         self.texts.append(MyCanvasText(self.dlg.canvas, outName, xWidgetOff + width/2.0, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
         self.texts.append(MyCanvasText(self.dlg.canvas, inName, xWidgetOff + width* 1.5 + xSpaceBetweenWidgets, yWidgetOffTop + height + 5, Qt.AlignHCenter + Qt.AlignTop, bold =1, show=1))
@@ -300,55 +286,121 @@ class SignalDialog(QDialog):
     def setOutInWidgets(self, outWidget, inWidget):
         self.outWidget = outWidget
         self.inWidget = inWidget
-        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.getOutList(), inWidget.widget.getInList(), outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName())
+        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.getOutputs(), inWidget.widget.getInputs(), outWidget.widget.getFullIconName(), inWidget.widget.getFullIconName())
         self.canvas.resize(width, height)
         self.resize(width+55, height+90)
-        
+
+    def countCompatibleConnections(self, outputs, inputs, outType, inType):
+        count = 0
+        for outS in outputs:
+            if not issubclass(eval(outS.type), eval(outType)): continue
+            for inS in inputs:
+                if not issubclass(eval(inType), eval(inS.type)): continue
+                if issubclass(eval(outS.type), eval(inS.type)): count+= 1
+
+        return count               
+
+    def existsABetterLink(self, outSignal, inSignal, outSignals, inSignals):
+        existsBetter = 0
+       
+        betterOutSignal = None; betterInSignal = None
+        for outS in outSignals:
+            for inS in inSignals:
+                if (outS.name != outSignal.name and outS.name == inSignal.name and outS.type == inSignal.type) or (inS.name != inSignal.name and inS.name == outSignal.name and inS.type == outSignal.type):
+                    existsBetter = 1
+                    betterOutSignal = outS.name
+                    betterInSignal = inS.name
+
+        return existsBetter, betterOutSignal, betterInSignal
 
     def addDefaultLinks(self):
         canConnect = 0
-        addedLinks = []
+        addedInLinks = []
+        addedOutLinks = []
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
-        for (outName, outType) in self.outWidget.widget.getOutList():
-            if not self.outWidget.instance.hasOutputName(outName):   return -1   # rebuild registry
-            (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
-            canConnectCount = 0
-            for (inName, inType, handler, single) in self.inWidget.widget.getInList():
-                if not self.inWidget.instance.hasInputName(inName):   return -1   # rebuild registry
-                (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
-                if issubclass(outClass, inClass):
+
+        allInputs = self.inWidget.widget.getInputs()
+        allOutputs = self.outWidget.widget.getOutputs()
+        minorInputs = self.inWidget.widget.getMinorInputs()
+        minorOutputs = self.outWidget.widget.getMinorOutputs()
+        nonMinorInputs = []
+        nonMinorOutputs = []
+        for s in allInputs:
+            if s not in minorInputs: nonMinorInputs.append(s)
+
+        for s in allOutputs:
+            if s not in minorOutputs: nonMinorOutputs.append(s)
+
+        inConnected = self.inWidget.getInConnectedSignalNames()
+        outConnected = self.outWidget.getOutConnectedSignalNames()
+
+        # try to add links between non minor signals
+        for outS in nonMinorOutputs:
+            if not self.outWidget.instance.hasOutputName(outS.name):   return -1   # rebuild registry
+            for inS in nonMinorInputs:
+                if not self.inWidget.instance.hasInputName(inS.name):   return -1   # rebuild registry
+                if issubclass(eval(outS.type), eval(inS.type)):
                     canConnect = 1
-                    canConnectCount += 1
-                    if (outName == inName or (inName, inType) not in self.outWidget.widget.getOutList()):
-                        if inName not in addedLinks:
-                            self.addLink(outName, inName)
-                            addedLinks.append(inName)
-                        else: self.multiplePossibleConnections = 1      # this happens when a widget sends two signals of same type
-            if canConnectCount > 1:
-                self.multiplePossibleConnections = 1
-        return canConnect
+                    existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, nonMinorOutputs, nonMinorInputs)
+                    if existsBetter and betterOut not in outConnected and betterIn not in inConnected:
+                        #self.multiplePossibleConnections = 1
+                        continue
+                    
+                    if inS.name not in inConnected + addedInLinks:
+                        addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
+                        self.addLink(outS.name, inS.name)
+                    elif self.countCompatibleConnections(nonMinorOutputs, nonMinorInputs, outS.type, inS.type) > 1:
+                        self.multiplePossibleConnections = 1
+
+        # if no connections were maid, try adding connections also to minor signals
+        if len(addedInLinks) == 0:
+            for outS in allOutputs:
+                if not self.outWidget.instance.hasOutputName(outS.name):   return -1   # rebuild registry
+                for inS in allInputs:
+                    if not self.inWidget.instance.hasInputName(inS.name):   return -1   # rebuild registry
+                    if issubclass(eval(outS.type), eval(inS.type)):
+                        canConnect = 1
+                        existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, nonMinorOutputs, nonMinorInputs)
+                        if existsBetter and betterOut not in outConnected and betterIn not in inConnected:
+                            self.multiplePossibleConnections = 1
+                            continue
+                        
+                        if inS.name not in inConnected + addedInLinks:
+                            addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
+                            self.addLink(outS.name, inS.name)
+                        elif self.countCompatibleConnections(allOutputs, allInputs, outS.type, inS.type) > 1:
+                            self.multiplePossibleConnections = 1
+
+
+        return canConnect        
+
 
     def addLink(self, outName, inName):
-        if (outName, inName) in self._links: return
+        if (outName, inName) in self._links: return 1
 
         # check if correct types
-        #print self.inWidget, self.outWidget
-        (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
-        (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
-        if not issubclass(outClass, inClass): return 0
+        outSignal = None
+        outputs = self.outWidget.widget.getOutputs()
+        for i in range(len(outputs)):
+            if outputs[i].name == outName: outSignal = outputs[i]
+
+        inSignal = None
+        inputs = self.inWidget.widget.getInputs()
+        for i in range(len(inputs)):
+            if inputs[i].name == inName: inSignal = inputs[i]
+
+        if outSignal == None or inSignal == None: return 0
+        if not issubclass(eval(outSignal.type), eval(inSignal.type)): return 0
 
         # if inName is a single signal and connection already exists -> delete it        
         for (outN, inN) in self._links:
-            if inN == inName:
-                for (name, type, handler, single) in self.inWidget.widget.getInList():
-                    if name == inName and single:
-                        for (o, i) in self._links:
-                            if i == inName:
-                                self.removeLink(o, i)
+            if inN == inName and inSignal.single:
+                self.removeLink(outN, inN)
                                 
         self._links.append((outName, inName))
         self.canvasView.addLink(outName, inName)
         return 1
+
 
     def removeLink(self, outName, inName):
         if (outName, inName) in self._links:

@@ -88,8 +88,6 @@ class SchemaDoc(QMainWindow):
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
         if connectStatus == -1:
-            #QMessageBox.critical( None, "Orange Canvas", "Error while connecting widgets. Please rebuild  widget registry (menu Options/Rebuild widget registry) because some of the widgets have now different signals.", QMessageBox.Ok + QMessageBox.Default )
-            #return
             self.canvasDlg.menuItemRebuildWidgetRegistry()
             connectStatus = dialog.addDefaultLinks()
         
@@ -108,8 +106,7 @@ class SchemaDoc(QMainWindow):
                 return
             
         self.signalManager.setFreeze(1)
-        signals = dialog.getLinks()
-        for (outName, inName) in signals:
+        for (outName, inName) in dialog.getLinks():
             self.addLink(outWidget, inWidget, outName, inName, enabled)
         
         self.signalManager.setFreeze(0, outWidget.instance)
@@ -429,68 +426,76 @@ class SchemaDoc(QMainWindow):
             QMessageBox.critical(self,'Orange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
-        # ##################
-        #load the data ...
-        doc = parse(str(filename))
-        schema = doc.firstChild
-        widgets = schema.getElementsByTagName("widgets")[0]
-        lines = schema.getElementsByTagName("channels")[0]
-        settings = schema.getElementsByTagName("settings")
+        # set cursor
+        qApp.setOverrideCursor(QWidget.waitCursor)
 
-        (self.documentpath, self.documentname) = os.path.split(filename)
-        (self.applicationpath, self.applicationname) = os.path.split(filename)
-        self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
+        try:
+            # ##################
+            #load the data ...
+            doc = parse(str(filename))
+            schema = doc.firstChild
+            widgets = schema.getElementsByTagName("widgets")[0]
+            lines = schema.getElementsByTagName("channels")[0]
+            settings = schema.getElementsByTagName("settings")
 
-        # #################
-        # open settings
-        settingsList = []
-        if len(settings) == 0:  # if settings are not in .ows file
-            settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
-            if os.path.exists(settingsFile):
-                file = open(settingsFile, "rt")
-                settingsList = cPickle.load(file)
-                file.close()
-        else:
-            settingsList = eval(str(settings[0].getAttribute("settingsDictionary")))
-            
+            (self.documentpath, self.documentname) = os.path.split(filename)
+            (self.applicationpath, self.applicationname) = os.path.split(filename)
+            self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
 
-        # ##################
-        # read widgets
-        widgetList = widgets.getElementsByTagName("widget")
-        for widget in widgetList:
-            name = widget.getAttribute("widgetName")
-            tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"))
-            if not tempWidget:
-                QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+            # #################
+            # open settings
+            settingsList = []
+            if len(settings) == 0:  # if settings are not in .ows file
+                settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
+                if os.path.exists(settingsFile):
+                    file = open(settingsFile, "rt")
+                    settingsList = cPickle.load(file)
+                    file.close()
             else:
-                if tempWidget.caption in settingsList:
-                    tempWidget.instance.loadSettingsStr(settingsList[tempWidget.caption])
-                    tempWidget.instance.activateLoadedSettings()
+                settingsList = eval(str(settings[0].getAttribute("settingsDictionary")))
+                
 
-        # ##################
-        #read lines                        
-        lineList = lines.getElementsByTagName("channel")
-        for line in lineList:
-            inCaption = line.getAttribute("inWidgetCaption")
-            outCaption = line.getAttribute("outWidgetCaption")
-            Enabled = int(line.getAttribute("enabled"))
-            signals = line.getAttribute("signals")
-            inWidget = self.getWidgetByCaption(inCaption)
-            outWidget = self.getWidgetByCaption(outCaption)
-            if inWidget == None or outWidget == None:
-                print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
-                continue
+            # ##################
+            # read widgets
+            widgetList = widgets.getElementsByTagName("widget")
+            for widget in widgetList:
+                name = widget.getAttribute("widgetName")
+                tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"))
+                if not tempWidget:
+                    QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+                else:
+                    if tempWidget.caption in settingsList:
+                        tempWidget.instance.loadSettingsStr(settingsList[tempWidget.caption])
+                        tempWidget.instance.activateLoadedSettings()
 
-            signalList = eval(signals)
-            for (outName, inName) in signalList:
-                self.addLink(outWidget, inWidget, outName, inName, Enabled)
+            # ##################
+            #read lines                        
+            lineList = lines.getElementsByTagName("channel")
+            for line in lineList:
+                inCaption = line.getAttribute("inWidgetCaption")
+                outCaption = line.getAttribute("outWidgetCaption")
+                Enabled = int(line.getAttribute("enabled"))
+                signals = line.getAttribute("signals")
+                inWidget = self.getWidgetByCaption(inCaption)
+                outWidget = self.getWidgetByCaption(outCaption)
+                if inWidget == None or outWidget == None:
+                    print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
+                    continue
 
-        self.canvas.update()
-        self.enableSave(FALSE)
-        
-        self.setCaption(self.documentname)
-        self.documentnameValid = TRUE
-        self.signalManager.processNewSignals(self.widgets[0].instance)
+                signalList = eval(signals)
+                for (outName, inName) in signalList:
+                    self.addLink(outWidget, inWidget, outName, inName, Enabled)
+
+            self.canvas.update()
+            self.enableSave(FALSE)
+            
+            self.setCaption(self.documentname)
+            self.documentnameValid = TRUE
+            self.signalManager.processNewSignals(self.widgets[0].instance)
+
+        finally:
+            # set cursor
+            qApp.setOverrideCursor(QWidget.arrowCursor)
     
 
     # ###########################################
