@@ -88,7 +88,7 @@ class WidgetButton(QToolButton):
 	def getFullIconName(self):
 		name = self.getIconName()
 		if os.path.exists(os.path.join(self.canvasDlg.picsDir, name)):
-			return os.path.join(canvasDlg.picsDir, name)
+			return os.path.join(self.canvasDlg.picsDir, name)
 		elif os.path.exists(os.path.join(self.canvasDlg.widgetDir, name)):
 			return os.path.join(self.canvasDlg.widgetDir, name)
 		else:
