@@ -55,9 +55,13 @@ class OWScatterPlotGraph(OWVisGraph):
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None):
         self.clear()
+        self.tips.removeAll()
         self.enableLegend(0)
         self.statusBar = statusBar
-
+        toolTipList = [xAttr, yAttr]
+        if shapeAttr != "": toolTipList.append(shapeAttr)
+        if sizeShapeAttr != "": toolTipList.append(sizeShapeAttr)
+        
         (xVarMin, xVarMax) = self.attrVariance[self.attributeNames.index(xAttr)]
         (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
         xVar = xVarMax - xVarMin
@@ -179,7 +183,7 @@ class OWScatterPlotGraph(OWVisGraph):
             ##########
             # we add a tooltip for this point
             r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
-            text= self.getExampleText(self.rawdata, self.rawdata[i])
+            text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
             self.tips.addToolTip(r, text)
             ##########
             
@@ -262,7 +266,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     table.append(example)
 
                 #orange.saveTabDelimited("E:\\temp\\data.tab", table)
-
+                """
                 exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
                 near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
                 euclidean = orange.ExamplesDistance_Euclidean()
@@ -282,8 +286,17 @@ class OWScatterPlotGraph(OWVisGraph):
                     
                     index = classValues.index(table[i].getclass().value)
                     tempValue += float(prob[index])/float(sum)
-
-                print "possibility %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (testIndex, totalTestCount, tempValue, tempValue*100.0/float(len(table)) )
+                """
+                # to bo delalo, ko bo popravljen orangov kNNLearner
+                classValues = list(self.rawdata.domain[className].values)
+                knn = orange.kNNLearner(table, k=kNeighbours)
+                for j in range(len(table)):
+                    out = knn(table[j], orange.GetProbabilities)
+                    index = classValues.index(table[j][2].value)
+                    #if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
+                    tempValue += out[index]
+                
+                print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(len(table)) )
 
                 # save the permutation
                 tempList = [self.attributeNames[x], self.attributeNames[y]]
