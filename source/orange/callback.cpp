@@ -49,7 +49,8 @@ inline PyObject *callCallback(PyObject *self, PyObject *args)
   else 
     result = PyEval_CallObject(self, args);
 
-  Py_DECREF(args);
+  if (args)
+    Py_DECREF(args);
 
   if (!result)
     throw pyexception();
@@ -82,6 +83,19 @@ bool TFilter_Python::operator()(const TExample &ex)
   bool res = bool(PyObject_IsTrue(result)!=0);
   Py_DECREF(result);
   return res;
+}
+
+PFilter TFilter_Python::deepCopy() const
+{
+  PyObject *result = PyObject_CallMethod((PyObject *)myWrapper,"deepCopy",NULL);
+  if (!result) 
+    raiseError("An exception has been thrown in method deepCopy!");
+  if (!PyOrFilter_Check(result)) 
+    raiseError("deepCopy is expected to return something derived from Filter");
+  
+  PFilter fil = PyOrange_AsFilter(result);
+  Py_DECREF(result);
+  return fil;
 }
 
 
@@ -525,7 +539,7 @@ PRuleList TRuleBeamRefiner_Python::operator ()(PRule rule, PExampleTable table, 
 
   if (!PyOrRuleList_Check(result))
     raiseError("__call__ is expected to return a list of rules.");
-  PRule res = PyOrange_AsRuleList(result);
+  PRuleList res = PyOrange_AsRuleList(result);
   Py_DECREF(result);
   return res;
 }

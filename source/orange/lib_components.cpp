@@ -1307,7 +1307,6 @@ PYCLASSCONSTANT_INT(Filter_values, NotContains, int(TValueFilter::NotContains))
 PYCLASSCONSTANT_INT(Filter_values, BeginsWith, int(TValueFilter::BeginsWith))
 PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 
-BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_isDefined, Filter, "([examples], [negate=..., domain=..., check=]) -/-> ExampleTable")
@@ -1357,7 +1356,7 @@ PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, i
   return weightGiven ? Py_BuildValue("Ni", WrapOrange(newGen), weightID) : WrapOrange(newGen);
 }
 
-
+ 
 PyObject *Filter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrFilter_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TFilter_Python(), type), args);
@@ -1418,6 +1417,16 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
   PyCATCH
 }
 
+PyObject *Filter_deepCopy(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_NOARGS, "() -> filter")
+{
+  PyTRY
+    NO_KEYWORDS
+    CAST_TO(TFilter, filter); 
+
+    PFilter res = filter->deepCopy();
+    return WrapOrange(res);
+  PyCATCH
+}
 
 PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)")
 { 
@@ -1437,8 +1446,6 @@ PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)
     return PyInt_FromLong(count);
   PyCATCH
 }
-
-
 
 PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds);
 

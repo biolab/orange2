@@ -43,6 +43,7 @@ public:
 
   PFilter filter; //P stored filter for this rule
   PClassifier classifier; //P classifies an example
+  PLearner learner; //P learns a classifier from data
 
   PDistribution classDistribution; //P distribution of classes covered by the rule
 
@@ -55,17 +56,17 @@ public:
   int coveredExamplesLength;
   
   TRule();
-  TRule(PFilter filter, PClassifier classifier, PDistribution dist, PExampleTable ce = PExampleTable(), const int &w = 0, const float &qu = -1);
+  TRule(PFilter filter, PClassifier classifier, PLearner lr, PDistribution dist, PExampleTable ce = PExampleTable(), const int &w = 0, const float &qu = -1);
   TRule(const TRule &other, bool copyData = true);
   ~TRule();
 
   bool operator()(const TExample &); //P Returns 1 for accept, 0 for reject
   PExampleTable operator()(PExampleTable, const bool ref = true, const bool negate = false); //P filter examples
     
-  void filterAndStore(PExampleTable, const int &weightID = 0, const int &targetClass = -1, const int *prevCovered = NULL, const int anExamples = -1); // Selects examples from given data
+  void filterAndStore(PExampleTable, const int &weightID = 0, const int &targetClass = -1, const int *prevCovered = NULL, const int anExamples = -1); //P Selects examples from given data
                                                                           // stores them in coveredExamples, computes distribution
                                                                           // and sets classValue (if -1 then take majority)
-  bool operator >(const TRule &) const;
+  bool operator >(const TRule &) const; 
   bool operator <(const TRule &) const;
   bool operator >=(const TRule &) const;
   bool operator <=(const TRule &) const;

@@ -786,7 +786,7 @@ C_NAMED(LWRClassifier, ClassifierFD, "([findNearestConstructor=, linRegLearner=,
 
 #include "rulelearner.hpp"
 
-BASED_ON(Rule, Orange)
+C_NAMED(Rule, Orange, "()")
 
 C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05])")
 
@@ -835,6 +835,22 @@ PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
   PyCATCH
 }
 
+PyObject *Rule_filterAndStore(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples, weightID, targetClass)")
+{
+  PyTRY
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    
+    if (!PyArg_ParseTuple(args, "O&O&i:RuleEvaluator.call",  pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
+      return PYNULL;
+
+    CAST_TO(TRule, rule);
+    rule->filterAndStore(gen,weightID,targetClass);
+    RETURN_NONE;
+ PyCATCH
+}
+
 PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleEvaluator_Type)
     return setCallbackFunction(WrapNewOrange(mlnew TRuleEvaluator_Python(), type), args);
@@ -872,6 +888,7 @@ PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywor
 
 PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
+  
   PyTRY
     NO_KEYWORDS
 
@@ -898,7 +915,7 @@ PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject
     return WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type);
 }
 
-PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, newWeight) -/-> (table)")
+PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass) -/-> (table,newWeight)")
 {
   PyTRY
     NO_KEYWORDS
@@ -909,12 +926,12 @@ PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *k
     int newWeightID = 0;
     int targetClass = -1;
 
-    if (!PyArg_ParseTuple(args, "O&O&iii:RuleCovererAndRemover.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &newWeightID,&targetClass))
+    if (!PyArg_ParseTuple(args, "O&O&O&i:RuleCovererAndRemover.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID,&targetClass))
       return PYNULL;
     CAST_TO(TRuleCovererAndRemover, covererAndRemover)
 
     PExampleTable res = (*covererAndRemover)(rule, gen, weightID, newWeightID, targetClass);
-    return WrapOrange(res);
+    return Py_BuildValue("Ni", WrapOrange(res),newWeightID);
   PyCATCH
 }
 
@@ -935,7 +952,7 @@ PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *ke
     PExampleGenerator gen;
     int weightID = 0;
 
-    if (!PyArg_ParseTuple(args, "O&O&O&i:RuleStoppingCriteria.call", cc_RuleList, &ruleList, cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&O&O&O&:RuleStoppingCriteria.call", cc_RuleList, &ruleList, cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       return PYNULL;
     CAST_TO(TRuleStoppingCriteria, ruleStopping)
 
@@ -992,9 +1009,8 @@ PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PY
 
     PRule res = (*finder)(gen, weightID, targetClass, baseRules);
     return WrapOrange(res);
-  PyCATCH
+  PyCATCH 
 }
-
 
 PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrRuleBeamRefiner_Type)

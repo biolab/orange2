@@ -42,9 +42,10 @@ TRule::TRule()
 {}
 
 
-TRule::TRule(PFilter af, PClassifier cl, PDistribution dist, PExampleTable ce, const int &w, const float &qu)
+TRule::TRule(PFilter af, PClassifier cl, PLearner lr, PDistribution dist, PExampleTable ce, const int &w, const float &qu)
 : filter(af),
   classifier(cl),
+  learner(lr),
   classDistribution(dist),
   examples(ce),
   weightID(w),
@@ -55,8 +56,9 @@ TRule::TRule(PFilter af, PClassifier cl, PDistribution dist, PExampleTable ce, c
 
 
 TRule::TRule(const TRule &other, bool copyData)
-: filter(other.filter->deepCopy()),
+: filter(other.filter? other.filter->deepCopy() : PFilter()),
   classifier(other.classifier),
+  learner(other.learner),
   complexity(other.complexity),
   classDistribution(copyData ? other.classDistribution: PDistribution()),
   examples(copyData ? other.examples : PExampleTable()),
@@ -97,15 +99,19 @@ PExampleTable TRule::operator ()(PExampleTable gen, const bool ref, const bool n
 void TRule::filterAndStore(PExampleTable gen, const int &wei, const int &targetClass, const int *prevCovered, const int anExamples)
 {
   checkProperty(filter);
-
   examples=this->call(gen);
   weightID = wei;
   classDistribution = getClassDistribution(examples, wei);
+  if (classDistribution->abs==0)
+    return;
 
-  if (targetClass>=0)
+  if (learner) {
+    classifier = learner->call(examples,wei);
+  }
+  else if (targetClass>=0)
     classifier = mlnew TDefaultClassifier(gen->domain->classVar, TValue(targetClass), classDistribution);
   else
-    classifier = mlnew TDefaultClassifier(gen->domain->classVar, classDistribution);
+    classifier = mlnew TDefaultClassifier(gen->domain->classVar, classDistribution); 
 /*  if (anExamples > 0) {
     const int bitsInInt = sizeof(int)*8;
     coveredExamplesLength = anExamples/bitsInInt + 1;
@@ -444,7 +450,7 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
       TRule *newRule = mlnew TRule((*ri).getReference(), false);
       PRule wNewRule = newRule;
       ruleList->push_back(wNewRule);
-      newRule->filterAndStore(data, weightID,targetClass);
+      newRule->filterAndStore(data,weightID,targetClass);
       newRule->quality = evaluator->call(wNewRule, data, weightID, targetClass, apriori);
       if (!bestRule || (newRule->quality > bestRule->quality)) {
         bestRule = wNewRule;
@@ -518,7 +524,12 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 
     else if (((*vi)->varType == TValue::FLOATVAR)) {
       if (discretization) {
-        PVariable  discretized = discretization->call(rule.examples, *vi, weightID);
+        PVariable discretized;
+        try {
+        discretized = discretization->call(rule.examples, *vi, weightID);
+        } catch(...) {
+          continue;
+        }
         TClassifierFromVar *cfv = discretized->getValueFrom.AS(TClassifierFromVar);
         TDiscretizer *discretizer = cfv ? cfv->transformer.AS(TDiscretizer) : NULL;
         if (!discretizer)
@@ -630,20 +641,18 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     if (ruleList->size()>0)
       raiseWarning("ruleList length to large.");
     PITERATE(TRuleList, ri, candidateRules) {
-      PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);
+      PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
       PITERATE(TRuleList, ni, newRules) {
         if (!validator || validator->call(*ni, data, weightID, targetClass, apriori)) {
           (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
-          if (!(*ni))
-            raiseWarning("strange ni.");
           ruleList->push_back(*ni);
           if ((*ni)->quality >= bestRule->quality)
             _selectBestRule(*ni, bestRule, wins, rgen);
         }
-      }
-    }
+      } 
+    } 
     ruleFilter->call(ruleList,data,weightID);
-  }
+  } 
 
   // set empty values if value was not set (used default)
   if (tempInitializer)
@@ -672,7 +681,7 @@ TRuleLearner::TRuleLearner(bool se, int tc, PRuleList rl)
 
 PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID)
 {
-  return this->call(gen,0,targetClass,baseRules);
+  return this->call(gen,weightID,targetClass,baseRules);
 }
 
 PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID, const int &targetClass, PRuleList baseRules)

@@ -542,6 +542,7 @@ PFilter TFilter_values::deepCopy() const
   return wfilter;
 }
 
+
 /// Constructor; sets the example
 TFilter_sameExample::TFilter_sameExample(PExample anexample, bool aneg)
   : TFilter(aneg, anexample->domain), example(anexample)
@@ -607,3 +608,4 @@ bool TFilter_disjunction::operator()(const TExample &ex)
 
   return false;
 }
+

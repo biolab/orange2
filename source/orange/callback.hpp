@@ -33,8 +33,8 @@ class ORANGE_API TFilter_Python : public TFilter {
 public:
   __REGISTER_CLASS
   bool operator()(const TExample &ex);
+  PFilter deepCopy() const;
 };
-
 
 #include "transval.hpp"
 class ORANGE_API TTransformValue_Python : public TTransformValue {

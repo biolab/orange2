@@ -489,7 +489,6 @@ public:
       if (p->svalV)
         PVISIT(p->svalV);
 
-    PVISIT(variable);
     return 0;
   }
 

@@ -142,7 +142,6 @@ public:
   virtual PValueFilter deepCopy() const;
 };
 
-
 class ORANGE_API TValueFilter_discrete : public TValueFilter {
 public:
   __REGISTER_CLASS
@@ -218,7 +217,6 @@ public:
   void addCondition(PVariable var, PStringList);
   void removeCondition(PVariable var);
 };
-
 
 /// Selects examples (not) equal to the given example.
 class ORANGE_API TFilter_sameExample : public TFilter {

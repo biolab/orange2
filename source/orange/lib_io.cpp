@@ -205,7 +205,7 @@ bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC)
     res = getStringIfExists(keyws, "NA", tmp);
     if (res == -1)
       return false;
-    if (res)
+    if (!res)
       DK = DC = tmp;
 
     res = getStringIfExists(keyws, "DC", DC);
