@@ -2,12 +2,14 @@
 TAG=stable
 
 echo "checking out sources using tag: $TAG"
-if [ $1 == 'clean' ]; then
+if [ "$1" == "clean" ]; then
 	## force a clean checkout
 	## compiling this might take some time
 	echo "force complete compile"
 	rm -Rf source 
 fi
+echo
+
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f source
 
 START_WD=`pwd`
