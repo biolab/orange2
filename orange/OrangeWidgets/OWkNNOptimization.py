@@ -951,7 +951,7 @@ class kNNClassifier(orange.Classifier):
         self.kNNOptimizationDlg.createSnapshots = 0
         self.kNNOptimizationDlg.findArguments()
         self.kNNOptimizationDlg.createSnapshots = snapshots
-        worstAccuracy = self.allResults[-1][0]
+        worstAccuracy = self.kNNOptimizationDlg.allResults[-1][0]
 
         vals = [0.0 for i in range(len(self.kNNOptimizationDlg.arguments))]
         if self.kNNOptimizationDlg.classificationProjectionWeight:
