@@ -107,6 +107,19 @@ SOURCE=.\include\primes.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\stat.cpp
+
+!IF  "$(CFG)" == "include - Win32 Release"
+
+# ADD CPP /O2
+
+!ELSEIF  "$(CFG)" == "include - Win32 Debug"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\statexceptions.cpp
 # End Source File
 # Begin Source File

@@ -39,13 +39,19 @@ TExamplesDistanceConstructor::TExamplesDistanceConstructor(const bool &ic)
 {}
 
 
+TExamplesDistanceConstructor_Hamiltonian::TExamplesDistanceConstructor_Hamiltonian()
+: ignoreClass(true),
+  ignoreUnknowns(false)
+{}
+
 
 PExamplesDistance TExamplesDistanceConstructor_Hamiltonian::operator()(PExampleGenerator, const int &, PDomainDistributions, PDomainBasicAttrStat) const
-{ return mlnew TExamplesDistance_Hamiltonian(ignoreClass); }
+{ return mlnew TExamplesDistance_Hamiltonian(ignoreClass, ignoreUnknowns); }
 
 
-TExamplesDistance_Hamiltonian::TExamplesDistance_Hamiltonian(const bool &ic)
-: ignoreClass(ic)
+TExamplesDistance_Hamiltonian::TExamplesDistance_Hamiltonian(const bool &ic, const bool &iu)
+: ignoreClass(ic),
+  ignoreUnknowns(iu)
 {}
 
 
@@ -55,8 +61,9 @@ float TExamplesDistance_Hamiltonian::operator()(const TExample &e1, const TExamp
 
   float dist = 0.0;
   int Na = e1.domain->attributes->size() + (!ignoreClass && e1.domain->classVar ? 1 : 0);
-  for(TExample::const_iterator i1 = e1.begin(), i2 = e2.begin(); Na--; )
-    if (!(*(i1++)).compatible(*(i2++)))
+  for(TExample::const_iterator i1 = e1.begin(), i2 = e2.begin(); Na--; i1++, i2++)
+    if (   (!ignoreUnknowns || !(*i1).isSpecial() && !(*i2).isSpecial())
+        && (!(*i1).compatible(*i2)))
       dist += 1.0;
   return dist;
 }
@@ -67,15 +74,17 @@ float TExamplesDistance_Hamiltonian::operator()(const TExample &e1, const TExamp
 TExamplesDistance_Normalized::TExamplesDistance_Normalized()
 : normalizers(PFloatList()),
   domainVersion(-1),
-  normalize(true)
+  normalize(true),
+  ignoreUnknowns(false)
 {}
 
 
-TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
+TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, const bool &iu, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
 : normalizers(mlnew TFloatList()),
   bases(mlnew TFloatList()),
   domainVersion(egen ? egen->domain->version : -1),
-  normalize(true)
+  normalize(true),
+  ignoreUnknowns(iu)
 { TFloatList &unormalizers = normalizers.getReference();
 
   if (!bstat && !ddist && egen)
@@ -188,7 +197,7 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
   TExample::const_iterator i1(e1.begin()), i2(e2.begin());
   for(TFloatList::const_iterator si(normalizers->begin()), se(normalizers->end()); si!=se; si++, i1++, i2++, di++)
     if ((*i1).isSpecial() || (*i2).isSpecial())
-      *di = *si!=0 ? 0.5 : 0.0;
+      *di = ((*si!=0) && !ignoreUnknowns) ? 0.5 : 0.0;
     else 
       if (normalize) {
         if (*si>0) {
@@ -253,15 +262,15 @@ TExamplesDistanceConstructor_Manhattan::TExamplesDistanceConstructor_Manhattan()
 
 
 PExamplesDistance TExamplesDistanceConstructor_Maximal::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Maximal(ignoreClass, egen, ddist, bstat); }
+{ return mlnew TExamplesDistance_Maximal(ignoreClass, ignoreUnknowns, egen, ddist, bstat); }
 
 
 PExamplesDistance TExamplesDistanceConstructor_Manhattan::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Manhattan(ignoreClass, egen, ddist, bstat); }
+{ return mlnew TExamplesDistance_Manhattan(ignoreClass, ignoreUnknowns, egen, ddist, bstat); }
 
 
 PExamplesDistance TExamplesDistanceConstructor_Euclidean::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_Euclidean(ignoreClass, egen, ddist, bstat); }
+{ return mlnew TExamplesDistance_Euclidean(ignoreClass, ignoreUnknowns, egen, ddist, bstat); }
 
 
 
@@ -278,18 +287,18 @@ TExamplesDistance_Euclidean::TExamplesDistance_Euclidean()
 
 
 
-TExamplesDistance_Maximal::TExamplesDistance_Maximal(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, egen, ddist, dstat)
+TExamplesDistance_Maximal::TExamplesDistance_Maximal(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, ignoreUnknowns, egen, ddist, dstat)
 {}
 
 
-TExamplesDistance_Manhattan::TExamplesDistance_Manhattan(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, egen, ddist, dstat)
+TExamplesDistance_Manhattan::TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, ignoreUnknowns, egen, ddist, dstat)
 {}
 
 
-TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, egen, ddist, dstat)
+TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, ignoreUnknowns, egen, ddist, dstat)
 {}
 
 

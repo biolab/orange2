@@ -1,6 +1,7 @@
 #include <cmath>
 #include <limits>
 
+#include "examplegen.hpp"
 #include "distance_dtw.ppp"
 
 DEFINE__TOrangeVector_classDescription(TAlignment, "TAlignmentList")
@@ -314,7 +315,7 @@ PExamplesDistance TExamplesDistanceConstructor_DTW::operator()(PExampleGenerator
 
 
 TExamplesDistance_DTW::TExamplesDistance_DTW(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, egen, ddist, dstat)
+: TExamplesDistance_Normalized(ignoreClass, false, egen, ddist, dstat)
 {}
 
 
