@@ -13,6 +13,15 @@ ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
 
+# take a number and return a formated string, eg: 2341232 -> "2,341,232"
+def createStringFromNumber(num):
+    s = str(num)
+    arr = range(len(s)-2)[:0:-3]
+    for i in arr:
+        s = s[:i] + "," + s[i:]
+    return s
+        
+
 # ####################################################################    
 # return a list of sorted values for attribute at index index
 # EXPLANATION: if variable values have values 1,2,3,4,... then their order in orange depends on when they appear first
@@ -75,6 +84,10 @@ class OWVisGraph(OWGraph):
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+
+        # uncomment this if you want to use printer friendly symbols
+        #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
+
         self.tooltip = MyQToolTip(self)
         self.subsetData = None
 
