@@ -1,4 +1,4 @@
-import whrandom, types
+import random, types
 
 def getobjectname(x, default=""):
     if type(x)==types.StringType:
@@ -28,8 +28,8 @@ def demangleExamples(x):
         return x, 0
     
 def classChecksum(dta):
-    rgen=whrandom.whrandom()
-    rgen.seed(1, 2, 3)
+    rgen=random.Random()
+    rgen.seed(0)
     sum=0
     for i in dta:
         sum+=int(i.getclass()) ^ rgen.randint(0, 255)
@@ -159,10 +159,11 @@ class CanonicFuncCounter:
 
 
 
-from whrandom import randint
+import random
 
 class BestOnTheFly:
-    def __init__(self, compare=cmp):
+    def __init__(self, compare=cmp, seed = 0):
+        self.randomGenerator = random.Random(seed)
         self.compare=compare
         self.wins=0
         self.bestIndex, self.index = -1, -1
@@ -184,7 +185,7 @@ class BestOnTheFly:
                 return 1
             elif cmpr==0:
                 self.wins=self.wins+1
-                if not randint(0, self.wins-1):
+                if not self.randomGenerator.randint(0, self.wins-1):
                     self.best=x
                     self.bestIndex=self.index
                     return 1
@@ -199,14 +200,14 @@ class BestOnTheFly:
         else:
             return None
 
-def selectBest(x, compare=cmp):
-    bs=BestOnTheFly(compare)
+def selectBest(x, compare=cmp, seed = 0):
+    bs=BestOnTheFly(compare, seed)
     for i in x:
         bs.candidate(i)
     return bs.winner()
 
-def selectBestIndex(x, compare=cmp):
-    bs=BestOnTheFly(compare)
+def selectBestIndex(x, compare=cmp, seed = 0):
+    bs=BestOnTheFly(compare, seed)
     for i in x:
         bs.candidate(i)
     return bs.winnerIndex()

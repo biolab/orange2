@@ -15,7 +15,10 @@ def encodePP(pps):
     return pps
 
 
-
+def verbose_print(v, s):
+    if v:
+        print s
+        
 #### Data structures
 
 class TestedExample:
@@ -100,48 +103,65 @@ def leaveOneOut(learners, examples, pps=[], **argkw):
 
 
 def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
+    # randomGenerator is set either to what users provided or to orange.RandomGenerator(0)
+    # If we left it None or if we set MakeRandomIndices2.randseed, it would give same indices each time it's called
+    randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
+    pick = orange.MakeRandomIndices2(stratified = strat, p0 = learnProp, randomGenerator = randomGenerator)
+    
     examples, weight = demangleExamples(examples)
-    pick = orange.MakeRandomIndices2(stratified = strat, p0 = learnProp)
     testResults = ExperimentResults(times, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
     for time in range(times):
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
         testset = examples.selectref(indices, 1)
-        learnAndTestOnTestData(learners, (learnset, weight), (testset, weight), testResults, time, pps)
+        apply(learnAndTestOnTestData, (learners, (learnset, weight), (testset, weight), testResults, time, pps), argkw)
     return testResults
 
 
 def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], indicesrandseed="*", **argkw):
     (examples, weight) = demangleExamples(examples)
-    if indicesrandseed=="*":
-        indices = orange.MakeRandomIndicesCV(examples, folds, stratified = strat)
-    else:
+    if indicesrandseed!="*":
         indices = orange.MakeRandomIndicesCV(examples, folds, randseed=indicesrandseed, stratified = strat)
-    return apply(testWithIndices, (learners, (examples, weight), indices, '*', pps), argkw)
+    else:
+        randomGenerator = argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
+        indices = orange.MakeRandomIndicesCV(examples, folds, stratified = strat, randomGenerator = randomGenerator)
+    return apply(testWithIndices, (learners, (examples, weight), indices, indicesrandseed, pps), argkw)
 
 
 def learningCurveN(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, proportions=orange.frange(0.1), pps=[], **argkw):
-    if strat:
-        cv=orange.MakeRandomIndicesCV(folds = folds, stratified = strat)
-        pick=orange.MakeRandomIndices2(stratified = strat)
+    seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
+    if seed:
+        randomGenerator = orange.RandomGenerator(seed)
     else:
-        cv=orange.RandomIndicesCV(folds = folds, stratified = strat)
-        pick=orange.RandomIndices2(stratified = strat)
+        randomGenerator = argkw.get("randomGenerator", orange.RandomGenerator())
+        
+    if strat:
+        cv=orange.MakeRandomIndicesCV(folds = folds, stratified = strat, randomGenerator = randomGenerator)
+        pick=orange.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
+    else:
+        cv=orange.RandomIndicesCV(folds = folds, stratified = strat, randomGenerator = randomGenerator)
+        pick=orange.RandomIndices2(stratified = strat, randomGenerator = randomGenerator)
     return apply(learningCurve, (learners, examples, cv, pick, proportions, pps), argkw)
 
 
 def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.frange(0.1), pps=[], **argkw):
     verb = argkw.get("verbose", 0)
-    cache = argkw.get("cache", 1)
+    cache = argkw.get("cache", 0)
 
     for pp in pps:
         if pp[0]!="L":
             raise SystemError, "cannot preprocess testing examples"
-    
-    if not cv:
-        cv = orange.MakeRandomIndicesCV(folds=10, stratified=orange.MakeRandomIndices.StratifiedIfPossible, randseed=0)
-    if not pick:
-        pick = orange.MakeRandomIndices2(stratified=orange.MakeRandomIndices.StratifiedIfPossible, randseed=0)
+
+    if not cv or not pick:    
+        seed = argkw.get("indicesrandseed", -1) or argkw.get("randseed", -1)
+        if seed:
+            randomGenerator = orange.RandomGenerator(seed)
+        else:
+            randomGenerator = argkw.get("randomGenerator", orange.RandomGenerator())
+        if not cv:
+            cv = orange.MakeRandomIndicesCV(folds=10, stratified=orange.MakeRandomIndices.StratifiedIfPossible, randomGenerator = randomGenerator)
+        if not pick:
+            pick = orange.MakeRandomIndices2(stratified=orange.MakeRandomIndices.StratifiedIfPossible, randomGenerator = randomGenerator)
 
     examples, weight = demangleExamples(examples)
     folds = cv(examples)
@@ -161,7 +181,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                 cache = 0
 
         testResults = ExperimentResults(cv.folds, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
-        testResults.results = [TestedExample(folds[i], int(examples[i].getclass()), nLrn, examples[i].getweight())
+        testResults.results = [TestedExample(folds[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                                for i in range(len(examples))]
 
         if cache and testResults.loadFromFiles(learners, fnstr):
@@ -171,7 +191,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                 verbose_print(verb, "  fold %d" % fold)
                 
                 # learning
-                learnset = examples.selectref(cv, fold, negate=1)
+                learnset = examples.selectref(folds, fold, negate=1)
                 learnset = learnset.selectref(pick(learnset, p0=p), 0)
                 if not len(learnset):
                     continue
@@ -181,7 +201,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
 
                 classifiers = [None]*nLrn
                 for i in range(nLrn):
-                    if not testResults.loaded[i]:
+                    if not cache or not testResults.loaded[i]:
                         classifiers[i] = learners[i](learnset, weight)
 
                 # testing
@@ -189,7 +209,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                     if (folds[i]==fold):
                         ex = examples[i]
                         for cl in range(nLrn):
-                            if not testResults.loaded[cl]:
+                            if not cache or not testResults.loaded[cl]:
                                 cls, pro = classifiers[cl](examples[i], orange.GetBoth)
                                 testResults.results[i].setResult(cl, cls, pro)
             if cache:
@@ -206,16 +226,17 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
     learnset, learnweight = demangleExamples(learnset)
     testweight = demangleExamples(testset)[1]
     
-    pick = orange.MakeRandomIndices2(stratified = strat)
+    randomGenerator = argkw.get("indicesrandseed", 0) or argkw.get("randseed", 0) or argkw.get("randomGenerator", 0)
+    pick = orange.MakeRandomIndices2(stratified = strat, randomGenerator = randomGenerator)
     allResults=[]
     for p in proportions:
-        print_verbose(verb, "Proportion: %5.3f" % p)
+        verbose_print(verb, "Proportion: %5.3f" % p)
         testResults = ExperimentResults(times, [l.name for l in learners], testset.domain.classVar.values.native(), testweight!=0, testset.domain.classVar.baseValue)
         testResults.results = []
         
         for t in range(times):
-            print_verbose(verb, "  repetition %d" % t)
-            learnAndTestWithTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight), testset, testResults, t)
+            verbose_print(verb, "  repetition %d" % t)
+            learnAndTestOnTestData(learners, (learnset.selectref(pick(learnset, p), 0), learnweight), testset, testResults, t)
 
         allResults.append(testResults)
         
@@ -225,7 +246,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
 def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **argkw):
     
     verb = argkw.get("verbose", 0)
-    cache = argkw.get("cache", 1)
+    cache = argkw.get("cache", 0)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     cache = cache and not storeclassifiers
 
@@ -310,12 +331,11 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
             testResults.saveToFiles(learners, fnstr)
         
     return testResults
-   
-
-
 
 
 def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterationNumber=0, pps=[], **argkw):
+    storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
+
     learnset, learnweight = demangleExamples(learnset)
     testset, testweight = demangleExamples(testset)
     
@@ -331,12 +351,16 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             testset = pp[1](testset)
         elif pp[0]=="LT":
             learnset, testset = pp[1](learnset, testset)
-            
-    return testOnData([learner(learnset, learnweight) for learner in learners],
-                            (testset, testweight), testResults, iterationNumber)
+
+    classifiers = [learner(learnset, learnweight) for learner in learners]        
+    if storeclassifiers:
+        testResults.classifiers.append(classifiers)
+    return testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
 
 
 def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumber=0, pps=[], **argkw):
+    storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
+
     learnset, learnweight = demangleExamples(learnset)
 
     hasLorT = 0    
@@ -359,6 +383,8 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
         testset = learnset    
 
     classifiers = [learner(learnset, learnweight) for learner in learners]
+    if storeclassifiers:
+        testResults.classifiers.append(classifiers)
     return testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
 
 
