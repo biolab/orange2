@@ -12,6 +12,9 @@ from qt import *
 from qtcanvas import *
 from OWWidget import *
 
+from ColorPalette import *
+import OWToolbars
+
 ##############################################################################
 # parameters that determine the canvas layout
 
@@ -21,28 +24,57 @@ c_legendHeight = 15             # height of the legend
 c_averageStripeWidth = 12       # width of the stripe with averages
 
 ##############################################################################
+
+class EventfulCanvasView(QCanvasView):
+    def __init__(self, canvas, parent, master):
+        QCanvasView.__init__(self, canvas,parent)
+        self.master = master
+        self.viewport().setMouseTracking(True)
+
+    def contentsMousePressEvent (self, event):
+        self.master.mousePress(event.pos().x(), event.pos().y())
+
+    def contentsMouseReleaseEvent (self, event):
+        self.master.mouseRelease(event.pos().x(), event.pos().y())
+
+    def contentsMouseMoveEvent (self, event):
+        self.master.mouseMove(event.pos().x(), event.pos().y())
+
 # main class
+v_sel_width = 2
+v_legend_width = 104
+v_legend_height = 18
+v_legend_offsetX = 5
+v_legend_offsetY = 15
 
 class OWDistanceMap(OWWidget):	
     settingsList = ["CellWidth", "CellHeight", "Merge", "Gamma", "CutLow", "CutHigh", "CutEnabled", "Sort",
-                    "ShowLegend", "ShowAnnotations", "ShowBalloon", "ShowItemsInBalloon", "SendOnRelease"]
+                    "ShowLegend", "ShowAnnotations", "ShowBalloon", "ShowItemsInBalloon", "SendOnRelease", "ColorSchemas"]
 
     def __init__(self, parent=None, name='DistanceMap'):
         self.callbackDeposit = [] # deposit for OWGUI callback function
         OWWidget.__init__(self, parent, name, 'Distance Map', FALSE, FALSE) 
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, 1)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass),
-                        ("Attribute List", orange.VarList)]
-        
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]#,("Attribute List", orange.VarList)]
+
+        self.clicked = False
+        self.offsetX = 5
+        self.offsetY = 5
+        self.imageWidth = 0
+        self.imageHeight = 0
+        self.distanceImage = None
+        self.legendImage = None
+        self.ColorSchemas = None
+      
+
         #set default settings
-        self.CellWidth = 3; self.CellHeight = 3
+        self.CellWidth = 15; self.CellHeight = 15
         self.Merge = 1; self.savedMerge = self.Merge
         self.Gamma = 1
         self.Grid = 1
         self.CutLow = 0; self.CutHigh = 0; self.CutEnabled = 0
         self.Sort = 0
-        self.setColorPalette()
         self.SquareCells = 0
         self.ShowLegend = 1; self.ShowAnnotations = 1; self.ShowBalloon = 1; self.ShowItemsInBalloon = 1
         self.SendOnRelease = 1
@@ -67,12 +99,7 @@ class OWDistanceMap(OWWidget):
         
         OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1, step=0.1, callback=self.drawDistanceMap)
 
-        # define the color stripe to show the current palette
-        colorItems = [self.createColorStripe(i) for i in range(len(self.ColorPalettes))]
-        palc = OWGUI.comboBox(tab, self, "CurrentPalette", box="Colors", items=None, tooltip=None, callback=self.setColor)
-        for cit in colorItems:
-            palc.insertItem(cit) ## because of a string cast in the comboBox constructor
-
+        self.colorPalette = ColorPalette(tab, self, "", additionalColors =["Cell outline", "Selected cells"], callback = self.setColor)
         self.tabs.insertTab(tab, "Settings")
 
         # FILTER TAB
@@ -94,7 +121,7 @@ class OWDistanceMap(OWWidget):
         # INFO TAB
         tab = QVGroupBox(self)
         box = QVButtonGroup("Annotation && Legends", tab)
-        OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend', callback=None)
+        OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend', callback=self.drawDistanceMap)
         OWGUI.checkBox(box, self, 'ShowAnnotations', 'Show annotations', callback=None)
         
         box = QVButtonGroup("Balloon", tab)
@@ -102,8 +129,10 @@ class OWDistanceMap(OWWidget):
         OWGUI.checkBox(box, self, 'ShowItemsInBalloon', "Display item names", callback=None)
 
         box = QVButtonGroup("Select", tab)
-        QLabel("BUTTONS HERE", box)
-        QLabel("BUTTONS HERE", box)
+        box2 = QHBox(box)
+        self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo, QPixmap(OWToolbars.dlg_undo), toggle = 0)
+        self.buttonRemoveAllSelections = OWToolbars.createButton(box2, 'Remove all selections', self.actionRemoveAllSelections, QPixmap(OWToolbars.dlg_clear), toggle = 0)
+        self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections', self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release", callback=None)
 
         self.tabs.insertTab(tab, "Info")
@@ -112,43 +141,122 @@ class OWDistanceMap(OWWidget):
 
         self.layout = QVBoxLayout(self.mainArea)
         self.canvas = QCanvas()
-        self.canvasView = QCanvasView(self.canvas, self.mainArea)
+        self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
         self.layout.add(self.canvasView)
 
+        #construct selector
+        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+        self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+        self.selector.setZ(20)
+
+        self.bubble = BubbleInfo(self.canvas)
+        self.selection = SelectionManager()
+
+        self.selectionRect = QCanvasRectangle(0, 0, 1, 1, self.canvas)
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
+        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))        
+        self.selectionRect.setZ(20)
+
+        self.legendText1 = QCanvasText(self.canvas)
+        self.legendText1.move(0,0)
+        self.legendText2 = QCanvasText(self.canvas)
+        self.legendText2.move(v_legend_width,0)
+
+        #restore color schemas from settings
+        if self.ColorSchemas:
+            self.colorPalette.setColorSchemas(self.ColorSchemas)
+        
     def createColorStripe(self, palette):
-        dx = 104; dy = 18
-        bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2 
-        image = QImage(bmp, dx, dy, 8, self.ColorPalettes[palette], 256, QImage.LittleEndian)
-        pm = QPixmap()
-        pm.convertFromImage(image, QPixmap.Color);
-        return pm
+        dx = v_legend_width
+        dy = v_legend_height
+        bmp = chr(252)*dx*2 + reduce(lambda x,y:x+y, [chr(i*250/dx) for i in range(dx)] * (dy-4)) + chr(252)*dx*2
 
-    # set the default palettes used in the program
-    # palette defines 256 colors, 250 are used for distance map, remaining 6 are extra
-    # color indices for unknown is 255, underflow 253, overflow 254, white 252
-    def setColorPalette(self):
-        white = qRgb(255,255,255)
-        gray = qRgb(200,200,200)
-        red = qRgb(255, 0, 0)
-        green = qRgb(0, 255, 0)
-        self.ColorPalettes = \
-          ([qRgb(255.*i/250., 255.*i/250., 255-(255.*i/250.)) for i in range(250)] + [white]*3 + [red, green, gray],
-           [qRgb(0, 255.*i*2/250., 0) for i in range(125, 0, -1)] + [qRgb(255.*i*2/250., 0, 0) for i in range(125)] + [white]*3 + [qRgb(0, 255., 0), qRgb(255., 0, 0), gray],
-           [qRgb(255.*i/250., 0, 0) for i in range(250)] + [white]*3 + [qRgb(0., 0, 0), qRgb(255., 0, 0), gray])
-#          ([qRgb(255.*i/250., 255.*i/250., 255-(255.*i/250.)) for i in range(250)] + [white]*3 + [qRgb(0., 0., 255.), qRgb(255., 255., 0.), gray],
-        self.SelectionColors = [QColor(0,0,0), QColor(255,255,128), QColor(0,255,255)]
-        self.CurrentPalette = 0
+        image = ImageItem(bmp, self.canvas, dx, dy, palette, x=v_legend_offsetX, y=v_legend_offsetY, z=0)
+        return image
 
-    ##########################################################################
+    def colFromMousePos(self, x, y):
+        if (x <= self.offsetX or x >= self.offsetX + self.imageWidth):
+            return -1
+        else:
+            return int((x - self.offsetX)/self.CellWidth)
+
+    def rowFromMousePos(self, x,y):
+        if (y <= self.offsetY or y >= self.offsetY + self.imageHeight):
+            return -1
+        else:
+            return int((y - self.offsetY)/self.CellHeight)
+
+
+    def qrgbToQColor(self, color):
+        return QColor(qRed(color), qGreen(color), qBlue(color))
+
+    def getItemFromPos(self, i):
+        if (len(self.distanceMap.elementIndices)==0):
+            j = i
+        else:
+            j = self.distanceMap.elementIndices[i]
+
+        if self.distanceMapConstructor.order:
+           j = self.distanceMapConstructor.order[j]
+
+        return j
+
+
+    def sendOutput(self):
+        if len(self.matrix.items)<1:
+            return
+
+        selectedIndices = []
+        tmp = []
+
+        if len(self.selection.getSelection())==0:
+            self.send("Attribute List", None)
+            self.send("Examples", None)
+            self.send("Classified Examples", None)
+        else:
+            selection = self.selection.getSelection()
+            for sel in selection:
+                if (len(self.distanceMap.elementIndices)==0):
+                    tmp += range(sel[0].x(), sel[1].x()+1)
+                    tmp +=range(sel[0].y(), sel[1].y()+1)
+                else:
+                    tmp += range(self.distanceMap.elementIndices[sel[0].x()], self.distanceMap.elementIndices[sel[1].x()+1])
+                    tmp +=range(self.distanceMap.elementIndices[sel[0].y()], self.distanceMap.elementIndices[sel[1].y()+1])
+
+            for i in tmp:
+                if self.distanceMapConstructor.order:
+                    if not (self.distanceMapConstructor.order[i] in selectedIndices):
+                        selectedIndices += [self.distanceMapConstructor.order[i]]
+
+                if not (i in selectedIndices):
+                    selectedIndices += [i]
+
+            items = self.matrix.items
+            #if issubclass(orange.EnumVariable, type(items[0])):
+            #    selected = orange.VarList()
+            #    for i in selectedIndices:
+            #        selected.append(items[i])
+            #    self.send("Attribute List", selected)
+                
+            if isinstance(items[0], orange.Example):
+                ex = [items[x] for x in selectedIndices]
+                selected = orange.ExampleTable(items[0].domain, ex)
+                self.send("Examples", selected)
+                if selected.domain.classVar:
+                    self.send("Classified Examples", selected)
+                
     # callbacks (rutines called after some GUI event, like click on a button)
 
     def setColor(self):
-        if self.CurrentPalette == len(self.ColorPalettes):
-            self.CurrentPalette = 0
-            # put a code here that allows to define ones own colors
-        else:
-            pm = self.createColorStripe(self.CurrentPalette)
-            self.drawDistanceMap()
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+        self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
+        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+
+        self.ColorSchemas = self.colorPalette.getColorSchemas()
+        self.drawDistanceMap()
 
     def setCutEnabled(self):
         self.sliderCutLow.box.setDisabled(not self.CutEnabled)
@@ -173,26 +281,134 @@ class OWDistanceMap(OWWidget):
         self.CutHigh = min(self.CutHigh, self.upperBound)
         self.sliderCutLow.setValue(self.CutLow)
         self.sliderCutHigh.setValue(self.CutHigh)
+
+        self.selection.clear()
         self.drawDistanceMap()
 
     def drawDistanceMap(self):
+
+        if not self.matrix:
+            return
         lo = self.CutEnabled and self.CutLow   or self.lowerBound
         hi = self.CutEnabled and self.CutHigh  or self.upperBound
 
-        for i in self.canvas.allItems():
-            i.setCanvas(None)
+        if self.distanceImage:
+            self.distanceImage.setCanvas(None)
 
-        palette = self.ColorPalettes[self.CurrentPalette]
+        if self.legendImage:
+            self.legendImage.setCanvas(None)
+
+        if self.ShowLegend==1:
+            self.legendImage = self.createColorStripe(self.colorPalette.getCurrentColorSchema().getPalette())
+            self.offsetY = v_legend_height + 30
+            self.legendText1.setText(str(self.CutLow))
+            self.legendText2.setText(str(self.CutHigh))
+            self.legendText1.show()
+            self.legendText2.show()
+        else:
+            self.legendText1.hide()
+            self.legendText2.hide()
+            self.offsetY = 5
+
+        palette = self.colorPalette.getCurrentColorSchema().getPalette()
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth), int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
 
         self.canvas.resize(2000, 2000) # this needs adjustment
-        x = c_offsetX; y0 = c_offsetY
+        self.distanceImage = ImageItem(bitmap, self.canvas, width, height, palette, x=self.offsetX, y=self.offsetY, z=0)
+        self.distanceImage.height = height
+        self.distanceImage.width = width
 
-        image = ImageItem(bitmap, self.canvas, width, height, palette, x=0, y=0, z=0)
-        image.height = height
-        image.width = width
+        self.imageWidth = width
+        self.imageHeight = height
+
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]        
+        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
+        self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
+        self.selector.setSize(self.CellWidth, self.CellHeight)
+        
+        self.updateSelectionRect()
+        self.canvas.update()
+
+    def updateSelectionRect(self):
+        if len(self.selection.getSelection())>0:
+            start = self.selection.getSelection()[0][0]
+            end = self.selection.getSelection()[0][1]
+            self.selectionRect.setX(self.offsetX + start.x()* self.CellWidth)
+            self.selectionRect.setY(self.offsetY + start.y()* self.CellHeight)
+            self.selectionRect.setSize((end.x()-start.x() + 1)*self.CellWidth,(end.y()-start.y() + 1)*self.CellHeight)
+            self.selectionRect.show()
+        else:
+            self.selectionRect.hide()
+        self.canvas.update()    
+
+            
+    def mouseMove(self, x, y):
+        row = self.rowFromMousePos(x,y)
+        col = self.colFromMousePos(x,y)
+
+        if (self.clicked==True):
+            self.selection.UpdateSel(col, row)
+
+        if (row==-1 or col==-1):
+            self.selector.hide()
+            self.bubble.hide()
+        else:
+            self.selector.setX(self.offsetX + col * self.CellWidth)
+            self.selector.setY(self.offsetY + row * self.CellHeight)
+            self.selector.show()
+
+            if self.ShowBalloon == 1:
+                self.bubble.move(x + 20, y + 20)
+
+                i = self.getItemFromPos(col)
+                j = self.getItemFromPos(row)
+                self.bubble.head.setText(str(self.matrix[i, j]))
+              
+                if (self.ShowItemsInBalloon == 1) and ((self.matrix.items[i].name<>"") or (self.matrix.items[i].name<>"")):
+                    self.bubble.body.setText(self.matrix.items[i].name + "\n" + self.matrix.items[j].name)
+                else:
+                    self.bubble.body.setText("")
+
+                self.bubble.show()
+            else:
+                self.bubble.hide()
+
+            self.updateSelectionRect()
 
         self.canvas.update()
+        
+    def mousePress(self, x,y):
+        self.clicked = True
+        row = self.rowFromMousePos(x,y)
+        col = self.colFromMousePos(x,y)
+        self.selection.clear()
+        self.selection.SelStart(col, row)
+        
+    def mouseRelease(self, x,y):
+        if self.clicked==True:
+            self.clicked = False
+            row = self.rowFromMousePos(x,y)
+            col = self.colFromMousePos(x,y)
+
+            if (row<>-1 and col<>-1):
+                self.selection.SelEnd()
+            else:
+                self.selection.CancelSel()
+
+            self.updateSelectionRect()
+            if self.SendOnRelease==1:
+                self.sendOutput()
+
+    def actionUndo(self):
+        self.selection.clear()
+        self.updateSelectionRect()
+    
+    def actionRemoveAllSelections(self):
+        self.selection.clear()
+        self.updateSelectionRect()
+                        
 
     ##########################################################################
     # input signal management
@@ -223,38 +439,8 @@ class OWDistanceMap(OWWidget):
             return
         # check if the same length
         self.matrix = matrix
-        self.constructDistanceMap()
+        self.constructDistanceMap()        
 
-
-        # following is just to demonstrate some points
-        # REMOVE FROM THE FINAL VERSION
-        
-        # just a try: print out the first 10 labels of the items
-        print 'first 5 of %d matrix labels:' % len(self.matrix.items),
-        print reduce(lambda x,y: x+','+y, [self.matrix.items[x].name for x in range(5)])
-
-        if len(self.matrix.items)<2:
-            return
-        items = self.matrix.items
-        print items[0]
-        print type(items[0])
-        if issubclass(orange.EnumVariable, type(items[0])):
-            print 'Attributes, first one:', items[0].name
-            selected = orange.VarList()
-            for i in range(2):
-                selected.append(items[i])
-            self.send("Attribute List", selected)
-            print 'send', selected
-            
-        elif isinstance(items[0], orange.Example):
-            print 'Examples'
-            ex = [items[x] for x in range(2)]
-            selected = orange.ExampleTable(items[0].domain, ex)
-            self.send("Examples", selected)
-            print "send", selected
-            if selected.domain.classVar:
-                self.send("Classified Examples", selected)
-        
 
 ##################################################################################################
 # new canvas items
@@ -271,7 +457,109 @@ class ImageItem(QCanvasRectangle):
 
     def drawShape(self, painter):
         painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
+##################################################################################################
+# selection manager class
+
+class SelectionManager:
+    def __init__(self):
+        self.selection = []
+        self.selecting = False
+        self.currSelEnd = None
+        self.currSel = None
+
+    def SelStart(self, x, y):
+        self.currSel = QPoint(x,y)
+        self.currSelEnd = QPoint(x,y)
+        self.selecting = True
         
+    def UpdateSel(self, x, y):
+        self.currSelEnd = QPoint(x,y)
+
+    def CancelSel(self):
+        self.selecting = False
+        
+    def SelEnd(self):
+        minx = min(self.currSel.x(), self.currSelEnd.x())
+        maxx = max(self.currSel.x(), self.currSelEnd.x())
+
+        miny = min(self.currSel.y(), self.currSelEnd.y())
+        maxy = max(self.currSel.y(), self.currSelEnd.y())
+        
+        self.selection += [(QPoint(minx, miny),QPoint(maxx,maxy))]
+        self.selecting = False
+
+    def clear(self):
+        self.selection = []
+
+    def getSelection(self):
+        res = self.selection + []
+        if self.selecting==True:
+            minx = min(self.currSel.x(), self.currSelEnd.x())
+            maxx = max(self.currSel.x(), self.currSelEnd.x())
+
+            miny = min(self.currSel.y(), self.currSelEnd.y())
+            maxy = max(self.currSel.y(), self.currSelEnd.y())
+
+            res += [(QPoint(minx, miny),QPoint(maxx,maxy))]
+        return res
+
+
+        
+##################################################################################################
+# bubble info class
+
+bubbleBorder = 4
+
+class BubbleInfo(QCanvasRectangle):
+    def __init__(self, *args):
+        apply(QCanvasRectangle.__init__, (self,) + args)
+        self.canvas = args[0]
+        self.setBrush(QBrush(Qt.white))
+        #self.setPen(QPen(Qt.black, v_sel_width))
+        self.bubbleShadow = QCanvasRectangle(self.canvas)
+        self.bubbleShadow.setBrush(QBrush(Qt.black))
+        self.bubbleShadow.setPen(QPen(Qt.black))
+        self.head = QCanvasText(self.canvas)
+        self.line = QCanvasLine(self.canvas)
+        self.body = QCanvasText(self.canvas)
+        self.items = [self.head, self.line, self.body]
+        self.setZ(110)
+        self.bubbleShadow.setZ(109)
+        for i in self.items:
+            i.setZ(111)
+
+    def move(self, x, y):
+        QCanvasRectangle.move(self, x, y)
+        self.setX(x); self.setY(y)
+        self.bubbleShadow.move(x+5, y+5)
+        for item in self.items:
+            item.setX(x + bubbleBorder)
+        w = max(100, self.head.boundingRect().width() + 2 * bubbleBorder, self.body.boundingRect().width() + 2 * bubbleBorder)
+        y += 2
+        self.head.setY(y)
+        y += self.head.boundingRect().height()
+        self.line.setPoints(0,0,w,0)
+        self.line.setX(x); self.line.setY(y)
+        y += 2
+        self.body.setY(y)
+        h = 2 * (2 + (self.body.text()<>None)) + self.head.boundingRect().height() + (self.body.text()<>None) * self.body.boundingRect().height()
+        self.setSize(w,h)
+        self.bubbleShadow.setSize(w,h)
+        
+    def show(self):
+        QCanvasRectangle.show(self)
+        self.bubbleShadow.show()
+        self.head.show()
+        if self.body.text():
+            self.line.show()
+            self.body.show()
+
+    def hide(self):
+        QCanvasRectangle.hide(self)
+        self.bubbleShadow.hide()
+        for item in self.items:
+            item.hide()
+
 ##################################################################################################
 # test script
 
@@ -293,7 +581,7 @@ if __name__=="__main__":
 
     ow.show()
 
-    data = orange.ExampleTable(r'../../doc/datasets/glass')
+    data = orange.ExampleTable(r'../../doc/datasets/wt')
     
     matrix = computeMatrix(data)
     ow.setMatrix(matrix)
