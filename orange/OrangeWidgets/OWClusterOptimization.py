@@ -68,7 +68,7 @@ def getPointsWithDifferentClassValue(graph, closureDict):
 
 
 # remove edges, that do not connect to triangles
-def removeSingleLines(graph, edgesDict, verticesDict, minimumValidIndex, newVal):
+def removeSingleLines(graph, edgesDict, clusterDict, verticesDict, minimumValidIndex, newVal):
     for (i,j) in graph.getEdges():
         if graph[i,j][VALUE] < minimumValidIndex: continue
         merged = graph.getNeighbours(i) + graph.getNeighbours(j)
@@ -76,52 +76,36 @@ def removeSingleLines(graph, edgesDict, verticesDict, minimumValidIndex, newVal)
         k=0; found = 0;
         for k in range(len(merged)-1):
             if merged[k] == merged[k+1] and graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex:
-                found = 1
-                break
-        # if the edge does not form a triangle, check if both points are accessible by a different route
+                found = 1; break
         if not found:
             if newVal == None: graph[i,j] = None            # delete the edge
             else:
                 graph[i,j][VALUE] = newVal   # set the edge value
                 graph[i,j][CLUSTER] = -1
             # remove the edge from the edgesDict
-            if edgesDict and verticesDict:
-                index = max(verticesDict[j], verticesDict[i])
+            if edgesDict and clusterDict and verticesDict:
+                index = max(clusterDict[j], clusterDict[i])
                 if index == -1: continue
                 if (i,j) in edgesDict[index]: edgesDict[index].remove((i,j))
                 elif (j,i) in edgesDict[index]: edgesDict[index].remove((j,i))
-                verticesDict[j] = verticesDict[i] = -1
-            """
-            verticesToBrowse = graph.getNeighbours(j)
-            verticesToBrowse.remove(i)
-            for v in verticesToBrowse[::-1]:
-                if graph[j,v][VALUE] < minimumValidIndex: verticesToBrowse.remove(v)
-            searchedVertices = [j]
-            while not found and verticesToBrowse != []:
-                vertex = verticesToBrowse.pop()
-                searchedVertices.append(vertex)
-                neighbors = graph.getNeighbours(vertex)
-                for v in neighbors[::-1]:
-                    if graph[vertex,v][VALUE] < minimumValidIndex or v in searchedVertices + verticesToBrowse: neighbors.remove(v)
-                if i in neighbors: found = 1
-                else: verticesToBrowse += neighbors
-            if not found:
-                if newVal == None: graph[i,j] = None            # delete the edge
-                else:              graph[i,j][VALUE] = newVal   # set the edge value
-            """
+                if clusterDict[i] != -1: verticesDict[clusterDict[i]].remove(i)
+                if clusterDict[j] != -1: verticesDict[clusterDict[j]].remove(j)
+                clusterDict[j] = clusterDict[i] = -1
 
 # remove single lines and triangles that are now treated as their own clusters because they are probably insignificant
-def removeSingleTrianglesAndLines(graph, edgesDict, verticesDict, newVal):
+def removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, newVal):
     for key in edgesDict.keys():
-        if len(edgesDict[key]) < 4:
+        #if len(verticesDict[key]) < 5 or len(verticesDict[key]) == len(edgesDict[key]):    # use this to remove groups where all points lie on the hull
+        if len(verticesDict[key]) < 5:
             for (i,j) in edgesDict[key]:
                 graph[i,j][VALUE] = newVal
                 graph[i,j][CLUSTER] = -1
-                verticesDict[i] = -1; verticesDict[j] = -1;
+                clusterDict[i] = -1; clusterDict[j] = -1;
+            verticesDict.pop(key)
             edgesDict.pop(key)
 
 # make clusters smaller by removing points on the hull that lie closer to points in opposite class
-def removeDistantPointsFromClusters(graph, edgesDict, verticesDict, closureDict, newVal):
+def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, newVal):
     for key in closureDict.keys():
         edges = closureDict[key]
         vertices = [i for (i,j) in edges] + [j for (i,j) in edges]
@@ -132,86 +116,83 @@ def removeDistantPointsFromClusters(graph, edgesDict, verticesDict, closureDict,
             correctClass = int(graph.objects[vertex].getclass())
             correct = []; incorrect = []
             for n in graph.getNeighbours(vertex):
-                if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] == -1: continue
+                #if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] == -1: continue   # 15.12. - commented because bellow we set graph[vertex, n][cluster] = -1 for some points and this may not work right
                 if int(graph.objects[n].getclass()) == correctClass: correct.append(graph[vertex,n][DISTANCE])
                 else: incorrect.append(graph[vertex,n][DISTANCE])
 
-            if correct == [] or (len(incorrect) > 0 and min(incorrect) < min(correct)):
+            if correct == [] or (len(incorrect) > 0 and min(correct) > min(incorrect)):     # if the distance to the correct class value is greater than to the incorrect class -> remove the point from the
+                # if closure will degenerate into a line -> remove the remaining vertices
+                correctClassNeighbors = []
                 for n in graph.getNeighbours(vertex):
-                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue
+                    if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] != -1: correctClassNeighbors.append(n)
+                for i in correctClassNeighbors:
+                    for j in correctClassNeighbors:
+                        if i==j: continue
+                        if (i,j) in edges:
+                            graph[i,j][CLUSTER] = -1
+                            if newVal == None:  graph[i,j] = None
+                            else:               graph[i,j][VALUE] = newVal
+                            if i in verticesDict[key]: verticesDict[key].remove(i)
+                            if j in verticesDict[key]: verticesDict[key].remove(j)
+                            clusterDict[i] = -1; clusterDict[j] = -1
+                            if (i,j) in edgesDict[key]: edgesDict[key].remove((i,j))
+                            else: edgesDict[key].remove((j,i))
+                            edges.remove((i,j))
+
+                # remove the vertex from the closure
+                for n in graph.getNeighbours(vertex):
+                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue 
                     if newVal == None:  graph[vertex,n] = None
                     else:               graph[vertex,n][VALUE] = newVal
                     if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
                     elif (vertex, n) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((vertex, n))
-                    verticesDict[n] = verticesDict[vertex] = -1
                     graph[vertex,n][CLUSTER] = -1
+                if clusterDict[vertex] != -1: verticesDict[key].remove(vertex)
+                #verticesDict[clusterDict[vertex]].remove(vertex)
+                clusterDict[vertex] = -1
 
-    """
-    for vertex in verticesDict.keys():
-        classes = [[] for j in range(len(graph.objects.domain.classVar.values))]
-        correctClass = int(graph.objects[vertex].getclass())
-        for n in graph.getNeighbours(vertex):
-            if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] == -1: continue
-            classes[int(graph.objects[n].getclass())].append(graph[vertex,n][DISTANCE])
-
-        if classes[correctClass] == []: minCorrectClassDistance = 1e20
-        else:                           minCorrectClassDistance = sum(classes[correctClass])/float(len(classes[correctClass]))
-        #else:                           minCorrectClassDistance = min(classes[correctClass])
-        count = 0; dist = 0.0;
-        for i in range(len(classes)):
-            if i == correctClass: continue
-            dist += sum(classes[i]); count += len(classes[i])
-        
-        if count > 0 and dist/float(count) < minCorrectClassDistance:
-            for n in graph.getNeighbours(vertex):
-                if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue
-                if newVal == None:  graph[vertex,n] = None
-                else:               graph[vertex,n][VALUE] = newVal
-                if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
-                elif (vertex, n) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((vertex, n))
-                verticesDict[n] = verticesDict[vertex] = -1
-                graph[vertex,n][CLUSTER] = -1
-    """
-    """
-    minWrongClassDistance = 2*minCorrectClassDistance
-    for key in classes.keys():
-        if key == correctClass or classes[key] == []: continue
-        minWrongClassDistance = min(minWrongClassDistance, min(classes[key]))
-    # if the distance to the wrong class is smaller than to the correct class then delete the edge
-    if minWrongClassDistance < minCorrectClassDistance:
-        for n in graph.getNeighbours(i):
-            if graph.objects[n].getclass().value ==  correctClass: graph[i,n][VALUE] = newVal
-    """
 
 # mark edges on the closure with the outerEdgeValue and edges inside a cluster with a innerEdgeValue
 # algorithm: for each edge, find all triangles that contain this edge. if the number of triangles is 1, then this edge is on the closure.
 # if there is a larger number of triangles, then they must all lie on the same side of this edge, otherwise this edge is not on the closure
-def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdgeValue):
+def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdgeValue, differentClassValue, tooDistantValue):
     closureDict = {}
     for key in edgesDict.keys(): closureDict[key] = []  # create dictionary where each cluster will contain all edges that lie on the closure
     for (i,j) in graph.getEdges():
-        if graph[i,j][VALUE] < minimumValidIndex: continue
-        if graph[i,j][CLUSTER] == -1:
-            #graph[i,j][VALUE] = innerEdgeValue
-            continue
+        if graph[i,j][VALUE] < minimumValidIndex or graph[i,j][CLUSTER] == -1: continue
         merged = graph.getNeighbours(i) + graph.getNeighbours(j)
         merged.sort()
-        k=0; found = [];
-        for k in range(len(merged)-1):
-            if merged[k] == merged[k+1] and graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex: found.append(merged[k])
-        graph[i,j][VALUE] = outerEdgeValue
-        closureDict[graph[i,j][CLUSTER]].append((i,j))
-        if found == []:
-            graph[i,j][VALUE] = innerEdgeValue
-            closureDict[graph[i,j][CLUSTER]].remove((i,j))
-        elif len(found) != 1:
-            dir = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[found[0]][0].value, graph.objects[found[0]][1].value)
-            for val in found[1:]:
+        k=0; sameClassPoints = []; otherClassPoints = []
+        while k < len(merged)-1:
+            if merged[k] == merged[k+1]:
+                if graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex: sameClassPoints.append(merged[k])
+                elif graph[i, merged[k]][VALUE] == graph[j, merged[k]][VALUE] == differentClassValue: otherClassPoints.append(merged[k])
+                elif graph[i,k][VALUE] == tooDistantValue:
+                    for n in graph.getNeighbours(k):
+                        if graph[k,n][VALUE] == differentClassValue: otherClassPoints.append(n)
+                k+=1
+            k+=1
+        outer = 1; outer2 = 0
+        if sameClassPoints == []: outer = 0
+        elif len(sameClassPoints) > 0:
+            dir = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[sameClassPoints[0]][0].value, graph.objects[sameClassPoints[0]][1].value)
+            for val in sameClassPoints[1:]:
                 dir2 = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[val][0].value, graph.objects[val][1].value)
-                if dir != dir2:
-                    graph[i,j][VALUE] = innerEdgeValue
-                    closureDict[graph[i,j][CLUSTER]].remove((i,j))
-                    break
+                if dir != dir2: outer = 0; break
+            if otherClassPoints != []:   # test if a point from a different class is lying inside one of the triangles
+                for o in otherClassPoints:
+                    val = 0; nearerPoint = 0
+                    for s in sameClassPoints:
+                        # check if o is inside (i,j,s) triangle
+                        val += pointInsideCluster (graph.objects, [(i,j), (j,s), (s,i)], graph.objects[o][0].value, graph.objects[o][1].value)
+                        # check if another point from sameClassPoints is inside (i,j,o) triangle - if it is, then (i,j) definitely isn't on the closure
+                        nearerPoint += pointInsideCluster(graph.objects, [(i,j), (j,o), (o,i)], graph.objects[s][0].value, graph.objects[s][1].value)
+                    if val > 0 and nearerPoint == 0: outer2 = 1
+        if outer + outer2 == 1:      # if outer is 0 or more than 1 than it is not an outer edge
+            graph[i,j][VALUE] = outerEdgeValue
+            closureDict[graph[i,j][CLUSTER]].append((i,j))
+        else:
+            graph[i,j][VALUE] = innerEdgeValue
     return closureDict
 
 def restoreLinesToOutliers(graph, removedValue, restoredValue):
@@ -243,27 +224,30 @@ def restoreLinesToOutliers(graph, removedValue, restoredValue):
 def enumerateClusters(graph, minimumValidValue):    
     clusterIndex = 1
     verticesDict = {}
+    clusterDict = {}
     edgesDict = {}
     for (i,j) in graph.getEdges(): graph[i,j][CLUSTER] = -1   # initialize class cluster
-    for i in range(graph.nVertices): verticesDict[i] = -1
+    for i in range(graph.nVertices): clusterDict[i] = -1
     
     for i in range(graph.nVertices):
-        if graph.getNeighbours(i) == [] or verticesDict[i] != -1: continue
+        if graph.getNeighbours(i) == [] or clusterDict[i] != -1: continue
         edgesDict[clusterIndex] = []
+        verticesDict[clusterIndex] = []
         verticesToSearch = [i]
         while verticesToSearch != []:
             current = verticesToSearch.pop()
-            if verticesDict[current] != -1: continue
-            verticesDict[current] = clusterIndex
+            if clusterDict[current] != -1: continue
+            clusterDict[current] = clusterIndex
+            verticesDict[clusterIndex].append(current)
             for n in graph.getNeighbours(current):
                 if graph[current,n][VALUE] < minimumValidValue: continue
-                if verticesDict[n] == -1:
+                if clusterDict[n] == -1:
                     verticesToSearch.append(n)
                     edgesDict[clusterIndex].append((n, current))
                     graph[current, n][CLUSTER] = clusterIndex
         clusterIndex += 1
     
-    return (edgesDict, verticesDict, clusterIndex-1)
+    return (edgesDict, clusterDict, verticesDict, clusterIndex-1)
 
 # for edges that have too small number of vertices set edge value to insignificantEdgeValue
 # for edges that fall apart because of the distance between points set value to removedEdgeValue
@@ -281,26 +265,48 @@ def computeAlphaShapes(graph, edgesDict, insignificantEdgeValue, removedEdgeValu
         std = sqrt(sum([(x-ave)*(x-ave) for x in lengths])/len(lengths))
         for index in range(len(lengths)):
             if lengths[index] > ave + std: graph[edges[index][0], edges[index][1]][VALUE] = removedEdgeValue
-            #if lengths[index] > ave: graph[edges[index][0], edges[index][1]][VALUE] = removedEdgeValue
         
 
 # alphashapes removed some edges. if after clustering two poins of the edge still belong to the same cluster, restore the edge
-def fixDeletedEdges(graph, verticesDict, edgesDict, deletedEdgeValue, repairValue, deleteValue):
+def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue, deleteValue):
     for (i,j) in graph.getEdges():
         if graph[i,j][VALUE] == deletedEdgeValue:
-            if verticesDict[i] == verticesDict[j]:
+            if clusterDict[i] == clusterDict[j]:
                 graph[i,j][VALUE] = repairValue             # restore the value of the edge
-                graph[i,j][CLUSTER] = verticesDict[i]       # reset the edge value
-                edgesDict[verticesDict[i]].append((i,j))    # re-add the edge to the list of edges
+                graph[i,j][CLUSTER] = clusterDict[i]       # reset the edge value
+                edgesDict[clusterDict[i]].append((i,j))    # re-add the edge to the list of edges
             else:
                 if deleteValue == None: graph[i,j] = None
                 else:                   graph[i,j][VALUE] = deleteValue
         
 
 # compute the area of the polygons that are not necessarily convex  
-def computeAreas(graph, closureDict, outerEdgeValue):
+def computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, outerEdgeValue):
     areaDict = {}
+    
     for key in closureDict.keys():
+        # first check if the closure is really a closure, by checking if it is connected into a circle
+        # if it is not, remove this closure from all dictionaries
+        vertices = [i for (i,j) in closureDict[key]] + [j for (i,j) in closureDict[key]]
+        vertices.sort()
+        valid = 1
+        if len(vertices) % 2 != 0: valid = 0
+        else:
+            for i in range(len(vertices)/2):
+                if vertices[2*i] != vertices[2*i+1]: valid = 0; break
+        if not valid:
+            print "found and ignored an invalid group", graph.objects.domain[0].name, graph.objects.domain[1].name, closureDict[key]
+            """
+            for (i,j) in edgesDict[key]: graph[i,j][CLUSTER] = -1
+            edgesDict.pop(key)
+            for v in verticesDict[key]: clusterDict[v] = -1
+            verticesDict.pop(key)
+            closureDict.pop(key)
+            """
+            areaDict[key] = 0
+            continue
+
+        # then compute its area size        
         currArea = 0.0
         edges = closureDict[key] # select outer edges
         coveredEdges = []
@@ -336,6 +342,9 @@ def computePolygons(graph, startingEdge, outerEdgeValue):
                 i = subpath.index(end)
                 polygons.append(subpath[i:])
                 subpath = subpath[:i]
+            if outerEdges == []:
+                print "there is a bug in computePolygons function", graph.objects.domain, startingEdge, end, neighbors
+                break
             subpath.append(end)
             takenEdges.append((start, end))
             start = end; end = outerEdges[0]
@@ -357,6 +366,7 @@ def computeAreaOfPolygon(graph, polygon):
     return abs(tempArea)
 
 
+"""
 def getVerticesInPolygons(verticesDict):
     polygonVerticesDict = {}
     for v in verticesDict.keys():
@@ -366,33 +376,18 @@ def getVerticesInPolygons(verticesDict):
     for key in polygonVerticesDict.keys():
         if len(polygonVerticesDict[key]) < 2: polygonVerticesDict.pop(key)
     return polygonVerticesDict
-
-"""
-def pointInsideCluster(data, closure, xTest, yTest):
-    p1 = closure[0][0]
-    count = 0
-    for (p2, p3) in closure[1:]:
-        pos = getPosition(data[p1][0], data[p1][1], data[p2][0], data[p2][1], xTest, yTest)
-        pos2 = getPosition(data[p1][0], data[p1][1], data[p3][0], data[p3][1], xTest, yTest)
-        if pos2 != pos: continue
-        pos3 = getPosition(data[p2][0], data[p2][1], data[p3][0], data[p3][1], xTest, yTest)
-        if pos3 == pos: count += 1
-    if count % 2 == 0: return 0
-    else: return 1
 """
 
-
 def pointInsideCluster(data, closure, xTest, yTest):
-    p1 = closure[0][0]
     count = 0
-    for (p2, p3) in closure[1:]:
+    #for (p2, p3) in closure[1:]:
+    for (p2, p3) in closure:
         x1 = data[p2][0] - xTest; y1 = data[p2][1] - yTest
         x2 = data[p3][0] - xTest; y2 = data[p3][1] - yTest
         if (y1 > 0 and y2 <= 0) or (y2 > 0 and y1 <= 0):
             x = (x1 * y2 - x2 * y1) / (y2 - y1)
             if x > 0: count += 1
-    if count % 2 == 1: return 1
-    else: return 0
+    return count % 2 
         
 
 class ClusterOptimization(OWBaseWidget):
@@ -408,9 +403,11 @@ class ClusterOptimization(OWBaseWidget):
 
         self.parentWidget = parentWidget
         self.setCaption("Qt Cluster Dialog")
-        self.topLayout = QVBoxLayout( self, 10 ) 
-        self.grid=QGridLayout(5,2)
-        self.topLayout.addLayout( self.grid, 10 )
+        #self.topLayout = QVBoxLayout( self, 10 ) 
+        #self.grid=QGridLayout(5,2)
+        #self.topLayout.addLayout( self.grid, 10 )
+
+        self.controlArea = QVBoxLayout(self)
 
         self.graph = graph
         self.minExamples = 0
@@ -446,6 +443,7 @@ class ClusterOptimization(OWBaseWidget):
         self.loadSettings()
 
         self.tabs = QTabWidget(self, 'tabWidget')
+        self.controlArea.addWidget(self.tabs)
         
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
@@ -560,10 +558,15 @@ class ClusterOptimization(OWBaseWidget):
         self.setMinimumWidth(350)
         self.tabs.setMinimumWidth(350)
 
+        self.statusBar = QStatusBar(self)
+        self.controlArea.addWidget(self.statusBar)
+        self.controlArea.activate()
+        
+
     # ##############################################################
     # EVENTS
     # ##############################################################
-    
+        
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
     # result list must be updated accordingly
@@ -600,30 +603,32 @@ class ClusterOptimization(OWBaseWidget):
         graph.returnIndices = 1
         computeDistances(graph)
         removeEdgesToDifferentClasses(graph, -3)    # None
-        removeSingleLines(graph, None, None, 0, -1)
-        edgesDict, verticesDict, count = enumerateClusters(graph, 0)
-
-        # find points that define the edge of a cluster with one class value
-        # these points used when we search for nearest poinst of a specific cluster
-        closureDict = computeClosure(graph, edgesDict, 1, 1, 1)
-        bigPolygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
-        otherClassDict = getPointsWithDifferentClassValue(graph, closureDict)
-
-        removeSingleTrianglesAndLines(graph, edgesDict, verticesDict, -1)
-        computeAlphaShapes(graph, edgesDict, -1, 0)                      # try to break too empty clusters into more clusters
-        edgesDict, verticesDict, count = enumerateClusters(graph, 1)     # create the new clustering
-        fixDeletedEdges(graph, verticesDict, edgesDict, 0, 1, -1)  # None       # restore edges that were deleted with computeAlphaShapes and did not result breaking the cluster
-        closureDict = computeClosure(graph, edgesDict, 1, 1, 2)
-        removeDistantPointsFromClusters(graph, edgesDict, verticesDict, closureDict, -1)
-        removeSingleLines(graph, None, None, 1, -1)   # None
-        edgesDict, verticesDict, count = enumerateClusters(graph, 1)     # reevaluate clusters - now some clusters might have disappeared
-        removeSingleTrianglesAndLines(graph, edgesDict, verticesDict, -1)
+        removeSingleLines(graph, None, None, None, 0, -1)
+        edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 0)
+        
+        closureDict = computeClosure(graph, edgesDict, 1, 1, 1, -3, -4)   # find points that define the edge of a cluster with one class value. these points used when we search for nearest points of a specific cluster
+        #bigPolygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
+        bigPolygonVerticesDict = copy(verticesDict)  # compute which points lie in which cluster
+        otherClassDict = getPointsWithDifferentClassValue(graph, closureDict)   # this dict is used when evaluating a cluster to find nearest points that belong to a different class
+        removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, -1)
+        bigPolygonVerticesDict = copy(verticesDict)
+        
+        computeAlphaShapes(graph, edgesDict, -1, 0)                                   # try to break too empty clusters into more clusters
+        edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # create the new clustering
+        fixDeletedEdges(graph, edgesDict, clusterDict, 0, 1, -1)  # None             # restore edges that were deleted with computeAlphaShapes and did not result breaking the cluster
+        closureDict = computeClosure(graph, edgesDict, 1, 1, 2, -3, -4)
+        removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, -2)
+        removeSingleLines(graph, edgesDict, clusterDict, verticesDict, 1, -1)   # None
+        edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # reevaluate clusters - now some clusters might have disappeared
+        removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, -1)
         # add edges that were removed by removing single points with different class value
-        closureDict = computeClosure(graph, edgesDict, 1, 1, 2)
-        polygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
+        closureDict = computeClosure(graph, edgesDict, 1, 1, 2, -3, -2)
+        polygonVerticesDict = verticesDict  # compute which points lie in which cluster
+        #polygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
 
-        areaDict = computeAreas(graph, closureDict, 2)
+        areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
 
+        
         valueDict = {}
         otherDict = {}
         for key in closureDict.keys():
@@ -632,27 +637,7 @@ class ClusterOptimization(OWBaseWidget):
             if points < 3: continue     # happens when there are two or more polygons that are connected in only one point
             #print "vertices ", polygonVerticesDict[key]
             #print "closure ", closureDict[key]
-
-            """
-            vertices = [i for (i,j) in closureDict[key]] + [j for (i,j) in closureDict[key]]
-            vertices.sort()
-            for i in range(len(vertices)-1)[::-1]:
-                if vertices[i] == vertices[i+1]: vertices.remove(vertices[i])
-
-            sameClass = []; diffClass = []
-            for vertex in vertices:
-                for n in graph.getNeighbours(vertex):
-                    if graph[n, vertex][OWClusterOptimization.VALUE] >= 0: continue
-                    if graph.objects[n].getclass() == graph.objects[vertex].getclass(): sameClass.append(graph[n,vertex][OWClusterOptimization.DISTANCE])
-                    else: diffClass.append(graph[n,vertex][OWClusterOptimization.DISTANCE])
-            sameClass.sort()
-            diffClass.sort()
-            sameClass = [i*i for i in sameClass[:5]]
-            diffClass = [i*i for i in diffClass[:5]]
-            dist = 3 * sum(diffClass)/max(1, len(diffClass)) + 1 * sum(sameClass)/max(1,len(sameClass))
-            dist /= max(1, len(sameClass) + len(diffClass))
-            """
-
+        
             index = -1
             for bigKey in bigPolygonVerticesDict.keys():
                 if polygonVerticesDict[key][0] in bigPolygonVerticesDict[bigKey]:
@@ -677,10 +662,14 @@ class ClusterOptimization(OWBaseWidget):
             points = sqrt(points)       # make a smaller effect of the number of points
             area = areaDict[key]
             area = sqrt(area)
-            value = points * dist / area
+            area = sqrt(area)
+            if area > 0: value = points * dist / area
+            else: value = 0
             valueDict[key] = value
             otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, area)
         
+
+        #return graph, {}, closureDict, polygonVerticesDict, {}
         return graph, valueDict, closureDict, polygonVerticesDict, otherDict
 
 
@@ -922,6 +911,7 @@ class ClusterOptimization(OWBaseWidget):
         self.argumentBox.setEnabled(0)
         self.classValueList.setEnabled(0)
         self.argumentationStartBox.setEnabled(0)
+        self.jitteringBox.setEnabled(0)
 
     def enableControls(self):    
         self.optimizationTypeCombo.setEnabled(1)
@@ -938,6 +928,7 @@ class ClusterOptimization(OWBaseWidget):
         self.argumentBox.setEnabled(1)
         self.classValueList.setEnabled(1)
         self.argumentationStartBox.setEnabled(1)
+        self.jitteringBox.setEnabled(1)
 
     # ##############################################################
     # exporting multiple pictures
@@ -996,8 +987,6 @@ class ClusterOptimization(OWBaseWidget):
         if self.resultList.count() == 0: return None
         return self.shownResults[self.resultList.currentItem()]
 
-    def resizeEvent(self, ev):
-        self.tabs.resize(ev.size().width(), ev.size().height())
 
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
@@ -1008,6 +997,8 @@ class ClusterOptimization(OWBaseWidget):
     def destroy(self, dw, dsw):
         self.saveSettings()
 
+    def setStatusBarText(self, text):
+        self.statusBar.message(text)
 
     # ######################################################
     # Argumentation functions
@@ -1094,6 +1085,67 @@ class ClusterOptimization(OWBaseWidget):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
         self.parentWidget.showAttributes(self.arguments[classInd][ind][2], clusterClosure = self.allResults[self.arguments[classInd][ind][3]][CLOSURE])
+        
+
+class clusterClassifier(orange.Classifier):
+    def __init__(self, clusterOptimizationDlg, visualizationWidget, data):
+        self.clusterOptimizationDlg = clusterOptimizationDlg
+        self.visualizationWidget = visualizationWidget
+        self.data = data
+
+        # set this data to the widget, run cluster detection
+        self.majorityClassifier = orange.MajorityLearner(data)
+        self.visualizationWidget.cdata(data)
+        self.evaluating = 1
+        #QTimer.singleShot(60*1000, self.stopEvaluation)
+        t = QTimer(self.visualizationWidget)
+        self.visualizationWidget.connect(t, SIGNAL("timeout()"), self.stopEvaluation)
+        t.start(60*1000, TRUE)
+        self.visualizationWidget.optimizeClusters()
+        t.stop()
+        self.evaluating = 0
+
+    # timer event that stops evaluation of clusters
+    def stopEvaluation(self):
+        if self.evaluating:
+            self.clusterOptimizationDlg.stopOptimizationClick()
+            
+
+    # for a given example run argumentation and find out to which class it most often fall        
+    def __call__(self, example, returnType):
+        table = orange.ExampleTable(example.domain)
+        table.append(example)
+        self.visualizationWidget.subsetdata(table)
+        self.clusterOptimizationDlg.createSnapshots = 0
+        snapshots = self.clusterOptimizationDlg.createSnapshots
+        self.clusterOptimizationDlg.createSnapshots = 0
+        self.clusterOptimizationDlg.findArguments()
+        self.clusterOptimizationDlg.createSnapshots = snapshots
+
+        vals = [0.0 for i in range(len(self.clusterOptimizationDlg.arguments))]
+        for i in range(len(self.clusterOptimizationDlg.arguments)):
+            for j in range(len(self.clusterOptimizationDlg.arguments[i])):
+                vals[i] += self.clusterOptimizationDlg.arguments[i][j][1]
+        
+        ind = vals.index(max(vals))
+        if vals.count(max(vals)) > 1:
+            return self.majorityClassifier(example, returnType)
+
+        if returnType == orange.GetBoth:
+            s = sum(vals)
+            return (example.domain.classVar[ind], orange.DiscDistribution([val/float(s) for val in vals]))
+        else:
+            return example.domain.classVar[ind]
+        
+        
+
+class clusterLearner(orange.Learner):
+    def __init__(self, clusterOptimizationDlg, visualizationWidget):
+        self.clusterOptimizationDlg = clusterOptimizationDlg
+        self.visualizationWidget = visualizationWidget
+        
+    def __call__(self, examples, weightID = 0):
+        return clusterClassifier(self.clusterOptimizationDlg, self.visualizationWidget, examples)
         
 
 
