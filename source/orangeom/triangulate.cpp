@@ -6,6 +6,7 @@ using namespace Wml;
 #include "graph.hpp"
 #include "examplegen.hpp"
 
+/* A */
 
 PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph")
 {
