@@ -18,7 +18,7 @@
     Authors: Janez Demsar, Blaz Zupan, 1996--2002
     Contact: janez.demsar@fri.uni-lj.si
 */
-
+ 
 
 #ifdef _MSC_VER
   #define NOMINMAX
