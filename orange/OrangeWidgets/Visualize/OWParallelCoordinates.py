@@ -527,7 +527,8 @@ class ParallelOptimization(OWBaseWidget):
               
         # remove non-existing files
         names = []
-        for (short, longName) in self.fileBuffer:
+        for i in range(len(self.fileBuffer)-1, -1, -1):
+            (short, longName) = self.fileBuffer[i]
             if not os.path.exists(longName):
                 self.fileBuffer.remove((short, longName))
             else: names.append(short)
