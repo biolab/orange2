@@ -31,7 +31,7 @@ ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
 
 INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
-		-I$(EXTERNALDIR) -I$(PYTHONINCLUDE)
+		-I$(PYTHONINCLUDE) -I$(LOGREGD)
 
 LIBPATH = -L$(LOGREGD)
 
@@ -76,13 +76,13 @@ dirs:
 	-@mkdir -p $(ODIR) $(BINDIR) > /dev/null
 
 $(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ORANGE_OBJECTS) $(LOGREG_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(LOGREG_OBJECTS) $(ODIR)/logreg.a -o $(BINDIR)/orange.so -shared $(LNKSTL)
+	gcc $(ORANGE_OBJECTS) $(LOGREG_OBJECTS) -fPIC -o $(BINDIR)/orange.so -shared $(LNKSTL)
 
 $(BINDIR)/corn.so:	$(CORN_OBJECTS)
-	gcc $(CORN_OBJECTS) -o $(BINDIR)/corn.so -shared $(LNKSTL)
+	gcc $(CORN_OBJECTS) -o $(BINDIR)/corn.so -fPIC -shared $(LNKSTL)
 
 $(BINDIR)/statc.so:	$(STATC_OBJECTS)
-	gcc $(STATC_OBJECTS) -o $(BINDIR)/statc.so -shared $(LNKSTL)
+	gcc $(STATC_OBJECTS) -o $(BINDIR)/statc.so -fPIC -shared $(LNKSTL)
 
 
 install:	all
