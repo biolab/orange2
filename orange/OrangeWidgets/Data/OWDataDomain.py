@@ -23,10 +23,11 @@ class OWDataDomain(OWWidget):
         OWWidget.__init__(self, parent, "DataDomain", "Does nothing") #initialize base class
 
         buttonSize = QSize(40, 30)
+        upDownButtonSize = QSize(37,30)
         
         # set member variables
         self.data = None
-        self.internalSelectionUpdateFlag = False
+        self.internalSelectionUpdateFlag = 0
         self.attributesButtonLeft = False
         self.classButtonLeft = False
         self.metaButtonLeft = False        
@@ -35,22 +36,23 @@ class OWDataDomain(OWWidget):
         self.inputs = [("InputData", ExampleTable, self.onDataInput, 1)]
         self.outputs = [("OutputData", ExampleTable),("OutputDataWithClass", ExampleTableWithClass)]
 
-        
+        self.space.setMinimumSize(QSize(650,500))
         self.hbox = QHBox(self.space)
         self.hbox.setSpacing(10)
 
         self.vbox1 = QVBox(self.hbox)
         self.vbox1.setSpacing(10)
         
-        self.vbox2 = QVBox(self.hbox)
-        self.vbox2.setSpacing(10)
-        self.vbox2.setMinimumSize(QSize(330,300))
+        self.vframe2 = QFrame(self.hbox)
+        self.vframe2Layout = QGridLayout(self.vframe2, 9, 1, 0, 0)
         self.vframe3 = QFrame(self.hbox)
-        self.vframe3ayout = QBoxLayout(self.vframe3,QBoxLayout.TopToBottom,10,5)
+        self.vframe3Layout = QBoxLayout(self.vframe3,QBoxLayout.TopToBottom,10,5)
 
         #set up leftmost column
         self.inputAttributesNameBox = QVGroupBox(self.vbox1)
-        self.inputAttributesNameBox.setTitle('Input Attributes')
+        self.inputAttributesNameBox.setTitle('Available Attributes')
+        self.inputAttributesNameBox.setMinimumSize(QSize(200,100))
+        self.inputAttributesNameBox.setMaximumSize(QSize(100,1000))        
         self.inputAttributesList = QListBox(self.inputAttributesNameBox,'InputAttributes')
         self.inputAttributesList.setSelectionMode(QListBox.Extended)
         self.connect(self.inputAttributesList, SIGNAL('selectionChanged()'), self.onInputAttributesSelectionChange)
@@ -58,7 +60,8 @@ class OWDataDomain(OWWidget):
 
 
         #set up middle column
-        self.horizontalAttributesFrame = QFrame(self.vbox2)
+        self.horizontalAttributesFrame = QFrame(self.vframe2)
+        self.vframe2Layout.addMultiCellWidget(self.horizontalAttributesFrame,0,3, 0,0,0)
         self.horizontalAttributesFrameLayout = QHBoxLayout(self.horizontalAttributesFrame, 5, 5)
         
         self.attributesButton = OWGUI.button(self.horizontalAttributesFrame, self, ">",self.onAttributesButtonClicked)        
@@ -66,7 +69,7 @@ class OWDataDomain(OWWidget):
         self.horizontalAttributesFrameLayout.addWidget(self.attributesButton, 0, Qt.AlignLeft)
         self.attributesNameBox = QVGroupBox(self.horizontalAttributesFrame)
         self.attributesNameBox.setTitle('Attributes')
-        self.attributesNameBox.setMinimumSize(QSize(200,100))        
+        self.attributesNameBox.setMinimumSize(QSize(200,200))        
         self.horizontalAttributesFrameLayout.addWidget(self.attributesNameBox, 0, Qt.AlignLeft)        
         self.attributesList = QListBox(self.attributesNameBox,'Attributes')
         self.attributesList.setSelectionMode(QListBox.Extended)
@@ -77,20 +80,25 @@ class OWDataDomain(OWWidget):
         self.horizontalAttributesFrameLayout.addWidget(self.verticalAttributeFrame, 0, Qt.AlignLeft)        
         self.verticalAttributeFrameLayout = QVBoxLayout(self.verticalAttributeFrame,5,5)
         self.attributesButtonUp = OWGUI.button(self.verticalAttributeFrame, self, "Up", self.onAttributesButtonUpClick)
+        self.attributesButtonUp.setMaximumSize(upDownButtonSize)        
         self.verticalAttributeFrameLayout.addWidget(self.attributesButtonUp, 0, Qt.AlignTop)
-        self.attributesButtonDown = OWGUI.button(self.verticalAttributeFrame, self, "Down", self.onAttributesButtonDownClick)        
+        self.attributesButtonDown = OWGUI.button(self.verticalAttributeFrame, self, "Down", self.onAttributesButtonDownClick)
+        self.attributesButtonDown.setMaximumSize(upDownButtonSize)
         self.verticalAttributeFrameLayout.addWidget(self.attributesButtonDown, 0, Qt.AlignTop)
         self.verticalAttributeFrameLayout.addStretch(100)
+
+        self.horizontalAttributesFrameLayout.addStretch(100)             
         
-        self.horizontalClassFrame = QFrame(self.vbox2)
+        self.horizontalClassFrame = QFrame(self.vframe2)
+        self.vframe2Layout.addMultiCellWidget(self.horizontalClassFrame,4,5,0,0,0)
         self.horizontalClassFrameLayout = QHBoxLayout(self.horizontalClassFrame, 5, 5)  
         self.classButton = OWGUI.button(self.horizontalClassFrame, self, ">", self.onClassButtonClicked)
         self.classButton.setMaximumSize(buttonSize)
         self.horizontalClassFrameLayout.addWidget(self.classButton, 0, Qt.AlignLeft)                
         self.classNameBox = QVGroupBox(self.horizontalClassFrame)
         self.classNameBox.setTitle('Class')
-        self.classNameBox.setMinimumSize(QSize(200,100))        
-        self.classNameBox.setMaximumSize(QSize(200,300))
+        self.classNameBox.setMinimumSize(QSize(200,50))        
+        self.classNameBox.setMaximumSize(QSize(200,50))
         self.horizontalClassFrameLayout.addWidget(self.classNameBox, 0, Qt.AlignLeft)           
         self.classList = QListBox(self.classNameBox,'ClassAttribute')  
         self.classList.setSelectionMode(QListBox.Extended)
@@ -99,7 +107,8 @@ class OWDataDomain(OWWidget):
 
         self.horizontalClassFrameLayout.addStretch(200)
 
-        self.horizontalMetaFrame = QFrame(self.vbox2)
+        self.horizontalMetaFrame = QFrame(self.vframe2)
+        self.vframe2Layout.addMultiCellWidget(self.horizontalMetaFrame,6,9,0,0,0)          
         self.horizontalMetaFrameLayout = QHBoxLayout(self.horizontalMetaFrame, 5, 5)
         
         self.metaButton = OWGUI.button(self.horizontalMetaFrame, self, ">",self.onMetaButtonClicked)
@@ -107,7 +116,7 @@ class OWDataDomain(OWWidget):
         self.horizontalMetaFrameLayout.addWidget(self.metaButton, 0, Qt.AlignLeft)        
         self.metaNameBox = QVGroupBox(self.horizontalMetaFrame)
         self.metaNameBox.setTitle('Meta Attributes')
-        self.metaNameBox.setMinimumSize(QSize(200,100))
+        self.metaNameBox.setMinimumSize(QSize(200,200))
         self.horizontalMetaFrameLayout.addWidget(self.metaNameBox, 0, Qt.AlignLeft)          
         self.metaList = QListBox(self.metaNameBox,'MetaAttributes')
         self.metaList.setSelectionMode(QListBox.Extended)
@@ -118,19 +127,22 @@ class OWDataDomain(OWWidget):
         self.horizontalMetaFrameLayout.addWidget(self.verticalMetaFrame, 0, Qt.AlignLeft)        
         self.verticalMetaFrameLayout = QVBoxLayout(self.verticalMetaFrame,5,5)
         self.metaButtonUp = OWGUI.button(self.verticalMetaFrame, self, "Up", self.onMetaButtonUpClick)
+        self.metaButtonUp.setMaximumSize(upDownButtonSize)        
         self.verticalMetaFrameLayout.addWidget(self.metaButtonUp, 0, Qt.AlignTop)
-        self.metaButtonDown = OWGUI.button(self.verticalMetaFrame, self, "Down", self.onMetaButtonDownClick)        
+        self.metaButtonDown = OWGUI.button(self.verticalMetaFrame, self, "Down", self.onMetaButtonDownClick)
+        self.metaButtonDown.setMaximumSize(upDownButtonSize)      
         self.verticalMetaFrameLayout.addWidget(self.metaButtonDown, 0, Qt.AlignTop)
         self.verticalMetaFrameLayout.addStretch(50)
+        self.horizontalMetaFrameLayout.addStretch(200)        
         
         #set up rightmost column
         self.applyButton = OWGUI.button(self.vframe3, self, "Apply", callback = self.setOutput)
         self.applyButton.setEnabled(False)        
-        self.vframe3ayout.addWidget(self.applyButton,0,Qt.AlignTop)
+        self.vframe3Layout.addWidget(self.applyButton,0,Qt.AlignTop)
         self.resetButton = OWGUI.button(self.vframe3, self, "Reset", callback = self.reset)
-        self.vframe3ayout.addWidget(self.resetButton,0,Qt.AlignTop)
+        self.vframe3Layout.addWidget(self.resetButton,0,Qt.AlignTop)
 
-        self.vframe3ayout.addStretch(200)
+        self.vframe3Layout.addStretch(200)
         
     ############################################################################################################################################################
     ## Data input and output management ########################################################################################################################
@@ -147,19 +159,17 @@ class OWDataDomain(OWWidget):
         if data:
             #set up normal attributes
             for attr in data.domain.attributes:
-                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
                 self.attributesList.insertItem(self.createListItem(attr.varType, attr.name))
 
             #set up class variable
             if data and data.domain.classVar:
-                self.inputAttributesList.insertItem(self.createListItem(data.domain.classVar.varType, data.domain.classVar.name))
                 self.classList.insertItem(self.createListItem(data.domain.classVar.varType, data.domain.classVar.name))
 
             #set up meta attriutes
             for attr in data.domain.getmetas().values():
-                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
                 self.metaList.insertItem(self.createListItem(attr.varType, attr.name))
 
+            self.setInputAttributesListElements()
             self.setOutput()
 
         self.updateInterfaceState()
@@ -225,25 +235,6 @@ class OWDataDomain(OWWidget):
             
     def updateInterfaceState(self):
 
-        #disable input attribute list items
-        for i in range(0, self.inputAttributesList.count()):
-            self.inputAttributesList.item(i).setSelectable(True)
-
-        for i in range(0, self.attributesList.count()):
-            item = self.inputAttributesList.findItem(str(self.attributesList.text(i)))
-            if item:
-                item.setSelectable(False)
-
-        for i in range(0, self.classList.count()):
-            item = self.inputAttributesList.findItem(str(self.classList.text(i)))
-            if item:
-                item.setSelectable(False)
-
-        for i in range(0, self.metaList.count()):
-            item = self.inputAttributesList.findItem(str(self.metaList.text(i)))
-            if item:
-                item.setSelectable(False)
-
         #set buttons for adding or removing attributes in lists
         self.attributesButton.setEnabled(False)
         self.metaButton.setEnabled(False)
@@ -303,7 +294,7 @@ class OWDataDomain(OWWidget):
     ############################################################################################################################################################
             
     def onAttributesButtonClicked(self):
-        self.internalSelectionUpdateFlag = True
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
         if self.attributesButtonLeft:
             self.removeSelectedItems(self.attributesList)
         else:
@@ -318,13 +309,14 @@ class OWDataDomain(OWWidget):
         self.classList.clearSelection()
         self.metaList.clearSelection()
         
-        self.internalSelectionUpdateFlag = False
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
+        self.setInputAttributesListElements()
         self.updateInterfaceState()
 
         self.applyButton.setEnabled(True)        
 
     def onClassButtonClicked(self):
-        self.internalSelectionUpdateFlag = True
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
         self.classList.clear()
         if not self.classButtonLeft:
             for i in range(0, self.inputAttributesList.count()):
@@ -338,13 +330,14 @@ class OWDataDomain(OWWidget):
         self.classList.clearSelection()
         self.metaList.clearSelection()
         
-        self.internalSelectionUpdateFlag = False
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
+        self.setInputAttributesListElements()
         self.updateInterfaceState()
 
         self.applyButton.setEnabled(True)        
 
     def onMetaButtonClicked(self):
-        self.internalSelectionUpdateFlag = True
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
         if self.metaButtonLeft:
             self.removeSelectedItems(self.metaList)
         else:
@@ -359,7 +352,8 @@ class OWDataDomain(OWWidget):
         self.classList.clearSelection()
         self.metaList.clearSelection()
         
-        self.internalSelectionUpdateFlag = False
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
+        self.setInputAttributesListElements()        
         self.updateInterfaceState()
 
         self.applyButton.setEnabled(True)        
@@ -474,9 +468,42 @@ class OWDataDomain(OWWidget):
         for i in selection:
             listBox.setSelected(i+1, True)
 
+    def setInputAttributesListElements(self):
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
+        self.inputAttributesList.clear()
+        if self.data:
+            #set up normal attributes
+            for attr in self.data.domain.attributes:
+                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
+
+            #set up class variable
+            if self.data.domain.classVar:
+                self.inputAttributesList.insertItem(self.createListItem(self.data.domain.classVar.varType, self.data.domain.classVar.name))
+
+            #set up meta attriutes
+            for attr in self.data.domain.getmetas().values():
+                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
+
+        for i in range(self.inputAttributesList.count(), -1, -1):
+            item = self.attributesList.findItem(str(self.inputAttributesList.text(i)))
+            if item:
+                self.inputAttributesList.removeItem(i)
+
+        for i in range(self.inputAttributesList.count(), -1, -1):
+            item = self.classList.findItem(str(self.inputAttributesList.text(i)))
+            if item:
+                self.inputAttributesList.removeItem(i)
+
+        for i in range(self.inputAttributesList.count(), -1, -1):
+            item = self.metaList.findItem(str(self.inputAttributesList.text(i)))
+            if item:
+                self.inputAttributesList.removeItem(i)
+
+        self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
+        
     def handleListSelectionChange(self, listBox):
-        if (not self.internalSelectionUpdateFlag):
-            self.internalSelectionUpdateFlag = True        
+        if (self.internalSelectionUpdateFlag==0):
+            self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
             if (self.inputAttributesList<>listBox):
                 self.inputAttributesList.clearSelection()
             if (self.attributesList<>listBox):
@@ -488,8 +515,8 @@ class OWDataDomain(OWWidget):
                 self.metaList.clearSelection()
 
             self.updateInterfaceState()
-            self.internalSelectionUpdateFlag = False    
-
+            self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
+            
 if __name__=="__main__":
     data = orange.ExampleTable('iris.tab')
     
