@@ -36,13 +36,14 @@ def finddeps(filename):
       mydeps.append(depname[:-4]+".hpp")
 #      if not "$(PPPDIR)/timestamp.h" in mydeps:
 #        mydeps.append("$(PPPDIR)/timestamp.h")
-    elif (depname[-3:]==".px"):
-      if not filename in px_timestamp_dep:
-      	px_timestamp_dep.append(filename)
-#      if not "$(PXDIR)/timestamp.h" in mydeps:
-#        mydeps.append("$(PXDIR)/timestamp.h")
     else:
-      if not depname in files and depname!="Python.h" and depname[-2:]!=".i" and depname[-2:]!=".h":
+      if (depname[-3:]==".px"):
+        if not filename in px_timestamp_dep:
+          px_timestamp_dep.append(filename)
+  #      if not "$(PXDIR)/timestamp.h" in mydeps:
+  #        mydeps.append("$(PXDIR)/timestamp.h")
+
+      if not depname in files and depname!="Python.h" and depname[-3:]!=".px" and depname[-2:]!=".i" and depname[-2:]!=".h":
         print "%s:%i: Warning: included file %s not found" % (filename, lineno, depname)
         continue
       else:
