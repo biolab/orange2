@@ -24,8 +24,8 @@ class WidgetsToXML:
 			if os.path.isdir(full_filename):
 				self.ParseDirectory(doc, categories, full_filename, filename)
 
-		# we put widgets that are in the root dir of widget directory to category "Unsorted"
-		self.ParseDirectory(doc, categories, widgetDirName, "Unsorted")
+		# we put widgets that are in the root dir of widget directory to category "Other"
+		self.ParseDirectory(doc, categories, widgetDirName, "Other")
 		
 		xmlText = doc.toprettyxml()
 		file = open(os.path.join(canvasDir, "widgetregistry.xml"), "wt")
