@@ -119,34 +119,91 @@ bool TAssistantExampleGenerator::readExample(TFileExampleIteratorData &fei, TExa
 // This is defined in retis.cpp
 string getLine(istream &str);
 
-TAssistantDomain::TAssistantDomain(const string &stem, PVarList knownVars) : TDomain()
-{ ifstream str(stem.c_str(), ios::binary);
-  if (!str.is_open())
-    raiseError("cannot open file '%s'", stem.c_str());
+TAssistantDomain::TAssistantDomain()
+{}
 
-  classVar = makeVariable(getLine(str), knownVars, TValue::INTVAR);
-  variables->push_back(classVar);
-  TEnumVariable *evar = classVar.AS(TEnumVariable);
+
+TAssistantDomain::TAssistantDomain(const TAssistantDomain &old)
+: TDomain(old),
+  intervals(old.intervals.size(), NULL)
+{ const_ITERATE(vector<vector<float> *>, ii, old.intervals)
+    intervals.push_back(*ii ? mlnew vector<float>(**ii) : NULL);
+}
+
+
+TAssistantDomain::~TAssistantDomain()
+{ ITERATE(vector<vector<float> *>, ii, intervals)
+    if (*ii)
+      mldelete *ii;
+  knownDomains.remove(this);
+}
+
+
+list<TAssistantDomain *> TAssistantDomain::knownDomains;
+TKnownVariables TAssistantDomain::knownVariables;
+
+
+void TAssistantDomain::removeKnownVariable(TVariable *var)
+{ knownVariables.remove(var);
+  var->destroyNotifier = NULL;
+}
+
+
+bool TAssistantDomain::isSameDomain(TAssistantDomain const *orig) const
+{ if (   !orig
+      || !sameDomains(this, orig)
+      || (intervals.size()!=orig->intervals.size()))
+    return false;
+
+  for(vector<vector<float> *>::const_iterator vvi1(intervals.begin()), vve1(intervals.end()), vvi2(orig->intervals.begin()); vvi1!=vve1; vvi1++, vvi2++) {
+    if ((*vvi1==NULL) != (*vvi2==NULL))
+      return false;
+    if (!*vvi1)
+      continue;
+    if ((*vvi1)->size() != (*vvi2)->size())
+      return false;
+    for(vector<float>::const_iterator vi1((*vvi1)->begin()), ve1((*vvi1)->end()), vi2((*vvi2)->begin()); vi1!=ve1; vi1++, vi2++)
+      if (*vi1 != *vi2)
+        return false;
+  }
+
+  return true;
+}
+
+
+PDomain TAssistantDomain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ TAssistantDomain *newDomain = mlnew TAssistantDomain();
+  PDomain wdomain = newDomain;
+  
+  ifstream str(stem.c_str(), ios::binary);
+  if (!str.is_open())
+    ::raiseError("AssistantDomain: cannot open file '%s'", stem.c_str());
+
+  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
+  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
+
+  newDomain->classVar = makeVariable(getLine(str), TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
+  newDomain->variables->push_back(newDomain->classVar);
+  TEnumVariable *evar = newDomain->classVar.AS(TEnumVariable);
   for(int noval = atoi(getLine(str).c_str()); noval; noval--)
     evar->addValue(getLine(str).c_str());
 
   int noAttr = atoi(getLine(str).c_str());
-  intervals = vector<vector<float> *>(noAttr);
-  fill(intervals.begin(), intervals.end(), (vector<float> *)NULL);
-  vector<vector<float> *>::iterator ri = intervals.begin();
+  newDomain->intervals = vector<vector<float> *>(noAttr, (vector<float> *)NULL);
+  vector<vector<float> *>::iterator ri = newDomain->intervals.begin();
 
   while(noAttr--) {
     string name = getLine(str);
 	  int values = atoi(getLine(str).c_str());
 	  if (values>0) {
-      PVariable newvar = makeVariable(name, knownVars, TValue::INTVAR);
+      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
       evar = newvar.AS(TEnumVariable);
       while(values--)
         evar->addValue(getLine(str).c_str());
-      addVariable(newvar);
+      newDomain->addVariable(newvar);
     }
 	  else if (values<0) {
-      PVariable newvar = makeVariable(name, knownVars, TValue::INTVAR);
+      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
       evar = newvar.AS(TEnumVariable);
       *ri = mlnew vector<float>();
       char buf[128];
@@ -157,13 +214,22 @@ TAssistantDomain::TAssistantDomain(const string &stem, PVarList knownVars) : TDo
 	    }
       sprintf(buf, "v%i", (*ri)->size()+1);
       evar->addValue(buf);
-      addVariable(newvar);
+      newDomain->addVariable(newvar);
     }
     else
-      addVariable(makeVariable(name, knownVars, TValue::FLOATVAR));
+      newDomain->addVariable(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
 
     ri++;
   }
+
+  if (newDomain->isSameDomain(sourceDomain.AS(TAssistantDomain)))
+    return sourceDomain;
+
+  ITERATE(list<TAssistantDomain *>, di, knownDomains)
+    if (newDomain->isSameDomain(*di))
+      return *di;
+
+   return wdomain;
 }
 
 

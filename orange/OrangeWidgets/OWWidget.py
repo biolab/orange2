@@ -47,7 +47,7 @@ class OWWidget(QWidget):
         self.outputs=[]
         #the map with settings
         if not hasattr(self, 'settingsList'):
-            type(self).settingsList = []
+            self.__class__.settingsList = []
         #is widget enabled?
         self.enabled=TRUE
         #the title

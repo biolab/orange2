@@ -42,6 +42,22 @@ TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar)
 {}
 
 
+TMetaDescriptor *TMetaVector::operator[](PVariable var)
+{ this_ITERATE(mi)
+    if ((*mi).variable==var)
+      return &*mi;
+  return (TMetaDescriptor *)NULL; 
+}
+
+
+TMetaDescriptor const *TMetaVector::operator[](PVariable var) const
+{ const_this_ITERATE(mi)
+    if ((*mi).variable==var)
+      return &*mi;
+  return (TMetaDescriptor const *)NULL; 
+}
+
+
 TMetaDescriptor *TMetaVector::operator[](const string &sna) 
 { this_ITERATE(mi)
     if ((*mi).variable->name==sna)

@@ -183,22 +183,111 @@ void TFileExampleGenerator::copyIterator(const TExampleIterator &source, TExampl
 }
 
 
-PVariable makeVariable(const string &name, PVarList knownVars, unsigned char varType)
-{ if (knownVars)
-    const_PITERATE(TVarList, vi, knownVars)
-      if (   ((*vi)->name==name)
-          && (    (varType==-1)
-               || (varType==stringVarType) && (*vi).is_derived_from(TStringVariable)
-               || ((*vi)->varType==varType)))
-        return *vi;
+void TKnownVariables::add(PVariable wvar, TVariable::TDestroyNotifier *notifier)
+{ TVariable *var = const_cast<TVariable *>(wvar.getUnwrappedPtr());
+  if (var->destroyNotifier) {
+    if (!exists(begin(), end(), var))
+      ::raiseError("addKnownVariable: system error - destroyNotifier busy");
+  }
+  else {
+    var->destroyNotifier = notifier;
+    push_back(var);
+  }
+}
 
-  if (varType==-1)
-    raiseErrorWho("makeVariable", "unknown type for attribute '%s'", name.c_str());
 
+PVariable createVariable(const string &name, const int &varType)
+{
   switch (varType) {
     case TValue::INTVAR:  return mlnew TEnumVariable(name);
     case TValue::FLOATVAR: return mlnew TFloatVariable(name);
     case stringVarType: return mlnew TStringVariable(name);
   }
+
+  if (varType==-1)
+    raiseErrorWho("makeVariable", "unknown type for attribute '%s'", name.c_str());
+
   return (TVariable *)NULL;
+}
+
+
+PVariable makeVariable(const string &name, const int &varType, PVarList sourceVars, PDomain sourceDomain, TKnownVariables *storedVars, TVariable::TDestroyNotifier *notifier)
+{ 
+  int id;
+  if (sourceDomain) {
+    PVariable var = ::makeVariable(name, varType, id, sourceDomain->variables, &sourceDomain->metas, true);
+    if (var)
+      return var;
+  }
+
+  if (sourceVars) {
+    PVariable var = ::makeVariable(name, varType, id, sourceVars, NULL, true);
+    if (var)
+      return var;
+  }
+
+  if (storedVars)
+    PITERATE(list<TVariable *>, vi, storedVars)
+      if (((*vi)->name==name) && ((varType==-1) || ((*vi)->varType==varType)))
+        // The variable is rewrapped here (we have a pure pointer, but it has already been wrapped)
+        return *vi;
+
+  PVariable var = createVariable(name, varType);
+  if (storedVars && notifier)
+    storedVars->add(var.AS(TVariable), notifier);
+
+  return var;
+}
+
+
+PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew)
+{ if (knownVars)
+    const_PITERATE(TVarList, vi, knownVars)
+      if (   ((*vi)->name==name)
+          && (    (varType==-1)
+               || (varType==stringVarType) && (*vi).is_derived_from(TStringVariable)
+               || ((*vi)->varType==varType))) {
+        id = 0;
+        return *vi;
+      }
+
+  if (metas)
+    const_PITERATE(TMetaVector, mi, metas)
+      if (   ((*mi).variable->name == name)
+          && (    (varType == -1)
+               || (varType==stringVarType) && (*mi).variable.is_derived_from(TStringVariable)
+               || ((*mi).variable->varType==varType))) {
+        id = (*mi).id;
+        return (*mi).variable;
+      }
+
+  id = 0;
+
+  return dontCreateNew ? PVariable() : createVariable(name, varType);
+}
+
+
+bool sameDomains(const TDomain *dom1, const TDomain *dom2)
+{
+  if ((dom1->classVar != dom2->classVar) || (dom1->variables->size() != dom2->variables->size()))
+    return false;
+
+  for(TVarList::const_iterator tvi(dom1->variables->begin()), tve(dom1->variables->end()), ovi(dom2->variables->begin()); tvi!=tve; tvi++, ovi++)
+    if (*tvi != *ovi)
+      return false;
+
+  vector<bool> used(dom2->metas.size(), true);
+  const_ITERATE(TMetaVector, mvi1, dom1->metas) {
+    TMetaVector::const_iterator mvi2(dom2->metas.begin()), mve2(dom2->metas.end());
+    int i;
+    for (i = 0; (mvi2!=mve2) && (mvi1->id!=mvi2->id) && (mvi1->variable!=mvi2->variable) && !used[i]; i++, mvi2++);
+    if (mvi2==mve2)
+      return false;
+    used[i] = true;
+  }
+  ITERATE(vector<bool>, bi, used)
+    if (!*bi)
+      return false;
+
+  return true;
 }

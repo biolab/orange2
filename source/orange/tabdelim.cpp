@@ -22,7 +22,7 @@
 
 #include <string>
 #include <vector>
-#include <set>
+#include <list>
 
 #include <math.h>
 #include "stladdon.hpp"
@@ -36,44 +36,51 @@
 
 #include "tabdelim.ppp"
 
+bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true);
 
-bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms);
-
-// Constructor; sets the name of file and the domain.
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, PDomain dom)
 : TFileExampleGenerator(afname, dom)
 { 
-  TTabDelimDomain *mydomain;
-  domain.dynamic_cast_to(mydomain);
-
+  TTabDelimDomain *mydomain = domain.AS(TTabDelimDomain);
   if (!mydomain)
     raiseError("'domain' should be derived from TabDelimDomain");
 
-  startDataPos = mydomain->startDataPos;
-  startDataLine = mydomain->startDataLine;
+  TFileExampleIteratorData fei(afname);
+  
+  TIdList atoms;
+  for (int i = mydomain->headerLines; !feof(fei.file) && i--; )
+    while(!feof(fei.file) && !readTabAtom(fei, atoms)) {
+      TIdList::iterator ii(atoms.begin()), ie(atoms.end());
+      while ((ii!=ie) && !(*ii).length())
+        ii++;
+      if (ii==ie)
+        atoms.clear();
+      else
+        break;
+    }
+
+  startDataPos = ftell(fei.file);
+  startDataLine = fei.line;
 }
 
 
-bool emptyAtoms(TIdList &atoms)
-{ for(TIdList::iterator ii(atoms.begin()); (ii!=atoms.end()); ii++)
-    if ((*ii).length())
-      return false;
-  atoms.erase(atoms.begin(), atoms.end());
-  return true;
-}
-
-
-// Reads an example from the file
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
-  TTabDelimDomain *mydomain;
-  domain.dynamic_cast_to(mydomain);
-
+  TTabDelimDomain *mydomain = domain.AS(TTabDelimDomain);
   if (!mydomain)
     raiseError("'domain' should be derived from TabDelimDomain");
 
   TIdList atoms;
-  while(!feof(fei.file) && (!readTabAtom(fei, atoms) || emptyAtoms(atoms)));
+  while(!feof(fei.file) && !readTabAtom(fei, atoms)) {
+    TIdList::iterator ii(atoms.begin()), ie(atoms.end());
+    while ((ii!=ie) && !(*ii).length())
+      ii++;
+    if (ii==ie)
+      atoms.clear();
+    else
+      break;
+  }
+  
   if (!atoms.size())
     return false;
 
@@ -82,46 +89,94 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 }
 
 
+list<TTabDelimDomain *> TTabDelimDomain::knownDomains;
+TKnownVariables TTabDelimDomain::knownVariables;
+
+
+void TTabDelimDomain::removeKnownVariable(TVariable *var)
+{ knownVariables.remove(var);
+  var->destroyNotifier = NULL;
+}
+
+
+
+PVariable TTabDelimDomain::createVariable(const string &name, const int &varType, bool dontStore)
+{ PVariable var = ::createVariable(name, varType);
+  if (!dontStore)
+    knownVariables.add(var.AS(TVariable), removeKnownVariable);
+
+  return var;
+}
+
+
 TTabDelimDomain::TTabDelimDomain(const TTabDelimDomain &old)
 : TDomain(old),
-  kind(mlnew TIntList(old.kind.getReference())),
+  attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
   DCs(old.DCs),
   classPos(old.classPos)
 {}
 
 
-TTabDelimDomain::TTabDelimDomain(const string &stem, PVarList knownVars, bool autoDetect)
-{ TFileExampleIteratorData fei(stem);
-  if (autoDetect)
-    detectTypes(fei, knownVars);
-  else
-    readHeader(fei, knownVars);
+TTabDelimDomain::TTabDelimDomain()
+: TDomain(),
+  attributeTypes(mlnew TIntList()),
+  DCs(mlnew TStringList()),
+  classPos(-1),
+  headerLines(0)
+{}
+
+
+TTabDelimDomain::~TTabDelimDomain()
+{ knownDomains.remove(this);
 }
 
 
-void TTabDelimDomain::readHeader(TFileExampleIteratorData &fei, PVarList knownVars)
-{
-  TIdList varNames;
-  while(!feof(fei.file) && !readTabAtom(fei, varNames));
-  if (!varNames.size())
-    raiseError("empty file");
+bool TTabDelimDomain::isSameDomain(TTabDelimDomain const *orig) const
+{ if (   !orig
+      || (classPos != orig->classPos)
+      || !sameDomains(this, orig))
+    return false;
 
-  TIdList varTypes;
-  while(!feof(fei.file) && !readTabAtom(fei, varTypes));
-  if (!varTypes.size())
-    raiseError("cannot read types of attributes");
+  for (TIntList::const_iterator ki1(attributeTypes->begin()), ke1(attributeTypes->end()), ki2(orig->attributeTypes->begin()); ki1!=ke1; ki1++, ki2++)
+    if (*ki1 != *ki2)
+      return false;
 
-  TIdList varFlags;
-  while(!feof(fei.file) && !readTabAtom(fei, varFlags));
-  if (!varFlags.size())
-    raiseError("cannot read flags for attributes");
+  for (TStringList::const_iterator si1(DCs->begin()), se1(DCs->end()), si2(orig->DCs->begin()); si1!=se1; si1++, si2++)
+    if (*si1 != *si2)
+      return false;
 
-  startDataPos = ftell(fei.file);
-  startDataLine = fei.line;
-
-  constructDomain(varNames, varTypes, varFlags, knownVars);
+  return true;
 }
 
+
+PDomain TTabDelimDomain::readDomain(const bool autoDetect, const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ PDomain newDomain = (autoDetect ? domainWithDetection : domainWithoutDetection) (stem, sourceVars, sourceDomain, dontCheckStored, dontStore);
+
+  TTabDelimDomain *unewDomain = newDomain.AS(TTabDelimDomain);
+  if (!unewDomain)
+    return newDomain;
+                                 
+  if (sourceDomain) {
+    TTabDelimDomain *usourceDomain = sourceDomain.AS(TTabDelimDomain);
+    if (unewDomain->isSameDomain(usourceDomain))
+      return sourceDomain;
+  }
+
+  if (dontCheckStored)
+    return newDomain;
+
+  ITERATE(list<TTabDelimDomain *>, sdi, knownDomains)
+    if (unewDomain->isSameDomain(*sdi))
+      // The domain is rewrapped here (we have a pure pointer, but it has already been wrapped)
+      return *sdi;
+
+  if (!dontStore && !exists(knownDomains, unewDomain))
+    knownDomains.push_back(unewDomain);
+
+  return newDomain;
+}
+
+ 
 
 /* These are the rules for determining the attribute types.
 
@@ -150,199 +205,268 @@ void TTabDelimDomain::readHeader(TFileExampleIteratorData &fei, PVarList knownVa
       are just codes for otherwise discrete values).
 */
 
-void TTabDelimDomain::detectTypes(TFileExampleIteratorData &fei, PVarList knownVars)
-{ vector<string> varNames;
-  vector<string> varTypes;
-  vector<string> varFlags;
-  vector<char> couldBeNumber; // 0 cannot be, 1 can be, 2 can even be coded discrete
-  int nCouldBeNumber = 0;
+class TSearchWarranty 
+{ public:
+  int posInFile, posInDomain, suspectedType;
+  TSearchWarranty(const int &pif, const int &pid)
+  : posInFile(pif), posInDomain(pid), suspectedType(3)
+  {}
+};
 
+PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ 
+  TFileExampleIteratorData fei(stem);
+  
+  TIdList varNames;
+  while(!feof(fei.file) && !readTabAtom(fei, varNames));
+  if (varNames.empty())
+    ::raiseError("unexpected end of file '%s'", fei.filename.c_str());
+
+  TTabDelimDomain *domain = mlnew TTabDelimDomain();
+  PDomain wdomain = domain;
+  int &classPos = domain->classPos;
+  TVarList &variables = const_cast<TVarList &>(domain->variables.getReference());
+  TIntList &attributeTypes = const_cast<TIntList &>(domain->attributeTypes.getReference());
+  TMetaVector &metas = domain->metas;
+
+  domain->headerLines = 1;
+
+  list<TSearchWarranty> searchWarranties;
 
   /**** Parsing the header row */
+  
+  ITERATE(vector<string>, ni, varNames) {
+    /* Parses the header line
+       - sets *ni to a real name (without prefix)
+       - sets varType to TValue::varType or -1 if the type is not specified
+       - sets classPos to the current position, if the attribute is class attribute
+         (and reports an error if there is more than one such attribute)
+       - to attributeTypes, appends -1 for ordinary atributes, -2 for metas and 0 for ignored */
+    int varType = -1; // varType, or -1 for unnown
+    attributeTypes.push_back(-1);
 
-  while(!feof(fei.file) && !readTabAtom(fei, varNames));
-  if (!varNames.size())
-    raiseError("unexpected end of file '%s'", fei.filename.c_str());
-
-  startDataPos = ftell(fei.file);
-  startDataLine = fei.line;
-
-  bool hasClass = false;
-
-  {
-    ITERATE(vector<string>, ni, varNames) {
-      varTypes.push_back(string());
-      varFlags.push_back(string());
-      couldBeNumber.push_back(0);
-
-      const char *cptr = (*ni).c_str();
-      if (*cptr && (cptr[1]=='#')) {
-        if (*cptr == 'm')
-          varFlags.back() = "meta";
-        else if (*cptr == 'i')
-          varFlags.back() = "i";
-        else if (*cptr == 'c') {
-          varFlags.back() = "class";
-          hasClass = true;
-        }
-        else if (*cptr == 'D')
-          varTypes.back() = "d";
-        else if (*cptr == 'C')
-          varTypes.back() = "c";
-        else if (*cptr == 'S')
-          varTypes.back() = "string";
+    const char *cptr = (*ni).c_str();
+    if (*cptr && (cptr[1]=='#')) {
+      if (*cptr == 'm')
+        attributeTypes.back() = -2;
+      else if (*cptr == 'i')
+        attributeTypes.back() = 0;
+      else if (*cptr == 'c') {
+        if (classPos>-1)
+          ::raiseError("more than one attribute marked as class");
         else
-          raiseWarning("unrecognized flags in attribute name '%s'", cptr);
-
-        *ni = string(cptr+2);
+          classPos = ni-varNames.begin();
       }
 
-      else if (*cptr && cptr[1] && (cptr[2]=='#')) {
-        bool beenWarned = false;
-        if (*cptr == 'm')
-          varFlags.back() = "meta";
-        else if (*cptr == 'i')
-          varFlags.back() = "i";
-        else if (*cptr == 'c') {
-          varFlags.back() = "class";
-          hasClass = true;
-        }
-        else {
-          raiseWarning("unrecognized flags in attribute name '%s'", cptr);
-          beenWarned = true;
-        }
+      else if (*cptr == 'D')
+        varType = TValue::INTVAR;
+      else if (*cptr == 'C')
+        varType = TValue::FLOATVAR;
+      else if (*cptr == 'S')
+        varType = stringVarType;
 
-        cptr++;
-        if (*cptr == 'D')
-          varTypes.back() = "d";
-        else if (*cptr == 'C')
-          varTypes.back() = "c";
-        else if (*cptr == 'S')
-          varTypes.back() = "string";
+      else
+        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
+
+      *ni = string(cptr+2);
+    }
+
+    else if (*cptr && cptr[1] && (cptr[2]=='#')) {
+      bool beenWarned = false;
+      if (*cptr == 'm')
+        attributeTypes.back() = -2;
+      else if (*cptr == 'i')
+        attributeTypes.back() = 0;
+      else if (*cptr == 'c') {
+        if (classPos>-1)
+          ::raiseError("more than one attribute marked as class");
         else
-          if (!beenWarned)
-            raiseWarning("unrecognized flags in attribute name '%s'", cptr);
-
-        *ni = string(cptr+2); // we have already increased cptr once
+          classPos = ni-varNames.begin();
       }
+      else
+        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
 
-      // If the type has not been determined, we look at knownVars
-      if (!varTypes.back().length() && knownVars)
-        PITERATE(TVarList, kni, knownVars)
-          if ((*kni)->name == *ni) {
-            varTypes.back() = "*";
-            break;
-          }
-          
-      /* If we still don't have the type, we request the check by setting
-         encountered and couldBeNumber */
-      if (!varTypes.back().length()) {
-        couldBeNumber.back() = 2;
-        nCouldBeNumber++;
+      cptr++;
+      if (*cptr == 'D')
+        varType = TValue::INTVAR;
+      else if (*cptr == 'C')
+        varType = TValue::FLOATVAR;
+      else if (*cptr == 'S')
+        varType = stringVarType;
+      else
+        ::raiseError("unrecognized flags in attribute name '%s'", cptr);
+
+      // remove the prefix (we have already increased cptr once)
+      *ni = string(cptr+2);
+    }
+
+    /* If the attribute is not to be ignored, we attempt to either find its descriptor
+       among the known attributes or create a new attribute if the type is given.
+       For ordinary attributes, the descriptor (or PVariable()) is pushed to the list of 'variables'.
+       For meta attributes, a meta descriptor is pushed to 'metas'. If the attribute was used as
+       meta-attribute in some of known domains, the id is reused; otherwise a new id is created.
+       If the descriptor was nor found nor created, a warranty is issued.
+    */
+      
+    if (attributeTypes.back()) {
+      int id;
+      PVariable var = makeVariable<TTabDelimDomain>(*ni, varType, sourceVars, sourceDomain, dontCheckStored ? NULL : &knownVariables, dontCheckStored ? NULL : &knownDomains, id, varType>=0, NULL);
+      if (attributeTypes.back() == -2) {
+        if (!id)
+          id = getMetaID();
+        metas.push_back(TMetaDescriptor(id, var));
+        attributeTypes.back() = id;
+
+        if (!var)
+          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -id));
+      }
+      else {
+        variables.push_back(var);
+        if (!var)
+          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), variables.size()-1));
       }
     }
   }
 
-
-
-  if (nCouldBeNumber) {
-
-    /**** Parsing the data (if needed) */
-
+  if (!searchWarranties.empty()) {
     vector<string> atoms;
     char numTest[64];
-    while (!feof(fei.file) && nCouldBeNumber) {
+    while (!feof(fei.file) && !searchWarranties.empty()) {
       if (!readTabAtom(fei, atoms))
         continue;
     
-      vector<char>::iterator cni(couldBeNumber.begin());
-      for(vector<string>::const_iterator ai(atoms.begin()), ae(atoms.end()); ai!=ae; ai++, cni++) {
-        if (*cni) {
-          // If it represents a special value, we skip it
-          const char *ceni = (*ai).c_str();
-          if (   !*ceni
-              || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
-              || (*ai == "NA"))
-            continue;
+      for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()), we(searchWarranties.end()); wi!=we; wi++) {
+        const string &atom = atoms[(*wi).posInFile];
 
-          // If the attribute can be a number, we check it as a number
-          if ((*ai).length()>63) {
-            *cni = 0;
-            nCouldBeNumber--;
-            continue;
-          }
+        // only discrete attributes can have values longer than 63 characters
+        if (atom.length()>63) {
+          PVariable newVar = createVariable(varNames[(*wi).posInFile], TValue::INTVAR, dontStore);
+          if ((*wi).posInDomain >= 0)
+            variables[(*wi).posInDomain] = newVar;
+          else
+            metas[-(*wi).posInDomain]->variable = newVar;
+          wi = searchWarranties.erase(wi);
+          wi--;
+          continue;
+        }
 
-          if ((*ai).length()==1) {
-            if (((*ai)[0]<'0') || ((*ai)[0]>'9')) {
-              *cni = 0;
-              nCouldBeNumber--;
-            }
-            continue;
-          }
+        const char *ceni = atom.c_str();
+        if (   !*ceni
+            || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+            || (atom == "NA"))
+          continue;
 
-          *cni = 1; // longer than 1 character
+        // we have encountered some value
+        if ((*wi).suspectedType == 3) 
+          (*wi).suspectedType = 2;
 
-          strcpy(numTest, ceni);
-          for(char *sc = numTest; *sc; sc++)
-            if (*sc == ',')
-              *sc = '.';
+        // If the attribute is a digit, it can be anything
+        if ((!*ceni) && (*ceni>='0') && (*ceni<='9'))
+          continue;
 
-          char *eptr;
-          strtod(numTest, &eptr);
-          if (*eptr) {
-            *cni = 0;
-            nCouldBeNumber--;
-          }
+        // If it is longer than one character, it cannot be a coded discrete
+        if (ceni[1])
+          (*wi).suspectedType = 1;
+
+        // Convert commas into dots
+        strcpy(numTest, ceni);
+        for(char *sc = numTest; *sc; sc++)
+          if (*sc == ',')
+            *sc = '.';
+
+        // If the attribute cannot be converted into a number, it is enum
+        char *eptr;
+        strtod(numTest, &eptr);
+        if (*eptr) {
+          PVariable newVar = createVariable(varNames[(*wi).posInFile], TValue::INTVAR, dontStore);
+          if ((*wi).posInDomain >= 0)
+            variables[(*wi).posInDomain] = newVar;
+          else
+            metas[-(*wi).posInDomain]->variable = newVar;
+          wi = searchWarranties.erase(wi);
+          continue;
         }
       }
     }
 
 
-    /**** Setting the missing types */
+    ITERATE(list<TSearchWarranty>, wi, searchWarranties) {
+      const string &name = varNames[(*wi).posInFile];
+      if ((*wi).suspectedType == 3)
+        ::raiseError("cannot determine type for attribute '%s'", name.c_str());
 
-    vector<string>::iterator ti(varTypes.begin());
-    vector<char>::const_iterator cni(couldBeNumber.begin()), cne(couldBeNumber.end());
-    for(; cni!=cne; cni++, ti++)
-      if (!(*ti).length())
-        (*ti) = (*cni==1) ? "c" : "d";
+      PVariable var = createVariable(name, (*wi).suspectedType == 2 ? TValue::INTVAR : TValue::FLOATVAR, dontStore);
+      if ((*wi).posInDomain >= 0)
+        variables[(*wi).posInDomain] = var;
+      else
+        metas[-(*wi).posInDomain]->variable = var;
+    }
   }
-  
-  if (!hasClass)
-    for(vector<string>::reverse_iterator fri(varFlags.rbegin()), fre(varFlags.rend()); fri!=fre; fri++)
-      /* We don't want ignored or meta-attributes as classes; we'll thus find
-         the last that is not such */
-      if (!(*fri).length()) {
-        *fri = "class";
-        break;
-      }
 
-  constructDomain(varNames, varTypes, varFlags, knownVars);
+  if (classPos>=0) {
+    TVarList::iterator ci = variables.begin()+classPos;
+    domain->classVar = *ci;
+    variables.erase(ci);
+    domain->attributes = mlnew TVarList(variables);
+    variables.push_back(domain->classVar);
+  }
+  else {
+    classPos = varNames.size()-1;
+    vector<int>::reverse_iterator fri(attributeTypes.rbegin()), fre(attributeTypes.rend());
+    for(; (fri!=fre) && (*fri != -1); fri++, classPos--);
+    if (fri==fre)
+      classPos = -1;
+    else {
+      domain->attributes = mlnew TVarList(variables);
+      domain->classVar = variables.back();
+      domain->attributes->erase(domain->attributes->end()-1);
+    }
+  }
+
+  domain->DCs = mlnew TStringList(domain->variables->size(), "");
+
+  return wdomain;
 }
 
 
-TTabDelimDomain::TTabDelimDomain(TIdList &varNames, TIdList &varTypes, TIdList &varFlags, PVarList knownVars)
-  : TDomain()
-{ constructDomain(varNames, varTypes, varFlags, knownVars); }
-
-
-
-void TTabDelimDomain::constructDomain(TIdList &varNames, TIdList &varTypes, TIdList &varFlags, PVarList knownVars)
+PDomain TTabDelimDomain::domainWithoutDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 {
-  PVariable newVar;
+  TFileExampleIteratorData fei(stem);
+  
+  TIdList varNames, varTypes, varFlags;
+  
+  while(!feof(fei.file) && !readTabAtom(fei, varNames));
+  if (varNames.empty())
+    ::raiseError("empty file");
+
+  while(!feof(fei.file) && !readTabAtom(fei, varTypes, false));
+  if (varTypes.empty())
+    ::raiseError("cannot read types of attributes");
+
+  while(!feof(fei.file) && !readTabAtom(fei, varFlags));
 
   if (varNames.size() != varTypes.size())
-    raiseError("mismatching number of attributes and their types.");
+    ::raiseError("mismatching number of attributes and their types.");
   if (varNames.size() < varFlags.size())
-    raiseError("too many flags (third line too long)");
+    ::raiseError("too many flags (third line too long)");
 
-  kind=mlnew TIntList(varNames.size(), -1);
-  DCs=mlnew TStringList(varNames.size(), "");
+  TTabDelimDomain *domain = mlnew TTabDelimDomain();
+  domain->attributeTypes = mlnew TIntList(varNames.size(), -1);
+  domain->DCs = mlnew TStringList(varNames.size(), "");
+
+  PDomain wdomain = domain;
+  int &classPos = domain->classPos;
+  TVarList &variables = const_cast<TVarList &>(domain->variables.getReference());
+  TIntList &attributeTypes = const_cast<TIntList &>(domain->attributeTypes.getReference());
+  TMetaVector &metas = domain->metas;
+
+  domain->headerLines = 3;
+
 
   int pos=0;
-  classPos=-1;
 
   // parses the 3rd line; for each attribute, it checks whether the flags are correct,
-  // it sets the classPos (position of the class attribute), kind[i] becomes 0 for attribute i
+  // it sets the classPos (position of the class attribute), attributeTypes[i] becomes 0 for attribute i
   // which is to be skipped, and id (getMetaID) for meta attributes. It sets DCs[i] for attributes
   // with different DC character.
   TIdList::iterator vni = varNames.begin();
@@ -352,52 +476,58 @@ void TTabDelimDomain::constructDomain(TIdList &varNames, TIdList &varTypes, TIdL
     TProgArguments &args = arguments.back();
     if (args.direct.size()) {
       if (args.direct.size()>1)
-        raiseError("invalid flags for attribute '%s'", (*vni).c_str());
+        ::raiseError("invalid flags for attribute '%s'", (*vni).c_str());
       string direct = args.direct.front();
       if ((direct=="s") || (direct=="skip") || (direct=="i") || (direct=="ignore"))
-        kind->at(pos) = 0;
+        attributeTypes[pos] = 0;
       else if ((direct=="c") || (direct=="class"))
         if (classPos==-1)
           classPos = pos;
         else 
-          raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", varNames[pos].c_str(), (*vni).c_str());
-      else if (direct=="meta") {
-        long id=getMetaID();
-        metas.push_back(TMetaDescriptor(id, PVariable()));
-        kind->at(pos)=id;
-      }
+          ::raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", varNames[pos].c_str(), (*vni).c_str());
+      else if (direct=="meta")
+        attributeTypes[pos]=-2;
     }
 
     if (args.exists("dc"))
-      DCs->at(pos) = args["dc"];
-    pos++; vni++;
+      domain->DCs->at(pos) = args["dc"];
+
+    pos++;
+    vni++;
   }
   while (arguments.size()<varNames.size())
     arguments.push_back(TProgArguments());
 
+  TKnownVariables *sknownv = dontCheckStored ? NULL : &knownVariables;
+  list<TTabDelimDomain *> *sknownd = dontCheckStored ? NULL : &knownDomains;
+  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
+
   // Constructs variables
-  vector<int>::iterator si=kind->begin();
+  vector<int>::iterator si = attributeTypes.begin();
   vector<TProgArguments>::const_iterator argi(arguments.begin());
   pos=0;
   for(TIdList::iterator ni=varNames.begin(), ti=varTypes.begin(); ni!=varNames.end(); ni++, ti++, pos++, argi++, si++) {
     if (*si) {
-      if (!(*ti).length())
-        raiseError("type for attribute '%s' is missing", (*ni).c_str());
+      PVariable newVar;
+      int id;
 
-      if (*ti=="*")
-        newVar = makeVariable(*ni, knownVars, -1);
-      else if ((*ti=="c") || (*ti=="continuous") || (*ti=="float") || (*ti=="f"))
-        newVar = makeVariable(*ni, knownVars, TValue::FLOATVAR);
-        //newVar=mlnew TFloatVariable(*ni);
+      if (!(*ti).length())
+        ::raiseError("type for attribute '%s' is missing", (*ni).c_str());
+
+      if ((*ti=="c") || (*ti=="continuous") || (*ti=="float") || (*ti=="f"))
+        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::FLOATVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
+
       else if ((*ti=="d") || (*ti=="discrete") || (*ti=="e") || (*ti=="enum")) {
-        newVar = makeVariable(*ni, knownVars, TValue::INTVAR);
+        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::INTVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
         newVar->ordered = (*argi).exists("ordered");
       }
+
       else if (*ti=="string")
-        newVar = makeVariable(*ni, knownVars, stringVarType);
+        newVar = makeVariable<TTabDelimDomain>(*ni, stringVarType, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
+
       else {
         string vals;
-        newVar = makeVariable(*ni, knownVars, TValue::INTVAR);
+        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::INTVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
         TEnumVariable *evar = newVar.AS(TEnumVariable);
         newVar->ordered = (*argi).exists("ordered");
         ITERATE(string, ci, *ti)
@@ -406,8 +536,14 @@ void TTabDelimDomain::constructDomain(TIdList &varNames, TIdList &varTypes, TIdL
               evar->addValue(vals);
             vals="";
           } 
-          else
-            vals+=*ci;
+          else {
+            if ((*ci=='\\') && (ci[1]==' ')) {
+              vals += ' ';
+              ci++;
+            }
+            else
+              vals += *ci;
+          }
 
         if (vals.length())
           evar->addValue(vals);
@@ -417,36 +553,38 @@ void TTabDelimDomain::constructDomain(TIdList &varNames, TIdList &varTypes, TIdL
 
       if (*si==-1) {
         if (pos==classPos)
-          classVar=newVar;
+          domain->classVar = newVar;
         else
-          attributes->push_back(newVar);
+          domain->attributes->push_back(newVar);
       }
-      else {
-        TMetaDescriptor *meta = metas[*si];
-        if (!meta) 
-          raiseError("error in domain for tab-delimited file (meta descriptor not found)");
-        meta->variable = newVar;
+      else { // *si==-2
+        if (!id)
+          id = getMetaID();
+        *si = id;
+        metas.push_back(TMetaDescriptor(id, newVar));
       }
     }
   }
 
-  variables = mlnew TVarList(attributes.getReference());
-  if (classVar)
-    variables->push_back(classVar);
+  domain->variables = mlnew TVarList(domain->attributes.getReference());
+  if (domain->classVar)
+    domain->variables->push_back(domain->classVar);
+
+  return wdomain;
 }
 
 
 void TTabDelimDomain::atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei)
 {
   // Add an appropriate number of empty atoms, if needed
-  while (atoms.size()<kind->size())
+  while (atoms.size()<attributeTypes->size())
     atoms.push_back(string(""));
   _ASSERT(exam.domain==this);
 
   TExample::iterator ei(exam.begin());
   TVarList::iterator vi(attributes->begin());
   TIdList ::iterator ai(atoms.begin());
-  vector<int>::iterator si(kind->begin()), se(kind->end());
+  vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
   vector<string>::iterator dci(DCs->begin());
   int pos=0;
   for (; (si!=se); pos++, si++, ai++, dci++)
@@ -528,7 +666,7 @@ void TTabDelimDomain::atomList2Example(TIdList &atoms, TExample &exam, const TFi
 /*  Reads a list of atoms from a line of tab delimited file. Atom consists of any characters
     except \n, \r and \t. Multiple spaces are replaced by a single space. Atoms are separated
     by \t. Lines end with \n or \r. Lines which begin with | are ignored. */
-bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
+bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces)
 {
   atoms.clear();
 
@@ -570,6 +708,13 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
       case ' ':
         atom += *curr;
         break;
+
+      case '\\':
+        if (escapeSpaces && curr[1]==' ') {
+          atom += ' ';
+          curr++;
+          break;
+        }
 
       default:
         if ((*curr>=' ') || (*curr<0))
@@ -614,7 +759,16 @@ void tabDelim_writeExamples(FILE *file, PExampleGenerator rg)
     tabDelim_writeExample(file, *gi);
 }
 
-
+string escSpaces(const string &s)
+{ string res;
+  const_ITERATE(string, si, s)
+    if (*si==' ')
+      res += "\\ ";
+    else
+      res += *si;
+  return res;
+}
+    
 void printVarType(FILE *file, PVariable var)
 {
   TEnumVariable *enumv;
@@ -626,10 +780,10 @@ void printVarType(FILE *file, PVariable var)
       fprintf(file, "d");
     else {
       enumv->val2str(val, sval); 
-      fprintf(file, sval.c_str());
+      fprintf(file, escSpaces(sval).c_str());
       while(enumv->nextValue(val)) {
         enumv->val2str(val, sval);
-        fprintf(file, " %s", sval.c_str());
+        fprintf(file, " %s", escSpaces(sval).c_str());
       }
     }
   }

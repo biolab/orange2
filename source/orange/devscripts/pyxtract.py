@@ -96,10 +96,11 @@ if 1: ### Definitions of method slots
                 ]
                 
                
-if 1: ### Definitions of regular expressions (hidden due to boringness)
+if 1: ### Definitions of regular expressions
 
   constrdef_mac=re.compile(r'(?P<constype>ABSTRACT|C_UNNAMED|C_NAMED|C_CALL)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
   constrdef_mac_call3=re.compile(r'(?P<constype>C_CALL3)\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<callname>\w*\s*)\s*,\s*(?P<basename>\w*\s*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
+  constrkeywords = re.compile(r'CONSTRUCTOR_KEYWORDS\s*\(\s*(?P<typename>\w*)\s*, \s*"(?P<keywords>[^"]*)"\s*\)')
   constrwarndef=re.compile("[^\w](ABSTRACT|CONS|C_UNNAMED|C_NAMED|C_CALL)[^\w]")
 
   datastructuredef=re.compile(r'DATASTRUCTURE\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<structurename>\w*)\s*,\s*(?P<dictfield>\w*)\s*\)')
@@ -142,6 +143,12 @@ def detectConstructors(line, classdefs):
     if (constype!="ABSTRACT"):
        addClassDef(classdefs, typename, parsedFile, "constructor", ConstructorDefinition(arguments=doc, type=constype))
     return 1
+  
+  found = constrkeywords.search(line)
+  if found:
+    typename, keywords = found.group("typename", "keywords")
+    addClassDef(classdefs, typename, parsedFile, "constructor_keywords", keywords.split())
+  
   if constrwarndef.search(line):
     printV0("Warning: looks like constructor, but syntax is not matching")
 
@@ -475,8 +482,14 @@ def writeAppendix(filename, targetname, classdefs, aliases):
 
     # Write default constructor
     if fields.constructor and fields.constructor.type!="MANUAL":
-      outfile.write('POrange %s_default_constructor(PyTypeObject *type)\n{ return POrange(mlnew T%s(), type); }\n\n' % (type, type))
+      outfile.write('POrange %s_default_constructor(PyTypeObject *type)\n{ return POrange(mlnew T%s(), type); }\n' % (type, type))
 
+    # Write constructor keywords
+    if fields.constructor_keywords:
+      outfile.write('char *%s_constructor_keywords[] = {%s, NULL};\n' % (type, reduce(lambda x, y: x + ", " + y, ['"%s"' % x for x in fields.constructor_keywords])))
+
+    outfile.write('\n')                    
+                    
     # Write aliases    
     if aliases.has_key(type):
       outfile.write("TAttributeAlias "+type+"_aliases[] = {\n")
@@ -595,6 +608,8 @@ def writeAppendix(filename, targetname, classdefs, aliases):
 
     outfile.write('TOrangeType PyOr'+type+'_Type (PyOr'+type+'_Type_inh, typeid(T'+type+')')
     outfile.write(', ' + (fields.constructor and fields.constructor.type!="MANUAL" and type+'_default_constructor' or '0'))
+    outfile.write(', ' + (fields.constructor_keywords and type+'_constructor_keywords' or 'NULL'))
+                          
     if aliases.has_key(type):
       outfile.write(', '+type+'_aliases')
     outfile.write(');\n\n')

@@ -196,11 +196,10 @@ C_CALL(Preprocessor_addGaussianNoise, Preprocessor, "([examples[, weightID]] [<s
 C_CALL(Preprocessor_addGaussianClassNoise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
 
 C_CALL(Preprocessor_addCostWeight, Preprocessor, "([examples[, weightID]] [equalize=, costs=) -/-> ExampleTable")
-C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [outComeVar=, eventValue=, timeVar= <string>] [method="km"|"nmr"|"split"] [maxTime=, weightName=]) -/-> ExampleTable")
+C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [method=0-km, 1-nmr, 2-linear, outcomeVar=, eventValue=, timeID=, maxTime=]) -/-> ExampleTable")
 
 C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
 C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
-
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
 { 

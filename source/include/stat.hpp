@@ -888,10 +888,15 @@ double wilcoxont(const vector<T> &x, const vector<T> &y, double &prob)
       absd.push_back(abs(d.back()));
     }
 
+  if (!d.size()) {
+    prob = 1.0;
+    return 0.0;
+  }
+
   vector<double> absdranks;
   rankdata(absd, absdranks);
   double r_plus=0.0, r_minus=0.0;
-  for(int i=0; i<x.size(); *( (d[i]<0.0) ? &r_minus : &r_plus ) += absdranks[i], i++);
+  for(int i=0; i<d.size(); *( (d[i]<0.0) ? &r_minus : &r_plus ) += absdranks[i], i++);
   double N=d.size();
   double se = sqrt(N*(N+1)*(2*N+1)/24.0);
   double wt = min_el(r_plus, r_minus);

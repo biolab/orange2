@@ -534,7 +534,7 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 
 int Orange_init(PyObject *self, PyObject *, PyObject *keywords)
 { PyTRY
-    return ((TPyOrange *)self)->call_constructed || SetAttr_FromDict(self, keywords) ? 0 : -1;
+    return ((TPyOrange *)self)->call_constructed || SetAttr_FromDict(self, keywords, true) ? 0 : -1;
   PyCATCH_1
 }
 

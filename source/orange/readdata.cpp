@@ -44,7 +44,7 @@
 #include <string.h>
 
 #ifdef _MSC_VER
-  TExampleTable *readExcelFile(char *filename, char *sheet, PVarList);
+  TExampleTable *readExcelFile(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 #endif
 
 bool fileExists(const string &s) {
@@ -61,7 +61,7 @@ typedef enum {UNKNOWN, TXT, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
 WRAPPER(ExampleTable);
 
-TExampleTable *readData(char *filename, PVarList knownVars)
+TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain, bool dontCheckStored, bool dontStore)
 { char *ext, *hash;
   if (filename) {
     for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
@@ -83,25 +83,23 @@ TExampleTable *readData(char *filename, PVarList knownVars)
   // If the extension is given, we simply determine the format and load the files
   if (ext) {
     if (!strcmp(ext, ".txt")) {
-      PDomain domain = mlnew TTabDelimDomain(filename, knownVars);
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, domain);
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, TTabDelimDomain::readDomain(true, filename, knownVars, knownDomain, dontCheckStored, dontStore));
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".tab")) {
-      PDomain domain = mlnew TTabDelimDomain(filename, knownVars);
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, domain);
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, TTabDelimDomain::readDomain(false, filename, knownVars, knownDomain, dontCheckStored, dontStore));
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".data") || !strcmp(ext, ".names") || !strcmp(ext, ".test")) {
-      PDomain domain = mlnew TC45Domain(string(filename, ext) + ".names", knownVars);
+      PDomain domain = TC45Domain::readDomain(string(filename, ext) + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TC45ExampleGenerator(strcmp(ext, ".names") ? filename : string(filename, ext) + ".data", domain);
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".rda") || !strcmp(ext, ".rdo")) {
-      PDomain domain = mlnew TRetisDomain(string(filename, ext) + ".rdo", knownVars);
+      PDomain domain = TRetisDomain::readDomain(string(filename, ext) + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TRetisExampleGenerator(string(filename, ext) + ".rda", domain);
       return mlnew TExampleTable(gen);
     }
@@ -115,14 +113,14 @@ TExampleTable *readData(char *filename, PVarList knownVars)
         raiseError("invalid assistant filename (it should start with 'asdo' or 'asda')");
 
       stem += 3;
-      PDomain domain = mlnew TAssistantDomain(string(filename, stem) + "o" + string(stem+1, ext));
+      PDomain domain = TAssistantDomain::readDomain(string(filename, stem) + "o" + string(stem+1, ext), knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "a" + string(stem+1, ext), domain);
       return mlnew TExampleTable(gen);
     }
 
     #ifdef _MSC_VER
     if ((hash-ext==4) && !strncmp(ext, ".xls", 4))
-      return readExcelFile(filename, hash, knownVars);
+      return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif
 
     raiseError("unknown file format for file '%s'", filename);    
@@ -198,38 +196,38 @@ TExampleTable *readData(char *filename, PVarList knownVars)
 
   switch (fileFormat) {
     case TXT: {
-      PDomain domain = mlnew TTabDelimDomain(sfilename+".txt", knownVars, true);
+      PDomain domain = TTabDelimDomain::readDomain(true, sfilename + ".txt", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".txt", domain);
       return mlnew TExampleTable(gen);
     }
 
     case TAB: {
-      PDomain domain = mlnew TTabDelimDomain(sfilename+".tab", knownVars, false);
+      PDomain domain = TTabDelimDomain::readDomain(false, sfilename + ".tab", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", domain);
       return mlnew TExampleTable(gen);
     }
 
     case C45: {
-      PDomain domain = mlnew TC45Domain(sfilename + ".names", knownVars);
+      PDomain domain = TC45Domain::readDomain(sfilename + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TC45ExampleGenerator(sfilename + ".data", domain);
       return mlnew TExampleTable(gen);
     }
 
     case RETIS: {
-      PDomain domain = mlnew TRetisDomain(sfilename + ".rdo", knownVars);
+      PDomain domain = TRetisDomain::readDomain(sfilename + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TRetisExampleGenerator(sfilename + ".rda", domain);
       return mlnew TExampleTable(gen);
     }
 
     case ASSISTANT: {
-      PDomain domain = mlnew TAssistantDomain(string(filename, stem) + "asdo" + string(stem)+".dat", knownVars);
+      PDomain domain = TAssistantDomain::readDomain(string(filename, stem) + "asdo" + string(stem)+".dat", knownVars, knownDomain, dontCheckStored, dontStore);
       PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat", domain);
       return mlnew TExampleTable(gen);
     }
 
     #ifdef _MSC_VER
     case EXCEL:
-      return readExcelFile(filename, hash, knownVars);
+      return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif
 
     default:

@@ -74,27 +74,35 @@ public:
   __REGISTER_CLASS
 
 /*  A kind of each attribute:
+           -2   pending meta value (used only at construction time)
            -1   normal
             0   skipped
      positive   meta value. */
-  PIntList kind; //P (>attributeTypes) types of attributes (-1 normal, 0 skip, positive = meta ID)
+  PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, positive = meta ID)
   PStringList DCs; //P characters that mean DC (for each attribute)
   int classPos; //P position of the class attribute
+  int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
 
-  int startDataPos; //P starting position of the data in file
-  int startDataLine; //P the line in the file where the data starts
-
+  TTabDelimDomain();
   TTabDelimDomain(const TTabDelimDomain &);
+  virtual ~TTabDelimDomain();
 
-  TTabDelimDomain(const string &stem, PVarList knownVars=PVarList(), bool autoDetect = false);
-  TTabDelimDomain(TIdList &varNames, TIdList &varTypes, TIdList &varFlags, PVarList knownVars=PVarList());
-
-  void constructDomain (TIdList &varNames, TIdList &varTypes, TIdList &varFlags, PVarList knownVars=PVarList());
   void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
+  static PDomain readDomain(const bool autoDetect, const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  static PDomain domainWithDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  static PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
 protected:
-  void readHeader(TFileExampleIteratorData &, PVarList knownVars);
-  void detectTypes(TFileExampleIteratorData &, PVarList knownVars);
+  static list<TTabDelimDomain *> knownDomains;
+  static TKnownVariables knownVariables;
+
+  static void removeKnownVariable(TVariable *var);
+  static void addKnownDomain(TTabDelimDomain *domain);
+
+  static PVariable createVariable(const string &name, const int &varType, bool dontStore);
+
+  bool isSameDomain(const TTabDelimDomain *original) const;
 };
 
 #endif

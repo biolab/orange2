@@ -53,9 +53,12 @@ WRAPPER(Learner);
 WRAPPER(Variable);
 WRAPPER(Classifier)
 
+
 class TVariable : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
+
+  typedef void TDestroyNotifier(TVariable *);
 
   string name; //P variable's name
   int  varType; //P variable type
@@ -65,9 +68,11 @@ public:
   PVariable sourceVariable; //P The attribute that this attribute is computed from (when applicable)
   PClassifier getValueFrom; //P Function to compute the value from values of other variables
   bool getValueFromLocked;
+  TDestroyNotifier *destroyNotifier;
 
   TVariable(const int &avarType=TValue::NONE, const bool &ordered = false);
   TVariable(const string &aname, const int &avarType=TValue::NONE, const bool &ordered = false);
+  virtual ~TVariable();
 
   virtual TValue DC() const;
   virtual TValue DK() const;

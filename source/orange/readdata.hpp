@@ -20,4 +20,4 @@
 */
 
 
-TExampleTable *readData(char *filename, PVarList knownVars);
+TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain, bool dontCheckStored, bool dontStore);

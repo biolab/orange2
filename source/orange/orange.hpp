@@ -83,10 +83,11 @@ public:
   PyTypeObject       ot_inherited;
   const type_info   &ot_classinfo;
   defaultconstrproc  ot_defaultconstruct;
+  char             **ot_constructorkeywords;
   TAttributeAlias   *ot_aliases;
 
-  TOrangeType(const PyTypeObject &inh, const type_info &cinf, defaultconstrproc dc, TAttributeAlias *ali=NULL)
-   : ot_inherited(inh), ot_classinfo(cinf), ot_defaultconstruct(dc), ot_aliases(ali)
+  TOrangeType(const PyTypeObject &inh, const type_info &cinf, defaultconstrproc dc, char **ck = NULL, TAttributeAlias *ali = NULL)
+   : ot_inherited(inh), ot_classinfo(cinf), ot_defaultconstruct(dc), ot_constructorkeywords(ck), ot_aliases(ali)
    {}
 };
 
@@ -105,7 +106,7 @@ bool PyOrange_CheckType(PyTypeObject *);
 // Ascends the hierarchy until it comes to a class that is from orange's hierarchy
 TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *);
 
-bool SetAttr_FromDict(PyObject *self, PyObject *dict);
+bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit = false);
 
 /* Do we need something like this?! Here?! Not in root.hpp?!
 void raiseWarning(PyObject *warnType, const char *s, ...);

@@ -42,13 +42,25 @@ public:
 };
 
 
-// TAssistantDomain which is initialized the Assistant's asdo*.dat file.
 class TAssistantDomain : public TDomain {
 public:
   __REGISTER_CLASS
 
   vector<vector<float> *> intervals;
-  TAssistantDomain(const string &stem, PVarList knownVars=PVarList());
+  TAssistantDomain();
+  TAssistantDomain(const TAssistantDomain &);
+  ~TAssistantDomain();
+
+  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
+protected:
+  static list<TAssistantDomain *> knownDomains;
+  static TKnownVariables knownVariables;
+
+  static void removeKnownVariable(TVariable *var);
+  static void addKnownDomain(TAssistantDomain *domain);
+
+  bool isSameDomain(const TAssistantDomain *original) const;
 };
 
 #endif

@@ -205,5 +205,5 @@ int TExample::sumValues() const
       sum += vli->isSpecial() ? (*vi)->noOfValues() : vli->intV;
     else if (((*vi)->varType == TValue::FLOATVAR) && !vli->isSpecial())
       sum += *(int *)(&vli->floatV);
-  return sum;
+  return abs(sum);
 }

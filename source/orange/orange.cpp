@@ -55,14 +55,23 @@ TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *pytype)
 }
 
 
-bool SetAttr_FromDict(PyObject *self, PyObject *dict)
+bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
 {
   if (dict) {
     int pos = 0;
     PyObject *key, *value;
-    while (PyDict_Next(dict, &pos, &key, &value))
+    char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
+    while (PyDict_Next(dict, &pos, &key, &value)) {
+      if (kc) {
+        char *kw = PyString_AsString(key);
+        char **akc;
+        for (akc = kc; *akc && strcmp(*akc, kw); akc++);
+        if (*akc)
+          continue;
+      }
       if (PyObject_SetAttr(self, key, value)<0)
         return false;
+    }
   }
   return true;
 }

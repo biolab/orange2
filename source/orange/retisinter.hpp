@@ -47,7 +47,16 @@ class TRetisDomain : public TDomain {
 public:
   __REGISTER_CLASS
 
-  TRetisDomain(const string &stem, PVarList knownVars=PVarList());
+  ~TRetisDomain();
+
+  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
+protected:
+  static list<TRetisDomain *> knownDomains;
+  static TKnownVariables knownVariables;
+
+  static void removeKnownVariable(TVariable *var);
+  static void addKnownDomain(TRetisDomain *domain);
 };
 
 #endif

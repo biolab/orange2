@@ -55,6 +55,8 @@ TBayesLearner::TBayesLearner(const TBayesLearner &old)
 PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
 { if (!gen->domain->classVar)
     raiseError("class-less domain");
+  if (gen->domain->classVar->varType != TValue::INTVAR)
+    raiseError("discrete class attribute expected");
 
   PProbabilityEstimatorConstructor estConst = 
      estimatorConstructor ? estimatorConstructor

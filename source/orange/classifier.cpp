@@ -60,7 +60,7 @@ TValue TClassifier::operator ()(const TExample &exam)
 { if (!computesProbabilities)
     raiseError("invalid setting of 'computesProbabilities'");
 
-  return classDistribution(exam)->highestProbValue(exam);
+  return classVar->varType==TValue::FLOATVAR ? TValue(classDistribution(exam)->average()) : classDistribution(exam)->highestProbValue(exam);
 }    
 
 
@@ -76,7 +76,7 @@ PDistribution TClassifier::classDistribution(const TExample &exam)
 void TClassifier::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist)
 { if (computesProbabilities) {
     classDist = classDistribution(ex);
-    val = classDist->highestProbValue(ex);
+    val = classVar->varType==TValue::FLOATVAR ? TValue(classDist->average()) : classDist->highestProbValue(ex);
   }
   else {
     val = operator()(ex);

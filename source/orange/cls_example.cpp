@@ -177,7 +177,7 @@ int getMetaIdFromPy(PExample example, PyObject *index, PVariable &var)
     return idx;
   }
   else if (PyString_Check(index)) {
-    TMetaDescriptor const *desc=example->domain->metas[PyString_AsString(index)];
+    TMetaDescriptor const *desc=example->domain->metas[string(PyString_AsString(index))];
     if (!desc) {
       PyErr_Format(PyExc_IndexError, "invalid meta variable name '%s'", PyString_AsString(index));
       return 0;

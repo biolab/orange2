@@ -44,4 +44,6 @@
 #define C_CALL3(type, basecall, basetype,doc)
 #define HIDDEN(type, base)
 
+#define CONSTRUCTOR_KEYWORDS(type, keywords)
+
 #endif

@@ -51,8 +51,20 @@ public:
 
   PBoolList skip; //P a boolean list, one element per attribute, denoting which attributes to skip
 
-  TC45Domain(const string &stem, PVarList knownVars=PVarList());
+  TC45Domain();
   TC45Domain(const TC45Domain &);
+  ~TC45Domain();
+
+  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
+protected:
+  static list<TC45Domain *> knownDomains;
+  static TKnownVariables knownVariables;
+
+  static void removeKnownVariable(TVariable *var);
+  static void addKnownDomain(TC45Domain *domain);
+
+  bool isSameDomain(const TC45Domain *original) const;
 };
 
 bool   readC45Atom(TFileExampleIteratorData &, vector<string> &);

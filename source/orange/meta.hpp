@@ -58,6 +58,8 @@ public:
 
 class TMetaVector : public vector<TMetaDescriptor> {
 public:
+  TMetaDescriptor *operator[](PVariable);
+  TMetaDescriptor const *operator[](PVariable) const;
   TMetaDescriptor *operator[](const string &sna);
   TMetaDescriptor const *operator[](const string &sna) const;
   TMetaDescriptor *operator[](const long &ai);

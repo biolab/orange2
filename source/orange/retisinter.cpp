@@ -112,32 +112,67 @@ bool TRetisExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample
 
 
 
-TRetisDomain::TRetisDomain(const string &stem, PVarList knownVars) : TDomain()
-{ ifstream str(stem.c_str(), ios::binary);
-  if (!str.is_open())
-    raiseError("file '%s' not found", stem.c_str());
+TRetisDomain::~TRetisDomain()
+{ knownDomains.remove(this);
+}
 
-  setClass(makeVariable(getLine(str), knownVars, TValue::FLOATVAR));
+
+list<TRetisDomain *> TRetisDomain::knownDomains;
+TKnownVariables TRetisDomain::knownVariables;
+
+
+void TRetisDomain::removeKnownVariable(TVariable *var)
+{ knownVariables.remove(var);
+  var->destroyNotifier = NULL;
+}
+
+
+
+// Reads the .names file. The format allow using different delimiters, not just those specified by the original format
+PDomain TRetisDomain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ TRetisDomain *newDomain = mlnew TRetisDomain();
+  PDomain wdomain = newDomain;
+
+  ifstream str(stem.c_str(), ios::binary);
+  if (!str.is_open())
+    ::raiseError("RetisDomain: file '%s' not found", stem.c_str());
+
+  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
+  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
+
+  newDomain->setClass(makeVariable(getLine(str), TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
   getLine(str); getLine(str);
-  int noAttr=atoi(getLine(str).c_str());
+  int noAttr = atoi(getLine(str).c_str());
 
   while(noAttr--) {
-    string name=getLine(str), type=getLine(str);
+    string name = getLine(str);
+    string type = getLine(str);
     if (type=="discrete") {
-      PVariable newvar=makeVariable(name, knownVars, TValue::INTVAR);
+      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
       TEnumVariable *evar=newvar.AS(TEnumVariable);
       int noVals=atoi(getLine(str).c_str());
       while(noVals--)
         evar->addValue(getLine(str).c_str());
-      addVariable(newvar);
+      newDomain->addVariable(newvar);
     }
     else if (type=="continuous") {
-      addVariable(makeVariable(name, knownVars, TValue::FLOATVAR));
+      newDomain->addVariable(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
       getLine(str); getLine(str);
     }
     else
-      raiseError("invalid type (%s) for attribute %s", type.c_str(), name.c_str());
+      ::raiseError("RetisDomain: invalid type (%s) for attribute %s", type.c_str(), name.c_str());
   }
+
+  TRetisDomain *orig = sourceDomain.AS(TRetisDomain);
+  if (orig && sameDomains(newDomain, orig))
+    return sourceDomain;
+
+  ITERATE(list<TRetisDomain *>, di, knownDomains)
+    if (sameDomains(newDomain, *di))
+      return *di;
+
+   return wdomain;
+
 }
 
 

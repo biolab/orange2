@@ -314,7 +314,7 @@ void TExampleTable::insert(const int &sti, const TExample &ex)
 
 
 TExampleIterator TExampleTable::begin()
-{ return TExampleIterator(this, *examples, (void *)examples); }
+{ return TExampleIterator(this, examples ? *examples : NULL, (void *)examples); }
 
 
 void TExampleTable::copyIterator(const TExampleIterator &src, TExampleIterator &dest)

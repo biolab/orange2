@@ -222,14 +222,14 @@ PExampleGenerator TPreprocessor_takeMissing::operator()(PExampleGenerator gen, c
 
 PExampleGenerator TPreprocessor_dropMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
-  return filterExamples(mlnew TFilter_hasClassValue(true), gen);
+  return filterExamples(mlnew TFilter_hasClassValue(false), gen);
 }
 
 
 
 PExampleGenerator TPreprocessor_takeMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
-  return filterExamples(mlnew TFilter_hasClassValue(false), gen);
+  return filterExamples(mlnew TFilter_hasClassValue(true), gen);
 }
 
 

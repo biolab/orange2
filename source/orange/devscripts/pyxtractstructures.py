@@ -7,6 +7,7 @@ class ClassDefinition:
     self.specialmethods={}
     self.constants={}
     self.hidden = 0
+    self.constructor_keywords = []
     self.__dict__.update(argkw)
 
   def hasSpecialProperties(self):

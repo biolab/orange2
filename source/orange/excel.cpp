@@ -3,8 +3,17 @@
 #include "table.hpp"
 #include "stringvars.hpp"
 
+#include "filegen.hpp"
+#include <list>
+
 #include <direct.h>
 #include <ole2.h>
+
+class TExcelDomain : public TDomain
+{ public:
+    TExcelDomain(PVariable, TVarList);
+    ~TExcelDomain();
+};
 
 
 // These functions are wrapped into a class for easier implementation of clean-up (especially at exceptions).
@@ -13,7 +22,15 @@ public:
   TExcelReader();
   ~TExcelReader();
 
-  TExampleTable *operator()(char *filename, char *sheet, PVarList knownVars);
+  TExampleTable *operator ()(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+
+  friend class TExcelDomain;
+protected:
+  static list<TExcelDomain *> knownDomains;
+  static TKnownVariables knownVariables;
+
+  static void removeKnownVariable(TVariable *var);
+  static void addKnownDomain(TExcelDomain *domain);
 
 private:
   IDispatch *pXlApp;
@@ -43,13 +60,26 @@ private:
   char *cellAsText(const int &row, const int &col);
   int cellType(const int &row, const int &col);
 
-  PVariable constructAttr(const int &attrNo, PVarList knownVars, char &special);
-  PDomain constructDomain(PVarList knownVars, vector<char> &specials);
-  TExampleTable *readExamples(PDomain domain, const vector<char> &specials);
+  PVariable TExcelReader::constructAttr(const int &attrNo, int &id, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  PDomain constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  TExampleTable *readExamples(PDomain domain, const vector<int> &specials);
   void readValue(const int &row, const int &col, PVariable var, TValue &value);
 
   void setArg(const int argno, const int arg);
 };
+
+
+TExcelDomain::TExcelDomain(PVariable classVar, TVarList attributes)
+: TDomain(classVar, attributes)
+{}
+
+
+TExcelDomain::~TExcelDomain()
+{ TExcelReader::knownDomains.remove(this); }
+
+
+list<TExcelDomain *> TExcelReader::knownDomains;
+TKnownVariables TExcelReader::knownVariables;
 
 
 TExcelReader::TExcelReader()
@@ -107,6 +137,12 @@ TExcelReader::~TExcelReader()
     free(cellvalue);
 
   CoUninitialize();
+}
+
+
+void TExcelReader::removeKnownVariable(TVariable *var)
+{ knownVariables.remove(var);
+  var->destroyNotifier = NULL;
 }
 
 
@@ -282,10 +318,11 @@ int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be contin
 }
 
 
-PVariable TExcelReader::constructAttr(const int &attrNo, PVarList knownVars, char &special)
+// id is 0 for normal, > 0 for meta (meta id), -1 for class
+PVariable TExcelReader::constructAttr(const int &attrNo, int &id, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 { char *name = cellAsText(0, attrNo);
-  special = 0;
-  
+  char special = 0;
+
   int type = - 1;
   char *cptr = name;
   if (*cptr && (cptr[1]=='#')) {
@@ -326,49 +363,57 @@ PVariable TExcelReader::constructAttr(const int &attrNo, PVarList knownVars, cha
     *cptr += 2; // we have already increased cptr once
   }
 
-  if (knownVars)
-    PITERATE(TVarList, kni, knownVars)
-      if (((*kni)->name == cptr) && ((type<0) || (type == ((*kni)->varType))))
-        return *kni;
+  PVariable var = makeVariable<TExcelDomain>(cptr, type, sourceVars, sourceDomain,
+                                             dontCheckStored ? NULL : &knownVariables,
+                                             dontCheckStored ? NULL : &knownDomains,
+                                             id, type>=0, dontStore ? NULL : removeKnownVariable);
+  if (!var) {
+    char minCellType = 2; // 0 cannot be continuous, 1 can be continuous, 2 can even be coded discrete
+    for (int row = 1; row<=nExamples; row++) {
+      const char tct = cellType(row, attrNo);
+      if (!tct)
+        return mlnew TEnumVariable(cptr);
+      if (tct < minCellType)
+        minCellType = tct;
+    }
 
-  switch (type) {
-    case TValue::INTVAR:
-      return mlnew TEnumVariable(cptr);
-    case TValue::FLOATVAR:
-      return mlnew TFloatVariable(cptr);
-    case TValue::OTHERVAR:
-      return mlnew TStringVariable(cptr);
+    var = makeVariable<TExcelDomain>(cptr, minCellType==1 ? TValue::FLOATVAR : TValue::INTVAR,
+                                     sourceVars, sourceDomain,
+                                     dontCheckStored ? NULL : &knownVariables,
+                                     dontCheckStored ? NULL : &knownDomains,
+                                     id, false, dontStore ? NULL : removeKnownVariable);
   }
 
-  char minCellType = 2; // 0 cannot be continuous, 1 can be continuous, 2 can even be coded discrete
-  for (int row = 1; row<=nExamples; row++) {
-    const char tct = cellType(row, attrNo);
-    if (!tct)
-      return mlnew TEnumVariable(cptr);
-    if (tct < minCellType)
-      minCellType = tct;
+  if (special == 'm') {
+    if (!id)
+      id = getMetaID();
   }
+  else if (special == 'c') 
+    id = -1;
+  else
+    id = 0;
 
-  return minCellType==1 ? PVariable(mlnew TFloatVariable(cptr)) : PVariable(mlnew TEnumVariable(cptr));
+  return var;
 }
 
 
-PDomain TExcelReader::constructDomain(PVarList knownVars, vector<char> &specials)
+// specials: 0 = normal, -1 = class, -2 = ignore, >0 = meta id
+PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 {
   TVarList attributes;
   TMetaVector metas;
   PVariable classVar;
 
   for (int i = 0; i < nAttrs; i++) {
-    char special;
-    PVariable var = constructAttr(i, knownVars, special);
+    int id;
+    PVariable var = constructAttr(i, id, sourceVars, sourceDomain, dontCheckStored, dontStore);
     if (!var)
-      specials.push_back('i');
+      specials.push_back(-2);
     else {
-      specials.push_back(special);
-      if (special == 'm')
-        metas.push_back(TMetaDescriptor(getMetaID(), var));
-      else if (special == 'c')
+      specials.push_back(id);
+      if (id > 0)
+        metas.push_back(TMetaDescriptor(id, var));
+      else if (id == -1)
         if (classVar)
           raiseError("Multiple class variables ('%s' and '%s')", classVar->name.c_str(), var->name.c_str());
         else
@@ -378,9 +423,11 @@ PDomain TExcelReader::constructDomain(PVarList knownVars, vector<char> &specials
     }
   }
 
-  TDomain *domain = mlnew TDomain(classVar, attributes);
+  TExcelDomain *domain = mlnew TExcelDomain(classVar, attributes);
   domain->metas = metas;
-  return domain;
+
+  TExcelDomain *sdomain = sourceDomain.AS(TExcelDomain);
+  return (sdomain && sameDomains(domain, sdomain)) ? sourceDomain : PDomain(domain);
 }
 
 
@@ -415,35 +462,29 @@ void TExcelReader::readValue(const int &row, const int &col, PVariable var, TVal
 }
 
 
-TExampleTable *TExcelReader::readExamples(PDomain domain, const vector<char> &specials)
+TExampleTable *TExcelReader::readExamples(PDomain domain, const vector<int> &specials)
 { TExampleTable *table = mlnew TExampleTable(domain);
   PVariable &classVar = domain->classVar;
   try {
     for (int row = 1; row <= nExamples; row++) {
       TExample example(domain);
-      vector<char>::const_iterator speci(specials.begin());
+      vector<int>::const_iterator speci(specials.begin());
       TVarList::const_iterator vari(domain->attributes->begin());
       TMetaVector::const_iterator meti(domain->metas.begin());
       TExample::iterator exi(example.begin());
-      for (int col = 0; col < nAttrs ; col++)
-        switch (*(speci++)) {
-          case 'i':
-            break;
-          case 'm': {
-            TValue value;
-            readValue(row, col, (*meti).variable, value);
-            example.meta.setValue((*meti).id, value);
-            meti++;
-            break;
-          }
-          case 'c': {
-            TValue value;
-            readValue(row, col, classVar, value);
-            example.setClass(value);
-            break;
-          }
-          default:
-            readValue(row, col, *(vari++), *(exi++));
+      for (int col = 0; col < nAttrs ; col++, speci++)
+        if (!*speci)
+          readValue(row, col, *(vari++), *(exi++));
+        else if (*speci == -1) {
+          TValue value;
+          readValue(row, col, classVar, value);
+          example.setClass(value);
+        }
+        else if (*speci>0) {
+          TValue value;
+          readValue(row, col, (*meti).variable, value);
+          example.meta.setValue((*meti).id, value);
+          meti++;
         }
 
       table->addExample(example);
@@ -457,16 +498,16 @@ TExampleTable *TExcelReader::readExamples(PDomain domain, const vector<char> &sp
 }
 
 
-TExampleTable *TExcelReader::operator ()(char *filename, char *sheet, PVarList knownVars)
+TExampleTable *TExcelReader::operator ()(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 { openFile(filename, sheet);
   
-  vector<char> specials;
-  PDomain domain = constructDomain(knownVars, specials);
+  vector<int> specials;
+  PDomain domain = constructDomain(specials, sourceVars, sourceDomain, dontCheckStored, dontStore);
   return readExamples(domain, specials);
 }
 
-TExampleTable *readExcelFile(char *filename, char *sheet, PVarList knownVars)
-{ return TExcelReader()(filename, sheet, knownVars); }
+TExampleTable *readExcelFile(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ return TExcelReader()(filename, sheet, sourceVars, sourceDomain, dontCheckStored, dontStore); }
 
 // import orange; t = orange.ExampleTable(r"D:\ai\Domene\Imp\imp\merged2.xls")
 

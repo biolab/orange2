@@ -146,7 +146,8 @@ void TAdapterGenerator::deleteIterator(TExampleIterator &i)
 // Calls the copyIterator method of the underlying generator
 void TAdapterGenerator::copyIterator(const TExampleIterator &src, TExampleIterator &dest)
  {  TExampleGenerator::copyIterator(src, dest);
-    AD_cast(dest)=mlnew TAdapterIteratorData(AD_cast(src)->subIterator, NULL);
+    if (src.data)
+      AD_cast(dest)=mlnew TAdapterIteratorData(AD_cast(src)->subIterator, NULL);
  }
 
 

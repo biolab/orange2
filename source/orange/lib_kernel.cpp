@@ -128,8 +128,21 @@ PVarList knownVars(PyObject *keywords)
   if (!variables)
     raiseError("invalid value for 'use' argument"); // PYERROR won't do - NULL is a valid value to return...
 
-  PyDict_DelItemString(keywords, "use");
   return variables;
+}
+
+
+PDomain knownDomain(PyObject *keywords)
+{
+  PVarList variables;
+  PyObject *pyknownDomain = keywords ? PyDict_GetItemString(keywords, "domain") : PYNULL;
+  if (!pyknownDomain)
+    return PDomain();
+
+  if (!PyOrDomain_Check(pyknownDomain))
+    raiseError("invalid value for 'domain' argument"); // PYERROR won't do - NULL is a valid value to return...
+
+  return PyOrange_AsDomain(pyknownDomain);
 }
 
 
@@ -407,7 +420,7 @@ PyObject *Domain_metaid(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(
 
     TMetaDescriptor *desc=(TMetaDescriptor *)NULL;
     if (PyString_Check(rar))
-      desc=domain->metas[PyString_AsString(rar)];
+      desc = domain->metas[string(PyString_AsString(rar))];
     else if (PyOrVariable_Check(rar))
       desc=domain->metas[PyOrange_AS(TVariable, rar).name];
 
@@ -777,6 +790,17 @@ int Domain_set_classVar(PyObject *self, PyObject *arg) PYDOC("Domain's class att
 
 C_UNNAMED(RandomGenerator, Orange, "() -> 32-bit random int")
 
+PyObject *RandomGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "([int])")
+{ PyTRY
+      int i = 0;
+      if (!PyArg_ParseTuple(args, "|i:RandomGenerator.__new__", &i))
+        return PYNULL;
+
+      return WrapNewOrange(mlnew TRandomGenerator(i), type);
+  PyCATCH
+}
+
+
 PyObject *RandomGenerator_reset(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([new_seed]) -> None")
 { PyTRY
     int seed = numeric_limits<int>::min();
@@ -915,7 +939,9 @@ inline PVariableFilterMap sameValuesMap(PyObject *dict, PDomain dom)
 }
 
 inline PPreprocessor pp_sameValues(PyObject *dict, PDomain dom)
-{ return mlnew TPreprocessor_take(sameValuesMap(dict, dom)); }
+{ PVariableFilterMap vfm = sameValuesMap(dict, dom);
+  return vfm ? mlnew TPreprocessor_take(vfm) : PPreprocessor();
+}
 
 inline PFilter filter_sameValues(PyObject *dict, PDomain domain)
 { return TPreprocessor_take::constructFilter(sameValuesMap(dict, domain), domain); }
@@ -1117,6 +1143,14 @@ TExampleTable *readListOfExamples(PyObject *args)
   PYERROR(PyExc_TypeError, "invalid type", NULL);
 }
 
+bool readBoolFlag(PyObject *keywords, char *flag)
+{
+  PyObject *pyflag = keywords ? PyDict_GetItemString(keywords, flag) : PYNULL;
+  return pyflag && PyObject_IsTrue(pyflag);
+}
+
+
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use dontCheckStored dontStore")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain | examples)")
 { PyTRY
@@ -1125,8 +1159,8 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     PyObject *args;
     char *filename = NULL;
 
-    if (PyArg_ParseTuple(argstuple, "|s", &filename))
-      res = readData(filename, knownVars(keywords));
+    if (PyArg_ParseTuple(argstuple, "|ss", &filename))
+      res = readData(filename, knownVars(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore"));
 
     else if (PyArg_ParseTuple(argstuple, "O", &args))
       if (PyOrOrange_Check(args)) {
@@ -1176,6 +1210,12 @@ PyObject *ExampleTable_native(PyObject *self, PyObject *args, PyObject *keywords
   PyCATCH
 }
 
+
+int ExampleTable_nonzero(PyObject *self)
+{ PyTRY
+    return SELF_AS(TExampleGenerator).numberOfExamples() ? 1 : 0;
+  PyCATCH_1
+}
 
 int ExampleTable_len_sq(PyObject *self) 
 { PyTRY
@@ -2700,8 +2740,10 @@ PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PY
         return WrapOrange(classifier->classDistribution(PyExample_AS_ExampleReference(example)));
 
       case 2:
-        return Py_BuildValue("NN", Value_FromVariableValue(classifier->classVar, (*classifier)(PyExample_AS_ExampleReference(example))),
-                                   WrapOrange(classifier->classDistribution(PyExample_AS_ExampleReference(example))));
+        TValue val;
+        PDistribution dist;
+        classifier->predictionAndDistribution(PyExample_AS_ExampleReference(example), val, dist);
+        return Py_BuildValue("NN", Value_FromVariableValue(classifier->classVar, val), WrapOrange(dist));
     }
 
     PYERROR(PyExc_AttributeError, "invalid parameter for classifier call", PYNULL);

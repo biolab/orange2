@@ -39,6 +39,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "externs.px"
 
 PVarList knownVars(PyObject *keywords); // defined in lib_kernel.cpp
+PDomain knownDomain(PyObject *keywords); // ibid
 
 /* ************ FILE EXAMPLE GENERATORS ************ */
 
@@ -77,7 +78,7 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
     if (!divDot(name, b, a))
       name+=".tab";
 
-    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, PDomain(mlnew TTabDelimDomain(name, knownVars(keywords)))), type);
+    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, TTabDelimDomain::readDomain(false, name, knownVars(keywords), knownDomain(keywords), false, false)), type);
   PyCATCH
 }
 
@@ -94,7 +95,7 @@ PyObject *RetisExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject
     else
       { data=string(stem)+".rda"; domain=string(stem)+".rdo"; }
       
-    return WrapNewOrange(mlnew TRetisExampleGenerator(data, PDomain(mlnew TRetisDomain(domain, knownVars(keywords)))), type);
+    return WrapNewOrange(mlnew TRetisExampleGenerator(data, TRetisDomain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
   PyCATCH
 }
 
@@ -111,7 +112,7 @@ PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *
     else
       { data=string(stem)+".data"; domain=string(stem)+".names"; }
 
-    return WrapNewOrange(mlnew TC45ExampleGenerator(data, PDomain(mlnew TC45Domain(domain, knownVars(keywords)))), type);
+    return WrapNewOrange(mlnew TC45ExampleGenerator(data, TC45Domain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
   PyCATCH
 }
 
@@ -132,7 +133,7 @@ PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyOb
     else // this is a longer name, but starting with ASDA
       { domain="ASDO"+string(stem+4); data=string(stem); }
 
-    return WrapNewOrange(mlnew TAssistantExampleGenerator(data, PDomain(mlnew TAssistantDomain(domain, knownVars(keywords)))), type);
+    return WrapNewOrange(mlnew TAssistantExampleGenerator(data, TAssistantDomain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
   PyCATCH
 }
 

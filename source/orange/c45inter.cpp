@@ -67,25 +67,63 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
 }
 
 
+TC45Domain::TC45Domain()
+: skip (mlnew TBoolList())
+{}
+
+
 TC45Domain::TC45Domain(const TC45Domain &old)
 : TDomain(old),
   skip(CLONE(TBoolList, old.skip))
 {}
 
-/* Reads the .names file. The format does not exactly follow Quinlan's specifications (that is, a file, using
-   wrong delimiters can be read). However, when writing C4.5 files, they are written correctly.  */
-TC45Domain::TC45Domain(const string &stem, PVarList knownVars)
-: TDomain(),
-  skip(mlnew TBoolList())
-{ TFileExampleIteratorData fei(stem);
+
+TC45Domain::~TC45Domain()
+{ knownDomains.remove(this);
+}
+
+
+list<TC45Domain *> TC45Domain::knownDomains;
+TKnownVariables TC45Domain::knownVariables;
+
+
+void TC45Domain::removeKnownVariable(TVariable *var)
+{ knownVariables.remove(var);
+  var->destroyNotifier = NULL;
+}
+
+
+bool TC45Domain::isSameDomain(TC45Domain const *orig) const
+{ if (   !orig
+      || !sameDomains(this, orig)
+      || (skip && (!orig->skip || (skip->size() != orig->skip->size()))))
+    return false;
+
+  for(vector<bool>::const_iterator bi1(skip->begin()), be1(skip->end()), bi2(orig->skip->begin()); bi1!=be1; bi1++, bi2++)
+    if (*bi1!=*bi2)
+      return false;
+
+  return true;
+}
+
+
+// Reads the .names file. The format allow using different delimiters, not just those specified by the original format
+PDomain TC45Domain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ TC45Domain *newDomain = mlnew TC45Domain();
+  PDomain wdomain = newDomain;
+
+  TFileExampleIteratorData fei(stem);
   
   TIdList atoms;
   while(!feof(fei.file) && !readC45Atom(fei, atoms));
   if (!atoms.size())
-    raiseError("empty or invalid names file");
+    ::raiseError("C45Domain: empty or invalid names file");
 
-  classVar=makeVariable("y", knownVars, TValue::INTVAR);
-  TEnumVariable *evar=classVar.AS(TEnumVariable);
+  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
+  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
+
+  newDomain->classVar = makeVariable("y", TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
+  TEnumVariable *evar = newDomain->classVar.AS(TEnumVariable);
   { for(TIdList::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
       evar->addValue(*(ai++)); 
   }
@@ -94,35 +132,44 @@ TC45Domain::TC45Domain(const string &stem, PVarList knownVars)
     while(!feof(fei.file) && !readC45Atom(fei, atoms));
     if (!atoms.size()) break;
     if (atoms.size()<2)
-      raiseError("invalid names file");
+      ::raiseError("C45Domain: invalid .names file");
 
     TIdList::iterator ai(atoms.begin());
-    string name=*(ai++);
+    string name = *(ai++);
 
     if (*ai=="ignore")
-      skip->push_back(true);
+      newDomain->skip->push_back(true);
     else {
-      skip->push_back(false);
+      newDomain->skip->push_back(false);
 
       if ((ai==atoms.end()) || (string((*ai).begin(), (*ai).begin()+9)=="discrete "))
-        attributes->push_back(makeVariable(name, knownVars, TValue::INTVAR));
+        newDomain->attributes->push_back(makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier));
       else if (*ai=="continuous")
-        attributes->push_back(makeVariable(name, knownVars, TValue::FLOATVAR));
+        newDomain->attributes->push_back(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
       else {
-        attributes->push_back(makeVariable(name, knownVars, TValue::INTVAR));
-        evar = attributes->back().AS(TEnumVariable);
+        newDomain->attributes->push_back(makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier));
+        evar = newDomain->attributes->back().AS(TEnumVariable);
         while(ai!=atoms.end())
           evar->addValue(*(ai++));
       }
     }
   } while (!feof(fei.file));
             
-  if (!attributes->size())
-    raiseError("names file contains no variables but class variable");
+  if (!newDomain->attributes->size())
+    ::raiseError("C45Domain: .names file contains no variables but class variable");
 
-  skip->push_back(false); // for class
-  variables=mlnew TVarList(attributes.getReference());
-  variables->push_back(classVar);
+  newDomain->skip->push_back(false); // for class
+  newDomain->variables = mlnew TVarList(newDomain->attributes.getReference());
+  newDomain->variables->push_back(newDomain->classVar);
+
+  if (newDomain->isSameDomain(sourceDomain.AS(TC45Domain)))
+    return sourceDomain;
+
+  ITERATE(list<TC45Domain *>, di, knownDomains)
+    if (newDomain->isSameDomain(*di))
+      return *di;
+
+   return wdomain;
 }
 
 
