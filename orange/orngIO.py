@@ -227,20 +227,21 @@ def toR(filename,t):
                     f.write(',')
         elif atyp[i] == 1: # discrete
             if aord[i]: # ordered
-                f.write('"%s" = ordered(levels=c('%(labels[i]))
-                for j in xrange(len(as[i].values)):
-                    f.write('"%s"'%(as[i].values[j]))
-                    if j == len(as[i].values)-1:
-                        f.write('),c(')
-                    else:
-                        f.write(',')
+                f.write('"%s" = ordered('%labels[i])
             else:
-                f.write('"%s" = factor(c('%(labels[i]))
+                f.write('"%s" = factor('%labels[i])
+            f.write('levels=c('%(labels[i]))
+            for j in xrange(len(as[i].values)):
+                f.write('"x%s"'%(as[i].values[j]))
+                if j == len(as[i].values)-1:
+                    f.write('),c(')
+                else:
+                    f.write(',')
             for j in xrange(len(t)):
                 if t[j][i].isSpecial():
                     f.write('NA')
                 else:
-                    f.write('"%s"'%str(t[j][i]))
+                    f.write('"x%s"'%str(t[j][i]))
                 if (j == len(t)-1):
                     f.write('))')
                 else:
