@@ -515,9 +515,9 @@ class SchemaDoc(QMainWindow):
             buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
             buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
             progressHandlers += "self.ow%s.progressBarSetHandler(self.progressHandler)\n" % (name) +t+t
-            loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, name) +t+t
+            loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
             loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
-            saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (name, name) +t+t
+            saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
             
         for line in self.lines:
             if not line.getEnabled(): continue
