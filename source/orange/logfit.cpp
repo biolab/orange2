@@ -21,7 +21,7 @@
 
 #include "logfit.ppp"
 #include "converts.hpp"
-#include "../external/logreg/logreg.hpp"
+#include "logreg.hpp"
 
 TLogisticFitter_Cholesky::TLogisticFitter_Cholesky()
 {}

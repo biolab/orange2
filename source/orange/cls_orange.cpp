@@ -538,18 +538,8 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
     }
 
   PyCATCH_1;
-  // this reports only errors that occur when setting built-in properties
-
-  // setting 'name', 'shortDescription', 'description' or setting any attributes to types that are
-  // *derived* from Orange types is OK and without warning
-  if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description") && PyOrange_CheckType(self->ob_type)) {
-    char sbuf[255];
-    sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
-    if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
-      return -1;
-  }
-
-  return PyObject_GenericSetAttr((PyObject *)self, pyname, args);
+  
+  return 1; // attribute not set (not even attempted to), try something else
 }
 
 
@@ -580,9 +570,9 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
 // This calls getattr1; first with the given, than with the translated name
 { 
   PyTRY
-    PyObject *res=Orange_getattr1(self, name);
+    PyObject *res = Orange_getattr1(self, name);
     if (!res) {
-      PyObject *translation=PyOrange_translateObsolete((PyObject *)self, name);
+      PyObject *translation = PyOrange_translateObsolete((PyObject *)self, name);
       if (translation) {
         PyErr_Clear();
         res = Orange_getattr1(self, translation);
@@ -595,19 +585,43 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
 }
 
 
-int Orange_setattr(TPyOrange *self, PyObject *name, PyObject *args)
+int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
 // This calls setattr1; first with the given, than with the translated name
 { PyTRY
-    int res=Orange_setattr1(self, name, args);
-    if (res<0) {
-      PyObject *translation=PyOrange_translateObsolete((PyObject *)self, name);
-      if (translation) {
-        PyErr_Clear();
-        res=Orange_setattr1(self, translation, args);
-        Py_DECREF(translation);
-      }
+    // Try to set it as C++ class member
+    int res = Orange_setattr1(self, pyname, args);
+    if (res!=1)
+      return res;
+    
+    PyErr_Clear();
+    // Try to translate it as an obsolete alias for C++ class member
+    PyObject *translation = PyOrange_translateObsolete((PyObject *)self, pyname);
+    if (translation) {   
+      char sbuf[255];
+      char *name = PyString_AsString(pyname);
+      char *transname = PyString_AsString(translation);
+      sprintf(sbuf, "'%s' is an (obsolete) alias for '%s'", name, transname);
+      if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+        return -1;
+        
+      res = Orange_setattr1(self, translation, args);
+      Py_DECREF(translation);
+      return res;
     }
-    return res;
+    
+    // Store it in instance's dictionary
+    /* Issue a warning unless name is 'name', 'shortDescription', 'description'
+       or the instance's class is defined in Python and merely inherits this
+       method from Orange class) */
+    char *name = PyString_AsString(pyname);
+    if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description") && PyOrange_CheckType(self->ob_type)) {
+      char sbuf[255];
+      sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
+      if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+        return -1;
+    }
+
+    return PyObject_GenericSetAttr((PyObject *)self, pyname, args);
   PyCATCH_1
 }
 

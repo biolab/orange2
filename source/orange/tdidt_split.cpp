@@ -728,7 +728,11 @@ PExampleGeneratorList TTreeExampleSplitter_IgnoreUnknowns::operator ()(PTreeNode
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsToCommon::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = node->branchSelector.getReference();
+{ 
+  if (!node->branchSizes)
+    raiseError("TreeExampleSplitter_UnknownsToCommon: splitConstructor didn't set the branchSize; use different constructor or splitter");
+
+  TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
   const int mostCommon = node->branchSizes->highestProbIntIndex();
 
@@ -811,9 +815,9 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToBranch::operator ()(PTreeNo
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTreeNode node, PExampleGenerator gen, const int &weightID, vector<int> &newWeights)
-{ TClassifier &branchSelector = node->branchSelector.getReference();
+{ 
   int maxIndex = node->branchDescriptions->size();
-
+  TClassifier &branchSelector = node->branchSelector.getReference();
  
   vector<TExampleTable *> uexamplePtrs;
   PExampleGeneratorList examplePtrs = prepareGeneratorList(maxIndex, gen->domain, uexamplePtrs);
@@ -829,6 +833,9 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
   }
 
   else {
+    if (!node->branchSizes)
+      raiseError("TreeExampleSplitter_UnknownsAsBranchSizes: splitConstructor didn't set the branchSize; use different constructor or splitter");
+
     const TDiscDistribution &branchSizes = node->branchSizes.getReference();
     for(int i = maxIndex; i--; )
       newWeights.push_back(getMetaID());
