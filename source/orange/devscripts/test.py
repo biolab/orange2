@@ -2,8 +2,9 @@ import os, os.path, sys, traceback
 from string import rstrip
 
 startdir = os.getcwd()
-dir = r"d:\ai\orange\doc\reference"
+#dir = r"d:\ai\orange\doc\reference"
 #dir = "/home/janez/doc/reference"
+dir = "/Users/janez/orange-dev/doc/reference"
 
 os.chdir(dir)
 sys.path = [dir] + sys.path
