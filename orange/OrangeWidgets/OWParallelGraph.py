@@ -44,7 +44,6 @@ class OWParallelGraph(OWVisGraph):
     # update shown data. Set labels, coloring by className ....
     #
     def updateData(self, labels, className):
-        print "updateData"
         self.removeTooltips()
         self.removeCurves()
         self.removeMarkers()
@@ -325,7 +324,6 @@ class OWParallelGraph(OWVisGraph):
         
 
     def addTooltips(self):
-        print self.size().width(), self.size().height()
         for i in range(len(self.toolInfo)):
             (name, value, total, sumTotals, lista, (x_start,x_end), (y_start, y_end)) = self.toolInfo[i]
             tooltipText = "Attribute: <b>%s</b><br>Value: <b>%s</b><br>Total instances: <b>%i</b> (%.1f%%)<br>Class distribution:<br>" % (name, value, total, 100.0*float(total)/float(sumTotals))
@@ -338,16 +336,13 @@ class OWParallelGraph(OWVisGraph):
             y_1 = self.transform(QwtPlot.yLeft, y_start)
             y_2 = self.transform(QwtPlot.yLeft, y_end)
             rect = QRect(x_1, y_1, x_2-x_1, y_2-y_1)
-            print x_1, x_2, y_1, y_2
             self.toolRects.append(rect)            
             QToolTip.add(self, rect, tooltipText)
-        print "added %i tooltips" %(len(self.toolInfo))
 
     def removeTooltips(self):
         for rect in self.toolRects:
             QToolTip.remove(self, rect)
         self.toolRects = []
-        print "removed tooltips"
 
     def updateLayout(self):
         OWVisGraph.updateLayout(self)

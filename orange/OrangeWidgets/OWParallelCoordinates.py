@@ -138,7 +138,6 @@ class OWParallelCoordinates(OWWidget):
         #self.repaint()
 
     def resizeEvent(self, e):
-        print "resizeEvent"
         self.isResizing = 1
         self.updateGraph()
 
