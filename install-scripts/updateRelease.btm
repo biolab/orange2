@@ -1,6 +1,3 @@
 call updateSetConstants__.btm
-
-set orangeMinorVersion=%@eval[%orangeMinorVersion+1]
 set verstr=%orangeReleaseVersion.%orangeMajorVersion.%orangeMinorVersion
-
 call updateCommon__.btm

@@ -29,12 +29,6 @@ rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
 rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
 
-rem ************************************************
-rem *** PREPARE THE DOCUMENTATION SNAPSHOT
-
-cd %STABLEDIR/orange/doc
-del %DOWNLOADDIR\orange-doc-snap-*.zip
-"c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
 
 rem ************************************************
 rem *** COMPILE NEW INSTALLATIONS
@@ -55,6 +49,7 @@ del %DOWNLOADDIR\orange-source-*.zip
 cdd %STABLEDIR
 winrar a -r "%DOWNLOADDIR\%SOURCE" orange/OrangeCanvas orange/OrangeWidgets orange/doc
 winrar d "%DOWNLOADDIR\%SOURCE" @orange\exclude.lst
+winrar d -inul "%DOWNLOADDIR\%SOURCE" Root
 winrar a -r "%DOWNLOADDIR\%SOURCE" -aporange source
 winrar a "%DOWNLOADDIR\%SOURCE" orange/*.py orange/COPYING
 
@@ -69,4 +64,7 @@ rem *** TAG THE FILES ON CVS AND UPDATE versions.set
 rem cvs -d :sspi:cvs@estelle.fri.uni-lj.si:/CVS rtag -r stable -f %TAG orange source
 rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
 
-rem plink blaz@morty.fri.uni-lj.si ~/install-scripts/mac/macinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0
+rem plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si ~/install-scripts/mac/macinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0
+
+cdd %SCRIPTDIR
+updateSnapshot.btm

@@ -1,5 +1,9 @@
 call updateSetConstants__.btm
 
+set DOCUMENTATION=orange-doc-snap-%daystr.zip
+set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
+set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
+
 pushd
 
 rem ************************************************
@@ -18,21 +22,17 @@ rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
 del /qsyfx orange
-rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS login
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r HEAD orange
 cd orange
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r HEAD source
 
 
 rem ************************************************
-rem *** REMOVE UNNEEDED FILES FROM THE DOCUMENTATION
 rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
-cd orange\doc
-del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
+cd %SNAPCHECKOUTDIR\orange\doc
 del %DOWNLOADDIR\orange-doc-snap-*.zip
-"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
-set DOCUMENTATION="orange-doc-snap-%daystr.zip"
+"c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
 cd ..\..
 
 
@@ -40,16 +40,15 @@ rem ************************************************
 rem *** COMPILE NEW SNAPSHOT
 
 cdd %SCRIPTDIR
+python buildInstFileList.py %STABLEDIR
 del %DOWNLOADDIR\orange-win-snap-*.exe
-nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR install3.nsi
-set WIN_SNAPSHOT="orange-win-snap-%daystr.exe"
+nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR install3.nsi
 
 pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
 cdd %SNAPCHECKOUTDIR
 winrar a -r "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
 winrar a "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/*.py orange/COPYING
-set SOURCE_SNAPSHOT="orange-source-snap-%daystr.zip"
 popd
 
 cdd %SNAPCHECKOUTDIR
@@ -60,4 +59,3 @@ cdd %SCRIPTDIR
 call updateVersionsPy__.btm
 
 popd
-pause
