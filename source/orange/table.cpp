@@ -205,8 +205,9 @@ const TExample &TExampleTable::back() const
 
 void TExampleTable::clear()
 { if (examples) {
-    while (_Last != examples)
-      delete *--_Last;
+    if (ownsPointers)
+      while (_Last != examples)
+        delete *--_Last;
     free(examples);
   }
   _Last = _EndSpace = examples = NULL;
@@ -275,7 +276,7 @@ void TExampleTable::erase(const int &sti, const int &eni)
 void TExampleTable::erase(TExample **ptr)
 { if (ownsPointers)
     delete ptr;
-  memmove(ptr, ptr+1, _Last - ptr - 1);
+  memmove(ptr, ptr+1, sizeof(TExample **)*(_Last - ptr - 1));
   _Last--;
 }
 
@@ -287,7 +288,7 @@ void TExampleTable::erase(TExample **fromPtr, TExample **toPtr)
       delete *(ee++);
   }
 
-  memmove(fromPtr, toPtr, _Last - toPtr);
+  memmove(fromPtr, toPtr, sizeof(TExample **)*(_Last - toPtr));
 
   _Last -= (toPtr - fromPtr);
 
@@ -306,7 +307,7 @@ void TExampleTable::insert(const int &sti, const TExample &ex)
     growTable();
 
   TExample **sp = examples + sti;
-  memmove(sp+1, sp, _Last - sp);
+  memmove(sp+1, sp, sizeof(TExample **)*(_Last - sp));
   *sp = ownsPointers ? CLONE(TExample, &ex) : const_cast<TExample *>(&ex);
 
   examplesHaveChanged();

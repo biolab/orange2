@@ -37,6 +37,7 @@
 #include "tabdelim.ppp"
 
 bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true);
+bool atomsEmpty(const TIdList &atoms);
 
 list<TDomain *> TTabDelimExampleGenerator::knownDomains;
 
@@ -86,7 +87,7 @@ void TTabDelimExampleGenerator::destroyNotifier(TDomain *domain)
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
   TIdList atoms;
-  while(!feof(fei.file) && !readTabAtom(fei, atoms)) {
+  while(!feof(fei.file) && (!readTabAtom(fei, atoms) || atomsEmpty(atoms))) {
     TIdList::iterator ii(atoms.begin()), ie(atoms.end());
     while ((ii!=ie) && !(*ii).length())
       ii++;
@@ -593,6 +594,14 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
   mldelete metaIDs;
 
   return newDomain;
+}
+
+
+bool atomsEmpty(const TIdList &atoms)
+{ const_ITERATE(TIdList, ai, atoms)
+    if ((*ai).length())
+      return false;
+  return true;
 }
 
 
