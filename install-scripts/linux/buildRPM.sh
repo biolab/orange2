@@ -1,16 +1,31 @@
-TAG=stable
-VER=$TAG
+# script accepts three parameters:
+#   version
+#   release
+#   RPM file name to generate
+#   tag (if not given, stable or HEAD is used)
 
-## check out from CVS
+# it builds a RPM package from the specified sources
+# and copies it to the web (on estelle)
+
+if [ $# -lt 3 ]; then
+	exit 1
+fi
+
+VER=$1
+REL=$2
+RPMFILE=$3
+TAG=${4:-stable}
+
+## check out source files from CVS
 ## and create the distribution (Source) file with the top-level directory of same name
 ORANGESOURCE=orange-linux-$VER.tgz
 ORANGEDIR=orange-$VER
 
-#rm -Rf $ORANGEDIR 
-#cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d orange-$VER orange
-#cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d orange-$VER/source source
-#tar -cvzf $ORANGESOURCE orange-$VER
-#rm -Rf $ORANGEDIR
+rm -Rf $ORANGEDIR 
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d $ORANGEDIR orange
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d $ORANGEDIR/source source
+tar -cvzf $ORANGESOURCE $ORANGEDIR
+rm -Rf $ORANGEDIR
 
 ## create .spec file for building RPM for Orange version: $VER
 SPECF=orange.spec
@@ -19,8 +34,8 @@ SPECF=orange.spec
 # preamble section
 echo Summary: Orange is Data Mining Application with Visual Programming capabilities > $SPECF
 echo Name: orange >> $SPECF
-echo Version: $TAG >> $SPECF
-echo Release: 1 >> $SPECF
+echo Version: $VER >> $SPECF
+echo Release: $REL >> $SPECF
 echo Copyright: GPL >> $SPECF
 echo Group: Applications >> $SPECF
 echo Source: http://www.ailab.si/Orange/Download/$ORANGESOURCE>> $SPECF
@@ -40,29 +55,30 @@ echo  >> $SPECF
 
 # prep section
 echo "%prep" >> $SPECF
-echo cd /usr/src/redhat/BUILD/orange-stable >> $SPECF
-#echo "%setup" >> $SPECF
+#echo cd /usr/src/redhat/BUILD/orange-stable >> $SPECF
+echo "%setup" >> $SPECF
 
 # build section
 echo "%build" >> $SPECF
-echo cd /usr/src/redhat/BUILD/orange-stable/source >> $SPECF
+#echo cd /usr/src/redhat/BUILD/orange-stable/source >> $SPECF
+echo cd source >> $SPECF
 echo python makedep.py >> $SPECF
 echo make >> $SPECF
 
 # install section
 echo "%install" >> $SPECF
-echo cd /usr/src/redhat/BUILD/orange-stable/source >> $SPECF
+#echo /usr/src/redhat/BUILD/orange-stable/source >> $SPECF
+echo cd source >> $SPECF
 echo make ROOT="\$RPM_BUILD_ROOT" install >> $SPECF
 
 # files section
 echo %files >> $SPECF
+echo %config /usr/local/lib/python2.3/site-packages/orange/OrangeCanvas/widgetregistry.xml >> $SPECF
 echo /usr/local/lib/python2.3/site-packages/orange >> $SPECF
 echo /usr/local/bin/canvas >> $SPECF
 echo %docdir /usr/local/doc/orange >> $SPECF
 echo /usr/local/doc/orange >> $SPECF
 echo %config /usr/local/lib/python2.3/site-packages/orange.pth >> $SPECF
-#echo %config /usr/local/lib/python2.3/site-packages/orange/OrangeCanvas/widgetregistry.xml >> $SPECF
-
 
 # post script
 # %post
@@ -70,12 +86,23 @@ echo %config /usr/local/lib/python2.3/site-packages/orange.pth >> $SPECF
 
 ## spec file built, now use it to make RPM
 # copy spec file into appropriate Build Directory
-cp $SPECF /usr/src/redhat/SPECS
-cp orange.gif /usr/src/redhat/SOURCES
+cp $SPECF /usr/src/redhat/SPECS/.
+cp orange.gif /usr/src/redhat/SOURCES/.
 
 # copy sources into the appropriate Build Directory
-cp $ORANGESOURCE /usr/src/redhat/SOURCES
+cp $ORANGESOURCE /usr/src/redhat/SOURCES/.
 
 # call rpm
-rpmbuild -ba $SPECF ## stored into /var/tmp   ## --buildarch i486
+if ! rpmbuild -ba $SPECF &> output.log; then ## stored into /var/tmp   ## --buildarch i486
+	mail -s "ERROR creating Orange RPM" tomaz.curk@fri.uni-lj.si < output.log
+	cat output.log
+	echo -e "\n\nERROR creating RPM, see log above"
+	exit 1
+else
+	mail -s "Orange RPM created successfully" tomaz.curk@fri.uni-lj.si < output.log
+	cat output.log
+	echo update was successful
+fi
+
+cp /usr/src/redhat/RPMS/i386/orange-$VER-$REL.i386.rpm $RPMFILE
 #
