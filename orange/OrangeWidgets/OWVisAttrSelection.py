@@ -196,7 +196,7 @@ def selectAttributes(data, attrContOrder, attrDiscOrder, projections = None):
         shown += s; hidden += h
 
     elif attrDiscOrder == "Oblivious decision graphs":
-            shown.append(data.domain.classVar.name)
+            #shown.append(data.domain.classVar.name)
             attrs = getFunctionalList(data)
             for item in attrs:
                 shown.append(item)
@@ -324,7 +324,8 @@ def optimizeAttributeOrder(attrInfo, currentProj, currentVal, numberOfAttributes
     optimizeAttributeOrder(newAttrInfo, newCurrentProj, newCurrentVal, numberOfAttributes, optimizationDlg, app)
     if not optimizationDlg.canContinueOptimization(): return
 
-    optimizeAttributeOrder(attrInfo, currentProj, currentVal, numberOfAttributes, optimizationDlg, app)
+    if len(currentProj) < numberOfAttributes/2:
+        optimizeAttributeOrder(attrInfo, currentProj, currentVal, numberOfAttributes, optimizationDlg, app)
     if not optimizationDlg.canContinueOptimization(): return
     
 
