@@ -52,6 +52,7 @@ install: all orange.pth canvas bininstall docinstall
 bininstall:
 	python -c "import compileall; compileall.compile_dir('..')"
 	$(INSTALL_DIR) $(DESTDIR)
+	$(INSTALL_DIR) $(SCRIPTDIR)
 	@for i in OrangeCanvas OrangeWidgets GUIApplications; \
 	do \
 		if test ! -d $(DESTDIR)/$$i; then \
