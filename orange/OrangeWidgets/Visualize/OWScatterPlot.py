@@ -31,7 +31,7 @@ class OWScatterPlot(OWWidget):
         OWWidget.__init__(self, parent, "ScatterPlot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Visual learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
 
         #set default settings
         self.pointWidth = 5
@@ -176,7 +176,8 @@ class OWScatterPlot(OWWidget):
         
         self.activateLoadedSettings()
         self.resize(900, 700)
-        self.send("Visual learner", clusterLearner(self.clusterDlg, self))
+        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self))
+        self.send("Cluster learner", clusterLearner(self.clusterDlg, self))
 
 
     # #########################
