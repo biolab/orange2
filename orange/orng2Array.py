@@ -51,6 +51,7 @@ import orange, warnings, math
 #
 # if you are unhappy about this, subclass DomainTranslation and fudge with analyse()
 
+SVM_CMIN = -1.0
 SVM_MIN = 0.0
 SVM_MAX = 1.0
 
@@ -298,10 +299,11 @@ class Ordinalizer:
         return self.attr(int((list[self.idx]/self.mult)+self.disp+0.5))
 
 class Binarizer:
-    def __init__(self,idx,attr):
+    def __init__(self,idx,attr,isclass=0):
         self.idx = idx
         self.nidx = idx+len(attr.values)
         self.attr = attr
+        self.isclass = isclass
         return
 
     def status(self):
@@ -314,7 +316,10 @@ class Binarizer:
         return
             
     def prepareSVM(self):
-        self.min = SVM_MIN
+        if self.isclass:
+            self.min = SVM_CMIN
+        else:
+            self.min = SVM_MIN
         self.max = SVM_MAX
         self.missing = (0,1)
         return
@@ -356,11 +361,12 @@ class Binarizer:
         return self.attr(best-self.idx)
 
 class Dummy:
-    def __init__(self,idx,attr):
+    def __init__(self,idx,attr,isclass=0):
         self.idx = idx
         self.nidx = idx+len(attr.values)-1
         self.counts = [0]*len(attr.values)
         self.attr = attr
+        self.isclass = 0
         return
 
     def learn(self,value):
@@ -389,7 +395,10 @@ class Dummy:
         print "\tidxn:",self.nidx-self.idx
             
     def prepareSVM(self):
-        self.min = SVM_MIN
+        if self.isclass:
+            self.min = SVM_CMIN
+        else:
+            self.min = SVM_MIN
         self.max = SVM_MAX
         self.missing = (0,1)
         return
