@@ -566,14 +566,14 @@ class OWRadvizGraph(OWVisGraph):
                             if validData[i] == 0: continue
                             table.append([x_positions[i], y_positions[i], self.rawdata[i].getclass()])
 
-                        accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+                        accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                         if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, len(indPermutations.values()), text, accuracy)
                         else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, len(indPermutations.values()), accuracy) 
                         
                         # save the permutation
-                        tempList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation]))
+                        tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
                         if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
-                            addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation])
+                            addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation])
 
                         self.triedPossibilities += 1
                         self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
@@ -582,8 +582,8 @@ class OWRadvizGraph(OWVisGraph):
                         # return only the best attribute placements
                         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
                         else: funct = min
-                        (acc, lenTable, attrList) = funct(tempList)
-                        if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList)
+                        (acc, other_results, lenTable, attrList) = funct(tempList)
+                        if addResultFunct: addResultFunct(acc, other_results, lenTable, attrList)
 
    
 

@@ -184,7 +184,7 @@ class OWScatterPlot(OWWidget):
    
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc = self.graph.getProjectionQuality(self.attrX, self.attrY, self.attrColor)
+        acc, other_results = self.graph.getProjectionQuality(self.attrX, self.attrY, self.attrColor)
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Scatterplot", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
@@ -231,8 +231,8 @@ class OWScatterPlot(OWWidget):
             table = orange.Preprocessor_dropMissing(table)
             if len(table) < self.optimizationDlg.minExamples: continue
 
-            accuracy = self.optimizationDlg.kNNComputeAccuracy(table)
-            self.optimizationDlg.addResult(self.data, accuracy, len(table), [xattr, yattr])
+            accuracy, other_results = self.optimizationDlg.kNNComputeAccuracy(table)
+            self.optimizationDlg.addResult(self.data, accuracy, other_results, len(table), [xattr, yattr])
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
@@ -285,7 +285,7 @@ class OWScatterPlot(OWWidget):
         self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, list, strList) = val
 
         attrNames = [attr.name for attr in self.data.domain]
         for item in list:
@@ -366,11 +366,11 @@ class OWScatterPlot(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.optimizationDlg.clearResults()
-        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
+        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
        
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()

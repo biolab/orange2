@@ -146,7 +146,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
+        #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
         self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)        
@@ -197,7 +197,7 @@ class OWPolyviz(OWWidget):
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
+        acc, results = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Polyviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
@@ -234,8 +234,8 @@ class OWPolyviz(OWWidget):
             self.progressBarSet(100.0*testIndex/float(len(results)))
 
             reverseDict = self.buildOrientationDictFromString(attrList, strList)
-            accuracy = self.graph.getProjectionQuality(attrList, reverseDict)
-            self.optimizationDlg.addResult(self.data, accuracy, tableLen, attrList, strList)
+            accuracy, other_results = self.graph.getProjectionQuality(attrList, reverseDict)
+            self.optimizationDlg.addResult(self.data, accuracy, other_results, tableLen, attrList, strList)
 
         self.optimizationDlg.finishedAddingResults()
         self.optimizationDlg.enableControls()
@@ -324,9 +324,8 @@ class OWPolyviz(OWWidget):
                 l = len(proj)
                 for i in range(len(proj)-2, 0, -1):
                     if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-                res = QMessageBox.information(self,'Polyviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
-                if res != 0: return
-            
+                self.warning("There are %s possible polyviz projections using currently visualized attributes"% (proj))
+                    
             self.progressBarInit()
             self.optimizationDlg.disableControls()
             startTime = time()
@@ -394,7 +393,7 @@ class OWPolyviz(OWWidget):
         print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(proj, secs/60, secs%60)
 
     
-    def addInterestingProjection(self, data, accuracy, tableLen, attrList, reverse):
+    def addInterestingProjection(self, data, accuracy, other_results, tableLen, attrList, reverse):
         strList = "["
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
@@ -402,7 +401,7 @@ class OWPolyviz(OWWidget):
             else:
                 strList += attrList[i] + "+, "
         strList = strList[:-2] + "]"
-        self.optimizationDlg.addResult(data, accuracy, tableLen, attrList, strList)
+        self.optimizationDlg.addResult(data, accuracy, other_results, tableLen, attrList, strList)
         
 
     def reverseSelectedAttribute(self, item):
@@ -425,7 +424,7 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, list, strList) = val
         
         # check if all attributes in list really exist in domain        
         attrNames = []

@@ -140,7 +140,7 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
 
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
+        #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
         self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)
@@ -186,7 +186,7 @@ class OWRadviz(OWWidget):
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc = self.graph.getProjectionQuality(self.getShownAttributeList())
+        acc, other_results = self.graph.getProjectionQuality(self.getShownAttributeList())
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
@@ -222,8 +222,8 @@ class OWRadviz(OWWidget):
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
 
-            accuracy = self.graph.getProjectionQuality(attrList)            
-            self.optimizationDlg.addResult(self.data, accuracy, tableLen, attrList, strList)
+            accuracy, other_results = self.graph.getProjectionQuality(attrList)            
+            self.optimizationDlg.addResult(self.data, accuracy, other_results, tableLen, attrList, strList)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
@@ -257,8 +257,7 @@ class OWRadviz(OWWidget):
             l = len(proj)
             for i in range(len(proj)-2, 0, -1):
                 if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections with the selected number of attributes. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
-            if res != 0: return
+            self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
         
         self.optimizationDlg.disableControls()
 
@@ -290,7 +289,7 @@ class OWRadviz(OWWidget):
         self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, list, strList) = val
         
         attrNames = []
         for attr in self.data.domain:

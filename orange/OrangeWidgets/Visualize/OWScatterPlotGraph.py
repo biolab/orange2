@@ -385,18 +385,15 @@ class OWScatterPlotGraph(OWVisGraph):
         xArray = self.noJitteringScaledData[self.attributeNames.index(xAttr)]
         yArray = self.noJitteringScaledData[self.attributeNames.index(yAttr)]
 
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
         table = orange.ExampleTable(domain)
-                 
+        valid = self.validDataArray[self.attributeNames.index(xAttr)] + self.validDataArray[self.attributeNames.index(yAttr)] - 1
+        
         for i in range(len(self.rawdata)):
-            if xArray[i] == "?" or yArray[i] == "?": continue
-            example = orange.Example(domain, [xArray[i], yArray[i], self.rawdata[i].getclass()])
-            table.append(example)
-        accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
-        print "kNeighbours = %3.d - Accuracy: %2.2f" % (self.kNNOptimization.kValue, accuracy)
-        return accuracy
+            if not valid[i]: continue
+            table.append(orange.Example(domain, [xArray[i], yArray[i], self.rawdata[i].getclass()]))
+        
+        return self.kNNOptimization.kNNComputeAccuracy(table)
 
 
     # ####################################
@@ -413,10 +410,12 @@ class OWScatterPlotGraph(OWVisGraph):
 
         xData = self.noJitteringScaledData[xAttrIndex]
         yData = self.noJitteringScaledData[yAttrIndex]
+        valid = self.validDataArray[xAttrIndex] + self.validDataArray[yAttrIndex] - 1
 
         xArray = []; yArray = []
         for i in range(len(self.rawdata)):
-            if xData[i] == "?" or yData[i] == "?": xArray.append("?"); yArray.append("?"); continue
+            if not valid[i]:
+                xArray.append("?"); yArray.append("?"); continue
 
             if xIsDiscrete: xArray.append(xVar * xData[i])
             else:           xArray.append(self.rawdata[i][xAttrIndex].value)
@@ -448,29 +447,7 @@ class OWScatterPlotGraph(OWVisGraph):
         testIndex = 0
         totalTestCount = len(projections)
 
-        """        
-        for (val, attr1, attr2) in projections:
-            testIndex += 1
-            self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
-            if self.kNNOptimization.isOptimizationCanceled(): return
-            
-            table = self.rawdata.select([attr1, attr2, self.rawdata.domain.classVar.name])
-            table = orange.Preprocessor_dropMissing(table)
-            if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
-            
-            accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
-            if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
-            else:
-                print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
-
-            # save the permutation
-            if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
-        
-        """
-
         # it is better to use scaled data - in case of ordinal discrete attributes we take into account that the attribute is ordinal.
-        
         # create a dataset with scaled data
         contVars = []
         for attr in self.rawdata.domain.attributes:
@@ -486,18 +463,20 @@ class OWScatterPlotGraph(OWVisGraph):
             testIndex += 1
             if self.kNNOptimization.isOptimizationCanceled(): return
 
+            valid = self.validDataArray[self.attributeNames.index(attr1)] + self.validDataArray[self.attributeNames.index(attr2)] - 1
             table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
-            table = orange.Preprocessor_dropMissing(table)
+            table = table.select(list(valid))
+            
             if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
             
-            accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+            accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
             if table.domain.classVar.varType == orange.VarTypes.Discrete:
                 print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
             else:
                 print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
             # save the permutation
-            if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
+            if addResultFunct: addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name])
             self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
 
 
