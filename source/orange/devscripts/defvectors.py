@@ -1,0 +1,102 @@
+### writes a text file with code that defines methods for sequence slots
+
+definition ="""
+$wrappedlistname$ P$pyname$_FromArguments(PyObject *arg) { return $classname$::P_FromArguments(arg); }
+PyObject *$pyname$_FromArguments(PyTypeObject *type, PyObject *arg) { return $classname$::_FromArguments(type, arg); }
+PyObject *$pyname$_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of $pyelement$>)") { return $classname$::_new(type, arg, kwds); }
+PyObject *$pyname$_getitem_sq(TPyOrange *self, int index) { return $classname$::_getitem(self, index); }
+int       $pyname$_setitem_sq(TPyOrange *self, int index, PyObject *item) { return $classname$::_setitem(self, index, item); }
+PyObject *$pyname$_getslice(TPyOrange *self, int start, int stop) { return $classname$::_getslice(self, start, stop); }
+int       $pyname$_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return $classname$::_setslice(self, start, stop, item); }
+int       $pyname$_len_sq(TPyOrange *self) { return $classname$::_len(self); }
+PyObject *$pyname$_concat(TPyOrange *self, PyObject *obj) { return $classname$::_concat(self, obj); }
+PyObject *$pyname$_repeat(TPyOrange *self, int times) { return $classname$::_repeat(self, times); }
+PyObject *$pyname$_str(TPyOrange *self) { return $classname$::_str(self); }
+int       $pyname$_contains(TPyOrange *self, PyObject *obj) { return $classname$::_contains(self, obj); }
+PyObject *$pyname$_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "($pyelement$) -> None") { return $classname$::_append(self, item); }
+PyObject *$pyname$_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "($pyelement$) -> int") { return $classname$::_count(self, obj); }
+PyObject *$pyname$_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> $pyname$") { return $classname$::_filter(self, args); }
+PyObject *$pyname$_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "($pyelement$) -> int") { return $classname$::_index(self, obj); }
+PyObject *$pyname$_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return $classname$::_insert(self, args); }
+PyObject *$pyname$_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return $classname$::_native(self); }
+PyObject *$pyname$_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> $pyelement$") { return $classname$::_pop(self, args); }
+PyObject *$pyname$_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "($pyelement$) -> None") { return $classname$::_remove(self, obj); }
+PyObject *$pyname$_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return $classname$::_reverse(self); }
+PyObject *$pyname$_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return $classname$::_sort(self, args); }
+"""
+
+outf = open("lib_vectors_auto.txt", "wt")
+
+def normalList(name, goesto):
+  return tuple([x % name for x in ("%sList", "%s", "P%sList", "T%sList", "P%s")] + [goesto])
+
+#  list name in Python,    element name in Py, wrapped list name in C, list name in C,         list element name in C, interface file
+for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
+  [("ValueList",           "Value",            "PValueList",           "TValueList",           "TValue",               "lib_kernel.cpp"),
+   ("VarList",             "Variable",         "PVarList",             "TVarList",             "PVariable",            "lib_kernel.cpp"),
+   ("VarListList",         "VarList",          "PVarListList",         "TVarListList",         "PVarList",             "lib_kernel.cpp"),
+   ("DomainDistributions", "Distribution",     "PDomainDistributions", "TDomainDistributions", "PDistribution",        "lib_kernel.cpp"),
+   normalList("Distribution", "lib_kernel.cpp"),
+   normalList("ExampleGenerator", "lib_kernel.cpp"),
+   normalList("Classifier", "lib_kernel.cpp"),
+   ("Preprocess",          "Preprocessor",     "PPreprocess",          "TPreprocess",          "PPreprocessor",        "lib_preprocess.cpp"),
+   ("DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
+   ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
+   ("Filter_sameValues",   "ValueRange",       "PFilter_sameValues",   "TFilter_sameValues",   "PValueRange",          "lib_components.cpp"),
+   
+   ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
+   normalList("DTNode", "lib_learner.cpp")
+   ]:
+  outf.write("**** This goes to '%s' ****\n" % goesto)
+  outf.write(definition.replace("$pyname$", pyname)
+                       .replace("$classname$", "ListOfWrappedMethods<%s, %s, %s, (PyTypeObject *)&PyOr%s_Type>" % (wrappedlistname, listname, elementname, pyelementname))
+                       .replace("$pyelement$", pyelementname)
+                       .replace("$wrappedlistname$", wrappedlistname)
+             +"\n\n"
+            )
+
+
+definition = """
+bool convertFromPython(PyObject *, $elementname$ &);
+PyObject *convertToPython(const $elementname$ &);
+#define $listname$ _TOrangeVector<$elementname$>
+typedef GCPtr< $listname$ > $wrappedlistname$;
+""" \
++ definition \
++ "inline PyObject *$pyname$_repr(TPyOrange *self) { return $classname$::_str(self); }\n"
+
+
+coutf = open("lib_vectors.cpp", "wt")
+
+coutf.write("""\
+#include "orvector.hpp"
+#include "cls_orange.hpp"
+#include "vectortemplates.hpp"
+#include "externs.px"
+""")
+
+for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
+  [("IntList",          "int",    "PIntList",          "TIntList",          "int"),
+   ("FloatList",        "float",  "PFloatList",        "TFloatList",        "float"),
+   ("StringList",       "string", "PStringList",       "TStringList",       "string"),
+   ("LongList",         "int",    "PLongList",         "TLongList",         "long"),
+   ("_Filter_index",     "int",    "PFilter_index",     "TFilter_index",     "FOLDINDEXTYPE"),
+   ]:
+  if (pyname[0]=="_"):
+    pyname = pyname[1:]
+    outfile=outf
+  else:
+    outfile=coutf
+  outfile.write(definition.replace("$pyname$", pyname)
+                       .replace("$classname$", "ListOfUnwrappedMethods<%s, %s, %s>" % (wrappedlistname, listname, elementname))
+                       .replace("$pyelement$", pyelementname)
+                       .replace("$wrappedlistname$", wrappedlistname)
+                       .replace("$listname$", listname)
+                       .replace("$elementname$", elementname)
+             +"\n\n"
+            )
+
+coutf.write('#include "lib_vectors.px"\n')
+
+outf.close()
+coutf.close()

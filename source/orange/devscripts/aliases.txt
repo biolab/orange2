@@ -1,0 +1,2 @@
+Class EnumVariable
+attr name
