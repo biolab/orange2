@@ -482,10 +482,8 @@ class OWRadvizGraph(OWVisGraph):
             
         return (x_positions, y_positions, self.getValidList(indices))
 
-    # ##############################################################
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0):
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+
+    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0):
         if not validData: validData = self.getValidList(attrIndices)
 
         selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
@@ -507,7 +505,14 @@ class OWRadvizGraph(OWVisGraph):
         if jitterSize > 0.0:
             x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
             y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
-        data = Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
+        
+        return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
+
+    # ##############################################################
+    # create the projection of attribute indices given in attrIndices and create an example table with it. 
+    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0):
+        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize)
         return orange.ExampleTable(domain, data)
 
     # ##############################################################
