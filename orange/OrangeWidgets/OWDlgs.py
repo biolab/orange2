@@ -19,62 +19,30 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
         self.loadSettings()
         
-        self.space=QVBox(self)
+        self.space = QVBox(self)
         self.grid=QGridLayout(self)
         self.grid.addWidget(self.space,0,0)
-        self.group = QVGroupBox("Image size", self.space)
-        self.imageSize = QButtonGroup(5, Qt.Vertical, self.group)
-        self.imageSize.setFrameStyle(QFrame.NoFrame)
-
-        self.sizeOriginal = QRadioButton('Original size', self.imageSize)
-        self.size400 = QRadioButton('400 x 400', self.imageSize)
-        self.size600 = QRadioButton('600 x 600', self.imageSize)
-        self.size800 = QRadioButton('800 x 800', self.imageSize)
-        self.custom  = QRadioButton('Custom:', self.imageSize)
-        self.boxX = QHBox(self.group)
-        self.boxY = QHBox(self.group)
-        self.customWidth = QLabel('Width:', self.boxX)
-        self.xSize = QLineEdit(self.boxX)
-        self.customHeight = QLabel('Height:', self.boxY)
-        self.ySize = QLineEdit(self.boxY)
-        self.sizeOriginal.setChecked(1)
+        box = QVButtonGroup("Image Size", self.space)
+        size = OWGUI.radioButtonsInBox(box, self, "selectedSize", ["Current size", "400 x 400", "600 x 600", "800 x 800", "Custom:"])
         
-        self.printButton = QPushButton("Print", self.space)
-        self.okButton = QPushButton("Save image", self.space)
-        self.cancelButton = QPushButton("Cancel", self.space)
-        self.connect(self.printButton, SIGNAL("clicked()"), self.printPic)
-        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
-        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
-                
+        OWGUI.lineEdit(box, self, "customX", "       Weight:  ", orientation = "horizontal", valueType = int)
+        OWGUI.lineEdit(box, self, "customY", "       Height:   ", orientation = "horizontal", valueType = int)
 
-        if self.selectedSize == 0: self.sizeOriginal.setChecked(1)
-        elif self.selectedSize == 1: self.size400.setChecked(1)
-        elif self.selectedSize == 2: self.size600.setChecked(1)
-        elif self.selectedSize == 3: self.size600.setChecked(1)
-        self.xSize.setText(str(self.customX))
-        self.ySize.setText(str(self.customY))
-        self.resize(200,300)
+        self.printButton = OWGUI.button(self.space, self, "Print", callback = self.printPic)
+        self.okButton = OWGUI.button(self.space, self, "Save image", callback = self.accept)
+        self.cancelButton = OWGUI.button(self.space, self, "Cancel", callback = self.reject)
+                                       
+        self.resize(170,270)
 
     def accept(self):
-        if self.sizeOriginal.isChecked(): self.selectedSize = 0
-        elif self.size400.isChecked(): self.selectedSize = 1
-        elif self.size600.isChecked(): self.selectedSize = 2
-        elif self.size800.isChecked(): self.selectedSize = 3
-        self.customX = int(str(self.xSize.text()))
-        self.customY = int(str(self.ySize.text()))
         self.saveToFile()
         self.saveSettings()
         QDialog.accept(self)
 
-
     def printPic(self):
+        self.saveSettings()
         printer = QPrinter()
-
-        if self.sizeOriginal.isChecked(): size = self.size()
-        elif self.size400.isChecked(): size = QSize(400,400)
-        elif self.size600.isChecked(): size = QSize(600,600)
-        elif self.size800.isChecked(): size = QSize(800,800)
-        elif self.custom.isChecked():  size = QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
+        size = self.getSize()
         buffer = QPixmap(size)
 
         if printer.setup():
@@ -98,8 +66,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".",""); ext = ext.upper()
-        if ext == "" or not (ext == "BMP" or ext == "GIF" or ext == "PNG") :	
+        ext = ext[1:].upper()
+        if ext == "" or ext not in ("BMP", "GIF", "PNG") :	
         	ext = "PNG"  	# if no format was specified, we choose png
         	fileName = fileName + ".png"
 
@@ -108,12 +76,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.saveToFileDirect(fileName, ext, self.getSize())
 
     def getSize(self):
-        if self.sizeOriginal.isChecked(): return self.graph.size()
-        elif self.size400.isChecked(): return QSize(400,400)
-        elif self.size600.isChecked(): return QSize(600,600)
-        elif self.size800.isChecked(): return QSize(800,800)
-        elif self.custom.isChecked():  return QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
-        else: return QSize(400,400)
+        if self.selectedSize == 0: size = self.graph.size()
+        elif self.selectedSize == 4: size = QSize(self.customX, self.customY)
+        else: size = QSize(200 + self.selectedSize*200, 200 + self.selectedSize*200)
+        return size
         
     def saveToFileDirect(self, fileName, ext, size, overwriteExisting = 0):
         if os.path.exists(fileName) and not overwriteExisting:
@@ -152,7 +118,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
 
 if __name__== "__main__":
     a = QApplication(sys.argv)
-    c = OWAttributeOrder(0,0)
+    c = OWChooseImageSizeDlg(0)
     
     a.setMainWidget(c)
     c.show()
