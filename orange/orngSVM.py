@@ -56,7 +56,7 @@ class BasicSVMLearner(orange.Learner):
       self.degree = 3
       
       # poly/rbf/sigm parameter
-      # if 0.0, it is assigned the default value of 1.0/#attributes
+      # if 0.0, it is assigned the default value of 1.0/features
       self.gamma = 0.0
 
       # poly/sigm      
@@ -161,7 +161,7 @@ class BasicSVMClassifier(orange.Classifier):
       self.translate = translate
       self.normalize = normalize
 
-      if normalize and model['kernel_type'] == 0 and model["svm_type"] == 0 and model["nr_class"] == 2:
+      if normalize and model['kernel_type'] == 0 and model["svm_type"] in [0,1] and model["nr_class"] == 2:
           beta = model["rho"][0]
           svs = model["SV"]
           ll = -1
