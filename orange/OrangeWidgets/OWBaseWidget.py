@@ -17,7 +17,7 @@ import time
 class OWBaseWidget(QDialog):
     def __init__(
     self,
-    parent=None,
+    parent = None,
     title="Qt Orange BaseWidget",
     description="This a base for OWWidget. It encorporates saving, loading settings and signal processing.",
     wantSettings=FALSE,
@@ -55,6 +55,7 @@ class OWBaseWidget(QDialog):
         # needed by signalWrapper to know when everything was sent
         #self.stackHeight = 0
         self.needProcessing = 0     # used by signalManager
+        self.signalManager = None
 
         self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
         self.outputs = []    # signalName: dataType
@@ -106,7 +107,10 @@ class OWBaseWidget(QDialog):
 
     def send(self, signalName, value, id = None):
         self.linksOut[signalName] = (value, id)
-        signalManager.send(self, signalName, value, id)
+        if self.signalManager:
+            self.signalManager.send(self, signalName, value, id)
+        else:
+            signalManager.send(self, signalName, value, id)
 
     # Set all settings
     # settings - the map with the settings       
