@@ -139,6 +139,80 @@ public:
   virtual TExample *operator()(TExample &example);
 };
 
+#include "rulelearner.hpp"
+
+class TRuleEvaluator_Python : public TRuleEvaluator {
+public:
+  __REGISTER_CLASS
+  virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution) const;
+};
+
+class TRuleValidator_Python : public TRuleValidator {
+public:
+  __REGISTER_CLASS
+  virtual bool operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution) const;
+};
+
+class TRuleCovererAndRemover_Python : public TRuleCovererAndRemover {
+public:
+  __REGISTER_CLASS
+  virtual PExampleTable operator()(PRule, PExampleTable, const int &weightID, int &newWeight, const int &targetClass = -1) const;
+};
+
+class TRuleStoppingCriteria_Python : public TRuleStoppingCriteria {
+public:
+  __REGISTER_CLASS
+  virtual bool operator()(PRuleList, PRule, PExampleTable, const int &weightID) const;
+};
+
+class TRuleDataStoppingCriteria_Python : public TRuleDataStoppingCriteria {
+public:
+  __REGISTER_CLASS
+  virtual bool operator()(PExampleTable, const int &weightID, const int &targetClass) const;
+};
+
+class TRuleFinder_Python : public TRuleFinder {
+public:
+  __REGISTER_CLASS
+  virtual PRule operator()(PExampleTable, const int &weightID, const int &targetClass, PRuleList baseRules = PRuleList());
+};
+
+/*class TRuleBeamFilter_Python : public TRuleBeamFilter {
+public:
+  __REG ISTER_CLASS
+  virtual void operator()(PRuleList existingRules, PExampleTable, const int &weightID);
+};*/
+
+class TRuleBeamRefiner_Python : public TRuleBeamRefiner {
+public:
+  __REGISTER_CLASS
+  virtual PRuleList operator()(PRule rule, PExampleTable, const int &weightID, const int &targetClass = -1);
+};
+
+class TRuleBeamInitializer_Python : public TRuleBeamInitializer {
+public:
+  __REGISTER_CLASS
+  virtual PRuleList operator()(PExampleTable, const int &weightID, const int &targetClass, PRuleList baseRules, PRuleEvaluator, PDistribution prior, PRule &bestRule);
+};
+
+class TRuleBeamCandidateSelector_Python : public TRuleBeamCandidateSelector {
+public:
+  __REGISTER_CLASS
+  virtual PRuleList operator()(PRuleList existingRules, PExampleTable, const int &weightID);
+};
+
+class TRuleBeamFilter_Python : public TRuleBeamFilter {
+public:
+  __REGISTER_CLASS
+  virtual void operator()(PRuleList rules, PExampleTable, const int &weightID);
+};
+
+class TRuleClassifierConstructor_Python : public TRuleClassifierConstructor {
+public:
+  __REGISTER_CLASS
+  virtual PRuleClassifier operator ()(PRuleList, PExampleTable, const int &weightID);
+};
+
 /*
 Not verified yet:
 

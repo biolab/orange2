@@ -27,6 +27,8 @@
 #include "distvars.hpp"
 #include "trindex.hpp"
 
+
+WRAPPER(Filter);
 /*  An abstract class, used to select examples.
     It defines an abstract bool operator()(TExample &) which must be redefined in derived classes.  */
 class TFilter : public TOrange {
@@ -38,10 +40,11 @@ public:
 
   TFilter(bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &)=0;
+  virtual PFilter deepCopy() const;
   virtual void reset();
 };
 
-WRAPPER(Filter);
+
 #define TFilterList TOrangeVector<PFilter>
 VWRAPPER(FilterList)
 
@@ -106,7 +109,7 @@ public:
   virtual bool operator()(const TExample &);
 };
 
-
+WRAPPER(ValueFilter)
 class TValueFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
@@ -118,9 +121,10 @@ public:
 
   TValueFilter(const int &pos = ILLEGAL_INT, const int & = -1);
   virtual int operator()(const TExample &) const = 0; // Returns 1 for accept, 0 for reject, -1 for ignore
+  virtual PValueFilter deepCopy() const;
 };
 
-WRAPPER(ValueFilter)
+
 
 class TValueFilter_continuous : public TValueFilter {
 public:
@@ -135,6 +139,7 @@ public:
   TValueFilter_continuous(const int &pos, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = -1);
   TValueFilter_continuous(const int &pos, const int &op, const float &min=0.0, const float &max=0.0, const int &accs = -1);
   virtual int operator()(const TExample &) const;
+  virtual PValueFilter deepCopy() const;
 };
 
 
@@ -147,6 +152,7 @@ public:
   TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1);
   TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1);
   virtual int operator()(const TExample &) const;
+  virtual PValueFilter deepCopy() const;
 };
 
 
@@ -200,6 +206,7 @@ public:
   TFilter_values(bool anAnd=true, bool aneg = false, PDomain =PDomain());
   TFilter_values(PValueFilterList, bool anAnd, bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
+  virtual PFilter deepCopy() const;
 
   TValueFilterList::iterator findCondition(PVariable var, const int &varType, int &position);
   void updateCondition(PVariable var, const int &varType, PValueFilter filter);

@@ -15,7 +15,7 @@
     along with Orange; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-    Authors: Martin Mozina, Janez Demsar, Blaz Zupan, 1996--2002
+    Authors: Martin Mozina, Janez Demsar, Blaz Zupan, 1996--2005
     Contact: martin.mozina@fri.uni-lj.si
 */
 
@@ -59,10 +59,10 @@ public:
   TRule(const TRule &other, bool copyData = true);
   ~TRule();
 
-  bool operator()(const TExample &); // Returns 1 for accept, 0 for reject
-  PExampleTable operator()(PExampleTable, const bool ref = true, const bool negate = false); // filter examples
+  bool operator()(const TExample &); //P Returns 1 for accept, 0 for reject
+  PExampleTable operator()(PExampleTable, const bool ref = true, const bool negate = false); //P filter examples
     
-  void filterAndStore(PExampleTable, const int &weightID = 0, const int *prevCovered = NULL, const int anExamples = -1); // Selects examples from given data
+  void filterAndStore(PExampleTable, const int &weightID = 0, const int &targetClass = -1, const int *prevCovered = NULL, const int anExamples = -1); // Selects examples from given data
                                                                           // stores them in coveredExamples, computes distribution
                                                                           // and sets classValue (if -1 then take majority)
   bool operator >(const TRule &) const;
@@ -126,6 +126,11 @@ class TRuleEvaluator_Entropy : public TRuleEvaluator {
   virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 
+class TRuleEvaluator_Laplace : public TRuleEvaluator {
+  __REGISTER_CLASS
+
+  virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
+};
 
 WRAPPER(RuleFinder)
 class TRuleFinder : public TOrange {
@@ -170,7 +175,7 @@ public:
   __REGISTER_CLASS
 
   PDiscretization discretization; //P discretization for continuous attributes
-
+  
   virtual PRuleList operator()(PRule rule, PExampleTable, const int &weightID, const int &targetClass = -1);
 };
 
@@ -253,14 +258,19 @@ public:
   virtual bool operator()(PRuleList, PRule, PExampleTable, const int &weightID) const = 0;
 };
 
+class TRuleStoppingCriteria_NegativeDistribution : public TRuleStoppingCriteria {
+public:
+  __REGISTER_CLASS
 
+  virtual bool operator()(PRuleList, PRule, PExampleTable, const int &weightID) const;
+};
 
 WRAPPER(RuleCovererAndRemover)
 class TRuleCovererAndRemover : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  virtual PExampleTable operator()(PRule, PExampleTable, const int &weightID, int &newWeight) const = 0;
+   virtual PExampleTable operator()(PRule, PExampleTable, const int &weightID, int &newWeight, const int &targetClass) const = 0;
 };
 
 
@@ -268,8 +278,24 @@ class TRuleCovererAndRemover_Default : public TRuleCovererAndRemover {
 public:
   __REGISTER_CLASS
 
-  virtual PExampleTable operator()(PRule, PExampleTable, const int &weightID, int &newWeight) const;
+  virtual PExampleTable operator()(PRule, PExampleTable, const int &weightID, int &newWeight, const int &targetClass) const;
 };
+
+WRAPPER(RuleClassifierConstructor)
+WRAPPER(RuleClassifier)
+class TRuleClassifierConstructor : public TOrange {
+public:
+  __REGISTER_ABSTRACT_CLASS
+
+  virtual PRuleClassifier operator()(PRuleList, PExampleTable, const int &weightID = 0) = 0;
+};
+
+
+class TRuleClassifierConstructor_firstRule: public TRuleClassifierConstructor {
+  __REGISTER_CLASS
+  virtual PRuleClassifier operator()(PRuleList, PExampleTable, const int &weightID = 0);
+};
+
 
 WRAPPER(RuleLearner)
 class TRuleLearner : public TLearner {
@@ -280,26 +306,44 @@ public:
   PRuleStoppingCriteria ruleStopping; //P
   PRuleCovererAndRemover coverAndRemove; //P
   PRuleFinder ruleFinder; //P
+  PRuleClassifierConstructor classifierConstructor; //P classifier
 
   bool storeExamples; //P
+  int targetClass; //P
+  PRuleList baseRules; //P
 
-  TRuleLearner(bool storeExamples = true);
+  TRuleLearner(bool storeExamples = true, int targetClass = -1, PRuleList baseRules = PRuleList());
 
-  PClassifier operator()(PExampleGenerator, const int & =0, const int &targetClass = -1, PRuleList baseRules = PRuleList());
+  PClassifier operator()(PExampleGenerator, const int & =0);
+  PClassifier operator()(PExampleGenerator, const int &, const int &targetClass = -1, PRuleList baseRules = PRuleList());
 };
 
 
-WRAPPER(RuleClassifier)
+
 class TRuleClassifier : public TClassifier {
 public:
   __REGISTER_ABSTRACT_CLASS
 
   PRuleList rules; //P
-  PClassifier defaultClassifier; //P
   PExampleTable examples; //P
+  int weightID;
 
   TRuleClassifier();
-  TRuleClassifier(PRuleList rules, PExampleTable examples);
+  TRuleClassifier(PRuleList rules, PExampleTable examples, const int &weightID = 0);
+
+  virtual PDistribution classDistribution(const TExample &ex) = 0;
+};
+
+// Zakaj moram se enkrat definirati konstruktor;
+class TRuleClassifier_firstRule : public TRuleClassifier {
+public:
+  __REGISTER_CLASS
+
+  PDistribution prior; //P prior distribution
+
+  TRuleClassifier_firstRule();
+  TRuleClassifier_firstRule(PRuleList rules, PExampleTable examples, const int &weightID = 0);
+  virtual PDistribution classDistribution(const TExample &ex);
 };
 
 #endif

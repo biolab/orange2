@@ -777,5 +777,373 @@ C_NAMED(LinRegClassifier, ClassifierFD, "([coefficients=, coefficients_se=, SSre
 C_CALL(LWRLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(LWRClassifier, ClassifierFD, "([findNearestConstructor=, linRegLearner=, k=, rankWeight=])")
 
+
+/************* RULES ************/
+
+#include "rulelearner.hpp"
+
+BASED_ON(Rule, Orange)
+
+C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05])")
+
+C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
+C_NAMED(RuleEvaluator_Laplace, RuleEvaluator, "()")
+
+C_NAMED(RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
+
+C_NAMED(RuleBeamInitializer_Default, RuleBeamInitializer, "()")
+
+C_NAMED(RuleBeamRefiner_Selector, RuleBeamRefiner, "([discretization=])")
+
+C_NAMED(RuleBeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
+
+C_NAMED(RuleBeamFilter_Width, RuleBeamFilter, "([width=5])")
+
+C_NAMED(RuleDataStoppingCriteria_NoPositives, RuleDataStoppingCriteria, "()")
+
+C_NAMED(RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
+
+C_NAMED(RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
+C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
+BASED_ON(RuleClassifier, Classifier)
+C_NAMED(RuleClassifier_firstRule, RuleClassifier, "()")
+
+PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
+{
+  PyTRY
+    SETATTRIBUTES
+
+    if (PyTuple_Size(args)==1) {
+      PyObject *pyex = PyTuple_GET_ITEM(args, 0);
+      if (PyOrExample_Check(pyex))
+        return PyInt_FromLong(PyOrange_AsRule(self)->call(PyExample_AS_ExampleReference(pyex)) ? 1 : 0);
+    }
+
+    PExampleGenerator egen;
+    int references = 1;
+    int negate = 0;
+    if (!PyArg_ParseTuple(args, "O&|ii:Rule.__call__", &pt_ExampleGenerator, &egen, &references, &negate))
+      return PYNULL;
+
+    CAST_TO(TRule, rule)
+    PExampleTable res = (*rule)(egen,(references?true:false),(negate?true:false));
+    return WrapOrange(res);
+  PyCATCH
+}
+
+PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleEvaluator_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleEvaluator_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleEvaluator_Python(), type);
+}
+
+PyObject *RuleEvaluator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PRule rule;
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    PDistribution apriori;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&iO&:RuleEvaluator.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, cc_Distribution, &apriori))
+      return PYNULL;
+    CAST_TO(TRuleEvaluator, evaluator)
+    float quality;
+     
+    quality = (*evaluator)(rule, gen, weightID, targetClass, apriori);
+    return PyFloat_FromDouble(quality);
+  PyCATCH
+}
+
+PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleValidator_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleValidator_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleValidator_Python(), type);
+}
+
+PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PRule rule;
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    PDistribution apriori;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&iO&:RuleValidator.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, cc_Distribution, &apriori))
+      return PYNULL;
+    CAST_TO(TRuleValidator, validator)
+
+    bool valid;
+    valid = (*validator)(rule, gen, weightID, targetClass, apriori);
+    return PyInt_FromLong(valid?1:0);
+  PyCATCH
+}
+
+PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleCovererAndRemover_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleCovererAndRemover_Python(), type);
+}
+
+PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, newWeight) -/-> (table)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PRule rule;
+    PExampleGenerator gen;
+    int weightID = 0;
+    int newWeightID = 0;
+    int targetClass = -1;
+
+    if (!PyArg_ParseTuple(args, "O&O&iii:RuleCovererAndRemover.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &newWeightID,&targetClass))
+      return PYNULL;
+    CAST_TO(TRuleCovererAndRemover, covererAndRemover)
+
+    PExampleTable res = (*covererAndRemover)(rule, gen, weightID, newWeightID, targetClass);
+    return WrapOrange(res);
+  PyCATCH
+}
+
+PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleStoppingCriteria_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleStoppingCriteria_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleStoppingCriteria_Python(), type);
+}
+
+PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rulelist, rule, table, weightID) -/-> (table)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PRuleList ruleList;
+    PRule rule;
+    PExampleGenerator gen;
+    int weightID = 0;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&i:RuleStoppingCriteria.call", cc_RuleList, &ruleList, cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+    CAST_TO(TRuleStoppingCriteria, ruleStopping)
+
+    bool stop = (*ruleStopping)(ruleList, rule, gen, weightID);
+    return PyInt_FromLong(stop?1:0);
+  PyCATCH
+}
+
+PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleDataStoppingCriteria_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleDataStoppingCriteria_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleDataStoppingCriteria_Python(), type);
+}
+
+PyObject *RuleDataStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass) -/-> (table)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+
+    if (!PyArg_ParseTuple(args, "O&O&i:RuleDataStoppingCriteria.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
+      return PYNULL;
+    CAST_TO(TRuleDataStoppingCriteria, dataStopping)
+
+    bool stop = (*dataStopping)(gen, weightID, targetClass);
+    return PyInt_FromLong(stop?1:0);
+  PyCATCH
+}
+
+PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleFinder_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleFinder_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleFinder_Python(), type);
+}
+
+PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules) -/-> (rule)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    PRuleList baseRules;
+
+    if (!PyArg_ParseTuple(args, "O&O&iO&:RuleFinder.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, ccn_RuleList, &baseRules))
+      return PYNULL;
+    CAST_TO(TRuleFinder, finder)
+
+    PRule res = (*finder)(gen, weightID, targetClass, baseRules);
+    return WrapOrange(res);
+  PyCATCH
+}
+
+
+PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleBeamRefiner_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamRefiner_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleBeamRefiner_Python(), type);
+}
+
+PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass) -/-> (rules)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    int weightID = 0;
+    int targetClass = -1;
+    PRule rule;
+
+    if (!PyArg_ParseTuple(args, "O&O&iO&:RuleBeamRefiner.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
+      return PYNULL;
+    CAST_TO(TRuleBeamRefiner, refiner)
+
+    PRuleList res = (*refiner)(rule, gen, weightID, targetClass);
+    return WrapOrange(res);
+  PyCATCH
+}
+
+PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleBeamInitializer_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamInitializer_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleBeamInitializer_Python(), type);
+}
+
+PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules, evaluator, prior) -/-> (rules, bestRule)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    PRuleList baseRules;
+    PRuleEvaluator evaluator;
+    PDistribution prior;
+    PRule bestRule;
+    int weightID = 0;
+    int targetClass = -1;
+    PRule rule;
+
+    if (!PyArg_ParseTuple(args, "O&O&iO&O&O&O&:RuleBeamInitializer.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, ccn_RuleList, &baseRules, cc_RuleEvaluator, &evaluator, cc_Distribution, &prior))
+      return PYNULL;
+    CAST_TO(TRuleBeamInitializer, initializer)
+
+    PRuleList res = (*initializer)(gen, weightID, targetClass, baseRules, evaluator, prior, bestRule);
+    return Py_BuildValue("NN", WrapOrange(res), WrapOrange(bestRule));
+  PyCATCH
+}
+
+PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleBeamCandidateSelector_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamCandidateSelector_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleBeamCandidateSelector_Python(), type);
+}
+
+PyObject *RuleBeamCandidateSelector_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(existingRules, table, weightID) -/-> (candidates, remainingRules)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    PRuleList existingRules;
+    int weightID = 0;
+    PRuleList candidates;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&:RuleBeamCandidateSelector.call", cc_RuleList, &existingRules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+    CAST_TO(TRuleBeamCandidateSelector, selector)
+
+    PRuleList res = (*selector)(existingRules, gen, weightID);
+    return Py_BuildValue("NN", WrapOrange(res), WrapOrange(existingRules));
+  PyCATCH
+}
+
+PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleBeamFilter_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleBeamFilter_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleBeamFilter_Python(), type);
+}
+
+PyObject *RuleBeamFilter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, table, weightID) -/-> (rules)")
+{
+  PyTRY
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    PRuleList rules;
+    int weightID = 0;
+
+    if (!PyArg_ParseTuple(args, "O&O&O&:RuleBeamFilter.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+    CAST_TO(TRuleBeamFilter, filter)
+
+    (*filter)(rules, gen, weightID);
+    return WrapOrange(rules);
+  PyCATCH
+}
+
+PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrRuleClassifierConstructor_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TRuleClassifierConstructor_Python(), type);
+}
+
+
+PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight]) -> (RuleClassifier)")
+{ PyTRY
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrRuleClassifierConstructor_Type) {
+      PyErr_Format(PyExc_SystemError, "RuleClassifierConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    SETATTRIBUTES
+    PExampleGenerator gen;
+    int weightID = 0;
+    PRuleList rules;
+
+    if (!PyArg_ParseTuple(args, "O&O&|O&:RuleClassifierConstructor.call", cc_RuleList, &rules, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+
+    PRuleClassifier ruleClassifier;
+    ruleClassifier = SELF_AS(TRuleClassifierConstructor)(rules, gen, weightID);
+    return WrapOrange(ruleClassifier);
+  PyCATCH
+}
+
+
+PRuleList PRuleList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::P_FromArguments(arg); }
+PyObject *RuleList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_FromArguments(type, arg); }
+PyObject *RuleList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Rule>)") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_new(type, arg, kwds); }
+PyObject *RuleList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_getitem(self, index); }
+int       RuleList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_setitem(self, index, item); }
+PyObject *RuleList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_getslice(self, start, stop); }
+int       RuleList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_setslice(self, start, stop, item); }
+int       RuleList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_len(self); }
+PyObject *RuleList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_richcmp(self, object, op); }
+PyObject *RuleList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_concat(self, obj); }
+PyObject *RuleList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_repeat(self, times); }
+PyObject *RuleList_str(TPyOrange *self) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_str(self); }
+PyObject *RuleList_repr(TPyOrange *self) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_str(self); }
+int       RuleList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_contains(self, obj); }
+PyObject *RuleList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_append(self, item); }
+PyObject *RuleList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> int") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_count(self, obj); }
+PyObject *RuleList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> RuleList") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_filter(self, args); }
+PyObject *RuleList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> int") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_index(self, obj); }
+PyObject *RuleList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_insert(self, args); }
+PyObject *RuleList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_native(self); }
+PyObject *RuleList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Rule") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_pop(self, args); }
+PyObject *RuleList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_remove(self, obj); }
+PyObject *RuleList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_reverse(self); }
+PyObject *RuleList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, (PyTypeObject *)&PyOrRule_Type>::_sort(self, args); }
+
 #include "lib_learner.px"
 

@@ -417,6 +417,189 @@ TExample *TImputer_Python::operator()(TExample &example)
   return res;
 }
 
+float TRuleEvaluator_Python::operator()(PRule rule, PExampleTable table, const int &weightID, const int &targetClass, PDistribution apriori) const
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!rule)
+    raiseError("invalid rule");
+  if (!apriori)
+    raiseError("invalid prior distribution");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori)));
+
+  if (!PyFloat_Check(result))
+    raiseError("__call__ is expected to return a float value.");
+  float res = PyFloat_AsDouble(result);
+  Py_DECREF(result);
+  return res;
+}
+
+bool TRuleValidator_Python::operator()(PRule rule, PExampleTable table, const int &weightID, const int &targetClass, PDistribution apriori) const
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!rule)
+    raiseError("invalid rule");
+  if (!apriori)
+    raiseError("invalid prior distribution");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori)));
+
+  if (!PyBool_Check(result))
+    raiseError("__call__ is expected to return a Boolean value.");
+  bool res = bool(PyObject_IsTrue(result)!=0);
+  Py_DECREF(result);
+  return res;
+}
+
+PExampleTable TRuleCovererAndRemover_Python::operator()(PRule rule, PExampleTable table, const int &weightID, int &newWeightID, const int &targetClass) const
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!rule)
+    raiseError("invalid rule");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass));
+
+  PExampleGenerator gen; 
+  if (!PyArg_ParseTuple(result, "O&O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &newWeightID))
+    raiseError("__call__ is expected to return a tuple: (example table, new weight ID)");
+  Py_DECREF(result);
+  return gen;
+}
+
+bool TRuleStoppingCriteria_Python::operator()(PRuleList ruleList, PRule rule, PExampleTable table, const int &weightID) const
+{
+  if (!ruleList)
+    raiseError("invalid rule list");
+  if (!table)
+    raiseError("invalid example table");
+  if (!rule)
+    raiseError("invalid rule");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNNi)", WrapOrange(ruleList), WrapOrange(rule), WrapOrange(table), weightID));
+
+  if (!PyBool_Check(result))
+    raiseError("__call__ is expected to return a Boolean value.");
+  bool res = bool(PyObject_IsTrue(result)!=0);
+  Py_DECREF(result);
+  return res;
+}
+
+bool TRuleDataStoppingCriteria_Python::operator()(PExampleTable table, const int &weightID, const int &targetClass) const
+{
+  if (!table)
+    raiseError("invalid example table");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(Nii)", WrapOrange(table), weightID, targetClass));
+
+  if (!PyBool_Check(result))
+    raiseError("__call__ is expected to return a Boolean value.");
+  bool res = bool(PyObject_IsTrue(result)!=0);
+  Py_DECREF(result);
+  return res;
+}
+
+PRule TRuleFinder_Python::operator ()(PExampleTable table, const int &weightID, const int &targetClass, PRuleList baseRules)
+{
+  if (!table)
+    raiseError("invalid example table");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NiiN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules)));
+
+  if (!PyOrRule_Check(result))
+    raiseError("__call__ is expected to return a rule.");
+  PRule res = PyOrange_AsRule(result);
+  Py_DECREF(result);
+  return res;
+}
+
+PRuleList TRuleBeamRefiner_Python::operator ()(PRule rule, PExampleTable table, const int &weightID, const int &targetClass)
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!rule)
+    raiseError("invalid rule");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass));
+
+  if (!PyOrRuleList_Check(result))
+    raiseError("__call__ is expected to return a list of rules.");
+  PRule res = PyOrange_AsRuleList(result);
+  Py_DECREF(result);
+  return res;
+}
+
+PRuleList TRuleBeamInitializer_Python::operator ()(PExampleTable table, const int &weightID, const int &targetClass, PRuleList baseRules, PRuleEvaluator evaluator, PDistribution prior, PRule &bestRule)
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!evaluator)
+    raiseError("invalid evaluator function");
+  if (!prior)
+    raiseError("invalid prior distribution");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NiiNNNN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules), WrapOrange(evaluator), WrapOrange(prior), WrapOrange(bestRule)));
+
+  if (!PyOrRuleList_Check(result))
+    raiseError("__call__ is expected to return a list of rules.");
+  PRule res = PyOrange_AsRuleList(result);
+  Py_DECREF(result);
+  return res;
+}
+
+PRuleList TRuleBeamCandidateSelector_Python::operator ()(PRuleList existingRules, PExampleTable table, const int &weightID)
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!existingRules)
+    raiseError("invalid existing rules");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(existingRules), WrapOrange(table), weightID));
+
+  PRuleList candidates; 
+  if (!PyArg_ParseTuple(result, "O&O&", cc_RuleList, &candidates, cc_RuleList, &existingRules))
+    raiseError("__call__ is expected to return a tuple: (candidate rules, remaining rules)");
+  Py_DECREF(result);
+  return candidates;
+}
+
+void TRuleBeamFilter_Python::operator ()(PRuleList rules, PExampleTable table, const int &weightID)
+{
+  if (!table)
+    raiseError("invalid example table");
+  if (!rules)
+    raiseError("invalid existing rules");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID));
+
+  if (!PyOrRuleList_Check(result))
+    raiseError("__call__ is expected to return a list of rules.");
+  rules = PyOrange_AsRuleList(result);
+  Py_DECREF(result);
+}
+
+PRuleClassifier TRuleClassifierConstructor_Python::operator()(PRuleList rules, PExampleTable table, const int &weightID)
+{ if (!rules)
+    raiseError("invalid set of rules");
+  if (!table)  
+    raiseError("invalid example table");
+
+  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID));
+
+  if (result==Py_None) {
+    Py_DECREF(result);
+    return PRuleClassifier();
+  }
+
+  if (!PyOrRuleClassifier_Check(result))
+    raiseError("__call__ is expected to return a rule classifier."); 
+  PRuleClassifier res = PyOrange_AsRuleClassifier(result);
+  Py_DECREF(result); 
+  return res;
+}
+
 /*
 PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID)
 { if (!gen)

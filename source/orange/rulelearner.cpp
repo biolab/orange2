@@ -55,13 +55,13 @@ TRule::TRule(PFilter af, PClassifier cl, PDistribution dist, PExampleTable ce, c
 
 
 TRule::TRule(const TRule &other, bool copyData)
-: filter(other.filter),
+: filter(other.filter->deepCopy()),
   classifier(other.classifier),
+  complexity(other.complexity),
   classDistribution(copyData ? other.classDistribution: PDistribution()),
   examples(copyData ? other.examples : PExampleTable()),
   weightID(copyData ? other.weightID : 0),
   quality(copyData ? other.quality : ILLEGAL_FLOAT),
-  complexity(copyData ? other.complexity : -1),
   coveredExamples(copyData && other.coveredExamples && (other.coveredExamplesLength >= 0) ? (int *)memcpy(new int[other.coveredExamplesLength], other.coveredExamples, other.coveredExamplesLength) : NULL),
   coveredExamplesLength(copyData ? other.coveredExamplesLength : -1)
 {}
@@ -94,19 +94,19 @@ PExampleTable TRule::operator ()(PExampleTable gen, const bool ref, const bool n
 }
 
 
-void TRule::filterAndStore(PExampleTable gen, const int &wei, const int *prevCovered, const int anExamples)
+void TRule::filterAndStore(PExampleTable gen, const int &wei, const int &targetClass, const int *prevCovered, const int anExamples)
 {
   checkProperty(filter);
 
-  TExampleTable *table = mlnew TExampleTable(gen, 1);
-  PExampleGenerator wtable = table;
+  examples=this->call(gen);
   weightID = wei;
-  classDistribution = getClassDistribution(gen, wei);
+  classDistribution = getClassDistribution(examples, wei);
 
-  if (!classifier)
+  if (targetClass>=0)
+    classifier = mlnew TDefaultClassifier(gen->domain->classVar, TValue(targetClass), classDistribution);
+  else
     classifier = mlnew TDefaultClassifier(gen->domain->classVar, classDistribution);
-
-  if (anExamples > 0) {
+/*  if (anExamples > 0) {
     const int bitsInInt = sizeof(int)*8;
     coveredExamplesLength = anExamples/bitsInInt + 1;
     coveredExamples = (int *)malloc(coveredExamplesLength);
@@ -163,7 +163,7 @@ void TRule::filterAndStore(PExampleTable gen, const int &wei, const int *prevCov
       }
       *cei = *cei << inBit;
     }
-  }
+  } */
 }
 
 
@@ -319,23 +319,29 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
     float lrs = 0.0;
     for(TDiscDistribution::const_iterator odi(obs_dist.begin()), ode(obs_dist.end()), edi(exp_dist.begin()), ede(exp_dist.end());
         (odi!=ode); odi++, edi++) {
-      if ((edi!=ede) && (*ede))
+      if ((edi!=ede) && (*edi) && (*odi))
         lrs += *odi * log(*odi / ((edi != ede) & (*edi > 0.0) ? *edi : 1e-5));
     }
 
-    lrs = 2 * (lrs - log(obs_dist.abs * log(obs_dist.abs / exp_dist.abs)));
+    lrs = 2 * (lrs - obs_dist.abs * log(obs_dist.abs / exp_dist.abs));
 
     return (lrs > 0.0) && (chisqprob(lrs, float(obs_dist.size()-1)) <= alpha);
   }
 
-  const float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 0.0;
+  float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 1e-5;
   const float P = (targetClass < exp_dist.size()) && (exp_dist[targetClass] > 0.0) ? exp_dist[targetClass] : 1e-5;
 
-  const float n = obs_dist.abs - p;
+  float n = obs_dist.abs - p;
   float N = exp_dist.abs - P;
   if (N<=0.0)
     N = 1e-6f;
+  if (p<=0.0)
+    p = 1e-6f;
+  if (n<=0.0)
+    n = 1e-6f;
 
+
+  
   float lrs = 2 * (p*log(p/P) + n*log(n/N) - obs_dist.abs * log(obs_dist.abs/exp_dist.abs));
 
   return (lrs > 0.0) && (chisqprob(lrs, 1.0f) <= alpha);
@@ -345,7 +351,7 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 float TRuleEvaluator_Entropy::operator()(PRule rule, PExampleTable, const int &, const int &targetClass, PDistribution apriori) const
 {
   if (targetClass == -1)
-    return getEntropy(dynamic_cast<TDiscDistribution &>(rule->classDistribution.getReference()));
+    return -getEntropy(dynamic_cast<TDiscDistribution &>(rule->classDistribution.getReference()));
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
@@ -353,27 +359,47 @@ float TRuleEvaluator_Entropy::operator()(PRule rule, PExampleTable, const int &,
   if (!obs_dist.cases)
     return false;
 
-  const float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 0.0;
+  float p = (targetClass < obs_dist.size()) ? obs_dist[targetClass] : 0.0;
   const float P = (targetClass < exp_dist.size()) && (exp_dist[targetClass] > 0.0) ? exp_dist[targetClass] : 1e-5;
 
-  const float n = obs_dist.abs - p;
+  float n = obs_dist.abs - p;
   float N = exp_dist.abs - P;
   if (N<=0.0)
     N = 1e-6f;
+  if (p<=0.0)
+    p = 1e-6f;
+  if (n<=0.0)
+    n = 1e-6f;
 
-  return (p*log(p) + n*log(n) - obs_dist.abs * log(obs_dist.abs)) / obs_dist.abs;
+  return ((p*log(p) + n*log(n) - obs_dist.abs * log(obs_dist.abs)) / obs_dist.abs);
+}
+
+float TRuleEvaluator_Laplace::operator()(PRule rule, PExampleTable, const int &, const int &targetClass, PDistribution apriori) const
+{
+  const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
+  if (!obs_dist.cases)
+    return 0;
+
+  float p;
+  if (targetClass == -1) {
+    p = float(obs_dist.highestProb());
+    return (p+1)/(obs_dist.abs+obs_dist.size());
+  }
+  p = float(obs_dist[targetClass]);
+  return (p+1)/(obs_dist.abs+2);
 }
 
 
-
-bool betterRule(const PRule &r1, const PRule &r2)
-{ return    (r1->quality < r2->quality)
-         || (r1->quality==r2->quality) 
+bool worstRule(const PRule &r1, const PRule &r2)
+{ return    (r1->quality > r2->quality) 
+          || (r1->quality==r2->quality 
+          && r1->complexity < r2->complexity);
+}
+/*         || (r1->quality==r2->quality) 
             && (   (r1->complexity < r2->complexity)
                 || (r1->complexity == r2->complexity) 
                    && ((int(r1.getUnwrappedPtr()) ^ int(r2.getUnwrappedPtr())) & 16) != 0
-               ); }
-   
+               ); }  */
 
 TRuleBeamFilter_Width::TRuleBeamFilter_Width(const int &w)
 : width(w)
@@ -383,7 +409,9 @@ TRuleBeamFilter_Width::TRuleBeamFilter_Width(const int &w)
 void TRuleBeamFilter_Width::operator()(PRuleList rules, PExampleTable, const int &)
 {
   if (rules->size() > width) {
-    sort(rules->begin(), rules->end(), betterRule);
+    // Janez poglej
+    TRuleList::const_iterator ri(rules->begin()), re(rules->end());
+    sort(rules->begin(), rules->end(), worstRule);
     rules->erase(rules->begin()+width, rules->end());
   }
 }
@@ -416,7 +444,7 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
       TRule *newRule = mlnew TRule((*ri).getReference(), false);
       PRule wNewRule = newRule;
       ruleList->push_back(wNewRule);
-      newRule->filterAndStore(data, weightID);
+      newRule->filterAndStore(data, weightID,targetClass);
       newRule->quality = evaluator->call(wNewRule, data, weightID, targetClass, apriori);
       if (!bestRule || (newRule->quality > bestRule->quality)) {
         bestRule = wNewRule;
@@ -433,10 +461,7 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
      ruleList->push_back(bestRule);
      ubestRule->filter = new TFilter_values();
      ubestRule->filter->domain = data->domain;
-     ubestRule->filterAndStore(data, weightID);
-
-     ubestRule->classifier = targetClass >= 0 ? mlnew TDefaultClassifier(data->domain->classVar, TValue(TValue::INTVAR, targetClass), PDistribution())
-                                              : mlnew TDefaultClassifier(data->domain->classVar, bestRule->classDistribution);
+     ubestRule->filterAndStore(data, weightID,targetClass);
      ubestRule->complexity = 0;
   }
 
@@ -446,6 +471,9 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
 
 PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data, const int &weightID, const int &targetClass)
 {
+  if (!discretization)
+    discretization = mlnew TEntropyDiscretization();
+
   TRule &rule = wrule.getReference();
   TFilter_values *filter = wrule->filter.AS(TFilter_values);
   if (!filter)
@@ -474,21 +502,23 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
           if (*idi>0) {
             TRule *newRule = mlnew TRule(rule, false);
             ruleList->push_back(newRule);
+            newRule->complexity++;
 
             filter = newRule->filter.AS(TFilter_values);
 
             TValueFilter_discrete *newCondition = mlnew TValueFilter_discrete(pos, *vi, 0);
             filter->conditions->push_back(newCondition);
 
-            newCondition->values->push_back(TValue(TValue::INTVAR, v));
-            newRule->filterAndStore(rule.examples, rule.weightID);
+            TValue value = TValue(v);
+            newCondition->values->push_back(value);
+            newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
           }
       }
     }
 
     else if (((*vi)->varType == TValue::FLOATVAR)) {
       if (discretization) {
-        PVariable discretized = discretization->call(rule.examples, *vi, weightID);
+        PVariable  discretized = discretization->call(rule.examples, *vi, weightID);
         TClassifierFromVar *cfv = discretized->getValueFrom.AS(TClassifierFromVar);
         TDiscretizer *discretizer = cfv ? cfv->transformer.AS(TDiscretizer) : NULL;
         if (!discretizer)
@@ -501,30 +531,36 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 
           newRule = mlnew TRule(rule, false);
           ruleList->push_back(newRule);
+          newRule->complexity++;
 
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, cutoffs.front(), 0, 0));
-          newRule->filterAndStore(rule.examples, rule.weightID);
+          newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
 
           for(vector<float>::const_iterator ci(cutoffs.begin()), ce(cutoffs.end()-1); ci != ce; ci++) {
             newRule = mlnew TRule(rule, false);
             ruleList->push_back(newRule);
+            newRule->complexity++;
+
             filter = newRule->filter.AS(TFilter_values);
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, *ci, 0, 0));
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, *(ci+1), 0, 0));
-            newRule->filterAndStore(rule.examples, rule.weightID);
+            newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
           }
 
           newRule = mlnew TRule(rule, false);
           ruleList->push_back(newRule);
+          newRule->complexity++;
+
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, cutoffs.back(), 0, 0));
-          newRule->filterAndStore(rule.examples, rule.weightID);
+          newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
         }
       }
       else
         raiseWarning("discretizer not given, continuous attributes will be skipped");
     }
   }
-
+  if (!discretization)
+    discretization = PDiscretization();
   return wRuleList;
 }
 
@@ -539,6 +575,26 @@ PRuleList TRuleBeamCandidateSelector_TakeAll::operator()(PRuleList existingRules
 
 PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const int &targetClass, PRuleList baseRules)
 {
+  // set default values if value not set
+  bool tempInitializer = !initializer;
+  if (tempInitializer)
+    initializer = mlnew TRuleBeamInitializer_Default;
+  bool tempCandidateSelector = !candidateSelector;
+  if (tempCandidateSelector)
+    candidateSelector = mlnew TRuleBeamCandidateSelector_TakeAll;
+  bool tempRefiner = !refiner;
+  if (tempRefiner)
+    refiner = mlnew TRuleBeamRefiner_Selector;
+  bool tempValidator = !validator;
+  if (tempValidator)
+    validator = mlnew TRuleValidator_LRS;
+  bool tempEvaluator = !evaluator;
+  if (tempEvaluator)
+    evaluator = mlnew TRuleEvaluator_Entropy;
+  bool tempRuleFilter = !ruleFilter;
+  if (tempRuleFilter)
+    ruleFilter = mlnew TRuleBeamFilter_Width;
+
   checkProperty(initializer);
   checkProperty(candidateSelector);
   checkProperty(refiner);
@@ -551,15 +607,6 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   TRandomGenerator rgen(data->numberOfExamples());
   int wins = 1;
 
-  {
-  PITERATE(TRuleList, ri, baseRules) {
-    if ((*ri)->quality == ILLEGAL_FLOAT)
-      (*ri)->quality = evaluator->call(*ri, data, weightID, targetClass, apriori);
-    if (!(*ri)->examples)
-      (*ri)->filterAndStore(data, weightID);
-  }
-  }
-
   PRule bestRule;
   PRuleList ruleList = initializer->call(data, weightID, targetClass, baseRules, evaluator, apriori, bestRule);
 
@@ -568,42 +615,81 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     if ((*ri)->quality == ILLEGAL_FLOAT)
       (*ri)->quality = evaluator->call(*ri, data, weightID, targetClass, apriori);
     if (!(*ri)->examples)
-      (*ri)->filterAndStore(data, weightID);
+      (*ri)->filterAndStore(data, weightID,targetClass);
   }
   }
 
   if (bestRule->quality == ILLEGAL_FLOAT)
     bestRule->quality = evaluator->call(bestRule, data, weightID, targetClass, apriori);
   if (!bestRule->examples)
-    bestRule->filterAndStore(data, weightID);
+    bestRule->filterAndStore(data, weightID,targetClass);
 
   int bestRuleLength = 0;
   while(ruleList->size()) {
     PRuleList candidateRules = candidateSelector->call(ruleList, data, weightID);
+    if (ruleList->size()>0)
+      raiseWarning("ruleList length to large.");
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);
       PITERATE(TRuleList, ni, newRules) {
         if (!validator || validator->call(*ni, data, weightID, targetClass, apriori)) {
           (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
+          if (!(*ni))
+            raiseWarning("strange ni.");
           ruleList->push_back(*ni);
           if ((*ni)->quality >= bestRule->quality)
             _selectBestRule(*ni, bestRule, wins, rgen);
         }
       }
     }
+    ruleFilter->call(ruleList,data,weightID);
   }
+
+  // set empty values if value was not set (used default)
+  if (tempInitializer)
+    initializer = PRuleBeamInitializer();
+  if (tempCandidateSelector)
+    candidateSelector = PRuleBeamCandidateSelector();
+  if (tempRefiner)
+    refiner = PRuleBeamRefiner();
+  if (tempValidator)
+    validator = PRuleValidator();
+  if (tempEvaluator)
+    evaluator = PRuleEvaluator();
+  if (tempRuleFilter)
+    ruleFilter = PRuleBeamFilter();
 
   return bestRule;
 }
 
 
-TRuleLearner::TRuleLearner(bool se)
-: storeExamples(se)
+TRuleLearner::TRuleLearner(bool se, int tc, PRuleList rl)
+: storeExamples(se),
+  targetClass(tc),
+  baseRules(rl)
 {}
 
 
+PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID)
+{
+  return this->call(gen,0,targetClass,baseRules);
+}
+
 PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID, const int &targetClass, PRuleList baseRules)
 {
+  // Initialize default values if values not set
+  bool tempDataStopping = !dataStopping && !ruleStopping;
+  if (tempDataStopping) 
+    dataStopping = mlnew TRuleDataStoppingCriteria_NoPositives;
+
+  bool tempRuleFinder = !ruleFinder;
+  if (tempRuleFinder)
+    ruleFinder = mlnew TRuleBeamFinder;
+
+  bool tempCoverAndRemove = !coverAndRemove;
+  if (tempCoverAndRemove)
+    coverAndRemove = mlnew TRuleCovererAndRemover_Default;
+
   checkProperty(ruleFinder);
   checkProperty(coverAndRemove);
 
@@ -626,11 +712,22 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
     if (ruleStopping && ruleStopping->call(ruleList, rule, wdata, currWeightID))
       break;
 
-    coverAndRemove->call(rule, wdata, currWeightID, currWeightID);
+    wdata = coverAndRemove->call(rule, wdata, currWeightID, currWeightID, targetClass);
     ruleList->push_back(rule);
   }
 
-  return mlnew TRuleClassifier(ruleList, storeExamples ? wdata : PExampleTable());
+  // Restore values
+  if (tempDataStopping) 
+    dataStopping = PRuleDataStoppingCriteria();
+  if (tempRuleFinder)
+    ruleFinder = PRuleFinder();
+  if (tempCoverAndRemove)
+    coverAndRemove = PRuleCovererAndRemover();
+
+  PRuleClassifierConstructor clConstructor = 
+    classifierConstructor ? classifierConstructor : 
+    PRuleClassifierConstructor(mlnew TRuleClassifierConstructor_firstRule());
+  return clConstructor->call(ruleList, gen, weightID);
 };
 
 
@@ -642,29 +739,86 @@ bool TRuleDataStoppingCriteria_NoPositives::operator()(PExampleTable data, const
   return (targetClass >= 0 ? ddist->atint(targetClass) : ddist->abs) == 0.0;
 }
 
+bool TRuleStoppingCriteria_NegativeDistribution::operator()(PRuleList ruleList, PRule rule, PExampleTable data, const int &weightID) const
+{
+  if (rule && rule->classifier) 
+  {
+    const TDefaultClassifier *clsf = rule->classifier.AS(TDefaultClassifier);
+    if (!clsf)
+      return false;
+    const TDiscDistribution *dist = dynamic_cast<const TDiscDistribution *>(clsf->defaultDistribution.getUnwrappedPtr());
+    const int classVal = clsf->defaultVal.intV;
+    if (classVal<0 || classVal>=dist->size())
+      return false;
+    float defProb = dist->atint(clsf->defaultVal.intV);
 
-PExampleTable TRuleCovererAndRemover_Default::operator()(PRule rule, PExampleTable data, const int &weightID, int &newWeight) const
+    for(TDiscDistribution::const_iterator di(dist->begin()), de(dist->end());
+        (di!=de); di++)
+      if ((*di > defProb))
+        return true;
+  }
+  return false;
+}
+
+
+PExampleTable TRuleCovererAndRemover_Default::operator()(PRule rule, PExampleTable data, const int &weightID, int &newWeight, const int &targetClass) const
 {
   TExampleTable *table = mlnew TExampleTable(data, 1);
   PExampleGenerator wtable = table;
 
   TFilter &filter = rule->filter.getReference();
 
-  PEITERATE(ei, data)
-    if (!filter(*ei))
-      table->addExample(*ei);
+  if (targetClass < 0)
+  {
+    PEITERATE(ei, data)
+      if (!filter(*ei))
+        table->addExample(*ei);
+  }
+  else 
+    PEITERATE(ei, data)
+      if (!filter(*ei) || (*ei).getClass().intV!=targetClass)
+        table->addExample(*ei);
+
 
   newWeight = weightID;
   return wtable;  
 }
 
+// classifiers
+PRuleClassifier TRuleClassifierConstructor_firstRule::operator ()(PRuleList rules, PExampleTable table, const int &weightID)
+{
+  return mlnew TRuleClassifier_firstRule(rules, table, weightID);
+}
 
 
-TRuleClassifier::TRuleClassifier(PRuleList arules, PExampleTable anexamples)
+TRuleClassifier::TRuleClassifier(PRuleList arules, PExampleTable anexamples, const int &aweightID)
 : rules(arules),
-  examples(anexamples)
+  examples(anexamples),
+  weightID(aweightID)
 {}
-
 
 TRuleClassifier::TRuleClassifier()
 {}
+
+
+TRuleClassifier_firstRule::TRuleClassifier_firstRule(PRuleList arules, PExampleTable anexamples, const int &aweightID)
+: TRuleClassifier(arules, anexamples, aweightID)
+{
+  prior = getClassDistribution(examples, weightID);
+}
+
+TRuleClassifier_firstRule::TRuleClassifier_firstRule()
+: TRuleClassifier()
+{}
+
+PDistribution TRuleClassifier_firstRule::classDistribution(const TExample &ex)
+{
+  checkProperty(rules);
+  checkProperty(prior);
+
+  PITERATE(TRuleList, ri, rules) {
+    if ((*ri)->call(ex))
+      return (*ri)->classDistribution;
+  }
+  return prior;
+}

@@ -48,6 +48,12 @@ TFilter::TFilter(bool anegate, PDomain dom)
 void TFilter::reset()
 {}
 
+PFilter TFilter::deepCopy() const
+{
+  raiseWarning("Deep copy not implemented.");
+  return PFilter();
+}
+
 // Sets the maxrand field to RAND_MAX*ap
 TFilter_random::TFilter_random(const float ap, bool aneg, PRandomGenerator rgen)
 : TFilter(aneg, PDomain()),
@@ -150,6 +156,12 @@ TValueFilter::TValueFilter(const int &pos, const int &accs)
   acceptSpecial(accs)
 {}
 
+PValueFilter TValueFilter::deepCopy() const
+{
+  raiseWarning("Deep copy not implemented.");
+  return PValueFilter();
+}
+
 
 TValueFilter_continuous::TValueFilter_continuous()
 : TValueFilter(ILLEGAL_INT, -1),
@@ -201,18 +213,22 @@ int TValueFilter_continuous::operator()(const TExample &example) const
   }
 }
 
+PValueFilter TValueFilter_continuous::deepCopy() const
+{
+  TValueFilter *filter = mlnew TValueFilter_continuous(position,oper,min,max,acceptSpecial);
+  PValueFilter wfilter = filter;
+  return wfilter;
+}
 
 TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs)
 : TValueFilter(pos, accs),
   values(bl ? bl : mlnew TValueList())
 {}
 
-
 TValueFilter_discrete::TValueFilter_discrete(const int &pos, PVariable var, const int &accs)
 : TValueFilter(pos, accs),
   values(mlnew TValueList(var))
 {}
-
 
 int TValueFilter_discrete::operator()(const TExample &example) const
 { const TValue &val = example[position];
@@ -226,6 +242,22 @@ int TValueFilter_discrete::operator()(const TExample &example) const
   return 0;
 }
 
+PValueFilter TValueFilter_discrete::deepCopy() const
+{
+  if (values->size())
+  {
+    TValueList *newValues = mlnew TValueList();
+    PValueList wnewValues = newValues;
+    const_PITERATE(TValueList, vi, values) 
+      wnewValues->push_back(TValue(*vi));
+    TValueFilter *filter = mlnew TValueFilter_discrete(position,wnewValues,acceptSpecial);
+    PValueFilter wfilter = filter;
+    return wfilter;
+  }
+  TValueFilter *filter = mlnew TValueFilter_discrete(position,PValueList(),acceptSpecial);
+  PValueFilter wfilter = filter;
+  return wfilter;
+}
 
 TValueFilter_string::TValueFilter_string()
 : TValueFilter(ILLEGAL_INT, -1),
@@ -422,7 +454,7 @@ void TFilter_values::addCondition(PVariable var, PValueList vallist)
   else {
     TValueFilter_discrete *valueFilter = (*condi).AS(TValueFilter_discrete);
     if (!valueFilter)
-      raiseError("addCondition(Value) con only be used for setting ValueFilter_discrete");
+      raiseError("addCondition(Value) can only be used for setting ValueFilter_discrete");
     else
       valueFilter->values = vallist;
   }
@@ -484,7 +516,18 @@ bool TFilter_values::operator()(const TExample &exam)
   return conjunction!=negate;
 }
 
+PFilter TFilter_values::deepCopy() const
+{
+  TValueFilterList *newValueFilters = mlnew TValueFilterList();
+  PValueFilterList wnewValueFilters = newValueFilters;
 
+  const_PITERATE(TValueFilterList, vi, conditions) 
+    wnewValueFilters->push_back((*vi)->deepCopy());
+
+  TFilter *filter = mlnew TFilter_values(wnewValueFilters,conjunction,negate,domain);
+  PFilter wfilter = filter;
+  return wfilter;
+}
 
 /// Constructor; sets the example
 TFilter_sameExample::TFilter_sameExample(PExample anexample, bool aneg)
