@@ -32,9 +32,7 @@ class OutputWindow(QMainWindow):
         self.printException = 1
         self.writeLogFile = 1
 
-        self.logFileName = os.path.join(canvasDlg.canvasDir, "outputLog.htm")
-        f = open(self.logFileName, "w") # create the log file and close it
-        f.close()
+        self.logFile = open(os.path.join(canvasDlg.canvasDir, "outputLog.htm"), "w") # create the log file
         #self.printExtraOutput = 0
         
         #sys.excepthook = self.exceptionHandler
@@ -46,6 +44,7 @@ class OutputWindow(QMainWindow):
         self.showNormal()
 
     def closeEvent(self,ce):
+        self.logFile.close()
         QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
         pass
 
@@ -78,21 +77,11 @@ class OutputWindow(QMainWindow):
     def clear(self):
         self.textOutput.setText("")
     
-
     # print text produced by warning and error widget calls
     def widgetEvents(self, text):
-        if self.writeLogFile and text != None:
-            if os.path.exists(self.logFileName):
-                f = open(self.logFileName, "a")
-            else:
-                f = open(self.logFileName, "w")
-            f.write(str(text))
-            f.close()
-            
         if text != None:
-            self.textOutput.append(str(text))
-            self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        self.canvasDlg.statusBar.message(QString(text))        
+            self.write(str(text))
+        self.canvasDlg.setStatusBarEvent(QString(text))
 
     # simple printing of text called by print calls
     def write(self, text):
@@ -100,28 +89,25 @@ class OutputWindow(QMainWindow):
         #if len(text) > 7 and text[0:7] == "<extra>":
         #    if not self.printExtraOutput: return
         #    text = text[7:]
+        if text == "\n": return
             
         text = text.replace("<", "[")    # since this is rich text control, we have to replace special characters
         text = text.replace(">", "]")
-        text = "<nobr>" + text + "</nobr><br>"
+        text = text.replace("\n", "<br>")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
+        text = "<nobr>" + text + "</nobr>"  
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
 
         if self.writeLogFile:
-            if os.path.exists(self.logFileName):
-                f = open(self.logFileName, "a")
-            else:
-                f = open(self.logFileName, "w")
-            f.write(str(text))
-            f.close()
+            self.logFile.write(str(text) + "<br>\n")
             
         self.textOutput.append(str(text))
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
         if self.printOutput:
             self.canvasDlg.setStatusBarEvent(text)
-
+        
     def writelines(self, lines):
         for line in lines:
             self.write(line)
@@ -137,7 +123,6 @@ class OutputWindow(QMainWindow):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
-
 
         text = ""
         t = localtime()
@@ -169,9 +154,4 @@ class OutputWindow(QMainWindow):
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 
         if self.writeLogFile:
-            if os.path.exists(self.logFileName):
-                f = open(self.logFileName, "a")
-            else:
-                f = open(self.logFileName, "w")
-            f.write(str(text))
-            f.close()
+            self.logFile.write(str(text) + "<br>")
