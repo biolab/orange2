@@ -319,7 +319,8 @@ class SignalDialog(QDialog):
                     try:
                         eval(inType)
                         if issubclass(eval(outType), eval(inType)): canConnect = 1
-                        if outName == inName and issubclass(eval(outType), eval(inType)):
+                        #if outName == inName and issubclass(eval(outType), eval(inType)):
+                        if issubclass(eval(outType), eval(inType)):
                             self.addLink(outName, inName)
                     except:
                         print "unknown type: ", inType
