@@ -23,12 +23,12 @@ def printOUT(classifier):
             longest=len(at.name);
 
     # print out the head
-    formatstr = "%"+str(longest)+"s %18s %10s %10s %10s %10s"
+    formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
     print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
     print
-    formatstr = "%"+str(longest)+"s %10.10f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
-    formatstr = "%"+str(longest)+"s %10.10f %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.domain.attributes)):
         print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
         
