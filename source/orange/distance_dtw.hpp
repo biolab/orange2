@@ -15,8 +15,8 @@ public:
 	TAlignment(int i, int j);
     TAlignment(const TAlignment &);
 
-    bool operator==(const TAlignment &);
-    bool operator<(const TAlignment &);
+    bool operator==(const TAlignment &) const;
+    bool operator<(const TAlignment &) const;
 };
 
 #define TWarpPath _TOrangeVector<TAlignment>

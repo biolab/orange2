@@ -31,6 +31,19 @@ public:
 };
 
 
+class CompareIndicesClass {
+public:
+  const vector<int> &classes;
+
+  CompareIndicesClass(const vector<int> &acl)
+  : classes(acl)
+  {};
+
+  bool operator() (const int &i1, const int &i2)
+  { return classes[i1]<classes[i2]; }
+};
+
+
 class CompareIndices {
 public:
   const vector<float> &centers;
@@ -285,6 +298,11 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
         sort(sortIndices.begin(), sortIndices.end(), compare);
       }
     }
+    else
+      if (nClasses) {
+        CompareIndicesClass compare(classes);
+        sort(sortIndices.begin(), sortIndices.end(), compare);
+      }
 
     floatMap.reserve(nRows);
     lineCenters.reserve(nRows);

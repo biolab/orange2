@@ -93,7 +93,8 @@ for file in deplist:
 makedepsfile.write("\n\n")
 
 makedepsfile.write("CORN_OBJECTS = $(ODIR)/corn.o $(ODIR)/c2py.o\n\n")
-makedepsfile.write("STATC_OBJECTS = $(ODIR)/statc.o  $(ODIR)/c2py.o $(ODIR)/statexceptions.o $(ODIR)/lcomb.o\n\n")
+makedepsfile.write("STATC_OBJECTS = $(ODIR)/stat.o $(ODIR)/statc.o  $(ODIR)/c2py.o $(ODIR)/statexceptions.o $(ODIR)/lcomb.o\n\n")
+ 
 
 for (file, filedeps) in deplist:
   if (file[-4:]==".cpp") and (not file in dont_compile):

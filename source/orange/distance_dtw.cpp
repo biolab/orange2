@@ -23,12 +23,12 @@ TAlignment::TAlignment(const TAlignment &old)
 {}
 
 
-bool TAlignment::operator==(const TAlignment &o)
+bool TAlignment::operator==(const TAlignment &o) const
 { return (i==o.i) && (j==o.j);
 }
 
 
-bool TAlignment::operator<(const TAlignment &o)
+bool TAlignment::operator<(const TAlignment &o) const
 { return (i<o.i) || ((o.i==o.j) && (j==o.j));
 }
 
