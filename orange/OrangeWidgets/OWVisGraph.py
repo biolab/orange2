@@ -46,6 +46,7 @@ class OWVisGraph(OWGraph):
         self.coloringScaledData = []
         self.attributeNames = []      # list of attribute names from self.rawdata
         self.domainDataStat = []
+        self.optimizedDrawing = 1
         self.pointWidth = 5
         self.jitteringType = 'none'
         self.jitterSize = 10
