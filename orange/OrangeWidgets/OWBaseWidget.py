@@ -365,6 +365,9 @@ class OWBaseWidget(QDialog):
         else:                
             self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
 
+    def information(self, text = None):
+        self.printEvent("Information", text)
+
     def warning(self, text = None):
         self.printEvent("Warning", text)
 
