@@ -22,8 +22,8 @@
 #       separated the 'prepare' function
 #   - 2003/09/18:
 #       added support for cluster coloring
-#   - 2003/09/18:
 #       cleaned up backwards-incompatible changes (grrr) (color changes, discData)
+#       added color-coded dissimilarity matrix export
 
 import orange, orngCI
 import warnings, math, string
@@ -265,7 +265,7 @@ class InteractionMatrix:
 
         f.write("}\n")
         
-    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1):
+    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1, color_coding = 0, color_gains = 0):
         NA = len(self.names)
 
         ### BEAUTIFY THE LABELS ###
@@ -287,20 +287,30 @@ class InteractionMatrix:
 
         ### CREATE THE DISSIMILARITY MATRIX ###
 
+        maxx = self.abslist[-1][0]
+        if color_gains:
+            maxx = max(maxx,self.gains[-1])
+            cgains = [0.5*(1-i/maxx) for i in self.gains]
         diss = []        
         for line in self.ig:
             newl = []
             for d in line:
-                # transform the IG into a distance
-                ad = abs(d)
-                if ad*truncation > 1:
-                    t = 1.0 / ad
+                if color_coding:
+                    t = 0.5*(1-d/maxx)
                 else:
-                    t = truncation
+                    # transform the IG into a distance
+                    ad = abs(d)
+                    if ad*truncation > 1:
+                        t = 1.0 / ad
+                    else:
+                        t = truncation
                 newl.append(t)
             diss.append(newl)
 
-        return (diss,labels)
+        if color_gains:
+            return (diss,labels,cgains)
+        else:
+            return (diss,labels)
 
     def getClusterAverages(self, clust):
         assert(len(self.attlist) == clust.n)

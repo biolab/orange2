@@ -23,11 +23,8 @@
 #   2003/09/12:
 #       - cluster identification
 #   2003/09/18:
-#       - coloring, line width: red color indicates positive interactions,
-#         blue color indicates negative interactions. Horizontal bars indicate
-#         inter-cluster interactions, vertical bars indicate intra-cluster
-#         interactions
-# 
+#       - coloring, line width
+#       - dissimilarity matrix visualization
 
 
 import orngCluster
@@ -138,6 +135,61 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
+    def matrix(self,labels, diss, margin = 10, hook = 10, block = None, line_size = 2.0, att_colors = [], canvas = None):
+        # prevent divide-by-zero...
+        if len(labels) < 2:
+            return canvas
+
+        ## ADJUST DIMENSIONS ###        
+
+        if canvas == None:
+            tcanvas = piddlePIL.PILCanvas()
+        else:
+            tcanvas = canvas
+
+        # compute the height
+        lineskip = int(line_size*tcanvas.fontHeight()+1)
+        labellen = [tcanvas.stringWidth(s) for s in labels]
+        maxlabel = max(labellen)
+        width = height = int(1 + 2.0*margin + hook + maxlabel + max(lineskip*(0.5+len(labels)) + tcanvas.fontHeight(),2*maxlabel))
+
+        if block == None:
+            block = lineskip/2-1
+
+        if canvas == None:
+            canvas = piddlePIL.PILCanvas(size=(width,height))
+
+        ### DRAWING ###
+                
+        offset = maxlabel+margin
+        halfline = canvas.fontAscent()/2.0
+
+        # print names
+        for i in range(len(labels)):
+            # self.order identifies the label at a particular row
+            idx = self.order[i]-1
+            x = offset - labellen[idx] + lineskip/2
+            y = offset + lineskip*(i+1)
+            canvas.drawString(labels[idx], x, y+block)
+            x = offset + lineskip/2
+            y = offset + lineskip*(i+1)
+            canvas.drawString(labels[idx], y+block, x, angle=90)
+            for j in range(i):
+                idx2 = self.order[j]-1
+                colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])
+                x = offset+hook+lineskip*(i+1)
+                y = offset+hook+lineskip*(j+1)
+                canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
+                canvas.drawRect(y-block,x-block,y+block,x+block,edgeColor=colo,fillColor=colo)
+            if len(att_colors) > 0:
+                # render the gain
+                x = offset+hook+lineskip*(i+1)
+                colo = _colorize(att_colors[i])
+                canvas.drawRect(x-block,x-block,x+block,x+block,edgeColor=colo,fillColor=colo)
+                
+        canvas.flush()
+        return canvas
+
 class GDHClustering(DendrogramPlot,orngCluster.DHClustering):
     pass
 
@@ -179,7 +231,12 @@ if __name__== "__main__":
     im = orngInteract.InteractionMatrix(tab)
     (diss,labels) = im.exportDissimilarityMatrix()
     c = GDHClustering(diss)
-    # canvas = c.dendrogram(labels)
-    canvas = c.dendrogram(labels,line_size=1.8,cluster_colors=im.getClusterAverages(c),line_width=3)
+    canvas = c.dendrogram(labels)
     canvas.getImage().save("c_zoo.png")
     ViewImage(canvas.getImage())
+
+    (dissx,labels,gains) = im.exportDissimilarityMatrix(show_gains = 0, color_coding = 1, color_gains = 1)
+    canvas = c.matrix(labels,dissx,att_colors = gains)
+    canvas.getImage().save("m_zoo.png")
+    ViewImage(canvas.getImage())
+    
