@@ -7,7 +7,7 @@
 """
 
 """ KNOWN BUGS
-- setting of the target does not work
+- setting the target does not work
 """
 
 ## viewportToContents
@@ -360,18 +360,18 @@ class OWClassificationTreeViewer2D(OWWidget):
         OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
         OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleHSpacing, ticks=1)
 
-        OWGUI.checkOnly(GeneralTab, self, 'Auto Refresh After Zoom', 'ZoomAutoRefresh', tooltip='Refresh after change of zoom setting?')
-        OWGUI.checkOnly(GeneralTab, self, 'Auto Arrange', 'AutoArrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
-        OWGUI.checkOnly(GeneralTab, self, 'Node Bubbles', 'NodeBubblesEnabled', tooltip='When mouse over the node show info bubble')
-        OWGUI.checkOnly(GeneralTab, self, 'Truncate Text To Fit Margins', 'TruncateText', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
+        OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto Refresh After Zoom', tooltip='Refresh after change of zoom setting?')
+        OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
+        OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node Bubbles', tooltip='When mouse over the node show info bubble')
+        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate Text To Fit Margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
         
         self.tabs.insertTab(GeneralTab, "General")
 
         # TREE TAB
         TreeTab = QVGroupBox(self)
         OWGUI.checkWithSpin(TreeTab, self, 'Max Tree Depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth", tooltip='Defines the depth of the tree displayed', checkCallback=self.toogleTreeDepth, spinCallback=self.toogleTreeDepth)
-        OWGUI.labelWithSpin(TreeTab, self, 'Max Line Width:', min=1, max=10, value='LineWidth', step = 1, tooltip='Defines max width of the edges that connect tree nodes', callback=self.toggleLineWidth)
-        OWGUI.radioButtonsInBox(TreeTab, self, 'Baseline for Line Width', ['No Dependency', 'Root Node', 'Parent Node'], 'LineWidthMethod',
+        OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max Line Width:', tooltip='Defines max width of the edges that connect tree nodes', callback=self.toggleLineWidth)
+        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod', ['No Dependency', 'Root Node', 'Parent Node'], box='Baseline for Line Width',
                                 tooltips=['All edges are of the same width', 'Line width is relative to number of cases in root node', 'Line width is relative to number of cases in parent node'],
                                 callback=self.toggleLineWidth)
         self.tabs.insertTab(TreeTab, "Tree")
@@ -386,17 +386,15 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
             self.dummy = i in self.NodeInfo
-            w = OWGUI.checkOnly(nodeInfoBox, self, nodeInfoButtons[i], 'dummy', callback=self.setNodeInfo, getwidget=1, id=i)
+            w = OWGUI.checkBox(nodeInfoBox, self, 'dummy', nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
         
-        OWGUI.radioButtonsInBox(NodeTab, self, 'Node Color', ['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'],
-                                'NodeColorMethod',
+        OWGUI.radioButtonsInBox(NodeTab, self, 'NodeColorMethod', ['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color', 
                                 tooltips=['Use the default color for all nodes in the tree.', 'The node color saturation of the color depends on the \nnumber of instances in node (lighter, fewer instances)', 'The saturation of depends on the \nprobability of the prevailing class',
                                           'The saturation of depends on the \nprobability of the target clas', 'Shows the distribution of instances with target class (100% at the root)\nthrough the nodes of the tree'],
                                 callback=self.toggleNodeColor)
         # pies
-        pieBox = QVButtonGroup("Pies",NodeTab)
-        OWGUI.checkOnly(pieBox, self, 'Show Pies', 'ShowPies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
+        OWGUI.checkBox(NodeTab, self, 'ShowPies', 'Show Pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
 
         self.tabs.insertTab(NodeTab, "Node")
         
@@ -482,14 +480,15 @@ class OWClassificationTreeViewer2D(OWWidget):
 
     import time
     def ctree(self, tree):
-        if self.canvas != None or not tree:
-            print 'ccc'
+        # XXX CLEAR SELECTION, EMPTY OUTPUT SIGNALS
+        if self.canvas != None:
             for i in self.canvas.allItems():
                 i.setCanvas(None)
-            if not tree:
+        if not tree:
+            if self.canvas:
                 self.canvas.update()
-                return
-        else:
+            return
+        if not self.canvas:         
             self.canvas = QCanvas(200, 200)
             self.canvasView = MyCanvasView(self.canvas, self.mainArea)
             self.canvasView.infoSet(master = self)

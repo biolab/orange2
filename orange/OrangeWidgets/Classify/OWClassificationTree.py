@@ -8,8 +8,9 @@ a data set) a classification tree classifier.</description>
 """
 
 from OWWidget import *
-from orngTreeLearner import TreeLearner
-from OWGUI import *
+##from orngTreeLearner import TreeLearner
+import orngTree
+import OWGUI
 
 class OWClassificationTree(OWWidget):
     settingsList = ["name",
@@ -17,7 +18,7 @@ class OWClassificationTree(OWWidget):
                     "bin", "subset",
                     "preLeafInst", "preNodeInst", "preNodeMaj",
                     "preLeafInstP", "preNodeInstP", "preNodeMajP",
-                    "postMaj", "postMPrunning", "postM"]
+                    "postMaj", "postMPruning", "postM"]
 
     # If you change this, you need to change measureChanged as well,
     # because it enables/disables two widgets when ReliefF is chosen
@@ -33,13 +34,11 @@ class OWClassificationTree(OWWidget):
         """ClassificationTree widget can either \nconstruct a classification tree leraner, or,
 if given a data set, a classification tree classifier. \nIt can also be combined with
 preprocessors to filter/change the data.
-""",
-        FALSE,
-        FALSE)
+""")
         
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset, 1)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier)]
 
         # Settings
@@ -48,10 +47,9 @@ preprocessors to filter/change the data.
         self.bin = 0; self.subset = 0
         self.preLeafInstP = 2; self.preNodeInstP = 5; self.preNodeMajP = 95
         self.preLeafInst = 1; self.preNodeInst = 0; self.preNodeMaj = 0
-        self.postMaj = 0; self.postMPrunning = 0; self.postM = 2.0
+        self.postMaj = 0; self.postMPruning = 0; self.postM = 2.0
         
         self.loadSettings()
-        
         
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
@@ -60,54 +58,49 @@ preprocessors to filter/change the data.
         
         # GUI
         # name
-
-        self.nameBox = QVGroupBox(self.controlArea)
-        self.nameBox.setTitle('Learner/Classifier Name')
-        QToolTip.add(self.nameBox,"Name to be used by other widgets to identify your learner/classifier.")
-        lineEditOnly(self.nameBox, self, '', 'name')
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
+                 tooltip='Name to be used by other widgets to identify your learner/classifier.')
         QWidget(self.controlArea).setFixedSize(0, 16)
         
         # attribute quality estimation
-        self.qBox = QVGroupBox(self.controlArea)
-        self.qBox.setTitle('Attribute Quality Estimation')
+        qBox = QVGroupBox(self.controlArea)
+        qBox.setTitle('Attribute Quality Estimation')
 
-        self.qMea = QComboBox(self.qBox)
+        self.qMea = QComboBox(qBox)
         for m in self.measures:
             self.qMea.insertItem(m[0])
         self.qMea.setCurrentItem(self.estim)
         self.connect(self.qMea, SIGNAL("activated(int)"), self.measureChanged)
         
-        self.hbxRel1 = labelWithSpin_hb(self.qBox, self, "Relief's reference examples: ", 1, 1000, "relM", 10)
-        self.hbxRel2 = labelWithSpin_hb(self.qBox, self, "Relief's neighbours", 1, 50, "relK")
+        self.hbxRel1 = OWGUI.spin(qBox, self, "relM", 1, 1000, 10, label="Relief's reference examples: ")
+        self.hbxRel2 = OWGUI.spin(qBox, self, "relK", 1, 50, label="Relief's neighbours")
         QWidget(self.controlArea).setFixedSize(0, 16)
         self.measureChanged(self.estim)
 
         # structure of the tree
-        self.sBox = QVGroupBox(self.controlArea)
-        self.sBox.setTitle('Tree Structure')
-        checkOnly(self.sBox, self, 'Binarization', 'bin')
+        OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
         QWidget(self.controlArea).setFixedSize(0, 16)
 
-        # preprunning
+        # prepruning
         self.pBox = QVGroupBox(self.controlArea)
-        self.pBox.setTitle('Pre-Prunning')
+        self.pBox.setTitle('Pre-Pruning')
 
         self.preLeafInstBox, self.preLeafInstPBox = \
-          checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
+          OWGUI.checkWithSpin(self.pBox, self, "Min. instances in leaves: ", 1, 1000, "preLeafInst", "preLeafInstP")
         self.preNodeInstBox, self.preNodeInstPBox = \
-          checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
+          OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 1000, "preNodeInst", "preNodeInstP", " or fewer instances")
         self.preNodeMajBox, self.preNodeMajPBox = \
-          checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
+          OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
         
         QWidget(self.controlArea).setFixedSize(0, 16)
 
         self.mBox = QVGroupBox(self.controlArea)
 
-        # post-prunning
-        self.mBox.setTitle('Post-Prunning')
-        checkOnly(self.mBox, self, 'Recursively merge leaves with same majority class', 'postMaj')
-        self.postMPrunningBox, self.postMPrunningPBox = \
-          checkWithSpin(self.mBox, self, "m for m-error prunning ", 0, 1000, 'postMPrunning', 'postM')
+        # post-pruning
+        self.mBox.setTitle('Post-Pruning')
+        OWGUI.checkBox(self.mBox, self, 'postMaj', 'Recursively merge leaves with same majority class')
+        self.postMPruningBox, self.postMPruningPBox = \
+          OWGUI.checkWithSpin(self.mBox, self, "m for m-error pruning ", 0, 1000, 'postMPruning', 'postM')
 
         QWidget(self.controlArea).setFixedSize(0, 16)
 
@@ -120,15 +113,14 @@ preprocessors to filter/change the data.
     # main part:         
 
     def setLearner(self):
-        #print 'MinEx', self.preNodeInst, self.preNodeInstP, '|', self.preLeafInst, self.preLeafInstP
-        self.learner = TreeLearner(measure = self.measures[self.estim][1],
+        self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
                                    reliefK = self.relK, reliefM = self.relM,
                                    binarization = self.bin,
                                    minExamples = self.preNodeInst and self.preNodeInstP,
                                    minSubset = self.preLeafInst and self.preLeafInstP,
                                    maxMajority = self.preNodeMaj and self.preNodeMajP/100.0,
                                    sameMajorityPruning = self.postMaj,
-                                   mForPrunning = self.postMPrunning and self.postM,
+                                   mForPruning = self.postMPruning and self.postM,
                                    storeExamples = 1)
                                    
         self.learner.name = self.name
@@ -139,22 +131,20 @@ preprocessors to filter/change the data.
             self.send("Classifier", self.classifier)
             self.send("Classification Tree", self.classifier)
 
-    # slots: handle input signals        
     def measureChanged(self, idx):
         self.estim = idx
         self.hbxRel1.setEnabled(idx == 3)
         self.hbxRel2.setEnabled(idx == 3)
         
-        
-    def cdata(self,data):
-        self.data=data
-        self.setLearner()
+    # handle input signals        
 
-    def pp():
-        pass
-        # include preprocessing!!!
-
-    # signal processing
+    def dataset(self,data):
+        self.data = data
+        if self.data:
+            self.setLearner()
+        else:
+            self.send("Classifier", None)
+            self.send("Classification Tree", None)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -166,8 +156,8 @@ if __name__=="__main__":
     ow=OWClassificationTree()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('../adult_sample')
-    ow.cdata(dataset)
+    d = orange.ExampleTable('adult_sample')
+    ow.dataset(d)
 
     ow.show()
     a.exec_loop()

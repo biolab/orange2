@@ -68,14 +68,14 @@ AUC (area under ROC curve), and Brier score.
 
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
-        OWGUI.labelWithSpin(box, self, 'Number of Folds:  ', 2, 100, 'nFolds', step=1)
+        OWGUI.spin(box, self, 'nFolds', 2, 100, step=1, label='Number of Folds:  ')
 
         self.s[1] = QRadioButton('Leave-One-Out', self.sBox)
         self.s[2] = QRadioButton('Random Sampling', self.sBox)
 
         box = QHBox(self.sBox)
         QWidget(box).setFixedSize(19, 8)
-        OWGUI.labelWithSpin(box, self, 'Repeat Train/Test:  ', 1, 100, 'pRepeat', step=1)
+        OWGUI.spin(box, self, 'pRepeat', 1, 100, step=1, label='Repeat Train/Test:  ')
 
         self.h2Box = QHBox(self.sBox)
         QWidget(self.h2Box).setFixedSize(19, 8)
@@ -196,7 +196,7 @@ AUC (area under ROC curve), and Brier score.
         # what if None is send (widget is removed!). Then remove the learner,
         # and corresponding data in self.results and self.scores, and refresh everything
         if not learner:
-            return
+            pass
         if not self.learnDict.has_key(id):
             self.learners.append(learner)
         else:
@@ -286,7 +286,7 @@ if __name__=="__main__":
 ##    l3 = orange.BayesLearner()
 ##    l3.name = 'NB First'
 ##    ow.learner(l3,1)
-
+    import orngTree
     l4 = orngTree.TreeLearner(minSubset=2)
     l4.name = "Decision Tree"
     ow.learner(l4, 4)
