@@ -543,12 +543,9 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
     } while (!diff);
 
     TExample ex = *bi;
-    if (tcv.noDeviation()) {
-      ex.setClass(tcv.highestProbValue(ex));
-      ex.getClass().svalV = classDist;
-    }
-    else
-      ex.setClass(TValue(PSomeValue(classDist)));
+    ex.setClass(tcv.highestProbValue(ex));
+    ex.getClass().svalV = classDist;
+
     classifier->sortedExamples->addExample(ex);
     bi = bbi;
   }
@@ -576,21 +573,9 @@ TClassifierByExampleTable::TClassifierByExampleTable(PExampleGenerator gen, PCla
 { domainWithoutClass->removeClass(); }
 
 
-TValue TClassifierByExampleTable::operator()(const TExample &exam)
-{ PDistribution probs = classDistributionLow(exam);
-  if (probs)
-    return probs->highestProbValue(exam);
-
-  if (classifierForUnknown)
-    return classifierForUnknown->operator()(exam);
-
-  return domain->classVar->DK();
-}
-
-
-PDistribution TClassifierByExampleTable::classDistributionLow(const TExample &exam)
+void TClassifierByExampleTable::getExampleRange(const TExample &exam, TExample **&low, TExample **&high)
 {
-  /* There's a cunning reason why we need domainWithoutClass.
+  /* There's a reason why we need domainWithoutClass.
      TClassifierByExampleTable is often used for getValueFrom. If it
      tried to convert the example to a domain with the class,
      this would also convert the class attribute, which would
@@ -598,33 +583,69 @@ PDistribution TClassifierByExampleTable::classDistributionLow(const TExample &ex
      until a stack overflow :) */
 
   TExample convertedEx(domainWithoutClass, exam);
-  TExample **ei = sortedExamples->examples, **ee = sortedExamples->_Last, **tee;
-  for(int aind=0, aend=domain->attributes->size(); (aind<aend) && (ei!=ee); aind++) {
-    while( (ei!=ee) && ((**ei)[aind].compare(convertedEx[aind])<0))
-      ei++;
-    if (ei!=ee) {
-      tee=ei;
-      while ( (tee!=ee) && ((**tee)[aind]==(**ei)[aind]))
+  low = sortedExamples->examples;
+  high = sortedExamples->_Last;
+  TExample **tee;
+  for(int aind=0, aend=domain->attributes->size(); (aind<aend) && (low!=high); aind++) {
+    while( (low!=high) && ((**low)[aind].compare(convertedEx[aind])<0))
+      low++;
+    if (low!=high) {
+      tee = low;
+      while ( (tee!=high) && ((**tee)[aind]==(**low)[aind]))
         tee++;
-      ee=tee;
+      high = tee;
     }
   }
 
-  if (ei!=ee) {
-    TValue cval=(**ei).getClass();
+  if (low == high)
+    low = high = NULL;
+}
+
+
+PDistribution TClassifierByExampleTable::classDistributionLow(TExample **low, TExample **high)
+{
+  PDistribution res;
+  for(; low!=high; low++) {
+    TDistribution *ures = NULL;
+
+    TValue cval = (**low).getClass();
     if (!cval.svalV || !cval.svalV.is_derived_from(TDistribution))
       raiseError("invalid value type");
 
-    return PDistribution(cval.svalV);
+    if (!ures) {
+      ures = CLONE(TDistribution, cval.svalV);
+      res = ures;
+    }
+    else
+      (*ures) += cval.svalV;
   }
 
+  return res;
+}
+
+
+TValue TClassifierByExampleTable::operator()(const TExample &exam)
+{ TExample **low, **high;
+  getExampleRange(exam, low, high);
+
+  if (low && (low==high-1))
+    return (*low)->getClass();
+
+  PDistribution probs = classDistributionLow(low, high);
+
+  if (probs)
+    //  might be that low was NULL or classDistributionLow returned NULL
+    return probs->highestProbValue(exam);
   else
-    return PDistribution();
+    return classifierForUnknown ? classifierForUnknown->operator()(exam) : domain->classVar->DK();
 }
 
 
 PDistribution TClassifierByExampleTable::classDistribution(const  TExample &exam)
-{ PDistribution dval = classDistributionLow(exam);
+{ TExample **low, **high;
+  getExampleRange(exam, low, high);
+
+  PDistribution dval = classDistributionLow(low, high);
   if (dval) {
     PDistribution dd = CLONE(TDistribution, dval);
     dval->normalize();
@@ -640,16 +661,19 @@ PDistribution TClassifierByExampleTable::classDistribution(const  TExample &exam
 }
 
 
-void TClassifierByExampleTable::predictionAndDistribution(const TExample &ex, TValue &pred, PDistribution &dist)
-{ PDistribution dval = classDistributionLow(ex);
+void TClassifierByExampleTable::predictionAndDistribution(const TExample &exam, TValue &pred, PDistribution &dist)
+{ TExample **low, **high;
+  getExampleRange(exam, low, high);
+
+  PDistribution dval = classDistributionLow(low, high);
   if (dval) {
-    pred = dval->highestProbValue(ex);
+    pred = dval->highestProbValue(exam);
     dist = CLONE(TDistribution, dval);
     dist->normalize();
   }
 
   else if (classifierForUnknown)
-    classifierForUnknown->predictionAndDistribution(ex, pred, dist);
+    classifierForUnknown->predictionAndDistribution(exam, pred, dist);
 
   else {
     pred = domain->classVar->DK();

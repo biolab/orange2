@@ -151,8 +151,10 @@ public:
   GCPtr(U *ptr)
   : counter(NULL)
   { if (ptr)
-      if (ptr->myWrapper)
+      if (ptr->myWrapper) {
         counter = reinterpret_cast<GCCounter *>(ptr->myWrapper);
+        counter->getRef();
+      }
       else {
         counter = PyObject_GC_New(GCCounter, (PyTypeObject *)&PyOrOrange_Type);
         counter->orange_dict = NULL;

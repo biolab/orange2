@@ -155,7 +155,8 @@ public:
   virtual PDistribution classDistribution(const TExample &);
   virtual void predictionAndDistribution(const TExample &ex, TValue &pred, PDistribution &dist);
   
-  PDistribution classDistributionLow(const TExample &exam);
+  PDistribution classDistributionLow(TExample **low, TExample **high);
+  void getExampleRange(const TExample &exam, TExample **&low, TExample **&high);
 };
 
 
