@@ -299,7 +299,7 @@ class OWInteractionGraph(OWWidget):
         pipePlainIn.close()
         pipePngOut.close()
         pipePlainOut.close()
-        #os.remove('interaction.dot')
+        os.remove('interaction.dot')
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
