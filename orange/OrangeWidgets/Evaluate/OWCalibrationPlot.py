@@ -97,8 +97,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
 
         classifier = 0
         for (curve, yesClassRugPoints, noClassRugPoints) in calibrationCurves:
-            x = [px for (px, py, dev) in curve]
-            y = [py for (px, py, dev) in curve]
+            x = [px for (px, py) in curve]
+            y = [py for (px, py) in curve]
             ckey = self.classifierCalibrationCKeys[classifier]
             self.setCurveData(ckey, x, y)
 

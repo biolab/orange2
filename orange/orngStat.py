@@ -796,9 +796,10 @@ def computeCalibrationCurve(res, classIndex=-1):
         if clen > maxnPoints:
             df = clen / maxnPoints
             if df < 1: df = 1
-            curve = [loessCurve[i] for i in range(0, clen, df)]
+            curve = [loessCurve[i]  for i in range(0, clen, df)]
         else:
             curve = loessCurve
+        curve = [(c)[:2] for c in curve] ## remove the third value (variance of epsilon?) that suddenly appeared in the output of the statc.loess function
         results.append((curve, yesClassRugPoints, noClassRugPoints))
 
     return results
