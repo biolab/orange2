@@ -354,12 +354,12 @@ class OWParallelGraph(OWVisGraph):
         self.removeTooltips()
         self.addTooltips()
 
-    
+    """
     def updateAxes(self):
         OWVisGraph.updateAxes()        
         self.removeTooltips()
         self.addTooltips()
-
+    """
     def updateTooltips(self):
         self.removeTooltips()
         self.addTooltips()

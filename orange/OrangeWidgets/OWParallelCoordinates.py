@@ -404,10 +404,7 @@ class OWParallelCoordinates(OWWidget):
             
         self.updateGraph()
     #################################################
-
-    def showEvent(self, e):
-        pass
-        
+       
 
 #test widget appearance
 if __name__=="__main__":
