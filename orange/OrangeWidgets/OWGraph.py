@@ -133,6 +133,35 @@ class HiddenScaleDraw(QwtScaleDraw):
     def label(self, value):
         return QString.null
 
+class OWChooseImageSizeDlg(QDialog):
+    def __init__(self,*args):
+        apply(QDialog.__init__,(self,) + args)
+        self.space=QVBox(self)
+        self.grid=QGridLayout(self)
+        self.grid.addWidget(self.space,0,0)
+        self.group = QVGroupBox("Image size", self.space)
+        self.imageSize = QButtonGroup(5, Qt.Vertical, self.group)
+        self.imageSize.setFrameStyle(QFrame.NoFrame)
+
+        self.sizeOriginal = QRadioButton('Original size', self.imageSize)
+        self.size400 = QRadioButton('400 x 400', self.imageSize)
+        self.size600 = QRadioButton('600 x 600', self.imageSize)
+        self.size800 = QRadioButton('800 x 800', self.imageSize)
+        self.custom  = QRadioButton('Custom:', self.imageSize)
+        self.boxX = QHBox(self.group)
+        self.boxY = QHBox(self.group)
+        self.customWidth = QLabel('Width:', self.boxX)
+        self.xSize = QLineEdit(self.boxX)
+        self.customHeight = QLabel('Height:', self.boxY)
+        self.ySize = QLineEdit(self.boxY)
+        self.sizeOriginal.setChecked(1)
+
+        self.okButton = QPushButton("OK", self.space)
+        self.cancelButton = QPushButton("Cancel", self.space)
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
+
+
 
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = None):
@@ -178,16 +207,33 @@ class OWGraph(QwtPlot):
         self.YRaxisTitle = None
 
     def saveToFile(self):
+        sizeDlg = OWChooseImageSizeDlg(self, "", TRUE)
+        sizeDlg.exec_loop()
+        if sizeDlg.result() != QDialog.Accepted: return
+
+        if sizeDlg.sizeOriginal.isChecked(): size = self.size()
+        elif sizeDlg.size400.isChecked(): size = QSize(400,400)
+        elif sizeDlg.size600.isChecked(): size = QSize(600,600)
+        elif sizeDlg.size800.isChecked(): size = QSize(800,800)
+        elif sizeDlg.custom.isChecked():  size = QSize(int(str(sizeDlg.xSize.text())), int(str(sizeDlg.ySize.text())))
+        else:
+            print "error"
+            return
+
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
-        self.saveToFileDirect(fileName, ext)
+        self.saveToFileDirect(fileName, ext, size)
         
-    def saveToFileDirect(self, fileName, ext):
-        buffer = QPixmap(self.size()) # any size can do, now using the window size
+    def saveToFileDirect(self, fileName, ext, size = None):
+        if size == None:
+            buffer = QPixmap(self.size()) # any size can do, now using the window size
+        else:
+            print size.width(), size.height()
+            buffer = QPixmap(size)
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background
         self.printPlot(painter, buffer.rect())

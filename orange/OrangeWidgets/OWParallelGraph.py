@@ -214,6 +214,7 @@ class OWParallelGraph(OWVisGraph):
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
                         mkey = self.insertMarker(attrVals[pos])
+                        font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
                         self.marker(mkey).setXValue(i)
                         self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
                         self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignHCenter)

@@ -211,8 +211,8 @@ class OWScatterPlot(OWWidget):
         self.graph.setJitterContinuous(self.jitterContinuous)
         if self.data != None: self.updateGraph()
 
-    def setJitterSize(self, size):
-        self.jitterSize = size
+    def setJitterSize(self, index):
+        self.jitterSize = self.jitterSizeNums[index]
         self.graph.setJitterSize(self.jitterSize)
         if self.data != None: self.updateGraph()
 
