@@ -1,9 +1,8 @@
 """
-<name>SeletData</name>
-<description>
-This widget takes a data set on input and outputs a data set on output that consists of selected instances from input data set. Instances are selected based on attribute conditions specified by the user.
-</description>
-<icon>icons/Unknown.png</icon>
+<name>SelectData</name>
+<description>Selects instances from the data set based on conditions
+over attributes.</description>
+<icon>icons/SelectData.png</icon>
 <priority>2000</priority>
 """
 
