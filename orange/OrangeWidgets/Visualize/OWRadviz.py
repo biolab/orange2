@@ -233,16 +233,19 @@ class OWRadviz(OWWidget):
     # ####################################
     # find optimal class separation for shown attributes
     # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
-    def optimizeSeparation(self, numberOfAttrs = None):
+    def optimizeSeparation(self, numberOfAttrs = None, listOfAttributes = None):
         if self.data == None: return
+
+        if not listOfAttributes:
+            listOfAttributes = self.getShownAttributeList()
 
         if not numberOfAttrs:
             text = str(self.optimizationDlg.attributeCountCombo.currentText())
-            if text == "ALL": number = len(self.getShownAttributeList())
+            if text == "ALL": number = len(listOfAttributes)
             else:             number = int(text)
 
             self.optimizationDlg.clearResults()
-            total = len(self.getShownAttributeList())
+            total = len(listOfAttributes)
             if total < number: return
             self.graph.totalPossibilities = combinations(number, total)*fact(number-1)/2
             self.graph.triedPossibilities = 0
@@ -256,9 +259,10 @@ class OWRadviz(OWWidget):
 
             startTime = time.time()
             self.graph.startTime = time.time()
-        else:                 number = numberOfAttrs
+        else:
+            number = numberOfAttrs
 
-        self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], number, self.optimizationDlg.addResult)
+        self.graph.getOptimalExactSeparation(listOfAttributes, [], number, self.optimizationDlg.addResult)
 
         if not numberOfAttrs:
             self.progressBarFinished()
@@ -273,11 +277,12 @@ class OWRadviz(OWWidget):
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data == None: return
-        
+
+        listOfAttributes = self.getShownAttributeList()
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(self.getShownAttributeList())
+        if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
-        total = len(self.getShownAttributeList()) 
+        total = len(listOfAttributes) 
 
         # compute the number of possible projections
         proj = 0
@@ -293,7 +298,7 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.disableControls()
 
         for val in range(3, maxLen+1):
-            self.optimizeSeparation(val)
+            self.optimizeSeparation(val, listOfAttributes)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()

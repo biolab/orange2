@@ -242,19 +242,22 @@ class OWPolyviz(OWWidget):
     # ####################################
     # find optimal class separation for shown attributes
     # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
-    def optimizeSeparation(self, numberOfAttrs = None):
+    def optimizeSeparation(self, numberOfAttrs = None, listOfAttributes = None):
         if self.data == None: return
+    
+        if not listOfAttributes:
+            listOfAttributes = self.getShownAttributeList()
 
         if self.rotateAttributes: reverseList = None
         else: reverseList = self.attributeReverse
         
         if not numberOfAttrs:
             text = str(self.optimizationDlg.attributeCountCombo.currentText())
-            if text == "ALL": number = len(self.getShownAttributeList())
+            if text == "ALL": number = len(listOfAttributes)
             else:             number = int(text)
         
             self.optimizationDlg.clearResults()
-            total = len(self.getShownAttributeList())
+            total = len(listOfAttributes)
             if total < number: return
             if not self.rotateAttributes: combin = combinations(number, total) * fact(number-1)
             else: combin = combinations(number, total) * fact(number-1) * math.pow(2, number)/2
@@ -268,9 +271,10 @@ class OWPolyviz(OWWidget):
             self.optimizationDlg.disableControls()
             startTime = time.time()
             
-        else:                 number = numberOfAttrs
+        else:
+            number = numberOfAttrs
 
-        self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, number, self.addInterestingProjection)
+        self.graph.getOptimalExactSeparation(listOfAttributes, [], reverseList, number, self.addInterestingProjection)
 
         if not numberOfAttrs:
             self.progressBarFinished()
@@ -285,11 +289,12 @@ class OWPolyviz(OWWidget):
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data == None: return
-   
+
+        listOfAttributes = self.getShownAttributeList()
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(self.getShownAttributeList())
+        if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
-        total = len(self.getShownAttributeList())
+        total = len(listOfAttributes)
 
         # compute the number of possible projections
         proj = 0
@@ -307,7 +312,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.disableControls()
 
         for val in range(3, maxLen+1):
-            self.optimizeSeparation(val)
+            self.optimizeSeparation(val, listOfAttributes)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
