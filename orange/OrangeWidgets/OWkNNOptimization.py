@@ -41,7 +41,7 @@ class kNNOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm"]
+    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm", "evaluateEachClassValue", "createSnapshots"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
@@ -49,9 +49,10 @@ class kNNOptimization(OWBaseWidget):
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
 
-    def __init__(self,parent=None, graph = None):
-        OWBaseWidget.__init__(self, parent, "Optimization Dialog")
+    def __init__(self, parentWidget=None, graph = None):
+        OWBaseWidget.__init__(self, None, "Optimization Dialog")
 
+        self.parentWidget = parentWidget
         self.setCaption("Qt VizRank Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
         self.grid=QGridLayout(5,2)
@@ -77,6 +78,9 @@ class kNNOptimization(OWBaseWidget):
         self.dataDistribution = None    # distribution of class attribute
         self.selectedClasses = []
         self.rawdata = None
+        self.subsetdata = None
+        self.arguments = []
+        self.createSnapshots = 1
 
         self.showRank = 0
         self.showAccuracy = 1
@@ -94,10 +98,12 @@ class kNNOptimization(OWBaseWidget):
         
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
+        self.ArgumentationTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")
         
 
@@ -111,7 +117,21 @@ class kNNOptimization(OWBaseWidget):
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
         #self.miscSettingsBox.hide()
         
-        
+        # argumentation tab        
+        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
+        f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
+        self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
+        self.stopArgumentationButton.setFont(f)
+        self.stopArgumentationButton.hide()
+        self.createSnapshotCheck = OWGUI.checkBox(self.argumentationStartBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
+        self.argumentList = QListBox(self.argumentBox)
+        self.argumentList.setMinimumSize(200,200)
+        self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
+
+
         self.classesBox = OWGUI.widgetBox(self.ManageTab, " Class values in data set ")        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
         self.evaluateBox = OWGUI.widgetBox(self.ManageTab, " Evaluate Current Projection / Classifier ")
@@ -289,6 +309,9 @@ class kNNOptimization(OWBaseWidget):
         else: self.datasetName = ""
         self.rawdata = data
         self.classesList.clear()
+        self.classValueList.clear()
+        self.argumentList.clear()
+        self.arguments = []
         self.selectedClasses = []
 
         if not data: return
@@ -306,11 +329,20 @@ class kNNOptimization(OWBaseWidget):
         # add class values
         for i in range(len(data.domain.classVar.values)):
             self.classesList.insertItem(data.domain.classVar.values[i])
+            self.classValueList.insertItem(data.domain.classVar.values[i])
         self.classesList.selectAll(1)
 
         # compute class distribution for all data
         self.dataDistribution = orange.Distribution(data.domain.classVar, data)
+        if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
 
+
+    # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
+    def setSubsetData(self, subsetdata):
+        self.subsetdata = subsetdata
+        self.arguments = []
+        self.argumentList.clear()
+    
                 
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
     # class values that are not interesting for separation (indices not present in self.selectedClasses) are joined in one class value, so
@@ -706,6 +738,9 @@ class kNNOptimization(OWBaseWidget):
         self.miscSettingsBox.setEnabled(0)
         self.methodTypeCombo.setEnabled(0)
         self.optimizeGivenProjectionButton.setEnabled(0)
+        self.argumentBox.setEnabled(0)
+        self.classValueList.setEnabled(0)
+        self.argumentationStartBox.setEnabled(0)
 
     def enableControls(self):    
         self.optimizationSettingsBox.setEnabled(1)
@@ -723,6 +758,9 @@ class kNNOptimization(OWBaseWidget):
         self.miscSettingsBox.setEnabled(1)
         self.methodTypeCombo.setEnabled(1)
         self.optimizeGivenProjectionButton.setEnabled(1)
+        self.argumentBox.setEnabled(1)
+        self.classValueList.setEnabled(1)
+        self.argumentationStartBox.setEnabled(1)
 
     # ##############################################################
     # exporting multiple pictures
@@ -806,6 +844,107 @@ class kNNOptimization(OWBaseWidget):
 
     def destroy(self, dw, dsw):
         self.saveSettings()
+
+
+    # ######################################################
+    # Argumentation functions
+    # ######################################################
+    def findArguments(self):
+        self.cancelArgumentation = 0
+        self.arguments = [[] for i in range(self.classValueList.count())]
+        snapshots = self.createSnapshots
+        
+        if self.subsetdata == None:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
+            return
+        if len(self.shownResults) == 0:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
+            return
+
+        example = self.subsetdata[0]
+        testExample = []
+        for attr in example.domain.attributes:
+            if example[attr].isSpecial(): testExample.append(-1)
+            else: testExample.append((example[attr].value - float(self.graph.attrValues[attr.name][0])) / float(self.graph.attrValues[attr.name][1]-self.graph.attrValues[attr.name][0]))
+        self.findArgumentsButton.hide()
+        self.stopArgumentationButton.show()
+        if snapshots: self.parentWidget.setMinimalGraphProperties()
+
+        for index in range(len(self.allResults)):
+            if self.cancelArgumentation: break
+            (accuracy, other_results, lenTable, attrList, tryIndex, strList) = self.allResults[index]
+
+            qApp.processEvents()
+            
+            possiblyInside = 1
+            
+            for attr in attrList:
+                if testExample[self.graph.attributeNames.index(attr)] < 0.0 or testExample[self.graph.attributeNames.index(attr)] > 1.0:
+                    possiblyInside = 0
+                    break
+            if not possiblyInside: continue
+
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))])
+            table = self.graph.createProjectionAsExampleTable([self.graph.attributeNames.index(attr) for attr in attrList])
+            knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+            (classValue, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
+            classValue = int(classValue)
+
+            pic = None
+            if snapshots:            
+                # if the point lies inside a cluster -> save this figure into a pixmap
+                self.parentWidget.showAttributes(attrList, clusterClosure = None)
+                painter = QPainter()
+                pic = QPixmap(QSize(120,120))
+                painter.begin(pic)
+                painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+                self.graph.printPlot(painter, pic.rect())
+                painter.flush()
+                painter.end()
+
+            value = 0.5 * accuracy + 50.0 * prob[classValue]
+            ind = self.getArgumentIndex(value, classValue)
+
+            self.arguments[classValue].insert(ind, (pic, value, accuracy, 100.0 * prob[classValue], attrList, index))
+            if classValue == self.classValueList.currentItem():
+                if snapshots: self.argumentList.insertItem(pic, "%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
+                else:         self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
+
+        self.stopArgumentationButton.hide()
+        self.findArgumentsButton.show()
+        self.parentWidget.restoreGraphProperties()
+        if self.argumentList.count() > 0: self.argumentList.setCurrentItem(0)        
+       
+
+    def getArgumentIndex(self, value, classValue):
+        top = 0; bottom = len(self.arguments[classValue])
+        while (bottom-top) > 1:
+            mid  = (bottom + top)/2
+            if max(value, self.arguments[classValue][mid][1]) == value: bottom = mid
+            else: top = mid
+
+        if len(self.arguments[classValue]) == 0: return 0
+        if max(value, self.arguments[classValue][top][1]) == value:  return top
+        else:                                                        return bottom
+        
+    def stopArgumentationClick(self):
+        self.cancelArgumentation = 1
+    
+    def argumentationClassChanged(self):
+        self.argumentList.clear()
+        if len(self.arguments) == 0: return
+        ind = self.classValueList.currentItem()
+        for i in range(len(self.arguments[ind])):
+            val = self.arguments[ind][i]
+            if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f (%.2f, %.2f) - %s" %(val[1], val[2], val[3], val[4]))
+            else:               self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(val[1], val[2], val[3], val[4]))
+
+    def argumentSelected(self):
+        ind = self.argumentList.currentItem()
+        classInd = self.classValueList.currentItem()
+        self.parentWidget.showAttributes(self.arguments[classInd][ind][4], clusterClosure = None)
+        
+
 
 
 #test widget appearance
