@@ -122,9 +122,10 @@ PClassifier TGeneralExampleClustering::classifier(const float &cut, const int &c
   const TVarList *attributes = NULL;
   PVariable classVar(eclassVar);
 
+  bool isLong = false;
+
   PITERATE(TExampleSets, ci, clusters) {
     string value = "";
-    bool isLong = false;
 
     PEITERATE(ei, *ci) {
       if (!attributes)
@@ -148,12 +149,24 @@ PClassifier TGeneralExampleClustering::classifier(const float &cut, const int &c
       if (isLong)
         break;
     }
-
+    if (isLong)
+      break;
+  
     if (!value.empty())
       eclassVar->addValue(value);
     else {
       char vbuf[12];
       sprintf(vbuf, "c%d", ci-clusters->begin());
+      eclassVar->addValue(vbuf);
+    }
+  }
+
+  if (isLong) {
+    eclassVar->values->clear();
+    int i = 1;
+    PITERATE(TExampleSets, ci, clusters) {
+      char vbuf[12];
+      sprintf(vbuf, "c%d", i++);
       eclassVar->addValue(vbuf);
     }
   }

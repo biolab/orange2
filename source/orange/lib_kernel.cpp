@@ -64,6 +64,7 @@ int       VarList_setitem_sq(TPyOrange *self, int index, PyObject *item) { retur
 PyObject *VarList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_getslice(self, start, stop); }
 int       VarList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_setslice(self, start, stop, item); }
 int       VarList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_len(self); }
+PyObject *VarList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_richcmp(self, object, op); }
 PyObject *VarList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_concat(self, obj); }
 PyObject *VarList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_repeat(self, times); }
 PyObject *VarList_str(TPyOrange *self) { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_str(self); }
@@ -89,6 +90,7 @@ int       VarListList_setitem_sq(TPyOrange *self, int index, PyObject *item) { r
 PyObject *VarListList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_getslice(self, start, stop); }
 int       VarListList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_setslice(self, start, stop, item); }
 int       VarListList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_len(self); }
+PyObject *VarListList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_richcmp(self, object, op); }
 PyObject *VarListList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_concat(self, obj); }
 PyObject *VarListList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_repeat(self, times); }
 PyObject *VarListList_str(TPyOrange *self) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::_str(self); }
@@ -236,6 +238,43 @@ PyObject *Variable_call(PyObject *self, PyObject *args, PyObject *keywords) PYDO
   PyCATCH
 }
 
+
+PyObject *EnumVariable_getitem_sq(PyObject *self, int index)
+{ PyTRY
+    CAST_TO(TEnumVariable, var)
+    if (!var->values || (index<0) || (index>=int(var->values->size())))
+      PYERROR(PyExc_IndexError, "index out of range", PYNULL);
+    return Value_FromVariableValue(PyOrange_AsVariable(self), TValue(index));
+  PyCATCH
+}
+
+
+PyObject *IntVariable_getitem_sq(PyObject *self, int index)
+{ PyTRY
+    CAST_TO(TIntVariable, var);
+    int maxInd = var->endValue - var->startValue;
+    if (maxInd<0)
+      PYERROR(PyExc_IndexError, "interval not specified", PYNULL);
+    if ((index<0) || (index>maxInd))
+      PYERROR(PyExc_IndexError, "index out of range", PYNULL);
+    return Value_FromVariableValue(PyOrange_AsVariable(self), TValue(var->startValue+index));
+  PyCATCH
+}
+
+
+PyObject *FloatVariable_getitem_sq(PyObject *self, int index)
+{ PyTRY
+    CAST_TO(TFloatVariable, var);
+    if ((var->stepValue<=0) || (var->startValue>var->endValue))
+      PYERROR(PyExc_IndexError, "interval not specified", PYNULL);
+    
+    float maxInd = (var->endValue - var->startValue)/var->stepValue;
+
+    if ((index<0) || (index>maxInd))
+      PYERROR(PyExc_IndexError, "index out of range", PYNULL);
+    return Value_FromVariableValue(PyOrange_AsVariable(self), TValue(var->startValue+var->stepValue*index));
+  PyCATCH
+}
 
 
 bool convertFromPythonWithVariable(PyObject *obj, string &str)
@@ -438,6 +477,27 @@ PyObject *Domain_metaid(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | 
   PyCATCH
 }
 
+
+PyObject *Domain_getmeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | int) -> Variable")
+{ PyTRY
+    CAST_TO(TDomain, domain);
+    TMetaDescriptor *desc = NULL;
+
+    if (PyString_Check(rar))
+      desc = domain->metas[string(PyString_AsString(rar))];
+    else if (PyInt_Check(rar))
+      desc = domain->metas[PyInt_AsLong(rar)];
+    else
+      PYERROR(PyExc_AttributeError, "invalid argument; name or integer expected", PYNULL);
+
+    if (!desc)
+      PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
+
+    return WrapOrange(desc->variable);
+  PyCATCH
+}
+
+
 PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(0, "() -> {int: Variable}")
 { PyTRY
     CAST_TO(TDomain, domain);
@@ -450,36 +510,18 @@ PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(0, "() -> {int
   PyCATCH
 }
     
-PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id0:desc0, id1:desc1, ...}) | (id, descriptor) -> None")
+PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(id, descriptor) -> None")
 { PyTRY
     CAST_TO(TDomain, domain);
 
     int id;
     PVariable var;
-    if (PyArg_ParseTuple(args, "iO&", &id, cc_Variable, &var)) {
-      domain->metas.push_back(TMetaDescriptor(id, var));
-      RETURN_NONE;
-    }
-    PyErr_Clear();
+    if (!PyArg_ParseTuple(args, "iO&", &id, cc_Variable, &var))
+      return PYNULL;
 
-    PyObject *dict;
-    if (PyArg_ParseTuple(args, "O", &dict) && !PyDict_Check(dict)) {
-      int pos = 0;
-      PyObject *key, *value;
-      vector<TMetaDescriptor> tempMetas;
-      while (PyDict_Next(dict, &pos, &key, &value))
-        if (PyInt_Check(key) && PyOrVariable_Check(value))
-          tempMetas.push_back(TMetaDescriptor(PyInt_AsLong(key), PyOrange_AsVariable(value)));
-        else
-          PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
-
-      ITERATE(vector<TMetaDescriptor>, mi, tempMetas)
-        domain->metas.push_back(*mi);
-
-      RETURN_NONE;
-    }
-
-    PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL)
+    domain->metas.push_back(TMetaDescriptor(id, var));
+    domain->domainHasChanged();
+    RETURN_NONE;
   PyCATCH
 }
 
@@ -495,6 +537,11 @@ bool removeMeta(PyObject *rar, TMetaVector &metas)
   else if (PyOrVariable_Check(rar))
     while((mvi!=mve) && ((*mvi).variable!=PyOrange_AsVariable(rar)))
       mvi++;
+  else if (PyString_Check(rar)) {
+    char *metaname = PyString_AsString(rar);
+    while((mvi!=mve) && ((*mvi).variable->name!=metaname))
+      mvi++;
+  }
   else
     mvi=mve;
 
@@ -529,6 +576,7 @@ PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id
         newMetas.erase(mvi);
       }
       domain->metas=newMetas;
+      domain->domainHasChanged();
     }
 
     else if (PyList_Check(rar)) {
@@ -537,6 +585,7 @@ PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id
         if (!removeMeta(PyList_GetItem(rar, pos), newMetas))
           return PYNULL;
       domain->metas=newMetas;
+      domain->domainHasChanged();
     }
   
     else if (!removeMeta(rar, domain->metas))
@@ -1098,6 +1147,7 @@ inline int       ExampleGeneratorList_setitem_sq(TPyOrange *self, int index, PyO
 inline PyObject *ExampleGeneratorList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_getslice(self, start, stop); }
 inline int       ExampleGeneratorList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_setslice(self, start, stop, item); }
 inline int       ExampleGeneratorList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_len(self); }
+inline PyObject *ExampleGeneratorList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_richcmp(self, object, op); }
 inline PyObject *ExampleGeneratorList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_concat(self, obj); }
 inline PyObject *ExampleGeneratorList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_repeat(self, times); }
 inline PyObject *ExampleGeneratorList_str(TPyOrange *self) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_str(self); }
@@ -1156,17 +1206,19 @@ bool readBoolFlag(PyObject *keywords, char *flag)
 
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore")
 
-PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain | examples)")
+PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 { PyTRY
     TExampleTable *res=NULL;
+    PDomain domain;
+    PExampleGenerator egen;
 
     PyObject *args;
     char *filename = NULL;
 
-    if (PyArg_ParseTuple(argstuple, "|ss", &filename))
+    if (PyArg_ParseTuple(argstuple, "|s", &filename))
       res = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore"));
 
-    else if (PyArg_ParseTuple(argstuple, "O", &args))
+    else if (PyArg_ParseTuple(argstuple, "O", &args)) {
       if (PyOrOrange_Check(args)) {
         if (PyOrDomain_Check(args))
           res = mlnew TExampleTable(PyOrange_AsDomain(args));
@@ -1176,6 +1228,12 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
       }
       else
         res = readListOfExamples(args); // this will return an error if needed
+    }
+
+    else if (PyArg_ParseTuple(argstuple, "O&O&", cc_Domain, &domain, pt_ExampleGenerator, &egen)) {
+      res = mlnew TExampleTable(domain);
+      res->addExamples(egen);
+    }
 
     if (!res)
       PYERROR(PyExc_TypeError, "invalid type", PYNULL);
@@ -1228,17 +1286,23 @@ int ExampleTable_len_sq(PyObject *self)
 }
 
 
-PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples) ->None | (example) -> None")
+PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_O, "(example) -> None")
 { PyTRY
     CAST_TO(TExampleTable, table)
 
-    TExample *example;
-    if (PyArg_ParseTuple(args, "O&", ptr_Example, &example)) {
-      table->addExample(*example);
-      RETURN_NONE;
-    }
+    TExample example(table->domain);
 
-    PyErr_Clear();
+    if (!convertFromPythonExisting(args, example))
+      return PYNULL;
+    
+    table->addExample(example);
+    RETURN_NONE;
+  PyCATCH
+}
+
+PyObject *ExampleTable_extend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples) -> None")
+{ PyTRY 
+    CAST_TO(TExampleTable, table)
 
     PExampleGenerator egen = exampleGenFromArgs(args);
     if (egen) {
@@ -1249,13 +1313,13 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARG
       RETURN_NONE;
     }
 
+    TExample example(table->domain);
     if (PyList_Check(args)) {
       int size=PyList_Size(args);
 
       for(int i=0; i<size; i++) {
         PyObject *pex=PyList_GetItem(args, i);
-        TExample example(table->domain);
-        if (!convertFromPython(pex, example, table->domain))
+        if (!convertFromPythonExisting(pex, example))
           return PYNULL;
 
         table->addExample(example);
@@ -1264,7 +1328,7 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARG
       RETURN_NONE;
     }
 
-    PYERROR(PyExc_TypeError, "invalid type", PYNULL);
+    PYERROR(PyExc_TypeError, "invalid argument for ExampleTable.append", PYNULL);
   PyCATCH
 }
 
@@ -1615,18 +1679,38 @@ PyObject *ExampleTable_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS
 
 PyObject *ExampleTable_addMetaAttribute(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(id[, Value=1.0]) -> None")
 { PyTRY
-    int id;
+    CAST_TO(TExampleTable, table);
+
+    PyObject *pyid;
     PyObject *pyvalue=PYNULL;
-    if (!PyArg_ParseTuple(args, "i|O", &id, &pyvalue))
+    if (!PyArg_ParseTuple(args, "O|O", &pyid, &pyvalue))
       PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
+
+    int id;
+    PVariable metavariable;
+    if (PyInt_Check(pyid)) {
+      id = PyInt_AsLong(pyid);
+      metavariable = table->domain->getMetaVar(id, false);
+    }
+    else if (PyString_Check(pyid)) {
+      id = table->domain->getMetaNum(string(PyString_AsString(pyid)));
+      metavariable = table->domain->getMetaVar(id, false);
+    }
+    else if (PyOrVariable_Check(pyid)) {
+      metavariable = PyOrange_AsVariable(pyid);
+      id = table->domain->getMetaNum(metavariable);
+    }
 
     TValue value;
     if (!pyvalue)
-      value=TValue(float(1.0));
-    else if (!convertFromPython(pyvalue, value))
+      if (metavariable && metavariable->varType != TValue::FLOATVAR)
+        value = metavariable->DK();
+      else
+        value = TValue(float(1.0));
+    else if (!convertFromPython(pyvalue, value, metavariable))
       PYERROR(PyExc_AttributeError, "invalid value argument", PYNULL);
 
-    SELF_AS(TExampleTable).addMetaAttribute(id, value);
+    table->addMetaAttribute(id, value);
 
     RETURN_NONE;
   PyCATCH
@@ -1635,11 +1719,22 @@ PyObject *ExampleTable_addMetaAttribute(PyObject *self, PyObject *args) PYARGS(M
 
 PyObject *ExampleTable_removeMetaAttribute(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(id) -> None")
 { PyTRY
-    int id;
-    if (!PyArg_ParseTuple(args, "i", &id))
+    CAST_TO(TExampleTable, table);
+
+    PyObject *pyid;
+    PyObject *pyvalue=PYNULL;
+    if (!PyArg_ParseTuple(args, "O|O", &pyid, &pyvalue))
       PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
 
-    SELF_AS(TExampleTable).removeMetaAttribute(id);
+    int id;
+    if (PyInt_Check(pyid))
+      id = PyInt_AsLong(pyid);
+    else if (PyString_Check(pyid))
+      id = table->domain->getMetaNum(string(PyString_AsString(pyid)));
+    else if (PyOrVariable_Check(pyid))
+      id = table->domain->getMetaNum(PyOrange_AsVariable(pyid));
+
+    table->removeMetaAttribute(id);
 
     RETURN_NONE;
   PyCATCH
@@ -2492,6 +2587,7 @@ inline int       DomainDistributions_setitem_sq(TPyOrange *self, int index, PyOb
 inline PyObject *DomainDistributions_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_getslice(self, start, stop); }
 inline int       DomainDistributions_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_setslice(self, start, stop, item); }
 inline int       DomainDistributions_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_len(self); }
+inline PyObject *DomainDistributions_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_richcmp(self, object, op); }
 inline PyObject *DomainDistributions_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_concat(self, obj); }
 inline PyObject *DomainDistributions_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_repeat(self, times); }
 inline PyObject *DomainDistributions_str(TPyOrange *self) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_str(self); }
@@ -2607,6 +2703,7 @@ int       DistributionList_setitem_sq(TPyOrange *self, int index, PyObject *item
 PyObject *DistributionList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_getslice(self, start, stop); }
 int       DistributionList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_setslice(self, start, stop, item); }
 int       DistributionList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_len(self); }
+PyObject *DistributionList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_richcmp(self, object, op); }
 PyObject *DistributionList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_concat(self, obj); }
 PyObject *DistributionList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_repeat(self, times); }
 PyObject *DistributionList_str(TPyOrange *self) { return ListOfWrappedMethods<PDistributionList, TDistributionList, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_str(self); }
@@ -2628,6 +2725,9 @@ PyObject *DistributionList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VAR
 
 #include "classify.hpp"
 #include "learn.hpp"
+
+BASED_ON(EFMDataDescription, Orange)
+
 BASED_ON(LearnerFD, Learner)
 
 PyObject *Learner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
@@ -2693,6 +2793,7 @@ int       ClassifierList_setitem_sq(TPyOrange *self, int index, PyObject *item) 
 PyObject *ClassifierList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_getslice(self, start, stop); }
 int       ClassifierList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_setslice(self, start, stop, item); }
 int       ClassifierList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_len(self); }
+PyObject *ClassifierList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_richcmp(self, object, op); }
 PyObject *ClassifierList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_concat(self, obj); }
 PyObject *ClassifierList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_repeat(self, times); }
 PyObject *ClassifierList_str(TPyOrange *self) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_str(self); }

@@ -467,7 +467,12 @@ void TExcelReader::readValue(const int &row, const int &col, PVariable var, TVal
     if (!res)
       raiseError("invalid value in cell %s%i", column2Chars(col), row+1);
 
-    var->str2val_add(cellvalue, value);
+    try {
+      var->str2val_add(cellvalue, value);
+    }
+    catch (mlexception err) {
+      raiseError("cannot convert content of cell %s%i ('%s')", column2Chars(col), row+1, cellvalue);
+    }
   }
 
     else {

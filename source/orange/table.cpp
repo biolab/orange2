@@ -278,6 +278,7 @@ void TExampleTable::erase(TExample **ptr)
     delete ptr;
   memmove(ptr, ptr+1, sizeof(TExample **)*(_Last - ptr - 1));
   _Last--;
+  examplesHaveChanged();
 }
 
 

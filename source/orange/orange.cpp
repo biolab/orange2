@@ -115,8 +115,9 @@ bool initExceptions()
     return false;
   PyObject *filterFunction = PyDict_GetItemString(PyModule_GetDict(warningModule), "filterwarnings");
   if (   !filterFunction
-      || !setFilterWarnings(filterFunction, "ignore", "orng.*", PyExc_OrangeAttributeWarning)
-      || !setFilterWarnings(filterFunction, "always", ".*", PyExc_OrangeKernelWarning))
+      || !setFilterWarnings(filterFunction, "ignore", ".*", PyExc_OrangeAttributeWarning, "orng.*")
+      || !setFilterWarnings(filterFunction, "ignore", "'__callback' is not a builtin attribute of", PyExc_OrangeAttributeWarning, ".*")
+      || !setFilterWarnings(filterFunction, "always", ".*", PyExc_OrangeKernelWarning, ".*"))
     return false;
   return true;
 

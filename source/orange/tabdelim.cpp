@@ -610,6 +610,8 @@ bool atomsEmpty(const TIdList &atoms)
     by \t. Lines end with \n or \r. Lines which begin with | are ignored. */
 bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces)
 {
+  #define MAXLINELEN 34000
+
   atoms.clear();
 
   if (!fei.file)
@@ -618,24 +620,22 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
   if (feof(fei.file))
     return false;
 
-  char line[32768], *curr=line;
-
   fei.line++;
-  if (!fgets(line, 32768, fei.file)) {
-    if (feof(fei.file))
-      return false;
-    raiseErrorWho("TabDelimExampleGenerator", "error while reading line %i of file '%s'", fei.line, fei.filename.c_str());
-  }
 
-  if (strlen(line)>=32768-1)
-    raiseErrorWho("TabDelimExampleGenerator", "line %i of file '%s' too long", fei.line, fei.filename.c_str());
-
-  if (*curr=='|')
-    return false;
-
+  char c;
+  int col = 0;
   string atom;
-  while (*curr) {
-    switch(*curr) {
+  for(;;) {
+    c = fgetc(fei.file);
+
+    if (c==EOF)
+      break;
+    if (!col && (c=='|'))
+      return false;
+
+    col++;
+
+    switch(c) {
       case '\r':
       case '\n':
         if (atom.length() || atoms.size())
@@ -648,22 +648,21 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
         break;
 
       case ' ':
-        atom += *curr;
+        atom += c;
         break;
 
       case '\\':
-        if (escapeSpaces && curr[1]==' ') {
-          atom += ' ';
-          curr++;
-          break;
-        }
+        if (escapeSpaces)
+          c = fgetc(fei.file);
 
       default:
-        if ((*curr>=' ') || (*curr<0))
-          atom += *curr;
+        if ((c>=' ') || (c<0))
+          atom += c;
     };
-    curr++;
   }
+  
+  if (ferror(fei.file))
+    raiseErrorWho("TabDelimExampleGenerator", "error while reading line %i of file '%s'", fei.line, fei.filename.c_str());
 
   if (atom.length() || atoms.size())
     atoms.push_back(atom);

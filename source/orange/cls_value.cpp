@@ -364,13 +364,13 @@ void Value_clear(TPyValue *self)
      - else, we return "###"
 */
 
+char *pvs = NULL;
 const char *TPyValue2string(TPyValue *self)
-{ static char pvs[256];
-
-  if (self->variable) {
+{ if (self->variable) {
     string str;
     self->variable->val2str(self->value, str);
-    strncpy(pvs, str.c_str(), 255);
+    pvs = (char *)realloc(pvs, str.size()+1);
+    strcpy(pvs, str.c_str());
   }
   else {
     if (self->value.isDK())
@@ -385,9 +385,10 @@ const char *TPyValue2string(TPyValue *self)
     else if (self->value.varType==TValue::INTVAR)
       sprintf(pvs, "<%i>", self->value.intV);
     else if ((self->value.varType == TValue::OTHERVAR) && (self->value.svalV)) {
-      string s;
-      self->value.svalV->val2str(s);
-      strncpy(pvs, s.c_str(), 255);
+      string str;
+      self->value.svalV->val2str(str);
+      pvs = (char *)realloc(pvs, str.size()+1);
+      strcpy(pvs, str.c_str());
     }
     else
       return "###";
@@ -865,9 +866,11 @@ PyObject *Value_native(TPyValue *self)   PYARGS(METH_NOARGS, "() -> bool; Conver
 #undef CHECK_VARIABLE
 #undef CHECK_SPECIAL_OTHER
 
+
 // This is in a separate file to avoid scanning by pyxtract
 #include "valuelisttemplate.cpp"
 
+// Modified new and related stuff, removed rich_cmp (might be added later, but needs to be programmed specifically)
 PValueList PValueList_FromArguments(PyObject *arg, PVariable var = PVariable())
 { return TValueListMethods::P_FromArguments(arg, var); }
 

@@ -47,6 +47,13 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
 {
   PDomain dom=example.domain;
 
+  if (PyOrExample_Check(lst)) {
+    const TExample &orex = PyExample_AS_ExampleReference(lst);
+    if (orex.domain != dom)
+      PYERROR(PyExc_TypeError, "invalid argument type: given example is from wrong domain", PYNULL);
+    example = orex;
+  }
+
   if (!PyList_Check(lst)) {
     PyErr_Format(PyExc_TypeError, "invalid argument type (expected list, got '%s)", lst ? lst->ob_type->tp_name : "None");
     return false;
@@ -184,21 +191,31 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(R
     PyObject *list=PYNULL;
     PDomain dom;
 
-    if (!PyArg_ParseTuple(args, "O&|O", cc_Domain, &dom, &list))
-      PYERROR(PyExc_TypeError, "domain and (optionally) list arguments accepted", PYNULL);
+    if (PyArg_ParseTuple(args, "O&|O", cc_Domain, &dom, &list)) {
+      if (list && PyOrExample_Check(list)) {
+        PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference());
+        return Example_FromWrappedExample(ex);
+      }
 
-    if (list && PyOrExample_Check(list)) {
-      PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference());
+      PyObject *example = Example_FromDomain(dom);
+      
+      if (list && !convertFromPythonExisting(list, PyExample_AS_ExampleReference(example))) {
+        Example_dealloc((TPyExample *)example);
+        return PYNULL;
+      }
+
+      return example;
+    }
+
+    PyErr_Clear();
+
+    PExample example;
+    if (PyArg_ParseTuple(args, "O&", cc_Example, &example)) {
+      PExample ex = mlnew TExample(example.getReference());
       return Example_FromWrappedExample(ex);
     }
-
-    PyObject *example = Example_FromDomain(dom);
-    if (list && !convertFromPythonExisting(list, PyExample_AS_ExampleReference(example))) {
-      Example_dealloc((TPyExample *)example);
-      return PYNULL;
-    }
       
-    return example;
+    PYERROR(PyExc_TypeError, "domain and (optionally) list arguments accepted", PYNULL);
   PyCATCH
 }
 
@@ -256,7 +273,7 @@ PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS
     int index;
     float weight = 1;
 
-    if (!PyArg_ParseTuple(args, "if:setweight", &index, &weight))
+    if (!PyArg_ParseTuple(args, "i|f:setweight", &index, &weight))
       return PYNULL;
     if (!index)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
@@ -321,8 +338,11 @@ PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, 
        else
          if (!PyInt_Check(par2))
            PYERROR(PyExc_TypeError, "invalid index type (int expected)", PYNULL)
-         else 
-           idx=int(PyInt_AsLong(par2));
+         else {
+           idx = int(PyInt_AsLong(par2));
+           if (idx>=0)
+             PYERROR(PyExc_TypeError, "invalid meta-id index (negative integer expected)", PYNULL);
+         }
 
       example->setMeta(idx, PyValue_AS_Value(par1));
     }
@@ -336,14 +356,10 @@ PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, 
       PVariable var;
 
       if (PyInt_Check(par1)) {
-        idx=PyInt_AsLong(par1);
+        idx = PyInt_AsLong(par1);
         TMetaDescriptor *desc=example->domain->metas[idx];
         if (desc)
-          var=desc->variable;
-        else {
-          PyErr_Format(PyExc_TypeError, "invalid id (%i)", idx);
-          return PYNULL;
-        }
+          var = desc->variable;
       }
 
       else {
@@ -352,9 +368,12 @@ PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, 
                                      : string(PyString_AsString(par1))];
         if (!desc)
           PYERROR(PyExc_TypeError, "invalid variable", PYNULL);
-        idx=desc->id;
-        var=desc->variable;
+        idx = desc->id;
+        var = desc->variable;
       }
+
+      if (idx>=0)
+        PYERROR(PyExc_TypeError, "invalid meta-id index (negative integer expected)", PYNULL);
 
       TValue val;
       if (!convertFromPython(par2, val, var))
@@ -493,17 +512,30 @@ int TPyExample_setItem_lower(PExample example, const int &ind, PyObject *vala)
       if (PyValue_AS_Variable(vala) && (PyValue_AS_Variable(vala)!=var)) {
           string vals;
           PyValue_AS_Variable(vala)->val2str(PyValue_AS_Value(vala), vals);
-          var->str2val(vals, example->operator[](ind));
+          if (ind>=0)
+            var->str2val(vals, example->operator[](ind));
+          else {
+            TValue val;
+            var->str2val(vals, val);
+            example->setMeta(ind, val);
+          }
         }
-        else
+      else {
+        if (ind>=0)
           example->operator[](ind) = PyValue_AS_Value(vala);
+        else
+          example->setMeta(ind, PyValue_AS_Value(vala));
+      }
     }
 
     else {
       TValue value;
       if (!convertFromPython(vala, value, var)) 
         return -1;
-      example->operator[](ind) = value;
+      if (ind>=0)
+        example->operator[](ind) = value;
+      else
+        example->setMeta(ind, value);
     }
 
     return 0;

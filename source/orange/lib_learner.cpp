@@ -266,6 +266,7 @@ int       AssociationRules_setitem_sq(TPyOrange *self, int index, PyObject *item
 PyObject *AssociationRules_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_getslice(self, start, stop); }
 int       AssociationRules_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_setslice(self, start, stop, item); }
 int       AssociationRules_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_len(self); }
+PyObject *AssociationRules_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_richcmp(self, object, op); }
 PyObject *AssociationRules_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_concat(self, obj); }
 PyObject *AssociationRules_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_repeat(self, times); }
 PyObject *AssociationRules_str(TPyOrange *self) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_str(self); }
@@ -585,6 +586,7 @@ int       TreeNodeList_setitem_sq(TPyOrange *self, int index, PyObject *item) { 
 PyObject *TreeNodeList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_getslice(self, start, stop); }
 int       TreeNodeList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_setslice(self, start, stop, item); }
 int       TreeNodeList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_len(self); }
+PyObject *TreeNodeList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_richcmp(self, object, op); }
 PyObject *TreeNodeList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_concat(self, obj); }
 PyObject *TreeNodeList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_repeat(self, times); }
 PyObject *TreeNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_str(self); }

@@ -318,47 +318,83 @@ public:
     PyCATCH_1
   }
 
-  static int _cmp(TPyOrange *self, PyObject *other)
+  static PyObject *_richcmp(TPyOrange *self, PyObject *other, int op)
   { PyTRY
       PyObject *myItem = NULL, *hisItem = NULL;
       try {
         if (!PySequence_Check(other)) {
-          PyErr_Format(PyExc_TypeError, "'%s.__cmp__': not a sequence", ob_type->tp_name);
-          return -1;
+          Py_INCREF(Py_NotImplemented);
+          return Py_NotImplemented;
+	      }
+
+        CAST_TO(_ListType, aList)
+        int myLen = aList->size();
+        int hisLen = PySequence_Size(other);
+
+        if (myLen != hisLen) {
+          if (op == Py_EQ) {
+            Py_INCREF(Py_False);
+            return Py_False;
+          }
+          if (op == Py_NE) {
+            Py_INCREF(Py_True);
+            return Py_True;
+          }
         }
 
-        CAST_TO_err(_ListType, aList, -1)
-        int myLen = aList->size(), hisLen = PySequence_Size(other);
         int len = myLen < hisLen ? myLen : hisLen;
-        int result;
+        int k = 0;
         iterator ii(aList->begin());
-        for (int pos=0; pos<len; pos++) {
+        for (int pos=0; !k && (pos<len); pos++) {
           myItem = WrapOrange(*(ii++));
-          hisItem = PySequence_Item(other, pos);
-          err = PyObject_Cmp(myItem, hisItem, &result);
-          Py_DECREF(myItem);
-          Py_DECREF(hisItem);
-          myItem = NULL;
-          hisItem = NULL;
+          hisItem = PySequence_GetItem(other, pos);
+          k = PyObject_RichCompareBool(myItem, hisItem, Py_NE);
+          if (k<=0) {
+            Py_DECREF(myItem);
+            Py_DECREF(hisItem);
+            myItem = NULL;
+            hisItem = NULL;
+          }
+        }
+        
+        if (k == -1)
+          return PYNULL;
 
-          if (err == -1)
-            return -1;
-          else
-            if (result!=0)
-              return result;
+        if (!k) {
+          bool cmp;
+          switch (op) {
+            case Py_LT: cmp = myLen <  hisLen; break;
+            case Py_LE: cmp = myLen <= hisLen; break;
+            case Py_EQ: cmp = myLen == hisLen; break;
+            case Py_NE: cmp = myLen != hisLen; break;
+            case Py_GT: cmp = myLen >  hisLen; break;
+            case Py_GE: cmp = myLen >= hisLen; break;
+            default: return PYNULL; /* cannot happen */
+          }
+          PyObject *res = cmp ? Py_True : Py_False;
+          Py_INCREF(res);
+          return res;
         }
 
-        if (myLen==hisLen)
-          return 0;
-        else
-          return (myLen<hisLen) ? 1 : -1;
+        // Here, myItem and hisItem are not decrefed yet!
+        PyObject *res = PYNULL;
+        if (op == Py_EQ)
+          res = Py_False;
+        else if (op == Py_NE)
+          res = Py_True;
+        else 
+          res = PyObject_RichCompare(myItem, hisItem, op);
+
+        Py_DECREF(myItem);
+        Py_DECREF(hisItem);
+        return res;
       }
       catch (exception err) {
         Py_XDECREF(myItem);
         Py_XDECREF(hisItem);
         throw;
       }
-    PyCATCH_1
+    PyCATCH
   }
 
   static PyObject *_str(TPyOrange *self)
@@ -722,46 +758,85 @@ public:
     PyCATCH_1
   }
 
-  static int _cmp(TPyOrange *self, PyObject *other)
+  static PyObject *_richcmp(TPyOrange *self, PyObject *other, int op)
   { PyTRY
       PyObject *myItem = NULL, *hisItem = NULL;
       try {
         if (!PySequence_Check(other)) {
-          PyErr_Format(PyExc_TypeError, "'%s.__cmp__': not a sequence", ob_type->tp_name);
-          return -1;
+          Py_INCREF(Py_NotImplemented);
+          return Py_NotImplemented;
+	      }
+
+        CAST_TO(_ListType, aList)
+        int myLen = aList->size();
+        int hisLen = PySequence_Size(other);
+
+        if (myLen != hisLen) {
+          if (op == Py_EQ) {
+            Py_INCREF(Py_False);
+            return Py_False;
+          }
+          if (op == Py_NE) {
+            Py_INCREF(Py_True);
+            return Py_True;
+          }
         }
 
-        CAST_TO_err(_ListType, aList, -1)
-        int myLen = aList->size(), hisLen = PySequence_Size(other);
         int len = myLen < hisLen ? myLen : hisLen;
-        int result;
+        int k = 0;
         iterator ii(aList->begin());
-        for (int pos=0; pos<len; pos++) {
+        for (int pos=0; !k && (pos<len); pos++) {
           myItem = convertToPython(*(ii++));
-          hisItem = PySequence_Item(other, pos);
-          err = PyObject_Cmp(myItem, hisItem);
-          Py_DECREF(myItem);
-          Py_DECREF(hisItem);
-          myItem = NULL;
-          hisItem = NULL;
+          hisItem = PySequence_GetItem(other, pos);
+          k = PyObject_RichCompareBool(myItem, hisItem, Py_NE);
+          if (k<=0) {
+            Py_DECREF(myItem);
+            Py_DECREF(hisItem);
+            myItem = NULL;
+            hisItem = NULL;
+          }
+        }
+        
+        if (k == -1)
+          return PYNULL;
 
-          if (err == -1)
-            return -1;
-          else
-            if (result!=0)
-              return result;
+        if (!k) {
+          bool cmp;
+          switch (op) {
+            case Py_LT: cmp = myLen <  hisLen; break;
+            case Py_LE: cmp = myLen <= hisLen; break;
+            case Py_EQ: cmp = myLen == hisLen; break;
+            case Py_NE: cmp = myLen != hisLen; break;
+            case Py_GT: cmp = myLen >  hisLen; break;
+            case Py_GE: cmp = myLen >= hisLen; break;
+            default: return PYNULL; /* cannot happen */
+          }
+          PyObject *res = cmp ? Py_True : Py_False;
+          Py_INCREF(res);
+          return res;
         }
 
-        if (myLen==hisLen) return 0;
-        else return (myLen<hisLen) ? 1 : -1;
+        // Here, myItem and hisItem are not decrefed yet!
+        PyObject *res = PYNULL;
+        if (op == Py_EQ)
+          res = Py_False;
+        else if (op == Py_NE)
+          res = Py_True;
+        else 
+          res = PyObject_RichCompare(myItem, hisItem, op);
+
+        Py_DECREF(myItem);
+        Py_DECREF(hisItem);
+        return res;
       }
       catch (exception err) {
         Py_XDECREF(myItem);
         Py_XDECREF(hisItem);
         throw;
       }
-    PyCATCH_1
+    PyCATCH
   }
+
 
   static PyObject *_str(TPyOrange *self)
   { CAST_TO(_ListType, aList);

@@ -9,6 +9,7 @@ int       $pyname$_setitem_sq(TPyOrange *self, int index, PyObject *item) { retu
 PyObject *$pyname$_getslice(TPyOrange *self, int start, int stop) { return $classname$::_getslice(self, start, stop); }
 int       $pyname$_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return $classname$::_setslice(self, start, stop, item); }
 int       $pyname$_len_sq(TPyOrange *self) { return $classname$::_len(self); }
+PyObject *$pyname$_richcmp(TPyOrange *self, PyObject *object, int op) { return $classname$::_richcmp(self, object, op); }
 PyObject *$pyname$_concat(TPyOrange *self, PyObject *obj) { return $classname$::_concat(self, obj); }
 PyObject *$pyname$_repeat(TPyOrange *self, int times) { return $classname$::_repeat(self, times); }
 PyObject *$pyname$_str(TPyOrange *self) { return $classname$::_str(self); }
@@ -44,7 +45,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
-   normalList("DTNode", "lib_learner.cpp")
+   normalList("TreeNode", "lib_learner.cpp")
    ]:
   outf.write("**** This goes to '%s' ****\n" % goesto)
   outf.write(definition.replace("$pyname$", pyname)

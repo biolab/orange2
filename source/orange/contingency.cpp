@@ -48,8 +48,11 @@ TContingency::TContingency(PVariable var, PVariable innervar)
   outerDistribution(TDistribution::create(var)),
   discrete((TDistributionVector *)NULL),
   innerDistribution(TDistribution::create(innervar))
-{ if (varType==TValue::INTVAR)
+{ if (varType==TValue::INTVAR) {
     discrete = mlnew TDistributionVector();
+    for(int i=0, e=outerVariable->noOfValues(); i!=e; i++)
+      discrete->push_back(TDistribution::create(innervar));
+  }
   else if (varType==TValue::FLOATVAR)
     continuous = mlnew TDistributionMap();
 }
@@ -328,8 +331,11 @@ void TContingencyClass::constructFromGenerator(PVariable outer, PVariable inner,
   outerDistribution = TDistribution::create(outerVariable);
 
   varType = outerVariable->varType;
-  if (varType==TValue::INTVAR)
+  if (varType==TValue::INTVAR) {
     discrete = mlnew TDistributionVector();
+    for(int i=0, e=outerVariable->noOfValues(); i!=e; i++)
+      discrete->push_back(TDistribution::create(innerVariable));
+  } 
   else {
    _ASSERT(varType==TValue::FLOATVAR);
     continuous = mlnew TDistributionMap();
@@ -381,7 +387,7 @@ void TContingencyClassAttr::add_gen(PExampleGenerator gen, const long &weightID)
   int attrNo = gen->domain->getVarNum(innerVariable, false);
   if (attrNo != ILLEGAL_INT)
     PEITERATE(ei, gen)
-      add((*ei)[attrNo], (*ei).getClass(), WEIGHT(*ei));
+      add((*ei).getClass(), (*ei)[attrNo], WEIGHT(*ei));
   else {
     if (!innerVariable->getValueFrom)
       raiseError("attribute '%s' is not in the domain and its 'getValueFrom' is not defined", innerVariable->name.c_str());
@@ -456,7 +462,7 @@ void TContingencyAttrClass::add_gen(PExampleGenerator gen, const long &weightID)
 
     TVariable &vfe = outerVariable.getReference();
     PEITERATE(ei, gen)
-      add((*ei).getClass(), vfe.computeValue(*ei), WEIGHT(*ei));
+      add(vfe.computeValue(*ei), (*ei).getClass(), WEIGHT(*ei));
   }
 }
 
