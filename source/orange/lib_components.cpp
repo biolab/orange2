@@ -1888,33 +1888,46 @@ C_NAMED(ExampleClusters, GeneralExampleClustering, "([root=, quality=]")
 
 
 PyObject *GeneralExampleClustering_exampleClusters(PyObject *self) PYARGS(METH_NOARGS, "() -> ExampleClusters")
-{ return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleClusters()); }
+{ 
+  PyTRY
+    return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleClusters()); 
+  PyCATCH
+}
 
 
 PyObject *GeneralExampleClustering_exampleSets(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> ExampleSets")
-{ float cut = 0.0;
-  if (!PyArg_ParseTuple(args, "|f", &cut))
-    return PYNULL;
+{ 
+  PyTRY
+    float cut = 0.0;
+    if (!PyArg_ParseTuple(args, "|f", &cut))
+      return PYNULL;
 
-  return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleSets(cut));
+    return WrapOrange(SELF_AS(TGeneralExampleClustering).exampleSets(cut));
+  PyCATCH
 }
 
 
 PyObject *GeneralExampleClustering_classifier(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> Classifier")
-{ float cut = 0.0;
-  if (!PyArg_ParseTuple(args, "|f", &cut))
-    return PYNULL;
+{ 
+  PyTRY
+    float cut = 0.0;
+    if (!PyArg_ParseTuple(args, "|f", &cut))
+      return PYNULL;
 
-  return WrapOrange(SELF_AS(TGeneralExampleClustering).classifier(cut));
+    return WrapOrange(SELF_AS(TGeneralExampleClustering).classifier(cut));
+  PyCATCH
 }
 
 
 PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([cut=0.0]) -> Variable")
-{ float cut = 0.0;
-  if (!PyArg_ParseTuple(args, "|f", &cut))
-    return PYNULL;
+{ 
+  PyTRY
+    float cut = 0.0;
+    if (!PyArg_ParseTuple(args, "|f", &cut))
+      return PYNULL;
 
-  return WrapOrange(SELF_AS(TGeneralExampleClustering).feature(cut));
+    return WrapOrange(SELF_AS(TGeneralExampleClustering).feature(cut));
+  PyCATCH
 }
 
 
@@ -1922,95 +1935,110 @@ PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARG
 
 PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")
 {
-  PExampleTable table;
-  PHeatmapConstructor baseHeatmap;
-  int disregardClass = 0;
-  if (!PyArg_ParseTuple(args, "O&|O&i:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap, &disregardClass))
-    return NULL;
-  return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap, (disregardClass!=0)), type);
+  PyTRY
+    PExampleTable table;
+    PHeatmapConstructor baseHeatmap;
+    int disregardClass = 0;
+    if (!PyArg_ParseTuple(args, "O&|O&i:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap, &disregardClass))
+      return NULL;
+    return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap, (disregardClass!=0)), type);
+  PyCATCH
 }
 
 
 PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> HeatmapList")
 {
-  float squeeze;
-  if (!PyArg_ParseTuple(args, "f:HeatmapConstructor.__call__", &squeeze))
-    return NULL;
+  PyTRY
+    float squeeze;
+    if (!PyArg_ParseTuple(args, "f:HeatmapConstructor.__call__", &squeeze))
+      return NULL;
 
-  SETATTRIBUTES
+    SETATTRIBUTES
 
-  float absLow, absHigh;
-  PHeatmapList hml = SELF_AS(THeatmapConstructor).call(squeeze, absLow, absHigh);
-  return Py_BuildValue("Nff", WrapOrange(hml), absLow, absHigh);
+    float absLow, absHigh;
+    PHeatmapList hml = SELF_AS(THeatmapConstructor).call(squeeze, absLow, absHigh);
+    return Py_BuildValue("Nff", WrapOrange(hml), absLow, absHigh);
+  PyCATCH
 }
 
 
 PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height, gamma) -> bitmap")
-{ int width, height;
-  float gamma;
-  if (!PyArg_ParseTuple(args, "iif:HeatmapConstructor.getLegend", &width, &height, &gamma))
-    return NULL;
+{ 
+  PyTRY
+    int width, height;
+    float gamma;
+    if (!PyArg_ParseTuple(args, "iif:HeatmapConstructor.getLegend", &width, &height, &gamma))
+      return NULL;
 
-  int size;
-  unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
-  PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
-  delete bitmap;
-  return res;
+    int size;
+    unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
+    PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
+    delete bitmap;
+    return res;
+  PyCATCH
 }
 
 BASED_ON(Heatmap, Orange)
 
 PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
 {
-  int cellWidth, cellHeight;
-  float absLow, absHigh, gamma;
-  if (!PyArg_ParseTuple(args, "iifff:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma))
-    return NULL;
+  PyTRY
+    int cellWidth, cellHeight;
+    float absLow, absHigh, gamma;
+    if (!PyArg_ParseTuple(args, "iifff:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma))
+      return NULL;
 
-  CAST_TO(THeatmap, hm)
+    CAST_TO(THeatmap, hm)
 
-  int size;
-  unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, size);
-  PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
-  delete bitmap;
-  return res;
+    int size;
+    unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, size);
+    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
+    delete bitmap;
+    return res;
+  PyCATCH
 }
 
 
 PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
 {
-  int width, height;
-  float absLow, absHigh, gamma;
-  if (!PyArg_ParseTuple(args, "iifff:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma))
-    return NULL;
+  PyTRY
+    int width, height;
+    float absLow, absHigh, gamma;
+    if (!PyArg_ParseTuple(args, "iifff:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma))
+      return NULL;
 
-  CAST_TO(THeatmap, hm)
+    CAST_TO(THeatmap, hm)
 
-  int size;
-  unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, size);
-  PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
-  delete bitmap;
-  return res;
+    int size;
+    unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, size);
+    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
+    delete bitmap;
+    return res;
+  PyCATCH
 }
 
 
 PyObject *Heatmap_getCellIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row, column) -> float")
 {
-  int row, column;
-  if (!PyArg_ParseTuple(args, "ii:Heatmap.getCellIntensity", &row, &column))
-    return NULL;
+  PyTRY
+    int row, column;
+    if (!PyArg_ParseTuple(args, "ii:Heatmap.getCellIntensity", &row, &column))
+      return NULL;
 
-  return PyFloat_FromDouble(SELF_AS(THeatmap).getCellIntensity(row, column));
+    return PyFloat_FromDouble(SELF_AS(THeatmap).getCellIntensity(row, column));
+  PyCATCH
 }
 
 
 PyObject *Heatmap_getRowIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row) -> float")
 {
-  int row;
-  if (!PyArg_ParseTuple(args, "i:Heatmap.getRowIntensity", &row))
-    return NULL;
+  PyTRY
+    int row;
+    if (!PyArg_ParseTuple(args, "i:Heatmap.getRowIntensity", &row))
+      return NULL;
 
-  return PyFloat_FromDouble(SELF_AS(THeatmap).getRowIntensity(row));
+    return PyFloat_FromDouble(SELF_AS(THeatmap).getRowIntensity(row));
+  PyCATCH
 }
 
 PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::P_FromArguments(arg); }
