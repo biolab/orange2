@@ -80,6 +80,9 @@ class OWRadvizGraph(OWVisGraph):
         self.clusterOptimization = None
         self.radvizWidget = radvizWidget
 
+        self.hideRadius = 0
+        self.showAnchors = 1
+        
         self.showLegend = 1
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
@@ -126,7 +129,7 @@ class OWRadvizGraph(OWVisGraph):
             
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, labels, **args):
+    def updateData(self, labels, setAnchors = 0, **args):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         #self.removeCurves()
         self.removeMarkers()
@@ -142,23 +145,33 @@ class OWRadvizGraph(OWVisGraph):
                 
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
-        self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
+        if setAnchors:
+            self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
 
         # draw "circle"
         xdata = self.createXAnchors(100)
         ydata = self.createYAnchors(100)
         self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
-        # draw dots at anchors
-        XAnchors = self.createXAnchors(length)
-        YAnchors = self.createYAnchors(length)
+        if self.showAnchors:
+            if self.hideRadius > 0:
+                rad = self.hideRadius / 10
+                xdata = [x*rad for x in xdata]
+                ydata = [y*rad for y in ydata]
+                self.addCurve("hidecircle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, pen = (QPen(QColor(128, 128, 128), 1, Qt.DashDotDotLine)), symbol = QwtSymbol.None, xData = xdata + [xdata[0]], yData = ydata + [ydata[0]])
+                
+            # draw dots at anchors
+            shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
+            XAnchors = [a[0] for a in shownAnchorData]
+            YAnchors = [a[1] for a in shownAnchorData]
+            shownLabels = [a[2] for a in shownAnchorData]
         
-        self.addCurve("dots", QColor(140,140,140), QColor(140,140,140), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
+            self.addCurve("dots", QColor(140,140,140), QColor(140,140,140), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
 
-        # draw text at anchors
-        if self.showAttributeNames:
-            for i in range(length):
-                self.addMarker(labels[i], XAnchors[i]*1.1, YAnchors[i]*1.04, Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
+            # draw text at anchors
+            if self.showAttributeNames:
+                for i in range(len(shownLabels)):
+                    self.addMarker(shownLabels[i], XAnchors[i]*1.1, YAnchors[i]*1.04, Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
@@ -176,6 +189,8 @@ class OWRadvizGraph(OWVisGraph):
         dataSize = len(self.rawdata)
         selectedData = Numeric.take(self.scaledData, indices)
         sum_i = self._getSum_i(selectedData)
+        XAnchors = [a[0] for a in self.anchorData]
+        YAnchors = [a[1] for a in self.anchorData]
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
         validData = self.getValidList(indices)
@@ -879,7 +894,7 @@ if __name__== "__main__":
         attrs = [attr.name for attr in table.domain.attributes]
         start = time.time()
         graph.setData(table)
-        graph.updateData(attrs)
+        graph.updateData(attrs, 1)
         print time.time() - start
     a.setMainWidget(graph)
     graph.show()

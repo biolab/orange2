@@ -56,7 +56,7 @@ class kNNOptimization(OWBaseWidget):
     resultsListLenList = [str(x) for x in resultsListLenNums]
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
-    argumentCounts = [1, 3, 5, 10, 20, 50, 100, 100000]
+    argumentCounts = [1, 5, 10, 20, 50, 100, 100000]
 
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 60, 120]
     evaluationTimeList = [str(x) for x in evaluationTimeNums]
@@ -1020,7 +1020,7 @@ class VizRankClassifier(orange.Classifier):
                 val = self.kNNOptimizationDlg.resultListLen
                 self.kNNOptimizationDlg.resultListLen = self.kNNOptimizationDlg.reevaluateProjectionsCount
                 self.kNNOptimizationDlg.updateShownProjections()
-                self.kNNOptimizationDlg.reevaluateAllProjections()
+                self.visualizationWidget.reevaluateProjections()
                 self.kNNOptimizationDlg.resultListLen = val
 
     # timer event that stops evaluation of clusters

@@ -835,7 +835,7 @@ PyObject *%(modulename)sModule;
 
 ORANGE_API void addClassList(TOrangeType **);
 
-#ifdef _DARWIN
+#ifdef DARWIN
   extern "C" %(MODULENAME)s_API void init%(modulename)sLow()
 #else
   extern "C" %(MODULENAME)s_API void init%(modulename)s()

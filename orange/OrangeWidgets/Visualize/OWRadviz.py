@@ -24,7 +24,8 @@ import OWGUI
 class OWRadviz(OWWidget):
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
-                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName"]
+                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName"
+                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -53,6 +54,11 @@ class OWRadviz(OWWidget):
 
         # variables
         self.pointWidth = 4
+        self.attractG = 1.0
+        self.repelG = 1.0
+        self.hideRadius = 0
+        self.showAnchors = 1
+        self.showOptimizationSteps = 0
         self.globalValueScaling = 0
         self.jitterSize = 1
         self.jitterContinuous = 0
@@ -81,8 +87,10 @@ class OWRadviz(OWWidget):
         self.GeneralTab = QVGroupBox(self)
         #self.GeneralTab.setFrameShape(QFrame.NoFrame)
         self.SettingsTab = QVGroupBox(self)
+        self.AnchorsTab = QVGroupBox(self)
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs.insertTab(self.AnchorsTab, "Anchors")
 
         
         #add controls to self.controlArea widget
@@ -147,6 +155,30 @@ class OWRadviz(OWWidget):
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
         self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
 
+
+        # ####################################
+        # ANCHORS TAB
+        # #####
+        self.setAnchorButtons = QHButtonGroup("Set Anchor Positions", self.AnchorsTab)
+        self.radialAnchorsButton = OWGUI.button(self.setAnchorButtons, self, "Radial", callback = self.radialAnchors)
+        self.randomAnchorsButton = OWGUI.button(self.setAnchorButtons, self, "Random", callback = self.randomAnchors)
+
+        box = OWGUI.widgetBox(self.AnchorsTab, "Anchor Optimization")
+        inbox = box #QHBox(box)
+        self.freeAttributesButton = OWGUI.button(inbox, self, "Single Step", callback = self.singleStep)
+        self.freeAttributesButton = OWGUI.button(inbox, self, "Optimize", callback = self.optimize)
+        self.freeAttributesButton = OWGUI.button(inbox, self, "Animate", callback = self.animate)
+        self.freeAttributesButton = OWGUI.button(inbox, self, "Slow Animate", callback = self.slowAnimate)
+        #self.setAnchorsButton = OWGUI.button(box, self, "Cheat", callback = self.setAnchors)
+
+        OWGUI.qwtHSlider(box, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0)
+        OWGUI.qwtHSlider(box, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0)
+#        OWGUI.comboBoxWithCaption(box, self, "showOptimizationSteps", 'Show optimization', items = ["Yes", "Every 10", "No"])
+
+        box = OWGUI.widgetBox(self.AnchorsTab, "Show Anchors")
+        OWGUI.checkBox(box, self, 'showAnchors', 'Show anchors', callback = self.updateValues)
+        OWGUI.qwtHSlider(box, self, "hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateValues)
+        
 
         # ####################################
         # K-NN OPTIMIZATION functionality
@@ -349,6 +381,41 @@ class OWRadviz(OWWidget):
 
 
     # ####################################
+    # free attribute anchors
+
+    def radialAnchors(self):
+        attrList = self.getShownAttributeList()
+        phi = 2*math.pi/len(attrList)
+        self.graph.anchorData = [(cos(i*phi), sin(i*phi), a) for i, a in enumerate(attrList)]
+        self.graph.updateData(attrList)
+        self.graph.repaint()
+        
+    def ranch(self, label):
+        import random
+        r = 0.3+0.7*random.random()
+        phi = 2*pi*random.random()
+        return (r*math.cos(phi), r*math.sin(phi), label)
+
+    def randomAnchors(self):
+        import random
+        attrList = self.getShownAttributeList()
+        self.graph.anchorData = [self.ranch(a) for a in attrList]
+        self.singleStep() # this won't do much, it's just for normalization
+
+    def freeAttributes(self, iterations, steps):
+        attrList = self.getShownAttributeList()
+        classes = [int(x.getclass()) for x in self.graph.rawdata]
+        for i in range(iterations):
+            self.graph.anchorData = orangeom.optimizeAnchors(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, self.attractG, -self.repelG, steps)
+            self.graph.updateData(attrList)
+            self.graph.repaint()
+
+    def singleStep(self): self.freeAttributes(1, 1)
+    def optimize(self):   self.freeAttributes(1, 100)
+    def animate(self):   self.freeAttributes(10, 10)
+    def slowAnimate(self):    self.freeAttributes(100, 1)
+        
+    # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
         self.graph.removeAllSelections()
@@ -454,7 +521,7 @@ class OWRadviz(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()
-        self.updateGraph()
+        self.updateGraph(1)
         self.graph.replot()
 
     def removeAttribute(self):
@@ -470,13 +537,13 @@ class OWRadviz(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()
-        self.updateGraph()
+        self.updateGraph(1)
         self.graph.replot()
 
     # #####################
 
-    def updateGraph(self, *args):
-        self.graph.updateData(self.getShownAttributeList())
+    def updateGraph(self, setAnchors = 0, *args):
+        self.graph.updateData(self.getShownAttributeList(), setAnchors)
         self.graph.update()
         self.repaint()
 
@@ -508,7 +575,7 @@ class OWRadviz(OWWidget):
                 for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
-        self.updateGraph()
+        self.updateGraph(1)
         self.sendSelections()
         self.sendShownAttributes()
 
@@ -543,6 +610,7 @@ class OWRadviz(OWWidget):
         self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing, useDifferentSymbols = self.useDifferentSymbols, useDifferentColors = self.useDifferentColors)
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols, tooltipKind = self.tooltipKind, tooltipValue = self.tooltipValue)
         self.graph.updateSettings(showLegend = self.showLegend, pointWidth = self.pointWidth, scaleFactor = self.scaleFactor)
+        self.graph.updateSettings(hideRadius = self.hideRadius, showAnchors = self.showAnchors)
         self.updateGraph()
 
     def setJitteringSize(self):
