@@ -103,7 +103,7 @@ class Scalizer:
         print "\tmin: ",self.min
         print "\tmax: ",self.max
             
-    def prepareSVM(self):
+    def prepareSVM(self,nomo):
         if self.isclass == 1:
             self.missing = 3.14159   # a special value!
         else:
@@ -188,7 +188,7 @@ class Standardizer:
         self.mult = 1.0/self.stddev
         self.disp = self.avg
 
-    def prepareSVM(self):
+    def prepareSVM(self,nomo):
         self.prep()
         if self.isclass == 1:
             self.missing = 3.14159   # a special value!
@@ -245,7 +245,7 @@ class Ordinalizer:
     def activate(self):
         pass
 
-    def prepareSVM(self):
+    def prepareSVM(self,nomo):
         if self.isclass==1:
             # keep all classes integer, because libsvm does rounding!!!
             self.mult = 1.0
@@ -315,8 +315,8 @@ class Binarizer:
     def learn(self,value):
         return
             
-    def prepareSVM(self):
-        if self.isclass:
+    def prepareSVM(self,nomo):
+        if self.isclass or nomo:
             self.min = SVM_CMIN
         else:
             self.min = SVM_MIN
@@ -394,8 +394,8 @@ class Dummy:
         print "\tidx: ",self.idx
         print "\tidxn:",self.nidx-self.idx
             
-    def prepareSVM(self):
-        if self.isclass:
+    def prepareSVM(self,nomo):
+        if self.isclass or nomo:
             self.min = SVM_CMIN
         else:
             self.min = SVM_MIN
@@ -509,13 +509,13 @@ class DomainTranslation:
         for i in self.trans:
             i.prepareLR()
 
-    def prepareSVM(self):
+    def prepareSVM(self,nomo):
         # preparation
-        self.cv.prepareSVM()
+        self.cv.prepareSVM(nomo)
         self.missing = 0
         self.weights = 0 # SVM is not compatible with example weighting
         for i in self.trans:
-            i.prepareSVM()
+            i.prepareSVM(nomo)
 
     def transformClass(self, classvector):
         # used for getting the label list

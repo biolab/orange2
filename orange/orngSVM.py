@@ -85,6 +85,7 @@ class BasicSVMLearner(orange.Learner):
       self.classweights = []
 
       self.translation_mode = 1
+      self.for_nomogram = 0
       
   def getmodel(self,data):
       # make sure that regression is used for continuous classes, and classification
@@ -124,7 +125,7 @@ class BasicSVMLearner(orange.Learner):
       puredata = orange.Filter_hasClassValue(data)
       translate = orng2Array.DomainTranslation(self.translation_mode)
       translate.analyse(puredata)
-      translate.prepareSVM()
+      translate.prepareSVM(self.for_nomogram)
       mdata = translate.transform(puredata)
 
       if len(self.classweights)==0:
