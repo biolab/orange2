@@ -32,6 +32,7 @@
 #include "module.hpp"
 #include "errors.hpp"
 
+PyObject *PyOrType_GenericAbstract(PyTypeObject *thistype, PyTypeObject *type, PyObject *args, PyObject *kwds);
 PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds);
 PyObject *PyOrType_GenericNamedNew(PyTypeObject *type, PyObject *args, PyObject *kwds);
 PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObject *kwds);

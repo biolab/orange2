@@ -36,6 +36,7 @@
 
 BASED_ON(Orange, ROOT)
 DATASTRUCTURE(Orange, TPyOrange, orange_dict)
+RECOGNIZED_ATTRIBUTES(Orange, "name shortDescription description")
 
 
 POrange PyOrType_NoConstructor()
@@ -88,6 +89,20 @@ bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
     }
   }
   return true;
+}
+
+
+PyObject *PyOrType_GenericAbstract(PyTypeObject *thistype, PyTypeObject *type, PyObject *args, PyObject *kwds)
+{ PyTRY
+    // if the user wants to create an instance of abstract class, we stop him
+    if ((thistype == type) || !thistype->tp_base || !thistype->tp_base->tp_new) {
+      PyErr_Format(PyExc_TypeError,  "cannot create instances of abstract class '%s'", type->tp_name);
+      return NULL;
+    }
+
+    // if he derived a new class, we may let him
+    return thistype->tp_base->tp_new(type, args, kwds);
+  PyCATCH
 }
 
 
@@ -731,16 +746,22 @@ int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool wa
 
     char *name = PyString_AsString(pyname);
     if (args) {
-      /* Issue a warning unless name is 'name', 'shortDescription', 'description'
-         or the instance's class is defined in Python and merely inherits this
-         method from Orange class) */
-      if (warn
-          && strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description")
-          && PyOrange_CheckType(self->ob_type)) {
-        char sbuf[255];
-        sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
-        if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
-          return -1;
+      /* Issue a warning unless name the name is in 'recognized_list' in some of the ancestors
+         or the instance's class only derived from some Orange's class, but is written in Python */
+      if (warn && PyOrange_CheckType(self->ob_type)) {
+        char **recognized = NULL;
+        for(PyTypeObject *otype = self->ob_type; otype && (!recognized || !*recognized); otype = otype->tp_base) {
+          recognized = PyOrange_CheckType(otype) ? ((TOrangeType *)otype)->ot_recognizedattributes : NULL;
+          if (recognized)
+            for(; *recognized && strcmp(*recognized, name); recognized++);
+        }
+
+        if (!recognized || !*recognized) {
+          char sbuf[255];
+          sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
+          if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+            return -1;
+        }
       }
 
       if (!self->orange_dict)

@@ -3117,7 +3117,7 @@ int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
 
     else {
       if (w != GRAPH__NO_CONNECTION) {
-        *(self->weights = self->graph->getOrCreateEdge(self->v1, self->v2)) = w;
+        (self->weights = self->graph->getOrCreateEdge(self->v1, self->v2))[ind] = w;
         self->weightsVersion = self->graph->currentVersion;
       }
     }
@@ -3330,7 +3330,7 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, float *weights)
 
 
 BASED_ON(Graph, Orange)
-
+RECOGNIZED_ATTRIBUTES(Graph, "objects forceMapping returnIndices")
 
 int Graph_getindex(TGraph *graph, PyObject *index)
 {
@@ -3380,6 +3380,66 @@ int Graph_getindex(TGraph *graph, PyObject *index)
 }
 
 
+PyObject *Graph_nodesToObjects(TGraph *graph, const vector<int> &neighbours)
+{
+  if (graph->myWrapper->orange_dict) {
+    PyObject *objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "returnIndices");
+    if (!objs || (PyObject_IsTrue(objs) == 0)) {
+      objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "objects");
+      if (objs) {
+        PyObject *res = PyList_New(neighbours.size());
+
+        if (PyDict_Check(objs)) {
+          // This is slow, but can't help...
+          int el = 0;
+          PyObject *key, *value;
+          int pos = 0;
+
+          while (PyDict_Next(objs, &pos, &key, &value))
+            if (!PyInt_Check(value)) {
+              Py_DECREF(res);
+              PYERROR(PyExc_IndexError, "values in Graph.objects dictionary should be integers", PYNULL);
+            }
+
+          for(vector<int>::const_iterator ni(neighbours.begin()), ne(neighbours.end()); ni!=ne; ni++, el++) {
+            pos = 0;
+            bool set = false;
+            while (PyDict_Next(objs, &pos, &key, &value) && !set) {
+              if (PyInt_AsLong(value) == *ni) {
+                Py_INCREF(key);
+                PyList_SetItem(res, el, key);
+                set = true;
+              }
+            }
+
+            if (!set) {
+              Py_DECREF(res);
+              PyErr_Format(PyExc_IndexError, "'objects' miss the key for vertex %i", *ni);
+              return PYNULL;
+            }
+          }
+        }
+        else {
+          int el = 0;
+          for(vector<int>::const_iterator ni(neighbours.begin()), ne(neighbours.end()); ni!=ne; ni++, el++) {
+            PyObject *pyel = PySequence_GetItem(objs, *ni);
+            if (!pyel) {
+              Py_DECREF(res);
+              return PYNULL;
+            }
+            else
+              PyList_SetItem(res, el, pyel);
+          }
+        }
+        return res;
+      }
+    }
+  }
+
+  return convertToPython(neighbours);
+}
+
+
 PyObject *Graph_getitem(PyObject *self, PyObject *args)
 {
   PyTRY
@@ -3413,6 +3473,35 @@ PyObject *Graph_getitem(PyObject *self, PyObject *args)
   PyCATCH
 }
 
+
+PyObject *Graph_edgeExists(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(v1, v2[, type])")
+{
+  PyTRY
+    CAST_TO(TGraph, graph);
+
+    PyObject *py1, *py2;
+    int v1, v2, type = -1;
+
+    if (   !PyArg_ParseTuple(args, "OO|i", &py1, &py2, &type)
+        || ((v1 = Graph_getindex(graph, py1)) < 0)
+        || ((v2 = Graph_getindex(graph, py2)) < 0))
+      return PYNULL;
+
+    if (PyTuple_Size(args) == 2)
+      return PyInt_FromLong(graph->getEdge(v1, v2) ? 1 : 0);
+
+    else {
+      PGraph graph = PyOrange_AS_Orange(self);
+      if ((type >= graph->nEdgeTypes) || (type < 0)) {
+        PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
+        return PYNULL;
+      }
+      float *weights = graph->getEdge(v1, v2);
+      return PyInt_FromLong(!weights || (weights[type] == GRAPH__NO_CONNECTION) ? 0 : 1);
+    }
+  PyCATCH
+}
+
 int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
 {
   PyTRY
@@ -3426,9 +3515,9 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
         || ((v2 = Graph_getindex(graph, py2)) < 0))
       return -1;
 
-    if (PyTuple_Size(args) == 2) {
+    if (PyTuple_Size(args) == 3) {
       if ((type >= graph->nEdgeTypes) || (type < 0)) {
-        PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
+        PyErr_Format(PyExc_IndexError, "type %i out of range (0-%i)", type, graph->nEdgeTypes);
         return -1;
       }
 
@@ -3501,7 +3590,6 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
 }
 
 
-
 PyObject *Graph_getNeighbours(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
 {
   PyTRY
@@ -3519,7 +3607,7 @@ PyObject *Graph_getNeighbours(PyObject *self, PyObject *args, PyObject *) PYARGS
     else
       graph->getNeighbours(vertex, edgeType, neighbours);
 
-    return convertToPython(neighbours);
+    return Graph_nodesToObjects(graph, neighbours);
   PyCATCH
 }
 
@@ -3541,7 +3629,7 @@ PyObject *Graph_getEdgesFrom(PyObject *self, PyObject *args, PyObject *) PYARGS(
     else
       graph->getNeighboursFrom(vertex, edgeType, neighbours);
 
-    return convertToPython(neighbours);
+    return Graph_nodesToObjects(graph, neighbours);
   PyCATCH
 }
 
@@ -3563,7 +3651,7 @@ PyObject *Graph_getEdgesTo(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
     else
       graph->getNeighboursTo(vertex, edgeType, neighbours);
 
-    return convertToPython(neighbours);
+    return Graph_nodesToObjects(graph, neighbours);
   PyCATCH
 }
 

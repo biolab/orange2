@@ -95,6 +95,11 @@ if 1: ### Definitions of method slots
   specialorangemethods=[
                 ]
                 
+
+  genericconstrs = {'C_UNNAMED': 'PyOrType_GenericNew',
+                    'C_NAMED'  : 'PyOrType_GenericNamedNew',
+                    'C_CALL'   : 'PyOrType_GenericCallableNew',
+                    'C_CALL3'  : 'PyOrType_GenericCallableNew'}
                
 if 1: ### Definitions of regular expressions
 
@@ -129,6 +134,7 @@ if 1: ### Definitions of regular expressions
   constantdef=re.compile(r"PYCONSTANT\((?P<pyname>\w*)\s*,\s*(?P<ccode>.*)\)\s*$")
   constantfuncdef=re.compile(r"PYCONSTANTFUNC\((?P<pyname>\w*)\s*,\s*(?P<cfunc>.*)\)\s*$")
   constantwarndef=re.compile("PYCONSTANT")
+  recognizedattrsdef = re.compile(r'RECOGNIZED_ATTRIBUTES\s*\(\s*(?P<typename>\w*)\s*, \s*"(?P<attributes>[^"]*)"\s*\)')
 
 
 def detectConstructors(line, classdefs):
@@ -186,8 +192,13 @@ def detectAttrs(line, classdefs):
     else:
       printV0("Warning: constant %s.%s duplicated", (typename, constname))
     return
-    
-  
+
+  found=recognizedattrsdef.search(line)
+  if found:
+    typename, attributes = found.group("typename", "attributes")
+    addClassDef(classdefs, typename, parsedFile, "recognized_attributes", attributes.split())
+
+
 def detectMethods(line, classdefs):
   # The below if is to avoid methods, like, for instance, map's clear to be recognized
   # also as a special method. Special methods never include PYARGS...
@@ -484,13 +495,19 @@ def writeAppendix(filename, targetname, classdefs, aliases):
       outfile.write("}\n\n")
 
     # Write default constructor
-    if fields.constructor and fields.constructor.type!="MANUAL":
-      outfile.write('POrange %s_default_constructor(PyTypeObject *type)\n{ return POrange(mlnew T%s(), type); }\n' % (type, type))
+    if fields.constructor:
+      if fields.constructor.type!="MANUAL":
+        outfile.write('POrange %s_default_constructor(PyTypeObject *type)\n{ return POrange(mlnew T%s(), type); }\n\n' % (type, type))
+    else:
+      outfile.write('PyObject *%s_abstract_constructor(PyTypeObject *type, PyObject *args, PyObject *kwds)\n{ return PyOrType_GenericAbstract((PyTypeObject *)&PyOr%s_Type, type, args, kwds); }\n\n' % (type, type))
 
     # Write constructor keywords
     if fields.constructor_keywords:
       outfile.write('char *%s_constructor_keywords[] = {%s, NULL};\n' % (type, reduce(lambda x, y: x + ", " + y, ['"%s"' % x for x in fields.constructor_keywords])))
 
+    if fields.recognized_attributes:
+      outfile.write('char *%s_recognized_attributes[] = {%s, NULL};\n' % (type, reduce(lambda x, y: x + ", " + y, ['"%s"' % x for x in fields.recognized_attributes])))
+      
     outfile.write('\n')                    
                     
     # Write aliases    
@@ -573,14 +590,10 @@ def writeAppendix(filename, targetname, classdefs, aliases):
             innulls=outfile.write((innulls and '\n' or '') + ('  %-50s /* %s */\n' % ("(%s)%s_%s," % (smethod[2], type, smethod[0]), smethod[1])))
             
           elif smethod[0]=="new":
-            if not fields.constructor:
-              innulls=write0(innulls)
-            else:
-              genericconstrs = {'C_UNNAMED': 'PyOrType_GenericNew',
-                                'C_NAMED'  : 'PyOrType_GenericNamedNew',
-                                'C_CALL'   : 'PyOrType_GenericCallableNew',
-                                'C_CALL3'  : 'PyOrType_GenericCallableNew'}
+            if fields.constructor:
               innulls = outfile.write((innulls and '\n' or '') + ('  %-50s /* tp_new */\n' % ("(newfunc)%s," % genericconstrs[fields.constructor.type])))
+            else:
+              innulls = outfile.write((innulls and '\n' or '') + ('  %-50s /* tp_new */\n' % ("(newfunc)%s_abstract_constructor," % type)))
 
           else:
             innulls=write0(innulls)
@@ -612,6 +625,7 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     outfile.write('TOrangeType PyOr'+type+'_Type (PyOr'+type+'_Type_inh, typeid(T'+type+')')
     outfile.write(', ' + (fields.constructor and fields.constructor.type!="MANUAL" and type+'_default_constructor' or '0'))
     outfile.write(', ' + (fields.constructor_keywords and type+'_constructor_keywords' or 'NULL'))
+    outfile.write(', ' + (fields.recognized_attributes and type+'_recognized_attributes' or 'NULL'))
                           
     if aliases.has_key(type):
       outfile.write(', '+type+'_aliases')

@@ -307,13 +307,18 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
   tempFloatMap.reserve(nRows);
 
   tempLineCenters.reserve(nRows);
-  if (!haveBase)
+  if (!haveBase) {
     sortIndices.reserve(nRows);
+    for(int i = nClasses+1; i; i--)
+      classBoundaries.push_back(0);
+  }
+
+  bool pushSortIndices = !haveBase && (!noSorting || nClasses);
 
   try {
     // Extract the data from the table, compute the centers and fill the sortIndices
     EITERATE(ei, etable) {
-      if (!haveBase)
+      if (pushSortIndices)
         sortIndices.push_back(sortIndices.size());
 
       float *i_floatMap = new float[nColumns];
@@ -321,7 +326,9 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
 
       if (nClasses) {
         TValue &classVal = (*ei).getClass();
-        classes.push_back(classVal.isSpecial() ? 999 : classVal.intV);
+        const int tClass = classVal.isSpecial() ? nClasses : classVal.intV;
+        classes.push_back(tClass);
+        classBoundaries[tClass]++;
       }
       
       TExample::const_iterator eii((*ei).begin());
@@ -360,54 +367,39 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
       classBoundaries = baseHeatmap->classBoundaries;
     }
 
-    else if (!noSorting) {
-      if (nClasses) {
-        CompareIndicesWClass compare(tempLineCenters, classes);
-        sort(sortIndices.begin(), sortIndices.end(), compare);
+    else {
+      for(vector<int>::iterator cbi(classBoundaries.begin()+1), cbe(classBoundaries.end()); cbi!=cbe; *cbi += cbi[-1], cbi++);
+    
+      if (!noSorting) {
+        if (nClasses) {
+          CompareIndicesWClass compare(tempLineCenters, classes);
+          sort(sortIndices.begin(), sortIndices.end(), compare);
+        }
+        else {
+          CompareIndices compare(tempLineCenters);
+          sort(sortIndices.begin(), sortIndices.end(), compare);
+        }
       }
-      else {
-        CompareIndices compare(tempLineCenters);
-        sort(sortIndices.begin(), sortIndices.end(), compare);
-      }
+      else
+        if (nClasses) {
+          // stable sort by classes only
+          vector<int> mcb(classBoundaries);
+          int i = 0;
+          sortIndices.resize(classes.size());
+          for(vector<int>::const_iterator ci(classes.begin()), ce(classes.end()); ci!=ce; sortIndices[mcb[*(ci++)]++] = i++);
+        }
     }
-    else
-      if (nClasses) {
-        CompareIndicesClass compare(classes);
-        sort(sortIndices.begin(), sortIndices.end(), compare);
-      }
 
     floatMap.reserve(nRows);
     lineCenters.reserve(nRows);
     lineAverages.reserve(nRows);
         
-    int pcl = -1;
-    if (!haveBase && nClasses) {
-      int cd = classes[sortIndices.front()];
-      while(pcl < cd) {
-        classBoundaries.push_back(0);
-        pcl++;
-      }
-    }
-
     ITERATE(vector<int>, si, sortIndices) {
       esorted.addExample(etable[*si]);
       lineCenters.push_back(tempLineCenters[*si]);
       lineAverages.push_back(tempLineAverages[*si]);
       floatMap.push_back(tempFloatMap[*si]);
       tempFloatMap[*si] = NULL;
-
-      if (!haveBase && nClasses)
-        while(pcl < classes[*si]) {
-          classBoundaries.push_back(floatMap.size()-1);
-          pcl++;
-        }
-    }
-
-    if (!haveBase) {
-      if (!nClasses)
-        classBoundaries.push_back(0);
-      for(; pcl<nClasses; pcl++)
-        classBoundaries.push_back(floatMap.size());
     }
   }
   catch (...) {

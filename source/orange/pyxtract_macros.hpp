@@ -46,5 +46,6 @@
 #define HIDDEN(type, base)
 
 #define CONSTRUCTOR_KEYWORDS(type, keywords)
+#define RECOGNIZED_ATTRIBUTES(type, keywords)
 
 #endif
