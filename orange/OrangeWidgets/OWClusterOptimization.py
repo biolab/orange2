@@ -706,37 +706,39 @@ class ClusterOptimization(OWBaseWidget):
 
         # ##########################
         # SAVE & MANAGE TAB
-        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Class values in data set ")   
-        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
-        self.evaluateBox = OWGUI.widgetBox(self.ManageTab, " Evaluate Current Projection / Classifier ")
+        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select class values you wish to separate ")   
+        self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Number of concurrently visualized attributes ")        
+        self.manageBox = OWGUI.widgetBox(self.ManageTab, " Manage projections")
         
-        self.classesCaption = QLabel('Select classes you wish to separate:', self.classesBox)
         self.classesList = QListBox(self.classesBox)
         self.classesList.setSelectionMode(QListBox.Multi)
         self.classesList.setMinimumSize(60,60)
         self.connect(self.classesList, SIGNAL("selectionChanged()"), self.updateShownProjections)
 
-        self.buttonBox3 = OWGUI.widgetBox(self.evaluateBox, orientation = "horizontal")
+        self.buttonBox6 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
+        OWGUI.button(self.buttonBox6, self, "Load", self.load)
+        OWGUI.button(self.buttonBox6, self, "Save", self.save)
+
+        self.buttonBox7 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
+        OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
+        OWGUI.button(self.buttonBox7, self, "Result analysis", self.resultAnalysis)
+        
+        self.buttonBox3 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         self.clusterStabilityButton = OWGUI.button(self.buttonBox3, self, 'Show cluster stability', self.evaluatePointsInClusters)
         self.clusterStabilityButton.setToggleButton(1)
         #self.saveProjectionButton = OWGUI.button(self.buttonBox3, self, 'Save projection')
-        self.saveBestButton = OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
+        OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
 
-        self.attrLenCaption = QLabel('Number of concurrently visualized attributes:', self.manageResultsBox)
+        OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
+
         self.attrLenList = QListBox(self.manageResultsBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
-
-        self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.buttonBox7 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
-        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
-        self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
-        self.closeButton = OWGUI.button(self.buttonBox7, self, "Result analysis", self.resultAnalysis)
+        
         self.resize(375,550)
-        self.setMinimumWidth(350)
-        self.tabs.setMinimumWidth(350)
+        self.setMinimumWidth(375)
+        self.tabs.setMinimumWidth(375)
 
         self.statusBar = QStatusBar(self)
         self.controlArea.addWidget(self.statusBar)
@@ -1205,9 +1207,19 @@ class ClusterOptimization(OWBaseWidget):
 
     def resultAnalysis(self):
         from OWkNNOptimization import OWResultAnalysis, CLUSTER
-        dialog = OWResultAnalysis(self, self.signalManager)
+        dialog = OWResultAnalysis(self, signalManager = self.signalManager)
         dialog.setResults(self.shownResults, CLUSTER)
         dialog.show()
+
+
+    def graphProjectionQuality(self):
+        from OWkNNOptimization import OWGraphProjectionQuality, CLUSTER
+        dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
+        dialog.setResults(self.allResults, CLUSTER)
+        dialog.show()
+
+
+    
 
     # ######################################################
     # Auxiliary functions
