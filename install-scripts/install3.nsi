@@ -121,7 +121,8 @@ Section "Genomic Data"
 	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotation
 	File /r "${ORANGEDIR}\OrangeWidgets\Genomics\Genome Map"
 	SetOutPath "$INSTDIR\OrangeCanvas"
-	File various\bi-visprog\*
+	File various\bi-visprog\*.tab
+	File various\bi-visprog\*.ows
 	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
 	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWExampleBuilder.py
 	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWSubsetGenerator.py
