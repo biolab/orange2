@@ -109,7 +109,7 @@ makedepsfile.write("%s_OBJECTS =" % modulename.upper())
 cnt = 0
 
 for file in deplist:
-    if file[0][-4:]==".cpp" && file[0] != modulename+"_mac.cpp":
+    if file[0][-4:]==".cpp" and file[0] != modulename+"_mac.cpp":
         if not cnt:
             makedepsfile.write("\\\n\t")
         cnt = (cnt+1) % 6
