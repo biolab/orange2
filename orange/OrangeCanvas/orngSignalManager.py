@@ -178,10 +178,17 @@ class SignalManager:
         self.links[widgetFrom] = existingLinks + [(widgetTo, signalNameFrom, signalNameTo, enabled)]
 
         widgetTo.addInputConnection(widgetFrom, signalNameTo)
-        if widgetFrom.linksOut.has_key(signalNameFrom) and enabled:
+
+        # if there is no key for the signalNameFrom, create it and set its id=None and data = None
+        if not widgetFrom.linksOut.has_key(signalNameFrom):
+            widgetFrom.linksOut[signalNameFrom] = {None:None}
+
+        # if channel is enabled, send data through it
+        if enabled:
             for key in widgetFrom.linksOut[signalNameFrom].keys():
                 widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key)
-
+            
+        # reorder widgets if necessary
         if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
             self.widgets.remove(widgetTo)
             self.widgets.insert(self.widgets.index(widgetFrom)+1, widgetTo)
