@@ -181,9 +181,9 @@ class kNNOptimization(OWBaseWidget):
         self.saveBestButton = OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
 
         self.buttonBox4 = OWGUI.widgetBox(self.evaluateBox, orientation = "horizontal")
-        self.showKNNCorrectButton = OWGUI.button(self.buttonBox4, self, 'kNN correct')
-        self.showKNNWrongButton = OWGUI.button(self.buttonBox4, self, 'kNN wrong')
-        self.showKNNResetButton = OWGUI.button(self.buttonBox4, self, 'Original') 
+        self.showKNNCorrectButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN correct')
+        self.showKNNWrongButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN wrong')
+        self.showKNNCorrectButton.setToggleButton(1); self.showKNNWrongButton.setToggleButton(1)
                 
         self.attrLenCaption = QLabel('Number of concurrently visualized attributes:', self.manageResultsBox)
         self.attrLenList = QListBox(self.manageResultsBox)
