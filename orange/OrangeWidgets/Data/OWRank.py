@@ -18,13 +18,21 @@ by their relevance for particular classification.</description>
 from qttable import *
 from OWWidget import *
 
+class MyTable(QTable):
+    def __init__(self, parent, widget):
+        QTable.__init__(self, widget)
+        self.parent = parent
+        
+    def contentsMouseReleaseEvent(self, ev):
+        self.parent.sendSelected()
+
 class OWRank(OWWidget):
     settingsList=["Precision","ReliefK","ReliefN","DiscretizationMethod","DisplayReliefF","DisplayInfoGain","DisplayGainRatio","DisplayGini"]
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Rank")
         
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
-        self.outputs = [] 
+        self.outputs = [("Selected Attributes", ExampleTableWithClass)] 
         
         #set default settings
         self.Precision=3
@@ -63,8 +71,9 @@ class OWRank(OWWidget):
         #give mainArea a layout
         self.layout=QVBoxLayout(self.mainArea)
         #add your components here
-        self.table=QTable(self.mainArea)
-        self.table.setSelectionMode(QTable.NoSelection) #hell, if i set this, swapRows() doesn't work - weird. and if i do not set this, the users can edit the fields
+        self.table = MyTable(self, self.mainArea)
+        #self.table.setSelectionMode(QTable.NoSelection) #hell, if i set this, swapRows() doesn't work - weird. and if i do not set this, the users can edit the fields
+        self.table.setSelectionMode(QTable.Multi)
         self.layout.add(self.table)
         self.table.setNumCols(7)
         self.table.setNumRows(0)
@@ -81,10 +90,18 @@ class OWRank(OWWidget):
         for i in range(4):
             self.topheader.setLabel(3+i,self.est_names[i])  
             self.table.adjustColumn(i)     
-        self.resize(600,200) 
-        
-        #add controls to self.controlArea widget 
-        #connect controls to appropriate functions
+        self.resize(600,200)
+
+    def sendSelected(self):
+        attrs = []
+        if not self.data: return
+        for i in range(self.table.numSelections()):
+            selection = self.table.selection(i)
+            top = selection.topRow(); bottom = selection.bottomRow()
+            for c in range(top, bottom+1):
+                attr = str(self.table.text(c, 0))
+                if attr not in attrs: attrs.append(attr)
+        if attrs != []: self.send("Selected Attributes", self.data.select(attrs + [self.data.domain.classVar.name]))
         
     def displayReliefF(self,checked):
         self.DisplayReliefF=checked
