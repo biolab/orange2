@@ -183,7 +183,7 @@ C_CALL(Preprocessor_dropMissingClasses, Preprocessor, "([examples[, weightID]]) 
 C_CALL(Preprocessor_addMissing, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addMissingClasses, Preprocessor, "([examples[, weightID]] [classMissing=<float>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
-C_CALL(Preprocessor_addClassNoise, Preprocessor, "([examples[, weightID]] [classNoise=<float>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addClassNoise, Preprocessor, "([examples[, weightID]] [proportion=<float>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addGaussianNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addGaussianClassNoise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
 

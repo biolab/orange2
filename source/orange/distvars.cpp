@@ -409,7 +409,7 @@ TDiscDistribution::TDiscDistribution(PExampleGenerator gen, PVariable var, const
   else
     if (variable->getValueFrom)
       PEITERATE(ei, gen)
-        add((*ei)[variable], WEIGHT(*ei));
+        add(variable->computeValue(*ei), WEIGHT(*ei));
     else
       raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
 }
@@ -884,7 +884,7 @@ TContDistribution::TContDistribution(PExampleGenerator gen, PVariable var, const
   else
     if (variable->getValueFrom)
       PEITERATE(ei, gen)
-        add((*ei)[variable], WEIGHT(*ei));
+        add(variable->computeValue(*ei), WEIGHT(*ei));
     else
       raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
 }

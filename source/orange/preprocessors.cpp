@@ -418,6 +418,8 @@ PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen,
 {
   if (!gen->domain->classVar)
     raiseError("Class-less domain");
+  if (gen->domain->classVar->varType != TValue::INTVAR)
+    raiseError("Discrete class value expected");
 
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;

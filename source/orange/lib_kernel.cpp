@@ -2690,19 +2690,6 @@ PyObject *ContDistribution_density(PyObject *self, PyObject *args) PYARGS(METH_V
 }
 
 
-// Note that this is actually density, not p!
-PyObject *ContDistribution_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x) -> float")
-{ PyTRY
-    TContDistribution *cont = getContDistribution(self);
-    float x;
-    if (!cont || !PyArg_ParseTuple(args, "f:ContDistribution.p", &x))
-      return PYNULL;
-    
-    return PyFloat_FromDouble(cont->p(x));
-  PyCATCH
-}
-
-
 PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma) | (distribution) | () -> distribution")
 { PyTRY
     float mean = 0.0, sigma = 1.0;
@@ -2760,16 +2747,6 @@ PyObject *GaussianDistribution_density(PyObject *self, PyObject *args) PYARGS(ME
   PyCATCH
 }
 
-// This is actually density, not p!
-PyObject *GaussianDistribution_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x) -> float")
-{ PyTRY
-    float x;
-    if (!PyArg_ParseTuple(args, "f:GaussianDistribution.p", &x))
-      return PYNULL;
-    
-    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).p(x));
-  PyCATCH
-}
 
 /* We redefine new (removed from below!) and add mapping methods
 */
