@@ -809,8 +809,9 @@ C_NAMED(RuleCovererAndRemover_Default, RuleCovererAndRemover, "()")
 
 C_NAMED(RuleStoppingCriteria_NegativeDistribution, RuleStoppingCriteria, "()")
 C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
+
 BASED_ON(RuleClassifier, Classifier)
-C_NAMED(RuleClassifier_firstRule, RuleClassifier, "()")
+C_NAMED(RuleClassifier_firstRule, RuleClassifier, "([rules,examples[,weightID]])")
 
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -1029,7 +1030,7 @@ PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keyword
     int targetClass = -1;
     PRule rule;
 
-    if (!PyArg_ParseTuple(args, "O&O&iO&:RuleBeamRefiner.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
+    if (!PyArg_ParseTuple(args, "O&O&O&i:RuleBeamRefiner.call", cc_Rule, &rule, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass))
       return PYNULL;
     CAST_TO(TRuleBeamRefiner, refiner)
 
@@ -1059,7 +1060,7 @@ PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *key
     int targetClass = -1;
     PRule rule;
 
-    if (!PyArg_ParseTuple(args, "O&O&iO&O&O&O&:RuleBeamInitializer.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, ccn_RuleList, &baseRules, cc_RuleEvaluator, &evaluator, cc_Distribution, &prior))
+    if (!PyArg_ParseTuple(args, "O&O&iO&O&O&:RuleBeamInitializer.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, &targetClass, ccn_RuleList, &baseRules, cc_RuleEvaluator, &evaluator, cc_Distribution, &prior))
       return PYNULL;
     CAST_TO(TRuleBeamInitializer, initializer)
 
