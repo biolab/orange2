@@ -97,6 +97,14 @@ class WidgetTabs(QTabWidget):
 		self.tabs.append(tab)
 		self.insertTab(tab, "Classification")
 		
+		tab = WidgetTab(self, "Evaluation")
+		self.tabs.append(tab)
+		self.insertTab(tab, "Evaluation")
+		
+		tab = WidgetTab(self, "Visualization")
+		self.tabs.append(tab)
+		self.insertTab(tab, "Visualization")
+		
 	def setCanvasDlg(self, canvasDlg):
 		self.canvasDlg = canvasDlg
 
@@ -183,10 +191,11 @@ class WidgetTabs(QTabWidget):
 			button.setValue(nameList[i], fileNameList[i], inListList[i], outListList[i], iconNameList[i], descriptionList[i], priorityList[i], self.canvasDlg, self.useLargeIcons)
 			self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
 			if exIndex != priorityList[i] / 1000:
-				frame = QFrame(tab)
-				frame.setMinimumWidth(20)
-				frame.setMaximumWidth(20)
-				tab.addWidget(frame)
+				for k in range(priorityList[i]/1000 - exIndex):
+					frame = QFrame(tab)
+					frame.setMinimumWidth(20)
+					frame.setMaximumWidth(20)
+					tab.addWidget(frame)
 				exIndex = priorityList[i] / 1000
 			tab.addWidget(button)
 			self.allWidgets.append(button)
