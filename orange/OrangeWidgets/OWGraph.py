@@ -14,6 +14,140 @@ from OWBaseWidget import *
 import time
 from OWDlgs import OWChooseImageSizeDlg
 
+
+# ####################################################################
+# calculate Euclidean distance between two points
+def EuclDist(v1, v2):
+    val = 0
+    for i in range(len(v1)):
+        val += (v1[i]-v2[i])**2
+    return sqrt(val)
+        
+
+# ####################################################################
+# add val to sorted list list. if len > maxLen delete last element
+def addToList(list, val, ind, maxLen):
+    i = 0
+    for i in range(len(list)):
+        (val2, ind2) = list[i]
+        if val < val2:
+            list.insert(i, (val, ind))
+            if len(list) > maxLen:
+                list.remove(list[maxLen])
+            return
+    if len(list) < maxLen:
+        list.insert(len(list), (val, ind))
+
+# ####################################################################
+# used in widgets that enable to draw a rectangle or a polygon to select a subset of data points
+class SelectionCurve(QwtPlotCurve):
+    def __init__(self, parent, name = "", pen = Qt.SolidLine ):
+        QwtPlotCurve.__init__(self, parent, name)
+        self.pointArrayValid = 0
+        self.setStyle(QwtCurve.Lines)
+        self.setPen(QPen(QColor(128,128,128), 1, pen))
+        
+    def addPoint(self, xPoint, yPoint):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
+        xVals.append(xPoint)
+        yVals.append(yPoint)
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    def removeLastPoint(self):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()-1):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    def replaceLastPoint(self, xPoint, yPoint):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()-1):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
+        xVals.append(xPoint)
+        yVals.append(yPoint)
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    # is point defined at x,y inside a rectangle defined with this curve
+    def isInside(self, x, y):       
+        xMap = self.parentPlot().canvasMap(self.xAxis());
+        yMap = self.parentPlot().canvasMap(self.yAxis());
+
+        if not self.pointArrayValid:
+            self.pointArray = QPointArray(self.dataSize() + 1)
+            for i in range(self.dataSize()):
+                self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
+            self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
+            self.pointArrayValid = 1
+
+        return QRegion(self.pointArray).contains(QPoint(xMap.transform(x), yMap.transform(y)))
+
+    # test if the line going from before last and last point intersect any lines before
+    # if yes, then add the intersection point and remove the outer points
+    def closed(self):
+        if self.dataSize() < 5: return 0
+        #print "all points"
+        #for i in range(self.dataSize()):
+        #    print "(%.2f,%.2f)" % (self.x(i), self.y(i))
+        x1 = self.x(self.dataSize()-3)
+        x2 = self.x(self.dataSize()-2)
+        y1 = self.y(self.dataSize()-3)
+        y2 = self.y(self.dataSize()-2)
+        for i in range(self.dataSize()-5, -1, -1):
+            """
+            X1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i))
+            X2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i+1))
+            Y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i))
+            Y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i+1))
+            """
+            X1 = self.x(i)
+            X2 = self.x(i+1)
+            Y1 = self.y(i)
+            Y2 = self.y(i+1)
+            #print "(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f)" % (x1, y1, x2, y2, X1, Y1, X2, Y2)
+            (intersect, xi, yi) = self.lineIntersection(x1, y1, x2, y2, X1, Y1, X2, Y2)
+            if intersect:
+                xData = [xi]; yData = [yi]
+                for j in range(i+1, self.dataSize()-2): xData.append(self.x(j)); yData.append(self.y(j))
+                xData.append(xi); yData.append(yi)
+                self.setData(xData, yData)
+                return 1
+        return 0
+
+    def lineIntersection(self, x1, y1, x2, y2, X1, Y1, X2, Y2):
+        if x2-x1 != 0: m1 = (y2-y1)/(x2-x1)
+        else:          m1 = 1e+12
+        
+        if X2-X1 != 0: m2 = (Y2-Y1)/(X2-X1)
+        else:          m2 = 1e+12;  
+
+        b1 = -1
+        b2 = -1
+        c1 = (y1-m1*x1)
+        c2 = (Y1-m2*X1)
+
+        det_inv = 1/(m1*b2 - m2*b1)
+
+        xi=((b1*c2 - b2*c1)*det_inv)
+        yi=((m2*c1 - m1*c2)*det_inv)
+
+        if xi >= min(x1, x2) and xi <= max(x1,x2) and xi >= min(X1, X2) and xi <= max(X1, X2) and yi >= min(y1,y2) and yi <= max(y1, y2) and yi >= min(Y1, Y2) and yi <= max(Y1, Y2):
+            return (1, xi, yi)
+        else:
+            return (0, xi, yi)
+
+# ####################################################################
+# draw a rectangle
 class subBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
         QwtPlotCurve.__init__(self, parent, text)
@@ -47,6 +181,26 @@ class subBarQwtPlotCurve(QwtPlotCurve):
         p.setBrush(brush)
 
 
+# ####################################################################
+# create a marker in QwtPlot, that doesn't have a transparent background. Currently used in parallel coordinates widget.
+class nonTransparentMarker(QwtPlotMarker):
+    def __init__(self, backColor, *args):
+        QwtPlotMarker.__init__(self, *args)
+        self.backColor = backColor
+
+    def draw(self, p, x, y, rect):
+        p.setPen(self.labelPen())
+        p.setFont(self.font())
+
+        th = p.fontMetrics().height();
+        tw = p.fontMetrics().width(self.label()); 
+        r = QRect(x + 4, y - th/2 - 2, tw + 4, th + 4)
+        p.fillRect(r, QBrush(self.backColor))
+        p.drawText(r, Qt.AlignHCenter + Qt.AlignVCenter, self.label());
+        
+
+# ####################################################################
+# 
 class errorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None, connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
         QwtPlotCurve.__init__(self, parent, text)
@@ -116,7 +270,8 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
         # restore ex settings
         p.setPen(pen)
         
-
+# ####################################################################
+# draw labels for discrete attributes
 class DiscreteAxisScaleDraw(QwtScaleDraw):
     def __init__(self, labels):
         apply(QwtScaleDraw.__init__, (self,))
@@ -128,6 +283,7 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
         if index >= len(self.labels) or index < 0: return ''
         return QString(str(self.labels[index]))
 
+# ####################################################################
 # use this class if you want to hide labels on the axis
 class HiddenScaleDraw(QwtScaleDraw):
     def __init__(self, *args):
@@ -150,8 +306,6 @@ class OWGraph(QwtPlot):
         self.setAxisAutoScale(QwtPlot.yLeft)
         self.setAxisAutoScale(QwtPlot.yRight)
 
-#        print plot.axisFont(QwtPlot.xBottom).family()
-#        print plot.axisFont(QwtPlot.xBottom).pointSize()
         newFont = QFont('Helvetica', 10, QFont.Bold)
         self.setTitleFont(newFont)
         self.setAxisTitleFont(QwtPlot.xBottom, newFont)

@@ -4,143 +4,10 @@
 # extension for the base graph class that is used in all visualization widgets
 from OWGraph import *
 from Numeric import *
-import sys
-import math
+import sys, math, os.path
 import orange
-import os.path
 from qtcanvas import *
 from OWTools import *
-
-# ####################################################################
-# calculate Euclidean distance between two points
-def EuclDist(v1, v2):
-    val = 0
-    for i in range(len(v1)):
-        val += (v1[i]-v2[i])**2
-    return sqrt(val)
-        
-
-# ####################################################################
-# add val to sorted list list. if len > maxLen delete last element
-def addToList(list, val, ind, maxLen):
-    i = 0
-    for i in range(len(list)):
-        (val2, ind2) = list[i]
-        if val < val2:
-            list.insert(i, (val, ind))
-            if len(list) > maxLen:
-                list.remove(list[maxLen])
-            return
-    if len(list) < maxLen:
-        list.insert(len(list), (val, ind))
-
-
-class SelectionCurve(QwtPlotCurve):
-    def __init__(self, parent, name = "", pen = Qt.SolidLine ):
-        QwtPlotCurve.__init__(self, parent, name)
-        self.pointArrayValid = 0
-        self.setStyle(QwtCurve.Lines)
-        self.setPen(QPen(QColor(128,128,128), 1, pen))
-        
-    def addPoint(self, xPoint, yPoint):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        xVals.append(xPoint)
-        yVals.append(yPoint)
-        self.setData(xVals, yVals)
-        self.pointArrayValid = 0        # invalidate the point array
-
-    def removeLastPoint(self):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()-1):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        self.setData(xVals, yVals)
-        self.pointArrayValid = 0        # invalidate the point array
-
-    def replaceLastPoint(self, xPoint, yPoint):
-        xVals = []
-        yVals = []
-        for i in range(self.dataSize()-1):
-            xVals.append(self.x(i))
-            yVals.append(self.y(i))
-        xVals.append(xPoint)
-        yVals.append(yPoint)
-        self.setData(xVals, yVals)
-        self.pointArrayValid = 0        # invalidate the point array
-
-    # is point defined at x,y inside a rectangle defined with this curve
-    def isInside(self, x, y):       
-        xMap = self.parentPlot().canvasMap(self.xAxis());
-        yMap = self.parentPlot().canvasMap(self.yAxis());
-
-        if not self.pointArrayValid:
-            self.pointArray = QPointArray(self.dataSize() + 1)
-            for i in range(self.dataSize()):
-                self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-            self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
-            self.pointArrayValid = 1
-
-        return QRegion(self.pointArray).contains(QPoint(xMap.transform(x), yMap.transform(y)))
-
-    # test if the line going from before last and last point intersect any lines before
-    # if yes, then add the intersection point and remove the outer points
-    def closed(self):
-        if self.dataSize() < 5: return 0
-        #print "all points"
-        #for i in range(self.dataSize()):
-        #    print "(%.2f,%.2f)" % (self.x(i), self.y(i))
-        x1 = self.x(self.dataSize()-3)
-        x2 = self.x(self.dataSize()-2)
-        y1 = self.y(self.dataSize()-3)
-        y2 = self.y(self.dataSize()-2)
-        for i in range(self.dataSize()-5, -1, -1):
-            """
-            X1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i))
-            X2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i+1))
-            Y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i))
-            Y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i+1))
-            """
-            X1 = self.x(i)
-            X2 = self.x(i+1)
-            Y1 = self.y(i)
-            Y2 = self.y(i+1)
-            #print "(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f)" % (x1, y1, x2, y2, X1, Y1, X2, Y2)
-            (intersect, xi, yi) = self.lineIntersection(x1, y1, x2, y2, X1, Y1, X2, Y2)
-            if intersect:
-                xData = [xi]; yData = [yi]
-                for j in range(i+1, self.dataSize()-2): xData.append(self.x(j)); yData.append(self.y(j))
-                xData.append(xi); yData.append(yi)
-                self.setData(xData, yData)
-                return 1
-        return 0
-
-    def lineIntersection(self, x1, y1, x2, y2, X1, Y1, X2, Y2):
-        if x2-x1 != 0: m1 = (y2-y1)/(x2-x1)
-        else:          m1 = 1e+12
-        
-        if X2-X1 != 0: m2 = (Y2-Y1)/(X2-X1)
-        else:          m2 = 1e+12;  
-
-        b1 = -1
-        b2 = -1
-        c1 = (y1-m1*x1)
-        c2 = (Y1-m2*X1)
-
-        det_inv = 1/(m1*b2 - m2*b1)
-
-        xi=((b1*c2 - b2*c1)*det_inv)
-        yi=((m2*c1 - m1*c2)*det_inv)
-
-        if xi >= min(x1, x2) and xi <= max(x1,x2) and xi >= min(X1, X2) and xi <= max(X1, X2) and yi >= min(y1,y2) and yi <= max(y1, y2) and yi >= min(Y1, Y2) and yi <= max(Y1, Y2):
-            return (1, xi, yi)
-        else:
-            return (0, xi, yi)
-
 
 
 ZOOMING = 1
@@ -176,6 +43,7 @@ class OWVisGraph(OWGraph):
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+        self.curveSymbolsPrinting = [QwtSymbol.Cross, QwtSymbol.Triangle, QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.XCross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
 
         self.state = ZOOMING
         self.tempSelectionCurve = None
@@ -584,12 +452,17 @@ class OWVisGraph(OWGraph):
             if unselected:
                 classVar.getValueFrom = lambda ex,what: 1
                 table.extend(unselected)
-        else:
+        elif unselected:
             domain = orange.Domain(unselected.domain.variables + [classVar])
             classVar.getValueFrom = lambda ex,what: 1
             table = orange.ExampleTable(domain, unselected)
+        else: table = None
         return table
        
+
+    # mouse was only pressed and released on the same spot. visualization methods might want to process this event
+    def staticMouseClick(self, e):
+        pass
 
     # ###############################################
     # HANDLING MOUSE EVENTS
@@ -676,7 +549,9 @@ class OWVisGraph(OWGraph):
             self.removeCurve(self.zoomKey)
             self.tempSelectionCurve = None
 
-            if xmin == xmax or ymin == ymax: return
+            if xmin == xmax or ymin == ymax:
+                self.staticMouseClick(e)
+                return
 
             xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
             ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
