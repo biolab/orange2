@@ -102,7 +102,7 @@ public:
   PMeasureAttribute measure; //P attribute quality measure
   float worstAcceptable; //P the worst acceptable quality of the attribute
 
-  TTreeSplitConstructor_Measure(PMeasureAttribute = PMeasureAttribute(), const float &worst = -1e30, const float &aminSubset = 0.0);
+  TTreeSplitConstructor_Measure(PMeasureAttribute = PMeasureAttribute(), const float &worst = 0, const float &aminSubset = 0.0);
 };
 
 

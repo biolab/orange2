@@ -200,16 +200,16 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
     TDomainContingency::iterator dci(dcont->begin()), dce(dcont->end());
     for(; (cse || (ci!=ce)) && (dci!=dce); dci++, thisAttr++)
       if ((cse || *(ci++)) && ((*dci)->outerVariable->varType==TValue::INTVAR)) {
-        // if there is a non-null branch with less than minSubset examples, skip the attribute
-        //   (the attribute has a value which is present but not with enough examples)
-        // Also, if the attribute's value is same for all examples, attribute is useless and skipped
+        // if there are less than two branches with at least minSubset examples, skip the attribute
+        // also, skip it if all examples are in the same branch
         int nonzero = 0;
-        TDistributionVector::const_iterator dvi((*dci)->discrete->begin()), dve((*dci)->discrete->end());
-        for(; (dvi!=dve) && (((*dvi)->abs==0) || ((*dvi)->abs>=minSubset)); dvi++)
-          if ((*dvi)->abs>0)
+        for(TDistributionVector::const_iterator dvi((*dci)->discrete->begin()), dve((*dci)->discrete->end());
+            (dvi!=dve) && (nonzero<2);
+            dvi++)
+          if ( ((*dvi)->abs > 0)  &&  ((*dvi)->abs >= minSubset) )
             nonzero++;
 
-        if ((dvi!=dve) || (nonzero<2))
+        if (nonzero<2)
           continue;
 
         float thisMeas = measure->call(thisAttr, dcont, apriorClass);
@@ -231,16 +231,16 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
       if (cse || *(ci++)) {
         TDiscDistribution *discdist = (*ddi).AS(TDiscDistribution);
         if (discdist) {
-          // if there is a non-null branch with less than minSubset examples, skip the attribute
-          //   (the attribute has a value which is present but not with enough examples)
-          // Also, if the attribute's value is same for all examples, attribute is unuseful and skipped
+          // if there are less than two branches with at least minSubset examples, skip the attribute
+          // also, skip it if all examples are in the same branch
           int nonzero = 0;
-          TDiscDistribution::const_iterator dvi(discdist->begin()), dve(discdist->end());
-          for(; (dvi!=dve) && ((*dvi==0) || (*dvi>=minSubset)); dvi++)
-            if (*dvi>0)
+          for(TDiscDistribution::const_iterator dvi(discdist->begin()), dve(discdist->end());
+              (dvi!=dve) && (nonzero<2);
+              dvi++)
+            if ( (*dvi > 0)  &&  (*dvi >= minSubset) )
               nonzero++;
 
-          if ((dvi!=dve) || (nonzero<2))
+          if (nonzero<2)
             continue;
 
           float thisMeas = measure->call(thisAttr, gen, apriorClass, weightID);
