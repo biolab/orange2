@@ -599,6 +599,53 @@ def TCthresholdlAverageROC(ROCcurves, samples = 10):
 
     return (average, stdevV, stdevH)
 
+## Calibration Curve
+## returns an array of (curve, yesClassPredictions, noClassPredictions) elements, where:
+##  - curve is an array of points (x, y) on the calibration curve
+##  - yesClassRugPoints is an array of (x, 1) points
+##  - noClassRugPoints is an array of (x, 0) points
+def computeCalibrationCurve(res, classIndex=-1):
+    import corn
+    ## merge multiple iterations into one
+    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    for te in res.results:
+        mres.results.append( te )
+
+    problists, tots = corn.computeROCCumulative(mres, classIndex)
+
+    results = []
+    P, N = tots[1], tots[0]
+
+    for plist in problists:
+        allP = 0.0
+        allN = 0.0
+        curve = [(0.0, 0.0)]
+        yesClassRugPoints = [] 
+        noClassRugPoints = []
+        for (f, (thisNeg, thisPos)) in plist:
+            allP += thisPos
+            allN += thisNeg
+            for i in range(thisPos):
+                yesClassRugPoints.append( (f, 1.0) )
+            for i in range(thisNeg):
+                noClassRugPoints.append( (f, 0.0) )
+            curve.append( (f, (allP+allN)/(P + N)) )
+
+        ## smooth the curve
+        maxnPoints = 50
+        loessCurve = statc.loess(curve, -3, 0.5)
+        clen = len(loessCurve)
+        if clen > maxnPoints:
+            df = clen / maxnPoints
+            if df < 1: df = 1
+            curve = [loessCurve[i] for i in range(0, clen, df)]
+        else:
+            curve = loessCurve
+        results.append((curve, yesClassRugPoints, noClassRugPoints))
+
+    return results
+###
+
 class CDT:
   """ Stores number of concordant (C), discordant (D) and tied (T) pairs (used for aROC) """
   def __init__(self, C=0.0, D=0.0, T=0.0):
