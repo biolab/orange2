@@ -236,7 +236,6 @@ class SchemaDoc(QMainWindow):
         qApp.setOverrideCursor(QWidget.waitCursor)
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
-            newwidget.instance.signalManager = self.signalManager   # set signal manager for the widget instance
             newwidget.instance.setEventHandler(self.canvasDlg.output.widgetEvents)
         except:
             type, val, traceback = sys.exc_info()
@@ -274,17 +273,12 @@ class SchemaDoc(QMainWindow):
     # ####################################
     # remove widget
     def removeWidget(self, widget):
-        if widget.instance:
-            widget.instance.saveSettings()
-            widget.instance.hide()
-            
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
         while widget.outLines != []:  self.removeLine1(widget.outLines[0])
                 
         self.signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
-
         self.enableSave(TRUE)
 
     def clear(self):
@@ -553,7 +547,7 @@ if os.path.exists(widgetDir):
         manager = ""
         loadSett = ""
         saveSett = ""
-        signals = "#set signal manager to widgets\n"+t+t
+        signals = "#set event and progress handler\n"+t+t
 
         sepCount = 1
         # gui for shown widgets
@@ -568,9 +562,9 @@ if os.path.exists(widgetDir):
                 name = name.replace("(", "")
                 name = name.replace(")", "")
                 imports += "from %s import *\n" % (widget.widget.getFileName())
-                instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
-                instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
-                signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
+                instancesT += "self.ow%s = %s (self.tabs, signalManager = signalManager)\n" % (name, widget.widget.getFileName())+t+t
+                instancesB += "self.ow%s = %s(signalManager = signalManager)\n" %(name, widget.widget.getFileName()) +t+t
+                signals += "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
@@ -598,10 +592,10 @@ if os.path.exists(widgetDir):
             name = name.replace("(", "")
             name = name.replace(")", "")
             imports += "from %s import *\n" % (widget.widget.getFileName())
-            instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
+            instancesT += "self.ow%s = %s (self.tabs, signalManager = signalManager)\n" % (name, widget.widget.getFileName())+t+t
+            instancesB += "self.ow%s = %s(signalManager = signalManager)\n" %(name, widget.widget.getFileName()) +t+t
             signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
             manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
-            instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
             tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
             loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
             loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t

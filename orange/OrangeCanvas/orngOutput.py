@@ -127,10 +127,10 @@ class OutputWindow(QMainWindow):
 
         text = ""
         t = localtime()
-        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%02d:%02d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
 
         if self.printException:
-            self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%d:%d" % ( str(type) , t[3],t[4],t[5]))
+            self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%02d:%02d" % ( str(type) , t[3],t[4],t[5]))
 
         # TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
         

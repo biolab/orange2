@@ -269,7 +269,7 @@ class CanvasWidget(QCanvasRectangle):
         # import widget class and create a class instance
         code = compile("import " + widget.getFileName(), ".", "single")
         exec(code)
-        code = compile(widget.getFileName() + "." + widget.getFileName() + "()", ".", "eval")
+        code = compile(widget.getFileName() + "." + widget.getFileName() + "(signalManager = signalManager)", ".", "eval")
         self.instance = eval(code)
         self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(self.view.processingHandler)
@@ -323,7 +323,9 @@ class CanvasWidget(QCanvasRectangle):
         
         # save settings
         if (self.instance != None):
-            self.instance.saveSettings()
+            try:    self.instance.saveSettings()
+            except: print "Unable to successfully save settings for %s widget" % (self.instance.title)
+            self.instance.hide()
         self.removeTooltip()
         self.text.hide()
         
@@ -517,7 +519,7 @@ class CanvasWidget(QCanvasRectangle):
                     string += "<nobr>- " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
 
         string += "<hr>Outputs:<br>"
-        if self.widget.getOutputs() == []: string += "None"
+        if self.widget.getOutputs() == []: string += "None<br>"
         else:
             for signal in self.widget.getOutputs():
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal.name)
@@ -528,7 +530,7 @@ class CanvasWidget(QCanvasRectangle):
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
                     string += "<nobr>- " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
-                   
+        string = string[:-4]
         self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)
 

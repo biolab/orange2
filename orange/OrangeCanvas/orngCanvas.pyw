@@ -104,8 +104,10 @@ class OrangeCanvasDlg(QMainWindow):
         # apply output settings
         self.output = orngOutput.OutputWindow(self, self.workspace, "", Qt.WDestructiveClose)
         self.output.show()
-        self.output.catchException(self.settings["catchException"])
-        self.output.catchOutput(self.settings["catchOutput"])
+        #self.output.catchException(self.settings["catchException"])
+        #self.output.catchOutput(self.settings["catchOutput"])
+        self.output.catchException(1)
+        self.output.catchOutput(1)
         self.output.setFocusOnException(self.settings["focusOnCatchException"])
         self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
         self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
@@ -543,10 +545,10 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
 
         # set current exception settings
-        dlg.catchExceptionCB.setChecked(self.settings["catchException"])
+        #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
         dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
         dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
-        dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
+        #dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
         dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
         dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
 
@@ -570,8 +572,8 @@ class OrangeCanvasDlg(QMainWindow):
                 self.updateUseLargeIcons()
                     
             # save exceptions settings
-            self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
-            self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
+            #self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
+            #self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
             self.settings["printExceptionInStatusBar"] = dlg.printExceptionInStatusBarCB.isChecked()
             self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
             self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
@@ -623,8 +625,8 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("snapToGrid"): self.settings["snapToGrid"] = 1
         if not self.settings.has_key("writeLogFile"): self.settings["writeLogFile"] = 1
 
-        if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
-        if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
+        #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
+        #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
         if not self.settings.has_key("focusOnCatchException"): self.settings["focusOnCatchException"] = 1
         if not self.settings.has_key("focusOnCatchOutput"): self.settings["focusOnCatchOutput"] = 0
         if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 1

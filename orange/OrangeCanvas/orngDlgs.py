@@ -438,12 +438,12 @@ class CanvasOptionsDlg(QDialog):
 
         # exception tab options
         exceptions = QVGroupBox("Exceptions", ExceptionsTab)
-        self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
+        #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
         self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
         self.printExceptionInStatusBarCB = QCheckBox('Print last exception in status bar', exceptions)
         
         output = QVGroupBox("System output", ExceptionsTab)
-        self.catchOutputCB = QCheckBox('Catch system output', output)
+        #self.catchOutputCB = QCheckBox('Catch system output', output)
         self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
         self.printOutputInStatusBarCB = QCheckBox('Print last system output in status bar', output)
 

@@ -302,5 +302,5 @@ class SignalManager:
 
 
 # create a global instance of signal manager
-signalManager = SignalManager()
+globalSignalManager = SignalManager()
 
