@@ -11,14 +11,14 @@ class InputSignal:
         self.name = name
         self.type = type
         self.handler = handler
-        self.single = single
-        self.minor = minor
+        self.single = int(single)
+        self.minor = int(minor)
 
 class OutputSignal:
     def __init__(self, name, type, minor = 0):
         self.name = name
         self.type = type
-        self.minor = minor
+        self.minor = int(minor)
 
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass

@@ -9,7 +9,8 @@ from string import strip
 import sys
 from orngCanvasItems import *
 from qttable import *
-from orngSignalManager import ExampleTable, ExampleTableWithClass
+#from orngSignalManager import ExampleTable, ExampleTableWithClass
+from orngSignalManager import *
 
 TRUE  = 1
 FALSE = 0
@@ -308,8 +309,8 @@ class SignalDialog(QDialog):
             for inS in inSignals:
                 if (outS.name != outSignal.name and outS.name == inSignal.name and outS.type == inSignal.type) or (inS.name != inSignal.name and inS.name == outSignal.name and inS.type == outSignal.type):
                     existsBetter = 1
-                    betterOutSignal = outS.name
-                    betterInSignal = inS.name
+                    betterOutSignal = outS
+                    betterInSignal = inS
 
         return existsBetter, betterOutSignal, betterInSignal
 
@@ -342,11 +343,11 @@ class SignalDialog(QDialog):
                 if issubclass(eval(outS.type), eval(inS.type)):
                     canConnect = 1
                     existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, nonMinorOutputs, nonMinorInputs)
-                    if existsBetter and betterOut not in outConnected and betterIn not in inConnected:
+                    if existsBetter and betterOut.name not in outConnected and (betterIn.name not in inConnected or not betterIn.single):
                         #self.multiplePossibleConnections = 1
                         continue
                     
-                    if inS.name not in inConnected + addedInLinks:
+                    if inS.name not in inConnected + addedInLinks or not inS.single:
                         addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                         self.addLink(outS.name, inS.name)
                     elif self.countCompatibleConnections(nonMinorOutputs, nonMinorInputs, outS.type, inS.type) > 1:
@@ -361,11 +362,11 @@ class SignalDialog(QDialog):
                     if issubclass(eval(outS.type), eval(inS.type)):
                         canConnect = 1
                         existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, nonMinorOutputs, nonMinorInputs)
-                        if existsBetter and betterOut not in outConnected and betterIn not in inConnected:
+                        if existsBetter and betterOut.name not in outConnected and (betterIn.name not in inConnected or not betterIn.single):
                             self.multiplePossibleConnections = 1
                             continue
                         
-                        if inS.name not in inConnected + addedInLinks:
+                        if inS.name not in inConnected + addedInLinks or not inS.single:
                             addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                             self.addLink(outS.name, inS.name)
                         elif self.countCompatibleConnections(allOutputs, allInputs, outS.type, inS.type) > 1:
