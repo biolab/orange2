@@ -190,6 +190,7 @@ class OWParallelCoordinates(OWWidget):
     def updateGraph(self):
         self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
         #self.graph.replot()
+        self.graph.update()
         self.repaint()
 
     # set combo box values with attributes that can be used for coloring the data

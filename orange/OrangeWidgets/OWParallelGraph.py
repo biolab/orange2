@@ -103,19 +103,17 @@ class OWParallelGraph(OWGraph):
         self.removeCurves()
         self.axesKeys = []
         self.curveKeys = []
-        
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        if self.showDistributions == 1:
-            self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
-        else:
-            self.setAxisScale(QwtPlot.xBottom, 0, len(labels), 1)
-        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
-        self.setAxisMaxMinor(QwtPlot.yLeft, 0)
-        self.setAxisMaxMajor(QwtPlot.yLeft, 1)
-        
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
+        
+        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        if self.showDistributions == 1 and self.rawdata.data.domain[labels[len(labels)-1]].varType == orange.VarTypes.Discrete:
+            self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
+        else:                           self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
+        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
+        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
+        self.setAxisMaxMinor(QwtPlot.yLeft, 0)
+        self.setAxisMaxMajor(QwtPlot.yLeft, 1)
 
         length = len(labels)
         indices = []
