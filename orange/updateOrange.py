@@ -86,7 +86,9 @@ class updateOrangeDlg(QMainWindow):
         self.toolbar.addSeparator()
         self.toolFolders = QToolButton(QPixmap(foldersIcon), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show Folders')
         self.toolFolders.setUsesTextLabel (1)
+        self.move((qApp.desktop().width()-self.width())/2, (qApp.desktop().height()-self.height())/2)   # center the window
         self.show()
+        
 
     # ####################################
     # show the list of possible folders
@@ -106,6 +108,7 @@ class updateOrangeDlg(QMainWindow):
         for group in self.updateGroups: dlg.addCategory(group, 1)
         for group in self.dontUpdateGroups: dlg.addCategory(group, 0)
         dlg.finishedAdding(cancel = 1)
+        dlg.move((qApp.desktop().width()-dlg.width())/2, (qApp.desktop().height()-400)/2)   # center dlg window
         
         res = dlg.exec_loop()
         if res == 1:
