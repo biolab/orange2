@@ -78,21 +78,30 @@ class OWC45Tree(OWWidget):
 
     # main part:         
 
+    def cdata(self,data):
+        self.data = data
+        self.setLearner()
+
+
     def setLearner(self):
         #print 'MinEx', self.preNodeInst, self.preNodeInstP, '|', self.preLeafInst, self.preLeafInstP
-#        try:
-        if 1:
+        try:
             self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
                                              minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100., 
                                              batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
                                              convertToOrange = self.convertToOrange, storeExamples = 1)
-##        except:
-##            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found! For details, see: http://magix.fri.uni-lj.si/orange/doc/reference/C45Learner.asp', QMessageBox.Ok)
-##            return
+        except:
+            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found! For details, see: http://magix.fri.uni-lj.si/orange/doc/reference/C45Learner.asp', QMessageBox.Ok)
+            return
 
         self.learner.name = self.name
         self.send("Learner", self.learner)
-        if self.data <> None:
+        
+        self.learn()
+
+        
+    def learn(self):
+        if self.data and self.learner:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
             self.send("Classifier", self.classifier)
@@ -100,11 +109,6 @@ class OWC45Tree(OWWidget):
                 self.send("Classification Tree", self.classifier)
             else:
                 self.send("C45 Tree", self.classifier)
-
-        
-    def cdata(self,data):
-        self.data=data
-        self.setLearner()
 
 ##############################################################################
 # Test the widget, run from DOS prompt
