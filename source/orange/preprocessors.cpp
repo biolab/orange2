@@ -588,7 +588,8 @@ TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight()
   timeVar(),
   eventValue(),
   method(km),
-  maxTime(0.0)
+  maxTime(0.0),
+  noComplementaryExamples(true)
 {}
 
 
@@ -597,8 +598,20 @@ TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, PVari
   timeVar(tv),
   eventValue(ev),
   method(me),
-  maxTime(0.0)
+  maxTime(0.0),
+  noComplementaryExamples(true)
 {}
+
+void TPreprocessor_addCensorWeight::addExample(TExampleTable *table, const int &weightID, const TExample &example, const float &weight, const int &complementary)
+{ TExample ex = example;
+  table->addExample(ex);
+  ex.setMeta(weightID, TValue(weight));
+  if (complementary > 0) {
+    ex.setClass(TValue(complementary));
+    ex.setMeta(weightID, TValue(1-weight));
+    table->addExample(ex);
+  }
+}
 
 
 PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
@@ -623,12 +636,18 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     else
       raiseError("'outcomeVar' not set and the domain is class-less");
 
+  int complementary;
+  if (noComplementaryExamples && (gen->domain->getVar(outcomeIndex)->noOfValues() == 2))
+    complementary = eventValue.intV ? 0 : 1;
+  else
+    complementary = -1;
+
   checkProperty(timeVar);
   int timeIndex = gen->domain->getVarNum(timeVar, false);
   if (timeIndex==ILLEGAL_INT)
     raiseError("'timeVar' not found in domain");
 
-  TExampleTable *table = mlnew TExampleTable(gen);
+  TExampleTable *table = mlnew TExampleTable(gen->domain);
   PExampleGenerator wtable = table;
 
   if (method == linear) {
@@ -649,19 +668,17 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
       raiseError("invalid time values (max<=0)");
 
     newWeight = getMetaID();
-    PEITERATE(ei, table) {
+    PEITERATE(ei, gen) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
-        (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
+        addExample(table, newWeight, *ei, WEIGHT(*ei), complementary);
       else {
         const TValue &tme = (*ei)[timeIndex];
         // need to check it again -- the above check is only run if maxTime is not given
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
 
-        if (tme.isSpecial())
-          (*ei).setMeta(newWeight, TValue(0.0));
-        else
-          (*ei).setMeta(newWeight, TValue(tme.floatV>thisMaxTime ? WEIGHT(*ei) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
+        if (!tme.isSpecial())
+          addExample(table, newWeight, *ei, WEIGHT(*ei) * (tme.floatV>thisMaxTime ? 1.0 : tme.floatV / thisMaxTime), complementary);
       }
     }
   }
@@ -678,25 +695,24 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     newWeight = getMetaID();
     PEITERATE(ei, table) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
-        (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
+        addExample(table, newWeight, *ei, WEIGHT(*ei), complementary);
       else {
         const TValue &tme = (*ei)[timeIndex];
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous value expected)");
-        if (tme.isSpecial())
-          (*ei).setMeta(newWeight, TValue(0.0));
-        else {
+        if (!tme.isSpecial()) {
           if (tme.floatV > maxTime)
-            (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
+            addExample(table, newWeight, *ei, WEIGHT(*ei), complementary);
           else {
             float KM_t = KM->p(tme.floatV);
-            if (method==km)
-              // KM_t shouldn't be 0 here - at least this example DID survive; but let's play it safe
-              (*ei).setMeta(newWeight, TValue((KM_t>0) ? WEIGHT(*ei) * (KM_max/KM_t) : 0.0));
+            if (method==km) {
+              if (KM_t>0)
+                addExample(table, newWeight, *ei, WEIGHT(*ei) * KM_max/KM_t, complementary);
+            }
             else
-              (*ei).setMeta(newWeight, TValue(WEIGHT(*ei) * KM_t));
+              addExample(table, newWeight, *ei, WEIGHT(*ei) * KM_t, complementary);
           }
         }
       }

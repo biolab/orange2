@@ -57,7 +57,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /debug /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "c:\program files\python22\lib\site-packages\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "c:\program files\python22\lib\site-packages\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "c:\program files\python22\lib\site-packages\orange\orange.pyd"
+PostBuild_Cmds=del "c:\program files\python22\lib\site-packages\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\modules\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "c:\program files\python22\lib\site-packages\orange\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"

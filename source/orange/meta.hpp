@@ -77,8 +77,8 @@ inline float _getweight(const TValue &val)
 }
 
 // A macro to return a weight of an example or 1 if the weightID == 0
-#define WEIGHT(ex) (weightID ? _getweight((ex)[weightID]) : float(1.0))
-#define WEIGHT2(ex,w) (w ? _getweight((ex)[w]) : float(1.0))
+#define WEIGHT(ex) (weightID<0 ? _getweight((ex)[weightID]) : float(1.0))
+#define WEIGHT2(ex,w) (w<0 ? _getweight((ex)[w]) : float(1.0))
 
 #endif
 
