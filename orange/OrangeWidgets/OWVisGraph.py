@@ -238,7 +238,7 @@ class OWVisGraph(OWGraph):
                 self.noJitteringScaledData[index] = (self.noJitteringScaledData[index] - float(min)) / diff
                 self.coloringScaledData[index] = self.noJitteringScaledData[index] * colors.maxHueVal
                 if self.jitterContinuous:
-                    self.scaledData[index] = self.noJitteringScaledData[index] + 0.5 - self.jitterSize/50.0 * RandomArray.random(len(data))
+                    self.scaledData[index] = self.noJitteringScaledData[index] + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
                     self.scaledData[index] = abs(self.scaledData[index])
                     for i in range(len(data)):
                         if self.scaledData[index][i] > 1.0: self.scaledData[index][i] = 2.0-self.scaledData[index][i]
