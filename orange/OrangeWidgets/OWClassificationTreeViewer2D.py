@@ -49,17 +49,17 @@ BubbleHeight_Default = 200
 # BARVE
 # barve razredov
 
-class PopupWindow(QWidget):
-    def __init__(self, *args):
-        apply(QWidget.__init__, (self,) + args)
-        self.setGeometry((ScreenSize[0]-300)/2, (ScreenSize[1]-100)/2, 300, 100)
-        self.Label = QLabel(self, 'Just some label')
-        self.Label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
-        self.Label.setFont(QFont(TextFont, 16))
-        self.Label.resize(self.size())
-
-    def setText(self, text):
-        self.Label.setText(text)
+##class PopupWindow(QWidget):
+##    def __init__(self, *args):
+##        apply(QWidget.__init__, (self,) + args)
+##        self.setGeometry((ScreenSize[0]-300)/2, (ScreenSize[1]-100)/2, 300, 100)
+##        self.Label = QLabel(self, 'Just some label')
+##        self.Label.setAlignment(Qt.AlignVCenter | Qt.AlignHCenter)
+##        self.Label.setFont(QFont(TextFont, 16))
+##        self.Label.resize(self.size())
+##
+##    def setText(self, text):
+##        self.Label.setText(text)
 
 # set items of text boxes (used in definition of node body and in bubbles)
 def setTextSeparator(container, canvas):
@@ -425,7 +425,7 @@ class OWClassificationTreeViewer2D(OWWidget):
         #OWGUI.button(self.controlArea, self, 'Test', self.test)
         #self.connect(RefreshButton, SIGNAL('clicked()'), self.refresh)
 
-        self.Popup = PopupWindow(None)
+##        self.Popup = PopupWindow(None)
         self.setMouseTracking(True)
 
         self.canvasView = None
@@ -523,10 +523,10 @@ class OWClassificationTreeViewer2D(OWWidget):
             self.ClassColors.append(newColor)
 
         # Annotate Orange tree and show it
-        self.Popup.setText('Drawing tree, please wait...')
-        self.Popup.show()
+##        self.Popup.setText('Drawing tree, please wait...')
+##        self.Popup.show()
         self.buildTree2D()
-        self.Popup.hide()
+##        self.Popup.hide()
 
     def target(self, target):
         self.TargetClassIndex = target
