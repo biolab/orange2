@@ -345,7 +345,7 @@ class DendrogramPlot:
         lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
         labellen = [tcanvas.stringWidth(s,font=normal) for s in labels]
         maxlabel = max(labellen)
-        width = height = int(1 + 2.0*margin + hook + maxlabel + max(lineskip*(0.5+len(labels)) + tcanvas.fontHeight(normal),2*maxlabel))
+        width = height = int(1 + 2.0*margin + hook + maxlabel + lineskip*(len(labels)) + tcanvas.fontHeight(normal))
 
         if block == None:
             block = lineskip/2-1
@@ -363,35 +363,34 @@ class DendrogramPlot:
         for i in range(len(labels)):
             # self.order identifies the label at a particular row
             idx = self.order[i]-1
-            x = offset - labellen[idx] + lineskip
+            x = offset - labellen[idx]
             y = offset + lineskip*(i+1)
             # horizontal
             if not diagonal or i > 0 or len(att_colors)>0:
                 canvas.drawString(labels[idx], x, y,font=normal)
-            x2 = offset + lineskip/2
             y2 = offset + lineskip*(i+1)
             # vertical
             if diagonal:
                 if len(att_colors)>0:
-                    canvas.drawString(labels[idx], y+lineskip, y2+block-hook-lineskip, angle=90,font=normal)
+                    canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, y2+block-hook-lineskip, angle=90,font=normal)
                 elif i < len(labels)-1:
-                    canvas.drawString(labels[idx], y+lineskip, y2+block-hook, angle=90,font=normal)
+                    canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, y2+block-hook, angle=90,font=normal)
             elif not diagonal:
-                canvas.drawString(labels[idx], y2+lineskip, x2+block-lineskip, angle=90,font=normal)
+                canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, offset+lineskip-block-hook, angle=90,font=normal)
             for j in range(i):
                 idx2 = self.order[j]-1
                 colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])
-                x = offset+hook+lineskip*(j+1)+block
-                y = offset+lineskip*(i+1)-halfline
+                x = offset+hook+lineskip*(j)+block
+                y = offset+lineskip*(i+1)
                 canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
                 if not diagonal:
-                    x = offset+hook+lineskip*(i+1)+block
-                    y = offset+lineskip*(j+1)-halfline
+                    x = offset+hook+lineskip*(i)+block
+                    y = offset+lineskip*(j+1)
                     canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
             if len(att_colors) > 0:
                 # render the gain
-                x = offset+hook+lineskip*(i+1)+block
-                y = offset+lineskip*(i+1)-halfline
+                x = offset+hook+lineskip*(i)+block
+                y = offset+lineskip*(i+1)
                 colo = _colorize(att_colors[idx])
                 canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
                 
@@ -421,8 +420,8 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
     vlabellen = [tcanvas.stringWidth(s,font=normal) for s in vlabels]
     maxlabelx = max(labellen)
     maxlabely = max(vlabellen)
-    width = int(1 + 2.0*margin + hook + maxlabelx + max(lineskip*(0.5+len(hlabels)) + tcanvas.fontHeight(normal),2*maxlabelx))
-    height = int(1 + 2.0*margin + hook + maxlabely + max(lineskip*(0.5+len(vlabels)) + tcanvas.fontHeight(normal),2*maxlabely))
+    width = int(1 + 2.0*margin + hook + maxlabelx + lineskip*(len(vlabels)) + tcanvas.fontHeight(normal))
+    height = int(1 + 2.0*margin + hook + maxlabely + lineskip*(len(hlabels)) + tcanvas.fontHeight(normal))
 
     if block == None:
         block = lineskip/2-1
@@ -430,7 +429,7 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
     if canvas == None:
         canvas = piddlePIL.PILCanvas(size=(width,height))
 
-    _colorize = colorpicker(color_mode)
+    _colorize = _color_picker(color_mode)
 
     ### DRAWING ###
             
@@ -439,21 +438,21 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
     halfline = canvas.fontAscent(normal)/2.0
 
     for i in range(len(vlabels)):
-        x2 = offsetx + lineskip/2
-        y2 = offsety + lineskip*(i+1)
+        x2 = offsetx + lineskip*(i) + hook
+        y2 = offsety + halfline - hook
         # vertical
-        canvas.drawString(vlabels[i], y2+lineskip, x2+block-lineskip, angle=90,font=normal)
-
+        canvas.drawString(vlabels[i], x2+block+halfline, y2+block, angle=90,font=normal)
+        
     # print names
     for i in range(len(hlabels)):
         # self.order identifies the label at a particular row
-        x = offsetx - labellen[i] + lineskip
+        x = offsetx - labellen[i]
         y = offsety + lineskip*(i+1)
         canvas.drawString(hlabels[i], x, y,font=normal)
-        for j in range(len(hlabels)):
+        for j in range(len(vlabels)):
             colo = _colorize(diss[i,j])
-            x = offsetx+hook+lineskip*(j+1)+block
-            y = offsety+lineskip*(i+1)-halfline
+            x = offsetx+hook+lineskip*(j)+block
+            y = offsety+lineskip*(i+1)
             if len(sizing) == 0:
                 ss = 1.0
             else:
