@@ -418,23 +418,14 @@ class OWScatterPlotGraph(OWVisGraph):
 		return (selected, unselected, merged)
 		
 	def getOptimalSeparation(self, projections, addResultFunct = None):
-		# define lenghts and variables
-		dataSize = len(self.rawdata)
-		attrCount = len(self.rawdata.domain.attributes)
-
 		testIndex = 0
 		totalTestCount = len(projections)
 
-		# create a dataset with scaled data
-		fullData = orange.ExampleTable(self.rawdata.domain)
-		attrCount = len(self.rawdata.domain.attributes)
-		for i in range(dataSize):
-			fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
-		
-		"""
+		"""		
 		for (val, attr1, attr2) in projections:
 			testIndex += 1
 			self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+			if self.kNNOptimization.isOptimizationCanceled(): return
 			
 			table = self.rawdata.select([attr1, attr2, self.rawdata.domain.classVar.name])
 			table = orange.Preprocessor_dropMissing(table)
@@ -448,9 +439,21 @@ class OWScatterPlotGraph(OWVisGraph):
 
 			# save the permutation
 			if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
-
 		
 		"""
+
+		# it is better to use scaled data - in case of ordinal discrete attributes we take into account that the attribute is ordinal.
+		
+		# create a dataset with scaled data
+		contVars = []
+		for attr in self.rawdata.domain.attributes:
+			contVars.append(orange.FloatVariable(attr.name))
+		contDomain = orange.Domain(contVars + [self.rawdata.domain.classVar])
+		fullData = orange.ExampleTable(contDomain)
+		attrCount = len(self.rawdata.domain.attributes)
+		for i in range(len(self.rawdata)):
+			fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
+		
 		for (val, attr1, attr2) in projections:
 			testIndex += 1
 			self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
