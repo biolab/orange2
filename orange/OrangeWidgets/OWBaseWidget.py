@@ -45,9 +45,9 @@ class OWBaseWidget(QDialog):
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
-
+        
         self.title = title.replace("&","")          # used for ini file
-        self.captionTitle=title.replace("&","")     # used for widget caption
+        self.captionTitle = title.replace("&","")     # used for widget caption
 
         # if we want the widget to show the title then the title must start with "Qt"
         if self.captionTitle[:2].upper() != "QT":
@@ -57,6 +57,7 @@ class OWBaseWidget(QDialog):
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
+        self.parent = parent
         self.needProcessing = 0     # used by signalManager
         if not signalManager: self.signalManager = globalSignalManager        # use the global instance of signalManager  - not advised
         else:                 self.signalManager = signalManager              # use given instance of signal manager
@@ -89,6 +90,11 @@ class OWBaseWidget(QDialog):
             QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/" + iconName))
         elif os.path.exists(self.widgetDir + "icons/Unknown.png"):
             QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/Unknown.png"))
+
+
+    def setCaption(self, caption):
+        if self.parent != None and isinstance(self.parent, QTabWidget): self.parent.changeTab(self, caption)
+        else: QDialog.setCaption(self, caption)
 
     def setCaptionTitle(self, caption):
         self.captionTitle = caption     # we have to save caption title in case progressbar will change it
