@@ -41,7 +41,7 @@ class SelectionCurve(QwtPlotCurve):
         self.pointArrayValid = 0
         self.setStyle(QwtCurve.Lines)
         self.setPen(QPen(QColor(128,128,128), 1, Qt.DotLine))
-        self.canvas = QCanvas(2000, 2000)   # we need canvas for QCanvasLine
+        #self.canvas = QCanvas(2000, 2000)   # we need canvas for QCanvasLine
 
         
     def addPoint(self, xPoint, yPoint):
@@ -52,6 +52,15 @@ class SelectionCurve(QwtPlotCurve):
             yVals.append(self.y(i))
         xVals.append(xPoint)
         yVals.append(yPoint)
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    def removeLastPoint(self):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()-1):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
         self.setData(xVals, yVals)
         self.pointArrayValid = 0        # invalidate the point array
 
@@ -154,7 +163,7 @@ class OWVisGraph(OWGraph):
         self.domainDataStat = []
         self.optimizedDrawing = 1
         self.pointWidth = 5
-        self.jitteringType = 'none'
+        self.jitteringType = 'uniform'
         self.jitterSize = 10
         self.showFilledSymbols = 1
         self.scaleFactor = 1.0
@@ -205,6 +214,7 @@ class OWVisGraph(OWGraph):
             lastCurve = self.selectionCurveKeyList[len(self.selectionCurveKeyList)-1]
             self.removeCurve(lastCurve)
             self.selectionCurveKeyList.remove(lastCurve)
+            self.tempSelectionCurve = None
         self.replot()
         if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
         
@@ -474,9 +484,9 @@ class OWVisGraph(OWGraph):
         """
         returns a number from -max to max, self.jitteringType defines which distribution is to be used.
         function is used to plot data points for categorical variables
-        """    
-        if self.jitteringType == 'none': 
-            return 0.0
+        """
+        if max == 0: return 0.0
+        if self.jitteringType == 'none': return 0.0
         elif self.jitteringType  == 'uniform': 
             return (random() - 0.5)*2*max
         elif self.jitteringType  == 'triangle': 
@@ -558,13 +568,14 @@ class OWVisGraph(OWGraph):
         classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
         classVar.getValueFrom = lambda ex,what: 0  # orange.Value(classVar, 0)
         if selected:
-            domain = orange.Domain(selected.domain.attributes + [classVar])
+            domain = orange.Domain(selected.domain.variables + [classVar])
             table = orange.ExampleTable(domain, selected)
             if unselected:
                 classVar.getValueFrom = lambda ex,what: 1
                 table.extend(unselected)
         else:
-            domain = orange.Domain(unselected.domain.attributes + [classVar])
+            domain = orange.Domain(unselected.domain.variables + [classVar])
+            classVar.getValueFrom = lambda ex,what: 1
             table = orange.ExampleTable(domain, unselected)
         return table
        
@@ -672,6 +683,20 @@ class OWVisGraph(OWGraph):
             else:
                 self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
                 return
+        elif Qt.RightButton == e.button() and self.state == SELECT_RECTANGLE:
+            self.removeLastSelection()      # remove the rectangle
+        elif Qt.RightButton == e.button() and self.state == SELECT_POLYGON:
+            if self.tempSelectionCurve:
+                self.tempSelectionCurve.removeLastPoint()
+                if self.tempSelectionCurve.dataSize() == 0: # remove the temp curve
+                    self.tempSelectionCurve = None
+                    self.removeLastSelection()
+                else:   # set new last point 
+                    x = self.invTransform(QwtPlot.xBottom, e.x())
+                    y = self.invTransform(QwtPlot.yLeft, e.y())
+                    self.tempSelectionCurve.replaceLastPoint(x,y)
+                self.replot()
+            
             
         # ####
         # SELECT RECTANGLE
