@@ -48,10 +48,10 @@ class SchemaDoc(QMainWindow):
     # we are about to close document
     # ask user if he is sure
     def closeEvent(self,ce):
-        QMainWindow.closeEvent(self, ce)
         if not self.canSave:
             self.clear()
             ce.accept()
+            QMainWindow.closeEvent(self, ce)
             return
 
         res = QMessageBox.information(self,'Qrange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
@@ -64,6 +64,7 @@ class SchemaDoc(QMainWindow):
             ce.accept()
         else:
             ce.ignore()
+        QMainWindow.closeEvent(self, ce)
 
     def enableSave(self, enable):
         self.canSave = enable

@@ -2,17 +2,21 @@
 # Description:
 #	icons
 import sys, string
+import orange, os.path
+
 from qt import *
 iDocIndex = 1 
 
-file_new = "./icons/doc.png"
-output = "./icons/output.png"
-file_open = "./icons/open.png"
-file_save = "./icons/save.png"
-file_print = "./icons/print.png"
-file_exit = "./icons/exit.png"
-move_left = "./icons/moveleft.png"
-move_right = "./icons/moveright.png"
+canvasPicsDir = os.path.join(os.path.split(os.path.abspath(orange.__file__))[0], "OrangeCanvas/icons")
+
+file_new  = os.path.join(canvasPicsDir, "doc.png")
+output    = os.path.join(canvasPicsDir, "output.png")
+file_open = os.path.join(canvasPicsDir, "open.png")
+file_save = os.path.join(canvasPicsDir, "save.png")
+file_print= os.path.join(canvasPicsDir, "print.png")
+file_exit = os.path.join(canvasPicsDir, "exit.png")
+move_left = os.path.join(canvasPicsDir, "moveleft.png")
+move_right= os.path.join(canvasPicsDir, "moveright.png")
 
 """
 file_open = [

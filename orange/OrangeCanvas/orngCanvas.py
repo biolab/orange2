@@ -5,6 +5,7 @@
 from qt import *
 import sys, os, cPickle, webbrowser
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
+import orange
 
 TRUE  = 1
 FALSE = 0
@@ -18,29 +19,29 @@ class OrangeCanvasDlg(QMainWindow):
         self.setCaption("Qt Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
         
-        # if widget path not registered -> register
-        self.widgetDir = os.path.realpath("../OrangeWidgets") + "/"
+        self.widgetDir = os.path.join(os.path.split(os.path.abspath(orange.__file__))[0], "OrangeWidgets")
         if not os.path.exists(self.widgetDir): 
             print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
         
-        self.picsDir = os.path.realpath("../OrangeWidgets/icons") + "/"
-        if not os.path.exists(self.picsDir): print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
+        self.picsDir = os.path.join(self.widgetDir, "icons")
+        if not os.path.exists(self.picsDir):
+            print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
         
-        self.canvasDir = os.path.realpath("./") + "/"
+        self.canvasDir = os.path.join(os.path.split(os.path.abspath(orange.__file__))[0], "OrangeCanvas")
         
         # add all directories with widgets to the path
-        widgetDir = os.path.join(os.path.split(os.path.realpath("."))[0], "OrangeWidgets")
-        if os.path.exists(widgetDir):
-            for name in os.listdir(widgetDir):
-                fullName = os.path.join(widgetDir, name)
+        if os.path.exists(self.widgetDir):
+            for name in os.listdir(self.widgetDir):
+                fullName = os.path.join(self.widgetDir, name)
                 if os.path.isdir(fullName): 
                     sys.path.append(fullName)
 
-        self.registryFileName = self.canvasDir + "widgetregistry.xml"
-        self.defaultPic = self.picsDir + "Unknown.png"
+        self.registryFileName = os.path.join(self.canvasDir, "widgetregistry.xml")
+        self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
 
-        if os.path.exists("./icons/CanvasIcon.png"):
-            self.setIcon(QPixmap("./icons/CanvasIcon.png"))
+        canvasIconName = os.path.join(self.canvasDir, "icons/CanvasIcon.png")
+        if os.path.exists(canvasIconName):
+            self.setIcon(QPixmap(canvasIconName))
         
         if sys.path.count(self.widgetDir) == 0:
             sys.path.append(self.widgetDir)
@@ -619,7 +620,6 @@ class OrangeCanvasDlg(QMainWindow):
     #######################
 
     def closeEvent(self, ce):
-        QMainWindow.closeEvent(self, ce)
         for win in self.workspace.getDocumentList():
             win.close()
 
@@ -628,6 +628,7 @@ class OrangeCanvasDlg(QMainWindow):
                 ce.accept()
         else:
                 ce.ignore()
+        QMainWindow.closeEvent(self, ce)
 
     def keyPressEvent(self, e):
         QMainWindow.keyPressEvent(self,e)
