@@ -97,6 +97,7 @@ public:
   TExamplesDistance_Normalized(const bool &, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
 
   void getDifs(const TExample &ex1, const TExample &ex2, vector<float> &difs) const;
+  void getNormalized(const TExample &e1, vector<float> &normalized) const;
 };
 
 

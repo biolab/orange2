@@ -170,7 +170,7 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
         else if (norm>249)
           col = 249;
         else
-          col = int(floor(col));
+          col = int(floor(norm));
 
         for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
       }
