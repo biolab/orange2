@@ -80,6 +80,9 @@ class SchemaView(QCanvasView):
 
     # popMenuAction - user selected to delete active widget
     def removeActiveWidget(self):
+        if self.doc.signalManager.signalProcessingInProgress:
+             QMessageBox.information( None, "Orange Canvas", "Unable to remove widgets while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+             return
         if not self.bMultipleSelection:
             self.selWidgets = [self.tempWidget]
 
@@ -107,6 +110,9 @@ class SchemaView(QCanvasView):
 
     # popMenuAction - delete selected link
     def deleteSelectedLine(self):
+        if self.doc.signalManager.signalProcessingInProgress:
+             QMessageBox.information( None, "Orange Canvas", "Unable to remove connection while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+             return
         self.deleteLine(self.selectedLine)
         self.selectedLine = None
         self.canvas().update()
@@ -335,9 +341,11 @@ class SchemaView(QCanvasView):
                 self.tempLine.setCanvas(None)
                 self.tempLine = None
 
-                line = self.doc.addLine(outWidget, inWidget)
-                if line:
-                    line.repaintLine(self)
+                if self.doc.signalManager.signalProcessingInProgress:
+                     QMessageBox.information( None, "Orange Canvas", "Unable to connect widgets while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+                else:
+                    line = self.doc.addLine(outWidget, inWidget)
+                    if line: line.repaintLine(self)
                 
             if self.tempLine != None:
                 self.tempLine.setPoints(0,0,0,0)
@@ -362,6 +370,9 @@ class SchemaView(QCanvasView):
             self.tempWidget = widget
             self.openActiveWidget()
         elif line != None:
+            if self.doc.signalManager.signalProcessingInProgress:
+                QMessageBox.information( None, "Orange Canvas", "Unable to modify signals while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+                return
             self.doc.resetActiveSignals(line.outWidget, line.inWidget, enabled = self.doc.signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
 
 
