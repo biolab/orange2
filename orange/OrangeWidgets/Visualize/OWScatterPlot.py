@@ -201,7 +201,7 @@ class OWScatterPlot(OWWidget):
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.optimizationDlg.classifierName = self.VizRankClassifierName
-        self.optimizationDlg.classifierNameChanged(self.VizRankClassifierName)
+        self.optimizationDlg.updateClassifierChanges()
         self.clusterDlg.classifierName = self.clusterClassifierName
         self.clusterDlg.classifierNameChanged(self.clusterClassifierName)
 
@@ -217,7 +217,7 @@ class OWScatterPlot(OWWidget):
    
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
-        acc, other_results = self.graph.getProjectionQuality(self.attrX, self.attrY, self.attrColor)
+        acc, other_results = self.graph.getProjectionQuality([self.attrX, self.attrY])
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Scatterplot", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:

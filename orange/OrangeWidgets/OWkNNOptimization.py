@@ -56,7 +56,7 @@ class kNNOptimization(OWBaseWidget):
     resultsListLenList = [str(x) for x in resultsListLenNums]
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
-    argumentCounts = [1, 5, 10, 20, 50, 100, 100000]
+    argumentCounts = [1, 3, 5, 10, 20, 50, 100, 100000]
 
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 60, 120]
     evaluationTimeList = [str(x) for x in evaluationTimeNums]
@@ -111,6 +111,7 @@ class kNNOptimization(OWBaseWidget):
         self.dataset = None
         self.cancelOptimization = 0
         self.argumentCountIndex = 1     # when classifying use 10 best arguments
+        #self.autoSetTheKValue = 1       # automatically set the value k to square root of the number of examples in the data
         self.autoSetTheKValue = 1       # automatically set the value k to square root of the number of examples in the data 
 
         self.loadSettings()
@@ -239,7 +240,7 @@ class kNNOptimization(OWBaseWidget):
         # ##########################
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
-        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection", callback = self.updateClassifierChanges)
+        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection", callback = self.enableApplyButton)
 
         reevalBox = OWGUI.widgetBox(self.ClassificationTab, " Reevaluate projections ")
         self.reevaluateProjectionsCheck = OWGUI.checkBox(reevalBox, self, "reevaluateProjections", "Reevaluate projections for each learning data set", tooltip = "Do you want to reevaluate projections for each learning data set. \nOtherwise, the same projections will be used in the prediction for each test data set.")
@@ -247,16 +248,20 @@ class kNNOptimization(OWBaseWidget):
 
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "50", "100", "All"], callback = self.updateClassifierChanges)
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "3", "5", "10", "20", "50", "100", "All"], callback = self.enableApplyButton)
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
 
+        self.classificationApplyButton = OWGUI.button(self.ClassificationTab, self, "Apply Changes", callback = self.updateClassifierChanges)
+
+    
+        # ###########################
         self.statusBar = QStatusBar(self)
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
 
-        self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.classifierNameChanged)
+        self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.enableApplyButton)
         self.vizRankLearner = VizRankLearner(self, self.parentWidget)
         if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
 
@@ -268,13 +273,15 @@ class kNNOptimization(OWBaseWidget):
     # EVENTS
     # ##############################################################
     # when text of vizrank or cluster learners change update their name
-    def classifierNameChanged(self, text):
-        self.vizRankLearner.name = self.classifierName
+    def enableApplyButton(self, text = None):
+        self.classificationApplyButton.setEnabled(1)
 
     def updateClassifierChanges(self):
         #self.vizRankLearner.classifier = None   # clear the existing classifier, so that there will be a new classifier created
         if self.parentWidget:
+            self.vizRankLearner.name = self.classifierName
             self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
+        self.classificationApplyButton.setEnabled(0)
 
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -707,7 +714,7 @@ class kNNOptimization(OWBaseWidget):
 
 
     # load projections from a file
-    def load(self, name = None):
+    def load(self, name = None, ignoreCheckSum = 0):
         self.clearResults()
         self.clearArguments()
         if self.rawdata == None:
@@ -729,7 +736,7 @@ class kNNOptimization(OWBaseWidget):
             file.close()
             return
 
-        if settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.rawdata.checksum():
+        if not ignoreCheckSum and settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.rawdata.checksum():
             if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
                 file.close()
                 return
@@ -1020,7 +1027,7 @@ class VizRankClassifier(orange.Classifier):
                 val = self.kNNOptimizationDlg.resultListLen
                 self.kNNOptimizationDlg.resultListLen = self.kNNOptimizationDlg.reevaluateProjectionsCount
                 self.kNNOptimizationDlg.updateShownProjections()
-                self.visualizationWidget.reevaluateProjections()
+                self.kNNOptimizationDlg.reevaluateAllProjections()
                 self.kNNOptimizationDlg.resultListLen = val
 
     # timer event that stops evaluation of clusters
