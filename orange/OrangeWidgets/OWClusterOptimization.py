@@ -16,6 +16,12 @@ ENL_CLOSURE = 5
 OTHER = 6
 STR_LIST = 7
 
+MUST_BE_INSIDE = 0  # values for self.conditionForArgument
+CAN_LIE_NEAR = 1
+
+BEST_GROUPS = 0
+BEST_GROUPS_IN_EACH_CLASS = 1
+
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
@@ -29,9 +35,6 @@ OTHER_POINTS = 2
 OTHER_DISTANCE = 3
 OTHER_AVERAGE = 4
 OTHER_AVERAGE_DIST = 5
-
-# definition of values used in the computation of clusters
-ALPHA_STD_DEV_FACTOR = 1.5      # when trying to break a cluster in multiple clusters using alpha shapes, we remove edges that are longer than average edge length + ALPHA_STD_DEV_FACTOR * standard deviation
 
 
 # compute union of two lists
@@ -589,6 +592,7 @@ class ClusterOptimization(OWBaseWidget):
         self.pointStability = None
         self.pointStabilityCount = None
         self.attributeCountIndex = 1
+        self.argumentationType = BEST_GROUPS
         
         self.argumentationClassValue = 0
         self.createSnapshots = 1
@@ -691,6 +695,7 @@ class ClusterOptimization(OWBaseWidget):
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
+        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"])
         self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster." )
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument count ")
@@ -872,7 +877,8 @@ class ClusterOptimization(OWBaseWidget):
                 points *= sum(d) / float(v)   # turn the number of points into a percentage of all points that belong to this class value and then multiply by the number of all data points in the data set
 
             # and another
-            dist = sqrt(dist*1000.0)/sqrt(aveDistDict[key]*1000.0)
+            #dist = sqrt(dist*1000.0)/sqrt(aveDistDict[key]*1000.0)
+            dist = sqrt(dist*1000.0)
             value = points
             if self.considerDistance: value *= dist
             
@@ -934,6 +940,8 @@ class ClusterOptimization(OWBaseWidget):
         self.shownResults = []
         self.selectedClasses = self.getSelectedClassValues()
         i = 0
+        print "updating", self.selectedClasses
+        
     
         while self.resultList.count() < self.resultListLen and i < len(self.allResults):
             if self.attrLenDict[len(self.allResults[i][ATTR_LIST])] != 1: i+=1; continue
@@ -1268,42 +1276,90 @@ class ClusterOptimization(OWBaseWidget):
         self.stopArgumentationButton.show()
         if snapshots: self.parentWidget.setMinimalGraphProperties()
 
-        argumentCount = self.argumentCounts[self.argumentCountIndex]
         foundArguments = 0
+        argumentCount = self.argumentCounts[self.argumentCountIndex]
         vals = [0.0 for i in range(len(self.arguments))]
-        for index in range(len(self.allResults)):
-            if self.cancelArgumentation: break
-            # we also stop if we are not allowed to search for more than argumentCount arguments or we are allowed and we have a reliable prediction or we have used a 100 additional arguments
-            if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
-            
-            (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[index]
-            if type(classValue) == dict: continue       # the projection contains several clusters
 
-            qApp.processEvents()
-            inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
-            if self.conditionForArgument == 0 and inside != 2: continue
-            elif inside == 0: continue
-            
-            foundArguments += 1  # increase argument count
-            
-            pic = None
-            if snapshots:
-                # if the point lies inside a cluster -> save this figure into a pixmap
-                self.parentWidget.showAttributes(attrList, clusterClosure = closure)
-                painter = QPainter()
-                pic = QPixmap(QSize(120,120))
-                painter.begin(pic)
-                painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
-                self.graph.printPlot(painter, pic.rect())
-                painter.flush();  painter.end()
+        # ####################################################################
+        # find arguments so that we evaluate best argumentCount clusters for each class value and see how often does the point lie inside them
+        # this way, we don't care if clusters of one class value have much higher values than clusters of another class.
+        # NOTE: argumentCount in this case represents the number of evaluated clusters and not the number of clusters where the point actually lies inside
+        if self.argumentationType == BEST_GROUPS_IN_EACH_CLASS:
+            classIndices = [0 for i in range(len(self.rawdata.domain.classVar.values))]
+            canFinish = 0
+            while not canFinish:
+                for cls in range(len(classIndices)):
+                    startingIndex = classIndices[cls]
 
-            if self.useProjectionValue: vals[classValue] += value
-            else: vals[classValue] += 1
+                    for index in range(len(self.allResults) - startingIndex):
+                        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[startingIndex+index]
+                        if type(classValue) == dict: continue       # the projection contains several clusters
+                        if classValue != cls: continue
+                        classIndices[cls] = startingIndex + index + 1   # remember where to start next
 
-            self.arguments[classValue].append((pic, value, attrList, index))
-            if classValue == self.classValueList.currentItem():
-                if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
-                else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                        qApp.processEvents()
+                        inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
+                        if inside == 0 or (inside == 1 and self.conditionForArgument == MUST_BE_INSIDE): continue
+                        vals[classValue] += 1
+                        pic = None
+                        if snapshots:
+                            # if the point lies inside a cluster -> save this figure into a pixmap
+                            self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                            pic = QPixmap(QSize(120,120))
+                            painter = QPainter(); painter.begin(pic);
+                            painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+                            self.graph.printPlot(painter, pic.rect())
+                            painter.flush();  painter.end()
+
+                        self.arguments[classValue].append((pic, value, attrList, startingIndex+index))
+                        if classValue == self.classValueList.currentItem():
+                            if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
+                            else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
+                        break
+                    if classIndices[cls] == startingIndex: classIndices[cls] = len(self.allResults)+1
+                    
+                foundArguments += 1
+                if min(classIndices) >= len(self.allResults): canFinish = 1  # out of possible arguments
+                
+                if sum(vals) > 0 and foundArguments >= argumentCount:
+                    if not self.canUseMoreArguments or (max(vals)*100.0)/float(sum(vals)) > self.moreArgumentsNums[self.moreArgumentsIndex]:
+                        canFinish = 1
+        # ####################################################################
+        # we consider clusters with the highest values and check if the point lies inside them. When it does we say that this cluster is an argument for
+        # that class. We continue until we find argumentCount such arguments. Then we predict the most likely class value
+        else:
+            for index in range(len(self.allResults)):
+                if self.cancelArgumentation: break
+                # we also stop if we are not allowed to search for more than argumentCount arguments or we are allowed and we have a reliable prediction or we have used a 100 additional arguments
+                if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
+                
+                (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[index]
+                if type(classValue) == dict: continue       # the projection contains several clusters
+
+                qApp.processEvents()
+                inside = self.isExampleInsideCluster(attrList, testExample, closure, vertices, other[OTHER_AVERAGE_DIST])
+                if self.conditionForArgument == MUST_BE_INSIDE and inside != 2: continue
+                elif inside == 0: continue
+                
+                foundArguments += 1  # increase argument count
+                
+                pic = None
+                if snapshots:
+                    # if the point lies inside a cluster -> save this figure into a pixmap
+                    self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                    pic = QPixmap(QSize(120,120))
+                    painter = QPainter(); painter.begin(pic)
+                    painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+                    self.graph.printPlot(painter, pic.rect())
+                    painter.flush();  painter.end()
+
+                if self.useProjectionValue: vals[classValue] += value
+                else: vals[classValue] += 1
+
+                self.arguments[classValue].append((pic, value, attrList, index))
+                if classValue == self.classValueList.currentItem():
+                    if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
+                    else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
@@ -1427,78 +1483,132 @@ class clusterClassifier(orange.Classifier):
 
         argumentCount = 0
         argumentValues = []
-    
-        for (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) in self.clusterOptimizationDlg.allResults:
-            if type(classValue) != dict: continue       # the projection contains several clusters
-            qApp.processEvents()
+        allowedArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
 
-            attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
-            data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
-            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
-            evaluation = []
-            for key in valueDict.keys():
-                evaluation.append((self.clusterOptimizationDlg.isExampleInsideCluster(attrList, testExample, closureDict[key], polygonVerticesDict[key], otherDict[key][OTHER_AVERAGE_DIST]), int(graph.objects[polygonVerticesDict[key][0]].getclass()), valueDict[key]))
+        classProjectionVals = [0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+        classIndices = [0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+        if self.clusterOptimizationDlg.argumentationType == BEST_GROUPS_IN_EACH_CLASS:
+            canFinish = 0
+            while not canFinish:
+                for cls in range(len(classIndices)):
+                    startingIndex = classIndices[cls]
 
-            evaluation.sort(); evaluation.reverse()
-            if len(evaluation) == 0 or (len(evaluation) > 0 and evaluation[0][0] == 0): continue # if the point wasn't in any of the clusters or near them then continue
-            elif len(evaluation) > 0 and evaluation[0][0] == 1 and self.clusterOptimizationDlg.conditionForArgument == 0: continue
-            elif len(evaluation) == 1 or evaluation[0][0] != evaluation[1][0]:
-                argumentCount += 1
-                argumentValues.append((evaluation[0][2], evaluation[0][1]))
+                    for index in range(len(self.clusterOptimizationDlg.allResults) - startingIndex):
+                        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.clusterOptimizationDlg.allResults[startingIndex+index]
+                        if type(classValue) == dict: continue       # the projection contains several clusters
+                        if classValue != cls: continue
+                        classIndices[cls] = startingIndex + index + 1   # remember where to start next
 
-            # find 10 more arguments than it is necessary - this is because with a different fold of data the clusters can be differently evaluated
-            if argumentCount >= self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]: 
-                argumentValues.sort(); argumentValues.reverse()
-                vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
-                neededArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
-                sufficient = 0; consideredArguments = 0
-                for (val, c) in argumentValues:
-                    if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
-                    else:                                               vals[c] += 1
-                    consideredArguments += 1
-                    if consideredArguments >= neededArguments and (not self.clusterOptimizationDlg.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.clusterOptimizationDlg.moreArgumentsNums[self.clusterOptimizationDlg.moreArgumentsIndex]) or consideredArguments >= neededArguments + 30):
-                        sufficient = 1
+                        qApp.processEvents()
+                        attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
+                        data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
+                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
+                        for key in valueDict.keys():
+                            if classValue != otherDict[key][OTHER_CLASS]: continue
+                            inside = self.clusterOptimizationDlg.isExampleInsideCluster(attrList, testExample, closureDict[key], polygonVerticesDict[key], otherDict[key][OTHER_AVERAGE_DIST])
+                            if inside == 0 or (inside == 1 and self.clusterOptimizationDlg.conditionForArgument == MUST_BE_INSIDE): continue
+                            classProjectionVals[classValue] += 1
                         break
-
-                # if we got enough arguments to make a prediction then do it
-                if sufficient:
-                    ind = vals.index(max(vals))
-                    s = sum(vals)
-                    dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
-
-                    classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
-                    s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
-                    for key in dist.keys():
-                        s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-                    if consideredArguments > neededArguments:
-                        s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (consideredArguments, neededArguments)
-                    print s[:-4]
+                    if classIndices[cls] == startingIndex: classIndices[cls] = len(self.clusterOptimizationDlg.allResults)+1
                     
-                    return (classValue, dist)
+                argumentCount += 1
+                if min(classIndices) >= len(self.clusterOptimizationDlg.allResults): canFinish = 1  # out of possible arguments
+                
+                if sum(classProjectionVals) > 0 and argumentCount >= allowedArguments:
+                    if not self.clusterOptimizationDlg.canUseMoreArguments or (max(classProjectionVals)*100.0)/float(sum(classProjectionVals)) > self.clusterOptimizationDlg.moreArgumentsNums[self.clusterOptimizationDlg.moreArgumentsIndex]:
+                        canFinish = 1
 
-        # if we ran out of projections before we could get a reliable prediction use what we have
-        vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
-        argumentValues.sort(); argumentValues.reverse()
-        for (val, c) in argumentValues:
-            if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
-            else:                                               vals[c] += 1
+            if max(classProjectionVals) == 0:
+                print "there are no arguments for this example in the current projection list."
+                dist = orange.DiscDistribution([1/float(len(classProjectionVals)) for i in classProjectionVals]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+                return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
+
+        
+            ind = classProjectionVals.index(max(classProjectionVals))
+            s = sum(classProjectionVals)
+            dist = orange.DiscDistribution([val/float(s) for val in classProjectionVals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+
+            classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            for key in dist.keys():
+                s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+            if argumentCount > allowedArguments:
+                s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (argumentCount, allowedArguments)
+            print s[:-4]
             
-        if max(vals) == 0.0:
-            print "there are no arguments for this example in the current projection list."
-            dist = orange.DiscDistribution([1/float(len(vals)) for i in range(len(vals))]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
-            return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
+            return (classValue, dist)
+        else:
+            for (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) in self.clusterOptimizationDlg.allResults:
+                if type(classValue) != dict: continue       # the projection contains several clusters
+                qApp.processEvents()
 
-        ind = vals.index(max(vals))
-        s = sum(vals)
-        dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+                attrIndices = [self.visualizationWidget.graph.attributeNameIndex[attr] for attr in attrList]
+                data = self.visualizationWidget.graph.createProjectionAsExampleTable(attrIndices, jitterSize = 0.001 * self.clusterOptimizationDlg.jitterDataBeforeTriangulation)
+                graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimizationDlg.evaluateClusters(data)
+                evaluation = []
+                for key in valueDict.keys():
+                    evaluation.append((self.clusterOptimizationDlg.isExampleInsideCluster(attrList, testExample, closureDict[key], polygonVerticesDict[key], otherDict[key][OTHER_AVERAGE_DIST]), int(graph.objects[polygonVerticesDict[key][0]].getclass()), valueDict[key]))
 
-        classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
-        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
-        for key in dist.keys():
-            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-        s += "<nobr>Note: There were not enough projections to get a reliable prediction<br>"
-        print s[:-4]
-        return (classValue, dist)
+                evaluation.sort(); evaluation.reverse()
+                if len(evaluation) == 0 or (len(evaluation) > 0 and evaluation[0][0] == 0): continue # if the point wasn't in any of the clusters or near them then continue
+                elif len(evaluation) > 0 and evaluation[0][0] == 1 and self.clusterOptimizationDlg.conditionForArgument == MUST_BE_INSIDE: continue
+                elif len(evaluation) == 1 or evaluation[0][0] != evaluation[1][0]:
+                    argumentCount += 1
+                    argumentValues.append((evaluation[0][2], evaluation[0][1]))
+
+                # find 10 more arguments than it is necessary - this is because with a different fold of data the clusters can be differently evaluated
+                if argumentCount >= self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]: 
+                    argumentValues.sort(); argumentValues.reverse()
+                    vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+                    neededArguments = self.clusterOptimizationDlg.argumentCounts[self.clusterOptimizationDlg.argumentCountIndex]
+                    sufficient = 0; consideredArguments = 0
+                    for (val, c) in argumentValues:
+                        if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
+                        else:                                               vals[c] += 1
+                        consideredArguments += 1
+                        if consideredArguments >= neededArguments and (not self.clusterOptimizationDlg.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.clusterOptimizationDlg.moreArgumentsNums[self.clusterOptimizationDlg.moreArgumentsIndex]) or consideredArguments >= neededArguments + 30):
+                            sufficient = 1
+                            break
+
+                    # if we got enough arguments to make a prediction then do it
+                    if sufficient:
+                        ind = vals.index(max(vals))
+                        s = sum(vals)
+                        dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+
+                        classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+                        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+                        for key in dist.keys():
+                            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+                        if consideredArguments > neededArguments:
+                            s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (consideredArguments, neededArguments)
+                        print s[:-4]
+                        
+                        return (classValue, dist)
+
+            # if we ran out of projections before we could get a reliable prediction use what we have
+            vals = [0.0 for i in range(len(self.clusterOptimizationDlg.rawdata.domain.classVar.values))]
+            argumentValues.sort(); argumentValues.reverse()
+            for (val, c) in argumentValues:
+                if self.clusterOptimizationDlg.useProjectionValue:  vals[c] += val
+                else:                                               vals[c] += 1
+                
+            if max(vals) == 0.0:
+                print "there are no arguments for this example in the current projection list."
+                dist = orange.DiscDistribution([1/float(len(vals)) for i in range(len(vals))]); dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+                return (self.clusterOptimizationDlg.rawdata.domain.classVar[0], dist)
+
+            ind = vals.index(max(vals))
+            s = sum(vals)
+            dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.clusterOptimizationDlg.rawdata.domain.classVar
+
+            classValue = self.clusterOptimizationDlg.rawdata.domain.classVar[ind]
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            for key in dist.keys():
+                s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+            s += "<nobr>Note: There were not enough projections to get a reliable prediction<br>"
+            print s[:-4]
+            return (classValue, dist)
 
 
 class clusterLearner(orange.Learner):
