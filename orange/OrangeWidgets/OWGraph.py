@@ -232,7 +232,6 @@ class OWGraph(QwtPlot):
         if size == None:
             buffer = QPixmap(self.size()) # any size can do, now using the window size
         else:
-            print size.width(), size.height()
             buffer = QPixmap(size)
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background
