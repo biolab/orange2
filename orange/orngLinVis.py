@@ -70,6 +70,10 @@ class _parseNB(_parse):
 
     def __call__(self,classifier,examples, buckets):
         # todo todo - support for loess
+        for i in xrange(len(examples.domain.attributes)):
+            for j in xrange(len(examples)):
+                if examples[j][i].isSpecial():
+                    raise "A missing value found in instance %d, attribute %s. Missing values are not allowed."%(j,examples.domain.attributes[i].name)
         
         beta = -self._safeRatio(classifier.distribution[1],classifier.distribution[0])
         coeffs = []
@@ -152,10 +156,17 @@ class _parseNB(_parse):
             for j in range(len(classifier.domain.attributes)):
                 if classifier.domain.attributes[j].varType == 1:
                     for k in coeff_names[j][1:]:
-                        m[i][offsets[j]+int(examples[i][classifier.domain.attributes[j]])] = 1.0
+                        if not examples[i][classifier.domain.attributes[j]].isSpecial():
+                            try:
+                                m[i][offsets[j]+int(examples[i][classifier.domain.attributes[j]])] = 1.0
+                            except:
+                                print "**",examples[i][classifier.domain.attributes[j]]
                 else:
                     # quantize
-                    cv = float(examples[i][classifier.domain.attributes[j]]) # obtain the attribute value
+                    if not examples[i][classifier.domain.attributes[j]].isSpecial():
+                        cv = float(examples[i][classifier.domain.attributes[j]]) # obtain the attribute value
+                    else:
+                        cv = 0.0
                     k = self.quantize(coeff_names[j][1:],cv) # obtain the right bucket
                     tm = transfvalues[j][cv]  # true margin
                     mu = coeffs[offsets[j]+k] # multiplier for the bucket
@@ -257,7 +268,10 @@ class _parseLR(_parse):
             # do the insertion and quantization
             # copy all coefficients
             for i in xrange(len(lookup)):
-                m[j][lookup[i]] = tv[i]
+                try:
+                    m[j][lookup[i]] = tv[i]
+                except:
+                    m[j][lookup[i]] = 0 # missing value
 
             # quantize the continuous attributes
             for i in contins[:-1]:
@@ -316,9 +330,8 @@ class _parseSVM(_parseLR):
         for i in xrange(classifier.model["total_sv"]):
             csv = svs[i]
             coef = csv[0][0]
-            for j in xrange(len(xcoeffs)):
-                assert(csv[j+1][0]-1 == j)
-                xcoeffs[j] += coef*csv[j+1][1]
+            for (j,v) in csv[1:]:
+                xcoeffs[j-1] += coef*v
 
         # reverse the betas if the labels got switched
         if classifier.model["label"][0] == 0:
@@ -332,7 +345,7 @@ class _parseSVM(_parseLR):
             tex.append(classifier.translate.extransform(examples[i]))
  
         m = self.getExamples(examples,tex,len(basis),classifier,lookup,nlookup,contins, coeff_names)
-
+        
         return (beta, coeffs, coeff_names, basis, m, _treshold)
 
 
@@ -383,10 +396,6 @@ class Visualizer:
             raise "The domain does not have a binary class. Binary class is required."
 
         all_attributes = [i for i in examples.domain.attributes]+[examples.domain.classVar]
-        for i in range(len(all_attributes)):
-            for j in range(len(examples)):
-                if examples[j][i].isSpecial():
-                    raise "A missing value found in instance %d, attribute %s. Missing values are not allowed."%(j,all_attributes[i].name)
                 
         # acquire the linear model
         parser = self.findParser(classifier)
@@ -534,7 +543,7 @@ if __name__== "__main__":
         print "beta:",-m.beta
 
 
-    t = orange.ExampleTable('x_cmc.tab') # discrete
+    t = orange.ExampleTable('c:/proj/domains/breast-miss.tab') # discrete
     #t = orange.ExampleTable('c_cmc.tab') # continuous
     
     print "NAIVE BAYES"
