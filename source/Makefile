@@ -11,7 +11,7 @@ INSTALL_SCRIPT = $(INSTALL)
 INSTALL_SHARED = $(INSTALL) -m 555
 INSTALL_DIR = $(INSTALL) -d -m 755
 
-COMPILEOPTIONS=-fPIC -w -DLINUX -O3 -DNO_NUMERIC
+COMPILEOPTIONS=-fPIC -w -DLINUX -O3 -DNO_NUMERIC -DNO_GSL
 LINKOPTIONS=-shared -lstdc++
 export CPATH=orange:orange/ppp:orange/px:include:corn:statc:$(PYTHONINCLUDE):/usr/local/include:/usr/include
 
