@@ -22,21 +22,21 @@ class ColorPaletteHSV:
         elif self.numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
             for i in range(self.numberOfColors):
                 col = QColor()
-                col.setHsv(colorHueValues[i], self.brightness, 255)
+                col.setHsv(colorHueValues[i], self.brightness, self.brightness)
                 self.colors.append(col)
             self.hueValues = list(colorHueValues[:self.numberOfColors])
         else:   
             self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
                 col = QColor()
-                col.setHsv(hue, self.brightness, 255)
+                col.setHsv(hue, self.brightness, self.brightness)
                 self.colors.append(col)
         
 
     def __getitem__(self, index):
         if self.numberOfColors == -1:                # is this color for continuous attribute?
             col = QColor()
-            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
+            col.setHsv(index*self.maxHueVal, self.brightness, self.brightness)     # index must be between 0 and 1
             return col
         else:                                   # get color for discrete attribute
             return self.colors[index]           # index must be between 0 and self.numberofColors
