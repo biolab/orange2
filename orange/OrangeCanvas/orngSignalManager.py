@@ -127,7 +127,10 @@ class SignalManager:
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
+                # DEBUG:
+                print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
                 widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id)
+                
 
         if not self.freezing and not self.signalProcessingInProgress:
             self.processNewSignals(widgetFrom)
