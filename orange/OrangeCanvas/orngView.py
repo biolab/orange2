@@ -6,6 +6,7 @@ from qt import *
 from qtcanvas import *
 import orngTabs
 import orngCanvasItems
+from orngSignalManager import *
 TRUE  = 1
 FALSE = 0
 
@@ -57,9 +58,7 @@ class SchemaView(QCanvasView):
     # popMenuAction - user selected to show active widget
     def openActiveWidget(self):
         if self.tempWidget.instance != None:
-            self.tempWidget.instance.hide()
-            self.tempWidget.instance.show()
-        pass
+            self.tempWidget.instance.reshow()
 
     # popMenuAction - user selected to rename active widget            
     def renameActiveWidget(self):
@@ -81,14 +80,11 @@ class SchemaView(QCanvasView):
             self.selWidgets = [self.tempWidget]
 
         for item in self.selWidgets:
-            self.doc.widgets.remove(item)
-            item.remove()
+            self.doc.removeWidget(item)
 
+        self.canvas().update()
         self.selWidgets = []
         self.tempWidget = None
-        self.canvas().update()
-        self.doc.hasChanged = TRUE
-        self.doc.canvasDlg.enableSave(TRUE)
 
     # ###########################################
     # POPUP MENU - LINKS actions
@@ -97,7 +93,9 @@ class SchemaView(QCanvasView):
     # popMenuAction - enable/disable link between two widgets
     def toggleEnabledLink(self):
         if self.selectedLine != None:
-            self.selectedLine.setEnabled(not self.selectedLine.getEnabled())
+            oldEnabled = signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance)
+            signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, not oldEnabled)
+            self.selectedLine.setEnabled(not oldEnabled)
             self.selectedLine.repaintLine(self)
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
@@ -108,14 +106,11 @@ class SchemaView(QCanvasView):
     def deleteSelectedLink(self):
         self.deleteLink(self.selectedLine)
         self.selectedLine = None
+        self.canvas().update()
     
     def deleteLink(self, link):
         if link != None:
-            self.doc.lines.remove(link)
-            link.remove()
-            link.repaintLine(self)
-            self.doc.hasChanged = TRUE
-            self.doc.canvasDlg.enableSave(TRUE)
+            self.doc.removeLine1(link)
       
 
     # ###########################################
@@ -166,7 +161,7 @@ class SchemaView(QCanvasView):
             item.hide()
             item.show()
 
-        rect = QRect(ev.pos().x()-1, ev.pos().y()-1,3,3)        
+        rect = QRect(ev.pos().x()-5, ev.pos().y()-5,10,10)        
         activeItems = self.canvas().collisions(rect)
         if activeItems == []:
             self.tempWidget = None
@@ -188,13 +183,14 @@ class SchemaView(QCanvasView):
                 self.tempWidget.selected = TRUE
 
                 # did we click inside the boxes to draw connections
-                if ev.button() == QMouseEvent.LeftButton and (widget.mouseInsideLeftChannel(ev.pos()) or widget.mouseInsideRightChannel(ev.pos())):
-                    self.tempLineStartPos = QPoint(ev.pos().x(), ev.pos().y())
+                if ev.button() == QMouseEvent.LeftButton and (widget.mouseInsideLeftChannel(rect) or widget.mouseInsideRightChannel(rect)):
                     self.bLineDragging = TRUE
-                    self.tempLine = None
-                    self.moving_start = widget.getEdgePoint(ev.pos())
-                    self.moving_ex_pos= self.moving_start
-
+                    pos = widget.getEdgePoint(rect)
+                    self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvas)
+                    self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
+                    self.tempLine.show()
+                    self.canvas().update()
+                    
                 # we clicked inside the widget and we start dragging it
                 elif ev.button() == QMouseEvent.LeftButton:
                     self.bWidgetDragging = TRUE
@@ -242,7 +238,7 @@ class SchemaView(QCanvasView):
     # ###################################################################
     # mouse button was pressed and mouse is moving ######################
     def contentsMouseMoveEvent(self, ev):
-        #print "drag move event\n"
+        print "drag move event\n"
         if self.bWidgetDragging:
             for item in self.selWidgets:
                 ex_pos = QPoint(item.x(), item.y())
@@ -254,21 +250,17 @@ class SchemaView(QCanvasView):
 
                 items = self.canvas().collisions(item.rect())
                 count = self.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
-                if count > 1:
-                    item.invalidPosition = TRUE
-                else:
-                    item.invalidPosition = FALSE
+                if count > 1: item.invalidPosition = TRUE
+                else:         item.invalidPosition = FALSE
                 item.updateLineCoords()
+                #item.repaintAllLines()
             self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
-            self.doc.canvas.update()
+            #self.canvas().update()
+            
 
         elif self.bLineDragging:
-            if self.tempLine == None:
-                self.tempLine = orngCanvasItems.CanvasLine(self.doc.canvas)
-            #self.repaintContents(self.moving_start.x(), self.moving_start.y(), ev.pos().x(), ev.pos().y())
-            self.tempLine.setPoints(self.moving_start.x(), self.moving_start.y(), ev.pos().x(), ev.pos().y())
-            self.tempLine.show()
-            self.canvas().update()
+            self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
+            #self.tempLine.show()
 
         elif self.bMultipleSelection:
             rect = QRect(min (self.moving_start.x(), ev.pos().x()), min (self.moving_start.y(), ev.pos().y()), abs(self.moving_start.x() - ev.pos().x()), abs(self.moving_start.y() - ev.pos().y()))
@@ -277,12 +269,10 @@ class SchemaView(QCanvasView):
 
             self.tempRect = QCanvasRectangle(rect, self.doc.canvas)
             self.tempRect.show()
-            self.canvas().update()
             self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
 
             # select widgets in rectangle
-            for item in self.selWidgets:
-                item.selected = FALSE
+            for item in self.selWidgets: item.selected = FALSE
             self.selWidgets = []
             items = self.canvas().collisions(rect)
             widgets = self.findAllItemType(items, orngCanvasItems.CanvasWidget)
@@ -295,7 +285,7 @@ class SchemaView(QCanvasView):
                     widget.selected = FALSE
                     widget.repaintWidget()
 
-            self.canvas().update()
+        self.canvas().update()
 
     # ###################################################################
     # mouse button was released #########################################
@@ -329,39 +319,21 @@ class SchemaView(QCanvasView):
 
             # we must check if we have really coonected some output to input
             if item!= None and item != self.tempWidget:
-                if self.tempWidget.mouseInsideLeftChannel(self.tempLineStartPos):
+                if self.tempWidget.mouseInsideLeftChannel(self.tempLine.startPoint()):
                     outWidget = item
                     inWidget  = self.tempWidget
                 else:
                     outWidget = self.tempWidget
                     inWidget  = item
-                    
-                #search for common channels...
-                count = 0
-                for outChannel in outWidget.widget.outList:
-                    if inWidget.widget.inList.count(outChannel) > 0:
-                        count = count+1
 
-                if count == 0:
-                    self.tempLine.hide()
-                    QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
-                else:
-                    line = self.doc.addLine(outWidget, inWidget)
-                    if line == None: self.repaintContents(QRect(min(self.tempLineStartPos.x(), ev.pos().x())-5, min(self.tempLineStartPos.y(), ev.pos().y())-5, abs(self.tempLineStartPos.x() - ev.pos().x())+10, abs(self.tempLineStartPos.y() - ev.pos().y())+10))
-                    else:            
-                        line.show()
+                # hide the temp line
+                self.tempLine.hide()
+                self.tempLine.setCanvas(None)
+                self.tempLine = None
 
-                        # we add the line to the input and output list of connected widgets                    
-                        if self.tempWidget.mouseInsideLeftChannel(self.moving_start):
-                        	self.tempWidget.addInLine(line)	
-                        	item.addOutLine(line)
-                        else:
-                        	self.tempWidget.addOutLine(line)	
-                        	item.addInLine(line)
-                        inWidget.updateTooltip()
-                        outWidget.updateTooltip()
-                        line.updateLinePos()
-                        line.repaintLine(self)
+                line = self.doc.addLine(outWidget, inWidget, 1)
+                if line:
+                    line.repaintLine(self)
                 
             if self.tempLine != None:
                 self.tempLine.setPoints(0,0,0,0)
@@ -386,11 +358,7 @@ class SchemaView(QCanvasView):
             self.tempWidget = widget
             self.openActiveWidget()
         elif line != None:
-            ok = line.resetActiveSignals(self.doc.canvasDlg)
-            if not ok:
-                self.deleteLink(line)
-            else:
-                line.setEnabled(line.getEnabled())
+            self.doc.resetActiveSignals(line, enabled = signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
 
 
     # if we scroll the view, we have to update tooltips for widgets

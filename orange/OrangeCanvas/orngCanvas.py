@@ -13,6 +13,7 @@ import orngOutput
 import orngResources
 import xmlParse
 import cPickle
+from orngSignalManager import *
 
 TRUE  = 1
 FALSE = 0
@@ -26,7 +27,7 @@ class OrangeCanvasDlg(QMainWindow):
 	def __init__(self,*args):
 		apply(QMainWindow.__init__,(self,) + args)
 		self.ctrlPressed = 0	# we have to save keystate, so that orngView can access information about keystate
-		self.resize(800,700)
+		self.resize(900,800)
 		self.setCaption("Qt Orange Canvas")
 
 		# if widget path not registered -> register
@@ -36,7 +37,6 @@ class OrangeCanvasDlg(QMainWindow):
 		self.canvasDir = "./"
 		self.registryFileName = self.canvasDir + "widgetregistry.xml"
 		
-
 		if sys.path.count(self.widgetDir) == 0:
 			sys.path.append(self.widgetDir)
 
@@ -71,8 +71,20 @@ class OrangeCanvasDlg(QMainWindow):
 
 		self.recentDocs = []
 		self.readRecentFiles()
+		self.show()
+
+		# center window in the desktop
+		deskH = app.desktop().height()
+		deskW = app.desktop().width()
+		h = deskH/2 - self.height()/2
+		w = deskW/2 - self.width()/2
+		h = max(h,0)	# if the screen is to small position the window in the upper left corner
+		w = max(w,0)
+		self.move(w,h)
 
 		win = self.menuItemNewSchema()
+		win.showMaximized()
+		
 
 	def createWidgetsToolbar(self, rebuildRegistry):
 		self.widgetsToolBar.clear()

@@ -12,6 +12,8 @@ import orngView
 import orngCanvasItems
 import orngResources
 import orngTabs
+from orngDlgs import *
+from orngSignalManager import *
 import cPickle
 TRUE  = 1
 FALSE = 0
@@ -19,7 +21,7 @@ FALSE = 0
 class SchemaDoc(QMainWindow):
     def __init__(self, canvasDlg, *args):
         apply(QMainWindow.__init__,(self,) + args)
-        self.resize(400,300)
+        self.resize(700,500)
         self.showNormal()
         self.canvasDlg = canvasDlg
         self.setCaption("Schema" + str(orngResources.iDocIndex))
@@ -59,23 +61,145 @@ class SchemaDoc(QMainWindow):
 
         self.removeAllWidgets()
  
-    def addLine(self, outWidget, inWidget, setSignals = TRUE):
+    def addLine(self, outWidget, inWidget, setSignals = TRUE, enabled = TRUE):
         # check if line already exists
         for line in self.lines:
             if line.inWidget == inWidget and line.outWidget == outWidget:
                 QMessageBox.information( None, "Orange Canvas", "This connection already exists.", QMessageBox.Ok + QMessageBox.Default )
                 return None
-            
-        line = orngCanvasItems.CanvasLine(self.canvas)
-        line.setInOutWidget(inWidget, outWidget)
-        if setSignals == TRUE:
-            if line.setActiveSignals(self.canvasDlg) == FALSE:
-                line = None
+
+        line = orngCanvasItems.CanvasLine(self.canvasDlg, outWidget, inWidget, self.canvas)
+        line.setEnabled(enabled)
+        if setSignals:
+            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+            dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+            canConnect = dialog.addDefaultLinks()
+            if not canConnect:
+                QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
+                line.remove()
                 return None
+
+            # if there are multiple choices, how to connect this two widget, then show the dialog
+            signals = dialog.getLinks()
+            if len(signals) > 1:
+                res = dialog.exec_loop()
+                if dialog.result() == QDialog.Rejected:
+                    line.remove()
+                    return None
+                
+            connected = []
+            signalManager.setFreeze(1)
+            for (outName, inName) in signals:
+                widgets = inWidget.instance.removeExistingSingleLink(inName)
+                for widget in  widgets:
+                    existingSignals = signalManager.findSignals(widget, inWidget.instance)
+                    existingOutName = None
+                    for (outN, inN) in existingSignals:
+                        if inN == inName: existingOutName = outN
+                    self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
+                ok = signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
+                if ok: connected.append((outName, inName))
+
+            if connected == []:
+                print "Error. No connections were maid."
+                line.remove()
+                return None
+
+            line.setSignals(connected)
+            signalManager.setFreeze(0, outWidget.instance)
+
         self.lines.append(line)
-        line.setEnabled(TRUE)
-        line.finished = TRUE
+        outWidget.addOutLine(line)
+        outWidget.updateTooltip()
+        inWidget.addInLine(line)
+        inWidget.updateTooltip()
+        line.show()
+        line.setEnabled(enabled)
+
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
+        
         return line
+
+
+    def resetActiveSignals(self, line, newSignals = None, enabled = 1):
+        signals = line.getSignals()
+        if newSignals == None:
+            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+            dialog.addSignalList(line.outWidget.caption, line.inWidget.caption, line.outWidget.widget.outList, line.inWidget.widget.inList, line.outWidget.widget.iconName, line.inWidget.widget.iconName)
+            for (outName, inName) in signals:
+                dialog.addLink(outName, inName)
+
+            # if there are multiple choices, how to connect this two widget, then show the dialog
+            res = dialog.exec_loop()
+            if dialog.result() == QDialog.Rejected: return line
+                
+            connected = []
+            newSignals = dialog.getLinks()
+            
+        for (outName, inName) in signals:
+            if (outName, inName) not in newSignals:
+                widgets = line.inWidget.instance.removeExistingSingleLink(inName)
+                for widget in  widgets:
+                    self.removeWidgetSignal(widget, line.inWidget.instance, outName, inName)
+                signals.remove((outName, inName))
+        
+        if newSignals == []:
+            self.lines.remove(line)
+            line.remove()
+            return None
+    
+        connected = []
+        signalManager.setFreeze(1)
+        for (outName, inName) in newSignals:
+            if (outName, inName) not in signals:
+                ok = signalManager.addLink(line.outWidget.instance, line.inWidget.instance, outName, inName, enabled)
+                if ok: connected.append((outName, inName))
+        signalManager.setFreeze(0, line.outWidget.instance)
+            
+        line.outWidget.updateTooltip()
+        line.inWidget.updateTooltip()
+        line.setSignals(signals + connected)
+
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
+
+        return line
+
+
+    # remove line line
+    def removeLine1(self, line):
+        for (outName, inName) in line.signals:
+            signalManager.removeLink(line.outWidget.instance, line.inWidget.instance, outName, inName)   # update SignalManager
+
+        line.inWidget.removeLine(line)
+        line.outWidget.removeLine(line)
+        line.inWidget.updateTooltip()
+        line.outWidget.updateTooltip()
+        self.lines.remove(line)
+        line.remove()
+        #line.repaintLine(self)
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)        
+
+    # remove line, connecting two widgets
+    def removeLine(self, widgetFrom, widgetTo):
+        for line in self.lines:
+            if line.outWidget.instance == widgetFrom and line.inWidget.instance == widgetTo:
+                self.removeLine1(line)
+        
+    # remove only one signal from connected two widgets. If no signals are left, delete the line
+    def removeWidgetSignal(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
+        signalManager.removeLink(widgetFrom, widgetTo, signalNameFrom, signalNameTo)
+
+        otherSignals = 0
+        for (widget, signalFrom, signalTo, enabled) in signalManager.links[widgetFrom]:
+            if widget == widgetTo: otherSignals = 1
+        if not otherSignals:
+            self.removeLine(widgetFrom, widgetTo)
+
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
 
     def addWidget(self, widget):
         newwidget = orngCanvasItems.CanvasWidget(self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
@@ -98,10 +222,9 @@ class SchemaDoc(QMainWindow):
                 if newwidget.caption + " (" + str(i) + ")" not in list:
                     found = 1
                     newwidget.updateText(newwidget.caption + " (" + str(i) + ")")
-                else:
-                    i += 1
-
-        
+                else: i += 1
+                
+        signalManager.addWidget(newwidget.instance)
         newwidget.show()
         newwidget.updateTooltip()
         self.widgets.append(newwidget)
@@ -109,6 +232,17 @@ class SchemaDoc(QMainWindow):
         self.canvasDlg.enableSave(TRUE)
         self.canvas.update()    
         return newwidget
+
+    def removeWidget(self, widget):
+        signalManager.removeWidget(widget.instance)
+        self.widgets.remove(widget)
+        widget.remove()
+
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
+
+        while widget.inLines != []: self.removeLine1(widget.inLines[0])
+        while widget.outLines != []:  self.removeLine1(widget.outLines[0])
 
     def removeAllWidgets(self):
         for widget in self.widgets:
@@ -119,18 +253,24 @@ class SchemaDoc(QMainWindow):
                 except:
                     pass
             self.widgets.remove(widget)
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
 
     def enableAllLines(self):
         for line in self.lines:
-            line.setEnabled(TRUE)
-            line.repaintLine(self.canvasView)
+            signalManager.setLinkEnabled(line.outWidget.instance, line.inWidget.instance, 1)
+            line.setEnabled(1)
+            #line.repaintLine(self.canvasView)
+        self.canvas.update()
         self.hasChanged = TRUE
         self.canvasDlg.enableSave(TRUE)
 
     def disableAllLines(self):
         for line in self.lines:
-            line.setEnabled(FALSE)
-            line.repaintLine(self.canvasView)
+            signalManager.setLinkEnabled(line.outWidget.instance, line.inWidget.instance, 0)
+            line.setEnabled(0)
+            #line.repaintLine(self.canvasView)
+        self.canvas.update()
         self.hasChanged = TRUE
         self.canvasDlg.enableSave(TRUE)
 
@@ -197,14 +337,10 @@ class SchemaDoc(QMainWindow):
         #save connections
         for line in self.lines:
             temp = doc.createElement("channel")
-            temp.setAttribute("inWidgetCaption", line.inWidget.caption)
             temp.setAttribute("outWidgetCaption", line.outWidget.caption)
+            temp.setAttribute("inWidgetCaption", line.inWidget.caption)
             temp.setAttribute("enabled", str(line.getEnabled()))
-            signals = ""
-            for signal in line.signals:
-                signals = signals + signal + ","
-            signals = signals[:-1]
-            temp.setAttribute("signals", signals)
+            temp.setAttribute("signals", str(line.getSignals()))
             lines.appendChild(temp)
 
         xmlText = doc.toprettyxml()
@@ -274,7 +410,8 @@ class SchemaDoc(QMainWindow):
         for line in lineList:
             inCaption = line.getAttribute("inWidgetCaption")
             outCaption = line.getAttribute("outWidgetCaption")
-            enabled = int(line.getAttribute("enabled"))
+            Enabled = int(line.getAttribute("enabled"))
+            print Enabled
             signals = line.getAttribute("signals")
             inWidget = self.getWidgetByCaption(inCaption)
             outWidget = self.getWidgetByCaption(outCaption)
@@ -282,16 +419,15 @@ class SchemaDoc(QMainWindow):
                 print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
                 continue
 
-            tempLine = self.addLine(outWidget, inWidget, FALSE)
-            tempLine.show()
-            inWidget.inLines.append(tempLine)
-            outWidget.outLines.append(tempLine)
-            tempLine.signals = signals.split(",")
-            tempLine.updateLinePos()
-            tempLine.setRightColors(self.canvasDlg)
-            tempLine.setEnabled(enabled)
-            tempLine.repaintLine(self.canvasView)
+            tempLine = self.addLine(outWidget, inWidget, setSignals = FALSE)
+            signalList = eval(signals)
+            self.resetActiveSignals(tempLine, signalList, Enabled)
+            #tempLine.updateLinePos()
+            #tempLine.setRightColors(self.canvasDlg)
+            tempLine.setEnabled(Enabled)
+            #tempLine.repaintLine(self.canvasView)
 
+        self.canvas.update()
         self.hasChanged = FALSE
         self.canvasDlg.enableSave(FALSE)
         self.path = os.path.dirname(filename)
@@ -318,48 +454,64 @@ class SchemaDoc(QMainWindow):
         appName = str(qname)
         if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
             appName = appName + ".py"
+        (dir, fileName) = os.path.split(appName)
+        fileName = fileName[:-3]
 
         #format string with file content
         t = "    "  # instead of tab
-        imports = "import sys\nimport os\n"
+        imports = "import sys\nimport os\nfrom orngSignalManager import *\n"
         instancesT = "# create widget instances\n" +t+t
         instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
-        links = "# add widget signals\n"+t+t
+        links = "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
         save = ""
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
-        for widget in self.widgets:
+        manager = ""
+        # add widgets to application as they are topologically sorted
+        for instance in signalManager.widgets:
+            widget = None
+            for i in range(len(self.widgets)):
+                if self.widgets[i].instance == instance: widget = self.widgets[i]
             name = widget.caption
             name = name.replace(" ", "_")
             name = name.replace("(", "")
             name = name.replace(")", "")
             imports += "from " + widget.widget.fileName + " import *\n"
             instancesT += "self.ow" + name + " = " + widget.widget.fileName + "(self.tabs)\n"+t+t
+            manager += "signalManager.addWidget(self.ow" + name + ")\n" +t+t
             instancesB += "self.ow" + name + " = " + widget.widget.fileName + "()\n"+t+t
             tabs += "self.tabs.insertTab (self.ow" + name + ",\"" + widget.caption + "\")\n"+t+t
             buttons += "owButton" + name + " = QPushButton(\"" + widget.caption + "\", self)\n"+t+t
-            buttonsConnect += "self.connect( owButton" + name + ",SIGNAL(\"clicked()\"), self.ow" + name + ".show)\n"+t+t
+            buttonsConnect += "self.connect( owButton" + name + ",SIGNAL(\"clicked()\"), self.ow" + name + ".reshow)\n"+t+t
             save += "self.ow" + name + ".saveSettings()\n"+t+t
             
-            for line in widget.inLines:
-                name2 = line.outWidget.caption
-                name2 = name2.replace(" ", "_")
-                name2 = name2.replace("(", "")
-                name2 = name2.replace(")", "")
-                for signal in line.signals:
-                    links = links + "self.ow" + name + ".link(self.ow" + name2 + ", \"" + signal + "\")\n"+t+t
+        for line in self.lines:
+            if not line.getEnabled(): continue
 
+            outWidgetName = line.outWidget.caption
+            outWidgetName = outWidgetName.replace(" ", "_")
+            outWidgetName = outWidgetName.replace("(", "")
+            outWidgetName = outWidgetName.replace(")", "")
+            inWidgetName = line.inWidget.caption
+            inWidgetName = inWidgetName.replace(" ", "_")
+            inWidgetName = inWidgetName.replace("(", "")
+            inWidgetName = inWidgetName.replace(")", "")
+    
+            for (outName, inName) in line.getSignals():            
+                links += "signalManager.addLink( self.ow" + outWidgetName + ", self.ow" + inWidgetName + ", '" + outName + "', '" + inName + "', 1)\n" +t+t
+    
+        links += "signalManager.setFreeze(0)\n" +t+t
         buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"),a,SLOT(\"quit()\"))\n"+t+t
 
         classname = os.path.basename(appName)[:-3]
         classname = classname.replace(" ", "_")
-        
+
         classinit = """
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        self.setCaption("Qt Orange Widgets Panes")
-        self.bottom=QHBox(self)"""
+        self.setCaption("Qt %s")
+        self.bottom=QHBox(self)""" % (fileName)
 
         if asTabs == 1:
             classinit += """
@@ -379,9 +531,9 @@ a.exec_loop()"""
             save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + "\n\n"+t+t + tabs + "\n\n"+t+t + links + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + "\n"+t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n\n" + save + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t + buttons + "\n\n" +t+t+ buttonsConnect + "\n\n" +t+t + links + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" +t+t+ buttonsConnect + "\n" +t+t + links + "\n\n" + save + "\n\n" + finish
         
         #save app
         fileApp = open(appName, "wt")

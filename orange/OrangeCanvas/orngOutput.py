@@ -18,7 +18,7 @@ FALSE = 0
 class OutputWindow(QToolBar ):
 	def __init__(self, canvas, *args):
 		apply(QToolBar.__init__,(self,)+args)
-		self.textOutput = QTextView(self)
+		self.textOutput = QTextBrowser(self)
 		self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
 		self.setStretchableWidget(self.textOutput)
 		self.canvas = canvas
@@ -26,8 +26,8 @@ class OutputWindow(QToolBar ):
 		self.setVerticalStretchable(1)
 		self.setHorizontalStretchable(1)
 
-		sys.excepthook = self.exceptionHandler
-		sys.stdout = self
+		#sys.excepthook = self.exceptionHandler
+		#sys.stdout = self
 		#self.textOutput.setText("")
 
 	def write(self, str):

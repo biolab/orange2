@@ -21,32 +21,27 @@ class WidgetButton(QToolButton):
 		self.iconName = icon
 		self.priority = priority
 		self.description = description
-	
-		inList = inList.replace(",", " ")
-		outList = outList.replace(",", " ")
-		self.inList = inList.split()
-		self.outList = outList.split()
+		self.inList = inList
+		self.outList = outList
 
-		formatedInList = ""
-		for item in self.inList:
-			formatedInList = formatedInList + canvasDlg.getChannelName(item) + ", "
-
-		if len(formatedInList) > 1 and formatedInList[-2] == ",":
-			formatedInList = formatedInList[:-2]
+		if len(inList) == 0:
+			formatedInList = "<b>Inputs:</b><br>None"
 		else:
-			formatedInList = formatedInList + "None"
-			
-		formatedOutList = ""
-		for item in self.outList:
-			formatedOutList = formatedOutList + canvasDlg.getChannelName(item) + ", "
+			formatedInList = "<b>Inputs:</b><ul>"
+			for (signalname, type, handler, single) in inList:
+				formatedInList = formatedInList + "<li>" + canvasDlg.getChannelName(signalname) + " (" + type + ")</li>"
+			formatedInList += "</ul>"
 
-		if len(formatedOutList) > 1 and formatedOutList[-2] == ",":
-			formatedOutList = formatedOutList[:-2]
+		if len(outList) == 0:
+			formatedOutList = "<b>Outputs:</b><br>None"
 		else:
-			formatedOutList = formatedOutList + "None"
+			formatedOutList = "<b>Outputs:</b><ul>"
+			for (signalname, type) in outList:
+				formatedOutList = formatedOutList + "<li>" + canvasDlg.getChannelName(signalname) + " (" + type + ")</li>"
+			formatedOutList += "</ul>"
 		
 		#tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
-		tooltipText = "<b>%s</b><br>Class name: %s<br>in: %s<br>out: %s<br>description: %s" % (name, fileName, formatedInList, formatedOutList, description)
+		tooltipText = "<b>%s</b><br>Class name: %s<br><hr><b>Description:</b><br>%s<hr>%s<hr>%s" % (name, fileName, description, formatedInList, formatedOutList)
 		QToolTip.add( self, tooltipText)
 
 		self.canvasDlg = canvasDlg
@@ -148,8 +143,8 @@ class WidgetTabs(QTabWidget):
 		for widget in widgetList:
 			name = widget.getAttribute("name")
 			fileName = widget.getAttribute("file")
-			inList = widget.getAttribute("in")
-			outList = widget.getAttribute("out")
+			inList = eval(widget.getAttribute("in"))
+			outList = eval(widget.getAttribute("out"))
 			priority = int(widget.getAttribute("priority"))
 
 			icon = widget.getAttribute("icon")

@@ -57,10 +57,24 @@ class WidgetsToXML:
             widget = doc.createElement("widget")
             widget.setAttribute("file", filename[:-3])
             widget.setAttribute("name", name)
-            widget.setAttribute("in", inputList)
-            widget.setAttribute("out", outputList)
+            widget.setAttribute("in", str(inputList))
+            widget.setAttribute("out", str(outputList))
             widget.setAttribute("icon", icon)
             widget.setAttribute("priority", priorityStr)
+            """
+            # inputlist
+            ins = doc.createElement("inputs")
+            insText = doc.createTextNode(inputList)
+            ins.appendChild(insText)
+            widget.appendChild(ins)
+
+            # outlist
+            outs = doc.createElement("outputs")
+            outsText = doc.createTextNode(outputList)
+            ins.appendChild(outsText)
+            widget.appendChild(outs)
+            """
+            # description            
             if (description != ""):
                 desc = doc.createElement("description")
                 descText = doc.createTextNode(description)
@@ -95,33 +109,38 @@ class WidgetsToXML:
         text = search.group(0)[index1:index2]    #delete the <...> </...>
         return string.strip(text)
 
-
         
     def GetAllInputs(self, data):
-        inputs = re.findall('self.addInput.*?\)', data)
-        inputlist = ""
+        result = re.search('self.inputs *= *[[].*]', data)
+        if not result: return []
+        text = data[result.start():result.end()]
+        text = text[text.index("[")+1:text.index("]")]
+        text= text.replace('"',"'")
+        inputs = re.findall("\(.*?\)", text)
+        inputList = []
         for input in inputs:
-            input = self.GetParenthText(input)
-            if (inputlist != ""):
-                inputlist = inputlist + ","
-            inputlist = inputlist + string.strip(input)
-        return inputlist
+            inputList.append(self.GetAllValues(input))
+        return inputList
 
     def GetAllOutputs(self, data):
-        outputs = re.findall('self.addOutput.*?\)', data)
-        outputlist = ""
+        result = re.search('self.outputs *= *[[].*]', data)
+        if not result: return []
+        text = data[result.start():result.end()]
+        text = text[text.index("[")+1:text.index("]")]
+        text= text.replace('"',"'")
+        outputs = re.findall("\(.*?\)", text)
+        outputList = []
         for output in outputs:
-            output = self.GetParenthText(output)
-            if (outputlist!= ""):
-                outputlist = outputlist + ","
-            outputlist = outputlist + string.strip(output)
-        return outputlist
+            outputList.append(self.GetAllValues(output))
+        return outputList
 
-    def GetParenthText(self, text):
-        res = re.search("\".*\"", text)
-        if (res == None):
-            return ""
-        return res.group(0)[1:-1]
+    def GetAllValues(self, text):
+        text = text[1:-1]
+        vals = text.split(",")
+        vals[0] = vals[0][1:-1]
+        for i in range(len(vals)):
+            vals[i] = vals[i].strip()
+        return tuple(vals)
 
 
 if __name__=="__main__":
