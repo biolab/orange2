@@ -1134,7 +1134,7 @@ float TContDistribution::percentile(const float &perc) const
     raiseError("empty distribution");
 
   while ((ths != ee) && (togo > 0)) {
-    togo -= (*ths).first;
+    togo -= (*ths).second;
     prev = ths;
     ths++;
   }
