@@ -620,15 +620,17 @@ class OrangeCanvasDlg(QMainWindow):
     #######################
 
     def closeEvent(self, ce):
+        totalDocs = len(self.workspace.getDocumentList())
+        closedDocs = 0
         for win in self.workspace.getDocumentList():
-            win.close()
+            closed = win.close()
+            if closed: closedDocs += 1
 
         self.saveSettings()
-        if len(self.workspace.getDocumentList()) == 0:
-                ce.accept()
-        else:
-                ce.ignore()
-        QMainWindow.closeEvent(self, ce)
+        if closedDocs == totalDocs:
+            ce.accept()
+            QMainWindow.closeEvent(self, ce)
+       
 
     def keyPressEvent(self, e):
         QMainWindow.keyPressEvent(self,e)

@@ -54,6 +54,7 @@ class SchemaDoc(QMainWindow):
             QMainWindow.closeEvent(self, ce)
             return
 
+        #QMainWindow.closeEvent(self, ce)
         res = QMessageBox.information(self,'Qrange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
         if res == 0:
             self.saveDocument()
@@ -64,6 +65,7 @@ class SchemaDoc(QMainWindow):
             ce.accept()
         else:
             ce.ignore()
+            return
         QMainWindow.closeEvent(self, ce)
 
     def enableSave(self, enable):
@@ -81,7 +83,7 @@ class SchemaDoc(QMainWindow):
         if line:
             self.resetActiveSignals(outWidget, inWidget, None, enabled)
             return
-            
+
         dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
