@@ -77,7 +77,8 @@ class SchemaDoc(QMainWindow):
         
         if setSignals:
             dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-            dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+            #dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+            dialog.setOutInWidgets(outWidget, inWidget)
             canConnect = dialog.addDefaultLinks()
             if not canConnect:
                 QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
@@ -141,7 +142,8 @@ class SchemaDoc(QMainWindow):
         signals = line.getSignals()
         if newSignals == None:
             dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-            dialog.addSignalList(line.outWidget.caption, line.inWidget.caption, line.outWidget.widget.outList, line.inWidget.widget.inList, line.outWidget.widget.iconName, line.inWidget.widget.iconName)
+            #dialog.addSignalList(line.outWidget.caption, line.inWidget.caption, line.outWidget.widget.outList, line.inWidget.widget.inList, line.outWidget.widget.iconName, line.inWidget.widget.iconName)
+            dialog.setOutInWidgets(line.outWidget, line.inWidget)
             for (outName, inName) in signals:
                 dialog.addLink(outName, inName)
 

@@ -20,7 +20,6 @@ class OutputWindow(QMainWindow):
 
 		self.textOutput = QTextView(self)
 		self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
-		#self.textOutput.setHScrollBarMode(QScrollView.AlwaysOn )
 		self.setCentralWidget(self.textOutput)
 		self.setCaption("Output Window")
 		self.setIcon(QPixmap(orngResources.output))
@@ -29,7 +28,7 @@ class OutputWindow(QMainWindow):
 		self.defaultSysOutHandler = sys.stdout
 		self.focusOnCatchException = 1
 		self.focusOnCatchOutput  = 0
-		self.printOutput = 0
+		self.printOutput = 1
 		self.printException = 1
 		
 		#sys.excepthook = self.exceptionHandler
@@ -64,6 +63,9 @@ class OutputWindow(QMainWindow):
 		self.textOutput.setText("")
 	
 	def write(self, text):
+		text = text.replace("<", "[")	# since this is rich text control, we have to replace special characters
+		text = text.replace(">", "]")
+
 		if self.focusOnCatchOutput:
 			self.canvasDlg.menuItemShowOutputWindow()
 			self.canvasDlg.workspace.cascade()	# cascade shown windows

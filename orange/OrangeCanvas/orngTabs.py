@@ -27,21 +27,21 @@ class WidgetButton(QToolButton):
 		if len(inList) == 0:
 			formatedInList = "<b>Inputs:</b><br>None"
 		else:
-			formatedInList = "<b>Inputs:</b><ul>"
+			formatedInList = "<b>Inputs:</b><br>"
 			for (signalname, type, handler, single) in inList:
-				formatedInList = formatedInList + "<li>" + canvasDlg.getChannelName(signalname) + " (" + type + ")</li>"
-			formatedInList += "</ul>"
+				formatedInList = formatedInList + "- " + canvasDlg.getChannelName(signalname) + " (" + type + ")<br>"
+			#formatedInList += "</ul>"
 
 		if len(outList) == 0:
 			formatedOutList = "<b>Outputs:</b><br>None"
 		else:
-			formatedOutList = "<b>Outputs:</b><ul>"
+			formatedOutList = "<b>Outputs:</b><br>"
 			for (signalname, type) in outList:
-				formatedOutList = formatedOutList + "<li>" + canvasDlg.getChannelName(signalname) + " (" + type + ")</li>"
-			formatedOutList += "</ul>"
+				formatedOutList = formatedOutList + "- " + canvasDlg.getChannelName(signalname) + " (" + type + ")<br>"
+			#formatedOutList += "</ul>"
 		
 		#tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
-		tooltipText = "<b>%s</b><br>Class name: %s<br><hr><b>Description:</b><br>%s<hr>%s<hr>%s" % (name, fileName, description, formatedInList, formatedOutList)
+		tooltipText = "<b>%s</b><br><hr><b>Description:</b><br>%s<hr>%s<hr>%s" % (name, description, formatedInList, formatedOutList)
 		QToolTip.add( self, tooltipText)
 
 		self.canvasDlg = canvasDlg

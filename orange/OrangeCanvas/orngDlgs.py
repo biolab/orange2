@@ -245,8 +245,6 @@ class SignalDialog(QDialog):
         self.canvasDlg = canvasDlg
         self.topLayout = QVBoxLayout( self, 10 )
         self.signals = []
-        self.inList = []
-        self.outList = []
         self._links = []
 
         # GUI
@@ -301,59 +299,44 @@ class SignalDialog(QDialog):
         while self._links != []:
             self.removeLink(self._links[0][0], self._links[0][1])
 
-    def addSignalList(self, outName, inName, outList, inList, outIconName = None, inIconName = None):
-        self.outWidget = outName
-        self.inWidget = inName
-        self.inList = inList
-        self.outList = outList
-        (width, height) = self.canvasView.addSignalList(outName, inName, outList, inList, outIconName, inIconName)
+    def setOutInWidgets(self, outWidget, inWidget):
+        self.outWidget = outWidget
+        self.inWidget = inWidget
+        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
         self.canvas.resize(width, height)
         self.resize(width+50, height+85)
+        
 
     def addDefaultLinks(self):
         canConnect = 0
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
-        for (outName, outType) in self.outList:
-            try:
-                eval(outType)
-                canConnectCount = 0
-                for (inName, inType, handler, single) in self.inList:
-                    try:
-                        eval(inType)
-                        if issubclass(eval(outType), eval(inType)):
-                            canConnect = 1
-                            canConnectCount += 1
-                            
-                        if issubclass(eval(outType), eval(inType)) and (outName == inName or (inName, inType) not in self.outList):
-                            self.addLink(outName, inName)
-                            
-                    except:
-                        print "unknown type: ", inType
-                if canConnectCount > 1:
-                    self.multiplePossibleConnections = 1
-            except:
-                print "unknown type: ", outType
+        for (outName, outType) in self.outWidget.widget.outList:
+            (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
+            canConnectCount = 0
+            for (inName, inType, handler, single) in self.inWidget.widget.inList:
+                (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
+                if issubclass(outClass, inClass):
+                    canConnect = 1
+                    canConnectCount += 1
+                    
+                if issubclass(outClass, inClass) and (outName == inName or (inName, inType) not in self.outWidget.widget.outList):
+                    self.addLink(outName, inName)
+            if canConnectCount > 1:
+                self.multiplePossibleConnections = 1
         return canConnect
 
     def addLink(self, outName, inName):
         if (outName, inName) in self._links: return
 
-        try:
-            # check if correct types
-            outType = None; inType = None
-            for (name, type, handler, single) in self.inList:
-                if name == inName: inType = type
-            for (name, type) in self.outList:
-                if name == outName: outType = type
-            if not issubclass(eval(outType), eval(inType)): return 0
-        except:
-            "unknown type: ", outType, " or ", inType
-            return 0
+        # check if correct types
+        (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
+        (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
+        if not issubclass(outClass, inClass): return 0
 
         # if inName is a single signal and connection already exists -> delete it        
         for (outN, inN) in self._links:
             if inN == inName:
-                for (name, type, handler, single) in self.inList:
+                for (name, type, handler, single) in self.inWidget.widget.inList:
                     if name == inName and single:
                         for (o, i) in self._links:
                             if i == inName:
