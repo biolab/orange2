@@ -33,7 +33,7 @@ class ColorPaletteHSV:
                 self.colors.append(col)
             self.hueValues = colorHueValues[:self.numberOfColors]
         else:   
-            self.hueValues = [int(float(x*maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
+            self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
                 col = QColor()
                 col.setHsv(hue, 255, 255)

@@ -207,6 +207,7 @@ class OWVisGraph(OWGraph):
                     min = self.domainDataStat[index].min
                     max = self.domainDataStat[index].max
                 diff = max - min
+                if diff == 0.0: diff = 1    # prevent division by zero
                 values = [min, max]
                 colors = ColorPaletteHSV(-1)
 
