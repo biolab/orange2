@@ -175,7 +175,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                 classifiers = [None]*nLrn
                 for i in range(nLrn):
                     if not testResults.loaded[i]:
-                        classifiers[i] = learners[i](learnset, w)
+                        classifiers[i] = learners[i](learnset, weight)
 
                 # testing
                 for i in range(len(examples)):
