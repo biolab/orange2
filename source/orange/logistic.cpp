@@ -149,7 +149,8 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
     throw;
   }
 
-  mldelete example;
+  if (imputer)
+    mldelete example;
 
   TDiscDistribution *dist = mlnew TDiscDistribution(classVar);
   PDistribution res = dist;
