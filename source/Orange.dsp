@@ -739,6 +739,10 @@ SOURCE=.\orange\lib_vectors.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\linreg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\lookup.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -839,6 +843,10 @@ SOURCE=.\orange\nearest.cpp
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\Nrutil.cpp
 # End Source File
 # Begin Source File
 
@@ -1386,6 +1394,10 @@ SOURCE=.\orange\lib_kernel.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\linreg.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\lookup.hpp
 # End Source File
 # Begin Source File
@@ -1415,6 +1427,10 @@ SOURCE=.\orange\minimal_error.hpp
 # Begin Source File
 
 SOURCE=.\orange\nearest.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\Nrutil.h
 # End Source File
 # Begin Source File
 
@@ -1671,6 +1687,10 @@ SOURCE=.\orange\ppp\knn.ppp
 # Begin Source File
 
 SOURCE=.\orange\ppp\learn.ppp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\ppp\linreg.ppp
 # End Source File
 # Begin Source File
 

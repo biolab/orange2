@@ -112,11 +112,11 @@ class TMissValuesGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  PFloatList replaceProbabilities; //P probabilities for replacing attributes' values
+  PIntFloatList replaceProbabilities; //P probabilities for replacing attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TMissValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
-  TMissValuesGenerator::TMissValuesGenerator(const vector<float> &, PExampleGenerator);
+  TMissValuesGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TMissValuesGenerator::TMissValuesGenerator(const vector<pair<int, float> > &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };
@@ -126,11 +126,11 @@ class TNoiseValuesGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  PFloatList replaceProbabilities; //P probabilities for replacing attributes' values
+  PIntFloatList replaceProbabilities; //P probabilities for replacing attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TNoiseValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
-  TNoiseValuesGenerator(const vector<float> &, PExampleGenerator);
+  TNoiseValuesGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TNoiseValuesGenerator(const vector<pair<int, float> > &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };
@@ -140,11 +140,11 @@ class TGaussianNoiseGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  PFloatList deviations; //P deviations for attributes' values
+  PIntFloatList deviations; //P deviations for attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TGaussianNoiseGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
-  TGaussianNoiseGenerator(const vector<float> &, PExampleGenerator);
+  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };

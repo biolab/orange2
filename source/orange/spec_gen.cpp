@@ -200,74 +200,76 @@ void TChangeExampleGenerator::increaseIterator(TExampleIterator &i)
 
 
 
-TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
- : TChangeExampleGenerator(dom, afirst, alast), replaceProbabilities(mlnew TFloatList(rp))
- {}
+TMissValuesGenerator::TMissValuesGenerator(const vector<pair<int, float> > &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+ : TChangeExampleGenerator(dom, afirst, alast),
+   replaceProbabilities(mlnew TIntFloatList(rp))
+{}
 
-TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PExampleGenerator gen)
- : TChangeExampleGenerator(gen), replaceProbabilities(mlnew TFloatList(rp))
- {}
+
+TMissValuesGenerator::TMissValuesGenerator(const vector<pair<int, float> > &rp, PExampleGenerator gen)
+: TChangeExampleGenerator(gen),
+  replaceProbabilities(mlnew TIntFloatList(rp))
+{}
 
 
 TExampleIterator TMissValuesGenerator::changeExample(const TExampleIterator &it)
 { if (it) {
-    TExample::iterator ei(it.example->begin());
-    const_PITERATE(TFloatList, pi, replaceProbabilities) {
-      if (*pi<0) {
-        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() < -*pi)
-          (*ei).setDC();
+    TExample &example = *it.example;
+    const_PITERATE(TIntFloatList, pi, replaceProbabilities) {
+      if ((*pi).second < 0) {
+        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() < -(*pi).second)
+          example[(*pi).first].setDC();
       }
-      else if (*pi>0) {
-        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() <  *pi)
-          (*ei).setDK();
+      else if ((*pi).second > 0) {
+        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() <  (*pi).second)
+          example[(*pi).second].setDK();
       }
-      ei++;
     }
   }
   return it;
 }
 
 
-TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<pair<int, float> > &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
 : TChangeExampleGenerator(dom, afirst, alast),
-  replaceProbabilities(mlnew TFloatList(rp))
- { TVarList::const_iterator vi(domain->variables->begin()); 
-   PITERATE(TFloatList, pi, replaceProbabilities)
-     if ((*vi)->noOfValues()<2)
-       *pi=0;
- }
+  replaceProbabilities(mlnew TIntFloatList(rp))
+{ const TVarList &varlist = domain->variables.getReference(); 
+  PITERATE(TIntFloatList, pi, replaceProbabilities)
+    if (((*pi).first >= 0) && (varlist[(*pi).first]->noOfValues()<2))
+      (*pi).second = 0;
+}
 
-TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PExampleGenerator gen)
+
+TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<pair<int, float> > &rp, PExampleGenerator gen)
 : TChangeExampleGenerator(gen),
-  replaceProbabilities(mlnew TFloatList(rp))
+  replaceProbabilities(mlnew TIntFloatList(rp))
 {}
 
 
 TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it)
 { if (it) {
-    TExample::iterator ei(it.example->begin());
-    TVarList::iterator vi(domain->variables->begin());
-    PITERATE(TFloatList, pi, replaceProbabilities) {
-      if ((*pi>0) && (LOCAL_OR_GLOBAL_RANDOM.randfloat() < *pi))
-        if ( ( (*ei) = (*vi)->randomValue(LOCAL_OR_GLOBAL_RANDOM.randint()) ).isDC())
-          raiseError("attribute '%s' cannot give randomValues.", (*vi)->name.c_str());
-      ei++;
-      vi++;
+    const TVarList &varlist = domain->variables.getReference(); 
+    TExample &example = *it.example;
+
+    PITERATE(TIntFloatList, pi, replaceProbabilities) {
+      if (((*pi).second>0) && (LOCAL_OR_GLOBAL_RANDOM.randfloat() < (*pi).second))
+        if ( ( example[(*pi).first] = varlist[(*pi).first]->randomValue(LOCAL_OR_GLOBAL_RANDOM.randint()) ).isDC())
+          raiseError("attribute '%s' cannot give randomValues.", varlist[(*pi).first]->name.c_str());
     }
   }
   return it;
 }
 
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
 : TChangeExampleGenerator(dom, afirst, alast),
-  deviations(mlnew TFloatList(rp))
+  deviations(mlnew TIntFloatList(rp))
 {}
 
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PExampleGenerator gen)
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PExampleGenerator gen)
 : TChangeExampleGenerator(gen),
-  deviations(mlnew TFloatList(rp))
+  deviations(mlnew TIntFloatList(rp))
 {}
 
 
@@ -280,13 +282,28 @@ public:
 
 TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &it)
 { if (it) {
-    TExample::iterator ei(it.example->begin());
-    TVarList::iterator vi(domain->variables->begin());
-    PITERATE(TFloatList, pi, deviations) {
-      if ((*pi>0.0) && !(*ei).isSpecial() && ((*vi)->varType==TValue::FLOATVAR))
-        *ei = TValue(gasdev(float(*ei), *pi, genrandfloat_11(randomGenerator ? randomGenerator : globalRandom)));
-      ei++;
-      vi++;
+    { PITERATE(TIntFloatList, pi, deviations) {
+        const int &pos = (*pi).first;
+        if (pos >= 0) {
+          if (pos >= domain->variables->size())
+            raiseError("attribute index %i out of range", pos);
+          if (domain->variables->at(pos)->varType != TValue::FLOATVAR)
+            raiseError("attribute '%s' is not continuous", domain->variables->at(pos)->name.c_str());
+        }
+      }
+    }
+
+    TExample &example = *it.example;
+    PITERATE(TIntFloatList, pi, deviations) {
+      TValue &val = example[(*pi).first];
+      if (!val.isSpecial())
+        if (val.varType != TValue::FLOATVAR)
+          if ((*pi).first > 0)
+            raiseError("attribute '%s' is not continuous", domain->variables->at((*pi).first)->name.c_str());
+          else
+            raiseError("attribute with id %i is not continuous", (*pi).first);
+
+        val = TValue(gasdev(float(val), (*pi).second, genrandfloat_11(randomGenerator ? randomGenerator : globalRandom)));
     }
   }
   return it;

@@ -191,7 +191,7 @@ C_CALL(Preprocessor_addClassWeight, Preprocessor, "([examples[, weightID]] [equa
 C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [method=0-km, 1-nmr, 2-linear, outcomeVar=, eventValue=, timeID=, maxTime=]) -/-> ExampleTable")
 
 C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
-C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
+C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
 
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, KM, TPreprocessor_addCensorWeight::km)
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Linear, TPreprocessor_addCensorWeight::linear)
@@ -233,13 +233,13 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
     if (!PyArg_ParseTuple(pyvalue, "ff:VariableFilterMap.__setitem__", &min, &max))
       return -1;
 
-    aMap->__ormap[var] = (min<max) ? mlnew TValueFilter_continuous(min, max)
-                                   : mlnew TValueFilter_continuous(max, min, true);
+    aMap->__ormap[var] = (min<max) ? mlnew TValueFilter_continuous(ILLEGAL_INT, min, max)
+                                   : mlnew TValueFilter_continuous(ILLEGAL_INT, max, min, true);
     return 0;
   }
 
   if (var->varType == TValue::INTVAR) {
-    TValueFilter_discrete *vfilter = mlnew TValueFilter_discrete(var);
+    TValueFilter_discrete *vfilter = mlnew TValueFilter_discrete(ILLEGAL_INT, var);
     PValueFilter wvfilter = vfilter;
     TValueList &valueList = vfilter->acceptableValues.getReference();
 

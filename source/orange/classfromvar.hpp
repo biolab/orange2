@@ -48,7 +48,7 @@ class TClassifierFromVarFD : public TClassifierFD {
 public:
   __REGISTER_CLASS
 
-  int position; // P position of the attribute in domain
+  int position; //P position of the attribute in domain
   PTransformValue transformer; //P transformer
   PDistribution distributionForUnknown; //P distribution for unknown value
 

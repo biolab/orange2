@@ -38,3 +38,6 @@ DEFINE__TOrangeVector_classDescription(string, "TStringList")
 
 #define pff pair<float, float>
 DEFINE__TOrangeVector_classDescription(pff, "TFloatFloatList")
+
+#define pif pair<int, float>
+DEFINE__TOrangeVector_classDescription(pif, "TIntFloatList")

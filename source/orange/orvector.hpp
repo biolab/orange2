@@ -172,6 +172,7 @@ class _TOrangeVector : public TOrange
 #define TIntList _TOrangeVector<int>
 #define TLongList _TOrangeVector<long>
 #define TFloatList _TOrangeVector<float>
+#define TIntFloatList _TOrangeVector<pair<int, float> >
 #define TFloatFloatList _TOrangeVector<pair<float, float> >
 #define TDoubleList _TOrangeVector<double>
 #define TStringList _TOrangeVector<string>
@@ -182,6 +183,7 @@ VWRAPPER(BoolList)
 VWRAPPER(IntList)
 VWRAPPER(LongList)
 VWRAPPER(FloatList)
+VWRAPPER(IntFloatList)
 VWRAPPER(FloatFloatList)
 VWRAPPER(DoubleList)
 VWRAPPER(StringList)
