@@ -64,8 +64,9 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
 ##        master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
 ##    return hb
 
-def checkOnly(widget, master, text, value, tooltip=None, callback=None, getwidget=None, id=None):
-    wa = QCheckBox(text, widget)
+def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None, getwidget=None, id=None):
+    b = widgetBox(widget, box, orientation=None)
+    wa = QCheckBox(text, b)
     wa.setChecked(getattr(master, value))
     master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
