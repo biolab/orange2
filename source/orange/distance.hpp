@@ -94,10 +94,10 @@ class TExamplesDistance_Normalized : public TExamplesDistance {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  PFloatList normalizers; //P normalizing factors for attributes
-  PFloatList bases; //P lowest values for attributes
+  PAttributedFloatList normalizers; //P normalizing factors for attributes
+  PAttributedFloatList bases; //P lowest values for attributes
   PAttributedFloatList averages; //P average values for continuous attribute values
-  PFloatList variances; //P variations for continuous attribute values
+  PAttributedFloatList variances; //P variations for continuous attribute values
   int domainVersion; //P version of domain on which the ranges were computed
   bool normalize; //P tells whether to normalize distances between attributes
   bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation

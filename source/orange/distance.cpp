@@ -93,20 +93,22 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized()
 
 
 TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, const bool &no, const bool &iu, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
-: normalizers(mlnew TFloatList()),
-  bases(mlnew TFloatList()),
+: normalizers(mlnew TAttributedFloatList()),
+  bases(mlnew TAttributedFloatList()),
   averages(mlnew TAttributedFloatList()),
-  variances(mlnew TFloatList()),
+  variances(mlnew TAttributedFloatList()),
   domainVersion(egen ? egen->domain->version : -1),
   normalize(no),
   ignoreUnknowns(iu)
 { TFloatList &unormalizers = normalizers.getReference();
 
+  PVarList varlist;
+
   if (!bstat && !ddist && egen)
     bstat = mlnew TDomainBasicAttrStat(egen, weightID);
 
   if (bstat && egen) {
-    averages->attributes  = ignoreClass ? egen->domain->attributes : egen->domain->variables;
+    varlist  = ignoreClass ? egen->domain->attributes : egen->domain->variables;
 
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
     TVarList::const_iterator vi (egen->domain->variables->begin()), evi(egen->domain->variables->end());
@@ -156,12 +158,12 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
   }
 
   else if (ddist) {
-    averages->attributes = mlnew TVarList;
+    varlist = mlnew TVarList;
 
     PITERATE(TDomainDistributions, ci, ddist) {
       if (*ci) {
         const PVariable &vi = (*ci)->variable;
-        averages->attributes->push_back(vi);
+        varlist->push_back(vi);
 
         if (vi->varType==TValue::FLOATVAR) {
           TContDistribution *dcont = (*ci).AS(TContDistribution);
@@ -207,7 +209,7 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
   }
 
   else if (bstat) {
-    averages->attributes = mlnew TVarList;
+    varlist = mlnew TVarList;
 
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
 
@@ -218,7 +220,7 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
       if (!*si)
         raiseError("cannot compute normalizers from BasicAttrStat in presence of non-continuous attributes");
 
-      averages->attributes->push_back((*si)->variable);
+      varlist->push_back((*si)->variable);
       if (((*si)->n>0) && ((*si)->max!=(*si)->min)) {
         normalizers->push_back(1.0/((*si)->max-(*si)->min));
         bases->push_back((*si)->min);
@@ -236,6 +238,8 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
 
   else
    raiseError("no data");
+
+  normalizers->attributes = bases->attributes = averages->attributes = variances->attributes = varlist;
 }
 
 

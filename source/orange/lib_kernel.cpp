@@ -520,7 +520,7 @@ int AttributeFloatList_getIndex(TPyOrange *self, PyObject *index)
     PYERROR(PyExc_AttributeError, "variable list size does not match the size of the list", ILLEGAL_INT);
 
   if (PyOrVariable_Check(index)) {
-    PVariable &var = PyOrange_AsVariable(self);
+    PVariable &var = PyOrange_AsVariable(index);
     TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
     int ind = 0;
     for(; vi!=ve; vi++, ind++)
