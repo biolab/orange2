@@ -88,25 +88,25 @@ for file in deplist:
         if not cnt:
             makedepsfile.write("\\\n\t")
         cnt = (cnt+1) % 6
-        makedepsfile.write(" $(ODIR)/%s.o" % file[0][:-4])
+        makedepsfile.write(" obj/%s.o" % file[0][:-4])
             
 makedepsfile.write("\n\n")
 
-makedepsfile.write("CORN_OBJECTS = $(ODIR)/corn.o $(ODIR)/c2py.o\n\n")
-makedepsfile.write("STATC_OBJECTS = $(ODIR)/stat.o $(ODIR)/statc.o  $(ODIR)/c2py.o $(ODIR)/statexceptions.o $(ODIR)/lcomb.o\n\n")
+makedepsfile.write("CORN_OBJECTS = obj/corn.o obj/c2py.o\n\n")
+makedepsfile.write("STATC_OBJECTS = obj/stat.o obj/statc.o  obj/c2py.o obj/statexceptions.o obj/lcomb.o\n\n")
  
 
 for (file, filedeps) in deplist:
   if (file[-4:]==".cpp") and (not file in dont_compile):
     dl = filedeps.keys()
     dl.sort()
-    makedepsfile.write("$(ODIR)/%s.o : %s/%s.cpp %s\n" % (file[:-4], files[file][0], file[:-4], reduce(lambda a, b: a+" "+b, dl)))
+    makedepsfile.write("obj/%s.o : %s/%s.cpp %s\n" % (file[:-4], files[file][0], file[:-4], reduce(lambda a, b: a+" "+b, dl)))
 makedepsfile.write("\n\n")
 
-makedepsfile.write("$(PPPDIR)/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
-makedepsfile.write("\tpython $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) \n\n")
+makedepsfile.write("orange/ppp/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
+makedepsfile.write("\tpython orange/devscripts/pyprops.py orange\n\n")
 
-makedepsfile.write("$(PXDIR)/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
-makedepsfile.write("\tpython $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)\n\n")
+makedepsfile.write("orange/px/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
+makedepsfile.write("\tpython orange/devscripts/pyxtract.py orange\n\n")
 
 makedepsfile.close()
