@@ -18,6 +18,7 @@ from OData import *
 import OWVisAttrSelection
 from OWVisTools import *
 import time
+from qt import *
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -37,13 +38,13 @@ class OWRadviz(OWWidget):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", TRUE, TRUE)
 
         #set default settings
-        self.pointWidth = 5
+        self.pointWidth = 4
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         self.jitteringType = "uniform"
         self.attrOrdering = "Original"
         self.enhancedTooltips = 1
-        self.globalValueScaling = 1
+        self.globalValueScaling = 0
         self.jitterSize = 1
         self.kNeighbours = 1
         self.scaleFactor = 1.0
@@ -105,7 +106,7 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
-        self.optimizationDlgButton = QPushButton('Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('kNN Optimization dialog', self.attrOrderingButtons)
         
         self.optimizationDlg = OptimizationDialog(None)
         self.optimizationDlg.parentName = "Radviz"
@@ -128,6 +129,7 @@ class OWRadviz(OWWidget):
 
         self.showGnuplotButton = QPushButton("Show with Gnuplot", self.space)
         self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
+        #self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
         self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
         self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
         
@@ -139,6 +141,10 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
         self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
+
+        self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
+        self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
+        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -161,7 +167,11 @@ class OWRadviz(OWWidget):
 
     def saveGnuplot(self):
         self.graph.saveGnuplot(self.getShownAttributeList(), str(self.classCombo.currentText()))
-    
+
+    def evaluateCurrentProjection(self):
+        acc = self.graph.getProjectionQuality(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
+        QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+   
     # #########################
     # OPTIONS
     # #########################
@@ -441,6 +451,16 @@ class OWRadviz(OWWidget):
         self.graph.replot()
 
     # #####################
+
+    def showKNNCorect(self):
+        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar,  showKNNModel = 1, kNeighbours = self.kNeighbours, showCorrect = 1)
+        self.graph.update()
+        self.repaint()
+
+    def showKNNWrong(self):
+        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar,  showKNNModel = 1, kNeighbours = self.kNeighbours, showCorrect = 0)
+        self.graph.update()
+        self.repaint()
 
     def updateGraph(self):
         self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)

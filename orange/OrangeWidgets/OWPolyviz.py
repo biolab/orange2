@@ -45,7 +45,7 @@ class OWPolyviz(OWWidget):
         self.jitteringType = "uniform"
         self.scaleFactor = 1.0
         self.enhancedTooltips = 1
-        self.globalValueScaling = 1
+        self.globalValueScaling = 0
         self.jitterSize = 1
         self.kNeighbours = 1
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
@@ -107,7 +107,7 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.optimizationDlgButton = QPushButton('Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('kNN Optimization dialog', self.attrOrderingButtons)
         self.tryReverse = QCheckBox("Try reversing attr. values (exponential time)", self.attrOrderingButtons)
 
         self.optimizationDlg = OptimizationDialog(None)

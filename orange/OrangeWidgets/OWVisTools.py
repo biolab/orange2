@@ -16,7 +16,7 @@ class OptimizationDialog(OWBaseWidget):
         #QWidget.__init__(self, parent)
         OWBaseWidget.__init__(self, parent, "Optimization Dialog", "optimize visualization impression and manage result", TRUE, FALSE, FALSE)
 
-        self.setCaption("Qt Optimization Dialog")
+        self.setCaption("Qt kNN Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
         self.grid=QGridLayout(3,2)
         self.topLayout.addLayout( self.grid, 10 )
@@ -40,15 +40,19 @@ class OptimizationDialog(OWBaseWidget):
         self.manageResultsBox = QVGroupBox (self, "Manage results")
         self.manageResultsBox.setTitle("Manage results")
 
-        self.infoBox =QVGroupBox(self, "Selected projection information")
-        self.infoBox.setTitle("Information")
+        #self.infoBox =QVGroupBox(self, "Selected projection information")
+        #self.infoBox.setTitle("Information")
+
+        self.evaluateBox = QVGroupBox(self, "Evaluate projection")
+        self.evaluateBox.setTitle("Evaluate projection")
         
         self.resultsBox = QVGroupBox (self, "Results")
         self.resultsBox.setTitle("Results")
 
         self.grid.addWidget(self.optimizeButtonBox,0,0)
-        self.grid.addWidget(self.manageResultsBox,1,0)
-        self.grid.addWidget(self.infoBox, 2,0)
+        self.grid.addWidget(self.evaluateBox,1,0)
+        self.grid.addWidget(self.manageResultsBox,2,0)
+        #self.grid.addWidget(self.infoBox, 2,0)
         self.grid.addMultiCellWidget (self.resultsBox,0,2, 1, 1)
         self.grid.setColStretch(0, 0)
         self.grid.setColStretch(1, 100)
@@ -100,6 +104,12 @@ class OptimizationDialog(OWBaseWidget):
             self.maxLenCombo.insertItem(str(i))
         self.maxLenCombo.setCurrentItem(0)
         self.exactlyLenCombo.setCurrentItem(0)
+
+        self.evaluateButton = QPushButton("Evaluate current projection", self.evaluateBox)
+        self.hbox7 = QHBox(self.evaluateBox)
+        self.showKNNCorrectButton = QPushButton('Show kNN correct', self.hbox7)
+        self.showKNNWrongButton = QPushButton('Show kNN wrong', self.hbox7) 
+        
         
         #self.resize(200, 500)
         self.attrLenCaption = QLabel('Select attribute count', self.manageResultsBox)

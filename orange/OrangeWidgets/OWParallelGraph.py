@@ -59,7 +59,7 @@ class OWParallelGraph(OWVisGraph):
         else:   self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
 
         if self.showAttrValues or self.showCorrelations:
-            self.setAxisScale(QwtPlot.yLeft, -0.03, 1.03, 1)
+            self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
         else:
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
@@ -234,7 +234,7 @@ class OWParallelGraph(OWVisGraph):
         classNameIndex = self.attributeNames.index(className)
 
         # create color table            
-        count = float(len(data.domain[className].values))
+        count = len(data.domain[className].values)
         if count < 1:
             count = 1.0
 

@@ -231,11 +231,12 @@ class OWGraph(QwtPlot):
         ext = ext.upper()
         self.saveToFileDirect(fileName, ext, size)
         
-    def saveToFileDirect(self, fileName, ext, size = None):
-        if size == None:
+    def saveToFileDirect(self, fileName, ext, size = QSize()):
+        if size.isEmpty():
             buffer = QPixmap(self.size()) # any size can do, now using the window size
         else:
             buffer = QPixmap(size)
+        buffer = QPixmap(size)
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
         self.printPlot(painter, buffer.rect())

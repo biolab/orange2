@@ -264,7 +264,7 @@ class OWRadvizGraph(OWVisGraph):
 
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, labels, className, statusBar):
+    def updateData(self, labels, className, statusBar, showKNNModel = 0, kNeighbours = -1, showCorrect = 1):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
@@ -366,6 +366,13 @@ class OWRadvizGraph(OWVisGraph):
         else:	# if we have a continuous class
             valLen = 0
 
+
+        if showKNNModel == 1:
+            # variables and domain for the table
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain[className]])
+            table = orange.ExampleTable(domain)
+            
+
         dataSize = len(self.rawdata)
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
@@ -376,6 +383,7 @@ class OWRadvizGraph(OWVisGraph):
                 if self.scaledData[indices[j]][i] == "?": validData[i] = 0
 
         RECT_SIZE = 0.01    # size of rectangle
+        newColor = QColor(0,0,0)
         for i in range(dataSize):
             if validData[i] == 0: continue
             
@@ -403,12 +411,12 @@ class OWRadvizGraph(OWVisGraph):
             self.tips.addToolTip(r, text)
 
 
-            if valLen == 1:
+            if showKNNModel == 1:
+                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i][className]]))
+            elif valLen == 1:
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
             elif self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-                #curveData[int(self.rawdata[i][className])][0].append(x_i)
-                #curveData[int(self.rawdata[i][className])][1].append(y_i)
                 curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
                 curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
                 newColor = QColor()
@@ -429,8 +437,21 @@ class OWRadvizGraph(OWVisGraph):
 
     
         #################
+        if showKNNModel == 1:
+            classValues = list(self.rawdata.domain[className].values)
+            knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+
+            for j in range(len(table)):
+                out = knn(table[j], orange.GetProbabilities)
+                prob = out[table[j].getclass()]
+                if showCorrect == 1:
+                    prob = 1.0 - prob
+                    newColor = QColor(prob*255, prob*255, prob*255)
+                else:
+                    newColor = QColor(prob*255, prob*255, prob*255)
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
         # we add computed data in curveData as curves and show it
-        if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+        elif className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             for i in range(valLen):
                 newColor = QColor()
                 if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
@@ -440,6 +461,7 @@ class OWRadvizGraph(OWVisGraph):
                 #index = classValueIndices[self.rawdata.domain.classVar.values[i]]
                 #key = self.addCurve(str(index), newColor, newColor, self.pointWidth)
                 #self.setCurveData(key, curveData[index][0], curveData[index][1])
+
 
         #################
         # draw the legend

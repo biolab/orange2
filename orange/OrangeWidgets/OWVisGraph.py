@@ -328,13 +328,16 @@ class OWVisGraph(OWGraph):
             b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
                      
 
-    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0):
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = []):
         newCurveKey = self.insertCurve(name)
         newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
         self.setCurveSymbol(newCurveKey, newSymbol)
         self.setCurveStyle(newCurveKey, style)
         self.setCurvePen(newCurveKey, QPen(penColor))
         self.enableLegend(enableLegend, newCurveKey)
+        if xData != [] and yData != []:
+            self.setCurveData(newCurveKey, xData, yData)
+            
         return newCurveKey
 
     # ####################################################################

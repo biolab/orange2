@@ -35,7 +35,7 @@ class OWScatterPlot(OWWidget):
         self.application = app
 
         #set default settings
-        self.pointWidth = 7
+        self.pointWidth = 5
         self.kNeighbours = 1 
         self.jitteringType = "uniform"
         self.showXAxisTitle = 1
