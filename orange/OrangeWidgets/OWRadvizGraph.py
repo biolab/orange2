@@ -154,7 +154,6 @@ class OWRadvizGraph(OWVisGraph):
         #  create data curves
         # -----------------------------------------------------------
         # if we don't want coloring
-        MAX_HUE_COLOR = 360
         if className == "(One color)":      
             valLen = 1
 
@@ -167,10 +166,8 @@ class OWRadvizGraph(OWVisGraph):
         # if we have a continuous class
         else:
             valLen = 0
-            MAX_HUE_COLOR = 300
-            scaledClassData = []
             if className != "(One color)" and className != '':
-                scaledClassData, vals = self.scaleData(self.rawdata, className, -1, -1, 1)
+                scaledClassData, vals = self.scaleData(self.rawdata, className, forColoring = 1)
 
         dataSize = len(self.scaledData[0])
         curveData = []
@@ -207,7 +204,7 @@ class OWRadvizGraph(OWVisGraph):
                 curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
             else:
                 newColor = QColor()
-                newColor.setHsv(scaledClassData[i] * MAX_HUE_COLOR, 255, 255)
+                newColor.setHsv(scaledClassData[i] * 360, 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
                 self.setCurveData(key, [x_i], [y_i])
 
@@ -261,7 +258,7 @@ class OWRadvizGraph(OWVisGraph):
         for label in attrList:
             index = self.scaledDataAttributes.index(label)
             indices.append(index)
-            scaled, vals = self.scaleData(self.rawdata, index)
+            scaled, vals = self.scaleData(self.rawdata, index, jitteringEnabled = 0)
             selectedScaledData[index] = scaled
 
         # create anchor for every attribute
@@ -281,6 +278,7 @@ class OWRadvizGraph(OWVisGraph):
             temp = 0
             for j in range(attrListLength):
                 temp += selectedScaledData[indices[j]][i]
+            if temp == 0.0: temp = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
             sum_i.append(temp)
 
         # create all possible circular permutations of this indices
@@ -294,8 +292,6 @@ class OWRadvizGraph(OWVisGraph):
             for i in range(classValsCount): curveData.append([ [] , [] ])   # we create classValsCount empty lists with sublists for x and y
             
             for i in range(dataSize):
-                if sum_i[i] == 0.0: continue
-
                 # calculate projections
                 x_i = 0.0; y_i = 0.0
                 for j in range(attrListLength):

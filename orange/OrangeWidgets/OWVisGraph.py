@@ -62,6 +62,7 @@ class OWVisGraph(OWGraph):
         newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
         self.setCurveSymbol(newCurveKey, newSymbol)
         self.setCurveStyle(newCurveKey, style)
+        self.setCurvePen(newCurveKey, QPen(penColor))
         self.enableLegend(enableLegend, newCurveKey)
         return newCurveKey
 
@@ -147,7 +148,7 @@ class OWVisGraph(OWGraph):
     #
     # scale data at index index to the interval 0 to 1
     #
-    def scaleData(self, data, index, min = -1, max = -1, forColoring = 0):
+    def scaleData(self, data, index, min = -1, max = -1, forColoring = 0, jitteringEnabled = 1):
         attr = data.domain[index]
         temp = []; values = []
 
@@ -164,9 +165,13 @@ class OWVisGraph(OWGraph):
                 for i in range(len(data)):
                     val = float(variableValueIndices[data[i][index].value]) / float(count)
                     temp.append(val)
-            else:
+            elif jitteringEnabled == 1:
                 for i in range(len(data)):
                     val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(0.2/count)
+                    temp.append(val)
+            else:
+                for i in range(len(data)):
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count)
                     temp.append(val)
                     
         # is the attribute continuous
@@ -194,6 +199,26 @@ class OWVisGraph(OWGraph):
                     temp.append((data[i][attr].value - min) / diff)
         return (temp, values)
 
+
+    def rescaleAttributesGlobaly(self, data, attrList):
+        min = -1; max = -1; first = TRUE
+        for attr in attrList:
+            if data.domain[attr].varType == orange.VarTypes.Discrete: continue
+            index = self.scaledDataAttributes.index(attr)
+            (minVal, maxVal) = self.getMinMaxVal(data, index)
+            if first == TRUE:
+                min = minVal; max = maxVal
+                first = FALSE
+            else:
+                if minVal < min: min = minVal
+                if maxVal > max: max = maxVal
+
+        for attr in attrList:
+            index = self.scaledDataAttributes.index(attr)
+            scaled, values = self.scaleData(data, index, min, max)
+            self.scaledData[index] = scaled
+            self.attrValues[attr] = values
+
     #
     # set new data and scale its values
     #
@@ -205,17 +230,18 @@ class OWVisGraph(OWGraph):
         
         if data == None: return
 
-        min = -1; max = -1
+        min = -1; max = -1; first = TRUE
         if self.globalValueScaling == 1:
             for index in range(len(data.domain)):
+                if data.domain[index].varType == orange.VarTypes.Discrete: continue
                 (minVal, maxVal) = self.getMinMaxVal(data, index)
-                if index == 0:
+                if first == TRUE:
                     min = minVal; max = maxVal
+                    first = FALSE
                 else:
                     if minVal < min: min = minVal
                     if maxVal > max: max = maxVal
 
-        self.distributions = []; self.totals = []
         for index in range(len(data.domain)):
             attr = data.domain[index]
             self.scaledDataAttributes.append(attr.name)

@@ -18,6 +18,7 @@ from OData import *
 import orngFSS
 import statc
 import orngCI
+import OWVisAttrSelection
 
 
 ###########################################################################################
@@ -28,7 +29,7 @@ class OWRadviz(OWWidget):
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF"]
-        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini"]
+        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Functional decomposition"]
         self.attributeOrdering  = ["Original", "Optimized class separation"]
         OWWidget.__init__(self,
         parent,
@@ -280,80 +281,19 @@ class OWRadviz(OWWidget):
     def setShownAttributeList(self, data):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
+
         if data == None: return
 
         self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
+        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+        for attr in shown:
+            if attr == data.domain.classVar.name: continue
+            self.shownAttribsLB.insertItem(attr)
+        for attr in hidden:
+            if attr == data.domain.classVar.name: continue
+            self.hiddenAttribsLB.insertItem(attr)
         
-        ## RELIEF
-        if self.attrContOrder == "RelieF" and self.attrDiscOrder == "RelieF":
-            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-            for item in newAttrs:
-                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
-                else:                       self.hiddenAttribsLB.insertItem(item[0])
-            return
-        ## NONE
-        elif self.attrContOrder == "None" and self.attrDiscOrder == "None":
-            for item in data.domain.attributes:    self.shownAttribsLB.insertItem(item.name)
-            return
-
-        ###############################
-        # sort continuous attributes
-        if self.attrContOrder == "None":
-            for item in data.domain:
-                if item.varType == orange.VarTypes.Continuous: self.shownAttribsLB.insertItem(item.name)
-        elif self.attrContOrder == "RelieF":
-            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-            for item in newAttrs:
-                if data.domain[item[0]].varType != orange.VarTypes.Continuous: continue
-                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
-                else:                       self.hiddenAttribsLB.insertItem(item[0])
-        else:
-            print "Incorrect value for attribute order"
-
-        ################################
-        # sort discrete attributes
-        if self.attrDiscOrder == "None":
-            for item in data.domain.attributes:
-                if item.varType == orange.VarTypes.Discrete: self.shownAttribsLB.insertItem(item.name)
-        elif self.attrDiscOrder == "RelieF":
-            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-            for item in newAttrs:
-                if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
-                if item[0] == data.domain.classVar.name: continue
-                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
-                else:                       self.hiddenAttribsLB.insertItem(item[0])
-        elif self.attrDiscOrder == "GainRatio" or self.attrDiscOrder == "Gini":
-            if self.attrDiscOrder == "GainRatio":   measure = orange.MeasureAttribute_gainRatio()
-            else:                                   measure = orange.MeasureAttribute_gini()
-            if data.domain.classVar.varType != orange.VarTypes.Discrete:
-                measure = orange.MeasureAttribute_relief(k=20, m=50)
-
-            # create new table with only discrete attributes
-            attrs = []
-            for attr in data.domain.attributes:
-                if attr.varType == orange.VarTypes.Discrete: attrs.append(attr)
-            attrs.append(data.domain.classVar)
-            dataNew = data.select(attrs)
-            newAttrs = orngFSS.attMeasure(dataNew, measure)
-            for item in newAttrs:
-                    self.shownAttribsLB.insertItem(item[0])
-        else:
-            print "Incorrect value for attribute order"
-
-        #################################
-        # if class attribute hasn't been added yet, we add it
-        foundClass = 0
-        for i in range(self.shownAttribsLB.count()):
-            if str(self.shownAttribsLB.text(i)) == data.domain.classVar.name:
-                foundClass = 1
-        for i in range(self.hiddenAttribsLB.count()):
-            if str(self.hiddenAttribsLB.text(i)) == data.domain.classVar.name:
-                foundClass = 1
-        if not foundClass:
-            self.shownAttribsLB.insertItem(data.domain.classVar.name)
-
         self.setAttrOrdering(self.attributeOrdering.index(self.attrOrdering))
-
         
     def getShownAttributeList (self):
         list = []

@@ -74,7 +74,7 @@ class OWParallelGraph(OWVisGraph):
         scaledClassData = []
         classValues = []
         if className != "(One color)" and className != '':
-            scaledClassData, classValues = self.scaleData(self.rawdata, className, -1,-1, 1)
+            scaledClassData, classValues = self.scaleData(self.rawdata, className, forColoring = 1)
 
         xs = range(length)
         dataSize = len(self.scaledData[0])        

@@ -34,7 +34,7 @@ class OWScatterPlotGraph(OWVisGraph):
     #
     # scale data at index index to the interval 0 - 1
     #
-    def scaleData(self, data, index, jitteringEnabled = 1):
+    def scaleData(self, data, index):
         attr = data.domain[index]
         temp = [];
         # is the attribute discrete

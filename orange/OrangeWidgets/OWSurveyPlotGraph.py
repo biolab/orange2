@@ -37,13 +37,8 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         # create a table of class values that will be used for coloring the lines
         scaledClassData = []
-        classValueIndices = {}
-        classValueCount = 0
-        if className != "(One color)" and className != '' and self.rawdata.domain[className].varType != orange.VarTypes.Discrete:
-            scaledClassData = self.scaleData(self.rawdata, className)
-        else:
-            classValueCount = len(self.rawdata.domain[className].values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, className)
+        if className != "(One color)":
+            scaledClassData, vals = self.scaleData(self.rawdata, className, forColoring = 1)
 
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
@@ -60,9 +55,6 @@ class OWSurveyPlotGraph(OWVisGraph):
             newColor = QColor(0,0,0)
             if scaledClassData != []:
                 newColor.setHsv(scaledClassData[i]*360, 255, 255)
-            elif classValueIndices != {}:
-                val = self.rawdata[i][className].value
-                newColor.setHsv(float(classValueIndices[val]*360)/float(classValueCount), 255, 255)
                 
             curve.color = newColor
             curve.penColor = newColor
