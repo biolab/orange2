@@ -73,7 +73,7 @@ class OWKMeans(OWWidget):
 
         bic, cbic = compute_bic(self.cdata, self.mc.medoids)
         for k in range(self.K):
-            self.table.setText(k, 0, str(self.cdata[k].getclass()))
+            self.table.setText(k, 0, str(k+1))
             self.table.setText(k, 1, str(dist[k]))
             self.table.setText(k, 2, "%5.3f" % self.mc.cdisp[k])
             self.table.setText(k, 3, "%6.2f" % cbic[k])
