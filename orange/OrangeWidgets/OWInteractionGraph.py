@@ -16,6 +16,7 @@ from OData import *
 from qt import *
 from qtcanvas import *
 import orngInteract
+import orngDepend
 import statc
 import os
 from re import *
@@ -169,7 +170,7 @@ class OWInteractionGraph(OWWidget):
                     return
         elif ev.button() == QMouseEvent.LeftButton and name == "interactions":
             self.rest = None
-            for (rect1, rect2, rect3, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
+            for (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
                 if self.clickInside(tooltipRect, ev.pos()) == 1:
                     self.send("view", (str(text1.text()), str(text2.text())))
 
@@ -178,7 +179,7 @@ class OWInteractionGraph(OWWidget):
 
             found = 0; i = 0
             while not found and i < len(self.interactionRects):
-                (rect1, rect2, rect3, text1, text2, tooltipRect, tooltipText) = self.interactionRects[i]
+                (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) = self.interactionRects[i]
                 if self.clickInside(tooltipRect, ev.pos()) == 1:
                     attr1 = str(text1.text()); attr2 = str(text2.text())
                     found = 1
@@ -244,6 +245,7 @@ class OWInteractionGraph(OWWidget):
     def updateNewData(self, data):
         self.data = data
         self.interactionMatrix = orngInteract.InteractionMatrix(data)
+        self.dependenceMatrix = orngDepend.DependenceMatrix(data, include_class=0, interactions_too=1)
 
         # save discretized data and repair invalid names
         
@@ -349,10 +351,11 @@ class OWInteractionGraph(OWWidget):
 
         ################################
         # hide all interaction rectangles
-        for (rect1, rect2, rect3, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
+        for (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
             rect1.hide() 
             rect2.hide() 
-            rect3.hide() 
+            rect3.hide()
+            nbrect.hide()
             text1.hide() 
             text2.hide()
             QToolTip.remove(self.canvasViewL, tooltipRect)
@@ -404,7 +407,9 @@ class OWInteractionGraph(OWWidget):
             if not self.showInteractionPair(attrIndex1, attrIndex2): continue
            
             interaction = (total - gain1 - gain2)
-            rectsYOff = yOff + index * yscale * 0.15
+            atts = (max(attrIndex1, attrIndex2), min(attrIndex1, attrIndex2))
+            nbgain = self.dependenceMatrix.igain[atts] + self.dependenceMatrix.gains[atts[0]] + self.dependenceMatrix.gains[atts[1]]-(self.dependenceMatrix.igain[atts]+self.dependenceMatrix.corr[atts])
+            rectsYOff = yOff + 3 + index * yscale * 0.15
 
             # swap if gain1 < gain2
             if gain1 < gain2:
@@ -420,6 +425,12 @@ class OWInteractionGraph(OWWidget):
                 x3 = ceil(xOff + xscale*(total-gain2))
             x4 = ceil(xOff + xscale*total)
 
+            # compute nbgain position
+            nb_x1 = min(xOff, floor(xOff + 0.5*xscale*nbgain))
+            nb_x2 = max(xOff, floor(xOff + 0.5*xscale*nbgain))
+            nbrect = QCanvasRectangle(nb_x1, rectsYOff-3, nb_x2-nb_x1+1, 2, self.canvasL)
+            
+            
             rect2 = QCanvasRectangle(x2, rectsYOff,   x3-x2+1, rectHeight, self.canvasL)
             rect1 = QCanvasRectangle(x1, rectsYOff, x2-x1+1, rectHeight, self.canvasL)
             
@@ -439,7 +450,7 @@ class OWInteractionGraph(OWWidget):
             rect1.setBrush(brush1); rect1.setPen(QPen(QColor(Qt.blue)))
             rect2.setBrush(brush2); rect2.setPen(QPen(color))
             rect3.setBrush(brush3); rect3.setPen(QPen(QColor(Qt.blue)))
-            rect1.show(); rect2.show();  rect3.show()
+            rect1.show(); rect2.show();  rect3.show(); nbrect.show()
 
             # create text labels
             text1 = QCanvasText(data.domain[attrIndex1].name, self.canvasL)
@@ -465,7 +476,7 @@ class OWInteractionGraph(OWWidget):
             if rectsYOff + rectHeight + 10 > maxHeight:
                 maxHeight = rectsYOff + rectHeight + 10
 
-            self.interactionRects.append((rect1, rect2, rect3, text1, text2, QRect(x1, rectsYOff, x4-x1, rectHeight), tooltipText))
+            self.interactionRects.append((rect1, rect2, rect3, nbrect, text1, text2, QRect(x1, rectsYOff, x4-x1, rectHeight), tooltipText))
             index += 1
 
         # resizing of the left canvas to update width
@@ -479,7 +490,7 @@ class OWInteractionGraph(OWWidget):
     #########################################
     # if we scrolled in the left canvas then we have to update tooltip positions
     def contentsMoving(self, x,y):
-        for (rect1, rect2, rect3, text1, text2, rect, tooltipText) in self.interactionRects:
+        for (rect1, rect2, rect3, nbrect, text1, text2, rect, tooltipText) in self.interactionRects:
             oldrect = QRect(rect.left()-self.viewXPos, rect.top()-self.viewYPos, rect.width(), rect.height())
             QToolTip.remove(self.canvasViewL, oldrect)
             newrect = QRect(rect.left()-x, rect.top()-y, rect.width(), rect.height())
