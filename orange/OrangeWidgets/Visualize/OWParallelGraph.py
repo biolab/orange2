@@ -74,6 +74,7 @@ class OWParallelGraph(OWVisGraph):
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
+        classNameIndex = -1
         if self.rawdata.domain.classVar:
             classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         
@@ -86,14 +87,14 @@ class OWParallelGraph(OWVisGraph):
         if not continuousClass and self.rawdata.domain.classVar:
             colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-            if self.lineTracking:
-                colorPalette.setBrightness(150)
+            if self.lineTracking or self.showStatistics: colorPalette.setBrightness(130)
         else:
             colorPalette = ColorPaletteHSV()
 
-        #############################################
+        # ############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
         # we do this by adding a integer meta attribute, that for each example stores attribute index, where we stop drawing lines
+        # ############################################
         lastIndex = indices[-1]
         dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
         
@@ -138,6 +139,7 @@ class OWParallelGraph(OWVisGraph):
 
         # ############################################
         # draw the data
+        # ############################################
         validData = [1] * dataSize
         for i in range(dataSize):
             valid = 1
@@ -180,22 +182,6 @@ class OWParallelGraph(OWVisGraph):
         if targetValue != None:
             for curve in curves[0]: self.insertCurve(curve)
             for curve in curves[1]: self.insertCurve(curve)
-
-        if self.showStatistics:
-            data = []
-            for i in range(length):
-                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Continuous:
-                    data.append(())
-                    continue  # only for continuous attributes
-                array = self.scaledData[indices[i]]
-                if self.showStatistics == MEANS:
-                    mean = MLab.mean(array)
-                    dev = MLab.std(array)
-                    data.append((mean-dev, mean, mean+dev))
-                elif self.showStatistics == MEDIAN:
-                    sorted = Numeric.sort(array)
-                    data.append((sorted[int(len(a)/4.0)], sorted[int(len(a)/2.0)], sorted[int(len(a)*0.75)]))
-            
 
 
         # ############################################
@@ -247,7 +233,73 @@ class OWParallelGraph(OWVisGraph):
                         self.marker(mkey).setXValue(i)
                         self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
                         self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignVCenter)
-                    
+
+        # ##############################################
+        # show lines that represent standard deviation or quartiles
+        # ##############################################
+        if self.showStatistics:
+            data = []
+            for i in range(length):
+                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Continuous:
+                    data.append([()])
+                    continue  # only for continuous attributes
+                array = Numeric.compress(Numeric.equal(self.validDataArray[indices[i]], 1), self.scaledData[indices[i]])  # remove missing values
+                
+                if classNameIndex == -1 or continuousClass:    # no class
+                    if self.showStatistics == MEANS:
+                        mean = MLab.mean(array)
+                        dev = MLab.std(array)
+                        data.append([(mean-dev, mean, mean+dev)])
+                    elif self.showStatistics == MEDIAN:
+                        sorted = Numeric.sort(array)
+                        data.append([(sorted[int(len(a)/4.0)], sorted[int(len(a)/2.0)], sorted[int(len(a)*0.75)])])
+                else:
+                    curr = []
+                    classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                    for c in range(len(classValues)):
+                        print i, c
+                        scaledVal = ((classValueIndices[classValues[c]] * 2) + 1) / float(2*len(classValueIndices))
+                        nonMissingValues = Numeric.compress(Numeric.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
+                        arr_c = Numeric.compress(Numeric.equal(nonMissingValues, scaledVal), array)
+                        if len(arr_c) == 0:
+                            curr.append(()); continue
+                        if self.showStatistics == MEANS:
+                            mean = MLab.mean(arr_c)
+                            dev = MLab.std(arr_c)
+                            curr.append((mean-dev, mean, mean+dev))
+                        elif self.showStatistics == MEDIAN:
+                            sorted = Numeric.sort(arr_c)
+                            curr.append((sorted[int(len(arr_c)/4.0)], sorted[int(len(arr_c)/2.0)], sorted[int(len(arr_c)*0.75)]))
+                    data.append(curr)
+
+            # draw vertical lines
+            colorPalette.setBrightness(255)
+            for i in range(len(data)):
+                for c in range(len(data[i])):
+                    if data[i][c] == (): continue
+                    x = i - 0.03*(len(data[i])-1)/2.0 + c*0.03
+                    self.addCurve("", colorPalette[c], colorPalette[c], 3, QwtCurve.Lines, QwtSymbol.Diamond, xData = [x,x,x], yData = [data[i][c][0], data[i][c][1], data[i][c][2]], lineWidth = 4)
+                    self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][0], data[i][c][0]], lineWidth = 4)
+                    self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][1], data[i][c][1]], lineWidth = 4)
+                    self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = [x-0.03, x+0.03], yData = [data[i][c][2], data[i][c][2]], lineWidth = 4)
+
+            # draw lines with mean/median values
+            classCount = 1
+            if classNameIndex == -1 or continuousClass:    classCount = 1 # no class
+            else: classCount = len(self.rawdata.domain.classVar.values)
+            for c in range(classCount):
+                diff = - 0.03*(classCount-1)/2.0 + c*0.03
+                ys = []
+                xs = []
+                for i in range(len(data)):
+                    if data[i] != [()]: ys.append(data[i][c][1]); xs.append(i+diff)
+                    else:
+                        if len(xs) > 1: self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4)
+                        xs = []; ys = []
+                self.addCurve("", colorPalette[c], colorPalette[c], 1, QwtCurve.Lines, QwtSymbol.None, xData = xs, yData = ys, lineWidth = 4)
+
+
+        
         # ##################################################
         # show labels in the middle of the axis
         if midLabels:
