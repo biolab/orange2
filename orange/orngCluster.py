@@ -116,7 +116,7 @@ class HClustering:
                         self.mapping[j] = i+1
                 #return height
                     
-        def sort(self,seq,lab):
+        def sort(self,seq):
                 # try to sort the dendrogram according to a list
                 merges = []
                 for i in range(self.n):
