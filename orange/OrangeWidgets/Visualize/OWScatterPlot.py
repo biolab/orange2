@@ -362,6 +362,7 @@ class OWScatterPlot(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.optimizationDlg.clearResults()
+        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)

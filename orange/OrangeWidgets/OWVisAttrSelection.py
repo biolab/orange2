@@ -209,11 +209,14 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = No
 def computeCorrelationBetweenAttributes(data, attrList, minCorrelation = 0.0):
     correlations = []
     for i in range(len(attrList)):
+        if data.domain.attributes[i].varType != orange.VarTypes.Continuous: continue
         for j in range(i+1, len(attrList)):
+            if data.domain.attributes[j].varType != orange.VarTypes.Continuous: continue
             table = data.select([attrList[i], attrList[j]])
             table = orange.Preprocessor_dropMissing(table)
             attr1 = [table[k][attrList[i]].value for k in range(len(table))]
             attr2 = [table[k][attrList[j]].value for k in range(len(table))]
+            
             val, prob = statc.pearsonr(attr1, attr2)
             if abs(val) >= minCorrelation: correlations.append((abs(val), attrList[i], attrList[j]))
 
