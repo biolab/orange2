@@ -39,6 +39,7 @@ import orngCluster
 import Tkinter, ImageTk
 import piddle, piddlePIL, math
 
+_defaultfont = 'Times'
 
 def _colorize0(cc):
     #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
@@ -119,8 +120,8 @@ class DendrogramPlot:
         else:
             tcanvas = canvas
 
-        normal = piddle.Font(face="Courier")
-        bold = piddle.Font(face="Courier",bold=1)
+        normal = piddle.Font(face=_defaultfont)
+        bold = piddle.Font(face=_defaultfont,bold=1)
         if height==None:
             # compute the height
             lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
@@ -350,7 +351,7 @@ class DendrogramPlot:
         else:
             tcanvas = canvas
 
-        normal = piddle.Font(face="Courier")
+        normal = piddle.Font(face=_defaultfont)
 
         # compute the height
         lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
@@ -420,7 +421,8 @@ def Matrix(diss = [], hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 1
     else:
         tcanvas = canvas
 
-    normal = piddle.Font(face="Courier")
+    normal = piddle.Font(face=_defaultfont)
+    bold = piddle.Font(face=_defaultfont,bold=1)
 
     square = 0
     if len(diss) > 0:
@@ -474,13 +476,16 @@ def Matrix(diss = [], hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 1
         x2 = offsetx + lineskip*(i) + hook
         y2 = offsety + halfline - hook
         # vertical
-        canvas.drawString(vlabels[i], x2+block+halfline, y2+block, angle=90,font=normal)
+        if vlabels[i][0] == '*':
+            canvas.drawString(vlabels[i][1:], x2+block+halfline, y2+block, angle=90,font=bold)
+        else:
+            canvas.drawString(vlabels[i], x2+block+halfline, y2+block, angle=90,font=normal)
         
     # print names
     for i in range(len(hlabels)):
         # self.order identifies the label at a particular row
         x = offsetx - labellen[i]
-        y = offsety + lineskip*(i+1)
+        y = offsety + lineskip*(i+1)+halfline
         canvas.drawString(hlabels[i], x, y,font=normal)
         for j in range(len(vlabels)):
             x = offsetx+hook+lineskip*(j)+block
