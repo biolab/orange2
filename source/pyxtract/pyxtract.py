@@ -802,7 +802,7 @@ def writeInitialization(functions, constants):
   functionsfile.write("\n")
 
   printV1NoNL("\nConstants:")
-  functionsfile.write("\nvoid addConstants(PyObject *mod) {\n")
+  functionsfile.write("\nvoid add%sConstants(PyObject *mod) {\n" % modulename)
   if olist:
     for constantname in olist:
       constant=constants[constantname]
@@ -835,9 +835,13 @@ PyObject *%(modulename)sModule;
 
 ORANGE_API void addClassList(TOrangeType **);
 
-extern "C" %(MODULENAME)s_API void init%(modulename)s()
+#ifdef _DARWIN
+  extern "C" %(MODULENAME)s_API void init%(modulename)sLow()
+#else
+  extern "C" %(MODULENAME)s_API void init%(modulename)s()
+#endif
 { 
-  if (!initExceptions())
+  if (!init%(modulename)sExceptions())
     return;
 """ % {"modulename" : modulename, "MODULENAME": modulename.upper()})
 
@@ -850,9 +854,9 @@ extern "C" %(MODULENAME)s_API void init%(modulename)s()
 """ % {"modulename" : modulename})
 
   functionsfile.write("""
-  gcUnsafeStaticInitialization();
+  gc%(modulename)sUnsafeStaticInitialization();
   %(modulename)sModule = Py_InitModule("%(modulename)s", %(modulename)sFunctions);  
-  addConstants(%(modulename)sModule);
+  add%(modulename)sConstants(%(modulename)sModule);
 }
 """ % {"modulename" : modulename, "MODULENAME": modulename.upper()})
 

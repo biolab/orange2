@@ -43,7 +43,7 @@ ORANGE_API PyObject *PyExc_OrangeAttributeWarning;
 ORANGE_API PyObject *PyExc_OrangeWarning;
 ORANGE_API PyObject *PyExc_OrangeCompatibilityWarning;
 
-bool initExceptions()
+bool initorangeExceptions()
 { if (   ((PyExc_OrangeKernel = makeExceptionClass("orange.KernelException", "An error occurred in Orange's C++ kernel")) == NULL)
       || ((PyExc_OrangeWarning = makeExceptionClass("orange.Warning", "Orange warning", PyExc_Warning)) == NULL)
       || ((PyExc_OrangeCompatibilityWarning = makeExceptionClass("orange.CompatibilityWarning", "Orange compabitility warning", PyExc_OrangeWarning)) == NULL)
@@ -84,7 +84,7 @@ void tdidt_cpp_gcUnsafeInitialization();
 void random_cpp_gcUnsafeInitialization();
 void pythonVariables_unsafeInitializion();
 
-void gcUnsafeStaticInitialization()
+void gcorangeUnsafeStaticInitialization()
 { tdidt_cpp_gcUnsafeInitialization();
   random_cpp_gcUnsafeInitialization();
   pythonVariables_unsafeInitializion();
