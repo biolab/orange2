@@ -8,6 +8,7 @@ from copy import copy
 import time
 from operator import add
 from math import *
+from OWkNNOptimization import *
 
 # ####################################################################
 # get a list of all different permutations
@@ -65,7 +66,6 @@ class OWRadvizGraph(OWVisGraph):
         self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
-        self.statusBar = None
         self.showLegend = 1
         self.kNNOptimization = None
 
@@ -260,10 +260,7 @@ class OWRadvizGraph(OWVisGraph):
 
             ##########
             # we add a tooltip for this point
-            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
-            r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
-            self.tips.addToolTip(r, text)
-
+            
 
             if self.showKNNModel == 1:
                 table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
@@ -272,11 +269,17 @@ class OWRadvizGraph(OWVisGraph):
                 curveData[classValueIndices[self.rawdata[i].getclass().value]][1].append(y_i)
                 newColor = QColor()
                 newColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
+                r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, text)
             else:
                 newColor = QColor()
                 newColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
                 self.setCurveData(key, [x_i], [y_i])
+                text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
+                r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, text)
 
             if self.enhancedTooltips == 1:            
                 # create a dictionary value so that tooltips will be shown faster
@@ -290,11 +293,26 @@ class OWRadvizGraph(OWVisGraph):
         #################
         if self.showKNNModel == 1:
             kNNValues = self.kNNOptimization.kNNClassifyData(table)
-            if self.showCorrect == 1: kNNValues = [1.0 - val for val in kNNValues]
+            accuracy = copy(kNNValues)
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                if (self.kNNOptimization.measureType == CLASS_ACCURACY and self.showCorrect) or (self.kNNOptimization.measureType == BRIER_SCORE and not self.showCorrect):
+                    kNNValues = [1.0 - val for val in kNNValues]
+            else:
+                if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
+            
+            if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
+            else:
+                if self.kNNOptimization.measureType == CLASS_ACCURACY: preText = "Classification accuracy : "
+                else:                                                  preText = "Brier score : "
 
             for j in range(len(table)):
+                #print kNNValues[j]
                 newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
                 key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                r = QRectFloat(table[j][0].value - RECT_SIZE, table[j][1].value -RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, preText + "%.2f "%(accuracy[j]))
+                
+                
                 
         # we add computed data in curveData as curves and show it
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -554,6 +572,7 @@ class OWRadvizGraph(OWVisGraph):
         full = []
 
         self.totalPossibilities = 0
+        self.triedPossibilities = 0
         self.startTime = time.time()
         for i in range(numOfAttr, 2, -1):
             self.totalPossibilities += combinations(i, len(attrList))
@@ -591,7 +610,7 @@ class OWRadvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete or self.kNNOptimization.measureType == CLASS_ACCURACY: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)

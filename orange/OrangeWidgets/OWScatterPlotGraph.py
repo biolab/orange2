@@ -220,19 +220,13 @@ class OWScatterPlotGraph(OWVisGraph):
                     newColor = QColor(0,0,0)
                     if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
                         
-                    symbol = shapeList[0]
-                    if shapeIndex != -1: symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
+                    Symbol = shapeList[0]
+                    if shapeIndex != -1: Symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
-                    newCurveKey = self.insertCurve(str(i))
-                    symbolBrush = QBrush(QBrush.NoBrush)
-                    self.setCurveData(newCurveKey, [x], [y])
-                    self.curveKeys.append(newCurveKey)
-                    if self.showFilledSymbols == 1: symbolBrush = QBrush(newColor)
-                    newSymbol = QwtSymbol(symbol, symbolBrush, QPen(newColor), QSize(size, size))
-                    self.setCurveSymbol(newCurveKey, newSymbol)
+                    self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
                     ##########
                     # we add a tooltip for this point

@@ -6,6 +6,7 @@
 from OWVisGraph import *
 from copy import copy, deepcopy
 import time
+from OWkNNOptimization import *
 
 # ####################################################################
 # get a list of all different permutations
@@ -262,12 +263,6 @@ class OWPolyvizGraph(OWVisGraph):
             y_i = y_i * self.scaleFactor
                 
 
-            # #########
-            # we add a tooltip for this point
-            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
-            r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
-            self.tips.addToolTip(r, text)
-
             lineColor = QColor(0,0,0)
             if self.showKNNModel == 1:
                 table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
@@ -276,9 +271,15 @@ class OWPolyvizGraph(OWVisGraph):
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
                 lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
+                r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, text)
             else:
                 contData.append([x_i, y_i, self.coloringScaledData[classNameIndex][i] * 360]) # store data for drawing
                 lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
+                r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, text)
 
 
             # compute the lines from anchors
@@ -318,11 +319,24 @@ class OWPolyvizGraph(OWVisGraph):
         ###### SHOW KNN MODEL QUALITY/ERROR
         if self.showKNNModel:
             kNNValues = self.kNNOptimization.kNNClassifyData(table)
-            if self.showCorrect == 1: kNNValues = [1.0 - val for val in kNNValues]
+            accuracy = copy(kNNValues)
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                if (self.kNNOptimization.measureType == CLASS_ACCURACY and self.showCorrect) or (self.kNNOptimization.measureType == BRIER_SCORE and not self.showCorrect):
+                    kNNValues = [1.0 - val for val in kNNValues]
+            else:
+                if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
             
+            if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
+            else:
+                if self.kNNOptimization.measureType == CLASS_ACCURACY: preText = "Classification accuracy : "
+                else:                                                  preText = "Brier score : "
+
             for j in range(len(table)):
+                #print kNNValues[j]
                 newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
                 key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                r = QRectFloat(table[j][0].value - RECT_SIZE, table[j][1].value -RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+                self.tips.addToolTip(r, preText + "%.2f "%(accuracy[j]))
                 for i in range(len(polyvizLineCoordsX)):
                     self.addCurve('line' + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
 
@@ -616,6 +630,7 @@ class OWPolyvizGraph(OWVisGraph):
         full = []
         
         self.totalPossibilities = 0
+        self.triedPossibilities = 0
         self.startTime = time.time()
         for i in range(numOfAttr, 2, -1):
             self.totalPossibilities += combinations(i, len(attrList))
@@ -657,7 +672,7 @@ class OWPolyvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete or self.kNNOptimization.measureType == CLASS_ACCURACY: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)

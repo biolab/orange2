@@ -118,9 +118,9 @@ class OWRadviz(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
-        #self.showGnuplotButton = QPushButton("Show with Gnuplot", self.space)
+        self.showGnuplotButton = QPushButton("Show with Gnuplot", self.space)
         #self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
-        #self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
+        self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
         #self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
         #self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
         
@@ -201,10 +201,14 @@ class OWRadviz(OWWidget):
 
     def evaluateCurrentProjection(self):
         acc = self.graph.getProjectionQuality(self.getShownAttributeList())
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-        else:
+        if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        else:
+            if self.optimizationDlg.measureType == CLASS_ACCURACY:
+                QMessageBox.information( None, "Radviz", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            else:
+                QMessageBox.information( None, "Radviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
+            
         
     def showKNNCorect(self):
         self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
@@ -263,7 +267,7 @@ class OWRadviz(OWWidget):
                 
             if len(fullList) == 0: return
 
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete or self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
             self.optimizationDlg.clear()
@@ -304,7 +308,7 @@ class OWRadviz(OWWidget):
             fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), maxLen)
             if len(fullList) == 0: return
 
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete or self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
             self.optimizationDlg.clear()

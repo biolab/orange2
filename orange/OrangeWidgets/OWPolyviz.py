@@ -187,10 +187,14 @@ class OWPolyviz(OWWidget):
 
     def evaluateCurrentProjection(self):
         acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            QMessageBox.information( None, "Polyviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-        else:
+        if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Polyviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        else:
+            if self.optimizationDlg.measureType == CLASS_ACCURACY:
+                QMessageBox.information( None, "Polyviz", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            else:
+                QMessageBox.information( None, "Polyviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
+            
 
     def showKNNCorect(self):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 1)
@@ -246,11 +250,11 @@ class OWPolyviz(OWWidget):
                 #self.progressBar.setTotalSteps(combin)
                 #self.progressBar.setProgress(0)
                 self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time())
-                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, select, int(str(self.optimizationDlg.resultListCombo.currentText())))
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, select)
                
             if fullList == []: return
 
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete or self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
             else: funct = min
 
             # fill the "interesting visualizations" list box
@@ -293,7 +297,8 @@ class OWPolyviz(OWWidget):
             else:
                 fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, maxLen)
 
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
+
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete or self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max 
             else: funct = min
             
             # fill the "interesting visualizations" list box

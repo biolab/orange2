@@ -318,7 +318,7 @@ class OWScatterPlot3D(OWWidget):
             self.updateGraph()
 
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         xAttr = str(self.attrX.currentText())
         yAttr = str(self.attrY.currentText())
         zAttr = str(self.attrZ.currentText())

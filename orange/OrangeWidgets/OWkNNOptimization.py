@@ -6,8 +6,11 @@ import cPickle
 import os
 import orange
 
+CLASS_ACCURACY = 0
+BRIER_SCORE = 1
+
 class kNNOptimization(OWBaseWidget):
-    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples"]
+    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
@@ -28,6 +31,7 @@ class kNNOptimization(OWBaseWidget):
         self.minExamples = 0
         self.resultListLen = 100
         self.percentDataUsed = 100
+        self.measureType = 0
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.parentName = "Projection"
         #self.domainName = "Unknown"
@@ -82,6 +86,13 @@ class kNNOptimization(OWBaseWidget):
         self.hbox4 = QHBox (self.optimizeButtonBox)
         self.percentDataUsedLabel = QLabel('Percent of data used in evaluation: ', self.hbox4)
         self.percentDataUsedCombo = QComboBox(self.hbox4)
+
+        self.measureBox = QHButtonGroup(self.optimizeButtonBox, "Quality measure")
+        #self.measureBox.setTitle("")
+        self.measureBox.setExclusive(TRUE)
+        self.measureAccuracy = QRadioButton('Classification accuracy', self.measureBox)
+        self.measureBrier = QRadioButton('Brier score', self.measureBox)
+        self.connect(self.measureBox, SIGNAL("clicked(int)"), self.setMeasure)
 
         self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
         self.numberOfAttrBox.setTitle("Number of attributes")
@@ -161,7 +172,11 @@ class kNNOptimization(OWBaseWidget):
             self.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kValue))
 
+        self.measureBox.setButton(self.measureType)
         self.minTableLenEdit.setText(str(self.minExamples))        
+
+    def setMeasure(self, n):
+        self.measureType = n
 
     def setKNeighbours(self, n):
         self.kValue = self.kNeighboursNums[n]
@@ -312,8 +327,30 @@ class kNNOptimization(OWBaseWidget):
         experiments = 0            
         knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0)
         selection = orange.MakeRandomIndices2(table, 1.0-float(percentDataUsed)/100.0)
-        
-        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+
+        if table.domain.classVar.varType == orange.VarTypes.Continuous:
+            for j in range(len(table)):
+                qApp.processEvents()        # allow processing of other events
+                if selection[j] == 0: continue
+                temp += pow(table[j][2].value - knn(table[j]), 2)
+                experiments += 1
+            accuracy = temp/float(experiments)
+            return 100.0*accuracy
+
+        # compute accuracy
+        elif self.measureType == CLASS_ACCURACY:
+            classValues = list(table.domain.classVar.values)
+            for j in range(len(table)):
+                qApp.processEvents()        # allow processing of other events
+                if selection[j] == 0: continue
+                out = knn(table[j], orange.GetProbabilities)
+                temp += out[table[j].getclass()]
+                experiments += 1
+            accuracy = temp/float(experiments)
+            return 100.0*accuracy
+
+        # compute brier
+        else:
             classValues = list(table.domain.classVar.values)
             for j in range(len(table)):
                 qApp.processEvents()        # allow processing of other events
@@ -323,27 +360,34 @@ class kNNOptimization(OWBaseWidget):
                 for val in out: sum += val*val
                 temp += sum - 2*out[table[j].getclass()]
                 experiments += 1
-            accuracy = 1 - ((temp + experiments)/(float(len(classValues)*experiments)))
-            #print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, temp)
-        else:
-            for j in range(len(table)):
-                qApp.processEvents()        # allow processing of other events
-                if selection[j] == 0: continue
-                temp += pow(table[j][2].value - knn(table[j]), 2)
-                experiments += 1
-            accuracy = temp/float(experiments)
-
-        return 100.0*accuracy
-
-
+            accuracy = (temp + experiments)/(float(len(classValues)*experiments))
+            return accuracy     # return value is between 0 and 1
+                
+        
     # #############################
     # kNNClassifyData - compute classification error for every example in table
     def kNNClassifyData(self, table):
-        temp = 0.0
         knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0)
         returnTable = []
-        
-        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+
+        if table.domain.classVar.varType == orange.VarTypes.Continuous:
+            for j in range(len(table)):
+                qApp.processEvents()        # allow processing of other events
+                returnTable.append(pow(table[j][2].value - knn(table[j]), 2))
+            # normalize the data to the 0-1 interval
+            maxError = max(returnTable)
+            returnTable = [val/maxError for val in returnTable]
+            
+        # compute accuracy
+        elif self.measureType == CLASS_ACCURACY:
+            classValues = list(table.domain.classVar.values)
+            for j in range(len(table)):
+                qApp.processEvents()        # allow processing of other events
+                out = knn(table[j], orange.GetProbabilities)
+                returnTable.append(out[table[j].getclass()])
+
+        # compute brier
+        else:
             classValues = list(table.domain.classVar.values)
             lenClassValues = len(classValues)
             for j in range(len(table)):
@@ -351,17 +395,8 @@ class kNNOptimization(OWBaseWidget):
                 out = knn(table[j], orange.GetProbabilities)
                 sum = 0
                 for val in out: sum += val*val
-                temp = sum + 1 - 2*out[table[j].getclass()]
-                returnTable.append(1-(temp/float(lenClassValues)))
-        else:
-            for j in range(len(table)):
-                qApp.processEvents()        # allow processing of other events
-                returnTable.append(pow(table[j][2].value - knn(table[j]), 2))
-            
-            # normalize the data to the 0-1 interval
-            maxError = max(returnTable)
-            returnTable = [val/maxError for val in returnTable]
-
+                returnTable.append((sum + 1 - 2*out[table[j].getclass()])/float(lenClassValues))
+        
         return returnTable
 
     
@@ -369,7 +404,7 @@ class kNNOptimization(OWBaseWidget):
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OptimizationDialog()
+    ow=kNNOptimization()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()        

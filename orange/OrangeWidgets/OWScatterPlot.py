@@ -397,7 +397,7 @@ class OWScatterPlot(OWWidget):
                 combo.setCurrentItem(i)
                 return
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         if self.data == None: return
         xAttr = str(self.attrX.currentText())
         yAttr = str(self.attrY.currentText())
