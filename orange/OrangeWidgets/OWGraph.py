@@ -1,5 +1,5 @@
 #
-# voGraph.py
+# owGraph.py
 #
 # the base for all graphs
 
@@ -14,6 +14,70 @@ from OWBaseWidget import *
 import time
 from OWDlgs import OWChooseImageSizeDlg
 
+
+colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
+
+class ColorPaletteHSV:
+    maxHueVal = 300
+    
+    def __init__(self, numberOfColors = -1):
+        self.colors = []
+        self.hueValues = []
+        self.numberOfColors = numberOfColors
+        
+        if numberOfColors == -1: return  # used for coloring continuous variables
+        elif numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
+            for i in range(numberOfColors):
+                col = QColor()
+                col.setHsv(colorHueValues[i], 255, 255)
+                self.colors.append(col)
+            self.hueValues = colorHueValues[:self.numberOfColors]
+        else:   
+            self.hueValues = [int(float(x*maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
+            for hue in self.hueValues:
+                col = QColor()
+                col.setHsv(hue, 255, 255)
+                self.colors.append(col)
+
+    # get only hue value for given index
+    def getHue(self, index):
+        if self.numberOfColors == -1:
+            return index * self.maxHueVal
+        else:
+            return self.hueValues[index]
+
+    # get QColor instance for given index
+    def getColor(self, index):
+        if self.numberOfColors == -1:                # is this color for continuous attribute?
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, 255, 255)     # index must be between 0 and 1
+            return col
+        else:                                   # get color for discrete attribute
+            return self.colors[index]           # index must be between 0 and self.numberofColors
+            
+
+# black and white color palette
+class ColorPaletteBW:
+    def __init__(self, numberOfColors = -1, brightest = 50, darkest = 255):
+        self.colors = []
+        self.numberOfColors = numberOfColors
+        self.brightest = brightest
+        self.darkest = darkest
+        
+        if numberOfColors == -1: return  # used for coloring continuous variables
+        else:   
+            for val in [int(brightest + (darkest-brightest)*x/float(numberOfColors)) for x in range(numberOfColors)]:
+                self.colors.append(QColor(val, val, val))
+                
+    # get QColor instance for given index
+    def getColor(self, index):
+        if self.numberOfColors == -1:                # is this color for continuous attribute?
+            val = int(self.brightest + (self.darkest-self.brightest)*index)
+            return QColor(val, val, val)
+        else:                                   # get color for discrete attribute
+            return self.colors[index]           # index must be between 0 and self.numberofColors
+
+        
 
 # ####################################################################
 # calculate Euclidean distance between two points

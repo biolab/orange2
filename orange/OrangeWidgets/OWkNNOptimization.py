@@ -31,7 +31,7 @@ class kNNOptimization(OWBaseWidget):
 	resultsListLenList = [str(x) for x in resultsListLenNums]
 
 	def __init__(self,parent=None):
-		OWBaseWidget.__init__(self, parent, "VizRank Optimization Dialog", "Find interesting projections of data", FALSE, FALSE, FALSE)
+		OWBaseWidget.__init__(self, parent, "Optimization Dialog", "Find interesting projections of data", FALSE, FALSE, FALSE)
 
 		self.setCaption("Qt VizRank Optimization Dialog")
 		self.topLayout = QVBoxLayout( self, 10 ) 
@@ -156,6 +156,11 @@ class kNNOptimization(OWBaseWidget):
 
 	def getQualityMeasure(self):
 		return self.qualityMeasure
+
+	def getQualityMeasureStr(self):
+		if self.qualityMeasure ==0: return "Classification accuracy"
+		elif self.qualityMeasure==1: return "Average probability of correct classification"
+		else: return "Brier score"
 
 	def getAllResults(self):
 		return self.allResults
@@ -356,9 +361,9 @@ class kNNOptimization(OWBaseWidget):
 		knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
 
 		if self.testingMethod == LEAVE_ONE_OUT:	
-			results = orngTest.leaveOneOut([knn], testTable)
+			results = orngTest.leaveOneOut([knn], table)
 		elif self.testingMethod == TEN_FOLD_CROSS_VALIDATION:
-			results = orngTest.crossValidation([knn], testTable)
+			results = orngTest.crossValidation([knn], table)
 		else:
 			# wrong but fast way to evaluate the accuracy
 			results = orngTest.ExperimentResults(1, ["kNN"], list(table.domain.classVar.values), 0, table.domain.classVar.baseValue)

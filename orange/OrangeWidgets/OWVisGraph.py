@@ -14,6 +14,53 @@ ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
 
+# ####################################################################    
+# return a list of sorted values for attribute at index index
+# EXPLANATION: if variable values have values 1,2,3,4,... then their order in orange depends on when they appear first
+# in the data. With this function we get a sorted list of values
+def getVariableValuesSorted(data, index):
+    if data.domain[index].varType == orange.VarTypes.Continuous:
+        print "Invalid index for getVariableValuesSorted"
+        return []
+    
+    values = list(data.domain[index].values)
+    intValues = []
+    i = 0
+    # do all attribute values containt integers?
+    try:
+        while i < len(values):
+            temp = int(values[i])
+            intValues.append(temp)
+            i += 1
+    except: pass
+
+    # if all values were intergers, we first sort them ascendently
+    if i == len(values):
+        intValues.sort()
+        values = intValues
+    out = []
+    for i in range(len(values)):
+        out.append(str(values[i]))
+
+    return out
+
+# ####################################################################
+# create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
+# in case all values are integers, we also sort them
+def getVariableValueIndices(data, index):
+    if data.domain[index].varType == orange.VarTypes.Continuous:
+        print "Invalid index for getVariableValueIndices"
+        return {}
+
+    values = getVariableValuesSorted(data, index)
+
+    dict = {}
+    for i in range(len(values)):
+        dict[values[i]] = i
+    return dict
+
+
+
 class OWVisGraph(OWGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
@@ -38,8 +85,6 @@ class OWVisGraph(OWGraph):
         self.ypos = 0
         self.zoomStack = []
         self.zoomState = ()
-        self.colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
-        self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
@@ -141,8 +186,9 @@ class OWVisGraph(OWGraph):
             # is the attribute discrete
             if attr.varType == orange.VarTypes.Discrete:
                 # we create a hash table of variable values and their indices
-                variableValueIndices = self.getVariableValueIndices(data, index)
+                variableValueIndices = getVariableValueIndices(data, index)
                 count = float(len(attr.values))
+                colors = ColorPaletteHSV(len(attr.values))
                 values = [0, count-1]
                 countx2 = float(2*count)	# we compute this value here, so that we don't have to compute it in the loop
                 count100 = float(100.0*count) # same
@@ -152,8 +198,8 @@ class OWVisGraph(OWGraph):
                     val = variableValueIndices[data[i][index].value]
                     noJittering.append( (1.0 + 2.0 * val)/ countx2 )
                     original.append( ((1.0 + 2.0 * val)/ countx2) + ((1+val)/count) * self.rndCorrection(self.jitterSize/count100))
-                    if count < len(self.colorHueValues): coloring.append(self.colorHueValues[val])
-                    else:                                coloring.append( val / float(count) )
+                    coloring.append(colors.getHue(val))
+
 
             # is the attribute continuous
             else:
@@ -162,13 +208,14 @@ class OWVisGraph(OWGraph):
                     max = self.domainDataStat[index].max
                 diff = max - min
                 values = [min, max]
+                colors = ColorPaletteHSV(-1)
 
                 max_hue = self.MAX_HUE_VAL / 360.0
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: original.append("?"); coloring.append("?"); continue
                     val = (data[i][attr].value - min) / diff
                     original.append(val)
-                    coloring.append(val * max_hue)        # we make color palette smaller, because red is in the begining and ending of hsv
+                    coloring.append(colors.getHue(val))        # we make color palette smaller, because red is in the begining and ending of hsv
                 noJittering = original
                 
             self.scaledData.append(original)
@@ -226,7 +273,7 @@ class OWVisGraph(OWGraph):
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
-            variableValueIndices = self.getVariableValueIndices(data, index)
+            variableValueIndices = getVariableValueIndices(data, index)
             count = float(len(attr.values))
             values = [0, count-1]
             countx2 = float(2*count)	# we compute this value here, so that we don't have to compute it in the loop
@@ -296,53 +343,6 @@ class OWVisGraph(OWGraph):
             for j in range(len(indices)):
                 if self.scaledData[indices[j]][i] == "?": validData[i] = 0
         return validData
-
-
-    # ####################################################################    
-    # return a list of sorted values for attribute at index index
-    # EXPLANATION: if variable values have values 1,2,3,4,... then their order in orange depends on when they appear first
-    # in the data. With this function we get a sorted list of values
-    def getVariableValuesSorted(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValuesSorted"
-            return []
-        
-        values = list(data.domain[index].values)
-        intValues = []
-        i = 0
-        # do all attribute values containt integers?
-        try:
-            while i < len(values):
-                temp = int(values[i])
-                intValues.append(temp)
-                i += 1
-        except: pass
-
-        # if all values were intergers, we first sort them ascendently
-        if i == len(values):
-            intValues.sort()
-            values = intValues
-        out = []
-        for i in range(len(values)):
-            out.append(str(values[i]))
-
-        return out
-
-    # ####################################################################
-    # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
-    # in case all values are integers, we also sort them
-    def getVariableValueIndices(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValueIndices"
-            return {}
-
-        values = self.getVariableValuesSorted(data, index)
-
-        dict = {}
-        for i in range(len(values)):
-            dict[values[i]] = i
-        return dict
-
 
     def setScaleFactor(self, num):
         self.scaleFactor = num
@@ -540,6 +540,12 @@ class OWVisGraph(OWGraph):
     def onMouseReleased(self, e):
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
+        staticClick = 0
+
+        if e.button() != Qt.RightButton:
+            if self.xpos == e.x() and self.ypos == e.y():
+                self.staticMouseClick(e)
+                staticClick = 1
 
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
@@ -549,9 +555,7 @@ class OWVisGraph(OWGraph):
             self.removeCurve(self.zoomKey)
             self.tempSelectionCurve = None
 
-            if xmin == xmax or ymin == ymax:
-                self.staticMouseClick(e)
-                return
+            if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
 
             xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
             ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
@@ -573,7 +577,7 @@ class OWVisGraph(OWGraph):
                 self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
                 return
 
-        elif Qt.RightButton == e.button() and self.state == SELECT_RECTANGLE:
+        elif e.button() == Qt.RightButton and self.state == SELECT_RECTANGLE:
             self.removeLastSelection()      # remove the rectangle
 
         # ####
