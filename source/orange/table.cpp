@@ -599,8 +599,10 @@ void TExampleTable::sort(vector<int> &sortOrder)
       for(t = examples; t!= _Last; t++) {
         const TValue &val = (**t)[*bi];
         const int intV = val.isSpecial() ? noVal : val.intV;
-        if (intV > noVal)
+        if (intV > noVal) {
+          free(temp);
           raiseError("value out attribute '%s' of range", domain->variables->operator[](*bi)->name.c_str());
+        }
         valf[intV]++;
       }
 
@@ -616,6 +618,7 @@ void TExampleTable::sort(vector<int> &sortOrder)
       examples = temp;
       temp = t;
       _Last = examples + lastOfs;
+      _EndSpace = examples + ssize;
     }
 
     else

@@ -550,8 +550,6 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
   if (strlen(line)>=32768-1)
     raiseErrorWho("TabDelimExampleGenerator", "line %i of file '%s' too long", fei.line, fei.filename.c_str());
 
-
-  for( ;*curr && (*curr==' '); curr++); // skip whitespace
   if (*curr=='|')
     return false;
 
@@ -567,16 +565,14 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
       case '\t':
         atoms.push_back(atom);
         atom = string();
-        while( *++curr && (*curr==' '));
         break;
 
       case ' ':
         atom += *curr;
-        while(*++curr==' ');
         break;
 
       default:
-        if ((*curr>' ') || (*curr<0))
+        if ((*curr>=' ') || (*curr<0))
           atom += *curr++;
         else
           curr++;

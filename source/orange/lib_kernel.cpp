@@ -228,20 +228,22 @@ bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, 
     return true;
   }
   
-  PyObject *iterator = PyObject_GetIter(boundList);
-  if (iterator) {
-    for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
-      PVariable variable=varFromArg_byDomain(item, domain, checkForIncludance);
-      Py_DECREF(item);
-      if (!variable) {
-        Py_DECREF(iterator);
-        return false;
+  if (!PyMapping_Check(boundList)) {
+    PyObject *iterator = PyObject_GetIter(boundList);
+    if (iterator) {
+      for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+        PVariable variable=varFromArg_byDomain(item, domain, checkForIncludance);
+        Py_DECREF(item);
+        if (!variable) {
+          Py_DECREF(iterator);
+          return false;
+        }
+        boundSet.push_back(variable);
       }
-      boundSet.push_back(variable);
-    }
         
-    Py_DECREF(iterator);
-    return true;
+      Py_DECREF(iterator);
+      return true;
+    }
   }
       
   else if (allowSingle) {
@@ -895,11 +897,28 @@ PyObject *ExampleGenerator_native(PyObject *self, PyObject *args, PyObject *keyw
 
 PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg);
 
-inline PPreprocessor pp_sameValues(PyObject *dict)
-{ return mlnew TPreprocessor_take(PVariableFilterMap_FromArguments(dict)); }
+int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObject *pyvalue);
 
-inline PPreprocessor filter_sameValues(PyObject *dict, PDomain domain)
-{ return TPreprocessor_take::constructFilter(PVariableFilterMap_FromArguments(dict), domain); }
+inline PVariableFilterMap sameValuesMap(PyObject *dict, PDomain dom)
+{ TVariableFilterMap *vfm = mlnew TVariableFilterMap;
+  PVariableFilterMap wvfm = vfm;
+
+  int pos=0;
+  PyObject *pykey, *pyvalue;
+  while (PyDict_Next(dict, &pos, &pykey, &pyvalue)) {
+    PVariable var = varFromArg_byDomain(pykey, dom, true);
+    if (!var || (VariableFilterMap_setitemlow(vfm, var, pyvalue) < 0))
+      return PVariableFilterMap();
+  }
+
+  return wvfm;
+}
+
+inline PPreprocessor pp_sameValues(PyObject *dict, PDomain dom)
+{ return mlnew TPreprocessor_take(sameValuesMap(dict, dom)); }
+
+inline PFilter filter_sameValues(PyObject *dict, PDomain domain)
+{ return TPreprocessor_take::constructFilter(sameValuesMap(dict, domain), domain); }
 
 PyObject *applyPreprocessor(PPreprocessor preprocessor, PExampleGenerator gen, bool weightGiven, int weightID)
 { if (!preprocessor)
@@ -923,7 +942,7 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
     /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
     if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
-      return applyPreprocessor(pp_sameValues(keywords), weg, false, 0);
+      return applyPreprocessor(pp_sameValues(keywords, eg->domain), weg, false, 0);
     }
 
     PyObject *mplier;
@@ -1011,7 +1030,7 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
       /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
       if (PyDict_Check(mplier))
-        return applyFilter(pp_sameValues(mplier), weg, weightGiven, weightID);
+        return applyFilter(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID);
 
 
       /* ***** PREPROCESSING ***** */

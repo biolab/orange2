@@ -44,7 +44,7 @@
 #include <string.h>
 
 #ifdef _MSC_VER
-  TExampleTable *readExcelFile(char *, PVarList);
+  TExampleTable *readExcelFile(char *filename, char *sheet, PVarList);
 #endif
 
 bool fileExists(const string &s) {
@@ -62,15 +62,17 @@ typedef enum {UNKNOWN, TXT, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 WRAPPER(ExampleTable);
 
 TExampleTable *readData(char *filename, PVarList knownVars)
-{ char *ext;
+{ char *ext, *hash;
   if (filename) {
-    for(ext = filename + strlen(filename); ext!=filename; ext--) {
+    for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
       if (*ext == '.')
         break;
       else if ((*ext=='\\') || (*ext==':')) {
         ext = NULL;
         break;
       }
+      else if (!*hash && (*ext == '#'))
+        hash = ext;
     }
     if (ext==filename)
       ext = NULL;
@@ -119,8 +121,8 @@ TExampleTable *readData(char *filename, PVarList knownVars)
     }
 
     #ifdef _MSC_VER
-    if (!strcmp(ext, ".xls"))
-      return readExcelFile(filename, knownVars);
+    if ((hash-ext==4) && !strncmp(ext, ".xls", 4))
+      return readExcelFile(filename, hash, knownVars);
     #endif
 
     raiseError("unknown file format for file '%s'", filename);    
@@ -162,8 +164,15 @@ TExampleTable *readData(char *filename, PVarList knownVars)
   CHECKFF(".tab", TAB);
   CHECKFF(".names", C45);
   CHECKFF(".rdo", RETIS);
+
   #ifdef _MSC_VER
-  CHECKFF(".xls", EXCEL);
+    if (*hash) {
+      *hash = 0;
+      CHECKFF(".xls", EXCEL);
+      *hash = '#';
+    }
+    else
+      CHECKFF(".xls", EXCEL);
   #endif
 
   #undef CHECKFF
@@ -220,7 +229,7 @@ TExampleTable *readData(char *filename, PVarList knownVars)
 
     #ifdef _MSC_VER
     case EXCEL:
-      return readExcelFile(filename, knownVars);
+      return readExcelFile(filename, hash, knownVars);
     #endif
 
     default:

@@ -206,3 +206,18 @@ PyObject *compiletime(PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> time")
 
   return Py_BuildValue("iiiiiiiii", time.tm_year, time.tm_mon, time.tm_mday, time.tm_hour, time.tm_min, time.tm_sec, ntime->tm_wday, ntime->tm_hour, ntime->tm_yday, ntime->tm_isdst);
 }
+
+
+
+/********** OBSOLETE ***************/
+
+PyObject *setrandseed(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(int seed) -> None")
+{ int rs;
+  if (!PyArg_ParseTuple(args, "i", &rs))
+    PYERROR(PyExc_TypeError, "integer parameter expected", PYNULL);
+
+  srand(rs);
+  RETURN_NONE;
+}
+
+

@@ -40,8 +40,8 @@ class TOrangeMap : public TOrange
     TOrangeMap()
       {}
  
-    TOrangeMap(const map<K, V>& _X)
-      : __ormap(_X)
+    TOrangeMap(const map<K, V>& X)
+      : __ormap(X)
       {}
 
     int traverse(visitproc visit, void *arg) const

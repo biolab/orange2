@@ -13,7 +13,7 @@ public:
   TExcelReader();
   ~TExcelReader();
 
-  TExampleTable *operator()(char *filename, PVarList knownVars);
+  TExampleTable *operator()(char *filename, char *sheet, PVarList knownVars);
 
 private:
   IDispatch *pXlApp;
@@ -31,12 +31,13 @@ private:
   DISPPARAMS dp;
   DISPID dispidNamed;
   LPWSTR lfilename;
+  LPWSTR lsheet;
   char *cellvalue;
 
   void Invoke(int autoType, IDispatch *pDisp, LPOLESTR ptName, int cArgs);
   void getProperty(IDispatch *pDisp, LPOLESTR ptName);
 
-  void openFile(char *filename);
+  void openFile(char *filename, char *sheet);
 
   void cellAsVariant(const int &row, const int &col);
   char *cellAsText(const int &row, const int &col);
@@ -59,6 +60,7 @@ TExcelReader::TExcelReader()
   pXlUsedRange(NULL),
   dispidNamed(DISPID_PROPERTYPUT),
   lfilename(NULL),
+  lsheet(NULL),
   cells(NULL),
   cellvalue(NULL)
 {
@@ -99,6 +101,8 @@ TExcelReader::~TExcelReader()
 
   if (lfilename)
     free(lfilename);
+  if (lsheet)
+    free(lsheet);
   if (cellvalue)
     free(cellvalue);
 
@@ -141,12 +145,32 @@ void TExcelReader::setArg(const int argno, const int arg)
 }
 
 
-void TExcelReader::openFile(char *filename)
+void TExcelReader::openFile(char *filename, char *sheet)
 {
-  const int blen = 2+2*strlen(filename);
-  lfilename = (LPWSTR)malloc(blen);
-  MultiByteToWideChar(CP_ACP, 0, filename, -1, lfilename, blen);
+  // Get the full path name and the sheet name (if given)
+  char fnamebuf[1024], *foo;
+  long fulllen;
+  if (*sheet) {
+    *sheet = 0;
+    fulllen = GetFullPathName(filename, 1024, fnamebuf, &foo);
 
+    const int slen = 2+2*strlen(sheet+1);
+    lsheet = (LPWSTR)malloc(slen);
+    MultiByteToWideChar(CP_ACP, 0, sheet+1, -1, lsheet, slen);
+
+    *sheet = '#';
+  }
+  else
+    fulllen = GetFullPathName(filename, 1024, fnamebuf, &foo);
+
+  if (!fulllen)
+    raiseError("invalid filename or path too long");
+
+  lfilename = (LPWSTR)malloc(fulllen*2+2);
+  MultiByteToWideChar(CP_ACP, 0, fnamebuf, -1, lfilename, fulllen*2+2);
+
+  
+  // Open Excel
   CLSID clsid;
   HRESULT hr = CLSIDFromProgID(L"Excel.Application", &clsid);
 
@@ -161,14 +185,8 @@ void TExcelReader::openFile(char *filename)
   setArg(0, 1);
   Invoke(DISPATCH_PROPERTYPUT, pXlApp, L"Visible", 1);
 */
-  args->vt = VT_BSTR;
-  unsigned short *buf = NULL;
-  buf = _wgetcwd(buf, 0);
-  args->bstrVal = SysAllocString(buf);
-  free(buf);
-  Invoke(DISPATCH_PROPERTYPUT, pXlApp, L"DefaultFilePath", 1);
-  VariantClear(args);
 
+  // Open the worksheet and get the range
   getProperty(pXlApp, L"Workbooks");
   pXlBooks = result.pdispVal;
 
@@ -178,7 +196,15 @@ void TExcelReader::openFile(char *filename)
   pXlBook = result.pdispVal;
   VariantClear(args);
 
-  getProperty(pXlApp, L"ActiveSheet");
+  if (lsheet) {
+    args->vt = VT_BSTR;
+    args->bstrVal = SysAllocString(lsheet);
+    Invoke(DISPATCH_PROPERTYGET, pXlBook, L"Sheets", 1);
+    VariantClear(args);
+  }
+  else
+    getProperty(pXlApp, L"ActiveSheet");
+
   pXlSheet = result.pdispVal;
 
   getProperty(pXlSheet, L"UsedRange");
@@ -431,16 +457,16 @@ TExampleTable *TExcelReader::readExamples(PDomain domain, const vector<char> &sp
 }
 
 
-TExampleTable *TExcelReader::operator ()(char *filename, PVarList knownVars)
-{ openFile(filename);
+TExampleTable *TExcelReader::operator ()(char *filename, char *sheet, PVarList knownVars)
+{ openFile(filename, sheet);
   
   vector<char> specials;
   PDomain domain = constructDomain(knownVars, specials);
   return readExamples(domain, specials);
 }
 
-TExampleTable *readExcelFile(char *filename, PVarList knownVars)
-{ return TExcelReader()(filename, knownVars); }
+TExampleTable *readExcelFile(char *filename, char *sheet, PVarList knownVars)
+{ return TExcelReader()(filename, sheet, knownVars); }
 
 // import orange; t = orange.ExampleTable(r"D:\ai\Domene\Imp\imp\merged2.xls")
 
