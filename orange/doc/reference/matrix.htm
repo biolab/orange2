@@ -1,0 +1,40 @@
+<HTML>
+<HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+
+<H1>Converting data to GSL and Numeric Python</H1>
+
+<H2>From ExampleTable to a matrix</H2>
+
+<P>Machine learning is often combined with various statistical procedures such as factor or discriminant analysis, clustering or ANOVA. Some of these are supported in Orange while others can be easily programmed using statistical and linear algebra libraries for Python, such as PyGSL or Numeric Python. To make conversions more efficient, <a href="ExampleTable.htm"><CODE>ExampleTable</CODE></A> provides the methods that return an example table in form of various matrices: method <CODE>toGsl</CODE> returns a PyGSL matrix, <CODE>toNumeric</CODE> returns a Numeric Python matrix and <CODE>toNumArray</CODE> will (when implemented) return a NumArray matrix.</P>
+
+<P><SMALL>Note: Binary distributions of Orange includes the listed methods, but they will yield an exception when called if the corresponding Python modules are not installed. If you're compiling Orange yourself, and you don't have and don't intend to use them, you can disable the extensions by #defining <CODE>NO_GSL</CODE> and/or <CODE>NO_NUMERIC</CODE> symbols.</SMALL></P>
+
+<P>Functions accept three optional arguments: contents string, weight ID and the flag that tells how to treat the multinomial attributes.</P>
+
+<P>Contents string can include 'A' or 'a' for attribute values (excluding the class), 'C' or 'c' for class value, 'W' or 'w' for weight and '0' and '1' for constant 0.0 or 1.0. Each symbol can occur more than once. For instance, to convert an example table 'data' to a Numeric array that will have the class value in the first column, followed by the attributes and finally by two columns of zero's (to which we can later set some other data), we would call <CODE>data.toNumeric("CA00")</CODE></P>
+
+<P>If the examples have not class but content string includes 'C', an exception is raised. If it includes only the lower case 'c', the corresponding column is omitted, without giving an exception or warning. Similar goes for 'W' and 'w': the former raises an exception if the weightID (the second argument to a call) is omitted or zero, while the latter simply omits the column. Finally, if 'A' is given and there are no attributes (except, possibly, the class attribute and ignored discrete attributes) an exception is raised.</P>
+
+<P>In addition to returning the matrix, the functions can return vectors of classes or weights. This is requested by putting a slash to the contents string, followed by c's, C's, w's and/or W's. Like before, capital letters will yield an exception if the class or weight is absent, while in case of lower cases <CODE>None</CODE> is returned instead of the corresponding vector.</P>
+
+<P>The result of calling <CODE>toGsl</CODE>, <CODE>toNumeric</CODE> and <CODE>toNumArray</CODE> is always a tuple containing the matrix and the requested vectors. If slash is the first character of the contents string, there will be no matrix. If there's no slash or it is the last character, the tuple will only have the matrix. If contents string is "/", the tuple is empty (if you find this funny).</P>
+
+<P>The default contents is "a/cw" - a matrix with attribute values and separate vectors with classes and weights. Specifying an empty string has the same effect. If you would, for some reason, want a matrix with two columns with class values and three columns of 0's, and, besides that, a separate vector of classes and three vectors of weights, you would request this by "acc000/cwww". The three weight vectors will, however, be one and the same Python object, so modifying one will change all three of them. You can also repeat a's: the combination "ACC1Aw/ccw" will put two copies of attributes values in the matrix, they will be separated by two columns of classes and a column of 1's, and followed by the weights if they exist. In addition, it will return two copies of vector of classes and a vector of weights (or None if there are none).</P>
+
+<P>The third argument to the function specifies the treatment of non-continuous non-binary values (for binary values we have no problem: they are translated to continuous 0.0 or 1.0). The argument's value can be <CODE>ExampleTable.Multinomial_Ignore</CODE> (such attributes are omitted), <CODE>ExampleTable.Multinomial_AsOrdinal</CODE> (the attribute's values' indices are treated as continuous numbers) or <CODE>ExampleTable.Multinomial_Error</CODE> (such attributes are forbidden, so an exception is raised if they are encountered). Default treatment is <CODE>ExampleTable.Multinomial_AsOrdinal</CODE>.</P>
+
+<P>When the class attribute is discrete and has more than two values, an exception is raised unless multinomial attributes are treated as ordinal.</P>
+
+
+<H2>From a matrix to an ExampleTable</H2>
+
+<P>There are two ways for converting matrices back into an example table.
+
+<P>The cleaner is to construct or reuse a <A HREF="Domain.htm"><CODE>Domain</CODE></A>, and call the ExampleTable's constructor, giving it a domain and the matrix. The elements of the matrix may not be complex numbers or Python objects. If the attribute is discrete, the value from the matrix is rounded to the closest integer which is then used as the attribute value's index.</P>
+
+<P>The quicker way to convert a matrix to an ExampleTable is to call the constructor giving only the matrix, without the domain. A new domain will be constructed whose attribute's names will be a1, a2... There will be no class attribute. Note that if you construct two such tables (even if you do it from the same matrix) the attributes will have the same names but will be essentially different attributes. Therefore, you shouldn't use this method unless you know what you're doing.</P>
