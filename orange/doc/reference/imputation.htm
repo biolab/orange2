@@ -45,7 +45,7 @@
 
 <P>The following code will load the bridges data, and first impute the values in a single examples and then in the whole table.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 import orange
 
@@ -72,7 +72,7 @@ for i in range(20, 25):
 
 <P>You can also construct the <CODE>Imputer_defaults</CODE> yourself and specify your own defaults. Or leave some values unspecified, in which case the imputer won't impute them, as in the following example.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 imputer = orange.Imputer_defaults(data.domain)
 imputer.defaults["LENGTH"] = 1234
@@ -105,7 +105,7 @@ imputer.defaults["LENGTH"] = 1234
 
 <P>The following imputer predicts the missing attribute values using classification and regression trees with the minimum of 20 examples in a leaf.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 import orngTree
 imputer = orange.ImputerConstructor_model()
@@ -117,7 +117,7 @@ imputer = imputer(data)
 
 <P>You can of course use different learning algorithms for discrete and continuous attributes. Probably a common setup will be to use <CODE>BayesLearner</CODE> for discrete and <CODE>MajorityLearner</CODE> (which just remembers the average) for continuous attributes, as follows.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 imputer = orange.ImputerConstructor_model()
 imputer.learnerContinuous = orange.MajorityLearner()
@@ -127,7 +127,7 @@ imputer = imputer(data)
 
 <P>You can also construct an <CODE>Imputer_model</CODE> yourself. You will do this if different attributes need different treatment. Brace for an example that will be a bit more complex. First we shall construct an <CODE>Imputer_model</CODE> and initialize an empty list of models.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 imputer = orange.Imputer_model()
 imputer.models = [None] * len(data.domain)
@@ -206,7 +206,7 @@ imputer.models[data.domain.index("SPAN")] = computeSpan
 
 <P>Here's a script that shows what this imputer actually does to the domain.</P>
 
-<P class="header"><A href="imputation.py">imputation.py</A></P>
+<P class="header">part of <A href="imputation.py">imputation.py</A> (uses <a href="bridges.tab">bridges.tab</a>)</P>
 <XMP class=code>
 imputer = orange.ImputerConstructor_asValue(data)
 
