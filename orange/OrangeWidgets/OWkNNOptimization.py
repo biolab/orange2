@@ -71,8 +71,7 @@ class kNNOptimization(OWBaseWidget):
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         self.onlyOnePerSubset = 1    # used in radviz and polyviz
         self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
-        self.parentName = "Projection"
-        self.lastSaveDirName = os.getcwd() + "/"
+        self.lastSaveDirName = os.getcwd()
         self.attrCont = 1
         self.attrDisc = 1
         self.dataDistribution = None    # distribution of class attribute
@@ -667,7 +666,7 @@ class kNNOptimization(OWBaseWidget):
                 filename = "%s - %s (k - %2d)" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName, self.kValue )
             else:
                 filename = "%s (k - %2d)" % (self.parentName, self.kValue )
-            qname = QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
+            qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting projections (*.proj)", self, "", "Save Projections")
             if qname.isEmpty(): return
             name = str(qname)
         else:

@@ -1294,7 +1294,7 @@ class ClusterOptimization(OWBaseWidget):
         argumentCount = 0
         for index in range(len(self.allResults)):
             if self.cancelArgumentation: break
-            (value, closure, vertices, attrList, classValue, other, strList) = self.allResults[index]
+            (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[index]
             if type(classValue) == dict: continue       # the projection contains several clusters
 
             qApp.processEvents()
@@ -1338,7 +1338,7 @@ class ClusterOptimization(OWBaseWidget):
         if argumentCount == 0:
             for index in range(len(self.allResults)):
                 if self.cancelArgumentation: break
-                (value, closure, vertices, attrList, classValue, other, strList) = self.allResults[index]
+                (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = self.allResults[index]
                 if type(classValue) != dict or len(other) == 0: continue       # the projection contains several clusters
 
                 qApp.processEvents()
@@ -1348,19 +1348,18 @@ class ClusterOptimization(OWBaseWidget):
                 if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: continue
                 
                 [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
-                dists = []
+                m = 1e10
                 for key in other.keys():
                     (xAve, yAve) = other[key][OTHER_AVERAGE]
                     dist = sqrt((xAve - xTest)*(xAve - xTest) + (yAve - yTest)*(yAve - yTest))
-                    dists.append(dist)
-                dist = min(dists)
-                key = classValue[dists.index(dist)]
+                    if dist < m: dist = m; k = key
+                key = classValue[k]
                 value = 1/(10.0 * dist)
 
                 pic = None
                 if snapshots:
                     # if the point lies inside a cluster -> save this figure into a pixmap
-                    self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                    self.parentWidget.showAttributes(attrList, clusterClosure = (closure, enlargedClosure, classValue))
                     painter = QPainter()
                     pic = QPixmap(QSize(120,120))
                     painter.begin(pic)
