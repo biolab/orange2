@@ -9,6 +9,7 @@ import string
 import orngTabs
 import orngDoc
 import orngDlgs
+import orngOutput
 import orngResources
 import xmlParse
 import cPickle
@@ -32,7 +33,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.widgetDir = "../OrangeWidgets/"
 		self.picsDir = "../OrangeWidgets/icons/"
 		self.defaultPic = self.picsDir + "Unknown.png"
-		self.canvasDir = "../OrangeCanvas/"
+		self.canvasDir = "./"
 		self.registryFileName = self.canvasDir + "widgetregistry.xml"
 		
 
@@ -42,14 +43,17 @@ class OrangeCanvasDlg(QMainWindow):
 		self.workspace = MDIWorkspace(self)
 		self.setCentralWidget(self.workspace)
 		self.statusBar = QStatusBar(self)
+		self.output = orngOutput.OutputWindow(self, self)
 
 		self.settings = {}
 		self.loadSettings()
 		self.rebuildSignals()
 
-		self.initMenu()
+		self.toolbar = QToolBar(self, 'toolbar')
+		self.widgetsToolBar = QToolBar( self, 'Widgets')
 
-		self.toolbar = QToolBar(self, 'test')
+		self.initMenu()
+		
 		self.toolNew  = QToolButton(QPixmap(orngResources.file_new), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
 		#self.toolNew.setUsesTextLabel (TRUE)
 		self.toolOpen = QToolButton(QPixmap(orngResources.file_open), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
@@ -57,10 +61,13 @@ class OrangeCanvasDlg(QMainWindow):
 		self.toolbar.addSeparator()
 		toolPrint = QToolButton(QPixmap(orngResources.file_print), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
 		self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, TRUE)
-
-		self.widgetsToolBar = QToolBar( self, 'Widgets')
+	
 		self.widgetsToolBar.setHorizontalStretchable(TRUE)		
 		self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
+		self.output.setHorizontalStretchable(TRUE)
+		self.output.setVerticalStretchable(TRUE)
+		self.addToolBar(self.output, "Output Window", QMainWindow.Bottom, TRUE)
+		self.output.hide()
 
 		self.recentDocs = []
 		self.readRecentFiles()
@@ -143,13 +150,33 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuOptions.insertSeparator()
 		self.menuOptions.insertItem( "Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
 		
-
 		self.menuWindow = QPopupMenu( self )		
 		self.menuWindow.insertItem("Cascade", self.workspace.cascade)
 		self.menuWindow.insertItem("Tile", self.workspace.tile)
 		self.menuWindow.insertSeparator()
 		self.menuWindow.insertItem("Close All", self.menuCloseAll)
 		self.menuWindow.insertSeparator()
+
+		self.menupopupShowToolbarID = self.menuWindow.insertItem( "Toolbar",  self.menuItemShowToolbar )
+		if self.settings.has_key("showToolbar"): self.showToolbar = self.settings["showToolbar"]
+		else:									self.showToolbar = TRUE
+		if not self.showToolbar: self.toolbar.hide()
+		self.menuWindow.setItemChecked(self.menupopupShowToolbarID, self.showToolbar)
+
+		self.menupopupShowWidgetToolbarID = self.menuWindow.insertItem( "Widget toolbar",  self.menuItemShowWidgetToolbar)
+		if self.settings.has_key("showWidgetToolbar"): self.showWidgetToolbar = self.settings["showWidgetToolbar"]
+		else:									self.showWidgetToolbar = TRUE
+		if not self.showWidgetToolbar: self.widgetsToolBar.hide()
+		self.menuWindow.setItemChecked(self.menupopupShowWidgetToolbarID, self.showWidgetToolbar)
+
+		self.menupopupShowOutputWindowID = self.menuWindow.insertItem( "Output window",  self.menuItemShowOutputWindow )
+		self.showOutputWindow = FALSE
+		#if self.settings.has_key("showOutputWindow"): self.showOutputWindow = self.settings["showOutputWindow"]
+		#else:									self.showOutputWindow = FALSE
+		self.menuWindow.setItemChecked(self.menupopupShowOutputWindowID, self.showOutputWindow)
+
+		self.menuWindow.insertSeparator()
+
 		self.menuWindow.insertItem("Minimize All", self.menuMinimizeAll)
 		self.menuWindow.insertItem("Restore All", self.menuRestoreAll)
 
@@ -218,40 +245,34 @@ class OrangeCanvasDlg(QMainWindow):
 			self.statusBar.message('')
 
 	def readRecentFiles(self):
-		recentDocs = []
-		try:
-			recentDocs = self.settings["RecentFiles"]
-		except:
-			pass
-		
+		if not self.settings.has_key("RecentFiles"): return
+		recentDocs = self.settings["RecentFiles"]
 		self.menuRecent.clear()
 
-		for i in range(5):
-			try:
-				name = recentDocs[i]
-				shortName = os.path.basename(name)
-				self.menuRecent.insertItem(shortName, eval("self.menuItemRecent"+str(i+1)))
-			except:
-				pass
+		for i in range(len(recentDocs)):
+			name = recentDocs[i]
+			shortName = os.path.basename(name)
+			self.menuRecent.insertItem(shortName, eval("self.menuItemRecent"+str(i+1)))
 
 	def openRecentFile(self, index):
 		if len(self.settings["RecentFiles"]) >= index:
 			win = self.menuItemNewSchema()
 			win.loadDocument(self.settings["RecentFiles"][index-1])
+			self.addToRecentMenu(self.settings["RecentFiles"][index-1])
 
 	def addToRecentMenu(self, name):
 		recentDocs = []
-		try:
+		if self.settings.has_key("RecentFiles"):
 			recentDocs = self.settings["RecentFiles"]
-		except:
-			pass
-
-		if name not in recentDocs:
-			recentDocs.insert(0, name)
-			if len(recentDocs)> 5:
-				recentDocs.remove(recentDocs[5])
-			self.settings["RecentFiles"] = recentDocs
-			self.readRecentFiles()
+		
+		if name in recentDocs:
+			recentDocs.remove(name)
+		recentDocs.insert(0, name)
+	
+		if len(recentDocs)> 5:
+			recentDocs.remove(recentDocs[5])
+		self.settings["RecentFiles"] = recentDocs
+		self.readRecentFiles()
 
 	def menuItemRecent1(self):
 		self.openRecentFile(1)
@@ -319,6 +340,26 @@ class OrangeCanvasDlg(QMainWindow):
 		win.disableAllLines()
 		return
 
+	def menuItemShowOutputWindow(self):
+		self.showOutputWindow = not self.showOutputWindow
+		self.menuWindow.setItemChecked(self.menupopupShowOutputWindowID, self.showOutputWindow)
+		if self.showOutputWindow: self.output.show()
+		else: self.output.hide()
+
+	def menuItemShowToolbar(self):
+		self.showToolbar = not self.showToolbar
+		self.settings["showToolbar"] = self.showToolbar
+		self.menuWindow.setItemChecked(self.menupopupShowToolbarID, self.showToolbar)
+		if self.showToolbar: self.toolbar.show()
+		else: self.toolbar.hide()
+
+	def menuItemShowWidgetToolbar(self):
+		self.showWidgetToolbar = not self.showWidgetToolbar
+		self.settings["showWidgetToolbar"] = self.showWidgetToolbar
+		self.menuWindow.setItemChecked(self.menupopupShowWidgetToolbarID, self.showWidgetToolbar)
+		if self.showWidgetToolbar: self.widgetsToolBar.show()
+		else: self.widgetsToolBar.hide()
+
 	def menuItemPreferences(self):
 		dlg = orngDlgs.PreferencesDlg(self, None, "", TRUE)
 		dlg.exec_loop()
@@ -327,13 +368,6 @@ class OrangeCanvasDlg(QMainWindow):
 
 	def menuItemRebuildWidgetRegistry(self):
 		self.createWidgetsToolbar(TRUE)
-		"""
-		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
-		self.tabs.setCanvasDlg(self)
-		parse = xmlParse.WidgetsToXML()
-		parse.ParseDirectory(self.widgetDir, self.canvasDir)
-		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
-		"""
 		
 	def menuCloseAll(self):
 		wins = self.workspace.windowList()

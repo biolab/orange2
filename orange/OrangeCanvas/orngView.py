@@ -46,7 +46,7 @@ class SchemaView(QCanvasView):
         self.linePopup = QPopupMenu(self, "Link")
         self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
         self.linePopup.insertSeparator()
-        self.linePopup.insertItem( "Remove",  self.deleteLink)
+        self.linePopup.insertItem( "Remove",  self.deleteSelectedLink)
         self.linePopup.insertSeparator() 
 
    
@@ -63,8 +63,9 @@ class SchemaView(QCanvasView):
 
     # popMenuAction - user selected to rename active widget            
     def renameActiveWidget(self):
-        (string,ok) = QInputDialog.getText("Rename", "Enter new name for the widget \"" + str(self.tempWidget.caption) + "\":")
-        if ok and self.tempWidget != None:
+        exName = str(self.tempWidget.caption)
+        (string,ok) = QInputDialog.getText("Rename", "Enter new name for the widget \"" + exName + "\":", exName)
+        if ok and self.tempWidget != None and str(string) != exName:
             for widget in self.doc.widgets:
                 if widget.caption.lower() == str(string).lower():
                     QMessageBox.critical(self,'Qrange Canvas','Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
@@ -81,15 +82,7 @@ class SchemaView(QCanvasView):
 
         for item in self.selWidgets:
             self.doc.widgets.remove(item)
-            for line in item.inLines:
-                self.selectedLine = line
-                self.deleteLink()
-            for line in item.outLines:
-                self.selectedLine = line
-                self.deleteLink()
-            item.hideWidget()
-            list = self.canvas().allItems()
-            list.remove(item)
+            item.remove()
 
         self.selWidgets = []
         self.tempWidget = None
@@ -112,25 +105,18 @@ class SchemaView(QCanvasView):
         self.doc.canvasDlg.enableSave(TRUE)
 
     # popMenuAction - delete selected link
-    def deleteLink(self):
-        if self.selectedLine != None:
-            for widget in self.doc.widgets:
-                widget.removeLine(self.selectedLine)
-            self.removeLine(self.selectedLine)
-            self.selectedLine.repaintLine(self)
-            self.selectedLine = None
+    def deleteSelectedLink(self):
+        self.deleteLink(self.selectedLine)
+        self.selectedLine = None
+    
+    def deleteLink(self, link):
+        if link != None:
+            self.doc.lines.remove(link)
+            link.remove()
+            link.repaintLine(self)
             self.doc.hasChanged = TRUE
             self.doc.canvasDlg.enableSave(TRUE)
-            self.selectedLine = None
-
-    # hide and remove the line "line"
-    def removeLine(self, line):
-        self.doc.lines.remove(line)
-        line.hide()
-        line.setEnabled(FALSE)
-        line.inWidget.updateTooltip()
-        line.outWidget.updateTooltip()
-        line = None
+      
 
     # ###########################################
     # ###########################################
@@ -402,8 +388,7 @@ class SchemaView(QCanvasView):
         elif line != None:
             ok = line.resetActiveSignals(self.doc.canvasDlg)
             if not ok:
-                self.selectedLine = line
-                self.deleteLink()
+                self.deleteLink(line)
             else:
                 line.setEnabled(line.getEnabled())
 

@@ -126,6 +126,6 @@ class WidgetsToXML:
 
 if __name__=="__main__":
     parse = WidgetsToXML()
-    canvasDir = sys.prefix + "../orangeCanvas/"
+    canvasDir = sys.prefix + "./"
     widgetDir = sys.prefix + "../orangeWidgets/"
     parse.ParseDirectory(widgetDir, canvasDir)

@@ -218,11 +218,11 @@ class SchemaDoc(QMainWindow):
         self.canvasDlg.addToRecentMenu(self.path + "/" + self.filename)        
 
     def saveWidgetSettings(self, filename):
-        file = open(filename, "w")
         list = {}
         for widget in self.widgets:
             list[widget.caption] = widget.instance.saveSettingsStr()
 
+        file = open(filename, "w")
         cPickle.dump(list, file)
         file.close()
 
@@ -247,12 +247,14 @@ class SchemaDoc(QMainWindow):
             QMessageBox.critical(self,'Qrange Canvas','Unable to find file \"'+ filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
+        # ##################
         #load the data ...
         doc = parse(str(filename))
         schema = doc.firstChild
         widgets = schema.getElementsByTagName("widgets")[0]
         lines = schema.getElementsByTagName("channels")[0]
 
+        # ##################
         #read widgets
         widgetList = widgets.getElementsByTagName("widget")
         for widget in widgetList:
@@ -266,6 +268,7 @@ class SchemaDoc(QMainWindow):
             else:
                 QMessageBox.information(self,'Qrange Canvas','Unable to find widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
 
+        # ##################
         #read lines                        
         lineList = lines.getElementsByTagName("channel")
         for line in lineList:
@@ -275,16 +278,19 @@ class SchemaDoc(QMainWindow):
             signals = line.getAttribute("signals")
             inWidget = self.getWidgetByCaption(inCaption)
             outWidget = self.getWidgetByCaption(outCaption)
-            if inWidget != None and outWidget != None:
-                tempLine = self.addLine(outWidget, inWidget, FALSE)
-                tempLine.show()
-                inWidget.inLines.append(tempLine)
-                outWidget.outLines.append(tempLine)
-                tempLine.signals = signals.split(",")
-                tempLine.updateLinePos()
-                tempLine.setRightColors(self.canvasDlg)
-                tempLine.setEnabled(enabled)
-                tempLine.repaintLine(self.canvasView)
+            if inWidget == None or outWidget == None:
+                print "Unable to create a line due to invalid widget name. Try reinstalling widgets."
+                continue
+
+            tempLine = self.addLine(outWidget, inWidget, FALSE)
+            tempLine.show()
+            inWidget.inLines.append(tempLine)
+            outWidget.outLines.append(tempLine)
+            tempLine.signals = signals.split(",")
+            tempLine.updateLinePos()
+            tempLine.setRightColors(self.canvasDlg)
+            tempLine.setEnabled(enabled)
+            tempLine.repaintLine(self.canvasView)
 
         self.hasChanged = FALSE
         self.canvasDlg.enableSave(FALSE)

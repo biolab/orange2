@@ -7,6 +7,7 @@ from qtcanvas import *
 import os
 import sys
 from orngDlgs import *
+import traceback
 TRUE  = 1
 FALSE = 0
 
@@ -23,6 +24,16 @@ class CanvasLine(QCanvasLine):
         self._enabled = TRUE
         self.signals = []
         self.colors = []
+
+    def remove(self):
+        self.hide()
+        self.setEnabled(FALSE)
+        self.setCanvas(None)
+        self.inWidget.removeLine(self)
+        self.outWidget.removeLine(self)
+        self.inWidget.updateTooltip()
+        self.outWidget.updateTooltip()
+        
 
     # set widgets that the line belongs to
     def setInOutWidget(self, inWidget, outWidget):
@@ -102,12 +113,9 @@ class CanvasLine(QCanvasLine):
         if not (self.inWidget and self.outWidget and self.inWidget.instance != None and self.outWidget.instance != None):
             return
         
-        if enabled:
-            action = "link"
-        else:
-            action = "unlink"
+        if enabled: action = "link"
+        else:       action = "unlink"
 
-        
         for signal in self.signals:
             try:
                 code = compile("self.inWidget.instance." + action + "(self.outWidget.instance, \"" + signal +  "\")", ".", "single")
@@ -115,7 +123,6 @@ class CanvasLine(QCanvasLine):
             except:
                 print "Failed to " + action + " widgets"
                 print "Unexpected error:"
-                import traceback
                 traceback.print_exc()
 
         
@@ -132,10 +139,12 @@ class CanvasLine(QCanvasLine):
         if self._enabled:
             lineStyle = Qt.SolidLine
         else:
-            lineStyle = Qt.DotLine 
+            lineStyle = Qt.DashLine 
 
-        painter.setPen(QPen(QColor("green"), 6, lineStyle))
+
+        painter.setPen(QPen(QColor("green"), 5, lineStyle))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
+
         """
         if len(self.colors) == 1:
             painter.setPen(QPen(QColor(self.colors[0]), 6, lineStyle))
@@ -244,7 +253,25 @@ class CanvasWidget(QCanvasRectangle):
         self.text.show()
         self.text.setTextFlags(Qt.AlignCenter)
         self.updateTextCoords()
-            
+
+    def remove(self):
+        self.hide()
+        self.setCanvas(None)    # hide the widget
+        # save settings
+        if (self.instance != None):
+            try:
+                code = compile("self.instance.saveSettings()", ".", "single")
+                exec(code)
+            except:
+                print "Exception raised while saving settings for widget " + self.caption
+
+        self.removeTooltip()
+        self.text.hide()
+        
+        while self.inLines != []:
+            self.view.deleteLink(self.inLines[0])
+        while self.outLines != []:
+            self.view.deleteLink(self.outLines[0])
 
     def updateTextCoords(self):
         self.text.move(self.xPos + 34, self.yPos + 60)
@@ -360,28 +387,23 @@ class CanvasWidget(QCanvasRectangle):
 		self.inLines.append(line)
 
     def removeLine(self, line):
-        try:
+        if line in self.inLines:
             self.inLines.remove(line)
-        except:
-            pass
-
-        try:
+        elif line in self.outLines:
             self.outLines.remove(line)
-        except:
-            pass
+        else:
+            print "Orange Canvas: Erorr. Unable to remove line"
+
+        self.updateTooltip()
                 
 
     def setAllLinesFinished(self, finished):
-        for line in self.inLines:
-            line.finished = finished
-        for line in self.outLines:
-            line.finished = finished
+        for line in self.inLines: line.finished = finished
+        for line in self.outLines: line.finished = finished
 
     def updateLineCoords(self):
-        for line in self.inLines:
-            line.updateLinePos()
-        for line in self.outLines:
-            line.updateLinePos()
+        for line in self.inLines:  line.updateLinePos()
+        for line in self.outLines: line.updateLinePos()
 
     def repaintWidget(self):
         (x,y,w,h) = ( self.x(), self.y(), self.width(), self.height() )
@@ -429,12 +451,7 @@ class CanvasWidget(QCanvasRectangle):
         #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         #QToolTip.remove(self.view, self.rect())
         QToolTip.remove(self.view, self.lastRect)
-        
-
-    def hideWidget(self):
-        self.removeTooltip()
-        self.hide()
-        self.text.hide()
+              
         
     def rtti(self):
         return 1001
