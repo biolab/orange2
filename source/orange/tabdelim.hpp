@@ -80,7 +80,7 @@ public:
 
   void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
-  bool mayBeTabFile(const string &stem);
+  char *mayBeTabFile(const string &stem);
   PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
   PDomain domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
   PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);

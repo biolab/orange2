@@ -186,85 +186,131 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 }
 
 
-bool TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
+char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
 {
-  TIdList varNames;
+  TIdList varNames, atoms;
+  TIdList::const_iterator vi, ai, ei;
+
   TFileExampleIteratorData fei(stem);
 
   // if there is no names line, it is not .tab
   while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
-  if (varNames.empty())
-    return false;
+  if (varNames.empty()) {
+    char *res = mlnew char[128];
+    res = strcpy(res, "empty file");
+    return res;
+  }
 
   // if any name contains the correct hash formatting it is not tab-delim it's more likely .txt
-  ITERATE(TIdList, ii, varNames) {
-    const char *c = (*ii).c_str();
+  for(vi = varNames.begin(), ei = varNames.end(); vi!=ei; vi++) {
+    const char *c = (*vi).c_str();
     if ((*c=='m') || (*c=='c') || (*c=='i'))
       c++;
     if (   ((*c=='D') || (*c=='C') || (*c=='S'))
-        && (c[1]=='#'))
-      return false;
+        && (c[1]=='#')) {
+      char *res= mlnew char[128 + (*vi).size()];
+      sprintf(res, "attribute name '%s' looks suspicious", (*vi).c_str());
+      return res;
+    }
   }
 
   // if there is no var types line, it is not .tab
-  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
-  if (varNames.empty())
-    return false;
+  while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv)==-1));
+  if (atoms.empty()) {
+    char *res = mlnew char[128];
+    res = strcpy(res, "no line with attribute types");
+    return res;
+  }
+
+  if (atoms.size() != varNames.size())
+    raiseError("the number of attribute types does not match the number of attributes");
 
   // Each atom must be either 'd', 'c' or 's', or contain a space
-  ITERATE(TIdList, ii2, varNames) {
-    const char *c = (*ii2).c_str();
-    if (!*c)
-      return false;
+  for(vi = varNames.begin(), ai = atoms.begin(), ei = atoms.end(); ai != ei; ai++, vi++) {
+    const char *c = (*ai).c_str();
+    if (!*c) {
+      char *res= mlnew char[128 + (*vi).size()];
+      sprintf(res, "empty type entry for attribute '%s'", (*vi).c_str());
+      return res;
+    }
     if (!c[1] && ((*c == 'd') || (*c == 'c') || (*c == 's')))
       continue;
     if (!strcmp(c, "continuous") || !strcmp(c, "discrete") || !strcmp(c, "string")) 
       continue;
       
     for(; *c && (*c!=' '); c++);
-      if (!*c)
-        return false; // no space
+      if (!*c) {
+        char *res= mlnew char[128 + (*vi).size() + (*ai).size()];
+        sprintf(res, "attribute '%s' is defined as having only one value ('%s')", (*vi).c_str(), (*ai).c_str());
+        return res;
+      }
   }
 
   // if there is no flags line, it is not .tab
-  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
-  if (varNames.empty())
-    return false;
+  while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv)==-1));
+  if (atoms.empty()) {
+    char *res = mlnew char[128];
+    res = strcpy(res, "file has only two lines");
+    return res;
+  }
+
+  if (atoms.size() > varNames.size())
+    raiseError("the number of attribute options is greater than the number of attributes");
 
   // Check flags
-  ITERATE(TIdList, ii3, varNames) {
-    TProgArguments args("dc: ordered", *ii3, false);
+  for(vi = varNames.begin(), ai = atoms.begin(), ei = atoms.end(); ai != ei; ai++, vi++) {
+    TProgArguments args("dc: ordered", *ai, false);
 
-    if (args.unrecognized.size())
-      return false;
+    if (args.unrecognized.size()) {
+      char *res= mlnew char[128 + (*vi).size()];
+      sprintf(res, "unrecognized options at attribute '%s'", (*vi).c_str());
+      return res;
+    }
 
     if (args.direct.size()) {
-      if (args.direct.size()>1)
-        return false;
+      if (args.direct.size()>1) {
+        char *res= mlnew char[128 + (*vi).size()];
+        sprintf(res, "too many direct options at attribute '%s'", (*vi).c_str());
+        return res;
+      }
 
       static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "m", "meta", NULL};
       string &direct = args.direct.front();
       const char **lc = legalDirects;
       while(*lc && strcmp(*lc, direct.c_str()))
         lc++;
-      if (!*lc)
-        return false;
+      if (!*lc) {
+        char *res= mlnew char[128 + (*vi).size() + (*ai).size()];
+        sprintf(res, "unrecognized option ('%s') at attribute '%s'", (*ai).c_str(), (*vi).c_str());
+        return res;
+      }
     }
   }
 
-  return true;
+  return NULL;
 }
 
 PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 { 
+  // non-NULL when this cannot be tab file (reason given as result)
+  // NULL if this seems a valid tab file
+  char *isNotTab = mayBeTabFile(stem);
+
   if (autoDetect) {
-    if (mayBeTabFile(stem))
-      raiseWarning("'%s' is being loaded as .txt, but seems to be .tab file", stem.c_str());
+    if (!isNotTab)
+      raiseWarning("'%s' is being loaded as .txt, but could be .tab file", stem.c_str());
+    else
+      mldelete isNotTab;
+
     return domainWithDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
   }
+
   else {
-    if (!mayBeTabFile(stem))
-      raiseWarning("'%s' is being loaded as .tab, but looks more like .txt file", stem.c_str());
+    if (isNotTab) {
+      raiseWarning("'%s' is being loaded as .tab, but looks more like .txt file\n(%s)", stem.c_str(), isNotTab);
+      mldelete isNotTab;
+    }
+
     return domainWithoutDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
   }
 }
