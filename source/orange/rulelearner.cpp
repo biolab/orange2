@@ -117,7 +117,7 @@ void TRule::filterAndStore(PExampleTable gen, const int &wei, const int *prevCov
       int mask = 0;
       int inBit = 0;
 
-      PEITERATE(ei, gen)
+      PEITERATE(ei, gen) {
         if (!(*cei & mask)) {
           if (inBit)
             *cei = *cei << inBit;
@@ -141,6 +141,7 @@ void TRule::filterAndStore(PExampleTable gen, const int &wei, const int *prevCov
 
         mask = mask << 1;
         inBit--;
+      }
     }
 
     else {
