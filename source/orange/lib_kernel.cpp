@@ -1897,6 +1897,29 @@ PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws)
   return PYNULL;
 }
 
+
+PyObject *ExampleGenerator_weight(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(weightID)")
+{
+  PyObject *pyw = PYNULL;
+  if (!PyArg_ParseTuple(args, "|O:ExampleGenerator.weight", &pyw))
+    return PYNULL;
+
+  CAST_TO(TExampleGenerator, egen)
+  if (!pyw)
+    return PyInt_FromLong(egen->numberOfExamples());
+
+  int weightID;
+  if (!varNumFromVarDom(pyw, egen->domain, weightID))
+    return PYNULL;
+
+  float weight = 0.0;
+  PEITERATE(ei, egen)
+    weight += WEIGHT(*ei);
+
+  return PyFloat_FromDouble(weight);
+}
+
+
 PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::P_FromArguments(arg); }
 PyObject *ExampleGeneratorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_FromArguments(type, arg); }
 PyObject *ExampleGeneratorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ExampleGenerator>)") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_new(type, arg, kwds); }
@@ -2450,7 +2473,7 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
 #ifndef NO_NUMERIC
 
 
-PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> matrix(-ces)")
+PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1[, valueForMissing=None]]]) -> matrix(-ces)")
 {
   PyTRY
     prepareNumeric();
@@ -2458,11 +2481,23 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
-    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
+    PyObject *missing = NULL;
+    if (!PyArg_ParseTuple(args, "|siiO:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment, &missing))
       return PYNULL;
 
     if (!contents)
       contents = "a/cw";
+
+    float missingValue;
+    if (missing)
+      if (missing == Py_None) {
+        Py_DECREF(Py_None);
+        missing = NULL;
+      }
+      else {
+        if (!PyNumber_ToFloat(missing, missingValue))
+          raiseError("float argument (or None) expect for missing values");
+      }
 
     PExampleGenerator egen = PyOrange_AsExampleGenerator(self);
 
@@ -2529,9 +2564,14 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
               vector<bool>::const_iterator bi(include.begin());
               for(; vi != ve; eei++, vi++, bi++)
                 if (*bi) {
-                  if ((*eei).isSpecial())
-                    raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
-                  *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
+                  if ((*eei).isSpecial()) {
+                    if (missing)
+                      *Xp++ = missingValue;
+                    else
+                      raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                  }
+                  else
+                    *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
                 }
               break;
             }
@@ -2540,9 +2580,14 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
             case 'c': 
               if (hasClass) {
                 const TValue &classVal = (*ei).getClass();
-                if (classVal.isSpecial())
-                  raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
-                *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
+                if (classVal.isSpecial()) {
+                  if (missing)
+                    *Xp++ = missingValue;
+                  else
+                    raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+                }
+                else
+                  *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
               }
               break;
 
@@ -2564,9 +2609,14 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
 
         if (yp) {
           const TValue &classVal = (*ei).getClass();
-          if (classVal.isSpecial())
-            raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
-          *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
+          if (classVal.isSpecial()) {
+            if (missing)
+              *yp++ = missingValue;
+            else
+              raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+            }
+          else
+            *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
         }
 
         if (wp)
