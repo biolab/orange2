@@ -71,7 +71,8 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloa
 	O.stdres = new double[input.nn+1]; 
 	O.cov_beta = new double*[input.k+1]; 
 	O.dependent = new int[input.k+1];
-	for(int i = 0; i <= input.k; ++i) {
+	int i;
+	for(i = 0; i <= input.k; ++i) {
 		O.cov_beta[i] = new double[input.k+1];
 		O.dependent[i] = 0; // no dependence
 	}
