@@ -39,7 +39,7 @@ import orngCluster
 import Tkinter, ImageTk
 import piddle, piddlePIL, math
 
-_defaultfont = 'Times'
+_defaultfont = 'Courier'
 
 def _colorize0(cc):
     #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
@@ -133,7 +133,7 @@ class DendrogramPlot:
             # compute lineskip
             lineskip = (height - 2.0*margin - tcanvas.fontHeight(normal)) / (len(labels)-1)
         maxlabel = 0.0
-        spacew = tcanvas.stringWidth(" ",font=normal)
+        spacew = tcanvas.stringWidth("   ",font=normal)
         swids = []
         for i in xrange(len(labels)):
             swid = tcanvas.stringWidth(labels[i],font=normal)

@@ -178,7 +178,11 @@ class InteractionMatrix:
                     if simple_too:
                         simp = 0.0
                         for k in xrange(min(len(c.a),len(c.b))):
-                            simp += c.pm[k,k]
+                            try:
+                                qq = c.pm[k,k]
+                            except:
+                                qq = 0
+                            simp += qq
                         self.simple[(j,i)] = simp
                     if pvalues:
                         pv = orngContingency.getPvalue(gai,c)
