@@ -117,7 +117,10 @@ class updateOrangeDlg(QMainWindow):
             return
             
         dlg = foldersDlg("Check the list of folders you wish to update:", None, "", 1)
-        for group in self.updateGroups: dlg.addCategory(group, 1)
+        for group in self.updateGroups:
+            # a category can show up in both groups since you can have files for a category already installed
+            # locally and only then you choose not to update the group anymore
+            if group not in self.dontUpdateGroups: dlg.addCategory(group, 1)    
         for group in self.dontUpdateGroups: dlg.addCategory(group, 0)
         dlg.finishedAdding(cancel = 1)
         dlg.move((qApp.desktop().width()-dlg.width())/2, (qApp.desktop().height()-400)/2)   # center dlg window
