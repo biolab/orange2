@@ -66,14 +66,16 @@ float TExamplesDistance_Hamiltonian::operator()(const TExample &e1, const TExamp
 
 TExamplesDistance_Normalized::TExamplesDistance_Normalized()
 : normalizers(PFloatList()),
-  domainVersion(-1)
+  domainVersion(-1),
+  normalize(true)
 {}
 
 
 TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
 : normalizers(mlnew TFloatList()),
   bases(mlnew TFloatList()),
-  domainVersion(egen ? egen->domain->version : -1)
+  domainVersion(egen ? egen->domain->version : -1),
+  normalize(true)
 { TFloatList &unormalizers = normalizers.getReference();
 
   if (!bstat && !ddist && egen)
@@ -187,15 +189,28 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
   for(TFloatList::const_iterator si(normalizers->begin()), se(normalizers->end()); si!=se; si++, i1++, i2++, di++)
     if ((*i1).isSpecial() || (*i2).isSpecial())
       *di = *si!=0 ? 0.5 : 0.0;
-    else {
-      if (*si>0) {
-        if ((*i1).varType == TValue::FLOATVAR)
-          *di = *si * fabs((*i1).floatV - (*i2).floatV);
-        else if ((*i1).varType == TValue::INTVAR)
-          *di = *si * fabs((*i1).intV - (*i2).intV);
+    else 
+      if (normalize) {
+        if (*si>0) {
+          if ((*i1).varType == TValue::FLOATVAR)
+            *di = *si * fabs((*i1).floatV - (*i2).floatV);
+          else if ((*i1).varType == TValue::INTVAR)
+            *di = *si * fabs((*i1).intV - (*i2).intV);
+        }
+        else if (*si<0)
+          *di = (*i1).compatible(*i2) ? 0.0 : 1.0;
       }
-      else if (*si<0)
-        *di = (*i1).compatible(*i2) ? 0.0 : 1.0;
+      else {
+        if ((*i1).varType == TValue::FLOATVAR) {
+          *di = fabs((*i1).floatV - (*i2).floatV);
+        }
+        else 
+          if (*si>0) {
+            if ((*i1).varType == TValue::INTVAR)
+              *di = fabs((*i1).intV - (*i2).intV);
+            else
+              *di = (*i1).compatible(*i2) ? 0.0 : 1.0;
+          }
     }
 }
 
@@ -217,8 +232,8 @@ void TExamplesDistance_Normalized::getNormalized(const TExample &e1, vector<floa
     if ((*ei).isSpecial())
       normalized.push_back(numeric_limits<float>::quiet_NaN());
     else
-      if ((*basi>0) && ((*ei).varType == TValue::FLOATVAR))
-        normalized.push_back(((*ei).floatV - *basi) / *normi);
+      if ((*normi>0) && ((*ei).varType == TValue::FLOATVAR))
+        normalized.push_back(normalize ? ((*ei).floatV - *basi) / *normi : (*ei).floatV);
       else
         normalized.push_back(-1.0);
   }

@@ -28,6 +28,7 @@
 using namespace std;
 
 #include "distvars.hpp"
+#include "domain.hpp"
 
 WRAPPER(Distribution)
 WRAPPER(DiscDistribution)

@@ -92,6 +92,7 @@ public:
   PFloatList normalizers; //P normalizing factors for attributes
   PFloatList bases; //P lowest values for attributes
   int domainVersion; //P version of domain on which the ranges were computed
+  bool normalize; //P tells whether to normalize distances between attributes
 
   TExamplesDistance_Normalized();
   TExamplesDistance_Normalized(const bool &, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());

@@ -76,6 +76,8 @@ coutf.write("""\
 #include "cls_orange.hpp"
 #include "vectortemplates.hpp"
 #include "externs.px"
+
+#include "distance_dtw.hpp"
 """)
 
 for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
@@ -85,6 +87,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
    ("StringList",       "string",   "PStringList",       "TStringList",       "string"),
    ("LongList",         "int",      "PLongList",         "TLongList",         "long"),
    ("_Filter_index",     "int",     "PFilter_index",     "TFilter_index",     "FOLDINDEXTYPE"),
+   ("AlignmentList",    "Alignment", "PAlignmentList",  "TAlignmentList",    "TAlignment")
    ]:
   if (pyname[0]=="_"):
     pyname = pyname[1:]

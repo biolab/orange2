@@ -3,6 +3,9 @@
 #include "vectortemplates.hpp"
 #include "externs.px"
 
+#include "distance_dtw.hpp"
+
+
 bool convertFromPython(PyObject *, bool &);
 PyObject *convertToPython(const bool &);
 #define TBoolList _TOrangeVector<bool>
@@ -160,6 +163,38 @@ PyObject *LongList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *LongList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(int) -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_remove(self, obj); }
 PyObject *LongList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_reverse(self); }
 PyObject *LongList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_sort(self, args); }
+
+
+
+bool convertFromPython(PyObject *, TAlignment &);
+PyObject *convertToPython(const TAlignment &);
+#define TAlignmentList _TOrangeVector<TAlignment>
+typedef GCPtr< TAlignmentList > PAlignmentList;
+
+PAlignmentList PAlignmentList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::P_FromArguments(arg); }
+PyObject *AlignmentList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_FromArguments(type, arg); }
+PyObject *AlignmentList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Alignment>)") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_new(type, arg, kwds); }
+PyObject *AlignmentList_getitem_sq(TPyOrange *self, int index) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_getitem(self, index); }
+int       AlignmentList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_setitem(self, index, item); }
+PyObject *AlignmentList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_getslice(self, start, stop); }
+int       AlignmentList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_setslice(self, start, stop, item); }
+int       AlignmentList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_len(self); }
+PyObject *AlignmentList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_richcmp(self, object, op); }
+PyObject *AlignmentList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_concat(self, obj); }
+PyObject *AlignmentList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_repeat(self, times); }
+PyObject *AlignmentList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_str(self); }
+PyObject *AlignmentList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_str(self); }
+int       AlignmentList_contains(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_contains(self, obj); }
+PyObject *AlignmentList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Alignment) -> None") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_append(self, item); }
+PyObject *AlignmentList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Alignment) -> int") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_count(self, obj); }
+PyObject *AlignmentList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> AlignmentList") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_filter(self, args); }
+PyObject *AlignmentList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Alignment) -> int") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_index(self, obj); }
+PyObject *AlignmentList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_insert(self, args); }
+PyObject *AlignmentList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_native(self); }
+PyObject *AlignmentList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Alignment") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_pop(self, args); }
+PyObject *AlignmentList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Alignment) -> None") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_remove(self, obj); }
+PyObject *AlignmentList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_reverse(self); }
+PyObject *AlignmentList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_sort(self, args); }
 
 
 #include "lib_vectors.px"

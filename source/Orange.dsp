@@ -201,6 +201,10 @@ SOURCE=.\orange\distance.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\distance_dtw.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\distvars.cpp
 # End Source File
 # Begin Source File

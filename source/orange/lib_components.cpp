@@ -1082,6 +1082,7 @@ PyObject *DomainContingency_normalize(PyObject *self, PyObject *) PYARGS(0, "() 
 /* ************ DISTANCE ************ */
 
 #include "distance.hpp"
+#include "distance_dtw.hpp"
 
 BASED_ON(ExamplesDistance, Orange)
 BASED_ON(ExamplesDistance_Normalized, ExamplesDistance)
@@ -1090,6 +1091,7 @@ C_NAMED(ExamplesDistance_Maximal, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Manhattan, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Euclidean, ExamplesDistance_Normalized, "()")
 C_NAMED(ExamplesDistance_Relief, ExamplesDistance, "()")
+C_NAMED(ExamplesDistance_DTW, ExamplesDistance_Normalized, "()")
 
 BASED_ON(ExamplesDistanceConstructor, Orange)
 C_CALL(ExamplesDistanceConstructor_Hamiltonian, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Hamiltonian")
@@ -1097,6 +1099,7 @@ C_CALL(ExamplesDistanceConstructor_Maximal, ExamplesDistanceConstructor, "([exam
 C_CALL(ExamplesDistanceConstructor_Manhattan, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Manhattan")
 C_CALL(ExamplesDistanceConstructor_Euclidean, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Euclidean")
 C_CALL(ExamplesDistanceConstructor_Relief, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_Relief")
+C_CALL(ExamplesDistanceConstructor_DTW, ExamplesDistanceConstructor, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance_DTW")
 
 
 
@@ -1173,7 +1176,7 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
   PyTRY
     SETATTRIBUTES
     TExample *ex1, *ex2;
-    if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.attributeDistances", ptr_Example, &ex1, ptr_Example, &ex2))
+    if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.__call__", ptr_Example, &ex1, ptr_Example, &ex2))
       PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);
 
     return PyFloat_FromDouble((double)(SELF_AS(TExamplesDistance)(*ex1, *ex2)));
@@ -1181,6 +1184,18 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
+PyObject *ExamplesDistance_DTW_alignment(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example1, example2) -> (distance, path)")
+{
+  PyTRY
+    TExample *ex1, *ex2;
+    if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_DTW.attributeDistances", ptr_Example, &ex1, ptr_Example, &ex2))
+      PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);
+
+    PWarpPath warpPath;
+    float distance = SELF_AS(TExamplesDistance_DTW)(*ex1, *ex2, warpPath);
+    return Py_BuildValue("fO", distance, WrapOrange(warpPath));
+  PyCATCH
+}
 
 /* ************ FINDNEAREST ************ */
 
