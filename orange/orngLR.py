@@ -1,0 +1,355 @@
+# ORANGE Logistic Regression
+#    by Alex Jakulin (jakulin@acm.org)
+#
+#       based on:
+#           Miller, A.J. (1992):
+#           Algorithm AS 274: Least squares routines to supplement
+#                those of Gentleman.  Appl. Statist., vol.41(2), 458-478.
+#
+#       and Alan Miller's F90 logistic regression code
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#
+# Version 1.7 (11/08/2002)
+#   - Support for new Orange (RandomIndices)
+#   - Assertion error was resulting because Orange incorrectly compared the
+#     attribute values as returned from .getclass() and the values array in
+#     the attribute definition. Cast both values to integer before comparison
+#   - Extended error messages.
+#   - Support for setting the preferred ordinal attribute transformation.
+#   - Prevent divide-by-0 errors in discriminant code.
+#
+# Version 1.6 (31/10/2001)
+#
+# The procedure used by this implementation of LR is minimization of log-likelihood
+# via deviance testing.
+#
+#
+# To Do:
+#   - Trivial imputation is used for missing attribute values. You should use
+#     something better. Eventually, this code might do something automatically.
+#
+#   - MarginMetaLearner is not doing anything when the classifier outputs a
+#     probability distribution. But even in such cases, the PD could be corrected.
+#
+#   - CalibrationMetaLearner  -> calibrates the *PD* estimates via CV
+
+import orange
+import orng2Array
+import orngCRS
+import math
+
+
+# BEWARE: these routines do not work with orange tables and are not orange-compatible
+class BLogisticLearner:
+    def getmodel(self, examples):
+      errors = ["LogReg: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
+                "LogReg: n[i]<0",
+                "LogReg: r[i]<0",
+                "LogReg: r[i]>n[i]",
+                "LogReg: constant variable",
+                "LogReg: singularity",
+                "LogReg: infinity in beta",
+                "LogReg: no convergence"]
+      model = orngCRS.LogReg(examples)
+      errorno = model[8]
+      if errorno == 5 or errorno == 6:
+        # dependencies between variables, remove them
+        raise RedundanceException(model[9])
+      else:
+        if errorno != 0 and errorno != 7:
+            # unhandled exception
+            raise errors[errorno-1]
+      return (model,errorno)
+        
+    def __call__(self, examples):
+      (model,errorno) = self.getmodel(examples)
+      if errorno == 7:
+        # there exists a perfect discriminant
+        return BDiscriminantClassifier(model, examples)
+      else:
+        return BLogisticClassifier(model)
+
+
+class BLogisticClassifier:
+    def __init__(self, model):
+        (self.chisq,self.devnce,self.ndf,self.beta,
+        self.se_beta,self.fit,self.stdres,
+        self.covbeta,errorno,masking) = model
+        
+    def getmargin(self,example):
+        # returns the actual probability which is not to be fudged with
+        return self.__call__(example)
+
+    def __call__(self,example):
+        # logistic regression
+        sum = self.beta[0]
+        for i in range(len(self.beta)-1):
+            sum = sum + example[i]*self.beta[i+1]
+        sum = math.exp(sum)
+        p = sum/(1.0+sum) # probability that the class is 1
+        if p < 0.5:
+            return (0,1-p)
+        else:
+            return (1,p)
+
+
+class BDiscriminantClassifier:
+    def __init__(self, model, examples):
+        (self.chisq,self.devnce,self.ndf,self.beta,
+        self.se_beta,self.fit,self.stdres,
+        self.covbeta,errorno,masking) = model
+
+        # set up the parameters for discrimination
+        sum = 1.0
+        for i in self.beta[1:]:
+            if abs(i) > 1e-6:
+                sum *= abs(i)
+        scale = math.sqrt(sum)
+        self.beta = [x/scale for x in self.beta]
+
+    def getmargin(self,example):
+        sum = self.beta[0]
+        for i in range(len(self.beta)-1):
+            sum = sum + example[i]*self.beta[i+1]
+        return sum
+
+    def __call__(self, example):
+        sum = self.getmargin(example)
+        # linear discriminant
+        if sum < 0.0:
+            return (0,1.0)
+        else:
+            return (1,1.0)
+
+
+class RedundanceException:
+  def __init__(self,redundant_vars):
+    self.redundant_vars = redundant_vars
+
+  def __str__(self):
+    return "Logistic regression cannot work with constant or linearly dependent variables."
+
+
+
+#
+# Logistic regression throws an exception upon constant or linearly
+# dependent attributes. RobustBLogisticLearner remembers to ignore
+# such attributes.
+#
+# returns None, if all attributes singular
+#
+class RobustBLogisticLearner(BLogisticLearner):
+    def __call__(self, examples):
+        skipping = 0
+        na = len(examples[0])
+        mask = [0]*na
+        assert(na > 0)
+        # while there are any unmasked variables
+        while skipping < na-1: 
+            try:
+                if skipping != 0:
+                    # remove some variables
+                    data = []
+                    for ex in examples:
+                        maskv = []
+                        for i in range(len(mask)):
+                            if mask[i] == 0:
+                                maskv.append(ex[i])
+                        data.append(maskv)
+                else:
+                    data = examples
+                classifier = BLogisticLearner.__call__(self,data)
+                return RobustBLogisticClassifierWrap(classifier,mask)
+            except RedundanceException, exp:
+                ext_offs = 0 # offset in the existing mask
+                for i in exp.redundant_vars:
+                    # skip what's already masked
+                    while mask[ext_offs] == 1:
+                        ext_offs += 1
+                    if i != 0:
+                        # new masking
+                        mask[ext_offs] = 1
+                        skipping += 1
+                    ext_offs += 1
+
+
+# this wrapper transforms the example
+#
+# it is a wrapper, because it has to work with both
+# the discriminant and the LR
+class RobustBLogisticClassifierWrap:
+    def __init__(self, classifier, mask):
+        self.classifier = classifier
+        self.mask = mask
+
+    def translate(self,example):
+        assert(len(example) == len(self.mask) or len(example) == len(self.mask)-1) # note that for classification, the class isn't defined
+        maskv = []
+        for i in range(len(example)):
+            if self.mask[i] == 0:
+                maskv.append(example[i])
+        return maskv
+
+    def getmargin(self, example):
+        return self.classifier.getmargin(self.translate(example))
+
+    def __call__(self, example):
+        return self.classifier(self.translate(example))
+
+
+#
+# Logistic regression works with arrays and not Orange domains
+# This wrapper performs the domain translation
+#
+class BasicLogisticLearner(RobustBLogisticLearner):
+    def __init__(self):
+        self.translation_mode = 0 # dummy
+
+    def __call__(self, examples, weight = 0):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            for i in examples.domain.classVar.values:
+                print i
+            raise "Logistic learner only works with binary discrete class."
+        translate = orng2Array.DomainTranslation(self.translation_mode)
+        translate.analyse(examples, weight)
+        translate.prepareLR()
+        mdata = translate.transform(examples)
+        r = RobustBLogisticLearner.__call__(self,mdata)
+        if r == None:
+            if weight != 0:
+                return orange.MajorityLearner()(examples, weight)
+            else:
+                return orange.MajorityLearner()(examples)
+        else:
+            return BasicLogisticClassifier(r,translate)
+
+
+class BasicLogisticClassifier:
+    def __init__(self, classifier, translator):
+        self.classifier = classifier
+        self.translator = translator
+
+    def getmargin(self,example):
+        tex = self.translator.extransform(example)
+        r = self.classifier.getmargin(tex)
+        return r
+
+    def __call__(self, example, format = orange.GetValue):
+        tex = self.translator.extransform(example)
+        r = self.classifier(tex)
+        #print example, tex, r
+        v = self.translator.getClass(r[0])
+        p = [0.0,0.0]
+        for i in range(2):
+            if int(v) == i:
+                p[i] = r[1]
+                p[1-i] = 1-r[1]
+                break
+        assert(p[0]+p[1]==1.0)
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
+        
+#
+# Margin Probability Wrap
+#
+# Margin metalearner attempts to use the margin-based classifiers, such as linear
+# discriminants and SVM to return the class probability distribution. Thie metalearner
+# only works with binary classes.
+#
+# Margin classifiers output the distance from the separating hyperplane, not
+# the probability distribution. However, the distance from the hyperplane can
+# be associated with the probability. This is a regression problem, for which
+# we can apply logistic regression.
+#
+# However, one must note that perfect separating hyperplanes generate trivial
+# class distributions. 
+#
+class MarginMetaLearner:
+    def __init__(self, learner, folds = 10, metalearner = BasicLogisticLearner()):
+        self.learner = learner
+        self.folds = 10
+        self.metalearner = metalearner
+        
+    def __call__(self, examples, weight = 0):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            raise "Margin metalearner only works with binary discrete class."
+
+        mv = orange.FloatVariable(name="margin")
+        estdomain = orange.Domain([mv,examples.domain.classVar])
+        mistakes = orange.ExampleTable(estdomain)
+        if weight != 0:
+            mistakes.addMetaAttribute(1)
+            
+        # perform 10 fold CV, and create a new dataset
+        try:
+            selection = orange.MakeRandomIndicesCV(examples, self.folds) # orange 2.2
+        except:
+            selection = orange.RandomIndicesSCVGen(examples, self.folds) # orange 2.1
+        for fold in range(self.folds):
+          learn_data = examples.selectref(selection, fold, negate=1)
+          test_data  = examples.selectref(selection, fold)
+
+          if weight!=0:
+              classifier = self.learner(learn_data, weight=weight)
+          else:
+              classifier = self.learner(learn_data)
+          for ex in test_data:
+              margin = classifier.getmargin(ex)
+              if type(margin)==type(1.0) or type(margin)==type(1):
+                  # ignore those examples which are handled with
+                  # the actual probability distribution
+                  mistake = orange.Example(estdomain,[float(margin), ex.getclass()])
+                  if weight!=0:
+                      mistake.setmeta(ex.getMetaAttribute(weight),1)
+                  mistakes.append(mistake)
+
+        if len(mistakes) < 1:
+            # nothing to learn from
+            if weight == 0:
+                return self.learner(examples)
+            else:
+                return self.learner(examples,weight)
+        
+        if weight != 0:
+            # learn a classifier to estimate the probabilities from margins
+            # learn a classifier for the whole training set
+            estimate = self.metalearner(mistakes, weight = 1)
+            classifier = self.learner(examples, weight)
+        else:
+            estimate = self.metalearner(mistakes)
+            classifier = self.learner(examples)
+
+        return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain)
+
+
+class MarginMetaClassifier:
+    def __init__(self, classifier, estimator, domain, estdomain):
+        self.classifier = classifier
+        self.estimator = estimator
+        self.domain = domain
+        self.estdomain = estdomain
+        self.cv = self.estdomain.classVar(0)
+
+    def __call__(self, example, format = orange.GetValue):
+        r = self.classifier.getmargin(example)
+        if type(r) == type(1.0) or type(r) == type(1):
+            # got a margin
+            ex = orange.Example(self.estdomain,[r,self.cv]) # need a dummy class value
+            (v,p) = self.estimator(ex,orange.GetBoth)
+        else:
+            # got a probability distribution, which can happen with LR... easy
+            (v,p) = r
+
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
+        
+

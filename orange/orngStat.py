@@ -868,12 +868,13 @@ def Friedman(res, stat=CA):
     """
     res_split = splitByIterations(res)
     res = [stat(r) for r in res_split]
-    
     N = len(res)
     k = len(res[0])
     sums = [0.0]*k
     for r in res:
         ranks = [k-x+1 for x in statc.rankdata(r)]
+        if stat==BrierScore: # reverse ranks for BrierScore (lower better)
+            ranks = [k+1-x for x in ranks]
         sums = [ranks[i]+sums[i] for i in range(k)]
 
     T = reduce(operator.add, [x*x for x in sums])

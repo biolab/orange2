@@ -133,12 +133,10 @@ class FilterRelief_Class:
   def __call__(self, data):
     return filterRelieff(data, self.measure, self.margin)
 
-# TODO: wrapper around recursive Relief, try it out  
-
 ##############################################################################
 # wrapped learner
 
-def FilteredLearner(baseLearner, examples=None, weight = 0, **kwds):
+def FilteredLearner(baseLearner, examples = None, weight = None, **kwds):
   learner = apply(FilteredLearner_Class, [baseLearner], kwds)
   if examples: return learner(examples, weight)
   else: return learner
@@ -148,7 +146,7 @@ class FilteredLearner_Class:
     self.baseLearner = baseLearner
     self.filter = filter
     self.name = name
-  def __call__(self, data, weight):
+  def __call__(self, data, weight=0):
     # filter the data and then learn
     fdata = self.filter(data)
     model = self.baseLearner(fdata, weight)
