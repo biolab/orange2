@@ -832,7 +832,7 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
     PUTDELIM;
     (*mi).variable->val2str(ex[(*mi).id], st);
-    fprintf(file, "%c%s", delim, st.c_str());
+    fprintf(file, "%s", st.c_str());
   }
   fprintf(file, "\n");
 }
