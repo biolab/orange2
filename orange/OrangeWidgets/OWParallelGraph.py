@@ -44,7 +44,7 @@ class OWParallelGraph(OWGraph):
     #
     # scale data at index index to the interval 0 to 1
     #
-    def scaleData(self, data, index):
+    def scaleData(self, data, index, forColoring = 0):
         attr = data.domain[index]
         temp = [];
         values = []
@@ -60,9 +60,17 @@ class OWParallelGraph(OWGraph):
             if len(attr.values) > 1: num = float(len(attr.values)-1)
             else: num = float(1)
 
-            for i in range(len(data)):
-                if data[i][index].isSpecial(): temp.append(0)
-                else:
+            
+                #if data[i][index].isSpecial(): temp.append(0)
+                #else:
+                #    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
+                #    temp.append(val)
+            if forColoring == 1:
+                for i in range(len(data)):
+                    val = float(variableValueIndices[data[i][index].value]) / float(count)
+                    temp.append(val)
+            else:
+                for i in range(len(data)):
                     val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
                     temp.append(val)
                     
@@ -84,9 +92,15 @@ class OWParallelGraph(OWGraph):
             values = [min, max]
 
             # create new list with values scaled from 0 to 1
-            for i in range(len(data)):
-                if data[i][attr].isSpecial() == 1:  temp.append(0)
-                else:                               temp.append((data[i][attr].value - min) / diff)
+            #for i in range(len(data)):
+            #    if data[i][attr].isSpecial() == 1:  temp.append(0)
+            #    else:                               temp.append((data[i][attr].value - min) / diff)
+            if forColoring == 1:
+                for i in range(len(data)):
+                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
+            else:
+                for i in range(len(data)):
+                    temp.append((data[i][attr].value - min) / diff)
         return (temp, values)
 
     #
@@ -120,6 +134,7 @@ class OWParallelGraph(OWGraph):
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[labels[len(labels)-1]].varType == orange.VarTypes.Discrete:
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
         else:   self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
@@ -129,11 +144,11 @@ class OWParallelGraph(OWGraph):
         else:
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
+        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
+        scaleDraw.setTickLength(1, 1, 0)
+
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMinor(QwtPlot.yLeft, 0)
-        self.setAxisMaxMajor(QwtPlot.yLeft, 1)
-
         
         length = len(labels)
         indices = []
@@ -150,7 +165,7 @@ class OWParallelGraph(OWGraph):
         if className != "(One color)" and className != '':
             ex_jitter = self.jitteringType
             self.setJitteringOption('none')
-            scaledClassData, classValues = self.scaleData(self.rawdata, className)
+            scaledClassData, classValues = self.scaleData(self.rawdata, className, 1)
             self.setJitteringOption(ex_jitter)
 
         #############################################
@@ -162,7 +177,7 @@ class OWParallelGraph(OWGraph):
             self.curveKeys.append(newCurveKey)
             newColor = QColor()
             if scaledClassData != []:
-                newColor.setHsv(scaledClassData[i]*255, 255, 255)
+                newColor.setHsv(scaledClassData[i]*360, 255, 255)
             self.setCurvePen(newCurveKey, QPen(newColor))
             ys = []
             for index in indices:
@@ -178,7 +193,7 @@ class OWParallelGraph(OWGraph):
 
         curve = subBarQwtPlotCurve(self)
         newColor = QColor()
-        newColor.setHsv(255, 255, 255)
+        newColor.setRgb(0, 0, 0)
         curve.color = newColor
         curve.setBrush(QBrush(QBrush.NoBrush))
         ckey = self.insertCurve(curve)
@@ -224,9 +239,6 @@ class OWParallelGraph(OWGraph):
                     
                     
 
-            
-        
-
     def showDistributionValues(self, className, data, indices):
         # get index of class         
         classNameIndex = 0
@@ -239,7 +251,8 @@ class OWParallelGraph(OWGraph):
             count = 1.0
 
         colors = []
-        for i in range(count): colors.append(float(1+2*i)/float(2*count))
+        #for i in range(count): colors.append(float(1+2*i)/float(2*count))
+        for i in range(count): colors.append(float(i)/float(count))
 
         classValueIndices = {}
         # we create a hash table of possible class values (IF we have a discrete class)
@@ -280,7 +293,7 @@ class OWParallelGraph(OWGraph):
                 for i in range(count):
                     curve = subBarQwtPlotCurve(self)
                     newColor = QColor()
-                    newColor.setHsv(colors[i]*255, 255, 255)
+                    newColor.setHsv(colors[i]*360, 255, 255)
                     curve.color = newColor
                     xData = []
                     yData = []
