@@ -299,8 +299,8 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
     PImputer imputer = imputerConstructor ? imputerConstructor->call(origen, weightID) : PImputer();
     PExampleGenerator gen = imputer ? imputer->call(origen, weightID) : origen;
 
-    if (hasNonContinuousAttributes(gen->domain, true)) {
-      PDomain regDomain = regressionDomain(gen);
+    if (gen->domain->hasDiscreteAttributes(true)) {
+      PDomain regDomain = TDomainContinuizer()(gen, weightID);
       gen = mlnew TExampleTable(regDomain, gen);
     }
 

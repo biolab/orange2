@@ -5,19 +5,132 @@
 
 <h1>Value Transformers</h1>
 
-<P>Class <CODE>TransformValue</CODE> is a base class for a small hierarchy of tiny classes that are use throughout Orange at the places where a simple transformation of values is needed. Some of such occasions are
+<P>Class <CODE>TransformValue</CODE> is a base class for a hierarchy of classes used throughout Orange for simple transformation of values. Discretization, for instances, creates
+a transformer that converts continuous values into discrete,
+while continuizers do the opposite. Classification trees use transformers for binarization where values of discrete attributes are converted into binary.</P>
 
-<UL style="margin-top: 0cm">
-<LI><A href="discretization.htm">discretization</A>, where the class <CODE>Discretizer</CODE> defines a base class for a hierarchy of classes that turn continuous values into discrete by checking thresholds or interval cutoffs</LI>
+<P>Transformers are most commonly used in conjunction with <a href="classifierFromVar.htm">Classifiers from Attribute</a>. It is also possible to subtype this class in Python.</P>
 
-<LI>SVM preprocessing, where <CODE>Discrete2Continuous</CODE> and <CODE>NormalizeContinuous</CODE> change discrete and continuous values into values from interval [0.0, 1.0]</LI>
+<P>Although this classes can occasionally come very handy, you will mostly encounter them when created by other methods, such as discretization.</P>
 
-<LI>decision trees with binarization (or subsetting), where <CODE>MapIntValue</CODE> computes a branch index from a discrete value.
-</UL>
 
-<P>Various classes derived from <CODE>TransformValue</CODE> are covered on pages with the corresponding topic.</P>
+<H2>TransformValue</H2>
 
-<P>It is possible to subtype this class in Python. An example of that is given in examples for <a href="classifierFromVar.htm">Classifiers from Attribute</a>.
+<P><CODE>TransformValue</CODE> is the abstract root of the hierarchy, itself derived from <CODE>Orange</CODE>. When called with a <A href="Value.htm"><CODE>Value</CODE></A> as an argument, it returns the transformed value.</P>
+
+<P>See <a href="classifierFromVar.htm">Classifiers from Attribute</a> for an example of how to derive new Python classes from <CODE>TransformValue</CODE>.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>subTransformer</DT>
+<DD>Specifies the transformation that takes place prior to this. This way, transformations can be chained, although this will seldom be needed.</DD>
+</DL>
+
+
+<H2>Ordinal2Continuous</H2>
+
+<P><CODE>Ordinal2Continuous</CODE> converts
+
+<H2>Discrete2Continuous</H2>
+
+<P>Converts a discrete value to a continuous so that some designated value is converted to 1.0 and all others to 0.0 or -1.0, depending on the settings.</P>
+
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>value</DT>
+<DD>The value that in converted to 1.0; others are converted to 0.0 or -1.0. Value needs to be specified by an integer index, not a <CODE>Value</CODE>.</DD>
+
+<DT>zeroBased</DT>
+<DD>Decides whether the other values will be transformed to 0.0 (<CODE>True</CODE>, default) or -1.0 (<CODE>False</CODE>)</DD>
+
+<DT>invert</DT>
+<DD>If <CODE>True</CODE> (default is <CODE>False</CODE>), the transformations are reversed - the selected <CODE>value</CODE> becomes 0.0 (or -1.0) and others 1.0.</DD>
+</DL>
+
+<P>The following examples load the Monk 1 dataset and prepares various transformations for attribute "e".</P>
+
+<p class="header">part of <a href="transformvalue.py">transformvalues.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<xmp class="code">
+import orange
+
+data = orange.ExampleTable("monk1")
+
+e = data.domain["e"]
+
+e1 = orange.FloatVariable("e=1")
+e1.getValueFrom = orange.ClassifierFromVar(whichVar = e)
+e1.getValueFrom.transformer = orange.Discrete2Continuous()
+e1.getValueFrom.transformer.value = int(orange.Value(e, "1"))
+</XMP>
+
+<P>We first construct a new continuous attribute <CODE>e1</CODE>, and set its <CODE>getValueFrom</CODE> to a newly constructed classifier that will extract the value of <CODE>e</CODE> from any example it's given. Then we tell the classifier to transform the gotten value using a <CODE>Discrete2Continuous</CODE> transformation. The tranformations <CODE>value</CODE> is set to the index of <CODE>e</CODE>'s value "1"; one way to do it is to construct a <CODE>Value</CODE> of attribute <CODE>e</CODE> and cast it to integer (if you don't understand this, use it without understanding it).</P>
+
+<P>To demonstrate the use of various flags, we constructed two more attributes in a similar manner. Both are based on <CODE>e</CODE>, all check whether <CODE>e</CODE>'s value is "1", except that the new attribute's <CODE>e10</CODE> tranformation will not be zero based and the <CODE>e01</CODE>'s transformation will also be inverted:
+
+<p class="header">part of <a href="transformvalue.py">transformvalues.py</a></p>
+<xmp class="code">
+(...)
+e10.getValueFrom.transformer.zeroBased = False
+(...)
+e01.getValueFrom.transformer.zeroBased = False
+e01.getValueFrom.transformer.invert = True
+</XMP>
+
+<P>Finally, we shall construct a new domain that will only have the original <CODE>e</CODE> and its transformations, and the class. We shall convert the entire table to that domain and print out the first ten examples.</P>
+
+<p class="header">part of <a href="transformvalue.py">transformvalues.py</a></p>
+<xmp class="code">
+newDomain = orange.Domain([e, e1, e10, e01], data.domain.classVar)
+newData = orange.ExampleTable(newDomain, data)
+for ex in newData[:10]:
+    print ex
+</xmp>
+
+<P>Here's the script's output.</P>
+
+<XMP class=code>
+['1', 1.000, 1.000, -1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+['2', 0.000, -1.000, 1.000, '1']
+['2', 0.000, -1.000, 1.000, '1']
+['3', 0.000, -1.000, 1.000, '1']
+['3', 0.000, -1.000, 1.000, '1']
+['4', 0.000, -1.000, 1.000, '1']
+['4', 0.000, -1.000, 1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+['1', 1.000, 1.000, -1.000, '1']
+</XMP>
+
+<P>The difference between the second and the third attribute is in that where the second has zero's, the third has -1's. The last attribute (before the class) is reversed version of the third.</P>
+
+<P>You can, of course, "divide" a single attribute into a number of continuous attributes. Original attribute <CODE>e</CODE> has four possible values; let's create for new attributes, each corresponding to one of <CODE>e</CODE>'s values.</P>
+
+<p class="header">part of <a href="transformvalue.py">transformvalues.py</a>
+(uses <a href="monk1.tab">monk1.tab</a>)</p>
+<XMP class="code">
+attributes = [e]
+for v in e.values:
+    newattr = orange.FloatVariable("e=%s" % v)
+    newattr.getValueFrom = orange.ClassifierFromVar(whichVar = e)
+    newattr.getValueFrom.transformer = orange.Discrete2Continuous()
+    newattr.getValueFrom.transformer.value = int(orange.Value(e, v))
+    attributes.append(newattr)
+</XMP>
+
+<P>The output of this script is</P>
+<XMP class="code">
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+['2', 0.000, 1.000, 0.000, 0.000, '1']
+['2', 0.000, 1.000, 0.000, 0.000, '1']
+['3', 0.000, 0.000, 1.000, 0.000, '1']
+['3', 0.000, 0.000, 1.000, 0.000, '1']
+['4', 0.000, 0.000, 0.000, 1.000, '1']
+['4', 0.000, 0.000, 0.000, 1.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+['1', 1.000, 0.000, 0.000, 0.000, '1']
+</XMP>
 
 </BODY>
 </HTML> 

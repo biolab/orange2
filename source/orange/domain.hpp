@@ -125,6 +125,10 @@ public:
   virtual void domainHasChanged();
 
   void afterSet(const string &name);
+
+  PVariable hasDiscreteAttributes(bool checkClass = true) const;
+  PVariable hasContinuousAttributes(bool checkClass = true) const;
+  PVariable hasOtherAttributes(bool checkClass = true) const;
 };
 
 

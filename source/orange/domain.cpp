@@ -500,3 +500,30 @@ void TDomain::domainChangedNoticeHandler(TDomain *dom)
   knownByDomains.remove(dom);
 }
 
+
+
+PVariable TDomain::hasOtherAttributes(bool checkClass) const
+{
+  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+    if (((*vi)->varType != TValue::FLOATVAR) && ((*vi)->varType != TValue::INTVAR))
+      return *vi;
+  return PVariable();
+}
+
+
+PVariable TDomain::hasDiscreteAttributes(bool checkClass) const
+{
+  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+    if ((*vi)->varType == TValue::INTVAR)
+      return *vi;
+  return PVariable();
+}
+
+
+PVariable TDomain::hasContinuousAttributes(bool checkClass) const
+{
+  const_PITERATE(TVarList, vi, checkClass ? attributes : variables)
+    if ((*vi)->varType == TValue::FLOATVAR)
+      return *vi;
+  return PVariable();
+}

@@ -70,14 +70,15 @@ TMapIntValue::TMapIntValue(const TIntList &al)
 
 
 void TMapIntValue::transform(TValue &val)
-{ checkProperty(mapping);
+{ 
+  checkProperty(mapping);
 
   if (val.isSpecial())
     return;
   if (val.varType!=TValue::INTVAR)
-    raiseErrorWho("transform", "invalid value type (discrete expected)");
+    raiseError("invalid value type (discrete expected)");
   if (val.intV>=int(mapping->size()))
-    raiseErrorWho("transform", "value out of range");
+    raiseError("value out of range");
 
   int res = mapping->at(val.intV);
   if (res<0)
@@ -88,20 +89,46 @@ void TMapIntValue::transform(TValue &val)
 
 
 
-TDiscrete2Continuous::TDiscrete2Continuous(const int aval, bool inv)
+TDiscrete2Continuous::TDiscrete2Continuous(const int aval, bool inv, bool zeroB)
 : value(aval),
-  invert(inv)
+  invert(inv),
+  zeroBased(zeroB)
 {}
 
-void TDiscrete2Continuous::transform(TValue &val)
-{ if (val.varType!=TValue::INTVAR)
-    raiseError("invalid value type (non-int)");
-  if (val.isSpecial())
-    raiseError("unknown value");
 
-  val = TValue(float(((val.intV == value) != invert) ? 1.0 : 0.0));
+void TDiscrete2Continuous::transform(TValue &val)
+{ 
+  if (val.varType!=TValue::INTVAR)
+    raiseError("invalid value type (non-int)");
+  if (val.isSpecial()) {
+    if (zeroBased)
+      raiseError("unknown value");
+    else
+      val = TValue(0.0);
+  }
+  else {
+    if ((val.intV == value) != invert)
+      val = TValue(1.0);
+    else
+      val = TValue(float(zeroBased ? 0.0 : -1.0));
+  }
 }
 
+
+TOrdinal2Continuous::TOrdinal2Continuous(const int nval)
+: nvalues(nval)
+{}
+
+
+void TOrdinal2Continuous::transform(TValue &val)
+{
+  if (val.isSpecial())
+    return;
+  if (val.varType!=TValue::INTVAR)
+    raiseError("invalid value type (discrete expected)");
+
+  val = TValue(float(val.intV) * factor);
+}
 
 
 TNormalizeContinuous::TNormalizeContinuous(const float av, const float sp)
@@ -119,32 +146,73 @@ void TNormalizeContinuous::transform(TValue &val)
 }
 
 
-PVariable discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val)
+TDomainContinuizer::TDomainContinuizer()
+: zeroBased(true),
+  normalizeContinuous(false),
+  baseValueSelection(FrequentIsBase),
+  classTreatment(ReportError)
+{}
+
+
+PVariable TDomainContinuizer::discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val, bool inv) const
 {
   PVariable newvar = mlnew TFloatVariable(evar->name+"="+evar->values->at(val));
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, wevar);
-  cfv->transformer = mlnew TDiscrete2Continuous(val);
+  cfv->transformer = mlnew TDiscrete2Continuous(val, inv, zeroBased);
   newvar->getValueFrom = cfv;
   return newvar;
 }
 
 
-void discrete2continuous(PVariable var, TVarList &vars)
+PVariable TDomainContinuizer::ordinal2continuous(TEnumVariable *evar, PVariable wevar) const
+{
+  PVariable newvar = mlnew TFloatVariable("C_"+evar->name);
+  TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, wevar);
+  cfv->transformer = mlnew TOrdinal2Continuous(1.0/evar->values->size());
+  newvar->getValueFrom = cfv;
+  return newvar;
+}
+
+
+void TDomainContinuizer::discrete2continuous(PVariable var, TVarList &vars, const int &mostFrequent) const
 { 
   TEnumVariable *evar = var.AS(TEnumVariable);
   if (evar->values->size() < 2)
     return;
 
-  const int baseValue = evar->baseValue>=0 ? evar->baseValue : 0;
-  for(int val = 0, mval = evar->values->size(); val<mval; val++)
-    if (val!=baseValue)
-      vars.push_back(discrete2continuous(evar, var, val));
+  if (evar->values->size() == 2)
+    vars.push_back(discrete2continuous(evar, var, 1));
+
+  int baseValue;
+  switch (baseValueSelection) {
+    case Ignore:
+      return;
+
+    case ReportError: 
+      raiseError("attribute '%s' is multinomial", var->name.c_str());
+
+    case AsOrdinal:
+      vars.push_back(ordinal2continuous(evar, var));
+      return;
+ 
+    default:
+      if (evar->baseValue >= 0)
+        baseValue = evar->baseValue;
+      else if (baseValueSelection == FrequentIsBase)
+        baseValue = mostFrequent;
+      else
+        baseValue = 0;
+    
+      for(int val = 0, mval = evar->values->size(); val<mval; val++)
+        if ((baseValueSelection==NValues) || (val!=baseValue))
+          vars.push_back(discrete2continuous(evar, var, val));
+  }
 }
 
 
-PVariable normalizeContinuous(PVariable var, const float &avg, const float &span)
+PVariable TDomainContinuizer::continuous2normalized(PVariable var, const float &avg, const float &span) const
 { 
-  PVariable newvar = mlnew TFloatVariable(var->name+"_N");
+  PVariable newvar = mlnew TFloatVariable("N_"+var->name);
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, var);
   cfv->transformer = mlnew TNormalizeContinuous(avg, span);
   newvar->getValueFrom = cfv;
@@ -152,95 +220,138 @@ PVariable normalizeContinuous(PVariable var, const float &avg, const float &span
 }
 
 
-PVariable discreteClass2continous(PVariable classVar, const int &targetClass, bool invertClass)
+PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const int &targetClass) const
 {
   TEnumVariable *eclass = classVar.AS(TEnumVariable);
   const int classBase = targetClass >= 0 ? targetClass : eclass->baseValue;
 
-  if (eclass->values->size() < 2)
-    raiseError("class has less than two different values");
-  if (classBase >= int(eclass->values->size()))
-      raiseError("base class value out of range");
-
-  if (eclass->values->size() == 2) {
-    if (classBase >= 0)
-      return discrete2continuous(eclass, classVar, 1-classBase);
-    else
-      return discrete2continuous(eclass, classVar, 1);
-  }
-  else { // class has more than 2 values
-    if (classBase < 0)
-      raiseError("cannot handle multinomial classes if baseValue is nor set nor given");
+  if (classBase >= 0) {
+    if (classBase >= int(eclass->values->size()))
+        raiseError("base class value out of range");
 
     PVariable newClassVar = mlnew TFloatVariable(eclass->name+"<>"+eclass->values->at(classBase));
     TClassifierFromVar *cfv = mlnew TClassifierFromVar(newClassVar, classVar);
-    cfv->transformer = mlnew TDiscrete2Continuous(classBase, true);
+    cfv->transformer = mlnew TDiscrete2Continuous(classBase, false, zeroBased);
     newClassVar->getValueFrom = cfv;
     return newClassVar;
   }
+
+  if (classTreatment == Ignore)
+    return classVar;
+
+  if (eclass->values->size() < 2)
+    raiseError("class has less than two different values");
+
+  if (eclass->values->size() == 2)
+    return discrete2continuous(eclass, classVar, 1);
+
+  if (classTreatment != AsOrdinal)
+    raiseError("class '%s' is multinomial", eclass->name.c_str());
+
+  return ordinal2continuous(eclass, classVar);
 }
 
 
-PDomain regressionDomain(PDomain dom, const int &targetClass, bool invertClass)
+PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) const
 { 
+  PVariable otherAttr = dom->hasOtherAttributes((targetClass>=0) || (classTreatment != Ignore));
+  if (otherAttr)
+    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->name.c_str());
+  
+  if (normalizeContinuous)
+    raiseError("cannot normalize continuous attributes without seeing the data");
+  if (baseValueSelection == FrequentIsBase)
+    raiseError("cannot determine the most frequent values without seeing the data");
+
   PVariable newClassVar;
-  if (dom->classVar->varType == TValue::INTVAR)
-    newClassVar = discreteClass2continous(dom->classVar, targetClass, invertClass);
-  else if (dom->classVar->varType == TValue::FLOATVAR)
-    newClassVar = dom->classVar;
+  if (((targetClass>=0) || (classTreatment != Ignore)) && (dom->classVar->varType == TValue::INTVAR))
+    newClassVar = discreteClass2continous(dom->classVar, targetClass);
   else
-    raiseError("class '%s' cannot be converted to continuous", dom->classVar->name.c_str());
+    newClassVar = dom->classVar;
 
   TVarList newvars;
   PITERATE(TVarList, vi, dom->attributes)
     if ((*vi)->varType == TValue::INTVAR)
-      discrete2continuous(*vi, newvars);
-    else if ((*vi)->varType == TValue::FLOATVAR)
-      newvars.push_back(*vi);
+      discrete2continuous(*vi, newvars, -1);
     else
-      raiseError("attribute '%s' cannot be converted to continuous", (*vi)->name.c_str());
+      newvars.push_back(*vi);
     
   return mlnew TDomain(newClassVar, newvars);
 }
 
 
-PDomain regressionDomain(PExampleGenerator egen, const int &targetClass, bool invertClass, bool normContinuous)
+PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weightID, const int &targetClass) const
 { 
-  if (!normContinuous)
-    return regressionDomain(egen->domain, targetClass, invertClass);
+  bool convertClass = (targetClass>=0) || (classTreatment != Ignore);
+
+  if (!convertClass && (targetClass>=0))
+    raiseWarning("class is not being converted, 'targetClass' argument is ignored");
+
+  if (!normalizeContinuous)
+    return call(egen->domain, targetClass);
 
   const TDomain &domain = egen->domain.getReference();
-  TDomainBasicAttrStat dombas(egen);
+
+  PVariable otherAttr = domain.hasOtherAttributes(convertClass);
+  if (otherAttr)
+    raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->name.c_str());
+
+
+  vector<float> avgs, spans;
+  vector<int> mostFrequent;
+
+  if ((baseValueSelection == FrequentIsBase) && domain.hasDiscreteAttributes(convertClass)) {
+    TDomainDistributions ddist(egen, weightID, false, true);
+    ITERATE(TDomainDistributions, ddi, ddist) {
+      if ((*ddi)->variable->varType == TValue::INTVAR) {
+        // won't call modus here, I want the lowest values if there are more values with equal frequencies
+        int val = 0, highVal = 0;
+        float highestF = 0.0;
+        TDiscDistribution *ddva = (*ddi).AS(TDiscDistribution);
+        for(TDiscDistribution::const_iterator di(ddva->begin()), de(ddva->end()); di!=de; di++, val++)
+          if (*di>highestF) {
+            highestF = *di;
+            highVal = val;
+          }
+        mostFrequent.push_back(highVal);
+      }
+      else
+        mostFrequent.push_back(-1);
+    }
+  }
+
+  if (domain.hasContinuousAttributes(convertClass)) {
+    TDomainBasicAttrStat dombas(egen);
+    ITERATE(TDomainBasicAttrStat, di, dombas);
+    if ((*di)->variable->varType == TValue::FLOATVAR) {
+      avgs.push_back((*di)->avg);
+      spans.push_back((*di)->max-(*di)->min);
+    }
+    else {
+      avgs.push_back(-1);
+      spans.push_back(-1);
+    }
+  }
+
 
   PVariable newClassVar;
-  if (domain.classVar->varType == TValue::INTVAR)
-    newClassVar = discreteClass2continous(domain.classVar, targetClass, invertClass);
-  else if (domain.classVar->varType == TValue::FLOATVAR) {
-    const TBasicAttrStat &cstat = dombas.back().getReference();
-    newClassVar = normalizeContinuous(domain.classVar, cstat.avg, cstat.max - cstat.min);
+  if (convertClass) {
+    if (domain.classVar->varType == TValue::INTVAR)
+      newClassVar = discreteClass2continous(domain.classVar, targetClass);
+    else
+      newClassVar = continuous2normalized(domain.classVar, avgs.back(), spans.back());
   }
   else
-    raiseError("class '%s' cannot be converted to continuous", domain.classVar->name.c_str());
+    newClassVar = domain.classVar;
 
   TVarList newvars;
   TVarList::const_iterator vi(domain.attributes->begin()), ve(domain.attributes->end());
-  TDomainBasicAttrStat::iterator di(dombas.begin());
-  for(; vi!=ve; vi++, di++)
+  for(int i = 0; vi!=ve; vi++, i++)
     if ((*vi)->varType == TValue::INTVAR)
-      discrete2continuous(*vi, newvars);
-    else if ((*vi)->varType == TValue::FLOATVAR)
-      newvars.push_back(normalizeContinuous(*vi, (*di)->avg, (*di)->max-(*di)->min));
+      discrete2continuous(*vi, newvars, mostFrequent[i]);
     else
-      raiseError("attribute '%s' cannot be converted to continuous", (*vi)->name.c_str());
+      newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
     
   return mlnew TDomain(newClassVar, newvars);
 }
 
-
-bool hasNonContinuousAttributes(PDomain dom, bool checkClass)
-{
-  PITERATE(TVarList, vi, checkClass ? dom->attributes : dom->variables)
-    if ((*vi)->varType != TValue::FLOATVAR)
-      return true;
-  return false;
-}

@@ -110,11 +110,16 @@ PyObject *Discretizer_constructVariable(PyObject *self, PyObject *var) PYARGS(ME
 
 C_NAMED(MapIntValue, TransformValue, "([mapping=])")
 C_NAMED(Discrete2Continuous, TransformValue, "([value=])")
+C_NAMED(Ordinal2Continuous, TransformValue, "([nvalues=])")
 C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
+
+C_NAMED(DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
 
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
   if (pyval) {
+    if (!classVar)
+      PYERROR(PyExc_TypeError, "cannot set target class value for class-less domain", -2);
     if (classVar->varType != TValue::INTVAR)
       PYERROR(PyExc_TypeError, "cannot set target value for non-discrete class", -2);
 
@@ -130,43 +135,34 @@ int getTargetClass(PVariable classVar, PyObject *pyval)
 }
 
 // WAS: Domain4SVM -- has Aleks used it already?
-PyObject *RegressionDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "([domain | examples]) -> domain")
-{ PyTRY
-    PyObject *arg;
+PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(domain | examples, weightID) -> domain")
+{ 
+  PyTRY
+    SETATTRIBUTES 
+
+    if (args && (PyTuple_Size(args)>=1) && PyOrDomain_Check(PyTuple_GET_ITEM(args, 0))) {
+      PDomain domain;
+      PyObject *pyval = PYNULL;
+      if (!PyArg_ParseTuple(args, "O&|O", cc_Domain, &domain, &pyval))
+        return PYNULL;
+      int targetClass = getTargetClass(domain->classVar, pyval);
+      if (targetClass == -2)
+        return PYNULL;
+     
+      return WrapOrange(SELF_AS(TDomainContinuizer)(domain, targetClass));
+    }
+
+    PExampleGenerator egen;
+    int weightID = 0;
     PyObject *pyval = PYNULL;
-    PyObject *pyInvertClass = PYNULL;
-    PyObject *pyNormalizeContinuous = PYNULL;
-    if (!PyArg_ParseTuple(args, "O|Oii:RegressionDomain", &arg, &pyval, &pyInvertClass, &pyNormalizeContinuous))
+    if (!PyArg_ParseTuple(args, "O&|O&O", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID, &pyval))
+      PYERROR(PyExc_AttributeError, "DomainContinuizer.__call__: domain or examples (and, optionally, weight attribute) expected", PYNULL);
+
+    int targetClass = getTargetClass(egen->domain->classVar, pyval);
+    if (targetClass == -2)
       return PYNULL;
 
-    bool invertClass = pyInvertClass && PyObject_IsTrue(pyInvertClass);
-    bool normalizeContinuous = pyNormalizeContinuous && PyObject_IsTrue(pyNormalizeContinuous);
-
-    if (PyOrDomain_Check(arg)) {
-      if (normalizeContinuous)
-        PYERROR(PyExc_SystemError, "cannot normalize continuous attributes based on Domain only", PYNULL);
-
-      PDomain dom(PyOrange_AsDomain(arg));
-      int targetClass = getTargetClass(dom->classVar, pyval);
-      if (targetClass==-2)
-        return PYNULL;
-
-      return WrapOrange(regressionDomain(dom, targetClass, invertClass));
-    }
-
-    else {
-      PExampleGenerator egen = exampleGenFromParsedArgs(arg);
-      if (!egen)
-        PYERROR(PyExc_TypeError, "domain or examples expected as the first argument", PYNULL);
-      if (!egen->domain->classVar)
-        PYERROR(PyExc_TypeError, "class-less domain", PYNULL);
-
-      int targetClass = getTargetClass(egen->domain->classVar, pyval);
-      if (targetClass=-2)
-        return PYNULL;
-
-      return WrapOrange(regressionDomain(egen, targetClass, invertClass, normalizeContinuous));
-    }
+    return WrapOrange(SELF_AS(TDomainContinuizer)(egen, weightID, targetClass));
 
   PyCATCH
 }

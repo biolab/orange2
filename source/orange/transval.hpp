@@ -65,10 +65,22 @@ class TDiscrete2Continuous : public TTransformValue {
 public:
   __REGISTER_CLASS
 
-  int value; //P target value
+  int value; //P tvearget value
   bool invert; //P give 1.0 to values not equal to the target
+  bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined
 
-  TDiscrete2Continuous(const int =-1, bool = false);
+  TDiscrete2Continuous(const int =-1, bool invert = false, bool zeroBased = true);
+  virtual void transform(TValue &);
+};
+
+
+class TOrdinal2Continuous : public TTransformValue {
+public:
+  __REGISTER_CLASS
+
+  int factor; //P number of values
+
+  TOrdinal2Continuous(const int = 1);
   virtual void transform(TValue &);
 };
 
@@ -87,14 +99,30 @@ public:
 class TEnumVariable;
 WRAPPER(Variable)
 
-PVariable discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val);
-void discrete2continous(PVariable var, TVarList &vars);
-PVariable normalizeContinuous(PVariable var, const float &avg, const float &span);
-PVariable discreteClass2continous(PVariable classVar, const int &targetClass, bool invertClass);
-PDomain regressionDomain(PDomain, const int &targetClass = -1, bool invert = false);
-PDomain regressionDomain(PExampleGenerator, const int &targetClass = -1, bool invertClass = false, bool normalizeContinuous = true);
 
-bool hasNonContinuousAttributes(PDomain, bool checkClass);
+class TDomainContinuizer : public TOrange {
+public:
+  __REGISTER_CLASS
+
+  enum { LowestIsBase, FrequentIsBase, NValues, Ignore, ReportError, AsOrdinal};
+
+  bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined
+  bool normalizeContinuous; //P if true (default is false), continuous values are normalized
+  int baseValueSelection; //P 0-lowest value, 1-most frequent (or baseValue), 2-n binary, 3-ignore, 4-error, 5-convert as ordinal
+  int classTreatment; //P 3-leave as is unless target is given, 4-error if not continuous nor binary nor target given, 5-convert as ordinal (unless target given)
+
+  TDomainContinuizer();
+
+  PVariable discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val, bool inv = false) const;
+  void discrete2continuous(PVariable var, TVarList &vars, const int &mostFrequent) const;
+  PVariable continuous2normalized(PVariable var, const float &avg, const float &span) const;
+  PVariable discreteClass2continous(PVariable classVar, const int &targetClass) const;
+  PVariable ordinal2continuous(TEnumVariable *evar, PVariable wevar) const;
+
+  PDomain operator()(PDomain, const int &targetClass = -1) const;
+  PDomain operator()(PExampleGenerator, const int &weightID, const int &targetClass = -1) const;
+};
+
 
 #endif
 
