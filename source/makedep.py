@@ -103,9 +103,9 @@ for (file, filedeps) in deplist:
 makedepsfile.write("\n\n")
 
 makedepsfile.write("$(PPPDIR)/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
-makedepsfile.write("\tpython2 $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) \n\n")
+makedepsfile.write("\tpython $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) \n\n")
 
 makedepsfile.write("$(PXDIR)/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
-makedepsfile.write("\tpython2 $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)\n\n")
+makedepsfile.write("\tpython $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)\n\n")
 
 makedepsfile.close()

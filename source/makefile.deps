@@ -109,9 +109,9 @@ $(ODIR)/values.o : orange/values.cpp errors.hpp garbage.hpp garbage_py_manner.hp
 $(ODIR)/vars.o : orange/vars.cpp cMersenneTwister.h classify.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp values.hpp vars.cpp vars.hpp
 
 
-$(PPPDIR)/stamp: learn.hpp trindex.hpp basstat.hpp boosting.hpp assistant.hpp values.hpp subsets.hpp distance.hpp tabdelim.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp examplegen.hpp svm_filtering.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp cost.hpp c4.5.hpp estimateprob.hpp knn.hpp examples.hpp svm.hpp lookup.hpp root.hpp majority.hpp spec_contingency.hpp tdidt.hpp costwrapper.hpp table.hpp transdomain.hpp domain.hpp contingency.hpp induce.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp minimal_error.hpp classfromvar.hpp filter.hpp preprocessors.hpp assoc.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp filegen.hpp dist_clustering.hpp decomposition.hpp
-	python2 $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) 
+$(PPPDIR)/stamp: learn.hpp trindex.hpp basstat.hpp c4.5.hpp boosting.hpp values.hpp filegen.hpp subsets.hpp distance.hpp tabdelim.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp cost.hpp examplegen.hpp svm_filtering.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp estimateprob.hpp knn.hpp examples.hpp svm.hpp lookup.hpp root.hpp induce.hpp majority.hpp spec_contingency.hpp tdidt.hpp costwrapper.hpp table.hpp transdomain.hpp domain.hpp contingency.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp assistant.hpp minimal_error.hpp classfromvar.hpp filter.hpp preprocessors.hpp assoc.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp dist_clustering.hpp decomposition.hpp
+	python $(DEVSCRIPTS)/pyprops.py $(ORANGEDIR) 
 
-$(PXDIR)/stamp: lib_io.cpp lib_vectors.cpp cls_orange.cpp orange.cpp cls_example.cpp cls_value.cpp lib_learner.cpp lib_kernel.cpp lib_components.cpp obsolete.cpp callback.cpp lib_preprocess.cpp
-	python2 $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)
+$(PXDIR)/stamp: lib_vectors.cpp lib_io.cpp cls_orange.cpp orange.cpp cls_example.cpp cls_value.cpp lib_learner.cpp lib_kernel.cpp lib_components.cpp obsolete.cpp callback.cpp lib_preprocess.cpp
+	python $(DEVSCRIPTS)/pyxtract.py $(ORANGEDIR)
 
