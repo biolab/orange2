@@ -89,7 +89,6 @@ class OWVisGraph(OWGraph):
 		self.colorNonTargetValue = QColor(200,200,200)
 		self.colorTargetValue = QColor(0,0,255)
 		self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
-		self.curveSymbolsPrinting = [QwtSymbol.Cross, QwtSymbol.Triangle, QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.XCross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
 
 		self.state = ZOOMING
 		self.tempSelectionCurve = None
