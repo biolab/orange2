@@ -294,7 +294,8 @@ class OWBaseWidget(QDialog):
     def progressBarSet(self, value):
         if value > 0:
             diff = time.time() - self.startTime
-            remaining = diff * 100.0/float(value)
+            total = diff * 100.0/float(value)
+            remaining = max(total - diff, 0)
             h = int(remaining/3600)
             min = int((remaining - h*3600)/60)
             sec = int(remaining - h*3600 - min*60)
