@@ -39,7 +39,7 @@ class OWMosaicDisplay(OWWidget):
         self.tooltips = []
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass), ("view", tuple)]
+        self.outputs = []
     
         #load settings
         self.showLines = 1
