@@ -254,7 +254,7 @@ class OWScatterPlot(OWWidget):
 
         testIndex = 0
         for (acc, tableLen, other, [xattr, yattr], tryIndex, strList) in results:
-            if self.optimizationDlg.isOptimizationCanceled(): continue
+            if self.optimizationDlg.isOptimizationCanceled(): break
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
             
@@ -264,6 +264,7 @@ class OWScatterPlot(OWWidget):
 
             accuracy, other_results = self.optimizationDlg.kNNComputeAccuracy(table)
             self.optimizationDlg.addResult(accuracy, other_results, len(table), [xattr, yattr], tryIndex, strList)
+            self.optimizationDlg.setStatusBarText("Evaluated %d projections..." % (testIndex))
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
@@ -342,7 +343,7 @@ class OWScatterPlot(OWWidget):
         (accuracy, other_results, tableLen, list, tryIndex, strList) = val
         kNNValues = None
         if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
-            kNNValues = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable(self.attrX, self.attrY))
+            kNNValues = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
             if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNValues = [1.0 - val for val in kNNValues]
             clusterClosure = self.graph.clusterClosure
         else: clusterClosure = None
@@ -372,12 +373,6 @@ class OWScatterPlot(OWWidget):
         
         
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
-        attrNames = [attr.name for attr in self.data.domain]
-        for item in attrList:
-            if not item in attrNames:
-                print "invalid settings"
-                return
-
         self.attrX = attrList[0]; self.attrY = attrList[1]
         self.attrColor = self.data.domain.classVar.name
 
