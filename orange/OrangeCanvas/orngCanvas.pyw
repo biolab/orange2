@@ -652,6 +652,7 @@ class OrangeCanvasDlg(QMainWindow):
 
         self.saveSettings()
         if closedDocs == totalDocs:
+            self.output.logFile.close()
             ce.accept()
             QMainWindow.closeEvent(self, ce)
        
