@@ -475,8 +475,6 @@ class OWScatterPlot(OWWidget):
             data = orange.Preprocessor_dropMissingClasses(data)
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.optimizationDlg.clearResults()
-        self.clusterDlg.clearResults()
         exData = self.data
         self.data = data
         self.graph.setData(data)
