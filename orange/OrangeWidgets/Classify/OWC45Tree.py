@@ -70,10 +70,14 @@ class OWC45Tree(OWWidget):
 
     def setLearner(self):
         #print 'MinEx', self.preNodeInst, self.preNodeInstP, '|', self.preLeafInst, self.preLeafInstP
-        self.learner = orange.C45Learner(gainRatio=self.gainRatio, subset=self.subset, probThresh=self.probThresh,
-          minObjs=self.minObjs, window=self.window, increment=self.increment, cf=self.cf, trials=self.trials,
-          prune=self.prune, convertToOrange = self.convertToOrange, storeExamples = 1)
-                                   
+        try:
+            self.learner = orange.C45Learner(gainRatio=self.gainRatio, subset=self.subset, probThresh=self.probThresh,
+                                             minObjs=self.minObjs, window=self.window, increment=self.increment, cf=self.cf, trials=self.trials,
+                                             prune=self.prune, convertToOrange = self.convertToOrange, storeExamples = 1)
+        except:
+            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found! For details, see: http://magix.fri.uni-lj.si/orange/doc/reference/C45Learner.asp', QMessageBox.Ok)
+            return
+
         self.learner.name = self.name
         self.send("Learner", self.learner)
         if self.data <> None:
