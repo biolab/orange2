@@ -2,7 +2,7 @@
 <name>K-Means Clustering</name>
 <description>K-means clustering.</description>
 <icon>icons/KMeans.png</icon>
-<priority>1000</priority>
+<priority>2000</priority>
 """
 
 import orange, orngCluster

@@ -15,7 +15,7 @@
 # output a new table and export it in variety of formats.
 
 from OWWidget import *
-import OWGUI
+import OWGUI, orange
 
 ##############################################################################
 
