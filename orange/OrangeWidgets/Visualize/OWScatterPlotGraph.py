@@ -330,7 +330,7 @@ class OWScatterPlotGraph(OWVisGraph):
             
 
         # draw color scale for continuous coloring attribute
-        if colorAttr != "" and colorAttr != "(One color)" and showColorLegend == 1 and self.showDistributions == 0 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
+        if colorAttr != "" and colorAttr != "(One color)" and showColorLegend == 1 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
             x0 = xVarMax + xVar/100
             x1 = x0 + xVar/20
             colors = ColorPaletteHSV()
