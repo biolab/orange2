@@ -19,6 +19,7 @@ def findfiles():
 
 ppp_timestamp_dep = []
 px_timestamp_dep = []
+px_files = []
 
 def finddeps(filename):
   file=open(files[filename][0]+"/"+filename)
@@ -38,6 +39,7 @@ def finddeps(filename):
 #        mydeps.append("$(PPPDIR)/timestamp.h")
     else:
       if (depname[-3:]==".px"):
+        if depname not in px_files: px_files.append( depname)
         if not filename in px_timestamp_dep:
           px_timestamp_dep.append(filename)
   #      if not "$(PXDIR)/timestamp.h" in mydeps:
@@ -109,5 +111,8 @@ makedepsfile.write("\tpython orange/devscripts/pyprops.py orange\n\n")
 
 makedepsfile.write("orange/px/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
 makedepsfile.write("\tpython orange/devscripts/pyxtract.py orange\n\n")
+
+for filename in px_files:
+  makedepsfile.write("%s: \n\n" % filename)
 
 makedepsfile.close()
