@@ -30,6 +30,14 @@ class TreeLearnerClass:
 	def __call__(self, examples, weight=0):
 		if not self.learner:
 			self.learner = self.instance()
+		if not hasattr(self, "split") and not hasattr(self, "measure"):
+			if examples.domain.classVar.varType == orange.VarTypes.Discrete:
+				measure = orange.MeasureAttribute_gainRatio()
+			else:
+				measure = orange.MeasureAttribute_retis()
+			self.learner.split.continuousSplitConstructor.measure = measure
+			self.learner.split.discreteSplitConstructor.measure = measure
+				
 		tree = self.learner(examples, weight)
 		if getattr(self, "sameMajorityPruning", 0):
 			tree = orange.TreePruner_SameMajority(tree)
@@ -59,9 +67,10 @@ class TreeLearnerClass:
 					}
 
 			measure = getattr(self, "measure", None)
-			if not measure:
-				measure = orange.MeasureAttribute_gainRatio()
-			elif type(measure) == str:
+### We cannot define measure before we see the data (might be regression!)
+#			if not measure:
+#				measure = orange.MeasureAttribute_gainRatio()
+			if type(measure) == str:
 				measure = measures[measure]()
 
 			learner.split.continuousSplitConstructor.measure = measure

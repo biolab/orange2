@@ -241,7 +241,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
     else:
         basevalue = values = None
         
-    testResults = ExperimentResults(nIterations, [l.name for l in learners], values, weight!=0, basevalue)
+    testResults = ExperimentResults(nIterations, [getobjectname(l) for l in learners], values, weight!=0, basevalue)
     testResults.results = [TestedExample(indices[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
