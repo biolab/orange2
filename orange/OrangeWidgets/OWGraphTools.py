@@ -6,6 +6,9 @@ from math import sqrt
 
 colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
 
+#ColorBrewer color set - bad when there are small points
+colorRGBValues = [(228, 26, 28), (0, 140, 255), (77, 175, 74), (152, 78, 163), (255, 127, 0), (255, 255, 51), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
+
 class ColorPaletteHSV:
     maxHueVal = 260
     
@@ -19,12 +22,73 @@ class ColorPaletteHSV:
         self.colors = []
         self.hueValues = []
         if self.numberOfColors == -1: return  # used for coloring continuous variables
+        #elif self.numberOfColors <= len(colorRGBValues): 
         elif self.numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
             for i in range(self.numberOfColors):
-                col = QColor()
-                col.setHsv(colorHueValues[i], self.brightness, 255)
-                self.colors.append(col)
+                c = QColor()
+                c.setHsv(colorHueValues[i], 255, 255)
+                self.colors.append(c)
+                #self.colors.append(QColor(colorRGBValues[i][0], colorRGBValues[i][1], colorRGBValues[i][2]))
             self.hueValues = list(colorHueValues[:self.numberOfColors])
+        else:   
+            self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
+            for hue in self.hueValues:
+                col = QColor()
+                col.setHsv(hue, self.brightness, 255)
+                self.colors.append(col)
+        
+
+    def __getitem__(self, index, brightness = None):
+        # is this color for continuous attribute?
+        if self.numberOfColors == -1:                
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, self.brightness, 255)     # index must be between 0 and 1
+            return col
+        # if we want a standard color, just with a specific brightness value
+        elif brightness != None:    
+            col = QColor()
+            col.setHsv(colorHueValues[index], brightness, 255)
+            return col
+        # return a color from the built table
+        else:                                   # get color for discrete attribute
+            return self.colors[index]           # index must be between 0 and self.numberofColors
+
+    # get only hue value for given index
+    def getHue(self, index):
+        if self.numberOfColors == -1:
+            return index * self.maxHueVal
+        else:
+            return self.hueValues[index]
+
+    def getBrightness(self):
+        return self.brightness
+
+    def setBrightness(self, brightness):
+        self.brightness = brightness
+        self.rebuildColors()
+
+    # get QColor instance for given index
+    def getColor(self, index, brightness = None):
+        return self.__getitem__(index, brightness)
+
+
+class ColorPaletteBrewer:
+    maxHueVal = 260
+    
+    def __init__(self, numberOfColors = -1, brightness = 255):
+        self.brightness = brightness
+        self.numberOfColors = numberOfColors
+        
+        self.rebuildColors()
+
+    def rebuildColors(self):
+        self.colors = []
+        self.hueValues = []
+        if self.numberOfColors == -1: return  # used for coloring continuous variables
+        elif self.numberOfColors <= len(colorRGBValues): 
+            for i in range(self.numberOfColors):
+                self.colors.append(QColor(colorRGBValues[i][0], colorRGBValues[i][1], colorRGBValues[i][2]))
+            self.hueValues = [c.hsv()[0] for c in self.colors]
         else:   
             self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
