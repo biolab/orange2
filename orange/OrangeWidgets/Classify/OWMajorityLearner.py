@@ -1,8 +1,8 @@
 """
-<name>Majority Learner</name>
+<name>Majority</name>
 <description>Constructs a learner that always predicts the majority class</description>
 <category>Classification</category>
-<icon>icons/MajorityLearner.png</icon>
+<icon>icons/Majority.png</icon>
 <priority>50</priority>
 """
 
@@ -13,7 +13,7 @@ class OWMajorityLearner(OWWidget):
     settingsList = ["name"]
 
     def __init__(self, parent=None, name='MajorityLearner'):
-        OWWidget.__init__(self, parent, name, "Constructs a learner that always predicts the majority class")
+        OWWidget.__init__(self, parent, name, "Constructs a learner that always predicts the majority class", icon="Majority.png")
         
         self.callbackDeposit = []
 

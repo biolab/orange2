@@ -1,5 +1,5 @@
 """
-<name>k nearest neighbours</name>
+<name>k-Nearest Neighbours</name>
 <description>Constructs a k nearest neighbours learner</description>
 <category>Classification</category>
 <icon>icons/kNN.png</icon>
@@ -12,8 +12,8 @@ import OWGUI
 class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
 
-    def __init__(self, parent=None, name='KNN'):
-        OWWidget.__init__(self, parent, name, "Construct a k Nearest Neighbours learner")
+    def __init__(self, parent=None, name='kNN'):
+        OWWidget.__init__(self, parent, name, "Construct a k Nearest Neighbours learner", icon="kNN.png")
         
         self.callbackDeposit = []
 
@@ -27,7 +27,7 @@ class OWKNN(OWWidget):
                        ("Dynamic time warp", orange.ExamplesDistanceConstructor_DTW)]
         
         # Settings
-        self.name = 'KNN'
+        self.name = 'kNN'
         self.k = 5;  self.metrics = 0; self.ranks = 0
         self.ignoreUnknowns = 0; self.normalize = 1
         self.loadSettings()
