@@ -2,6 +2,8 @@
 # Module Orange Interactions
 # --------------------------
 #
+# CVS Status: $Id$
+#
 # Author: Aleks Jakulin (jakulin@acm.org)
 #
 # Purpose: Analysis of dependencies between attributes given the class.
@@ -18,6 +20,8 @@
 #       fixed a problem with negative percentages of less than a percent
 #   - 2003/05/12:
 #       separated the 'prepare' function
+#   - 2003/09/18:
+#       added support for cluster coloring
 
 import orange, orngCI
 import warnings, math, string
@@ -254,21 +258,24 @@ class InteractionMatrix:
 
         f.write("}\n")
         
-    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2):
+    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1):
         NA = len(self.names)
 
         ### BEAUTIFY THE LABELS ###
 
-        labels = []        
+        labels = []
+        maxgain = max(self.gains)
         for i in range(NA):
             t = '%s'%self.names[i]
             if pretty_names:
                 t = string.replace(t,"ED_","")
                 t = string.replace(t,"D_","")
                 t = string.replace(t,"M_","")
+            r = self.gains[i]
             if print_bits:
-                r = self.gains[i]*100.0/self.entropy
-                t = "%s (%s%%)"%(t,_nicefloat(r,significant_digits))
+                t = "%s (%s%%)"%(t,_nicefloat(r*100.0/self.entropy,significant_digits))
+            if show_gains: # a bar indicating the feature importance
+                t += ' '+'*'*int(8.0*r/maxgain+0.5)
             labels.append(t)
 
         ### CREATE THE DISSIMILARITY MATRIX ###
@@ -287,6 +294,40 @@ class InteractionMatrix:
             diss.append(newl)
 
         return (diss,labels)
+
+    def getClusterAverages(self, clust):
+        assert(len(self.attlist) == clust.n)
+        # get the max value
+        #d = max(self.attlist[-1][0],self.abslist[-1][0])
+        d = self.abslist[-1][0]
+        # prepare a lookup
+        LUT = {}
+        for (ig,(igv,i,j)) in self.list:
+            LUT[i,j] = igv
+            LUT[j,i] = igv
+
+        cols = []
+        merges = []
+        for i in range(clust.n):
+            merges.append((0.0,[clust.n-i-1]))
+        merges.append("sentry")
+        p = clust.n
+        for i in range(clust.n-1):
+            a = merges[p+clust.merging[i][0]] # cluster 1
+            b = merges[p+clust.merging[i][1]] # cluster 2
+            na = len(a[1])
+            nb = len(b[1])
+            # compute cross-average
+            sum = 0.0
+            for x in a[1]:
+                for y in b[1]:
+                    sum += LUT[x,y]
+            avg = (a[0]*(na*na-na) + b[0]*(nb*nb-nb) + 2*sum)/(math.pow(na+nb,2)-na-nb)
+            clustercolor = 0.5*(1-avg/d)
+            intercluster = 0.5*(1-sum/(d*na*nb))
+            cols.append((clustercolor,intercluster)) # positive -> red, negative -> blue
+            merges.append((avg,a[1]+b[1]))
+        return cols
 
 if __name__== "__main__":
     t = orange.ExampleTable('zoo.tab')

@@ -2,6 +2,8 @@
 # Module: Orange Dendrograms
 # --------------------------
 #
+# CVS Status: $Id$
+#
 # Author: Aleks Jakulin (jakulin@acm.org)
 #
 # Purpose: Dendrogram rendering for hierarchical clustering.
@@ -18,15 +20,31 @@
 #       - line_size
 #   2003/07/18:
 #       - support for other canvases 
+#   2003/09/12:
+#       - cluster identification
+#   2003/09/18:
+#       - coloring, line width: red color indicates positive interactions,
+#         blue color indicates negative interactions. Horizontal bars indicate
+#         inter-cluster interactions, vertical bars indicate intra-cluster
+#         interactions
 # 
 
 
 import orngCluster
 import Tkinter, ImageTk
-import piddlePIL
+import piddle, piddlePIL, math
 
-class DendrogramPlot:
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, canvas = None):
+
+def _colorize(cc):
+    bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
+    redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
+    cblu = bluefunc(cc)
+    cred = redfunc(cc)
+    cgre =  1 - pow(redfunc(cc+0.1),2) - bluefunc(cc-0.15)
+    return piddle.Color(cred,cgre,cblu)
+
+class DendrogramPlot:    
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -59,6 +77,7 @@ class DendrogramPlot:
         origins = [0.0]*self.n    # text positions
         xpositions = [0.0]*self.n # cluster x positions (height)
         ypositions = [0]*self.n   # cluster y positions (average element)
+        attcolors = [0]*self.n
         y = margin
         for i in range(len(labels)):
             # self.order identifies the label at a particular row
@@ -70,16 +89,23 @@ class DendrogramPlot:
         height = 0.0
         for i in range(self.n-1):
                 height += self.height[i]
-                vlines.append((height,ypositions[p+self.merging[i][0]],ypositions[p+self.merging[i][1]]))
+                if len(cluster_colors) == self.n-1:
+                    coloV = _colorize(cluster_colors[i][0])
+                    coloH = _colorize(cluster_colors[i][1])
+                else:
+                    # no color information
+                    coloH = coloV = piddle.black
+                vlines.append((height,ypositions[p+self.merging[i][0]],ypositions[p+self.merging[i][1]],coloV))
                 avg = 0.0
                 for j in self.merging[i]:
                     # record text origins
                     v = ypositions[p+j]
                     if j < 0:
                         origins[-1-j] = height
+                        attcolors[-1-j] = coloH
                     else:
                         # create the cluster lines
-                        hlines.append((v,xpositions[p+j],height))
+                        hlines.append((v,xpositions[p+j],height,coloH))
                     avg += v             
                 # recompute the average height of new cluster
                 ypositions.append(0.5*avg)
@@ -99,14 +125,15 @@ class DendrogramPlot:
             x = offset-hs*origins[idx]
             canvas.drawString(labels[idx], hook+x, y+halfline)
             # draw the hook
-            canvas.drawLine(x,y,x+hook*0.8,y)
+            canvas.drawLine(x,y,x+hook*0.8,y,attcolors[idx],width=line_width)
             y += lineskip
 
         # print lines
-        for (y,x1,x2) in hlines:
-            canvas.drawLine(offset-x1*hs,y,offset-x2*hs,y)
-        for (x,y1,y2) in vlines:
-            canvas.drawLine(offset-x*hs,y1,offset-x*hs,y2)
+        for (y,x1,x2,colo) in hlines:
+            canvas.drawLine(offset-x1*hs,y,offset-x2*hs,y,colo,width=line_width)
+        vlines.reverse() # smaller clusters are more interesting
+        for (x,y1,y2,colo) in vlines:
+            canvas.drawLine(offset-x*hs,y1,offset-x*hs,y2,colo,width=line_width)
             
         canvas.flush()
         return canvas
@@ -152,6 +179,7 @@ if __name__== "__main__":
     im = orngInteract.InteractionMatrix(tab)
     (diss,labels) = im.exportDissimilarityMatrix()
     c = GDHClustering(diss)
-    canvas = c.dendrogram(labels)
+    # canvas = c.dendrogram(labels)
+    canvas = c.dendrogram(labels,line_size=1.8,cluster_colors=im.getClusterAverages(c),line_width=3)
     canvas.getImage().save("c_zoo.png")
     ViewImage(canvas.getImage())
