@@ -52,8 +52,8 @@ python removeCVS.py %SNAPSHOTDIR
 del %DOWNLOADDIR\orange-win-snap-*.exe
 del %DOWNLOADDIR\orange-win-genomics-snap-*.exe
 
-nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
-nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+nsis /Onsis_snapshot.log /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+nsis /Onsis_snapshot.log /DCOMPLETE /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 rem del snapshotfiles_*.inc
 
 del %DOWNLOADDIR\orange-source-snap-*.zip
