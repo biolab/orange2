@@ -142,8 +142,6 @@ class OWScatterPlotGraph(OWVisGraph):
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
             sizeShapeIndex = self.attributeNames.index(sizeShapeAttr)
 
-        shapeList = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.Triangle, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.Cross, QwtSymbol.XCross, QwtSymbol.StyleCnt]
-
         # create hash tables in case of discrete X axis attribute
         attrXIndices = {}
         discreteX = 0
@@ -234,8 +232,8 @@ class OWScatterPlotGraph(OWVisGraph):
                     newColor = QColor(0,0,0)
                     if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
                         
-                    Symbol = shapeList[0]
-                    if shapeIndex != -1: Symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
+                    Symbol = self.curveSymbols[0]
+                    if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
@@ -270,7 +268,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 varValues = self.getVariableValuesSorted(self.rawdata, shapeIndex)
                 val[3] = []; val[0] = []
                 for ind in range(num):
-                    val[3].append(shapeList[ind])
+                    val[3].append(self.curveSymbols[ind])
                     val[0].append(self.rawdata.domain[shapeIndex].name + "=" + varValues[ind])
                 legendKeys[shapeIndex] = val
 

@@ -509,7 +509,7 @@ distribution of classes for each attribute.
             self.data = None
             return
 
-        self.data = data
+        self.data = orange.Preprocessor_dropMissingClasses(data)
         
         names = []
         for attr in self.data.domain.attributes:

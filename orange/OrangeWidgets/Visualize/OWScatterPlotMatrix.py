@@ -376,7 +376,7 @@ class OWScatterPlotMatrix(OWWidget):
             self.removeAllGraphs()
             return
         
-        self.data = orange.Preprocessor_dropMissing(data)
+        self.data = orange.Preprocessor_dropMissingClasses(data)
 
         if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
             if self.graphs != []: self.createGraphs()   # if we had already created graphs, redraw them with new data

@@ -31,7 +31,7 @@ class OWScatterPlot(OWWidget):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
         apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", FALSE, TRUE))
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("View", tuple, self.view, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("View", tuple, self.view, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
 
         #set default settings
@@ -429,7 +429,8 @@ class OWScatterPlot(OWWidget):
         else:
             self.attrY.setCurrentItem(0)
             
-        self.setText(self.attrColor, self.data.domain.classVar.name)
+        if self.data.domain.classVar: self.setText(self.attrColor, self.data.domain.classVar.name)
+        else:                         self.setText(self.attrColor, "(One color)")
         self.setText(self.attrShape, "(One shape)")
         self.setText(self.attrSizeShape, "(One size)")
         
@@ -460,7 +461,8 @@ class OWScatterPlot(OWWidget):
     def cdata(self, data):
         self.optimizationDlg.clear()
         exData = self.data
-        self.data = data
+        self.data = None
+        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
        
         if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)): # preserve attribute choice if the domain is the same

@@ -361,10 +361,10 @@ class OWParallelCoordinates(OWWidget):
                 self.slider.setRange(0, rest)
                 self.sliderRange = rest
             elif self.isResizing:
+                print "is resizing = 1"
                 self.isResizing = 0
                 return  # if we resized widget and it doesn't change the number of attributes that are shown then we return
         else:
-            #print "returned"
             self.slider.setRange(0,0)
             self.sliderRange = 0
             maxAttrs = len(attrs)
@@ -374,7 +374,7 @@ class OWParallelCoordinates(OWWidget):
         if targetVal == "(None)": targetVal = None
         self.graph.updateData(attrs[start:start+maxAttrs], targetVal)
         self.slider.repaint()
-        #self.graph.update()
+        self.graph.update()
         #self.repaint()
 
 
@@ -407,7 +407,8 @@ class OWParallelCoordinates(OWWidget):
     # receive new data and update all fields
     def data(self, data):
         exData = self.data
-        self.data = data
+        self.data = None
+        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
@@ -418,12 +419,12 @@ class OWParallelCoordinates(OWWidget):
             self.targetValueCombo.insertItem("(None)")
 
             # update target combo
-            if data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                for val in data.domain.classVar.values:
+            if self.data and self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                for val in self.data.domain.classVar.values:
                     self.targetValueCombo.insertItem(val)
                 self.targetValueCombo.setCurrentItem(0)
             
-            self.setShownAttributeList(data)
+            self.setShownAttributeList(self.data)
 
         self.updateGraph()
     #################################################

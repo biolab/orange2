@@ -105,7 +105,7 @@ class OWSurveyPlotGraph(OWVisGraph):
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):
-        if self.mouseCurrentlyPressed or not self.rawData: return
+        if self.mouseCurrentlyPressed or not self.rawdata: return
         else:
             self.hideSelectedRectangle()
             if not self.exampleTracking:

@@ -121,9 +121,8 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-        for label in labels:
-            index = self.attributeNames.index(label)
-            indices.append(index)
+        # store indices to shown attributes
+        for label in labels: indices.append(self.attributeNames.index(label))
 
         self.anchorData = self.createAnchors(length, labels)
 
@@ -137,9 +136,8 @@ class OWRadvizGraph(OWVisGraph):
 
         # ##########
         # draw dots at anchors
-        xArray = []; yArray = []
-        for (x,y,label) in self.anchorData:
-            xArray.append(x), yArray.append(y)
+        xArray = [x for (x,y,label) in self.anchorData]
+        yArray = [y for (x,y,label) in self.anchorData]
         xArray.append(self.anchorData[0][0])
         yArray.append(self.anchorData[0][1])
         self.addCurve("dots", QColor(140,140,140), QColor(140,140,140), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = xArray, yData = yArray, forceFilledSymbols = 1)
@@ -157,13 +155,12 @@ class OWRadvizGraph(OWVisGraph):
         #  create data curves
         # -----------------------------------------------------------
 
+        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:    	# if we have a discrete class
-            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
             valLen = len(self.rawdata.domain.classVar.values)
             classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
         else:	# if we have a continuous class
             valLen = 0
-            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
 
 
         if self.showKNNModel == 1:
@@ -173,8 +170,8 @@ class OWRadvizGraph(OWVisGraph):
             
 
         dataSize = len(self.rawdata)
-        curveData = []
-        for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
+        curveData = [[ [] , [] ] for i in range(valLen)]
+        for i in range(valLen): curveData.append()   # we create valLen empty lists with sublists for x and y
 
         validData = self.getValidList(indices)
 
@@ -238,7 +235,6 @@ class OWRadvizGraph(OWVisGraph):
             accuracy = copy(kNNValues)
             measure = self.kNNOptimization.getQualityMeasure()
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                
                 if ((measure == CLASS_ACCURACY or measure == AVERAGE_CORRECT) and self.showCorrect) or (measure == BRIER_SCORE and not self.showCorrect):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:

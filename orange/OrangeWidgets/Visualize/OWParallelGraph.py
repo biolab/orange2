@@ -230,16 +230,18 @@ class OWParallelGraph(OWVisGraph):
                     
         ###################################################
         # show correlations
-        if self.showCorrelations == 1:
+        if self.showCorrelations:
             for j in range(length-1):
-                attr1 = indices[j]
-                attr2 = indices[j+1]
-                if self.rawdata.domain[attr1].varType == orange.VarTypes.Discrete or self.rawdata.domain[attr2].varType == orange.VarTypes.Discrete: continue
-                array1 = []; array2 = []
-                # create two arrays with continuous values to compute correlation
-                for index in range(len(self.rawdata)):
-                    array1.append(self.rawdata[index][attr1])
-                    array2.append(self.rawdata[index][attr2])
+                if self.rawdata.domain[indices[j]].varType == orange.VarTypes.Discrete or self.rawdata.domain[indices[j+1]].varType == orange.VarTypes.Discrete: continue
+                array1 = list(self.noJitteringScaledData[indices[j]])
+                array2 = list(self.noJitteringScaledData[indices[j+1]])
+                # we have to remove missing values
+                for i in range(array1.count("?")):
+                    ind = array1.index("?")
+                    array1.pop(ind); array2.pop(ind)
+                for i in range(array2.count("?")):
+                    ind = array2.index("?")
+                    array1.pop(ind); array2.pop(ind)
                 (corr, b) = pearsonr(array1, array2)
                 mkey1 = self.insertMarker("%.3f" % (corr))
                 self.marker(mkey1).setXValue(j+0.5)

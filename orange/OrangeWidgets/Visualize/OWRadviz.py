@@ -572,7 +572,8 @@ class OWRadviz(OWWidget):
     def cdata(self, data):
         self.optimizationDlg.clear()
         exData = self.data
-        self.data = data
+        self.data = None
+        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same                
