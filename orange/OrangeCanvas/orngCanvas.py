@@ -619,6 +619,7 @@ class OrangeCanvasDlg(QMainWindow):
     #######################
 
     def closeEvent(self, ce):
+        QMainWindow.closeEvent(self, ce)
         for win in self.workspace.getDocumentList():
             win.close()
 
@@ -629,10 +630,12 @@ class OrangeCanvasDlg(QMainWindow):
                 ce.ignore()
 
     def keyPressEvent(self, e):
+        QMainWindow.keyPressEvent(self,e)
         if e.state() & Qt.ControlButton != 0:
             self.ctrlPressed = 1
 
     def keyReleaseEvent(self, e):
+        QMainWindow.keyReleaseEvent(self,e)
         self.ctrlPressed = 0
 
     def enableSave(self, enable):

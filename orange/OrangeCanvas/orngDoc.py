@@ -48,6 +48,7 @@ class SchemaDoc(QMainWindow):
     # we are about to close document
     # ask user if he is sure
     def closeEvent(self,ce):
+        QMainWindow.closeEvent(self, ce)
         if not self.canSave:
             print "accept close"
             self.clear()
@@ -271,6 +272,7 @@ class SchemaDoc(QMainWindow):
     def removeWidget(self, widget):
         if widget.instance:
             widget.instance.saveSettings()
+            widget.hide()
             
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
         while widget.outLines != []:  self.removeLine1(widget.outLines[0])
@@ -545,7 +547,7 @@ if os.path.exists(widgetDir):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
-                icons += "self.ow%s.setIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
+                icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t

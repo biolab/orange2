@@ -269,10 +269,10 @@ class CanvasWidget(QCanvasRectangle):
 		code = compile(widget.getFileName() + "." + widget.getFileName() + "()", ".", "eval")
 		self.instance = eval(code)
 		self.instance.progressBarSetHandler(self.view.progressBarHandler)   # set progress bar event handler
-		if os.path.exists(widget.getFullIconName()):											self.instance.setIcon(widget.getFullIconName())
-		elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):			self.instance.setIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
-		elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):				self.instance.setIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
-		else: self.instance.setIcon(defaultPic)
+		if os.path.exists(widget.getFullIconName()):											self.instance.setWidgetIcon(widget.getFullIconName())
+		elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):			self.instance.setWidgetIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
+		elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):				self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
+		else: self.instance.setWidgetIcon(defaultPic)
 
 		self.text = QCanvasText(self.caption, canvas)
 		self.text.show()
