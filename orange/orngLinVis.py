@@ -578,7 +578,7 @@ if __name__== "__main__":
 
     print "\n\nLOGISTIC REGRESSION (Martin)"
     print     "==================="
-    c = orngLR.LogisticLearner()(t)
+    c = orngLR.LogisticLearner(t)
     printmodel(t,c,printexamples=0)
 
     print "\n\nLINEAR SVM"
