@@ -50,8 +50,8 @@ preprocessors to filter/change the data.
         self.removeSingular = 1
         self.univariate = 0
         self.stepwiseLR = 0
-        self.addCrit = 0.2
-        self.removeCrit = 0.3
+        self.addCrit = 0.1
+        self.removeCrit = 0.1
         self.numAttr = -1
         self.zeroPoint = 0
         self.imputation = 1

@@ -383,10 +383,11 @@ class OWClassificationTreeViewer2D(OWWidget):
         # Node information
         nodeInfoBox = QVButtonGroup("Show Info On", NodeTab)
         nodeInfoButtons = ['Majority Class', 'Majority Class Probability', 'Target Class Probability', 'Number of Instances']
+        nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
-            self.dummy = i in self.NodeInfo
-            w = OWGUI.checkBox(nodeInfoBox, self, 'dummy', nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
+            setattr(self, nodeInfoSettings[i], i in self.NodeInfo)
+            w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
         
         OWGUI.radioButtonsInBox(NodeTab, self, 'NodeColorMethod', ['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color', 
@@ -973,13 +974,15 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.hideNode(node)
         if node.branches:
             for sibling in node.branches:
-                self.hideTree(sibling)
+                if sibling: # not null-leaf?
+                    self.hideTree(sibling)
 
     def visibleToBorderline(self, node):
         self.showNode(node)
         if not node.borderline and node.branches:
             for sibling in node.branches:
-                self.visibleToBorderline(sibling)
+                if sibling: # not null-leaf?
+                    self.visibleToBorderline(sibling)
 
 ##################################################################################################
 # TreeWalk constructs a visual definition of the tree that is a collection of the

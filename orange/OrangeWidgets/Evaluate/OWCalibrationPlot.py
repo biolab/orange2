@@ -374,6 +374,8 @@ class OWCalibrationPlot(OWWidget):
             self.numberOfClasses = 0
             self.classifierColor = None
             self.targetClass = None ## no results, no target
+        if not self.targetClass:
+            self.targetClass = 0
         self.target(self.targetClass)
 
 if __name__ == "__main__":
