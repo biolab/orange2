@@ -13,6 +13,7 @@ from OWWidget import *
 from random import betavariate 
 from OWRadvizGraph import *
 from OWkNNOptimization import *
+from OWClusterOptimization import *
 import time
 import OWToolbars
 import OWGUI
@@ -21,7 +22,9 @@ import OWGUI
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
+    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
+                    "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
+                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -32,16 +35,26 @@ class OWRadviz(OWWidget):
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
-
-        #GUI
+        
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWRadvizGraph(self, self.mainArea)
         self.box.addWidget(self.graph)
+        
+        # cluster dialog
+        self.clusterDlg = ClusterOptimization(None, self.graph)
+        self.clusterDlg.parentName = "Radviz"
+        self.graph.clusterOptimization = self.clusterDlg
+
+        # optimization dialog
         self.optimizationDlg = kNNOptimization(None, self.graph)
+        self.optimizationDlg.parentName = "Radviz"
+        self.graph.kNNOptimization = self.optimizationDlg
+        self.optimizationDlg.optimizeGivenProjectionButton.show()
 
+
+        # variables
         self.pointWidth = 4
-
         self.globalValueScaling = 0
         self.jitterSize = 1
         self.jitterContinuous = 0
@@ -57,10 +70,12 @@ class OWRadviz(OWWidget):
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
         self.toolbarSelection = 0
+        self.showClusters = 0
 
         #load settings
         self.loadSettings()
 
+        #GUI
         # add a settings dialog and initialize its values
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
@@ -85,6 +100,9 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.optimizationDlgButton = OWGUI.button(self.attrOrderingButtons, self, "VizRank optimization dialog", callback = self.optimizationDlg.reshow)
+        self.clusterDetectionDlgButton = OWGUI.button(self.attrOrderingButtons, self, "Cluster detection dialog", callback = self.clusterDlg.reshow)
+        self.connect(self.clusterDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeClusters)
+        self.connect(self.clusterDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedCluster)
         
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
@@ -115,6 +133,7 @@ class OWRadviz(OWWidget):
         OWGUI.checkBox(box3, self, 'useDifferentSymbols', 'Use different symbols', callback = self.updateValues, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'useDifferentColors', 'Use different colors', callback = self.updateValues, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box3, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
+        OWGUI.checkBox(box3, self, 'showClusters', 'Show clusters', callback = self.updateValues, tooltip = "Show a line boundary around a significant cluster")
 
         box2 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
         OWGUI.comboBox(box2, self, "tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
@@ -131,20 +150,14 @@ class OWRadviz(OWWidget):
 
         # ####################################
         # K-NN OPTIMIZATION functionality
-        self.optimizationDlg.parentName = "Radviz"
-        self.graph.kNNOptimization = self.optimizationDlg
-        self.optimizationDlg.optimizeGivenProjectionButton.show()
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
-        
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
 
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
-        self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -170,6 +183,7 @@ class OWRadviz(OWWidget):
         self.graph.globalValueScaling = self.globalValueScaling
         self.graph.jitterSize = self.jitterSize
         self.graph.scaleFactor = self.scaleFactor
+        self.graph.showClusters = self.showClusters
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         
@@ -185,6 +199,15 @@ class OWRadviz(OWWidget):
             name = name + ".tab"
         self.graph.saveProjectionAsTabData(name, self.getShownAttributeList())
 
+    def showKNNCorect(self):
+        self.optimizationDlg.showKNNWrongButton.setOn(0)
+        self.showSelectedAttributes()
+
+    # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
+    def showKNNWrong(self):
+        self.optimizationDlg.showKNNCorrectButton.setOn(0) 
+        self.showSelectedAttributes()
+
 
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
@@ -199,18 +222,6 @@ class OWRadviz(OWWidget):
             else:
                 QMessageBox.information( None, "Radviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
             
-    # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
-    def showKNNCorect(self):
-        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
-        self.graph.update()
-        self.repaint()
-
-    # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
-    def showKNNWrong(self):
-        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 0)
-        self.graph.update()
-        self.repaint()
-
     # reevaluate projections in result list with different k values
     def reevaluateProjections(self):
         results = list(self.optimizationDlg.getShownResults())
@@ -233,7 +244,7 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.finishedAddingResults()
         
 
-    def startOptimization(self):
+    def optimizeSeparation(self):
         if self.data == None: return
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
@@ -263,7 +274,7 @@ class OWRadviz(OWWidget):
             self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
         
         self.optimizationDlg.disableControls()
-
+        self.progressBarInit()
         startTime = time.time()
         self.graph.startTime = time.time()
         try:
@@ -295,6 +306,52 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.finishedAddingResults()
 
 
+    def optimizeClusters(self):
+        if self.data == None: return
+        listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+
+        text = str(self.optimizationDlg.attributeCountCombo.currentText())
+        if text == "ALL": maxLen = len(listOfAttributes)
+        else:             maxLen = int(text)
+        
+        if self.clusterDlg.getOptimizationType() == self.clusterDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
+        else: minLen = 3
+
+        self.clusterDlg.clearResults()
+        self.clusterDlg.clusterStabilityButton.setOn(0)
+        self.clusterDlg.pointStability = None
+        
+        possibilities = 0
+        for i in range(minLen, maxLen+1): possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+            
+        self.graph.totalPossibilities = possibilities
+        self.graph.triedPossibilities = 0
+    
+        if self.graph.totalPossibilities > 20000:
+            proj = str(self.graph.totalPossibilities)
+            l = len(proj)
+            for i in range(len(proj)-2, 0, -1):
+                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+            self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
+        
+        self.progressBarInit()
+        self.clusterDlg.disableControls()
+        startTime = time.time()
+        self.graph.startTime = time.time()
+        try:
+            self.graph.getOptimalClusters(listOfAttributes, minLen, maxLen, self.clusterDlg.addResult)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
+
+        self.progressBarFinished()
+        self.clusterDlg.enableControls()
+        self.clusterDlg.finishedAddingResults()
+    
+        secs = time.time() - startTime
+        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections:  %d\nUsed time: %d min, %d sec" %(self.graph.triedPossibilities, possibilities, secs/60, secs%60)        
+
+
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
         if not self.data: return
@@ -317,32 +374,75 @@ class OWRadviz(OWWidget):
         self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, list, tryIndex, strList) = val
+        (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
         
-        attrNames = []
-        for attr in self.data.domain:
-            attrNames.append(attr.name)
-        
-        for item in list:
-            if not item in attrNames:
-                print "invalid settings"
-                return
-        
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-        for attr in list: self.shownAttribsLB.insertItem(attr)
-        for attr in self.data.domain:
-            if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
-        self.updateGraph()
+        if not self.setShownAttributes(attrList): return            
+
+        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
+            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNames.index(attr) for attr in attrList])
+            kNNValues = self.optimizationDlg.kNNClassifyData(shortData)
+            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNValues = [1.0 - val for val in kNNValues]
+            self.graph.updateData(attrList, insideColors = kNNValues)
+        else:
+            self.graph.updateData(attrList, insideColors = None)
+
+        self.graph.update()            
+        self.graph.repaint()
         self.sendShownAttributes()
+
+
+    def showSelectedCluster(self):
+        self.graph.removeAllSelections()
+        val = self.clusterDlg.getSelectedCluster()
+        if not val: return
+        (value, closure, vertices, attrList, classValue, tryIndex, strList) = val
+
+        if not self.setShownAttributes(attrList): return
+
+        if self.clusterDlg.clusterStabilityButton.isOn():
+            validData = self.graph.getValidList([self.graph.attributeNames.index(attr) for attr in attrList])
+            shortPointStability = Numeric.compress(validData, self.clusterDlg.pointStability)
+            self.graph.updateData(attrList, insideColors = shortPointStability, clusterClosure = closure)
+        else:
+            self.graph.updateData(attrList, insideColors = None, clusterClosure = closure)
+        
+        self.graph.update()
+        self.graph.repaint()
+        self.sendShownAttributes()
+
+        if type(tryIndex[0]) == tuple:
+            for vals in tryIndex:
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
+        else:
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
+        print "---------------------------"
+        
+
         
     # ####################
     # LIST BOX FUNCTIONS
     # ####################
+    def setShownAttributes(self, attributes):
+        attrNames = []
+        for attr in self.data.domain:
+            attrNames.append(attr.name)
+        
+        for item in attributes:
+            if not item in attrNames:
+                print "invalid settings"
+                return 0
+        
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+        for attr in attributes: self.shownAttribsLB.insertItem(attr)
+        for attr in self.data.domain:
+            if attr.name not in attributes: self.hiddenAttribsLB.insertItem(attr.name)
+        return 1
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
         self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
         for i in range(self.shownAttribsLB.count()):
             if self.shownAttribsLB.isSelected(i) and i != 0:
                 text = self.shownAttribsLB.text(i)
@@ -355,6 +455,7 @@ class OWRadviz(OWWidget):
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
         self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
@@ -367,6 +468,7 @@ class OWRadviz(OWWidget):
 
     def addAttribute(self):
         self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
@@ -382,6 +484,7 @@ class OWRadviz(OWWidget):
 
     def removeAttribute(self):
         self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
         count = self.shownAttribsLB.count()
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
@@ -418,6 +521,10 @@ class OWRadviz(OWWidget):
     def cdata(self, data):
         self.optimizationDlg.clearResults()
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
+        self.clusterDlg.clearResults()
+        self.clusterDlg.setData(data)
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
@@ -460,6 +567,7 @@ class OWRadviz(OWWidget):
     # RADVIZ EVENTS
     # #########################
     def updateValues(self):
+        self.graph.showClusters = self.showClusters
         self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing, useDifferentSymbols = self.useDifferentSymbols, useDifferentColors = self.useDifferentColors)
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols, tooltipKind = self.tooltipKind, tooltipValue = self.tooltipValue)
         self.graph.updateSettings(showLegend = self.showLegend, pointWidth = self.pointWidth, scaleFactor = self.scaleFactor)
@@ -476,6 +584,7 @@ class OWRadviz(OWWidget):
         self.updateGraph()
 
     def setGlobalValueScaling(self):
+        self.graph.insideColors = None; self.graph.clusterClosure = None
         self.graph.globalValueScaling = self.globalValueScaling
         self.graph.setData(self.data)
         self.updateGraph()
