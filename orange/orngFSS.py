@@ -42,7 +42,7 @@ def attsAbovethreshold(relevancies, threshold=0.0):
              threshold      threshold, default is 0.0
   Result: the first N attributes (without measures)
   """
-  pairs = filter(lambda x, t=threshold: x[1] >= t, relevancies)
+  pairs = filter(lambda x, t=threshold: x[1] > t, relevancies)
   return map(lambda x:x[0], pairs)
 
 def selectBestNAtts(data, relevancies, N):
