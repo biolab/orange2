@@ -924,7 +924,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
   for(mi = mb; mi!=me; mi++) {
     PUTDELIM;
     fprintf(file, "meta");
-    if ((*mi).variable->ordered)
+    if (((*vi)->varType == TValue::INTVAR) && (*mi).variable->ordered)
       fprintf(file, " -ordered");
  }
  fprintf(file, "\n");
