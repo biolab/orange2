@@ -92,25 +92,9 @@ inline void roundToFactor(float &f, const float &factor)
 
 string mcvt(double f, int decs)
 { 
-/*  if (!decs) {
-    static char mcvt_buffer[128];
-    return itoa(int(ceil(f+0.5)), mcvt_buffer, 10);
-  }
-*/
-  char buf[32];
-
-  string res(f<0 ? "-" : "");
-  f = fabs(f);
-
-  sprintf(buf, "%i", floor(f));
-  res += buf;
-
-  if (decs) {
-    while (--decs)
-      res += char(floor(48 + (f*=10)));
-    res += char(floor(48.5 + (f*=10)));
-  }
-  return res;
+  char buf[64];
+  sprintf(buf, "%.*f", decs, f);
+  return buf;
 }
 
 /*  Constructs a new TEnumVariable. Its values represent the intervals for values of passed variable var;
