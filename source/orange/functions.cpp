@@ -231,6 +231,51 @@ PyObject *compiletime(PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> time")
 }
 
 
+int pt_ExampleGenerator(PyObject *args, void *egen);
+
+PyObject *__arrayDistance(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(table1, table2) -> distance")
+{
+  PExampleGenerator g1, g2;
+  if (!PyArg_ParseTuple(args, "O&O&:__arrayDistance", pt_ExampleGenerator, &g1, pt_ExampleGenerator, &g2))
+    return PYNULL;
+
+  const int nattrs = g1->domain->attributes->size();
+  if ((g2->domain->attributes->size() != nattrs) || (g1->numberOfExamples() != g2->numberOfExamples()))
+    PYERROR(PyExc_AttributeError, "two example tables with equal number of attributes and examples expected", PYNULL);
+
+  if (g1->domain->classVar || g2->domain->classVar)
+    raiseWarning(false, "__arrayDistance ignores class values");
+
+  TVarList::const_iterator vi, ve;
+  for(vi = g1->domain->attributes->begin(), ve = g1->domain->attributes->end(); vi!=ve; vi++)
+    if ((*vi)->varType != TValue::FLOATVAR) {
+      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->name.c_str());
+      return PYNULL;
+    }
+  if (g1->domain != g2->domain)
+  for(vi = g2->domain->attributes->begin(), ve = g2->domain->attributes->end(); vi!=ve; vi++)
+    if ((*vi)->varType != TValue::FLOATVAR) {
+      PyErr_Format(PyExc_TypeError, "attribute %s is not continuous", (*vi)->name.c_str());
+      return PYNULL;
+    }
+
+  float sum = 0.0;
+  int existing = 0;
+  for(TExampleIterator g1i(g1->begin()), g2i(g2->begin()); g1i; ++g1i, ++g2i) {
+    TExample::const_iterator e1i((*g1i).begin()), e2i((*g2i).begin());
+    for(int i = nattrs; i--; e1i++, e2i++)
+      if (!(*e1i).isSpecial() && !(*e2i).isSpecial()) {
+        const float d = (*e1i).floatV - (*e2i).floatV;
+        sum += d*d;
+        existing++;
+      }
+  }
+
+  if (!existing)
+    PYERROR(PyExc_AttributeError, "no defined values", PYNULL);
+
+  return PyFloat_FromDouble(sqrt(sum/existing));
+}
 
 /********** OBSOLETE ***************/
 
