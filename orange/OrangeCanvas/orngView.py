@@ -42,7 +42,7 @@ class SchemaView(QCanvasView):
         #self.menupopupWidgetEnabledID = self.widgetPopup.insertItem("Enabled", self.enabledWidget)
 
         self.linePopup = QPopupMenu(self, "Link")
-        self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.enabledLink)
+        self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
         self.linePopup.insertItem( "Delete",  self.deleteLink)
         self.linePopup.insertSeparator() 
 
@@ -96,7 +96,7 @@ class SchemaView(QCanvasView):
     # ###########################################
 
     # popMenuAction - enable/disable link between two widgets
-    def enabledLink(self):
+    def toggleEnabledLink(self):
         if self.selectedLine != None:
             self.selectedLine.setEnabled(not self.selectedLine.getEnabled())
             self.selectedLine.repaintLine(self)
@@ -114,18 +114,15 @@ class SchemaView(QCanvasView):
             self.selectedLine = None
             self.doc.hasChanged = TRUE
             self.selectedLine = None
-        
+
     # hide and remove the line "line"
     def removeLine(self, line):
+        self.doc.lines.remove(line)
         line.hide()
         line.setEnabled(FALSE)
         line.inWidget.updateTooltip(self)
         line.outWidget.updateTooltip(self)
         line = None
-        try:
-            self.doc.lines.remove(line)
-        except:
-            pass
 
     # ###########################################
     # ###########################################
@@ -346,13 +343,11 @@ class SchemaView(QCanvasView):
                     QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
                 else:
                     line = self.doc.addLine(outWidget, inWidget)
-                    if line == None:
-                    	self.repaintContents(QRect(min(self.tempLineStartPos.x(), ev.pos().x())-5, min(self.tempLineStartPos.y(), ev.pos().y())-5, abs(self.tempLineStartPos.x() - ev.pos().x())+10, abs(self.tempLineStartPos.y() - ev.pos().y())+10))
-                    else:                                        	
+                    if line == None: self.repaintContents(QRect(min(self.tempLineStartPos.x(), ev.pos().x())-5, min(self.tempLineStartPos.y(), ev.pos().y())-5, abs(self.tempLineStartPos.x() - ev.pos().x())+10, abs(self.tempLineStartPos.y() - ev.pos().y())+10))
+                    else:            
                         line.show()
 
                         # we add the line to the input and output list of connected widgets                    
-                        
                         if self.tempWidget.mouseInsideLeftChannel(self.moving_start):
                         	self.tempWidget.addInLine(line)	
                         	item.addOutLine(line)
