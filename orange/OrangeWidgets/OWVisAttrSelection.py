@@ -196,21 +196,66 @@ class S2NMeasure:
 
         return self.attrInfo[data.domain[attr].name]
 
+# same class as above, just that we can use it to evaluate attribute for each class value
+class S2NMeasureMix(S2NMeasure):
+    def __init__(self):
+        S2NMeasure.__init__(self)
+    
+
+def mergeClassValues(data, value):
+    selection = orange.EnumVariable("Selection", values = ["0", "1"])
+
+    selectedClassesStr = [value]
+    nonSelectedClassesStr = []
+    for val in data.domain.classVar.values:
+        if val not in selectedClassesStr: nonSelectedClassesStr.append(val)
+                
+    shortData1 = data.select({data.domain.classVar.name: selectedClassesStr})
+    shortData2 = data.select({data.domain.classVar.name: nonSelectedClassesStr})
+    d1 = orange.Domain(shortData1.domain.attributes + [selection])
+    selection.getValueFrom = lambda ex, what: orange.Value(selection, "0")
+    data1 = orange.ExampleTable(d1, shortData1)
+
+    selection.getValueFrom = lambda ex, what: orange.Value(selection, "1")
+    data2 = orange.ExampleTable(d1, shortData2)
+    data1.extend(data2)
+    return data1
+    
+
 
 # used by kNN optimization to evaluate attributes
 def evaluateAttributes(data, contMeasure, discMeasure):
-    attrs = []
+    attrs = []; contAttrs = []
     corr = MeasureCorrelation()
     for attr in data.domain.attributes:
         if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
         elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.1, attr.name))
         elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
         elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
-        elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
-        else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
+        elif attr.varType == orange.VarTypes.Continuous:
+            if not isinstance(contMeasure, S2NMeasureMix): attrs.append((contMeasure(attr.name, data), attr.name))
+            contAttrs.append(attr.name)
+        else:
+            attrs.append((discMeasure(attr.name, data), attr.name))
     attrs.sort()
     attrs.reverse()
-    return attrs
+
+    if isinstance(contMeasure, S2NMeasureMix) and contAttrs != []:
+        cls = []
+        for c in data.domain.classVar.values:   # for each class value compute how good is each attribute for discriminating this class value against all other
+            v = []
+            data2 = mergeClassValues(data, c)
+            for attr in contAttrs:
+                v.append((contMeasure(attr, data2), attr))
+            v.sort()
+            v.reverse()
+            cls.append(v)
+        for i in range(len(cls[0])):        # sort the attributes in order 1a, 1b, 1c, 2a, 2b, 2c, ..., where 1 means the best attribute, 2 second best, and a,b,c represent class values
+            for j in range(len(data.domain.classVar.values)):
+                if cls[j][i][1] not in attrs: attrs.append(cls[j][i])
+    
+    #return attrs
+    return [attr for (val, attr) in attrs]      # return only the ordered list of attributes and not also their values
         
 
     
