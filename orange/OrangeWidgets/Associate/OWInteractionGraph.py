@@ -14,7 +14,6 @@ from OWInteractionGraphOptions import *
 from qt import *
 from qtcanvas import *
 import orngInteract
-import orngDepend
 import statc
 import os
 from re import *
@@ -244,8 +243,7 @@ class OWInteractionGraph(OWWidget):
         
     def updateNewData(self, data):
         self.data = data
-        self.interactionMatrix = orngInteract.InteractionMatrix(data)
-        self.dependenceMatrix = orngDepend.DependenceMatrix(data, include_class=0, interactions_too=1)
+        self.interactionMatrix = orngInteract.InteractionMatrix(data, dependencies_too=1)
 
         # save discretized data and repair invalid names
         
@@ -408,7 +406,9 @@ class OWInteractionGraph(OWWidget):
            
             interaction = (total - gain1 - gain2)
             atts = (max(attrIndex1, attrIndex2), min(attrIndex1, attrIndex2))
-            nbgain = self.dependenceMatrix.igain[atts] + self.dependenceMatrix.gains[atts[0]] + self.dependenceMatrix.gains[atts[1]]-(self.dependenceMatrix.igain[atts]+self.dependenceMatrix.corr[atts])
+            #nbgain = self.interactionMatrix.ig[atts[0]][atts[1]] + self.interactionMatrix.gains[atts[0]] + self.interactionMatrix.gains[atts[1]]
+            nbgain = self.interactionMatrix.gains[atts[0]] + self.interactionMatrix.gains[atts[1]]
+            nbgain -= self.interactionMatrix.corr[(atts[1],atts[0])]
             rectsYOff = yOff + 3 + index * yscale * 0.15
 
             # swap if gain1 < gain2
