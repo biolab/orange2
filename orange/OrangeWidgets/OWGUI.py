@@ -75,7 +75,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
         master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
     return wa
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, space=None, tooltip=None, callback=None, valueType = str, validator=None):
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = QLineEdit(b)
@@ -86,7 +86,6 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     master.controledAttributes.append((value, CallFront_lineEdit(wa)))
     if callback:
         master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
-    if space: QWidget(widget).setFixedSize(0, space)
     wa.box = b
     return wa
 

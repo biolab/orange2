@@ -49,6 +49,7 @@ class OWKMeans(OWWidget):
         self.layout.add(self.table)
         self.table.hide()
 
+        self.resize(350,200)
         # signals
         self.connect(self.applyBtn, SIGNAL("clicked()"), self.cluster)
 
@@ -177,7 +178,7 @@ if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWKMeans()
     a.setMainWidget(ow)
-    d = orange.ExampleTable('wt')
+    d = orange.ExampleTable('glass')
     ow.dataset(d)
     ow.show()
     a.exec_loop()
