@@ -82,7 +82,6 @@ public:
 WRAPPER(AssociationRule)
 
 
-//VECTOR: AssociationRules (of PAssociationRule)
 #define TAssociationRules TOrangeVector<PAssociationRule>
 VWRAPPER(AssociationRules)
 

@@ -34,7 +34,6 @@
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
 
-#define UNKNOWN_F ILLEGAL_FLOAT
 
 #define PAINT_PIXEL_LINE                     \
 { unsigned char col;                         \
@@ -133,6 +132,8 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   return res;
 }
 
+
+#define UNKNOWN_F -1e30f
 
 TDistanceMap::TDistanceMap(const int &d)
 : cells(new float [d*d]),

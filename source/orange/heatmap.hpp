@@ -27,7 +27,7 @@
 
 WRAPPER(ExampleTable)
 
-#define UNKNOWN_F ILLEGAL_FLOAT
+#define UNKNOWN_F -1e30f
 
 void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 

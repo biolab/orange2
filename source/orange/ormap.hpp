@@ -23,8 +23,8 @@
 /* _ClassName should be TOrangeMap_, TOrangeMap_K, TOrangeMap_V or TOrangeMap_KV.
    K and V stand for key and value, and should be present if the key (value) is
    an Orange object. */
-#define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME)
-  //TClassDescription _ClassName<_Key,_Value>::st_classDescription(_NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components);
+#define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME) \
+  TClassDescription _ClassName<_Key,_Value>::st_classDescription = { _NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
 
 
 #ifndef __ORMAP_HPP

@@ -785,9 +785,3 @@ void TExampleTable::sort(vector<int> &sortOrder)
 
   examplesHaveChanged();
 }
-
-
-void TExampleTable::sortByPointers()
-{
-  std::sort((int *)examples, (int *)_Last);
-}

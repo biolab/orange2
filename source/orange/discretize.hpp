@@ -82,8 +82,6 @@ public:
   /* If you want to avoid rewrapping, you should write this as static and
      pass the discretizer as PDiscretizer. */
   virtual PVariable constructVar(PVariable) = 0;
-
-  virtual void getCutoffs(vector<float> &cutoffs) const = 0;
 };
 
 WRAPPER(Discretizer)
@@ -117,8 +115,6 @@ public:
 
   virtual void transform(TValue &);
   virtual PVariable constructVar(PVariable);
-
-  virtual void getCutoffs(vector<float> &cutoffs) const;
 };
 
 
@@ -132,8 +128,6 @@ public:
   virtual void transform(TValue &);
 
   virtual PVariable constructVar(PVariable);
-
-  virtual void getCutoffs(vector<float> &cutoffs) const;
 };
 
 
@@ -149,8 +143,6 @@ public:
 
   virtual void      transform(TValue &);
   PVariable constructVar(PVariable var);
-
-  virtual void getCutoffs(vector<float> &cutoffs) const;
 };
 
 
@@ -164,8 +156,6 @@ public:
   TBiModalDiscretizer(const float & = 0.0, const float & = 0.0);
   virtual void transform(TValue &);
   PVariable constructVar(PVariable var);
-
-  virtual void getCutoffs(vector<float> &cutoffs) const;
 };
 
 

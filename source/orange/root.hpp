@@ -68,13 +68,13 @@ references to those object are 'explained'.
 #define call operator()
 
 
-class TClassDescription;
+struct _tclassdescription;
 
 typedef struct {
   const char *name;
   const char *description;
   const type_info *type;
-  const TClassDescription *classDescription;
+  const struct _tclassdescription *classDescription;
 
   size_t offset;
 
@@ -83,17 +83,14 @@ typedef struct {
 } TPropertyDescription;
 
 
-class TClassDescription {
-public:
+typedef struct _tclassdescription {
   const char *name;
   const type_info *type;
-  const TClassDescription *base;
+  const struct _tclassdescription *base;
 
   TPropertyDescription const *properties;
   size_t const *components;
-
-  TClassDescription(const char * = NULL, const type_info * = NULL, const TClassDescription * = NULL, TPropertyDescription const * = NULL, size_t const * = NULL);
-};
+} TClassDescription;
 
 
 extern TPropertyDescription _no_properties[];

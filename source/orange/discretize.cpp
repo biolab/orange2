@@ -160,13 +160,6 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var)
 }
 
 
-void TEquiDistDiscretizer::getCutoffs(vector<float> &cutoffs) const
-{
-  cutoffs.clear();
-  for(int i = 0; i < numberOfIntervals-1; i++)
-    cutoffs.push_back(firstCut+step*i);
-}
-
 
 TThresholdDiscretizer::TThresholdDiscretizer(const float &athreshold)
 : threshold(athreshold)
@@ -197,13 +190,6 @@ PVariable TThresholdDiscretizer::constructVar(PVariable var)
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv;
   return revar;
-}
-
-
-void TThresholdDiscretizer::getCutoffs(vector<float> &cutoffs) const
-{
-  cutoffs.clear();
-  cutoffs.push_back(threshold);
 }
 
 
@@ -259,14 +245,6 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var)
   tcfv->transformer = this; // rewrapping
   revar->getValueFrom = tcfv;
   return revar;
-}
-
-
-void TBiModalDiscretizer::getCutoffs(vector<float> &cutoffs) const
-{
-  cutoffs.clear();
-  cutoffs.push_back(low);
-  cutoffs.push_back(high);
 }
 
 
@@ -357,12 +335,6 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
   return revar;
 }
 
-
-
-void TIntervalDiscretizer::getCutoffs(vector<float> &cutoffs) const
-{
-  cutoffs = points.getReference();
-}
 
 
 // Sets the number of intervals (default is 4)

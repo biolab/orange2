@@ -41,7 +41,6 @@ public:
     bool operator<(const TAlignment &) const;
 };
 
-//VECTOR: AlignmentList (of TAlighment)
 #define TWarpPath _TOrangeVector<TAlignment>
 VWRAPPER(WarpPath)
 

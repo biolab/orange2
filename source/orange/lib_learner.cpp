@@ -777,45 +777,5 @@ C_NAMED(LinRegClassifier, ClassifierFD, "([coefficients=, coefficients_se=, SSre
 C_CALL(LWRLearner, Learner, "([examples] -/-> Classifier)")
 C_NAMED(LWRClassifier, ClassifierFD, "([findNearestConstructor=, linRegLearner=, k=, rankWeight=])")
 
-
-
-/************* RULES ************/
-
-#include "rulelearner.hpp"
-
-C_NAMED(Rule, Orange, "([filter=, classifier=, classDistribution=, examples=, weightID=, quality=, complexity=])")
-
-BASED_ON(RuleValidator, Orange)
-C_NAMED(RuleValidator_LRS, RuleValidator, "([alpha=0.05])")
-
-BASED_ON(RuleEvaluator, Orange)
-C_NAMED(RuleEvaluator_Entropy, RuleEvaluator, "()")
-
-BASED_ON(RuleFinder, Orange)
-C_NAMED(RuleBeamFinder, RuleFinder, "([validator=, evaluator=, initializer=, refiner=, candidateSelector=, ruleFilter=])")
-
-BASED_ON(RuleBeamInitializer, Orange)
-C_NAMED(RuleBeamInitializer_Default, Orange, "()")
-
-BASED_ON(RuleBeamRefiner, Orange)
-C_NAMED(RuleBeamRefiner_Selector, Orange, "([discretization=])")
-
-BASED_ON(RuleBeamCandidateSelector, Orange)
-C_NAMED(RuleBeamCandidateSelector_TakeAll, RuleBeamCandidateSelector, "()")
-
-BASED_ON(RuleBeamFilter, Orange)
-C_NAMED(RuleBeamFilter_Width, RuleBeamFilter, "()")
-
-BASED_ON(RuleDataStoppingCriteria, Orange)
-
-BASED_ON(RuleStoppingCriteria, Orange)
-
-BASED_ON(RuleCovererAndRemover, Orange)
-
-C_CALL(RuleLearner, Learner, "([examples[, weightID]]) -/-> Classifier")
-C_NAMED(RuleClassifier, Classifier, "()")
-
-
-
 #include "lib_learner.px"
 

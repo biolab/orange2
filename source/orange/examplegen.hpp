@@ -98,7 +98,6 @@ public:
 
 WRAPPER(ExampleGenerator);
 
-//VECTOR: ExampleGeneratorList (of PExampleGenerator)
 #define TExampleGeneratorList TOrangeVector<PExampleGenerator> 
 VWRAPPER(ExampleGeneratorList)
 

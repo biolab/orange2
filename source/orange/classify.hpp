@@ -33,7 +33,6 @@ WRAPPER(Classifier)
 
 WRAPPER(EFMDataDescription);
 
-//VECTOR: ClassifierList (of PClassifier)
 #define TClassifierList TOrangeVector<PClassifier> 
 VWRAPPER(ClassifierList)
 

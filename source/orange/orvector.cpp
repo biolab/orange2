@@ -24,7 +24,7 @@
   #pragma warning (disable : 4290)
 #endif
 
-#include "orvector.ppp"
+#include "orvector.hpp"
 
 DEFINE__TOrangeVector_classDescription(bool, "TBoolList")
 DEFINE__TOrangeVector_classDescription(char, "TBoolList")

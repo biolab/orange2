@@ -53,7 +53,6 @@ public:
 };
 
 
-//VECTOR: ExampleSets (of PExampleGenerator)
 #define TExampleSets TOrangeVector<PExampleGenerator> 
 VWRAPPER(ExampleSets)
 

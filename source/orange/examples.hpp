@@ -28,7 +28,6 @@
 WRAPPER(Domain)
 WRAPPER(Example)
 
-//VECTOR: ExampleList (of PExample)
 #define TExampleList TOrangeVector<PExample> 
 VWRAPPER(ExampleList)
 

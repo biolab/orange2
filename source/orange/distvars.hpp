@@ -49,7 +49,6 @@ WRAPPER(RandomGenerator)
 class TExample;
 
 
-//VECTOR: DistributionList (of PDistribution)
 #define TDistributionList TOrangeVector<PDistribution> 
 VWRAPPER(DistributionList)
 
