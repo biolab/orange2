@@ -25,7 +25,7 @@
 import orange
 
 
-class MultiClassClassifier:
+class MultiClassClassifier(orange.Classifier):
     def __init__(self, cmatrix, template, domain):
         self.cmatrix = cmatrix
         self.template = template
@@ -217,7 +217,7 @@ class MCMOrdinal:
             m.append(r)
         return m
 
-class MultiClassLearner:
+class MultiClassLearner(orange.Learner):
     def __init__(self, learner, matrix = MCMOneOne, pestimator = MCPEFriedman, name='MultiClass'):
         self.learner = learner
         self.pestimator = pestimator

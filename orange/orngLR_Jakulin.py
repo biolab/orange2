@@ -42,7 +42,7 @@ import math
 
 
 # BEWARE: these routines do not work with orange tables and are not orange-compatible
-class BLogisticLearner:
+class BLogisticLearner(orange.Learner):
     def getmodel(self, examples):
       errors = ["LogReg: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
                 "LogReg: n[i]<0",
@@ -72,7 +72,7 @@ class BLogisticLearner:
         return BLogisticClassifier(model)
 
 
-class BLogisticClassifier:
+class BLogisticClassifier(orange.Classifier):
     def __init__(self, model):
         (self.chisq,self.devnce,self.ndf,self.beta,
         self.se_beta,self.fit,self.stdres,
@@ -202,7 +202,7 @@ class RobustBLogisticLearner(BLogisticLearner):
 #
 # it is a wrapper, because it has to work with both
 # the discriminant and the LR
-class RobustBLogisticClassifierWrap:
+class RobustBLogisticClassifierWrap(orange.Classifier):
     def __init__(self, classifier, mask):
         self.classifier = classifier
         self.mask = mask
@@ -256,7 +256,7 @@ class BasicLogisticLearner(RobustBLogisticLearner):
             return BasicLogisticClassifier(r,translate)
 
 
-class BasicLogisticClassifier:
+class BasicLogisticClassifier(orange.Classifier):
     def __init__(self, classifier, translator):
         self.classifier = classifier
         self.translator = translator
@@ -292,7 +292,7 @@ class BasicLogisticClassifier:
 #
 # A margin-based Bayesian learner
 #
-class BasicBayesLearner:
+class BasicBayesLearner(orange.Learner):
     def _safeRatio(self,a,b):
         if a*10000.0 < b:
             return -10
@@ -329,7 +329,7 @@ class BasicBayesLearner:
         return BasicBayesClassifier(beta,coeffs,translate)
 
 
-class BasicBayesClassifier:
+class BasicBayesClassifier(orange.Classifier):
     def __init__(self, beta, coeffs, translator):
         self.beta = beta
         self.coeffs = coeffs
@@ -374,7 +374,7 @@ class BasicBayesClassifier:
             return p
 
 
-class BasicCalibrationLearner:
+class BasicCalibrationLearner(orange.Learner):
     def __init__(self, discr = orange.EntropyDiscretization(), learnr = orange.BayesLearner()):
         self.disc = discr
         self.learner = learnr
@@ -391,7 +391,7 @@ class BasicCalibrationLearner:
 
         return BasicCalibrationClassifier(c)
 
-class BasicCalibrationClassifier:
+class BasicCalibrationClassifier(orange.Classifier):
     def __init__(self, classifier):
         self.classifier = classifier
 
@@ -413,7 +413,7 @@ class BasicCalibrationClassifier:
 # However, one must note that perfect separating hyperplanes generate trivial
 # class distributions. 
 #
-class MarginMetaLearner:
+class MarginMetaLearner(orange.Learner):
     def __init__(self, learner, folds = 10, replications = 1, metalearner = BasicLogisticLearner()):
         self.learner = learner
         self.folds = 10
@@ -481,7 +481,7 @@ class MarginMetaLearner:
         return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain)
 
 
-class MarginMetaClassifier:
+class MarginMetaClassifier(orange.Classifier):
     def __init__(self, classifier, estimator, domain, estdomain):
         self.classifier = classifier
         self.estimator = estimator

@@ -33,7 +33,7 @@ import orange
 import orngCRS
 import orng2Array
 
-class BasicSVMLearner:
+class BasicSVMLearner(orange.Learner):
   def __init__(self):
       self._name = "SVM Learner Wrap"
       # "SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPS_SVR, NU_SVR=4)
@@ -145,7 +145,7 @@ class BasicSVMLearner:
       (model, translate) = self.getmodel(data)
       return BasicSVMClassifier(model,translate)
 
-class BasicSVMClassifier:
+class BasicSVMClassifier(orange.Classifier):
   def __init__(self, model, translate):
       self._name = "SVM Classifier Wrap"
       self.model = model
