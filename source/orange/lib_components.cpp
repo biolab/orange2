@@ -2014,6 +2014,46 @@ PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARG
 }
 
 
+#include "calibrate.hpp"
+
+C_CALL(ThresholdCA, Orange, "([classifier, examples[, weightID, target value]]) -/-> (threshold, optimal CA, list of CAs))")
+
+PyObject *ThresholdCA_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(classifier, examples[, weightID, target value]) -> (threshold, optimal CA, list of CAs)")
+{
+  PyTRY
+    SETATTRIBUTES
+
+    PClassifier classifier;
+    PExampleGenerator egen;
+    int weightID = 0;
+    PyObject *pyvalue = NULL;
+    int targetVal = -1;
+    
+    if (!PyArg_ParseTuple(args, "O&O&|O&O:ThresholdCA.__call__", cc_Classifier, &classifier, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID, &pyvalue))
+      return PYNULL;
+    if (pyvalue) {
+      TValue classVal;
+      if (!convertFromPython(pyvalue, classVal, classifier->classVar))
+        return PYNULL;
+      if (classVal.isSpecial())
+        PYERROR(PyExc_TypeError, "invalid target value", PYNULL);
+      targetVal = classVal.intV;
+    }
+
+    TFloatFloatList *ffl = mlnew TFloatFloatList();
+    PFloatFloatList wfl(ffl);
+    float optThresh, optCA;
+    optThresh = SELF_AS(TThresholdCA).call(classifier, egen, weightID, optCA, targetVal, ffl);
+
+    PyObject *pyCAs = PyList_New(ffl->size());
+    int i = 0;
+    PITERATE(TFloatFloatList, ffi, ffl)
+      PyList_SetItem(pyCAs, i++, Py_BuildValue("ff", (*ffi).first, (*ffi).second));
+
+    return Py_BuildValue("ffN", optThresh, optCA, pyCAs);
+  PyCATCH
+}
+
 #include "heatmap.hpp"
 
 PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")

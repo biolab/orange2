@@ -186,49 +186,27 @@ def ThresholdLearner(learner, examples = None, weightId = 0, **kwds):
 class ThresholdLearner_Class(orange.Learner):
     def __init__(self, learner, **kwds):
         self.learner = learner
-        self.__dict__.update(kwds)
+        for k, e in kwds.items():
+            self.setattr(k, e)
 
     def __call__(self, examples, weightID = 0):
         if not hasattr(self, "learner"):
             raise "learner not set"
-        if len(examples.domain.classVar.values)!=2:
-            raise "ThresholdLearner handles binary classes only"
         
         classifier = self.learner(examples, weightID)
-        
-        probs = {}
-        N = N0 = 0
-        for ex in examples:
-            wei = ex.getweight(weightID)
-            prob1 = classifier(ex, orange.Classifier.GetProbabilities)[1]
-            probs.setdefault(prob1, 0.)
-            if int(ex.getclass()):
-                probs[prob1]-=wei
-            else:
-                probs[prob1]+=wei
-                N0 += wei
-            N += wei
-
-        optcorr = optthresh = 0
-        corr = N - N0
-        pitems = probs.items()
-        pitems.sort(lambda x,y:cmp(x[0], y[0]))
-        for i in range(len(pitems)-1):
-            corr += pitems[i][1]
-            #print corr, pitems[i][0]
-            if (corr<optcorr):
-                continue
-            tthresh = (pitems[i][0] + pitems[i+1][0])/2
-            if (corr>optcorr) or (abs(tthresh-0.5) < abs(optthresh-0.5)):
-                optcorr, optthresh = corr, tthresh
-
-        print "Threshold %5.3f, CA %5.3f" % (optthresh, optcorr/N)
-        return ThresholdClassifier(classifier, optthresh)
+        threshold, optCA, curve = orange.ThresholdCA(classifier, examples, weightID)
+#        print "Threshold %5.3f, CA %5.3f" % (threshold, optCA)
+        if getattr(self, "storeCurve", 0):
+            return ThresholdClassifier(classifier, threshold, curve = curve)
+        else:
+            return ThresholdClassifier(classifier, threshold)
 
 class ThresholdClassifier(orange.Classifier):
-    def __init__(self, classifier, threshold):
+    def __init__(self, classifier, threshold, **kwds):
         self.classifier = classifier
         self.threshold = threshold
+        for k, e in kwds.items():
+            self.setattr(k, e)
 
     def __call__(self, example, what = orange.Classifier.GetValue):
         probs = self.classifier(example, self.GetProbabilities)
@@ -239,3 +217,25 @@ class ThresholdClassifier(orange.Classifier):
             return value
         else:
             return (value, probs)
+
+def ThresholdLearner_fixed(learner, threshold, examples = None, weightId = 0, **kwds):
+    lr = apply(ThresholdLearner_fixed_Class, (learner, threshold), kwds)
+    if examples:
+        return lr(examples, weightId)
+    else:
+        return lr
+    
+class ThresholdLearner_fixed_Class(orange.Learner):
+    def __init__(self, learner, threshold, **kwds):
+        self.learner = learner
+        self.threshold = threshold
+        for k, e in kwds.items():
+            self.setattr(k, e)
+
+    def __call__(self, examples, weightID = 0):
+        if not hasattr(self, "learner"):
+            raise "learner not set"
+        if len(examples.domain.classVar.values)!=2:
+            raise "ThresholdLearner handles binary classes only"
+        
+        return ThresholdClassifier(self.learner(examples, weightID), self.threshold)

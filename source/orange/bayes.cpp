@@ -33,12 +33,14 @@
 #include "classify.hpp"
 #include "contingency.hpp"
 #include "estimateprob.hpp"
+#include "calibrate.hpp"
 
 #include "bayes.ppp"
 
 
 TBayesLearner::TBayesLearner() 
-: normalizePredictions(true) 
+: normalizePredictions(true),
+  adjustThreshold(false)
 {}
 
 
@@ -47,7 +49,8 @@ TBayesLearner::TBayesLearner(const TBayesLearner &old)
   estimatorConstructor(old.estimatorConstructor),
   conditionalEstimatorConstructor(old.conditionalEstimatorConstructor),
   conditionalEstimatorConstructorContinuous(old.conditionalEstimatorConstructorContinuous),
-  normalizePredictions(old.normalizePredictions)
+  normalizePredictions(old.normalizePredictions),
+  adjustThreshold(old.adjustThreshold)
 {}
 
 
@@ -104,10 +107,24 @@ PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
   if (!haveContingencies && !haveEstimators)
     raiseWarning("invalid conditional probability or no attributes (the classifier will use apriori probabilities)");
 
-  return mlnew TBayesClassifier(gen->domain, 
-                                distribution, haveContingencies ? condProbs : PDomainContingency(), 
-                                estimator, haveEstimators ? condProbEstList : PConditionalProbabilityEstimatorList(),
-                                normalizePredictions);
+  TBayesClassifier *classifier = mlnew TBayesClassifier(
+      gen->domain, 
+      distribution, haveContingencies ? condProbs : PDomainContingency(), 
+      estimator, haveEstimators ? condProbEstList : PConditionalProbabilityEstimatorList(),
+      normalizePredictions);
+
+  PClassifier wclassifier(classifier);
+
+  if (adjustThreshold) {
+    if (gen->domain->classVar.AS(TEnumVariable)->values->size() != 2)
+      raiseWarning("threshold can only be optimized for binary classes");
+    else {
+      float optCA;
+      classifier->threshold = TThresholdCA()(wclassifier, gen, weight, optCA);
+    }
+  }
+
+  return wclassifier;
 }
 
 
@@ -118,13 +135,14 @@ TBayesClassifier::TBayesClassifier(const bool &anP)
 {}
 
 
-TBayesClassifier::TBayesClassifier(PDomain dom, PDistribution dist, PDomainContingency dcont, PProbabilityEstimator pest, PConditionalProbabilityEstimatorList cpest, const bool &anP) 
+TBayesClassifier::TBayesClassifier(PDomain dom, PDistribution dist, PDomainContingency dcont, PProbabilityEstimator pest, PConditionalProbabilityEstimatorList cpest, const bool &anP, const float &thresh) 
 : TClassifierFD(dom, true),
   distribution(dist),
   conditionalDistributions(dcont),
   estimator(pest),
   conditionalEstimators(cpest),
-  normalizePredictions(anP)
+  normalizePredictions(anP),
+  threshold(thresh)
 {}
 
 
@@ -206,6 +224,25 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
   }
 
   return wresult;
+}
+
+
+TValue TBayesClassifier::operator ()(const TExample &exam)
+{ 
+  if (classVar.AS(TEnumVariable)->values->size() == 2)
+    return TValue(classDistribution(exam)->atint(1) >= threshold ? 1 : 0);
+  else
+    return classDistribution(exam)->highestProbValue(exam);
+}
+
+
+void TBayesClassifier::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist)
+{ 
+  classDist = classDistribution(ex);
+  if (classVar.AS(TEnumVariable)->values->size() == 2)
+    val = TValue(classDist->atint(1) >= threshold ? 1 : 0);
+  else
+    val = classDist->highestProbValue(ex);
 }
 
 

@@ -23,7 +23,7 @@ class TreeLearnerClass:
 		
 	def __setattr__(self, name, value):
 		if name in ["split", "binarization", "measure", "worstAcceptable", "minSubset",
-					"stop", "maxMajority", "minExample", "nodeLearner"]:
+					"stop", "maxMajority", "minExamples", "nodeLearner"]:
 			self.learner = None
 		self.__dict__[name] = value
 

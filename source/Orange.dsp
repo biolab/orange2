@@ -137,6 +137,10 @@ SOURCE=.\orange\c45inter.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\calibrate.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\callback.cpp
 # End Source File
 # Begin Source File
@@ -503,6 +507,10 @@ SOURCE=.\orange\c4.5.hpp
 # Begin Source File
 
 SOURCE=.\orange\c45inter.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\calibrate.hpp
 # End Source File
 # Begin Source File
 

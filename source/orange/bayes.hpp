@@ -38,6 +38,7 @@ public:
   PConditionalProbabilityEstimatorConstructor conditionalEstimatorConstructor;           //P constructs a probability estimator for P(C|A) 
   PConditionalProbabilityEstimatorConstructor conditionalEstimatorConstructorContinuous; //P constructs a probability estimator for P(C|A) for continuous attributes
   bool normalizePredictions;  //P instructs learner to construct a classifier that normalizes probabilities
+  bool adjustThreshold; //P adjust probability thresholds (for binary classes only)
 
   TBayesLearner();
   TBayesLearner(const TBayesLearner &old);
@@ -60,11 +61,15 @@ public:
   PProbabilityEstimator estimator; //P a probability estimator for P(C)
   PConditionalProbabilityEstimatorList conditionalEstimators; //P a probability estimator for P(C|A)
   bool normalizePredictions; //P if true, classifier will normalize predictions
+  float threshold; //P threshold probability for class 1 (for binary classes only)
 
   TBayesClassifier(const bool &anP=true);
-  TBayesClassifier(PDomain, PDistribution, PDomainContingency, PProbabilityEstimator = PProbabilityEstimator(), PConditionalProbabilityEstimatorList = PConditionalProbabilityEstimatorList(), const bool &anP=true);
+  TBayesClassifier(PDomain, PDistribution, PDomainContingency, PProbabilityEstimator = PProbabilityEstimator(), PConditionalProbabilityEstimatorList = PConditionalProbabilityEstimatorList(), const bool &anP=true, const float &thresh = 0.5);
 
+  virtual TValue operator ()(const TExample &);
   virtual PDistribution classDistribution(const TExample &);
+  virtual void predictionAndDistribution(const TExample &, TValue &, PDistribution &);
+
   virtual float p(const TValue &classVal, const TExample &exam);
 };
 
