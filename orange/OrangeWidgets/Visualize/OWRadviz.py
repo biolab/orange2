@@ -260,6 +260,10 @@ class OWRadviz(OWWidget):
     # find projections where different class values are well separated
     def optimizeSeparation(self):
         if self.data == None: return
+        if not self.data.domain.classVar:
+            QMessageBox.critical( None, "VizRank Dialog", 'Projections can be evaluated only in datasets with a class value.', QMessageBox.Ok)
+            return
+        
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
@@ -303,7 +307,7 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.finishedAddingResults()
     
         secs = time.time() - startTime
-        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections: %d" % (self.graph.triedPossibilities, possibilities)
+        print "Number of evaluated projections: %d\nNumber of possible projections: %d\n----------------------------" % (self.graph.triedPossibilities, possibilities)
         print "Used time: %d min, %d sec" % (secs/60, secs%60)        
 
 
@@ -311,6 +315,10 @@ class OWRadviz(OWWidget):
     # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
+        if not self.data.domain.classVar or not self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            QMessageBox.critical( None, "Cluster Detection Dialog", 'Clusters can be detected only in data sets with a discrete class value', QMessageBox.Ok)
+            return
+
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
@@ -352,7 +360,7 @@ class OWRadviz(OWWidget):
         self.clusterDlg.finishedAddingResults()
     
         secs = time.time() - startTime
-        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections: %d" % (self.graph.triedPossibilities, possibilities)
+        print "Number of evaluated projections: %d\nNumber of possible projections: %d\n----------------------------" % (self.graph.triedPossibilities, possibilities)
         print "Used time: %d min, %d sec" % (secs/60, secs%60)        
 
 
@@ -412,21 +420,23 @@ class OWRadviz(OWWidget):
         self.graph.removeAllSelections()
         val = self.clusterDlg.getSelectedCluster()
         if not val: return
-        (value, closure, vertices, attrList, classValue, tryIndex, strList) = val
+        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = val
 
         if self.clusterDlg.clusterStabilityButton.isOn():
             validData = self.graph.getValidList([self.graph.attributeNames.index(attr) for attr in attrList])
             insideColors = Numeric.compress(validData, self.clusterDlg.pointStability)
         else: insideColors = None
         
-        self.showAttributes(attrList, insideColors, clusterClosure = closure)        
+        self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))        
 
+        """
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
                 print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
         else:
             print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
         print "---------------------------"
+        """
         
 
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):

@@ -12,8 +12,9 @@ CLOSURE = 1
 VERTICES = 2
 ATTR_LIST = 3
 CLASS = 4
-TRY_INDEX = 5
-STR_LIST = 6
+ENL_CLOSURE = 5
+OTHER = 6
+STR_LIST = 7
 
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
@@ -28,6 +29,21 @@ OTHER_POINTS = 2
 OTHER_DISTANCE = 3
 OTHER_AVERAGE = 4
 
+def union(list1, list2):
+    union_dict = {}
+    for e in list1: union_dict[e] = 1
+    for e in list2: union_dict[e] = 1
+    return union_dict.keys()
+
+def intersection(list1, list2):
+    int_dict = {}
+    list1_dict = {}
+    for e in list1:
+        list1_dict[e] = 1
+    for e in list2:
+        if list1_dict.has_key(e): int_dict[e] = 1
+    return int_dict.keys()
+    
 # is the point (xTest, yTest) on the left or right side of the line through (x1,y1), (x2,y2)
 def getPosition(x1, y1, x2, y2, xTest, yTest):
     if x1 == x2:
@@ -46,6 +62,22 @@ def computeDistances(graph):
         graph[i,j][DISTANCE] = sqrt(xdiff*xdiff + ydiff*ydiff)
 
 
+# Slightly deficient function to determine if the two lines p1, p2 and p2, p3 turn in counter clockwise direction
+def ccw(p1, p2, p3):
+    dx1 = p2[0] - p1[0]; dy1 = p2[1] - p1[1]
+    dx2 = p3[0] - p2[0]; dy2 = p3[1] - p2[1]
+    if(dy1*dx2 < dy2*dx1): return 1
+    else: return 0
+
+
+# do lines with (p1,p2) and (p3,p4) intersect?
+def lineIntersect(p1, p2, p3, p4):
+    return ((ccw(p1, p2, p3) != ccw(p1, p2, p4)) and (ccw(p3, p4, p1) != ccw(p3, p4, p2)))
+
+
+def computeDistance(x1, y1, x2, y2):
+    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
+
 # remove edges to different class values
 def removeEdgesToDifferentClasses(graph, newVal):
     if newVal == None:
@@ -60,10 +92,7 @@ def getPointsWithDifferentClassValue(graph, closureDict):
     differentClassPoinsDict = {}
     for key in closureDict:
         points = []
-        vertices = [i for (i,j) in closureDict[key]] + [j for (i,j) in closureDict[key]]
-        vertices.sort()
-        for i in range(len(vertices)-1)[::-1]:
-            if vertices[i] == vertices[i+1]: vertices.remove(vertices[i])
+        vertices = union([i for (i,j) in closureDict[key]], [j for (i,j) in closureDict[key]])
 
         for v in vertices:
             for n in graph.getNeighbours(v):
@@ -114,10 +143,8 @@ def removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, n
 def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, newVal):
     for key in closureDict.keys():
         edges = closureDict[key]
-        vertices = [i for (i,j) in edges] + [j for (i,j) in edges]
-        vertices.sort()
-        for i in range(len(vertices)-1)[::-1]:
-            if vertices[i] == vertices[i+1]: vertices.remove(vertices[i])
+        vertices = union([i for (i,j) in edges], [j for (i,j) in edges])
+        
         for vertex in vertices:
             correctClass = int(graph.objects[vertex].getclass())
             correct = []; incorrect = []
@@ -166,18 +193,14 @@ def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdg
     for key in edgesDict.keys(): closureDict[key] = []  # create dictionary where each cluster will contain all edges that lie on the closure
     for (i,j) in graph.getEdges():
         if graph[i,j][VALUE] < minimumValidIndex or graph[i,j][CLUSTER] == -1: continue
-        merged = graph.getNeighbours(i) + graph.getNeighbours(j)
-        merged.sort()
-        k=0; sameClassPoints = []; otherClassPoints = []
-        while k < len(merged)-1:
-            if merged[k] == merged[k+1]:
-                if graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex: sameClassPoints.append(merged[k])
-                elif graph[i, merged[k]][VALUE] == graph[j, merged[k]][VALUE] == differentClassValue: otherClassPoints.append(merged[k])
-                elif graph[i,merged[k]][VALUE] == tooDistantValue or graph[j,merged[k]][VALUE] == tooDistantValue:
-                    for n in graph.getNeighbours(merged[k]):
-                        if graph[merged[k],n][VALUE] == differentClassValue and n not in otherClassPoints: otherClassPoints.append(n)
-                k+=1
-            k+=1
+        merged = intersection(graph.getNeighbours(i), graph.getNeighbours(j))
+        sameClassPoints = []; otherClassPoints = []
+        for v in merged:
+            if graph[i, v][VALUE] >= minimumValidIndex and graph[j, v][VALUE] >= minimumValidIndex: sameClassPoints.append(v)
+            elif graph[i, v][VALUE] == graph[j, v][VALUE] == differentClassValue: otherClassPoints.append(v)
+            elif graph[i,v][VALUE] == tooDistantValue or graph[j,v][VALUE] == tooDistantValue:
+                for n in graph.getNeighbours(v):
+                    if graph[v,n][VALUE] == differentClassValue and n not in otherClassPoints: otherClassPoints.append(n)
         outer = 1; outer2 = 0
         if sameClassPoints == []: outer = 0
         elif len(sameClassPoints) > 0:
@@ -403,18 +426,173 @@ def pointInsideCluster(data, closure, xTest, yTest):
         
 
 # compute average distance between points inside each cluster
-def computeAverageDistance(graph, verticesDict):
+def computeAverageDistance(graph, edgesDict):
     ave_distDict = {}
-    for key in verticesDict.keys():
-        xAve = sum([graph.objects[i][0] for i in verticesDict[key]]) / len(verticesDict[key])
-        yAve = sum([graph.objects[i][1] for i in verticesDict[key]]) / len(verticesDict[key])
+    for key in edgesDict.keys():
         distArray = []
-        for v in verticesDict[key]:
-            d = sqrt((graph.objects[v][0]-xAve)*(graph.objects[v][0]-xAve) + (graph.objects[v][1]-yAve)*(graph.objects[v][1]-yAve))
+        for (v1,v2) in edgesDict[key]:
+            d = sqrt((graph.objects[v1][0]-graph.objects[v2][0])*(graph.objects[v1][0]-graph.objects[v2][0]) + (graph.objects[v1][1]-graph.objects[v2][1])*(graph.objects[v1][1]-graph.objects[v2][1]))
             distArray.append(d)
         ave_distDict[key] = sum(distArray) / float(max(1, len(distArray)))
     return ave_distDict
 
+
+def getNeighboursWithValue(graph, vertex, value):
+    ret = []
+    ns = graph.getNeighbours(vertex)
+    for n in ns:
+        if graph[vertex, n][VALUE] == value: ret.append(n)
+    return ret
+
+
+# for neighbors of v find which left and right vertices will represent the boundary of the enlarged closure
+def getNextPoints(graph, v, ns, closure):
+    ret = []
+    status = {}
+    while ns != []:
+        e = ns.pop()
+        x_e = 0.999*graph.objects[v][0] + 0.001*graph.objects[e][0]; y_e = 0.999*graph.objects[v][1] + 0.001*graph.objects[e][1]
+        for e2 in ns:
+            x_e2 = 0.999*graph.objects[v][0] + 0.001*graph.objects[e2][0]; y_e2 = 0.999*graph.objects[v][1] + 0.001*graph.objects[e2][1]
+            intersect = 0
+            for test in ns:
+                if test == e2: continue
+                intersect += lineIntersect((x_e, y_e), (x_e2, y_e2), (graph.objects[v][0], graph.objects[v][1]), (graph.objects[test][0], graph.objects[test][1]))
+            status[(e,e2)] = intersect
+            
+            """
+            x_e = 0.999*graph.objects[e][0] + 0.001*graph.objects[v][0]; y_e = 0.999*graph.objects[e][1] + 0.001*graph.objects[v][1]
+            x_e2 = 0.999*graph.objects[e2][0] + 0.001*graph.objects[v][0]; y_e2 = 0.999*graph.objects[e2][1] + 0.001*graph.objects[v][1]
+            x1 = 0.999 * x_e + 0.001 * x_e2  ;  y1 = 0.999 * y_e + 0.001 * y_e2
+            x2 = 0.001 * x_e + 0.999 * x_e2  ;  y2 = 0.001 * y_e + 0.999 * y_e2
+            status[(e,e2)] = [pointInsideCluster(graph.objects, closure, x1, y1), pointInsideCluster(graph.objects, closure, x2, y2)]
+            """
+
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        if status[(e,e2)] == 0:
+            ret.append((e,e2))
+            for (f, f2) in status.keys():
+                if f == e or f == e2 or f2 == e or f2 == e2:
+                    status.pop((f,f2))
+
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        ret.append((e,e2))
+        for (f, f2) in status.keys():
+            if f == e or f == e2 or f2 == e or f2 == e2:
+                status.pop((f,f2))
+            
+    """
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        if status[(e,e2)] == [0,0]:
+            ret.append((e,e2))
+            for (f, f2) in status.keys():
+                if f == e or f == e2 or f2 == e or f2 == e2:
+                    status.pop((f,f2))
+            
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        if status[(e,e2)][0] == status[(e,e2)][1]:
+            ret.append((e,e2))
+            for (f, f2) in status.keys():
+                if f == e or f == e2 or f2 == e or f2 == e2:
+                    status.pop((f,f2))
+    """
+    return ret
+
+def addPointsToDict(dictionary, key, val):
+    if dictionary.has_key(key):
+        dictionary[key] = dictionary[key] + [val]
+    else:
+        dictionary[key] = [val]
+
+# return a list that possibly contains multiple lists. in each list there are vertices sorted in the way as they are ordered on the closure
+def getSortedClosurePoints(graph, closure):
+    dicts = []
+    tempDicts = []
+    tempD = {}
+
+    pointDict = {}
+    points = union([i for (i,j) in closure], [j for (i,j) in closure])
+    for p in points:
+        ns = getNeighboursWithValue(graph, p, 2)
+        if len(ns) > 2:
+            split = getNextPoints(graph, p, ns, closure)       # splited is made of [(l1, r1), (l2, r2), ...]
+        else: split = [(ns[0], ns[1])]
+        pointDict[p] = split
+
+    lists = []
+    #print pointDict
+    while pointDict.keys() != []:
+        for start in pointDict.keys():
+            if len(pointDict[start]) == 1:
+                currList = [start, pointDict[start][0][0]]
+                last = pointDict[start][0][1]
+                pointDict.pop(start)
+                break
+        lastAdded = currList[-1]
+        while lastAdded != start:
+            for (l,r) in pointDict[lastAdded]:
+                if l == currList[-2]:
+                    currList.append(r)
+                    pointDict[lastAdded].remove((l,r))
+                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
+                    lastAdded = r
+                    break
+                elif r == currList[-2]:
+                    currList.append(l)
+                    pointDict[lastAdded].remove((l,r))
+                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
+                    lastAdded = l
+                    break
+        lists.append(currList[:-1])
+    #print lists
+    return lists
+
+
+def getEnlargedPointPosition(graph, point, left, right, dist, closure):
+    y_diff1 = graph.objects[point][0] - graph.objects[left][0]
+    x_diff1 = - (graph.objects[point][1] - graph.objects[left][1])
+    d = sqrt(x_diff1*x_diff1 + y_diff1*y_diff1)
+    x_diff1 /= d; y_diff1 /= d
+
+    y_diff2 = graph.objects[right][0] - graph.objects[point][0]
+    x_diff2 = - (graph.objects[right][1] - graph.objects[point][1])
+    d = sqrt(x_diff2*x_diff2 + y_diff2*y_diff2)
+    x_diff2 /= d; y_diff2 /= d
+
+    x_diff = x_diff1 + x_diff2; y_diff = y_diff1 + y_diff2
+    d = sqrt(x_diff*x_diff + y_diff*y_diff)
+    x_diff /= d; y_diff /= d
+    x_diff *= dist; y_diff *= dist
+
+    x = graph.objects[point][0] + x_diff*0.001
+    y = graph.objects[point][1] + y_diff*0.001
+    if pointInsideCluster(graph.objects, closure, 0.99*graph.objects[left][0] + 0.01*x, 0.99*graph.objects[left][1] + 0.01*y):
+        return (graph.objects[point][0] - x_diff, graph.objects[point][1] - y_diff)
+    else:
+        return (graph.objects[point][0] + x_diff, graph.objects[point][1] + y_diff)
+
+
+# computer the average distance of points inside a cluster
+# compute some sort of voronoi diagram
+def enlargeClosure(graph, closure, aveDist):
+    halfAveDist = aveDist / 2.0
+    sortedClosurePoints = getSortedClosurePoints(graph, closure)
+    merged = []
+    for group in sortedClosurePoints:
+        currMerged = []
+        for i in range(len(group)):
+            p = group[i]
+            l = group[i-1]; r = group[(i+1)%len(group)]
+            x, y = getEnlargedPointPosition(graph, p, l, r, halfAveDist, closure)
+            currMerged.append((x,y))
+        merged.append(currMerged)
+
+    return merged
+                    
 
 class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
@@ -453,7 +631,7 @@ class ClusterOptimization(OWBaseWidget):
         self.subsetdata = None
         self.arguments = []
         self.selectedClasses = []
-        self.optimizationType = 0
+        self.optimizationType = 1
         self.jitterDataBeforeTriangulation = 0
         self.classifierName = "Visual cluster classifier"
 
@@ -560,7 +738,7 @@ class ClusterOptimization(OWBaseWidget):
         for i in range(3,15):
             self.attributeCountCombo.insertItem(str(i))
         self.attributeCountCombo.insertItem("ALL")
-        self.attributeCountIndex = 0
+        self.attributeCountIndex = 1
 
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
@@ -697,11 +875,10 @@ class ClusterOptimization(OWBaseWidget):
         polygonVerticesDict = verticesDict  # compute which points lie in which cluster
         #polygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
 
+        aveDistDict = computeAverageDistance(graph, edgesDict)
+        
         # compute areas of all found clusters
         #areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
-
-        # computer the average distance of a point inside a cluster to the center of the cluster - alternative to computing area of cluster
-        #aveDistDict = computeAverageDistance(graph, polygonVerticesDict)
 
         # create a list of vertices that lie on the boundary of all clusters - used to determine the distance to the examples with different class
         allOtherClass = []
@@ -713,12 +890,13 @@ class ClusterOptimization(OWBaseWidget):
         
         valueDict = {}
         otherDict = {}
+        enlargedClosureDict = {}
         for key in closureDict.keys():
-            if polygonVerticesDict[key] < 6: continue            # if the cluster has less than 6 points ignore it
+            if len(polygonVerticesDict[key]) < 6: continue            # if the cluster has less than 6 points ignore it
             points = len(polygonVerticesDict[key]) - len(closureDict[key])    # number of points in the interior
-            if points < 2: continue                     # ignore clusters that don't have at least 2 points in the interior of the cluster
+            if points < 2: continue                      # ignore clusters that don't have at least 2 points in the interior of the cluster
             points += len(closureDict[key])/float(2)     # points on the edge only contribute with 1/2 of the value - punishment for very complex boundaries
-            if points < 5: continue                     # ignore too small clusters
+            if points < 5: continue                      # ignore too small clusters
 
             # compute the center of the current cluster
             xAve = sum([graph.objects[i][0] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
@@ -757,6 +935,8 @@ class ClusterOptimization(OWBaseWidget):
                 value *= sum(d)/float(v)
             
             valueDict[key] = value
+            #enlargedClosureDict[key] = enlargeClosure(graph, closureDict[key], aveDistDict[key])
+            enlargedClosureDict[key] = []
 
             #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass(), value, points, dist, area)
             #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, aveDistDict[key])
@@ -765,7 +945,12 @@ class ClusterOptimization(OWBaseWidget):
 
         #return graph, {}, closureDict, polygonVerticesDict, {}
         del edgesDict; del clusterDict; del verticesDict
-        return graph, valueDict, closureDict, polygonVerticesDict, otherDict
+        for key in closureDict.keys():
+            if not otherDict.has_key(key):
+                if closureDict.has_key(key): closureDict.pop(key)
+                if polygonVerticesDict.has_key(key): polygonVerticesDict.pop(key)
+                if enlargedClosureDict.has_key(key): enlargedClosureDict.pop(key)
+        return graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict
 
 
     # for each point in the data set compute how often does if appear inside a cluster
@@ -776,10 +961,10 @@ class ClusterOptimization(OWBaseWidget):
         self.pointStabilityCount = [0 for i in range(len(self.rawdata.domain.classVar.values))]       # for each class value create a counter that will count the number of clusters for it
 
         for i in range(len(self.allResults)):
-            if type(self.allResults[i][CLASS]) != list: continue    # ignore all projections except the ones that show all clusters in the picture
-            for j in range(len(self.allResults[i][VERTICES])):
-                self.pointStabilityCount[self.allResults[i][CLASS][j]] += 1
-                vertices = self.allResults[i][VERTICES][j]
+            if type(self.allResults[i][CLASS]) != dict: continue    # ignore all projections except the ones that show all clusters in the picture
+            for key in self.allResults[i][VERTICES].keys():
+                self.pointStabilityCount[self.allResults[i][CLASS][key]] += 1
+                vertices = self.allResults[i][VERTICES][key]
                 validData = self.graph.getValidList([self.graph.attributeNames.index(self.allResults[i][ATTR_LIST][0]), self.graph.attributeNames.index(self.allResults[i][ATTR_LIST][1])])
                 indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
                 indicesToOriginalTable = Numeric.take(indices, vertices)
@@ -801,7 +986,7 @@ class ClusterOptimization(OWBaseWidget):
     
         while self.resultList.count() < self.resultListLen and i < len(self.allResults):
             if self.attrLenDict[len(self.allResults[i][ATTR_LIST])] != 1: i+=1; continue
-            if type(self.allResults[i][CLASS]) == list and -1 not in self.selectedClasses: i+=1; continue
+            if type(self.allResults[i][CLASS]) == dict and -1 not in self.selectedClasses: i+=1; continue
             if type(self.allResults[i][CLASS]) == int and self.allResults[i][CLASS] not in self.selectedClasses: i+=1; continue
 
             string = ""
@@ -849,8 +1034,8 @@ class ClusterOptimization(OWBaseWidget):
     def getEvaluatedAttributes(self, data):
         return OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
     
-    def addResult(self, value, closure, vertices, attrList, classValue, other, strList = ""):
-        self.insertItem(value, closure, vertices, attrList, classValue, self.findTargetIndex(value), other, strList)
+    def addResult(self, value, closure, vertices, attrList, classValue, enlargedClosure, other, strList = ""):
+        self.insertItem(self.findTargetIndex(value), value, closure, vertices, attrList, classValue, enlargedClosure, other, strList)
         qApp.processEvents()        # allow processing of other events
 
     # use bisection to find correct index
@@ -870,9 +1055,9 @@ class ClusterOptimization(OWBaseWidget):
 
     # insert new result - give parameters: value of the cluster, closure, list of attributes.
     # parameter strList can be a pre-formated string containing attribute list (used by polyviz)
-    def insertItem(self, value, closure, vertices, attrList, classValue, index, other, strList = ""):
+    def insertItem(self, index, value, closure, vertices, attrList, classValue, enlargedClosure, other, strList = ""):
         if index < self.maxResultListLen:
-            self.allResults.insert(index, (value, closure, vertices, attrList, classValue, other, strList))
+            self.allResults.insert(index, (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList))
         if index < self.resultListLen:
             string = ""
             if self.showRank: string += str(index+1) + ". "
@@ -882,7 +1067,7 @@ class ClusterOptimization(OWBaseWidget):
             else: string += self.buildAttrString(attrList)
 
             self.resultList.insertItem(string, index)
-            self.shownResults.insert(index, (value, closure, vertices, attrList, classValue, other, strList))
+            self.shownResults.insert(index, (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList))
 
         # remove worst projection if list is too long
         if self.resultList.count() > self.resultListLen:
@@ -940,9 +1125,9 @@ class ClusterOptimization(OWBaseWidget):
         for attr in attrs: dict[attr] = self.__dict__[attr]
         file.write("%s\n" % (str(dict)))
         file.write("%s\n" % str(self.selectedClasses))
-        for (value, closure, vertices, attrList, classValue, other, strList) in self.shownResults:
-            if type(classValue) != list: continue
-            s = "(%s, %s, %s, %s, %s, %s, '%s')\n" % (str(value), str(closure), str(vertices), str(attrList), str(classValue), str(other), strList)
+        for (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) in self.shownResults:
+            if type(classValue) != dict: continue
+            s = "(%s, %s, %s, %s, %s, %s, %s, '%s')\n" % (str(value), str(closure), str(vertices), str(attrList), str(classValue), str(enlargedClosure), str(other), strList)
             file.write(s)
         file.flush()
         file.close()
@@ -981,10 +1166,10 @@ class ClusterOptimization(OWBaseWidget):
 
         line = file.readline()[:-1];
         while (line != ""):
-            (value, closure, vertices, attrList, classValue, other, strList) = eval(line)
-            self.addResult(value, closure, vertices, attrList, classValue, other, strList)
+            (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = eval(line)
+            self.addResult(value, closure, vertices, attrList, classValue, enlargedClosure, other, strList)
             for i in range(len(classValue)):
-                self.addResult(other[i][1], closure[i], vertices[i], attrList, classValue[i], other[i], strList)
+                self.addResult(other[i][1], closure[i], vertices[i], attrList, classValue[i], enlargedClosure[i], other[i], strList)
             line = file.readline()[:-1]
         file.close()
 
@@ -1110,12 +1295,15 @@ class ClusterOptimization(OWBaseWidget):
         for index in range(len(self.allResults)):
             if self.cancelArgumentation: break
             (value, closure, vertices, attrList, classValue, other, strList) = self.allResults[index]
+            if type(classValue) == dict: continue       # the projection contains several clusters
 
             qApp.processEvents()
-            
-            if type(classValue) == list: continue       # the projection contains several clusters
 
-            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))])
+            # select the attr values for attributes in attrList. if scaled values are out of 0-1 range skip the projection
+            testExampleAttrVals = [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))]
+            if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: continue
+            
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
             array = self.graph.createProjectionAsNumericArray([self.graph.attributeNames.index(attr) for attr in attrList])
             short = Numeric.transpose(Numeric.take(array, vertices))
             mX = min(short[0]); mY = min(short[1])
@@ -1151,15 +1339,18 @@ class ClusterOptimization(OWBaseWidget):
             for index in range(len(self.allResults)):
                 if self.cancelArgumentation: break
                 (value, closure, vertices, attrList, classValue, other, strList) = self.allResults[index]
+                if type(classValue) != dict or len(other) == 0: continue       # the projection contains several clusters
 
                 qApp.processEvents()
                 
-                if type(classValue) != list: continue       # the projection contains several clusters
-
-                [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))])
+                # select the attr values for attributes in attrList. if scaled values are out of 0-1 range skip the projection
+                testExampleAttrVals = [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))]
+                if min(testExampleAttrVals) < 0.0 or max(testExampleAttrVals) > 1.0: continue
+                
+                [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, testExampleAttrVals)
                 dists = []
-                for i in range(len(other)):
-                    (xAve, yAve) = other[i][OTHER_AVERAGE]
+                for key in other.keys():
+                    (xAve, yAve) = other[key][OTHER_AVERAGE]
                     dist = sqrt((xAve - xTest)*(xAve - xTest) + (yAve - yTest)*(yAve - yTest))
                     dists.append(dist)
                 dist = min(dists)
@@ -1191,13 +1382,16 @@ class ClusterOptimization(OWBaseWidget):
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
         # show classification results
+        classValue, dist = self.classifyExample(example)
+        s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+        for key in dist.keys():
+            s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+        s = s[:-4]
+
+        print s
         if showClassification:
-            classValue, dist = self.classifyExample(example)
-            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
-            for key in dist.keys():
-                s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
-            s = s[:-4]
             QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+        
 
 
     # use bisection to find correct index

@@ -129,13 +129,13 @@ class OWScatterPlotGraph(OWVisGraph):
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
             colorIndex = self.attributeNames.index(colorAttr)
-            colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
+            if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
             
         shapeIndex = -1
         shapeIndices = {}
         if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
             shapeIndex = self.attributeNames.index(shapeAttr)
-            shapeIndices = getVariableValueIndices(self.rawdata, shapeAttr)
+            if self.rawdata.domain[shapeAttr].varType == orange.VarTypes.Discrete: shapeIndices = getVariableValueIndices(self.rawdata, shapeAttr)
 
         sizeShapeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
@@ -155,11 +155,11 @@ class OWScatterPlotGraph(OWVisGraph):
             discreteY = 1
             attrYIndices = getVariableValueIndices(self.rawdata, yAttr)
         
-        if self.showClusters:
+        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             validData = self.getValidList([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)])
             data = self.createProjectionAsExampleTable([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
             #data = self.rawdata.select([xAttr, yAttr, self.rawdata.domain.classVar.name])
-            graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
@@ -181,15 +181,19 @@ class OWScatterPlotGraph(OWVisGraph):
                             y = (self.rawdata[indices[i]][yAttr].value + self.rawdata[indices[v]][yAttr].value) / 2.0
                             self.addCurve("", classColors[color], classColors[color], 5, QwtCurve.Lines, QwtSymbol.XCross, xData = [x], yData = [y], lineWidth = 0)
             """
-
-            
             for key in valueDict.keys():
                 if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
                     color = classIndices[graph.objects[i].getclass().value]
                     #self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = graph[i,j][0])
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = 1)
-
+                """
+                for arr in enlargedClosureDict[key]:
+                    #print arr
+                    color = classIndices[otherDict[key][0]]
+                    for i in range(len(arr)):
+                        self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * arr[i][0], xVarMin + (xVarMax - xVarMin) * arr[(i+1)%len(arr)][0]], yData = [yVarMin + (yVarMax - yVarMin) * arr[i][1], yVarMin + (yVarMax - yVarMin) * arr[(i+1)%len(arr)][1]], lineWidth = 2)
+                """
             """
             self.removeMarkers()
             for i in range(graph.nVertices):
@@ -321,7 +325,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
                     if colorIndex != -1:
-                        if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
+                        if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor = QColor(); newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
                         else: newColor = classColors[colorIndices[self.rawdata[i][colorIndex].value]]
                     else: newColor = QColor(0,0,0)
                             
@@ -442,18 +446,35 @@ class OWScatterPlotGraph(OWVisGraph):
 
         shortData = self.rawdata.select([self.rawdata.domain[xAttr], self.rawdata.domain[yAttr], self.rawdata.domain.classVar])
         shortData = orange.Preprocessor_dropMissing(shortData)
-        
-        if type(self.clusterClosure[0]) == list:
-            for clusterLines in self.clusterClosure:
-                colorIndex = classIndices[shortData[clusterLines[0][0]].getclass().value]
+
+        (closure, enlargedClosure, classValue) = self.clusterClosure        
+
+        (xVarMin, xVarMax) = self.attrValues[xAttr]
+        (yVarMin, yVarMax) = self.attrValues[yAttr]
+        xVar = xVarMax - xVarMin
+        yVar = yVarMax - yVarMin                
+
+        if type(closure) == dict:
+            for key in closure.keys():
+                clusterLines = closure[key]
+                colorIndex = classIndices[classValue[key]]
                 for (p1, p2) in clusterLines:
                     self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+
+                """
+                arr = enlargedClosure[key]
+                for i in range(len(arr)):
+                    self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * arr[i][0], xVarMin + (xVarMax - xVarMin) * arr[(i+1)%len(arr)][0]], yData = [yVarMin + (yVarMax - yVarMin) * arr[i][1], yVarMin + (yVarMax - yVarMin) * arr[(i+1)%len(arr)][1]], lineWidth = 2)
+                """ 
         else:
-            colorIndex = classIndices[shortData[self.clusterClosure[0][0]].getclass().value]
-            for (p1, p2) in self.clusterClosure:
+            colorIndex = classIndices[classValue]
+            for (p1, p2) in closure:
                 self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
 
-
+            """
+            for i in range(len(enlargedClosure)):
+                self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * enlargedClosure[i][0], xVarMin + (xVarMax - xVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][0]], yData = [yVarMin + (yVarMax - yVarMin) * enlargedClosure[i][1], yVarMin + (yVarMax - yVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][1]], lineWidth = 2)
+            """
         
     # ##############################################################
     # add tooltip for point at x,y
@@ -631,20 +652,28 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections)" % (testIndex))
                     return
 
+                print attr1, attr2
                 data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], domain = domain, jitterSize = jitterSize)
                 #data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], jitterSize = jitterSize)
-                graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+                graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
-                allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []
-                allClasses = []
+                allValue = 0.0
+                #allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []
+                #allClasses = []; allEnlargedClosures = []
+                classesDict = {}
                 for key in valueDict.keys():
                     #addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), testIndex)
-                    addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), otherDict[key])
-                    allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
-                    allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                    addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
+                    classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
+                    allValue += valueDict[key]
+                    #allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
+                    #allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                    #allEnlargedClosures.append(enlargedClosureDict[key])
 
                 #addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], -1, testIndex)     # add all the clusters
-                addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], allClasses, allComponents)     # add all the clusters
+                #addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], allClasses, allEnlargedClosures, allComponents)     # add all the clusters
+                addResultFunct(allValue, closureDict, polygonVerticesDict, [attr1, attr2], classesDict, enlargedClosureDict, otherDict)     # add all the clusters
+                
 
                 #print "evaluated projection %d" % testIndex
                 self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))

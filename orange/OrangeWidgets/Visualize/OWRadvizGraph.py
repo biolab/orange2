@@ -182,21 +182,20 @@ class OWRadvizGraph(OWVisGraph):
 
         # do we have cluster closure information
         
-        if self.showClusters:
+        if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             data = self.createProjectionAsExampleTable(indices, validData = validData, scaleFactor = self.scaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
-            graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+            graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-            classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
             for key in valueDict.keys():
                 if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
-                    color = classIndices[graph.objects[i].getclass().value]
+                    color = classValueIndices[graph.objects[i].getclass().value]
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
 
             """
             for key in closureDict.keys():
                 for (i,j) in closureDict[key]:
-                    color = classIndices[graph.objects[i].getclass().value]
+                    color = classValueIndices[graph.objects[i].getclass().value]
                     #self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = graph[i,j][0])
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
             """
@@ -267,7 +266,7 @@ class OWRadvizGraph(OWVisGraph):
                     if colors and not self.subsetData[i].getclass().isSpecial():
                         newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
                     elif not self.subsetData[i].getclass().isSpecial():
-                        newColor.setHsv(dataVals[-1], 255, 255)
+                        newColor = QColor(); newColor.setHsv(dataVals[-1], 255, 255)
                     else: newColor = QColor(0,0,0)
 
                     if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
@@ -285,7 +284,7 @@ class OWRadvizGraph(OWVisGraph):
                 newColor = QColor()
                 newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = x_positions[i], yData = y_positions[i])
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
 
         # ############################################################## 
@@ -372,19 +371,33 @@ class OWRadvizGraph(OWVisGraph):
 
 
     def showClusterLines(self, attributeIndices, validData, width = 1):
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
         shortData = self.createProjectionAsExampleTable(attributeIndices, validData = validData, scaleFactor = self.scaleFactor)
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
 
-        if type(self.clusterClosure[0]) == list:
-            for clusterLines in self.clusterClosure:
+        (closure, enlargedClosure, classValue) = self.clusterClosure
+
+        if type(closure) == dict:
+            for key in closure.keys():
+                clusterLines = closure[key]
                 colorIndex = classIndices[shortData[clusterLines[0][0]].getclass().value]
                 for (p1, p2) in clusterLines:
                     self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+                """
+                arr = enlargedClosure[key]
+                for i in range(len(arr)):
+                    self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * arr[i][0], xVarMin + (xVarMax - xVarMin) * arr[(i+1)%len(arr)][0]], yData = [yVarMin + (yVarMax - yVarMin) * arr[i][1], yVarMin + (yVarMax - yVarMin) * arr[(i+1)%len(arr)][1]], lineWidth = 2)
+                """ 
         else:
             colorIndex = classIndices[shortData[self.clusterClosure[0][0]].getclass().value]
             for (p1, p2) in self.clusterClosure:
                 self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [shortData[p1][0].value, shortData[p2][0].value], yData = [shortData[p1][1].value, shortData[p2][1].value], lineWidth = width)
+
+            """
+            for i in range(len(enlargedClosure)):
+                self.addCurve("", classColors[colorIndex], classColors[colorIndex], 1, QwtCurve.Lines, QwtSymbol.None, xData = [xVarMin + (xVarMax - xVarMin) * enlargedClosure[i][0], xVarMin + (xVarMax - xVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][0]], yData = [yVarMin + (yVarMax - yVarMin) * enlargedClosure[i][1], yVarMin + (yVarMax - yVarMin) * enlargedClosure[(i+1)%len(enlargedClosure)][1]], lineWidth = 2)
+            """
 
 
     # ############################################################## 
@@ -834,21 +847,25 @@ class OWRadvizGraph(OWVisGraph):
                         permutationIndex += 1
 
                         data = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
-                        graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+                        graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
                         if not self.clusterOptimization.onlyOnePerSubset:
-                            allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []
-                            allClasses = []
+                            allValue = 0.0
+                            #allClosure = []; allPolygonVertices = []; allComponents = []; allClasses = []
+                            classesDict = {}
                             for key in valueDict.keys():
-                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, int(graph.objects[polygonVerticesDict[key][0]].getclass()), otherDict[key])
-                                allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
-                                allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
+                                #allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
+                                #allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                                classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
+                                allValue += valueDict[key]
 
-                            addResultFunct(allValue, allClosure, allPolygonVertices, permutationAttributes, allClasses, allComponents)     # add all the clusters
+                            #addResultFunct(allValue, allClosure, allPolygonVertices, permutationAttributes, allClasses, allComponents)     # add all the clusters
+                            addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
                         else:
                             value = 0.0
                             for val in valueDict.values(): value += val
-                            tempList.append((value, valueDict, closureDict, polygonVerticesDict, otherDict))
+                            tempList.append((value, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict))
                             
                         self.triedPossibilities += 1
                         if time.time() - lastTime > 2:
@@ -861,14 +878,19 @@ class OWRadvizGraph(OWVisGraph):
                     self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (self.triedPossibilities))
 
                     if self.clusterOptimization.onlyOnePerSubset:
-                        (value, valueDict, closureDict, polygonVerticesDict, otherDict) = max(tempList)
-                        allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []; allClasses = []
+                        (value, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict) = max(tempList)
+                        #allClosure = []; allPolygonVertices = []; allComponents = []; allClasses = []
+                        allValue = 0.0
+                        classesDict = {}
                         for key in valueDict.keys():
-                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, int(graph.objects[polygonVerticesDict[key][0]].getclass()), otherDict[key])
-                            allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
-                            allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
+                            #allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
+                            #allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                            classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
+                            allValue += valueDict[key]
 
-                        addResultFunct(allValue, allClosure, allPolygonVertices, permutationAttributes, allClasses, allComponents)     # add all the clusters
+                        #addResultFunct(allValue, allClosure, allPolygonVertices, permutationAttributes, allClasses, allComponents)     # add all the clusters
+                        addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
 
                     del validData, classList, selectedData, sum_i
                 del combinations

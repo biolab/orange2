@@ -303,7 +303,7 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.finishedAddingResults()
 
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d" % (len(projections))
+        print "Number of possible projections: %d\n----------------------------" % (len(projections))
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
 
@@ -341,7 +341,7 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.finishedAddingResults()
 
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d" % (len(projections))
+        print "Number of possible projections: %d\n----------------------------" % (len(projections))
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
 
@@ -369,21 +369,23 @@ class OWScatterPlot(OWWidget):
         self.graph.removeAllSelections()
         val = self.clusterDlg.getSelectedCluster()
         if not val: return
-        (value, closure, vertices, attrList, classValue, tryIndex, strList) = val
+        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = val
 
         if self.clusterDlg.clusterStabilityButton.isOn():
             validData = self.graph.getValidList([self.graph.attributeNames.index(self.attrX), self.graph.attributeNames.index(self.attrY)])
             insideColors = Numeric.compress(validData, self.clusterDlg.pointStability)
         else: insideColors = None
 
-        self.showAttributes(attrList, insideColors, clusterClosure = closure)
+        self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))
 
+        """
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
                 print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
         else:
             print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
         print "---------------------------"
+        """
         
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
         attrNames = [attr.name for attr in self.data.domain]
