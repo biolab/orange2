@@ -24,7 +24,7 @@ import orngCI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["globalNormalization"]
+    settingsList = ["attrDiscOrder", "attrContOrder"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -40,7 +40,6 @@ class OWSurveyPlot(OWWidget):
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         self.GraphCanvasColor = str(Qt.white.name())
-        self.globalNormalization = 0
         self.data = None
 
         #load settings
@@ -88,7 +87,7 @@ class OWSurveyPlot(OWWidget):
 
         self.secondarySortCB = QCheckBox('Enable sorting secondary', self.sortingAttrGB)
         self.secondaryAttr = QComboBox(self.sortingAttrGB)
-        self.connect(self.primarySortCB, SIGNAL("clicked()"), self.sortingClick)
+        self.connect(self.secondarySortCB, SIGNAL("clicked()"), self.sortingClick)
         self.connect(self.secondaryAttr, SIGNAL('activated ( const QString & )'), self.sortingClick)
 
         self.primarySortCB.setChecked(0)
@@ -239,13 +238,14 @@ class OWSurveyPlot(OWWidget):
         if data.domain[primaryAttr].varType == orange.VarTypes.Discrete:
             for value in data.domain[primaryAttr].values:
                 tempData = data.select({primaryAttr:value})
-                newData.append(sortData1(secondaryAttr, tempData))
+                newData.append(self.sortData1(secondaryAttr, tempData))
         # do we have a continuous attribute
         elif data.domain[primaryAttr].varType == orange.VarTypes.Continuous:
-            data = data.sort(primaryAttr)
+            data.sort(primaryAttr)
+            eps = 0.0001
             index = 0
             while index < len(data):
-                tempData = data.select({primaryAttr:data[index][primaryAttr].value})
+                tempData = data.select({primaryAttr:(data[index][primaryAttr].value - eps, data[index][primaryAttr].value + eps)})
                 newData.append(tempData)
                 index += len(tempData)
         return newData

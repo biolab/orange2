@@ -91,7 +91,7 @@ class OWSurveyPlotGraph(OWGraph):
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
         
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        self.setAxisScale(QwtPlot.xBottom, 0, len(labels), 1)
+        self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisMaxMinor(QwtPlot.yLeft, 0)
@@ -108,8 +108,14 @@ class OWSurveyPlotGraph(OWGraph):
 
         # create a table of class values that will be used for coloring the lines
         scaledClassData = []
-        if className != "(One color)" and className != '':
+        classValueIndices = {}
+        classValueCount = 0
+        if className != "(One color)" and className != '' and self.rawdata.domain[className].varType != orange.VarTypes.Discrete:
             scaledClassData = self.scaleData(self.rawdata, className)
+        else:
+            classValueCount = len(self.rawdata.domain[className].values)
+            for i in range(classValueCount):
+                classValueIndices[self.rawdata.domain[className].values[i]] = i
 
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
@@ -123,8 +129,13 @@ class OWSurveyPlotGraph(OWGraph):
             newColor = QColor()
             if scaledClassData != []:
                 newColor.setHsv(scaledClassData[i]*360, 255, 255)
+            elif classValueIndices != {}:
+                val = self.rawdata[i][className].value
+                newColor.setHsv(float(classValueIndices[val]*360)/float(classValueCount), 255, 255)
             else:
                 newColor.setRgb(0,0,0)
+
+                
             curve.color = newColor
             curve.penColor = newColor
             xData = []; yData = []

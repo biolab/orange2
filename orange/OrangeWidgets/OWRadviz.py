@@ -137,6 +137,7 @@ class OWRadviz(OWWidget):
         
     # jittering options
     def setSpreadType(self, n):
+        self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
         self.updateGraph()
@@ -317,6 +318,7 @@ class OWRadviz(OWWidget):
             attrs = []
             for attr in data.domain.attributes:
                 if attr.varType == orange.VarTypes.Discrete: attrs.append(attr)
+            attrs.append(data.domain.classVar)
             dataNew = data.select(attrs)
             newAttrs = orngFSS.attMeasure(dataNew, measure)
             for item in newAttrs:

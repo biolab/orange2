@@ -271,6 +271,7 @@ class OWParallelCoordinates(OWWidget):
 
     # jittering options
     def setSpreadType(self, n):
+        self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
         self.updateGraph()

@@ -120,12 +120,10 @@ class OWRadvizGraph(OWGraph):
                 variableValueIndices[attr.values[i]] = i
 
             count = float(len(attr.values))
-            if len(attr.values) > 1: num = float(len(attr.values)-1)
-            else: num = float(1)
-
             for i in range(len(data)):
                 val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.1 * self.rndCorrection(1.0/count)
                 temp.append(val)
+
                     
         # is the attribute continuous
         else:
@@ -296,6 +294,23 @@ class OWRadvizGraph(OWGraph):
                 self.setCurveStyle(newCurveKey, QwtCurve.Dots)
                 self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
                 self.setCurveData(newCurveKey, curveData[i][0], curveData[i][1])
+
+        # draw the legend
+        if className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            for index in range(valLen):
+                newCurveKey = self.insertCurve(str(index))
+                newColor = QColor()
+                newColor.setHsv(index*360/(valLen), 255, 255)
+                self.setCurveStyle(newCurveKey, QwtCurve.Dots)
+                self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
+                y = 1.08 - index * 0.05
+                self.setCurveData(newCurveKey, [0.95, 0.95], [y, y])
+                mkey = self.insertMarker(self.rawdata.domain[className].values[index])
+                self.marker(mkey).setXValue(0.90)
+                self.marker(mkey).setYValue(y)
+                self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
+
+
 
         # -----------------------------------------------------------
         # -----------------------------------------------------------
