@@ -411,9 +411,16 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.header.setCanvas(None)
             self.graph.setCanvas(None)
 
-        if self.data and self.cl and self.data.domain!=self.cl.domain:
-            return
-            
+        if self.data and self.cl:
+            #check domains
+            for at in self.cl.domain:
+                if at.getValueFrom:
+                    if not at.getValueFrom.variable in self.data.domain:
+                        return
+                else:
+                    if not at in self.data.domain:
+                        return
+
         if type(self.cl) == orngSVM.BasicSVMClassifier and self.data:
                 self.svmClassifier(self.cl)
         elif type(self.cl) == orange.BayesClassifier:
@@ -504,10 +511,10 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("d:\\data\\titanic.tab")
-    bayes = orange.BayesLearner(data)
-    #logistic = orngLR.LogRegLearner(data)
-    ow.classifier(bayes)
+    data = orange.ExampleTable("d:\\data\\crush.tab")
+    #bayes = orange.BayesLearner(data)
+    logistic = orngLR.LogRegLearner(data)
+    ow.classifier(logistic)
     ow.cdata(data)
 
     # here you can test setting some stuff

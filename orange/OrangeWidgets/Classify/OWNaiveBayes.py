@@ -160,13 +160,13 @@ preprocessors to filter/change the data.
         
         self.learner = orange.BayesLearner()
 
-   #     for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
-   #                         ("conditionalEstimatorConstructor", self.condEstMethods[self.condProbEstimation][1]),
-  #                          ("conditionalEstimatorConstructorContinuous", self.condEstContMethods[self.condProbContEstimation][1])):
-   #         if cons:
-    #            setattr(self.learner, attr, cons)
-    #            if hasattr(cons, "m"):
-    #                setattr(cons, "m", self.m)
+        for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
+                            ("conditionalEstimatorConstructor", self.condEstMethods[self.condProbEstimation][1]),
+                            ("conditionalEstimatorConstructorContinuous", self.condEstContMethods[self.condProbContEstimation][1])):
+            if cons:
+                setattr(self.learner, attr, cons)
+                if hasattr(cons, "m"):
+                    setattr(cons, "m", self.m)
             
         self.learner.name = self.name
         self.send("Learner", self.learner)
