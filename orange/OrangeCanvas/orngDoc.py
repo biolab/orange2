@@ -513,7 +513,7 @@ class SchemaDoc(QMainWindow):
         instancesT = "# create widget instances\n" +t+t
         instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
-        links = "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
+        links = "#load settings before we connect widgets\n" +t+t+ "self.loadSettings()\n\n" +t+t + "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
         manager = ""
