@@ -5,6 +5,7 @@
 
 from OWVisGraph import *
 from copy import copy
+import time
 
 # ####################################################################
 # get a list of all different permutations
@@ -171,7 +172,7 @@ class OWRadvizGraph(OWVisGraph):
 
             ##########
             # we add a tooltip for this point
-            text= self.getExampleText(self.rawdata, self.rawdata[i])
+            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
             r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             self.tips.addToolTip(r, text)
 
@@ -214,7 +215,7 @@ class OWRadvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, className, kNeighbours):
+    def getOptimalSeparation(self, attrList, className, kNeighbours, printTime = 1):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return attrList
@@ -274,6 +275,8 @@ class OWRadvizGraph(OWVisGraph):
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
         domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+
+        t = time.time()
         
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
@@ -297,7 +300,7 @@ class OWRadvizGraph(OWVisGraph):
                 table.append(example)
 
             #orange.saveTabDelimited("E:\\temp\\data.tab", table)
-
+            """
             classValues = list(self.rawdata.domain[className].values)
             classValNum = len(classValues)
             
@@ -322,17 +325,16 @@ class OWRadvizGraph(OWVisGraph):
                 tempPermValue += float(prob[index])/float(sum)
 
             """
+
             # to bo delalo, ko bo popravljen orangov kNNLearner
             classValues = list(self.rawdata.domain[className].values)
-            print kNeighbours
-            knn = orange.kNNLearner(table, k=40)
-            print knn.k, len(table)
+            knn = orange.kNNLearner(table, k=kNeighbours)
             for j in range(len(table)):
-                out = knn(table[i], orange.GetProbabilities)
-                index = classValues.index(table[i][2].value)
-                if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
-            """
-            
+                out = knn(table[j], orange.GetProbabilities)
+                index = classValues.index(table[j][2].value)
+                #if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
+                tempPermValue += out[index]
+         
             print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (permutationIndex, totalPermutations, tempPermValue, tempPermValue*100.0/float(len(table)) )
 
             if tempPermValue > bestPermValue:
@@ -345,20 +347,26 @@ class OWRadvizGraph(OWVisGraph):
                 tempList.append(self.attributeNames[i])
             fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList))
 
+        if printTime:
+            secs = time.time() - t
+            print "------------------------------"
+            print "Used time: %d min, %d sec" %(secs/60, secs%60)
+
         # return best permutation
         retList = []
         for i in bestPerm:
             retList.append(self.attributeNames[i])
         return (retList, bestPermValue, fullList)
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours):
-        if attrList == []:
+    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours, maxLen):
+        if attrList == [] or maxLen == 0:
             if len(subsetList) < 2: return ([], 0, [])
-            return self.getOptimalSeparation(subsetList, className, kNeighbours)
-        (list1, v1, full1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
+            print subsetList, 
+            return self.getOptimalSeparation(subsetList, className, kNeighbours, printTime = 0)
+        (list1, v1, full1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours, maxLen)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        (list2, v2, full2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours)
+        (list2, v2, full2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours, maxLen-1)
 
         # find max values in booth lists
         full = full1 + full2

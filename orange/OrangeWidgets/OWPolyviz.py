@@ -102,7 +102,12 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
         self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
-        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
+        self.hbox3 = QHBox(self.attrOrderingButtons)
+        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.hbox3)
+        self.maxLenCombo = QComboBox(self.hbox3)    # maximum number of attributes in subset
+        self.maxLenCombo.insertItem("ALL")
+        for i in range(3, 15):
+            self.maxLenCombo.insertItem(str(i))
         self.interestingProjectionsButton = QPushButton('List of interesting projections', self.attrOrderingButtons)
         
         self.hbox2 = QHBox(self.attrOrderingButtons)
@@ -112,7 +117,7 @@ class OWPolyviz(OWWidget):
 
 
         self.interestingprojectionsDlg = InterestingProjections(None)
-        self.interestingprojectionsDlg.parentName = "ScatterPlot"
+        self.interestingprojectionsDlg.parentName = "Polyviz"
         self.interestingprojectionsDlg.kValue = self.kNeighbours
         
         self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
@@ -267,10 +272,15 @@ class OWPolyviz(OWWidget):
                 if res != 0: return
 
             self.graph.scaleDataNoJittering()
+            text = str(self.maxLenCombo.currentText())
+
+            if text == "ALL": maxLen = len(self.getShownAttributeList())
+            else:             maxLen = int(text)
+                
             if self.tryReverse.isChecked() == 1:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], None, str(self.classCombo.currentText()), self.kNeighbours)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], None, str(self.classCombo.currentText()), self.kNeighbours, maxLen)
             else:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours, maxLen)
             if fullList == []: return
             
             # fill the "interesting visualizations" list box

@@ -101,7 +101,13 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
         self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
-        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
+        self.hbox3 = QHBox(self.attrOrderingButtons)
+        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.hbox3)
+        self.maxLenCombo = QComboBox(self.hbox3)    # maximum number of attributes in subset
+        self.maxLenCombo.insertItem("ALL")
+        for i in range(3, 15):
+            self.maxLenCombo.insertItem(str(i))
+        self.maxLenCombo.setCurrentItem(0)
         self.interestingProjectionsButton = QPushButton('List of interesting projections', self.attrOrderingButtons)
         
         self.hbox2 = QHBox(self.attrOrderingButtons)
@@ -109,7 +115,7 @@ class OWRadviz(OWWidget):
         self.attrKNeighbour = QComboBox(self.hbox2)
 
         self.interestingprojectionsDlg = InterestingProjections(None)
-        self.interestingprojectionsDlg.parentName = "ScatterPlot"
+        self.interestingprojectionsDlg.parentName = "Radviz"
         self.interestingprojectionsDlg.kValue = self.kNeighbours
         
         self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
@@ -241,7 +247,12 @@ class OWRadviz(OWWidget):
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
             self.graph.scaleDataNoJittering()
-            (list,val, fullList) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours)
+            text = str(self.maxLenCombo.currentText())
+            if text == "ALL":
+                maxLen = len(self.getShownAttributeList())
+            else:
+                maxLen = int(text)
+            (list,val, fullList) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, maxLen)
             if list == []: return
             
             # fill the "interesting visualizations" list box

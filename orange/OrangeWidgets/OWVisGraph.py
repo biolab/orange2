@@ -155,8 +155,9 @@ class OWVisGraph(OWGraph):
                     
         # is the attribute continuous
         else:
-            min = self.domainDataStat[index].min
-            max = self.domainDataStat[index].max
+            if min == max == -1:
+                min = self.domainDataStat[index].min
+                max = self.domainDataStat[index].max
             diff = max - min
             values = [min, max]
 
@@ -300,7 +301,23 @@ class OWVisGraph(OWGraph):
                     text = "%s%s = %.3f; " % (text, data.domain[i].name, example[i].value)
         return text
 
-    
+    # ####################################################################
+    # return string with attribute names and their values for example example
+    def getShortExampleText(self, data, example, indices):
+        text = ""
+        for i in range(len(indices)):
+            index = indices[i]
+            if data.domain[index].varType == orange.VarTypes.Discrete:
+                if example[index].isSpecial():
+                    text = "%s%s = ?; " % (text, data.domain[index].name)
+                else:
+                    text = "%s%s = %s; " % (text, data.domain[index].name, str(example[index].value))
+            else:
+                if example[i].isSpecial():
+                    text = "%s%s = ?; " % (text, data.domain[index].name)
+                else:
+                    text = "%s%s = %.3f; " % (text, data.domain[index].name, example[index].value)
+        return text
 
     # ###############################################
     # HANDLING MOUSE EVENTS

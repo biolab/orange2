@@ -5,7 +5,7 @@
 
 from OWVisGraph import *
 from copy import copy, deepcopy
-
+import time
 
 # ####################################################################
 # get a list of all different permutations
@@ -238,7 +238,7 @@ class OWPolyvizGraph(OWVisGraph):
 
             # #########
             # we add a tooltip for this point
-            text= self.getExampleText(self.rawdata, self.rawdata[i])
+            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
             r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             self.tips.addToolTip(r, text)
 
@@ -312,7 +312,7 @@ class OWPolyvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, attrReverseDict, className, kNeighbours):
+    def getOptimalSeparation(self, attrList, attrReverseDict, className, kNeighbours, printTime = 1):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering. A discrete class must be selected."
             return attrList
@@ -379,6 +379,8 @@ class OWPolyvizGraph(OWVisGraph):
         # store all sums
         sum = self.calculateAttrValuesSum(selectedGlobScaledData, len(self.rawdata), indices, validData)
 
+        t = time.time()
+
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
             for attrOrder in attrReverse:
@@ -440,17 +442,22 @@ class OWPolyvizGraph(OWVisGraph):
                     tempList.append(self.attributeNames[i])
                 fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList, attrOrder))
 
+        if printTime:
+            print "------------------------------"
+            secs = time.time() - t
+            print "Used time: %d min, %d sec" %(secs/60, secs%60)
+
         return fullList
                 
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours):
-        if attrList == []:
+    def getOptimalSubsetSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, maxLen):
+        if attrList == [] or maxLen == 0:
             if len(subsetList) < 3: return []
-            return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours)
-        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours)
+            return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
+        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, maxLen)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours)
+        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, maxLen-1)
 
         # find max values in booth lists
         full = full1 + full2

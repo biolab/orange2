@@ -62,6 +62,8 @@ class OWScatterPlotGraph(OWVisGraph):
         (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
+        
+        
         MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
         MIN_SHAPE_SIZE = 10
         MAX_SHAPE_DIFF = 10
@@ -287,6 +289,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 tempList = [self.attributeNames[x], self.attributeNames[y]]
                 fullList.append(((tempValue*100.0/float(len(table)), len(table)), tempList))
 
+        print "------------------------------"
         secs = time.time() - t
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
         # return best permutation
