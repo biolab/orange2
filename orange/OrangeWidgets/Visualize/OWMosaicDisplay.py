@@ -16,17 +16,15 @@ import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 from copy import copy
+import OWGraphTools
+from OWGUI import checkBox
 
 
 ###########################################################################################
 ##### WIDGET : 
 ###########################################################################################
 class OWMosaicDisplay(OWWidget):
-    settingsList = ["showLines"]
-    #settingsList = ["showLines", "kvoc"]
-    #kvocList = ['1.5','2','3','5','10','20']
-    #kvocNums = [1.5,   2,  3,  5,  10,  20]
-
+    settingsList = ["horizontalDistribution", "showDistribution", "showAprioriDistribution"]
     
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Mosaic display", 'show Mosaic display', FALSE, TRUE, icon = "MosaicDisplay.png")
@@ -35,15 +33,21 @@ class OWMosaicDisplay(OWWidget):
         self.data = None
         self.rects = []
         self.texts = []
-        self.lines = []
         self.tooltips = []
+        self.names = []     # class values
+        self.symbols = []   # squares for class values
+        
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = []
     
         #load settings
-        self.showLines = 1
+        self.showDistribution = 1
+        self.showAprioriDistribution = 1
+        self.horizontalDistribution = 1
         self.cellspace = 6
+        self.attributeNameOffset = 30
+        self.attributeValueOffset = 15
         self.loadSettings()
 
         # add a settings dialog and initialize its values
@@ -58,14 +62,9 @@ class OWMosaicDisplay(OWWidget):
         
         #GUI
         #add controls to self.controlArea widget
-        """
-        self.shownCriteriaGroup = QVGroupBox(self.controlArea)
-        self.shownCriteriaGroup.setTitle("Shown criteria")
-        self.criteriaCombo = QComboBox(self.shownCriteriaGroup)
-        self.connect(self.criteriaCombo, SIGNAL('activated ( const QString & )'), self.updateData)
-        """
-        
-        self.attrSelGroup = QVGroupBox(self.controlArea)
+        self.group = QVGroupBox(self.controlArea)
+        self.group.setMinimumWidth(200)
+        self.attrSelGroup = QVGroupBox(self.group)
         self.attrSelGroup.setTitle("Shown attributes")
 
         self.attr1Group = QVButtonGroup("1st attribute", self.attrSelGroup)
@@ -84,23 +83,20 @@ class OWMosaicDisplay(OWWidget):
         self.attr4 = QComboBox(self.attr4Group)
         self.connect(self.attr4, SIGNAL('activated ( const QString & )'), self.updateData)        
 
-        self.showLinesCB = QCheckBox('Show lines', self.controlArea)
-        self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
+        checkBox(self.group, self, 'showDistribution', 'Show distribution', callback = self.updateData, tooltip = "Do you wish to see class distribution or only class purity?")
+        checkBox(self.group, self, 'showAprioriDistribution', 'Show apriori distribution', callback = self.updateData, tooltip = "Do you wish to see lines showing apriori class distribution?")
+        checkBox(self.group, self, 'horizontalDistribution', 'Show distribution horizontally', callback = self.updateData, tooltip = "Do you wish to see distribution drawn horizontally or vertically?")
 
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
 
-        #self.resize(800, 480)
+        self.resize(680, 480)
 
         #connect controls to appropriate functions
         self.activateLoadedSettings()
 
-    def activateLoadedSettings(self):
-        self.showLinesCB.setChecked(self.showLines)
-
-        
         
     ##################################################
     # initialize combo boxes with discrete attributes
@@ -159,7 +155,11 @@ class OWMosaicDisplay(OWWidget):
         self.data = None
         if data:
             self.data = orange.Preprocessor_dropMissing(data)
+            if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.colorPalette = OWGraphTools.ColorPaletteHSV(len(data.domain.classVar.values))
+            
         self.initCombos(self.data)
+        
         self.updateData()
 
 
@@ -169,14 +169,10 @@ class OWMosaicDisplay(OWWidget):
         # hide all rectangles
         for rect in self.rects: rect.hide()
         for text in self.texts: text.hide()
-        for line in self.lines: line.hide()
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
-        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
+        self.rects = []; self.texts = [];  self.tooltips = []
         
         if self.data == None : return
-
-        self.showLines = self.showLinesCB.isOn()
-        #self.kvoc = float(str(self.kvocCombo.currentText()))
 
         attrList = [str(self.attr1.currentText()), str(self.attr2.currentText())]
         if str(self.attr3.currentText()) != "(none)": attrList.append(str(self.attr3.currentText()))
@@ -195,85 +191,92 @@ class OWMosaicDisplay(OWWidget):
         # get the maximum height of rectangle        
         height = 90
         yOff = 40
-        squareSize = min(self.canvasView.size().width() - width, self.canvasView.size().height() - height)
+        squareSize = min(self.canvasView.size().width() - width - 20, self.canvasView.size().height() - height - 20)
         if squareSize < 0: return    # canvas is too small to draw rectangles
 
         self.legend = {}        # dictionary that tells us, for what attributes did we already show the legend
         for attr in attrList: self.legend[attr] = 0
+
+        # draw rectangles
         self.DrawData(self.data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 1)
+
+        # draw labels
         self.DrawText(self.data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
+
+        # draw class legend
+        self.DrawClasses(self.data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
        
         self.canvas.update()
 
+   
     ######################################################################
     ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
     def DrawText(self, data, attrList, (x0, x1), (y0, y1)):
         # save values for all attributes
-        values = []
-        for attr in attrList:
-            vals = data.domain[attr].values
-            values.append(vals)
+        values = [data.domain[attr].values for attr in attrList]
 
         width = x1-x0 - self.cellspace*len(attrList)*(len(values[0])-1)
         height = y1-y0 - self.cellspace*(len(attrList)-1)*(len(values[1])-1)
-        #print x1-x0, width, y1-y0, height
         
         #calculate position of first attribute
-        self.addText(attrList[0], x0+(x1-x0)/2, y1+30, Qt.AlignCenter, 1)
+        self.addText(attrList[0], x0+(x1-x0)/2, y1 + self.attributeNameOffset, Qt.AlignCenter, 1)
         currPos = 0        
         for val in values[0]:
             tempData = data.select({attrList[0]:val})
             perc = float(len(tempData))/float(len(data))
-            self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y1 + 15, Qt.AlignCenter, 1)
+            self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y1 + self.attributeValueOffset, Qt.AlignCenter, 0)
             currPos += perc*width + self.cellspace*len(attrList)
 
-        #calculate position of second attribute
-        self.addText(attrList[1], x0-30, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
+        #calculate position of second attribute 
+        self.addText(attrList[1], x0 - self.attributeNameOffset, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
         currPos = 0
         tempData = data.select({attrList[0]:values[0][0]})
         for val in list(values[1])[::-1]:
             tempData2 = tempData.select({attrList[1]:val})
             perc = float(len(tempData2))/float(len(tempData))
-            self.addText(str(val), x0-10, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 1)
+            self.addText(str(val), x0 - self.attributeValueOffset, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 0)
             currPos += perc*height + self.cellspace*(len(attrList)-1)
 
         if len(attrList) < 3: return
 
         #calculate position of third attribute
-        self.addText(attrList[2], x0 + width*float(len(tempData))/float(2*len(data)), y0 - 25, Qt.AlignCenter, 1)
         currPos = 0
-        tempData2 = data.select({attrList[0]:values[0][0], attrList[1]:values[1][0]})
+        i = len(values[1])-1
+        tempData2 = []
+        while i >= 0 and len(tempData2) == 0:
+            tempData2 = data.select({attrList[0]:values[0][0], attrList[1]:values[1][i]})
         width2 = width*float(len(tempData))/float(len(data)) - (len(values[2])-1)*self.cellspace*(len(attrList)-2)
-        if len(tempData2) == 0: print "Error: Division by zero"; return
+        if len(tempData2) == 0: self.warning("Unable to draw attribute labels due to empty example subsetError: Division by zero."); return
+        self.addText(attrList[2], x0 + width*float(len(tempData))/float(2*len(data)), y0 - self.attributeNameOffset, Qt.AlignCenter, 1)
         for val in values[2]:
             tempData3 = tempData2.select({attrList[2]:val})
             perc = (float(len(tempData3))/float(len(tempData2)))#*(float(len(tempData))/float(len(data)))
-            #print perc
-            self.addText(str(val), x0+currPos+width2*perc*0.5, y0 - 10, Qt.AlignCenter, 1)
+            self.addText(str(val), x0+currPos+width2*perc*0.5, y0 - self.attributeValueOffset, Qt.AlignCenter, 0)
             currPos += perc*width2 + self.cellspace*(len(attrList)-2)
 
         if len(attrList) < 4: return
 
         #calculate position of fourth attribute
-        tempData0 = data.select({attrList[0]:values[0][len(values[0])-1]})
-        tempData1 = tempData0.select({attrList[1]:values[1][0]})
-        tempData2 = tempData1.select({attrList[2]:values[2][len(values[2])-1]})
-        if len(tempData0) == 0: print "Error: Division by zero"; return
-        self.addText(attrList[3], x1 + 30, y0+ float(height*len(tempData1))/float(2*len(tempData0)), Qt.AlignLeft + Qt.AlignVCenter, 1)
         currPos = 0
+        tempData0 = data.select({attrList[0]:values[0][-1]})
+        tempData1 = tempData0.select({attrList[1]:values[1][-1]})
+        tempData2 = tempData1.select({attrList[2]:values[2][-1]})
+        if len(tempData0) == 0: self.warning("Unable to draw attribute labels due to empty example subsetError: Division by zero."); return
         height2 = height * float(len(tempData1))/float(len(tempData0)) - self.cellspace*(len(values[3])-1)
-        if len(tempData2) == 0: print "Error: Division by zero"; return
+
+        if len(tempData2) == 0: self.warning("Unable to draw attribute labels due to empty example subsetError: Division by zero."); return
+        self.addText(attrList[3], x1 + self.attributeNameOffset, y0+ height2/2, Qt.AlignLeft + Qt.AlignVCenter, 1)
         for val in list(values[3])[::-1]:
             tempData3 = tempData2.select({attrList[3]:val})
             perc = float(len(tempData3))/float(len(tempData2)) #* (float(len(tempData1))/float(len(tempData0)))
-            self.addText(str(val), x1+10, y0 + currPos + height2*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 1)
+            self.addText(str(val), x1 + self.attributeValueOffset, y0 + currPos + height2*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 0)
             currPos += perc*height2 + self.cellspace
             
     ######################################################################
     ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
-    def DrawData(self, data, attrList, (x0, x1), (y0, y1), bHorizontal):
+    def DrawData(self, data, attrList, (x0, x1), (y0, y1), bHorizontal, condition = ""):
         if len(data) == 0:
-            self.addRect(x0, x1, y0, y1)
+            self.addRect(x0, x1, y0, y1, None)
             return
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
@@ -288,13 +291,48 @@ class OWMosaicDisplay(OWWidget):
             perc = float(len(tempData))/float(len(data))
             if bHorizontal:
                 size = ceil(whole*perc);
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1)
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal)
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal, condition + "<b>" + attr + ":</b> " + val + "<br>")
             else:
                 size = ceil(whole*perc)
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size)
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal)
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal, condition + "<b>" + attr + ":</b> " + val + "<br>")
             currPos += size + edge
+
+
+     # draw the class legend below the square
+    def DrawClasses(self, data, (x0, x1), (y0, y1)):
+        # compute the x position of the center of the legend
+        if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous or not self.showDistribution: return
+
+        for name in self.names: name.hide()
+        self.names = []
+        for symbol in self.symbols: symbol.hide()
+        self.symbols = []
+        
+        x = (x0+x1)/2
+        y = y1 + self.attributeNameOffset + 20
+
+        self.names = []
+        totalWidth = 0
+        for name in data.domain.classVar.values:
+            item = QCanvasText(name, self.canvas)
+            self.names.append(item)
+            totalWidth += item.boundingRect().width()
+
+        distance = 30
+        startX = x - (totalWidth + (len(data.domain.classVar.values)-1)*distance)/2
+        xOffset = 0
+        for i in range(len(data.domain.classVar.values)):
+            symbol = QCanvasRectangle (startX + xOffset, y, 8, 8, self.canvas)
+            symbol.setBrush(QBrush(self.colorPalette[i])); symbol.setPen(QPen(self.colorPalette[i]))
+            symbol.show()
+            self.symbols.append(symbol)
+            self.names[i].move(startX + xOffset + 13, y-4)
+            self.names[i].show()
+            xOffset += distance + self.names[i].boundingRect().width()
+            
+
 
     # draws text with caption name at position x,y with alignment and style
     def addText(self, name, x, y, alignment, bold):
@@ -306,7 +344,7 @@ class OWMosaicDisplay(OWWidget):
         self.texts.append(text)
 
     # draw a rectangle, set it to back and add it to rect list                
-    def addRect(self, x0, x1, y0, y1):
+    def addRect(self, x0, x1, y0, y1, data = None, condition = ""):
         if x0==x1: x1+=1
         if y0==y1: y1+=1
         rect = QCanvasRectangle(x0, y0, x1-x0, y1-y0, self.canvas)
@@ -314,7 +352,61 @@ class OWMosaicDisplay(OWWidget):
         rect.show()
         #pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
         self.rects.append(rect)
-        return rect
+        
+        if not data: return rect
+
+        originalDist = orange.Distribution(data.domain.classVar.name, self.data)
+        dist = orange.Distribution(data.domain.classVar.name, data)
+
+        if self.showDistribution:
+            total = 0
+            for i in range(len(dist)):
+                val = dist[i]
+                if self.horizontalDistribution:
+                    v = (x1-x0)/len(data) * val
+                    r = QCanvasRectangle(x0+total, y0+1, v, y1-y0-1, self.canvas)
+                else:
+                    v = (y1-y0)/len(data) * val
+                    r = QCanvasRectangle(x0, y0+total, x1-x0, v, self.canvas)
+                r.setPen(QPen(self.colorPalette[i])); r.setBrush(QBrush(self.colorPalette[i]))
+                r.setZ(-20); r.show()
+                self.rects.append(r)
+                total += v
+
+            if self.showAprioriDistribution:
+                total = 0
+                for i in range(len(originalDist)-1):
+                    r = QCanvasLine(self.canvas)
+                    if self.horizontalDistribution:
+                        total += (x1-x0)/len(self.data) * originalDist[i]
+                        r.setPoints(x0+total, y0+1, x0+total, y1-1)
+                    else:
+                        total += (y1-y0)/len(self.data) * originalDist[i]
+                        r.setPoints(x0+1, y0+total, x1-1, y0+total)
+                    r.setZ(10); r.show()
+                    self.rects.append(r)
+        else:
+            pass
+            
+        self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist)
+
+    #################################################
+    # add tooltips
+    def addTooltip(self, x, y, w, h, condition, apriori, actual):
+        examples = sum(list(actual))
+        apriori = [val*100.0/float(sum(apriori)) for val in apriori]
+        actual = [val*100.0/float(sum(actual)) for val in actual]
+        aprioriText = ""; actualText = ""
+        for i in range(len(apriori)):
+            aprioriText += "%.2f, " %(apriori[i])
+            actualText += "%.2f, " %(actual[i])
+        aprioriText = "[ " + aprioriText[:-2] + " ]"
+        actualText = "[ " +  actualText[:-2] + " ]"
+       
+        tooltipText = condition + "<hr>Number of examples: " + str(int(examples)) + "<br>Apriori distribution: " + aprioriText + "<br>Actual distribution: " + actualText
+        tipRect = QRect(x, y, w, h)
+        QToolTip.add(self.canvasView, tipRect, tooltipText)
+        self.tooltips.append(tipRect)
 
    
      ##################################################
