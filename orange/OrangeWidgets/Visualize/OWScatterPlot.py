@@ -254,7 +254,7 @@ class OWScatterPlot(OWWidget):
 
         testIndex = 0
         for (acc, tableLen, other, [xattr, yattr], tryIndex, strList) in results:
-            if self.optimizationDlg.isOptimizationCanceled(): break
+            if self.optimizationDlg.isOptimizationCanceled(): continue
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
             
@@ -279,22 +279,11 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.clearResults()
         self.optimizationDlg.disableControls()
 
+        # sort attributes according to the heuristic
         attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
-        if len(attributeNameOrder) > 1000:
-            self.warning("Since there were too many attributes, all but best 1000 attributes were removed.")
-            attributeNameOrder = attributeNameOrder[:1000]
-
-        # sort projections using heuristics
-        projections = []
-        for i in range(len(attributeNameOrder)):
-            for j in range(i+1, len(attributeNameOrder)):
-                projections.append((attributeNameOrder[i][0] + attributeNameOrder[j][0], attributeNameOrder[i][1], attributeNameOrder[j][1]))
-        projections.sort()
-        projections.reverse()
-
-        self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
-        self.graph.getOptimalSeparation(projections, self.optimizationDlg.addResult)
+        # evaluate projections
+        self.graph.getOptimalSeparation(attributeNameOrder, self.optimizationDlg.addResult)
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()

@@ -555,10 +555,7 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # evaluate the class separation for attribute pairs in the projections list
     # ##############################################################
-    def getOptimalSeparation(self, projections, addResultFunct):
-        testIndex = 0
-        totalTestCount = len(projections)
-
+    def getOptimalSeparation(self, attributeNameOrder, addResultFunct):
         # it is better to use scaled data - in case of ordinal discrete attributes we take into account that the attribute is ordinal.
         # create a dataset with scaled data
         contVars = [orange.FloatVariable(attr.name) for attr in self.rawdata.domain.attributes]
@@ -579,27 +576,32 @@ class OWScatterPlotGraph(OWVisGraph):
         
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         startTime = time.time()
-        
-        for (val, attr1, attr2) in projections:
-            testIndex += 1
-            if self.kNNOptimization.isOptimizationCanceled():
-                secs = time.time() - startTime
-                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
-                self.scatterWidget.progressBarFinished()
-                return
-            
-            valid = self.validDataArray[self.attributeNameIndex[attr1]] + self.validDataArray[self.attributeNameIndex[attr2]] - 1
-            table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
-            table = table.select(list(valid))
-            
-            if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
-            
-            accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-            self.kNNOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
-            addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
-            
-            self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
-            del valid, table
+        count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2
+        strCount = createStringFromNumber(count)
+        testIndex = 0
+
+        for i in range(len(attributeNameOrder)):
+            for j in range(i):
+                attr1 = attributeNameOrder[j][1]; attr2 = attributeNameOrder[i][1]
+                testIndex += 1
+                if self.kNNOptimization.isOptimizationCanceled():
+                    secs = time.time() - startTime
+                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
+                    self.scatterWidget.progressBarFinished()
+                    return
+                
+                valid = self.validDataArray[self.attributeNameIndex[attr1]] + self.validDataArray[self.attributeNameIndex[attr2]] - 1
+                table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
+                table = table.select(list(valid))
+                
+                if len(table) < self.kNNOptimization.minExamples: print "Not enough examples (%d)" % (len(table)); continue
+                
+                accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                self.kNNOptimization.setStatusBarText("Evaluated %s/%s projections..." % (createStringFromNumber(testIndex), strCount))
+                addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
+                
+                self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
+                del valid, table
 
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
