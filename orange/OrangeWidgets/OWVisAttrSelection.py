@@ -155,6 +155,7 @@ def getCorrelationList(data):
         for j in range(len(mergedCorrs[i])):
             shownList.append(dataNames[mergedCorrs[i][j]])
 
+    if len(dataNames) == 1: shownList += dataNames
     return (shownList, hiddenList)
 
 

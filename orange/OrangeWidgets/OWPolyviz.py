@@ -152,8 +152,8 @@ class OWPolyviz(OWWidget):
 
 
     def testCurrentProjections(self):
-        #kList = [3,5,10,15,20,30,50,70,100,150,200]
-        kList = [10]
+        kList = [3,5,10,15,20,30,50,70,100,150,200]
+        #kList = [60]
         className = str(self.classCombo.currentText())
         results = []
         
@@ -164,7 +164,7 @@ class OWPolyviz(OWWidget):
             print "Experiment %2.d - %s" % (i, str(list))
             for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
             results.append((sumAcc/float(len(kList)), tableLen, list))
-        
+
         self.optimizationDlg.clear()
         while results != []:
             (accuracy, tableLen, list) = max(results)
@@ -174,6 +174,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.updateNewResults()
         self.optimizationDlg.save("temp.proj")
         self.optimizationDlg.interestingList.setCurrentItem(0)
+
 
     def reverseSelectedAttribute(self, item):
         text = str(item.text())

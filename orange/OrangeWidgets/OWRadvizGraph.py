@@ -6,6 +6,7 @@
 from OWVisGraph import *
 from copy import copy
 import time
+from operator import add
 
 # ####################################################################
 # get a list of all different permutations
@@ -153,14 +154,6 @@ class OWRadvizGraph(OWVisGraph):
                 x_i += anchors[0][j]*(self.scaledData[index][i] / sum_i)
                 y_i += anchors[1][j]*(self.scaledData[index][i] / sum_i)
 
-            ##########
-            """
-            # we add a tooltip for this point
-            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices)
-            r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
-            self.tips.addToolTip(r, text)
-            """
-
             if valLen == 1:
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
@@ -256,6 +249,18 @@ class OWRadvizGraph(OWVisGraph):
 
         orange.saveTabDelimited(fileName, table)
 
+
+    def getVariableValueIndices(self, data, index):
+        if data.domain[index].varType == orange.VarTypes.Continuous:
+            print "Invalid index for getVariableValueIndices"
+            return {}
+
+        values = self.getVariableValuesSorted(data, index)
+
+        dict = {}
+        for i in range(len(values)):
+            dict[values[i]] = i
+        return dict
 
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
@@ -402,6 +407,8 @@ class OWRadvizGraph(OWVisGraph):
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
             elif self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+                #curveData[int(self.rawdata[i][className])][0].append(x_i)
+                #curveData[int(self.rawdata[i][className])][1].append(y_i)
                 curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
                 curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
                 newColor = QColor()
@@ -430,6 +437,9 @@ class OWRadvizGraph(OWVisGraph):
                 else:                                 newColor.setHsv((i*360)/valLen, 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
                 self.setCurveData(key, curveData[i][0], curveData[i][1])
+                #index = classValueIndices[self.rawdata.domain.classVar.values[i]]
+                #key = self.addCurve(str(index), newColor, newColor, self.pointWidth)
+                #self.setCurveData(key, curveData[index][0], curveData[index][1])
 
         #################
         # draw the legend
@@ -648,9 +658,7 @@ class OWRadvizGraph(OWVisGraph):
         for permutation in indPermutations.values():
             permutationIndex += 1
             
-            if progressBar != None:
-                progressBar.setProgress(progressBar.progress()+1)
-           
+            if progressBar != None: progressBar.setProgress(progressBar.progress()+1)           
             tempPermValue = 0
             table = orange.ExampleTable(domain)
                      
@@ -667,44 +675,6 @@ class OWRadvizGraph(OWVisGraph):
                 example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
                 table.append(example)
 
-            """
-            classValues = list(self.rawdata.domain[className].values)
-            classValNum = len(classValues)
-            
-            exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
-            near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
-            euclidean = orange.ExamplesDistance_Euclidean()
-            euclidean.normalizers = [1,1]   # our table has attributes x,y, and class
-            for i in range(len(table)):
-                prob = [0]*classValNum
-                # we call find nearest with k=0 to return all examples sorted by their distance to i-th example
-                neighbours = near(0, table[i])
-
-                #for neighbour in neighbours:
-                for neighbour in neighbours[:kNeighbours]:
-                    dist = euclidean(table[i], neighbour)
-                    val = math.exp(-(dist*dist))
-                    index = classValues.index(neighbour.getclass().value)
-                    prob[index] += val
-
-                # we store distance to the k-th neighbour and continue computing for greater neighbours until they are at the same distance
-                # this is probably the correct way of processing when we have  many neighbours at the same distance
-                ind = kNeighbours + 1
-                kthDistance = dist
-                kthValue = val
-                while ind < len(table) and euclidean(table[i], neighbours[ind]) == kthDistance:
-                    index = classValues.index(neighbours[ind].getclass().value)
-                    prob[index] += kthValue
-                    ind += 1
-
-                # calculate sum for normalization
-                sum = 0
-                for val in prob: sum += val
-                
-                index = classValues.index(table[i].getclass().value)
-                tempPermValue += float(prob[index])/float(sum)
-            
-            """
 
             # use knn on every example and compute its accuracy
             classValues = list(self.rawdata.domain[className].values)
@@ -716,7 +686,7 @@ class OWRadvizGraph(OWVisGraph):
                 if selection[j] == 0: continue
                 out = knn(table[j], orange.GetProbabilities)
                 index = classValues.index(table[j][2].value)
-                tempPermValue += out[index]
+                tempPermValue += out[table[j].getclass()]
                 #if out[index] >= 1.0/len(classValues): tempPermValue += 1
                 experiments += 1
 
@@ -742,23 +712,18 @@ class OWRadvizGraph(OWVisGraph):
     # maxResultLen = max length of returning list
     def getOptimalSubsetSeparation(self, attrList, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
         full = []
-        
-        totalPossibilities = 0
-        for i in range(numOfAttr, 2, -1):
-            totalPossibilities += combinations(i, len(attrList))
 
+        self.totalPossibilities = 0
+        for i in range(numOfAttr, 2, -1):
+            self.totalPossibilities += combinations(i, len(attrList))
+            
         if progressBar:
-            progressBar.setTotalSteps(totalPossibilities)
+            progressBar.setTotalSteps(self.totalPossibilities)
             progressBar.setProgress(0)
                 
         for i in range(numOfAttr, 2, -1):
             full1 = self.getOptimalExactSeparation(attrList, [], className, kNeighbours, i, maxResultsLen, progressBar)
             full = full + full1
-            """
-            while len(full) > maxResultsLen:
-                el = min(full)
-                full.remove(el)
-            """
             
         return full
 

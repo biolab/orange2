@@ -56,7 +56,7 @@ class OWVisGraph(OWGraph):
         self.zoomStack = []
         self.zoomState = ()
         self.colorHueValues = [240, 0, 120, 60, 180, 300, 30, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
-        self.colorHueValues = [float(x)/36.0 for x in self.colorHueValues]
+        self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
 
 
         self.enableGridX(FALSE)

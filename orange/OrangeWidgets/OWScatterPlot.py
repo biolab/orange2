@@ -22,7 +22,7 @@ from OWVisTools import *
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "jitteringType", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "kNeighbours"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "kNeighbours", "showDistributions"]
     spreadType=["none","uniform","triangle","beta"]
     jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
@@ -46,6 +46,7 @@ class OWScatterPlot(OWWidget):
         self.jitterContinuous = 0
         self.jitterSize = 5
         self.showFilledSymbols = 1
+        self.showDistributions = 0
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
 
@@ -91,6 +92,9 @@ class OWScatterPlot(OWWidget):
         self.attrYGroup = QVButtonGroup("Y axis attribute", self.controlArea)
         self.attrY = QComboBox(self.attrYGroup)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateGraph)
+
+        self.showDistributionsCB = QCheckBox("Show distributions", self.controlArea)
+        self.connect(self.showDistributionsCB, SIGNAL("clicked()"), self.setShowDistributions)
 
         self.attrColorGroup = QVButtonGroup("Coloring attribute", self.controlArea)
         self.attrColorCB = QCheckBox('Enable coloring by', self.attrColorGroup)
@@ -170,6 +174,8 @@ class OWScatterPlot(OWWidget):
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
 
+        self.showDistributionsCB.setChecked(self.showDistributions)
+        self.graph.setShowDistributions(self.showDistributions)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
@@ -182,6 +188,11 @@ class OWScatterPlot(OWWidget):
         self.graph.setJitterContinuous(self.jitterContinuous)
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setShowFilledSymbols(self.showFilledSymbols)
+
+    def setShowDistributions(self):
+        self.showDistributions = self.showDistributionsCB.isOn()
+        self.graph.setShowDistributions(self.showDistributions)
+        self.updateGraph()
 
     def setXAxis(self, b):
         self.showXAxisTitle = b
@@ -423,7 +434,8 @@ class OWScatterPlot(OWWidget):
 
         self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn(), self.statusBar)
         self.graph.update()
-        self.repaint()
+        #self.repaint()
+        self.graph.replot()
 
     ####### CDATA ################################
     # receive new data and update all fields

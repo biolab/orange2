@@ -246,18 +246,19 @@ class OWRadviz(OWWidget):
 
 
     def testCurrentProjections(self):
-        #kList = [3,5,10,15,20,30,50,70,100,150,200]
-        kList = [10]
+        kList = [3,5,10,15,20,30,50,70,100,150,200]
+        #kList = [60]
         className = str(self.classCombo.currentText())
         results = []
 
         for i in range(self.optimizationDlg.interestingList.count()):
+        #for i in range(1):
             (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
             sumAcc = 0.0
             print "Experiment %2.d - %s" % (i, str(list))
             for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
             results.append((sumAcc/float(len(kList)), tableLen, list))
-        
+
         self.optimizationDlg.clear()
         while results != []:
             (accuracy, tableLen, list) = max(results)
@@ -296,7 +297,7 @@ class OWRadviz(OWWidget):
 
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
-            for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
+            for i in range(len(fullList)):
                 (accuracy, tableLen, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, tableLen, list)  
                 fullList.remove((accuracy, tableLen, list))
@@ -338,7 +339,7 @@ class OWRadviz(OWWidget):
             
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
-            for i in range(min(len(fullList), maxResultsLen)):
+            for i in range(len(fullList)):
                 (accuracy, itemCount, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, itemCount, list)
                 fullList.remove((accuracy, itemCount, list))

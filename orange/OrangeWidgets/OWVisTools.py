@@ -202,6 +202,7 @@ class OptimizationDialog(OWBaseWidget):
         self.optimizedListFiltered = []
         self.attrLenDict = {}        
         self.interestingList.clear()
+        self.attrLenList.clear()
 
     # we can remove projections that have a specific attribute
     def filter(self):
