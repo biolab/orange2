@@ -174,25 +174,15 @@ class SelectionCurve(QwtPlotCurve):
     # if yes, then add the intersection point and remove the outer points
     def closed(self):
         if self.dataSize() < 5: return 0
-        #print "all points"
-        #for i in range(self.dataSize()):
-        #    print "(%.2f,%.2f)" % (self.x(i), self.y(i))
         x1 = self.x(self.dataSize()-3)
         x2 = self.x(self.dataSize()-2)
         y1 = self.y(self.dataSize()-3)
         y2 = self.y(self.dataSize()-2)
         for i in range(self.dataSize()-5, -1, -1):
-            """
-            X1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i))
-            X2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i+1))
-            Y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i))
-            Y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i+1))
-            """
             X1 = self.x(i)
             X2 = self.x(i+1)
             Y1 = self.y(i)
             Y2 = self.y(i+1)
-            #print "(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f)" % (x1, y1, x2, y2, X1, Y1, X2, Y2)
             (intersect, xi, yi) = self.lineIntersection(x1, y1, x2, y2, X1, Y1, X2, Y2)
             if intersect:
                 xData = [xi]; yData = [yi]
@@ -203,21 +193,32 @@ class SelectionCurve(QwtPlotCurve):
         return 0
 
     def lineIntersection(self, x1, y1, x2, y2, X1, Y1, X2, Y2):
-        if x2-x1 != 0: m1 = (y2-y1)/(x2-x1)
-        else:          m1 = 1e+12
+        if min(x1,x2) > max(X1, X2) or max(x1,x2) < min(X1,X2): return (0, 0, 0)
+        if min(y1,y2) > max(Y1, Y2) or max(y1,y2) < min(Y1,Y2): return (0, 0, 0)
         
-        if X2-X1 != 0: m2 = (Y2-Y1)/(X2-X1)
-        else:          m2 = 1e+12;  
+        if x2-x1 != 0: k1 = (y2-y1)/(x2-x1)
+        else:          k1 = 1e+12
+        
+        if X2-X1 != 0: k2 = (Y2-Y1)/(X2-X1)
+        else:          k2 = 1e+12
 
-        b1 = -1
-        b2 = -1
-        c1 = (y1-m1*x1)
-        c2 = (Y1-m2*X1)
+        c1 = (y1-k1*x1)
+        c2 = (Y1-k2*X1)
 
-        det_inv = 1/(m1*b2 - m2*b1)
+        if k1 == 1e+12:
+            yTest = k2*x1 + c2
+            if yTest > min(y1,y2) and yTest  < max(y1,y2): return (1, x1, yTest)
+            else: return (0,0,0)
 
-        xi=((b1*c2 - b2*c1)*det_inv)
-        yi=((m2*c1 - m1*c2)*det_inv)
+        if k2 == 1e+12:
+            yTest = k1*X1 + c1
+            if yTest > min(Y1,Y2) and yTest < max(Y1,Y2): return (1, X1, yTest)
+            else: return (0,0,0)
+
+        det_inv = 1/(k2 - k1)
+
+        xi=((c1 - c2)*det_inv)
+        yi=((k2*c1 - k1*c2)*det_inv)
 
         if xi >= min(x1, x2) and xi <= max(x1,x2) and xi >= min(X1, X2) and xi <= max(X1, X2) and yi >= min(y1,y2) and yi <= max(y1, y2) and yi >= min(Y1, Y2) and yi <= max(Y1, Y2):
             return (1, xi, yi)
