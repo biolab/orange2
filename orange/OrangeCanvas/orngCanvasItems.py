@@ -293,13 +293,11 @@ class CanvasWidget(QCanvasRectangle):
     def eraseExText(self, view, exX, exY):
         view.repaintContents(QRect(exX+34-self.captionWidth/2, exY+52+2, self.captionWidth, 13 ))
 
-    def addLine(self, line, pos):
-        if self.mouseInsideLeftChannel(pos):
-            self.inLines.append(line)
-        elif self.mouseInsideRightChannel(pos):
-            self.outLines.append(line)
-        else:
-            print "unable to add line to a widget"
+    def addOutLine(self, line):
+        self.outLines.append(line)
+
+    def addInLine(self,line):
+		self.inLines.append(line)
 
     def removeLine(self, line):
         try:

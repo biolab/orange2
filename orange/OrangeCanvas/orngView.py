@@ -328,9 +328,7 @@ class SchemaView(QCanvasView):
             item = self.findFirstItemType(items, orngCanvasItems.CanvasWidget)
 
             # we must check if we have really coonected some output to input
-            if item!= None and item != self.tempWidget and  \
-            ((self.tempWidget.mouseInsideLeftChannel(self.tempLineStartPos)  and item.mouseInsideRightChannel(ev.pos())) or  \
-            (self.tempWidget.mouseInsideRightChannel(self.tempLineStartPos) and item.mouseInsideLeftChannel(ev.pos()))):
+            if item!= None and item != self.tempWidget:
                 if self.tempWidget.mouseInsideLeftChannel(self.tempLineStartPos):
                     outWidget = item
                     inWidget  = self.tempWidget
@@ -354,8 +352,13 @@ class SchemaView(QCanvasView):
                         line.show()
 
                         # we add the line to the input and output list of connected widgets                    
-                        self.tempWidget.addLine(line, self.tempLineStartPos)
-                        item.addLine(line, ev.pos())
+                        
+                        if self.tempWidget.mouseInsideLeftChannel(self.moving_start):
+                        	self.tempWidget.addInLine(line)	
+                        	item.addOutLine(line)
+                        else:
+                        	self.tempWidget.addOutLine(line)	
+                        	item.addInLine(line)
                         inWidget.updateTooltip(self)
                         outWidget.updateTooltip(self)
                         line.updateLinePos()
