@@ -16,14 +16,11 @@ FALSE = 0
 class OutputWindow(QMainWindow):
 	def __init__(self, canvasDlg, *args):
 		apply(QMainWindow.__init__,(self,) + args)
-		self.resize(700,500)
-		self.showNormal()
 		self.canvasDlg = canvasDlg
 
-		#self.textOutput = QTextBrowser(self)
 		self.textOutput = QTextView(self)
 		self.textOutput.setFont(QFont('Courier New',10, QFont.Normal))
-		self.textOutput.setHScrollBarMode(QScrollView.AlwaysOn )
+		#self.textOutput.setHScrollBarMode(QScrollView.AlwaysOn )
 		self.setCentralWidget(self.textOutput)
 		self.setCaption("Output Window")
 		self.setIcon(QPixmap(orngResources.output))
@@ -38,7 +35,10 @@ class OutputWindow(QMainWindow):
 		#sys.excepthook = self.exceptionHandler
 		#sys.stdout = self
 		#self.textOutput.setText("")
-		self.setFocusPolicy(QWidget.NoFocus)
+		#self.setFocusPolicy(QWidget.NoFocus)
+		
+		self.resize(700,500)
+		self.showNormal()
 
 	def catchException(self, catch):
 		if catch: sys.excepthook = self.exceptionHandler
@@ -85,6 +85,7 @@ class OutputWindow(QMainWindow):
 	def exceptionHandler(self, type, value, tracebackInfo):
 		if self.focusOnCatchException:
 			self.canvasDlg.menuItemShowOutputWindow()
+			#self.canvasDlg.workspace.cascade()	# tile shown windows
 			
 		t = localtime()
 		self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))

@@ -38,9 +38,6 @@ class SchemaDoc(QMainWindow):
         self.applicationpath = os.getcwd()
         self.applicationname = str(self.caption())
         self.documentnameValid = FALSE
- 
-
-    def createView(self):
         self.canvas = QCanvas(2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.setCentralWidget(self.canvasView)

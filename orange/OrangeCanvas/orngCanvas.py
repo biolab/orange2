@@ -35,7 +35,7 @@ class OrangeCanvasDlg(QMainWindow):
 		if sys.path.count(self.widgetDir) == 0:
 			sys.path.append(self.widgetDir)
 
-		self.workspace = QWorkspace(self)
+		self.workspace = WidgetWorkspace(self)
 		self.workspace.setBackgroundColor(QColor(255,255,255))
 		self.setCentralWidget(self.workspace)
 		self.statusBar = QStatusBar(self)
@@ -94,14 +94,11 @@ class OrangeCanvasDlg(QMainWindow):
 		self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
 
 		self.show()
-
+		
 		# create new schema
 		win = self.menuItemNewSchema()
-		win.showMaximized()
+		self.workspace.cascade()
 
-		
-
-	
 	def createWidgetsToolbar(self, rebuildRegistry):
 		self.widgetsToolBar.clear()
 		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
@@ -238,9 +235,7 @@ class OrangeCanvasDlg(QMainWindow):
 
 	def menuItemNewSchema(self):
 		win = orngDoc.SchemaDoc(self, self.workspace)
-		win.createView()
-		#win.show()
-		#win.setFocus()
+		self.workspace.setDefaultDocPosition(win)
 		return win
 
 	def menuItemNewFromTemplate(self):
@@ -391,12 +386,8 @@ class OrangeCanvasDlg(QMainWindow):
 			win.clear()
 
 	def menuItemShowOutputWindow(self):
-		#self.output.hide()
-		#self.menuWindow.setItemChecked(self.menupopupShowOutputWindowID, 1)
 		self.output.show()
-		#self.output.setActiveWindow()
 		self.output.setFocus()
-		#self.output.clearFocus()
 
 	def menuItemShowToolbar(self):
 		self.showToolbar = not self.showToolbar
@@ -573,6 +564,49 @@ class OrangeCanvasDlg(QMainWindow):
 		self.toolSave.setEnabled(enable)
 		self.menuFile.setItemEnabled(self.menuSaveID, enable)
 		self.menuFile.setItemEnabled(self.menuSaveAsID, enable)
+
+class WidgetWorkspace(QWorkspace):
+	def __init__(self,*args):
+		apply(QWorkspace.__init__,(self,) + args)
+		self.off = 30
+
+	# ###########
+	# override the default cascade function
+	def cascade(self):
+		list = self.windowList()
+		outputWin = None
+		for item in list:
+			if isinstance(item, orngOutput.OutputWindow):
+				outputWin = item
+		if outputWin:
+			list.remove(outputWin)
+
+		# move schemas
+		pos = 0
+		for item in list:
+			item.parentWidget().move(pos,pos)
+			item.parentWidget().resize(self.width()-pos, self.height()-pos)
+			pos += self.off
+
+		# move output win
+		if outputWin:
+			outputWin.parentWidget().move(pos,pos)
+			outputWin.parentWidget().resize(self.width()-pos, self.height()-pos)
+
+	# #################
+	# position new window down and right to the last window. move output window down and right to the new window
+	def setDefaultDocPosition(self, win):
+		k = len(self.windowList())-2
+		win.parentWidget().move(k*self.off,k*self.off)
+		win.parentWidget().resize(self.width()-k*self.off, self.height()-k*self.off)
+
+		list = self.windowList()
+		for item in list:
+			if isinstance(item, orngOutput.OutputWindow):
+				item.parentWidget().move((k+1)*self.off,(k+1)*self.off)
+				item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
+
+
 
 app = QApplication(sys.argv) 
 dlg = OrangeCanvasDlg()
