@@ -15,7 +15,6 @@ class OrangeCanvasDlg(QMainWindow):
         apply(QMainWindow.__init__,(self,) + args)
         self.ctrlPressed = 0    # we have to save keystate, so that orngView can access information about keystate
         self.debugMode = 1        # print extra output for debuging
-        self.resize(700,700)
         self.setCaption("Qt Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
 
@@ -89,17 +88,19 @@ class OrangeCanvasDlg(QMainWindow):
         # read recent files
         self.recentDocs = []
         self.readRecentFiles()
+
+        width  = 700
+        height = 700
+        if self.settings.has_key("canvasWidth"): width = self.settings["canvasWidth"]
+        if self.settings.has_key("canvasHeight"): height = self.settings["canvasHeight"]
+        self.resize(width, height)
         
         # center window in the desktop
         deskH = app.desktop().height()
         deskW = app.desktop().width()
-        h = deskH/2 - self.height()/2
-        w = deskW/2 - self.width()/2
-        if h<0 or w<0:    # if the window is too small, resize the window to desktop size
-            self.resize(app.desktop().height(), app.desktop().width())
-            self.move(0,0)
-        else:            
-            self.move(w,h)
+        h = max(0, deskH/2 - height/2)  # if the window is too small, resize the window to desktop size
+        w = max(0, deskW/2 - width/2)
+        self.move(w,h)
         
         # apply output settings
         self.output = orngOutput.OutputWindow(self, self.workspace, "", Qt.WDestructiveClose)
@@ -552,6 +553,13 @@ class OrangeCanvasDlg(QMainWindow):
         dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
         dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
 
+        width  = 700
+        height = 700
+        if self.settings.has_key("canvasWidth"): width = self.settings["canvasWidth"]
+        if self.settings.has_key("canvasHeight"): height = self.settings["canvasHeight"]
+        dlg.heightEdit.setText(str(height))
+        dlg.widthEdit.setText(str(width))
+
         # fill categories tab list
         oldTabList = []
         for tab in self.tabs.tabs:
@@ -560,6 +568,13 @@ class OrangeCanvasDlg(QMainWindow):
 
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
+            try:
+                h = int(str(dlg.heightEdit.text())); w = int(str(dlg.widthEdit.text()))
+            except:
+                QMessageBox.critical( None, "Orange Canvas", "Incorrect value type in 'Orange Canvas size' edit boxes. Values must be integers.", QMessageBox.Ok)
+                return
+
+            
             # save general settings
             if self.snapToGrid != dlg.snapToGridCB.isChecked():
                 self.snapToGrid = dlg.snapToGridCB.isChecked()
@@ -579,8 +594,10 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
             self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
             self.settings["writeLogFile"] = dlg.writeLogFileCB.isChecked()
-            self.output.catchException(self.settings["catchException"])
-            self.output.catchOutput(self.settings["catchOutput"])
+            self.settings["canvasHeight"] = int(str(dlg.heightEdit.text()))
+            self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
+            #self.output.catchException(self.settings["catchException"])
+            #self.output.catchOutput(self.settings["catchOutput"])
             self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
             self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
             self.output.setFocusOnException(self.settings["focusOnCatchException"])

@@ -436,6 +436,17 @@ class CanvasOptionsDlg(QDialog):
         self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", GeneralTab)
 
+        canvasSizeBox = QVGroupBox(GeneralTab)
+        canvasSizeBox.setTitle("Orange Canvas size")
+        widthBox = QHBox(canvasSizeBox)
+        widthLabel = QLabel("Width: ", widthBox)
+        self.widthEdit = QLineEdit(widthBox)
+
+        heightBox = QHBox(canvasSizeBox)
+        heightLabel = QLabel("Height: ", heightBox)
+        self.heightEdit = QLineEdit(heightBox)
+
+
         # exception tab options
         exceptions = QVGroupBox("Exceptions", ExceptionsTab)
         #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
