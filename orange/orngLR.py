@@ -46,13 +46,13 @@ def createNoDiscDomain(domain, data):
         if at.varType == orange.VarTypes.Discrete:
             # get major attribute value
             mod = orange.Distribution(at, data).modus()
-            print mod, orange.Distribution(at, data), at.values
             for ival in range(len(at.values)):
                 # continue at first value 
                 if at.values[ival] == mod:
                     continue
                 # create attribute
                 newVar = orange.FloatVariable(at.name+"="+at.values[ival])
+                newVar.setattr("originValue", at.values[ival])
                 
                 # create classifier
                 vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
@@ -66,7 +66,8 @@ def createNoDiscDomain(domain, data):
         else:
             # add original attribute
             attributes.append(at)
-    attributes.append(domain.classVar)
+    if domain.classVar:
+        attributes.append(domain.classVar)
     retDomain = orange.Domain(attributes)
     for k in domain.getmetas().keys():
         retDomain.addmeta(orange.newmetaid(), domain.getmetas()[k])
@@ -94,13 +95,13 @@ def createFullNoDiscDomain(domain):
         else:
             # add original attribute
             attributes.append(at)
-    attributes.append(domain.classVar)
+    if domain.classVar:
+        attributes.append(domain.classVar)
     return orange.Domain(attributes)
                 
 # returns data set without discrete values. 
 def createNoDiscTable(olddata):
     newdomain = createNoDiscDomain(olddata.domain, olddata)
-    #print newdomain
     return olddata.select(newdomain)
 
 def createFullNoDiscTable(olddata):
@@ -129,16 +130,16 @@ class LogRegLearnerClass:
         self.fitter = None
 
     def __call__(self, examples, weight=0):
-        imputer = getattr(self, "imputer", None) or orange.ImputerConstructor_average()
-
+        imputer = getattr(self, "imputer", None) or None
         if getattr(self, "removeMissing", 0):
             examples = orange.Preprocessor_dropMissing(examples)
         if hasDiscreteValues(examples.domain):
             examples = createNoDiscTable(examples)
-        if getattr(self, "stepwise", 0):
+        if getattr(self, "stepwiseLR", 0):
             addCrit = getattr(self, "addcrit", 0.2)
             removeCrit = getattr(self, "removeCrit", 0.3)
-            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer)
+            numAttr = getattr(self, "numAttr", -1)
+            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer, numAttr = numAttr)
             examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
 
         learner = orange.LogRegLearner()
@@ -146,7 +147,7 @@ class LogRegLearnerClass:
 
         if self.fitter:
             learner.fitter = self.fitter
-            
+
         if self.removeSingular:
             lr = learner.fitModel(examples, weight)
         else:
@@ -158,236 +159,7 @@ class LogRegLearnerClass:
             lr = learner.fitModel(examples, weight)
         return lr
 
-def LogRegStepwiseLearner(examples = None, weightID=0, **kwds):
-    lr = LogRegStepwiseLearnerClass(**kwds)
-    if examples:
-        return lr(examples, weightID)
-    else:
-        return lr
 
-class LogRegStepwiseLearnerClass:
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
-    def __call__(self, examples, weight=0):
-        nexamples = orange.Preprocessor_dropMissing(examples)
-        if hasDiscreteValues(examples.domain):
-            nexamples = createNoDiscTable(nexamples)
-        else:
-            nexamples = nexamples
-
-        learner = orange.LogRegLearner()
-        
-        nexamples = StepWiseFSS_Filter(nexamples)
-        return learner(nexamples, weight)
-        
-
-def LogReg_PCALearner(examples=None, weightID=0, **kwds):
-    learner = apply(LogReg_PCALearner_Class, (), kwds)
-    if examples:
-        return learner(examples, weightID)
-    else:
-        return learner
-    
-
-class LogReg_PCALearner_Class:
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
-
-    def __call__(self, examples, weight=0):
-        import orng2Array, orngDimRed
-        
-        
-        # transfor ExampleTable to NoDiscreteValue ExampleTable
-        noDiscExamples = createNoDiscTable(orange.Preprocessor_dropMissing(examples))
-        attr = noDiscExamples.domain.attributes
-
-        # Transform to arrayTable
-#        translate = orng2Array.DomainTranslation()
-#        translate.analyse(noDiscExamples)
-#        translate.prepareLR()
-#        mdata = translate.transform(noDiscExamples)
-        mdata = []
-        X = []
-        X1 = []
-        for d in noDiscExamples:
-            newv = [0.0]*len(attr)
-            for i in range(len(attr)):
-                newv[i] = d[attr[i]].value
-            #if d[noDiscExamples.domain.classVar] == noDiscExamples.domain.classVar.values[0]:
-            X.append(newv)
-            #else:
-            #    X1.append(newv)
-        X = Numeric.array(X,Numeric.Float)            
-#        X1 = Numeric.array(X1,Numeric.Float)
-        print shape(X)#, shape(X1)
-
-        # Perform PCA
-        pca = orngDimRed.PCA(X,len(attr))
-        #pca1 = orngDimRed.PCA(X1,len(attr))
-        print pca.variance, pca.factors
-       # print pca1.variance, pca1.factors
-        
-
-        listAtt = [orange.FloatVariable("pca"+str(i)) for i in range(len(attr))]
-
-        # Create NEW Domain (get Value From ...)
-        newDomain = orange.Domain(listAtt + [noDiscExamples.domain.classVar])
-        # Create New ExampleTable with abovementioned domain
-        finalExample = orange.ExampleTable(newDomain)
-        for di in range(len(pca.loading)):
-            values = [pca.loading[di][v] for v in range(len(pca.loading[di]))]
-            finalExample.append(orange.Example(newDomain, values+[noDiscExamples[di][noDiscExamples.domain.classVar].value]))
-
-        #finalExample = StepWiseFSS_Filter(finalExample)
-#        print finalExample.domain
-        # perform logistic regression
-
-#        orange.saveTabDelimited("d:\\data\\ionosphere_svd.tab", finalExample)
-        lr = LogRegLearner(finalExample)
-        lr.domain = noDiscExamples.domain
-
-        b = []
-        for bti in range(len(pca.variance)):
-            sum = 0
-            for vi in range(len(pca.variance)):
-                sum = sum + lr.beta[vi+1]*(pca.variance[vi]*pca.variance[vi])/(pca.variance[vi]*pca.variance[vi]+1)*pca.factors[vi][bti]/pca.variance[vi]
-            b.append(sum)
-        print lr.beta
-        lr.beta = [lr.beta[0]]+b
-        print lr.beta
-        
-
-        # Translate betas in logistic regressio
-        # change domain in logistic regression
-
-        # other lr fixing resulting from domain conversion ...        
-                
-  #      return LogReg_PCAClassifier(model = lr, domain = newDomain, nodiscdomain = noDiscExamples.domain, pca=pca)
-        return lr 
-
-class LogReg_PCAClassifier:
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
-
-    def __call__(self, example, resultType = orange.GetValue):
-        #print example, self.nodiscdomain, len(example)
-        nexample = orange.Example(self.nodiscdomain, example)
-        v = [0.0]*(len(self.nodiscdomain.attributes))
-        for i in range(len(self.nodiscdomain.attributes)):
-            v[i] = nexample[self.nodiscdomain.attributes[i]].value
-        print v
-        x=Numeric.dot(v,Numeric.transpose(self.pca.factors))/self.pca.variance
-        x = [v for v in x]
-        # create Example
-        fexample = orange.Example(self.domain, x+["?"])
-        return self.model(fexample, resultType)        
-
-
-def Bayes_PCALearner(examples=None, weightID=0, **kwds):
-    learner = apply(Bayes_PCALearner_Class, (), kwds)
-    if examples:
-        return learner(examples, weightID)
-    else:
-        return learner
-    
-class Bayes_PCALearner_Class:
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
-
-    def __call__(self, examples, weight=0):
-        import orng2Array, orngDimRed
-        
-        print "grem not!"
-        # transfor ExampleTable to NoDiscreteValue ExampleTable
-        noDiscExamples = createNoDiscTable(orange.Preprocessor_dropMissing(examples))
-        attr = noDiscExamples.domain.attributes
-
-        # Transform to arrayTable
-#        translate = orng2Array.DomainTranslation()
-#        translate.analyse(noDiscExamples)
-#        translate.prepareLR()
-#        mdata = translate.transform(noDiscExamples)
-        mdata = []
-        X = []
-        X1 = []
-
-        modus = orange.Distribution(noDiscExamples.domain.classVar, noDiscExamples).modus()
-        nomodus = noDiscExamples.domain.classVar.values[0]
-        if nomodus == modus:
-            nomodus = noDiscExamples.domain.classVar.values[1]
-        for d in noDiscExamples:
-            newv = [0.0]*len(attr)
-            for i in range(len(attr)):
-                newv[i] = d[attr[i]].value
-            if d[noDiscExamples.domain.classVar] == modus:
-                X.append(newv)
-            else:
-                X1.append(newv)
-        X = Numeric.array(X,Numeric.Float)            
-        X1 = Numeric.array(X1,Numeric.Float)
-#        print shape(X)#, shape(X1)
-
-        # Perform PCA
-        pca = orngDimRed.PCA(X,len(attr))
-        #pca1 = orngDimRed.PCA(X1a ,len(attr))
-#        print pca.variance, pca.factors
-       # print pca1.variance, pca1.factors
-        X1pca = Numeric.dot(X1,Numeric.transpose(pca.factors))/pca.variance
-        print shape(X1)
-        print shape(X1pca)
-
-        listAtt = [orange.FloatVariable("pca"+str(i)) for i in range(len(attr))]
-
-        # Create NEW Domain (get Value From ...)
-        newDomain = orange.Domain(listAtt + [noDiscExamples.domain.classVar])
-        # Create New ExampleTable with abovementioned domain
-        
-        finalExample = orange.ExampleTable(newDomain)
-        for di in range(len(pca.loading)):
-            values = [pca.loading[di][v] for v in range(len(pca.loading[di]))]
-            finalExample.append(orange.Example(newDomain, values+[modus]))
-        st = len(finalExample)
-        for di in range(len(X1pca)):
-            values = [X1pca[di][v] for v in range(len(X1pca[di]))]
-            finalExample.append(orange.Example(newDomain, values+[nomodus]))
-
-        #finalExample = StepWiseFSS_Filter(finalExample)
-#        print finalExample.domain
-        # perform logistic regression
-
-#        orange.saveTabDelimited("d:\\data\\ionosphere_svd.tab", finalExample)
-        nb = orange.BayesLearner(finalExample)
-        
-
-        # Translate betas in logistic regressio
-        # change domain in logistic regression
-
-        # other lr fixing resulting from domain conversion ...        
-                
-        return Bayes_PCAClassifier(model = nb, domain = newDomain, nodiscdomain = noDiscExamples.domain, pca=pca)
- #       return lr 
-
-class Bayes_PCAClassifier:
-    def __init__(self, **kwds):
-        self.__dict__ = kwds
-
-    def __call__(self, example, resultType = orange.GetValue):
-        #print example, self.nodiscdomain, len(example)
-        nexample = orange.Example(self.nodiscdomain, example)
-        v = [0.0]*(len(self.nodiscdomain.attributes))
-        for i in range(len(self.nodiscdomain.attributes)):
-            if nexample[self.nodiscdomain.attributes[i]].isSpecial():
-                v[i] = 0
-            else:
-                v[i] = nexample[self.nodiscdomain.attributes[i]].value
-        print v
-        x=Numeric.dot(v,Numeric.transpose(self.pca.factors))/self.pca.variance
-        x = [v for v in x]
-        # create Example
-        fexample = orange.Example(self.domain, x+["?"])
-        return self.model(fexample, resultType)        
-        
-   
 
 def Univariate_LogRegLearner(examples=None, **kwds):
     learner = apply(Univariate_LogRegLearner_Class, (), kwds)
@@ -509,7 +281,6 @@ class LogRegLearnerClass_getPriors:
         extended_examples = createLogRegExampleTable(examples)
         extended_model = LogRegLearner(extended_examples, extended_examples.domain.getmeta("weight"))
 
-        print "domains", orig_model.domain, extended_model.domain
         # izracunas odstopanja
         # get sum of all betas
         beta = 0
@@ -533,7 +304,6 @@ class LogRegLearnerClass_getPriors:
         betas_ap = [k*x for x in betas_ap]                
 
         # vrni originalni model in pripadajoce apriorne niclele
-        print "returnam ZDEJ!", orig_model, betas_ap
         return (orig_model, betas_ap)
 
 
@@ -576,7 +346,6 @@ class simpleFitter(orange.LogRegFitter):
         N = len(data)
         likelihood = 0
         for i in range(10):
-            print i
             p = array([Pr(X[i], betas) for i in range(len(data))])
 
             W = identity(len(data), Float)
@@ -591,7 +360,6 @@ class simpleFitter(orange.LogRegFitter):
             tmpB = matrixmultiply(transpose(X), matrixmultiply(W, z))
             betas = matrixmultiply(tmpA, tmpB)
             likelihood_new = lh(X,y,betas)
-            print likelihood, likelihood_new
             #if abs(likelihood_new-likelihood)<0.001:
              #   break
 
@@ -638,7 +406,7 @@ def StepWiseFSS(examples = None, **kwds):
 
 def getLikelihood(fitter, examples):
     res = fitter(examples)
-    if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
+    if res[0] in [fitter.OK]: #, fitter.Infinity, fitter.Divergence]:
        status, beta, beta_se, likelihood = res
        return likelihood
     else:
@@ -665,11 +433,12 @@ class StepWiseFSS_class:
     tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
 
     ll_Old = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
-    length_Old = len(tempData)
+    length_Old = float(len(tempData))
 
     stop = 0
     while not stop:
         # LOOP until all variables are added or no further deletion nor addition of attribute is possible
+        worstAt = None
         
         # if there are more than 1 attribute then perform backward elimination
         if len(attr) >= 2:
@@ -685,20 +454,20 @@ class StepWiseFSS_class:
                 # domain, calculate P for LL improvement.
                 tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 ll_Delete = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
-                length_Delete = len(tempData)
+                length_Delete = float(len(tempData))
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
                 length_Avg = (length_Delete + length_Old)/2.0
 
                 G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old)
 
-                # set new best attribute                
+                # set new worst attribute                
                 if G<minG:
                     worstAt = at
                     minG=G
                     ll_Best = ll_Delete
                     length_Best = length_Delete
             # deletion of attribute
-
+            
             if worstAt.varType==orange.VarTypes.Continuous:
                 P=lchisqprob(minG,1);
             else:
@@ -730,7 +499,7 @@ class StepWiseFSS_class:
             tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
             ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
 
-            length_New = len(tempData) # get number of examples in tempData to normalize likelihood
+            length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
 
             # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
 
@@ -753,13 +522,12 @@ class StepWiseFSS_class:
             ll_Old = ll_Best
             length_Old = length_Best
 
-        if P>self.addCrit and nodeletion:
+        if (P>self.addCrit and nodeletion) or (bestAt == worstAt):
             stop = 1
 
     #print "Likelihood is:"
     #print ll_Old
     #return examples.select(orange.Domain(attr,examples.domain.classVar))
-    print "best likeLihood", ll_Best
     return attr
 
 
