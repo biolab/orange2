@@ -9,10 +9,10 @@
 from OWWidget import *
 import OWGUI
 
-class OWMajorityLearner(OWWidget):
+class OWMajority(OWWidget):
     settingsList = ["name"]
 
-    def __init__(self, parent=None, name='MajorityLearner'):
+    def __init__(self, parent=None, name='Majority'):
         OWWidget.__init__(self, parent, name, "Constructs a learner that always predicts the majority class", icon="Majority.png")
         
         self.callbackDeposit = []
@@ -20,7 +20,7 @@ class OWMajorityLearner(OWWidget):
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
-        self.name = 'Majority Learner'
+        self.name = 'Majority'
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
@@ -51,7 +51,7 @@ class OWMajorityLearner(OWWidget):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWMajorityLearner()
+    ow=OWMajority()
     a.setMainWidget(ow)
 
 ##    dataset = orange.ExampleTable('adult_sample')
