@@ -55,7 +55,7 @@ class SchemaDoc(QMainWindow):
             return
 
         #QMainWindow.closeEvent(self, ce)
-        res = QMessageBox.information(self,'Qrange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
+        res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
         if res == 0:
             self.saveDocument()
             ce.accept()
@@ -373,9 +373,12 @@ class SchemaDoc(QMainWindow):
         schema = doc.createElement("schema")
         widgets = doc.createElement("widgets")
         lines = doc.createElement("channels")
+        settings = doc.createElement("settings")
         doc.appendChild(schema)
         schema.appendChild(widgets)
         schema.appendChild(lines)
+        schema.appendChild(settings)
+        settingsDict = {}
 
         #save widgets
         for widget in self.widgets:
@@ -384,6 +387,7 @@ class SchemaDoc(QMainWindow):
             temp.setAttribute("yPos", str(int(widget.y())) )
             temp.setAttribute("caption", widget.caption)
             temp.setAttribute("widgetName", widget.widget.getFileName())
+            settingsDict[widget.caption] = widget.instance.saveSettingsStr()
             widgets.appendChild(temp)
 
         #save connections
@@ -395,6 +399,8 @@ class SchemaDoc(QMainWindow):
             temp.setAttribute("signals", str(line.getSignals()))
             lines.appendChild(temp)
 
+        settings.setAttribute("settingsDictionary", str(settingsDict))
+
         xmlText = doc.toprettyxml()
         file = open(os.path.join(self.documentpath, self.documentname), "wt")
         file.write(xmlText)
@@ -402,7 +408,7 @@ class SchemaDoc(QMainWindow):
         file.close()
         doc.unlink()
 
-        self.saveWidgetSettings(os.path.join(self.documentpath, os.path.splitext(self.documentname)[0]) + ".sav")
+        #self.saveWidgetSettings(os.path.join(self.documentpath, os.path.splitext(self.documentname)[0]) + ".sav")
         self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))        
 
     def saveWidgetSettings(self, filename):
@@ -420,7 +426,7 @@ class SchemaDoc(QMainWindow):
     def loadDocument(self, filename):
         if not os.path.exists(filename):
             self.close()
-            QMessageBox.critical(self,'Qrange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.critical(self,'Orange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
         # ##################
@@ -429,28 +435,33 @@ class SchemaDoc(QMainWindow):
         schema = doc.firstChild
         widgets = schema.getElementsByTagName("widgets")[0]
         lines = schema.getElementsByTagName("channels")[0]
+        settings = schema.getElementsByTagName("settings")
 
-        # #################
-        # open settings
         (self.documentpath, self.documentname) = os.path.split(filename)
         (self.applicationpath, self.applicationname) = os.path.split(filename)
         self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
-        settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
 
+        # #################
+        # open settings
         settingsList = []
-        if os.path.exists(settingsFile):
-            file = open(settingsFile, "rt")
-            settingsList = cPickle.load(file)
-            file.close()
+        if len(settings) == 0:  # if settings are not in .ows file
+            settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
+            if os.path.exists(settingsFile):
+                file = open(settingsFile, "rt")
+                settingsList = cPickle.load(file)
+                file.close()
+        else:
+            settingsList = eval(str(settings[0].getAttribute("settingsDictionary")))
+            
 
         # ##################
-        #read widgets
+        # read widgets
         widgetList = widgets.getElementsByTagName("widget")
         for widget in widgetList:
             name = widget.getAttribute("widgetName")
             tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"))
             if not tempWidget:
-                QMessageBox.information(self,'Qrange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+                QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
             else:
                 if tempWidget.caption in settingsList:
                     tempWidget.instance.loadSettingsStr(settingsList[tempWidget.caption])
