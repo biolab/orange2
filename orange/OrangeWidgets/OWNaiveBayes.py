@@ -3,7 +3,7 @@
 <description>NaiveBayes widget can either construct a Naive Bayesian learner, or 
 (if given a data set) a Naive Bayesian classifier.</description>
 <category>Classification</category>
-<icon>icons\NaiveBayes.png</icon>
+<icon>icons/NaiveBayes.png</icon>
 """
 #
 # OWDataTable.py

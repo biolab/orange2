@@ -10,7 +10,7 @@ class OWAbout(QTabDialog):
     def __init__(self, parent=None, name=None):
         QTabDialog.__init__(self,parent,name)
         self.setCaption("About Orange Widgets")
-        self.icon=QPixmap(sys.prefix + "\\lib\\site-packages\\orange\\orngWidgets\\pics\\OrangeWidgetsIcon.png")
+        self.icon=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeWidgetsIcon.png")
         self.setIcon(self.icon)
         self.setIconText("Orange Widgets")
 
@@ -37,8 +37,8 @@ Principal authors: Janez Demsar and Blaz Zupan"""
 
         tab1=QVBox(self)
         tab2=QVBox(self)
-        pixmap1=QPixmap(sys.prefix + "\\lib\\site-packages\\orange\\orngWidgets\\pics\\OrangeWidgetsLogo.png")
-        pixmap2=QPixmap(sys.prefix + "\\lib\\site-packages\\orange\\orngWidgets\\pics\\OrangeLogo.png")
+        pixmap1=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeWidgetsLogo.png")
+        pixmap2=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeLogo.png")
         l11=QLabel(orangewidgets,tab1)
         l12=QLabel(tab1)
         l12.setPixmap(pixmap1)

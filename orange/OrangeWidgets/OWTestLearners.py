@@ -5,7 +5,7 @@ evaluate already build classifiers. For testing learners, it implements differen
 It reports on variety of statistics, including accuracy, sensitivity, specificity, information score,
 AUC (area under ROC curve), and Brier score.</description>
 <category>Data</category>
-<icon>icons\TestLearners.png</icon>
+<icon>icons/TestLearners.png</icon>
 """
 #
 # OWTestLearners.py

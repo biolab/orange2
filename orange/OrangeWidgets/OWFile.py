@@ -2,7 +2,7 @@
 <name>File</name>
 <description>The File Widget is used for selecting and opening data files.</description>
 <category>Input</category>
-<icon>icons\File.png</icon>
+<icon>icons/File.png</icon>
 """
 
 #
@@ -29,6 +29,7 @@ class OWFile(OWWidget):
         
         #add the outputs
         self.addOutput("data")
+        self.addOutput("cdata")
                
         #GUI
         vb=QGridLayout(self.mainArea,3)
@@ -95,8 +96,11 @@ class OWFile(OWWidget):
             data=OrangeData(tab)
             data.title = fn
             self.send("data",data)
+            if data.table.domain.classVar:
+                    self.send("cdata", data)
         else:
             self.send("data",None)
+            self.send("cdata", None)
 
     def addFileToList(self,fn):
         """

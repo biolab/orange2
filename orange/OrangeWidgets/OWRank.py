@@ -3,7 +3,7 @@
 <description>Rank is an Orange Widget that shows ranking of attributes 
 by their relevance for particular classification.</description>
 <category>Data</category>
-<icon>icons\Rank.png</icon>
+<icon>icons/Rank.png</icon>
 """
 #
 # OWRank.py

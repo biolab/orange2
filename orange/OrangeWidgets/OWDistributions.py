@@ -3,7 +3,7 @@
 <description>The Distribution Widget shows data distributions, distribution of attribute values and
 distribution of classes for each attribute.</description>
 <category>Data</category>
-<icon>icons\Distribution.png</icon>
+<icon>icons/Distribution.png</icon>
 """
 
 #

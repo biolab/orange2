@@ -4,7 +4,7 @@
 learning object. This way, using a powerful combination of Python and Orange, one can define sophisticated
 learners and used them in other Orange Widgets.</description>
 <category>Classification</category>
-<icon>icons\Learner.png</icon>
+<icon>icons/Learner.png</icon>
 """
 
 from OData import *

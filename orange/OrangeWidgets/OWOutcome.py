@@ -3,7 +3,7 @@
 <description>Enables selecting the target outcome from all the possible outcomes in the data.
 It also provides some basic data statistics.</description>
 <category>Input</category>
-<icon>icons\Outcome.png</icon>
+<icon>icons/Outcome.png</icon>
 """
 #
 # OWOutcome.py
@@ -65,9 +65,6 @@ It also provides some basic data statistics.""",
 
         self.resize(100,100)
 
-    def setOutcome(self, outcomeStr):
-        self.paintStatistics(outcomeStr)
-        self.paintTargets(outcomeStr)
 
     def data(self,oData):
         """
@@ -87,17 +84,20 @@ It also provides some basic data statistics.""",
         for i in outcomes:
             self.outcome.insertItem(i)
         self.outcome.setCurrentItem(len(outcomes)-1)
-        self.paintStatistics(self.oData.getPotentialOutcomes()[-1])
-        self.paintTargets(self.oData.getOutcomeName())
+        self.setOutcome(outcomes[-1])
     
-    def paintTargets(self,variable):
-        #set targets
+    def setOutcome(self,variable):
         variable=str(variable) #if variable was QString
         self.tar.clear()       
         targets=self.oData.getVarValues(variable)
         for target in targets:
             self.tar.insertItem(target)
 
+        self.paintStatistics(variable)
+        
+        self.send("cdata",self.oData)
+        self.send("target", 0)   # cross fingers, this part should be written clearly
+        
     def setTargets(self, value):
         self.send("target", self.oData.data.domain.classVar.values.index(str(value)))
 #        print 'send target'
@@ -122,9 +122,6 @@ It also provides some basic data statistics.""",
           s += '\n'+(ss+'outcomes with label '+outcomes[i])
 
         self.stats.setText(s)
-        self.repaint()
-        self.send("cdata",self.oData)
-        self.send("target", 0)   # cross fingers, this part should be written clearly
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)

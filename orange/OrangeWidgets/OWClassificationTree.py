@@ -3,7 +3,7 @@
 <description>Classification Tree widget can construct a classification tree learner or (if given
 a data set) a classification tree classifier.</description>
 <category>Classification</category>
-<icon>icons\ClassificationTree.png</icon>
+<icon>icons/ClassificationTree.png</icon>
 """
 
 from OData import *
@@ -64,7 +64,6 @@ preprocessors to filter/change the data.
         # GUI
         # name
 
-        self.resize(400,550)
         self.nameBox = QVGroupBox(self.controlArea)
         self.nameBox.setTitle('Learner/Classifier Name')
         QToolTip.add(self.nameBox,"Name to be used by other widgets to identify your learner/classifier.")
@@ -118,6 +117,8 @@ preprocessors to filter/change the data.
         # apply button
         self.applyBtn = QPushButton("&Apply", self.controlArea)
         self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)
+
+        self.resize(100,550)
 
     # main part:         
 

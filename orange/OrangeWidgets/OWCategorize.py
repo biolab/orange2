@@ -7,7 +7,7 @@ this widget can use are: entropy-based discretization (finds most approapriate
 cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency intervals
 (intervals contain about the same number of instances), and equal-width intervals.</description>
 <category>Misc</category>
-<icon>icons\Categorize.png</icon>
+<icon>icons/Categorize.png</icon>
 """
 #
 # OWDataTable.py

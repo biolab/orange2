@@ -2,7 +2,7 @@
 <name>2D Interactions</name>
 <description>Shows interactions of two attributes (works for discrete and numerical attributes)</description>
 <category>Visualization</category>
-<icon>icons\2DInteractions.png</icon>
+<icon>icons/2DInteractions.png</icon>
 """
 # OW2DInteractions.py
 #
@@ -205,7 +205,8 @@ shows interactions of two attributes
             self.repaint()
             return
 
-        self.setMainGraphTitle(data.title)
+        if hasattr(data, "title"):
+        	self.setMainGraphTitle(data.title)
         self.setComboBoxes(self.data.getVarNames())
         self.setOutcomeNames(self.data.getVarValues(self.data.getOutcomeName()))
         self.setXAxis(self.data.getVarNames()[0])

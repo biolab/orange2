@@ -2,7 +2,7 @@
 <name>Classification Tree Viewer</name>
 <description>ClassificationTreeViewer displays a classification tree in a hierarchical list view.</description>
 <category>Visualization</category>
-<icon>icons\ClassificationTreeViewer.png</icon>
+<icon>icons/ClassificationTreeViewer.png</icon>
 """
 
 from OData import *
@@ -52,6 +52,9 @@ tree in a hierarchical list view.
 
         self.addInput("ctree")
         self.addInput("target")
+
+        self.addOutput("data")
+        self.addOutput("cdata")
 
         # Settings
         for s in self.settingsList[:5]:
@@ -216,6 +219,10 @@ tree in a hierarchical list view.
 
     # signal processing
     def viewSelectionChanged(self, item):
+        data = OrangeData(self.nodeClassDict[item].examples)
+        self.send("data",data)
+        self.send("cdata", data)
+
         tx = ""
         f = 1
         nodeclsfr = self.nodeClassDict[item].nodeClassifier

@@ -1,7 +1,7 @@
 # <name>2D Misclassified</name>
 # <description>2D visualization of correct and incorrect classifications)</description>
 # <category>Visualization</category>
-# <icon>icons\2DMisclassified.png</icon>
+# <icon>icons/2DMisclassified.png</icon>
 #
 # OW2DMisClassified.py
 #

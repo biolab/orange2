@@ -12,8 +12,8 @@ class OWAboutX(OWAbout):
     self,
     title="&X",
     description="X is an Orange Widget that does nothing.",
-    icon="pics\OrangeWidgetsIcon.png",
-    logo="pics\OrangeWidgetsLogo.png"
+    icon="icons/OrangeWidgetsIcon.png",
+    logo="icons/OrangeWidgetsLogo.png"
     ):
         """
         Constructor

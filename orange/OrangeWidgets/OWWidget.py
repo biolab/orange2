@@ -33,8 +33,8 @@ class OWWidget(QWidget):
             logo - the logo file
             parent - parent of the widget if needed
         """
-        icon = sys.prefix + "\\lib\\site-packages\\orange\\orngWidgets\\pics\\" + icon
-        logo = sys.prefix + "\\lib\\site-packages\\orange\\orngWidgets\\pics\\" + logo
+        icon = sys.prefix + "/lib/site-packages/orange/orngWidgets/pics/" + icon
+        logo = sys.prefix + "/lib/site-packages/orange/orngWidgets/pics/" + logo
         self.title=title.replace("&","")
         QWidget.__init__(self,parent)
         #list of all active connections to this widget

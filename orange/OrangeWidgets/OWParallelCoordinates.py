@@ -2,7 +2,7 @@
 <name>Parallel coordinates</name>
 <description>Shows data using parallel coordianates visualization method</description>
 <category>Visualization</category>
-<icon>icons\ParallelCoordinates.png</icon>
+<icon>icons/ParallelCoordinates.png</icon>
 """
 # ParallelCoordinates.py
 #
