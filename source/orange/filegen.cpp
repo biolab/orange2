@@ -275,8 +275,12 @@ PDomain TFileExampleGenerator::prepareDomain(const TAttributeDescriptions *attri
 
   TVarList attrList;
   int foo;
-  const_PITERATE(TAttributeDescriptions, ai, attributes)
-    attrList.push_back(makeVariable((*ai).name, (*ai).varType, (*ai).values, foo, knownVars, knownMetas, false, false));
+  const_PITERATE(TAttributeDescriptions, ai, attributes) {
+    PVariable newvar = makeVariable((*ai).name, (*ai).varType, (*ai).values, foo, knownVars, knownMetas, false, false);
+    if ((*ai).ordered)
+      newvar.AS(TEnumVariable)->ordered = true;
+    attrList.push_back(newvar);
+  }
 
   PDomain newDomain;
 

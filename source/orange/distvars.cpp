@@ -255,16 +255,46 @@ const float &TDistribution::operator[](const TValue &val)
 
 
 void TDistribution::add(const TValue &val, const float &p)
-{ if (val.isSpecial()) {
+{ 
+  if (!val.svalV || !variable || !variable->distributed) {
+    if (val.isSpecial()) {
+      unknowns += p;
+      if (!val.svalV || !val.svalV.is_derived_from(TDistribution))
+        return;
+    }
+    else {
+      CHECKVALTYPE(val.varType);
+      if (val.varType==TValue::INTVAR)
+        addint(val.intV, p);
+      else
+        addfloat(val.floatV, p);
+      return;
+    }
+  }
+
+  if (!val.svalV)
     unknowns += p;
+
+  const TDiscDistribution *ddist = val.svalV.AS(TDiscDistribution);
+  if (ddist) {
+    if (!supportsDiscrete || variable && ddist->variable && (variable!=ddist->variable))
+      raiseError("invalid value type");
+    int i = 0;
+    const_PITERATE(TDiscDistribution, ddi, ddist)
+      addint(i++, *ddi*p);
     return;
   }
 
-  CHECKVALTYPE(val.varType);
-  if (val.varType==TValue::INTVAR)
-    addint(val.intV, p);
-  else
-    addfloat(val.floatV, p);
+  const TContDistribution *cdist = val.svalV.AS(TContDistribution);
+  if (cdist) {
+    if (!supportsContinuous || variable && ddist->variable && (variable!=ddist->variable))
+      raiseError("invalid value type");
+    const_PITERATE(TContDistribution, cdi, cdist)
+      addfloat((*cdi).first, (*cdi).second*p);
+    return;
+  }
+
+  raiseError("invalid value type");
 }
 
 
