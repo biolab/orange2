@@ -46,9 +46,15 @@ public:
 	// constructors
 	TLogisticLearner();
 
+	// statistics computation 
+	// Wald Z statistic (PFloatList beta, PFloatList beta_se)
+	PFloatList computeWaldZ(PFloatList &, PFloatList &);
+	// P for chi square (PFloatList wald_Z)
+	PFloatList computeP(PFloatList &);
+
+
 	// Constructs a Logistic classifier
 	virtual PClassifier operator()(PExampleGenerator gen, const int & =0);
-
 };
 
 
@@ -63,7 +69,14 @@ public:
 	PFloatList beta; //P estimated beta coefficients for logistic regression
 	// beta standard errors
 	PFloatList beta_se; //P estimated standard errors for beta coefficients
-	
+	// Wald Z Statistic
+	PFloatList wald_Z; //P Wald Z statstic for beta coefficients
+	// P
+	PFloatList P; //P estimated significances for beta coefficients
+	// likelihood
+	float likelihood; //P Likelihood: The likelihood function is the function which specifies the probability of the sample observed on the basis of a known model, as a function of the model's parameters. 
+
+
 	// constructors
 	TLogisticClassifier();
 	TLogisticClassifier(PDomain);

@@ -28,6 +28,45 @@
 TLogisticLearner::TLogisticLearner() 
 {}
 
+// TODO: najdi pametno mesto za naslednji dve funkciji
+// compute waldZ statistic from beta and beta_se
+PFloatList TLogisticLearner::computeWaldZ(PFloatList &beta, PFloatList &beta_se) 
+{
+	PFloatList waldZ=PFloatList(mlnew TFloatList);
+	TFloatList::const_iterator b(beta->begin()), be(beta->end());
+	TFloatList::const_iterator s(beta_se->begin()), se(beta_se->end());
+	for (; (b!=be) && (s!=se); b++, s++) 
+		waldZ->push_back((*b)/(*s));
+	return waldZ;
+}
+
+// compute P from waldZ statistic
+PFloatList TLogisticLearner::computeP(PFloatList &waldZ) 
+{
+	PFloatList Pstat=PFloatList(mlnew TFloatList);
+	TFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
+	for (; (z!=ze); z++) {
+		double zt = (*z)*(*z);
+		if(zt>1000) {
+			Pstat->push_back(0.0);
+			continue;
+		}
+		double p = exp(-0.5*zt);
+		// TODO: PI, kje najdes to konstano
+		p *= sqrt(2*zt/3.141592);
+
+		double t=p;
+		int a=3;
+		// TODO: poglej kaj je to 0.0000...1 ?
+		for (; t>0.0000000001*p; a=a+2) {
+			t*=zt/a; 
+			p+=t;
+		}
+		Pstat->push_back(1-p);
+    }
+	return Pstat;
+}
+
 
 PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weight)
 { 
@@ -52,7 +91,9 @@ PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weigh
   fitter = PLogisticFitter(mlnew TLogisticFitterMinimization());
 
   // fit logistic regression 
-  lrc->beta = fitter->call(gen, lrc->beta_se);
+  lrc->beta = fitter->call(gen, lrc->beta_se, lrc->likelihood);
+  lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
+  lrc->P = computeP(lrc->wald_Z);
 
   // return classifier containing domain, beta and standard errors of beta 
   return cl;
@@ -98,6 +139,7 @@ PDistribution TLogisticClassifier::classDistribution(const TExample &origexam)
 	prob[0]=1-prob[1];
  
 	// return class distribution
+	// TODO: delete prob
 	return PDistribution(mlnew TDiscDistribution(prob, 2));
 }
 

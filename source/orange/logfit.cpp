@@ -37,6 +37,7 @@ const char *TLogisticFitterMinimization::errors[] =
 				   "LogisticFitter: infinity in beta",
 				   "LogisticFitter: no convergence" };
 
+
 // function used only in Logistic fitter, that returns vector length n
 // and filled with ones(1)
 double *ones(int n) {
@@ -49,7 +50,8 @@ double *ones(int n) {
 	return ret;
 }
 
-PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloatList &beta_se) {
+
+PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloatList &beta_se, float &likelihood) {
 	// get all needed/necessarily attributes and set
 	LRInput input = LRInput();
 	LRInfo O = LRInfo();
@@ -96,6 +98,9 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloa
 		beta->push_back(O.beta[i]);
 		beta_se->push_back(O.se_beta[i]);
 	}
+
+	// Calculate likelihood
+	likelihood = - O.devnce; // I am not sure if this is OK?. Added by: Martin Mozina, 9.10.2003
 
 	return beta;
 }
@@ -151,6 +156,7 @@ double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen) {
 
 	return Y;
 }
+
 
 LRInput::LRInput() {
 	data=NULL;
