@@ -50,21 +50,19 @@ class SchemaDoc(QMainWindow):
     def closeEvent(self,ce):
         QMainWindow.closeEvent(self, ce)
         if not self.canSave:
-            print "accept close"
             self.clear()
             ce.accept()
             return
+
         res = QMessageBox.information(self,'Qrange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
         if res == 0:
             self.saveDocument()
             ce.accept()
             self.clear()
         elif res == 1:
-            #print "accept close"
             self.clear()
             ce.accept()
         else:
-            #print "ignore close"
             ce.ignore()
 
     def enableSave(self, enable):
@@ -272,7 +270,7 @@ class SchemaDoc(QMainWindow):
     def removeWidget(self, widget):
         if widget.instance:
             widget.instance.saveSettings()
-            widget.hide()
+            widget.instance.hide()
             
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
         while widget.outLines != []:  self.removeLine1(widget.outLines[0])
