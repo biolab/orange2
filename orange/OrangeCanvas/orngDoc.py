@@ -553,7 +553,6 @@ if os.path.exists(widgetDir):
         manager = ""
         loadSett = ""
         saveSett = ""
-        progressHandlers = ""
         signals = "#set signal manager to widgets\n"+t+t
 
         sepCount = 1
@@ -571,14 +570,13 @@ if os.path.exists(widgetDir):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
-                signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t
+                signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
                 buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
-                progressHandlers += "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
                 loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
@@ -601,11 +599,10 @@ if os.path.exists(widgetDir):
             name = name.replace(")", "")
             imports += "from %s import *\n" % (widget.widget.getFileName())
             instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
-            signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t
+            signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t + "self.ow%s.setEventHandler(self.eventHandler)\n" % (name) +t+t + "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
             manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
             instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
             tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
-            progressHandlers += "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
             loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
             loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
             saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
@@ -646,34 +643,27 @@ if os.path.exists(widgetDir):
         progress = """
         statusBar = QStatusBar(self)
         self.caption = QLabel('', statusBar)
-        self.caption.setMaximumWidth(200)
-        self.caption.hide()
+        self.caption.setMaximumWidth(230)
         self.progress = QProgressBar(100, statusBar)
         self.progress.setMaximumWidth(100)
-        self.progress.hide()
         self.progress.setCenterIndicator(1)
+        self.status = QLabel("", statusBar)
+        self.status.setSizePolicy(QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred))
         statusBar.addWidget(self.caption, 1)
-        statusBar.addWidget(self.progress, 1)"""
-        """
-        else:
-            progress =
-        self.caption = QLabel('', self)
-        self.caption.hide()
-        self.progress = QProgressBar(100, self)
-        self.progress.hide()
-        self.progress.setCenterIndicator(1)
-        """
+        statusBar.addWidget(self.progress, 1)
+        statusBar.addWidget(self.status, 1)"""
 
         handlerFunct = """
+    def eventHandler(self, text):
+        self.status.setText(text)
+        
     def progressHandler(self, widget, val):
         if val < 0:
             self.caption.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
-            self.caption.show()
             self.progress.setProgress(0)
-            self.progress.show()
         elif val >100:
-            self.caption.hide()
-            self.progress.hide()
+            self.caption.setText("")
+            self.progress.reset()
         else:
             self.progress.setProgress(val)
             self.update()"""    
@@ -716,9 +706,9 @@ ow.saveSettings()
         #    save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + signals + "\n" +t+t + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + signals + "\n" +t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + signals + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + signals + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
