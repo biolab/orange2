@@ -194,7 +194,23 @@ void TOrange::raiseWarning(const char *anerr, ...) const
 
     snprintf(excbuf, 512, "'%s': %s", TYPENAME(typeid(*this)), anerr);
     vsnprintf(excbuf2, 512, excbuf, vargs);
-    warningFunction(excbuf2);
+    warningFunction(false, excbuf2);
+  }
+}
+
+void TOrange::raiseCompatibilityWarning(const char *anerr, ...) const
+{ 
+  if (warningFunction) {
+    va_list vargs;
+    #ifdef HAVE_STDARG_PROTOTYPES
+      va_start(vargs, anerr);
+    #else
+      va_start(vargs);
+    #endif
+
+    snprintf(excbuf, 512, "'%s': %s", TYPENAME(typeid(*this)), anerr);
+    vsnprintf(excbuf2, 512, excbuf, vargs);
+    warningFunction(true, excbuf2);
   }
 }
 
@@ -210,6 +226,6 @@ void TOrange::raiseWarningWho(const char *who, const char *anerr, ...) const
 
     snprintf(excbuf, 512, "'orange.%s.%s': %s", TYPENAME(typeid(*this)), who, anerr);
     vsnprintf(excbuf2, 512, excbuf, vargs);
-    warningFunction(excbuf2);
+    warningFunction(false, excbuf2);
   }
 }

@@ -47,6 +47,7 @@ void addConstants(PyObject *);
 bool initExceptions()
 { if (   ((PyExc_OrangeKernel = makeExceptionClass("orange.KernelException", "An error occurred in Orange's C++ kernel")) == NULL)
       || ((PyExc_OrangeWarning = makeExceptionClass("orange.Warning", "Orange warning", PyExc_Warning)) == NULL)
+      || ((PyExc_OrangeCompatibilityWarning = makeExceptionClass("orange.CompatibilityWarning", "Orange compabitility warning", PyExc_OrangeWarning)) == NULL)
       || ((PyExc_OrangeKernelWarning = makeExceptionClass("orange.KernelWarning", "Orange kernel warning", PyExc_OrangeWarning)) == NULL)
       || ((PyExc_OrangeAttributeWarning = makeExceptionClass("orange.AttributeWarning", "A non-builtin attribute has been set", PyExc_OrangeWarning)) == NULL))
     return false;
@@ -90,6 +91,7 @@ extern "C" EXPORT_DLL void initorange()
   PyModule_AddObject(orangeModule, "AttributeWarning", PyExc_OrangeAttributeWarning);
   PyModule_AddObject(orangeModule, "KernelWarning", PyExc_OrangeKernelWarning);
   PyModule_AddObject(orangeModule, "Warning", PyExc_OrangeWarning);
+  PyModule_AddObject(orangeModule, "CompatibilityWarning", PyExc_OrangeCompatibilityWarning);
 
   PyModule_AddObject(orangeModule, "_orangeClasses", PyCObject_FromVoidPtr((void *)orangeClasses, NULL));
 }

@@ -85,10 +85,12 @@ BOOL APIENTRY DllMain( HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReser
 
 
 bool py2double(PyObject *pyo, double &dd)
-{ PyObject *pyn=PyNumber_Float(pyo);
+{ 
+  PyObject *pyn=PyNumber_Float(pyo);
   if (!pyn)
     PYERROR(PyExc_TypeError, "invalid number", false);
   dd=PyFloat_AsDouble(pyn);
+  Py_DECREF(pyn);
   return true;
 }
 
@@ -97,6 +99,7 @@ bool py2int(PyObject *pyo, int &dd)
   if (!pyn)
     PYERROR(PyExc_TypeError, "invalid number", false);
   dd=int(PyInt_AsLong(pyn));
+  Py_DECREF(pyn);
   return true;
 }
 
@@ -110,6 +113,7 @@ bool PyList2flist(PyObject *pylist, vector<double> &flist)
     if (!number)
       PYERROR(PyExc_AttributeError, "invalid number in list", false);
     flist[i]=PyFloat_AsDouble(number);
+    Py_DECREF(number);
   }
   return true;
 }

@@ -8,7 +8,7 @@
 
 extern PyObject *orangeModule;
 
-extern PyObject *PyExc_OrangeKernel, *PyExc_OrangeAttributeWarning, *PyExc_OrangeWarning, *PyExc_OrangeKernelWarning;
+extern PyObject *PyExc_OrangeKernel, *PyExc_OrangeAttributeWarning, *PyExc_OrangeWarning, *PyExc_OrangeCompatibilityWarning, *PyExc_OrangeKernelWarning;
 
 #define PyTRY try {
 
@@ -21,7 +21,13 @@ extern PyObject *PyExc_OrangeKernel, *PyExc_OrangeAttributeWarning, *PyExc_Orang
 catch (pyexception err)   { err.restore(); return r; } \
 catch (mlexception err) { PYERROR(PyExc_OrangeKernel, err.what(), r); }
 
-void raiseWarning(const char *s);
+void raiseWarning(bool, const char *s);
+bool raiseWarning(PyObject *warnType, const char *s, ...);
+bool raiseCompatibilityWarning(const char *s, ...);
+/*
+void raiseError(PyObject *excType, const char *s, ...);
+*/
+
 
 typedef struct {
   char *alias, *realName;
@@ -70,11 +76,6 @@ bool PyOrange_CheckType(PyTypeObject *);
 TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *);
 
 bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit = false);
-
-/* Do we need something like this?! Here?! Not in root.hpp?!
-void raiseWarning(PyObject *warnType, const char *s, ...);
-void raiseError(PyObject *excType, const char *s, ...);
-*/
 
 
 

@@ -356,7 +356,7 @@ PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename,
 
 
 void basket_writeExamples(FILE *, PExampleGenerator, set<int> &missing);
-void raiseWarning(const char *s);
+void raiseWarning(bool, const char *s);
 
 PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
@@ -392,7 +392,7 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
       if (missing.size() == 1) {
         char excbuf[128];
         snprintf(excbuf, 512, "saveBasket: attribute with id %i was not found in Domain and has not been stored", *(missing.begin()));
-        raiseWarning(excbuf);
+        raiseWarning(false, excbuf);
       }
 
       else {
@@ -412,7 +412,7 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
         char *excbuf = mlnew char[misss.length() + 128];
         sprintf(excbuf, "saveBasket: attributes with ids not found in Domain have not been stored (%s)", misss.c_str());
         try {
-          raiseWarning(excbuf);
+          raiseWarning(false, excbuf);
         }
         catch (...) {
           mldelete excbuf;

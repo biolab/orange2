@@ -32,6 +32,7 @@
 #include "domain.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
+#include "module.hpp"
 
 #include "trindex.ppp"
 
@@ -92,6 +93,9 @@ PRandomIndices TMakeRandomIndices2::operator()(const int &n, const float &p0)
  { if (stratified==TMakeRandomIndices::STRATIFIED)
      raiseError("cannot prepare stratified indices (no class values)");
 
+   if (!randomGenerator && (randseed<0))
+     raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
+
    PRandomIndices indices(mlnew TFoldIndices(n, 1));
    TFoldIndices::iterator ii(indices->begin());
 
@@ -114,6 +118,9 @@ PRandomIndices TMakeRandomIndices2::operator()(PExampleGenerator gen, const floa
 { 
   if (!gen)
     raiseError("invalid example generator");
+
+   if (!randomGenerator && (randseed<0))
+     raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
 
   if (stratified==TMakeRandomIndices::NOT_STRATIFIED)
     return operator()(gen->numberOfExamples(), ap0);
@@ -222,9 +229,13 @@ PRandomIndices TMakeRandomIndicesN::operator()(PExampleGenerator gen, PFloatList
 
 
 PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
-{ if (!ap || !ap->size())
+{ 
+  if (!ap || !ap->size())
     raiseError("'p' not defined or empty");
 
+  if (!randomGenerator && (randseed<0))
+    raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
+  
   float sum = 0;
   bool props = true;
   for(vector<float>::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; pis++) {
@@ -276,8 +287,12 @@ PRandomIndices TMakeRandomIndicesCV::operator()(const int &n)
 
 
 PRandomIndices TMakeRandomIndicesCV::operator()(const int &n, const int &afolds)
-{ if (stratified==TMakeRandomIndices::STRATIFIED)
+{ 
+  if (stratified==TMakeRandomIndices::STRATIFIED)
     raiseError("cannot prepare stratified indices (no class values)");
+
+  if (!randomGenerator && (randseed<0))
+    raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
 
   if (n<=0)
     raiseError("unknown number of examples");
@@ -310,6 +325,7 @@ PRandomIndices TMakeRandomIndicesCV::operator()(PExampleGenerator gen, const int
   if (afolds<=0)
     raiseError("invalid number of folds");
 
+
   if (stratified==TMakeRandomIndices::NOT_STRATIFIED)
     return operator()(gen->numberOfExamples(), afolds);
 
@@ -325,6 +341,9 @@ PRandomIndices TMakeRandomIndicesCV::operator()(PExampleGenerator gen, const int
     else
       raiseError("cannot prepare stratified indices (non-discrete class values)");
     
+  if (!randomGenerator && (randseed<0))
+    raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
+
   TExampleIterator ri=gen->begin();
   if (!ri)
     return PRandomIndices(mlnew TFoldIndices());
@@ -416,8 +435,12 @@ PRandomIndices TMakeRandomIndicesMultiple::operator()(const int &n)
 
 
 PRandomIndices TMakeRandomIndicesMultiple::operator()(const int &n, const float &p0)
- { if (stratified==TMakeRandomIndices::STRATIFIED)
+ {
+   if (stratified==TMakeRandomIndices::STRATIFIED)
      raiseError("cannot prepare stratified indices (no class values)");
+
+   if (!randomGenerator && (randseed<0))
+     raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
 
    int no= (p0<=1.0) ? int(p0*n+0.5) : int(p0+0.5);
    rsrgen rg(randomGenerator, randseed);
@@ -436,6 +459,9 @@ PRandomIndices TMakeRandomIndicesMultiple::operator()(PExampleGenerator gen, con
 { 
   if (stratified==TMakeRandomIndices::NOT_STRATIFIED)
      return operator()(gen->numberOfExamples(), ap0);
+
+  if (!randomGenerator && (randseed<0))
+    raiseCompatibilityWarning("object always returns the same indices unless either 'randomGenerator' or 'randseed' is set");
 
   TExampleIterator ri=gen->begin();
   if (!ri)

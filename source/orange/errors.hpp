@@ -27,58 +27,29 @@
 
 using namespace std;
 
+extern bool exhaustiveWarnings;
+
 #ifdef _MSC_VER
 #define mlexception exception
 #else
 class mlexception : public exception {
 public:
    string err_desc;
-   mlexception(const string &des);
-   ~mlexception() throw();
+
+   mlexception(const string &des)
+   : err_desc(desc)
+   {}
+
+   ~mlexception() throw()
+   {}
+
    virtual const char* what () const throw();
+   { return err_desc.c_str(); };
 };
 #endif
 
-
 void raiseError(const char *anerr, ...);
 void raiseErrorWho(const char *who, const char *anerr, ...);
-
-
-exception TUserError(const string &anerr);
-exception TUserError(const string &anerr, const string &s);
-exception TUserError(const string &anerr, const string &s1, const string &s2);
-exception TUserError(const string &anerr, const string &s1, const string &s2, const string &s3);
-exception TUserError(const string &anerr, const string &s1, const string &s2, const string &s3, const string &s4);
-exception TUserError(const string &anerr, const long i);
-
-exception TUserError(const char *anerr);
-exception TUserError(const char *anerr, const char *s);
-exception TUserError(const char *anerr, const char *s1, const char *s2);
-exception TUserError(const char *anerr, const char *s1, const char *s2, const char *s3);
-exception TUserError(const char *anerr, const char *s1, const char *s2, const char *s3, const char *s4);
-exception TUserError(const char *anerr, const long i);
-
-#define TRY try {
-#define CATCH } catch(exception err) { fprintf(stderr, "Error: %s\n", err.what()); }
-
-
-#define _QUOTE(x) # x
-#define QUOTE(x) _QUOTE(x)
-#define __FILE__LINE__ __FILE__ "(" QUOTE(__LINE__) ") : "
-
-#define NOTE( x )  message( x )
-#define FILE_LINE  message( __FILE__LINE__ )
-
-#define TODO( x )  message( __FILE__LINE__"\n"           \
-        " ------------------------------------------------\n" \
-        "|  TODO :   " x "\n" \
-        " -------------------------------------------------\n" )
-#define FIXME( x )  message(  __FILE__LINE__"\n"           \
-        " ------------------------------------------------\n" \
-        "|  FIXME :  " x "\n" \
-        " -------------------------------------------------\n" )
-#define todo( x )  message( __FILE__LINE__" TODO :   " x "\n" ) 
-#define fixme( x )  message( __FILE__LINE__" FIXME:   " x "\n" ) 
 
 #endif
 

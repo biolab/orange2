@@ -53,6 +53,12 @@ PyObject *newmetaid(PyObject *, PyObject *) PYARGS(0,"() -> int")
   PyCATCH
 }
 
+PyObject *setWarningLevel(PyObject *, PyObject *arg) PYARGS(METH_O, "(bool) -> None")
+{ 
+  exhaustiveWarnings = (PyObject_IsTrue(arg) != 0);
+  RETURN_NONE;
+}
+
 
 PyObject *setoutput(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, format-name, function) -> None")
 { PyTypeObject *type;

@@ -103,7 +103,7 @@ WRAPPER(Orange)
 class TOrange {
 public:
   __REGISTER_CLASS
-  typedef void TWarningFunction(const char *);
+  typedef void TWarningFunction(bool exhaustive, const char *);
   static TWarningFunction *warningFunction;
 
   TGCCounter<TOrange> *myWrapper;
@@ -129,6 +129,7 @@ public:
 
   void raiseError(const char *anerr, ...) const;
   void raiseWarning(const char *anerr, ...) const;
+  void raiseCompatibilityWarning(const char *anerr, ...) const;
   void raiseErrorWho(const char *who, const char *anerr, ...) const;
   void raiseWarningWho(const char *who, const char *anerr, ...) const;
 
