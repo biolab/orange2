@@ -4,6 +4,9 @@ set DOCUMENTATION=orange-doc-snap-%daystr.zip
 set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
 set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
 
+set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
+set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
+
 pushd
 
 rem ************************************************
@@ -67,3 +70,5 @@ cdd %SCRIPTDIR
 call updateVersionsPy__.btm
 
 popd
+
+start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si /bin/bash ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0

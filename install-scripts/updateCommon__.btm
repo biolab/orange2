@@ -7,10 +7,8 @@ set VERSION=%verstr
 set STABLE_DATE=%nicedate
 set TAG=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
 
-set PLINK_LINUX=orange-linux-%verstr.exe
-set PLINK_MACINTOSH=orange-mac-%verstr.exe
-
-set PLINK_MACINTOSH_SNAPSHOT=orange-mac-%verstr.exe
+set PLINK_LINUX=orange-linux-%verstr.tgz
+set PLINK_MACINTOSH=orange-mac-%verstr.dmg
 
 rem ************************************************
 rem *** CHANGE THE DIRECTORY, TERMINATE IF CAN'T
