@@ -42,7 +42,7 @@ public:
   /*  Positions of attributes from owning domain in the domain, denoted by 'domain' field. For example,
       if position[2]=5, the value of the second attribute from the owning domain is the value of the fifth
       from the 'domain' domain. Negative values represent id's of `domain`'s meta-attributes.
-      If position[i]==numeric_limits<int>::max(), i-th attribute has no corresponding attribute in
+      If position[i]==ILLEGAL_INT, i-th attribute has no corresponding attribute in
       'domain'; convert passes the entire example to the computeValue method of the i-th variable which will
       either deduce its value from the example or return a DK. */
   vector<int> positions;
@@ -102,24 +102,28 @@ public:
   int getVarNum(PVariable, bool throwExc=true) const;
   int getVarNum(const string &, bool throwExc=true) const;
 
+  PVariable getVar(int num, bool throwExc=true);
   PVariable getVar(int num, bool throwExc=true) const;
+
   PVariable getVar(const string &, bool takeMetas=true, bool throwExc=true);
+  PVariable getVar(const string &, bool takeMetas=true, bool throwExc=true) const;
 
   long getMetaNum(const string &, bool throwExc=true) const;
   long getMetaNum(PVariable, bool throwExc=true) const;
 
+  PVariable getMetaVar(const int &idx, bool throwExc=true);
   PVariable getMetaVar(const int &idx, bool throwExc=true) const;
+
+  PVariable getMetaVar(const string &wname, bool throwExc=true);
   PVariable getMetaVar(const string &wname, bool throwExc=true) const;
 
+  PVariable operator[](const string &name);
   PVariable operator[](const string &name) const;
 
   virtual void convert(TExample &dest, const TExample &src);
   virtual void domainHasChanged();
 
   void afterSet(const string &name);
-
-protected:
-    int TDomain::getConvertIndex(const PVariable var, const PDomain &srcDomain);
 };
 
 #endif

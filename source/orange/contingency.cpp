@@ -320,7 +320,7 @@ PDistribution TContingencyClass::p_classes(const TValue &) const
 }
 
 
-void TContingencyClass::constructFromGenerator(PVariable outer, PVariable inner, PExampleGenerator gen, const long &weightID, const int &attrNo, const bool &useValueFrom)
+void TContingencyClass::constructFromGenerator(PVariable outer, PVariable inner, PExampleGenerator gen, const long &weightID, const int &attrNo)
 {
   outerVariable = outer;
   innerVariable = inner;
@@ -335,7 +335,7 @@ void TContingencyClass::constructFromGenerator(PVariable outer, PVariable inner,
     continuous = mlnew TDistributionMap();
   }
 
-  if (useValueFrom)
+  if (attrNo == ILLEGAL_INT)
     add_gen(gen, weightID);
   else
     add_gen(gen, attrNo, weightID);
@@ -358,11 +358,11 @@ TContingencyClassAttr::TContingencyClassAttr(PExampleGenerator gen, const int &a
   if (attrNo>=int(domain.attributes->size()))
     raiseError("attribute index %i out of range", attrNo, domain.attributes->size()-1);
 
-  PVariable attribute = attrNo>=0 ? domain.attributes->at(attrNo) : gen->domain->getMetaVar(-attrNo, false);
+  PVariable attribute = attrNo>=0 ? domain.attributes->at(attrNo) : gen->domain->getMetaVar(attrNo, false);
   if (!attribute)
     raiseError("attribute not found");
 
-  constructFromGenerator(domain.classVar, attribute, gen, weightID, attrNo, false);
+  constructFromGenerator(domain.classVar, attribute, gen, weightID, attrNo);
 }    
 
 
@@ -371,21 +371,15 @@ TContingencyClassAttr::TContingencyClassAttr(PExampleGenerator gen, PVariable va
   if (!gen->domain->classVar)
     raiseError("classless domain");
 
-  bool uvf = false;
-  int attrNo = gen->domain->getVarNum(var, false);
-  if (attrNo<0) {
-    attrNo = -gen->domain->getMetaNum(var, false);
-    uvf = (attrNo>=0);
-  }
-
-  constructFromGenerator(gen->domain->classVar, var, gen, weightID, attrNo, uvf);
+  const int attrNo = gen->domain->getVarNum(var, false);
+  constructFromGenerator(gen->domain->classVar, var, gen, weightID, attrNo);
 }
 
 
 void TContingencyClassAttr::add_gen(PExampleGenerator gen, const long &weightID)
 { checkProperty(innerVariable);
   int attrNo = gen->domain->getVarNum(innerVariable, false);
-  if (attrNo>=0)
+  if (attrNo != ILLEGAL_INT)
     PEITERATE(ei, gen)
       add((*ei)[attrNo], (*ei).getClass(), WEIGHT(*ei));
   else {
@@ -400,12 +394,8 @@ void TContingencyClassAttr::add_gen(PExampleGenerator gen, const long &weightID)
 
 
 void TContingencyClassAttr::add_gen(PExampleGenerator gen, const int &attrNo, const long &weightID)
-{ if (attrNo>=0)
-    PEITERATE(ei, gen)
-      add((*ei).getClass(), (*ei)[attrNo], WEIGHT(*ei));
-  else
-    PEITERATE(ei, gen)
-      add((*ei).getClass(), (*ei).meta[-attrNo], WEIGHT(*ei));
+{ PEITERATE(ei, gen)
+    add((*ei).getClass(), (*ei)[attrNo], WEIGHT(*ei));
 }
 
 
@@ -433,14 +423,8 @@ TContingencyAttrClass::TContingencyAttrClass(PExampleGenerator gen, PVariable va
   if (!gen->domain->classVar)
     raiseError("classless domain");
 
-  bool uvf = false;
-  int attrNo = gen->domain->getVarNum(var, false);
-  if (attrNo<0) {
-    attrNo = -gen->domain->getMetaNum(var, false);
-    uvf = (attrNo>=0);
-  }
-
-  constructFromGenerator(var, gen->domain->classVar, gen, weightID, attrNo, uvf);
+  const int attrNo = gen->domain->getVarNum(var, false);
+  constructFromGenerator(var, gen->domain->classVar, gen, weightID, attrNo);
 }
 
 
@@ -457,13 +441,13 @@ TContingencyAttrClass::TContingencyAttrClass(PExampleGenerator gen, const int &a
   if (!attribute)
     raiseError("attribute not found");
 
-  constructFromGenerator(attribute, domain.classVar, gen, weightID, attrNo, false);
+  constructFromGenerator(attribute, domain.classVar, gen, weightID, attrNo);
 }
 
 
 void TContingencyAttrClass::add_gen(PExampleGenerator gen, const long &weightID)
 { int attrNo = gen->domain->getVarNum(outerVariable, false);
-  if (attrNo>=0)
+  if (attrNo != ILLEGAL_INT)
     PEITERATE(ei, gen)
       add((*ei)[attrNo], (*ei).getClass(), WEIGHT(*ei));
   else {
@@ -478,12 +462,8 @@ void TContingencyAttrClass::add_gen(PExampleGenerator gen, const long &weightID)
 
 
 void TContingencyAttrClass::add_gen(PExampleGenerator gen, const int &attrNo, const long &weightID)
-{ if (attrNo>=0)
-    PEITERATE(ei, gen)
-      add((*ei)[attrNo], (*ei).getClass(), WEIGHT(*ei));
-  else
-    PEITERATE(ei, gen)
-      add((*ei).meta[-attrNo], (*ei).getClass(), WEIGHT(*ei));
+{ PEITERATE(ei, gen)
+    add((*ei)[attrNo], (*ei).getClass(), WEIGHT(*ei));
 }
 
 
@@ -516,7 +496,7 @@ TContingencyAttrAttr::TContingencyAttrAttr(PVariable variable, PVariable innerva
 
 
 TContingencyAttrAttr::TContingencyAttrAttr(const int &var, const int &innervar, PExampleGenerator gen, const long weightID)
- : TContingency( gen->domain->variables->at(var), gen->domain->variables->at(innervar))
+ : TContingency(gen->domain->getVar(var), gen->domain->getVar(innervar))
 { operator()(gen, weightID); }
 
 
@@ -524,19 +504,19 @@ void TContingencyAttrAttr::operator()(PExampleGenerator gen, const long weightID
 { int var=gen->domain->getVarNum(outerVariable, false);
   int invar=gen->domain->getVarNum(innerVariable, false);
 
-  if (var<0)
-    if (invar<0)
+  if (var == ILLEGAL_INT)
+    if (invar == ILLEGAL_INT)
       PEITERATE(ei, gen) {
         TValue val = outerVariable->computeValue(*ei);
         add(val, innerVariable->computeValue(*ei), WEIGHT(*ei));
       }
-    else // var<0, invar>=0
+    else // var == ILLEGAL_INT, invar is not
       PEITERATE(ei, gen) {
         TValue val = outerVariable->computeValue(*ei);
         add(val, (*ei)[invar], WEIGHT(*ei));
       }
   else 
-    if (invar<0) // var>=0, invar<0
+    if (invar<0) // invar == ILLEGAL_INT, var is not
       PEITERATE(ei, gen)
         add((*ei)[var], innerVariable->computeValue(*ei), WEIGHT(*ei));
   else // both OK

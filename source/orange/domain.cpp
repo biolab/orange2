@@ -196,41 +196,90 @@ bool TDomain::delVariable(PVariable var)
 
 
 int TDomain::getVarNum(PVariable var, bool throwExc) const
-{ TVarList::const_iterator vi=find(variables->begin(), variables->end(), var);
-  if (vi==variables->end()) 
-    if (throwExc)
-      raiseError("attribute '%s' not found", var->name.c_str());
-    else
-      return -1;
-  return vi-variables->begin();
+{ int pos = 0;
+  for(TVarList::const_iterator vi(variables->begin()), ve(variables->end()); vi!=ve; vi++, pos++)
+    if (*vi == var)
+      return pos;
+
+  pos = getMetaNum(var, false);
+  if ((pos == ILLEGAL_INT) && throwExc)
+    raiseError("attribute '%s' not found", var->name.c_str());
+
+  return pos;
 }
-  
+
 
 int TDomain::getVarNum(const string &name, bool throwExc) const
-{ TVarList::const_iterator vi(variables->begin());
-  while ((vi!=variables->end()) && ((*vi)->name!=name))
-    vi++;
-  if (vi==variables->end()) 
-    if (throwExc)
-      raiseError("attribute '%s' not found", name.c_str());
-    else
-      return -1;
-  return vi-variables->begin();
+{ int pos = 0;
+  for(TVarList::const_iterator vi(variables->begin()), ve(variables->end()); vi!=ve; vi++, pos++)
+    if ((*vi)->name == name)
+      return pos;
+
+  pos = getMetaNum(name, false);
+  if ((pos == ILLEGAL_INT) && throwExc)
+    raiseError("attribute '%s' not found", name.c_str());
+
+  return pos;
 }
 
 
 PVariable TDomain::getVar(int num, bool throwExc) const
-{ if (!variables->size())
+{ checkProperty(variables);
+  
+  if (num>=0) {
+    if (num>=int(variables->size()))
+      if (throwExc)
+        if (!variables->size())
+          raiseError("no attributes in domain");
+        else
+          raiseError("index %i out of range 0-%i", num, variables->size()-1);
+      else
+        return PVariable();
+
+    return variables->at(num);
+  }
+  else {
+    const_ITERATE(TMetaVector, mi, metas)
+      if ((*mi).id == num)
+        return (*mi).variable;
+
     if (throwExc)
-      raiseError("no attributes in domain");
+      raiseError("meta attribute with index %i not in domain", num);
     else
       return PVariable();
-  if ((num<0) || (num>=int(variables->size())))
+  }
+
+  return PVariable();
+}
+
+
+PVariable TDomain::getVar(int num, bool throwExc)
+{ checkProperty(variables);
+  
+  if (num>=0) {
+    if (num>=int(variables->size()))
+      if (throwExc)
+        if (!variables->size())
+          raiseError("no attributes in domain");
+        else
+          raiseError("index %i out of range 0-%i", num, variables->size()-1);
+      else
+        return PVariable();
+
+    return variables->at(num);
+  }
+  else {
+    ITERATE(TMetaVector, mi, metas)
+      if ((*mi).id == num)
+        return (*mi).variable;
+
     if (throwExc)
-      raiseError("index %i out of range 0-%i", variables->size()-1);
+      raiseError("meta attribute with index %i not in domain", num);
     else
       return PVariable();
-  return variables->at(num);
+  }
+
+  return PVariable();
 }
 
 
@@ -251,6 +300,23 @@ PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc)
 }
 
 
+PVariable TDomain::getVar(const string &name, bool takeMetas, bool throwExc) const
+{ const_PITERATE(TVarList, vi, variables)
+    if ((*vi)->name==name)
+      return *vi;
+
+  if (takeMetas)
+    const_ITERATE(TMetaVector, mi, metas)
+      if ((*mi).variable->name==name)
+        return (*mi).variable;
+
+  if (throwExc)
+    raiseError("attribute '%s' not found", name.c_str());
+
+  return PVariable();
+}
+
+
 long TDomain::getMetaNum(const string &wname, bool throwExc) const
 { const_ITERATE(TMetaVector, mi, metas)
     if ((*mi).variable->name==wname)
@@ -259,7 +325,7 @@ long TDomain::getMetaNum(const string &wname, bool throwExc) const
   if (throwExc)
     raiseError("meta attribute '%s' not found", wname.c_str());
 
-  return -1;
+  return ILLEGAL_INT;
 }
 
 
@@ -271,7 +337,19 @@ long TDomain::getMetaNum(PVariable var, bool throwExc) const
   if (throwExc)
     raiseError("meta attribute '%s' not found", var->name.c_str());
 
-  return -1;
+  return ILLEGAL_INT;
+}
+
+
+PVariable TDomain::getMetaVar(const int &idx, bool throwExc)
+{ ITERATE(TMetaVector, mi, metas)
+    if ((*mi).id==idx)
+      return (*mi).variable;
+
+  if (throwExc)
+    raiseError("meta attribute with index %i not found", idx);
+
+  return PVariable();
 }
 
 
@@ -299,27 +377,24 @@ PVariable TDomain::getMetaVar(const string &wname, bool throwExc) const
 }
 
 
-PVariable TDomain::operator[](const string &name) const
-{ const_PITERATE(TVarList, vi, variables)
-    if ((*vi)->name==name)
-      return *vi;
-  raiseError("attribute '%s' not found", name.c_str());
+PVariable TDomain::getMetaVar(const string &wname, bool throwExc)
+{ ITERATE(TMetaVector, mi, metas)
+    if ((*mi).variable->name==wname)
+      return (*mi).variable;
+
+  if (throwExc)
+    raiseError("meta attribute '%s' not found", wname.c_str());
+
   return PVariable();
 }
 
 
-int TDomain::getConvertIndex(PVariable var, const PDomain &srcDomain)
-{ // search for ordinary attributes
-  const_PITERATE(TVarList, vi, srcDomain->variables)
-    if (*vi==var)
-      return vi-srcDomain->variables->begin();
+PVariable TDomain::operator[](const string &name) const
+{ return getVar(name, true, true); }
 
-  const_ITERATE(TMetaVector, smvi, srcDomain->metas)
-    if ((*smvi).variable==var)
-      return -int((*smvi).id);
 
-  return numeric_limits<int>::max();
-}
+PVariable TDomain::operator[](const string &name)
+{ return getVar(name, true, true); }
 
 
 /*  Converts the example 'src' to 'dest' from this domain. If example is from the same domain,
@@ -351,17 +426,17 @@ void TDomain::convert(TExample &dest, const TExample &src)
       lastDomain--;
 
       const_PITERATE(TVarList, vi, variables) {
-        const int cvi = getConvertIndex(*vi, src.domain);
+        const int cvi = src.domain->getVarNum(*vi, false);
         (*lastDomain).positions.push_back(cvi);
         if (cvi<0)
-          (*lastDomain).metasNotToCopy.insert(-cvi);
+          (*lastDomain).metasNotToCopy.insert(cvi);
       }
 
       ITERATE(TMetaVector, mvi, metas) {
-        const int cvi = getConvertIndex((*mvi).variable, src.domain);
+        const int cvi = src.domain->getVarNum((*mvi).variable, false);
         (*lastDomain).metaPositions.push_back(make_pair(int((*mvi).id), cvi));
         if (cvi<0)
-          (*lastDomain).metasNotToCopy.insert(-cvi);
+          (*lastDomain).metasNotToCopy.insert(cvi);
       }
 
       const_ITERATE(TMetaVector, mvio, src.domain->metas)
@@ -373,26 +448,19 @@ void TDomain::convert(TExample &dest, const TExample &src)
     TVarList::iterator vi(variables->begin());
 
     TExample::iterator deval(dest.begin());
-    TExample::const_iterator srval(src.begin());
     for(int Nv = dest.domain->variables->size(); Nv--; pi++, vi++)
-      if (*pi==numeric_limits<int>::max())
-        *(deval++) = (*vi)->computeValue(src);
-      else 
-        *(deval++) = (*pi>=0) ? srval[*pi] : src.meta[- *pi];
+      *(deval++) = (*pi == ILLEGAL_INT) ? (*vi)->computeValue(src) : src[*pi];
 
     TMetaVector::iterator mvi(metas.begin());
     for(vector<pair<int, int> >::const_iterator vpii((*lastDomain).metaPositions.begin()), vpie((*lastDomain).metaPositions.end());
         vpii!=vpie; 
         vpii++, mvi++)
-      if ((*vpii).second==numeric_limits<int>::max())
-        dest.meta.setValue((*vpii).first, (*mvi).variable->computeValue(src));
-      else
-        dest.meta.setValue((*vpii).first, ((*vpii).second<0) ? src.meta[-(*vpii).second] : srval[(*vpii).second]);
+      dest.setMeta((*vpii).first, (*vpii).second==ILLEGAL_INT ? (*mvi).variable->computeValue(src) : src[(*vpii).second]);
 
     set<int>::iterator mend = (*lastDomain).metasNotToCopy.end();
     const_ITERATE(TMetaValues, mi, src.meta)
       if ((*lastDomain).metasNotToCopy.find((*mi).first) == mend)
-        dest.meta.setValue((*mi).first, (*mi).second);
+        dest.setMeta((*mi).first, (*mi).second);
   }
 }
 

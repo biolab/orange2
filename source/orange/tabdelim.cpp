@@ -168,7 +168,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
         _ASSERT(md!=NULL);
         TValue mval;
         md->variable->str2val_add(valstr, mval);
-        exam.meta.setValue(*si, mval);
+        exam.setMeta(*si, mval);
       }
     }
 
@@ -270,7 +270,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
        - sets varType to TValue::varType or -1 if the type is not specified
        - sets classPos to the current position, if the attribute is class attribute
          (and reports an error if there is more than one such attribute)
-       - to attributeTypes, appends -1 for ordinary atributes, -2 for metas and 0 for ignored */
+       - to attributeTypes, appends -1 for ordinary atributes, 1 for metas and 0 for ignored */
     int varType = -1; // varType, or -1 for unnown
     attributeTypes->push_back(-1);
     int &attributeType = attributeTypes->back();
@@ -278,7 +278,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
     const char *cptr = (*ni).c_str();
     if (*cptr && (cptr[1]=='#')) {
       if (*cptr == 'm')
-        attributeType = -2;
+        attributeType = 1;
       else if (*cptr == 'i')
         attributeType = 0;
       else if (*cptr == 'c') {
@@ -304,7 +304,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
     else if (*cptr && cptr[1] && (cptr[2]=='#')) {
       bool beenWarned = false;
       if (*cptr == 'm')
-        attributeType = -2;
+        attributeType = 1;
       else if (*cptr == 'i')
         attributeType = 0;
       else if (*cptr == 'c') {
@@ -342,7 +342,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
       classType = varType;
     }
     else {
-      if (attributeType == -2) {
+      if (attributeType == 1) {
         metas.push_back(TAttributeDescription(*ni, varType));
         if (varType==-1)
           searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -metas.size()));
@@ -447,7 +447,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
 
   int *mid = metaIDs;
   PITERATE(TIntList, ii, attributeTypes)
-    if (*ii == -2)
+    if (*ii == 1)
       *ii = *(mid++);
 
   mldelete metaIDs;
@@ -511,7 +511,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
           else 
             ::raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", (*vni).c_str(), (*vni).c_str());
         else if ((direct=="m") || (direct=="meta"))
-          *ati = -2;
+          *ati = 1;
       }
 
       if (args.exists("dc"))
@@ -524,7 +524,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
       continue;
 
     if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
-      if (*ati==-2) {
+      if (*ati==1) {
         metas.push_back(TAttributeDescription(*vni, -1, ordered));
         attributeDescription = &metas.back();
       }
@@ -585,7 +585,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
 
   int *mid = metaIDs;
   PITERATE(TIntList, ii, attributeTypes)
-    if (*ii == -2)
+    if (*ii == 1)
       *ii = *(mid++);
 
   mldelete metaIDs;
@@ -678,7 +678,7 @@ void tabDelim_writeExample(FILE *file, const TExample &ex)
   }
 
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
-    (*mi).variable->val2str(ex.meta[(*mi).id], st);
+    (*mi).variable->val2str(ex[(*mi).id], st);
     fprintf(file, "\t%s", st.c_str());
   }
   fprintf(file, "\n");

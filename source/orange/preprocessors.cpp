@@ -49,34 +49,6 @@ DEFINE_TOrangeMap_classDescription(TOrangeMap_K, PVariable, float, "VariableFloa
   #pragma warning (disable : 4100) // unreferenced local parameter (macros name all arguments)
 #endif
 
-void atoms2varList(const vector<string> &vnames, PDomain domain, TVarList &varList, const string &error)
-{ const_ITERATE(TStringList, ni, vnames) {
-    int vnum = domain->getVarNum(*ni, false);
-    if (vnum<0) {
-      char errorout[128];
-      sprintf(errorout, error.c_str(), (*ni).c_str());
-      raiseError(errorout);
-    }
-    else 
-      varList.push_back(domain->variables->at(vnum));
-  }
-}
-
-void string2varList(const string &str, PDomain domain, TVarList &varList, const string &error)
-{
-  vector<string> vnames;
-  string2atoms(str, vnames);
-  atoms2varList(vnames, domain, varList, error);
-}
-
-PStringList string2atoms(const string &line)
-{ PStringList atoms = mlnew TStringList();
-  string2atoms(line, atoms->__orvector);
-  return atoms;
-}
-
-
-
 
 PExampleGenerator TPreprocessor::filterExamples(PFilter filter, PExampleGenerator generator)
 { TFilteredGenerator fg(filter, generator);
@@ -196,8 +168,7 @@ PExampleGenerator TPreprocessor_removeDuplicates::operator()(PExampleGenerator g
     newWeight = weightID;
   else {
     newWeight = getMetaID();
-    TValue val0(float(1.0));
-    table.AS(TExampleTable)->addMetaAttribute(newWeight, val0);
+    table.AS(TExampleTable)->addMetaAttribute(newWeight, TValue(float(1.0)));
   }
 
   table.AS(TExampleTable)->removeDuplicates(newWeight);
@@ -552,7 +523,7 @@ PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen
 
   newWeight = getMetaID();
   PEITERATE(ei, table)
-    (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * weights[(*ei).getClass().intV]));
+    (*ei).setMeta(newWeight, TValue(WEIGHT(*ei) * weights[(*ei).getClass().intV]));
 
   return wtable;
 }
@@ -593,10 +564,8 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
   int outcomeIndex;
   if (outcomeVar) {
     outcomeIndex = gen->domain->getVarNum(outcomeVar, false);
-    if (outcomeIndex<0)
-      outcomeIndex = -gen->domain->getMetaNum(outcomeVar, false);
-      if (outcomeIndex>0)
-        raiseError("outcomeVar not found in domain");
+    if (outcomeIndex==ILLEGAL_INT)
+      raiseError("outcomeVar not found in domain");
   }
   else
     if (gen->domain->classVar)
@@ -606,12 +575,8 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
 
   checkProperty(timeVar);
   int timeIndex = gen->domain->getVarNum(timeVar, false);
-  if (timeIndex==-1) {
-    timeIndex = -gen->domain->getMetaNum(timeVar, false);
-    if (timeIndex>1)
-      raiseError("'timeVar' not found in domain");
-  }
-  bool metatime = timeIndex<0;
+  if (timeIndex==ILLEGAL_INT)
+    raiseError("'timeVar' not found in domain");
 
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
@@ -620,7 +585,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     float thisMaxTime = maxTime;
     if (thisMaxTime<=0.0)
       PEITERATE(ei, table) {
-        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
+        const TValue &tme = (*ei)[timeIndex];
         if (!tme.isSpecial()) {
           if (tme.varType != TValue::FLOATVAR)
             raiseError("invalid time (continuous attribute expected)");
@@ -636,17 +601,17 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     newWeight = getMetaID();
     PEITERATE(ei, table) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
-        (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
+        (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
       else {
-        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
+        const TValue &tme = (*ei)[timeIndex];
         // need to check it again -- the above check is only run if maxTime is not given
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
 
         if (tme.isSpecial())
-          (*ei).meta.setValue(newWeight, TValue(0.0));
+          (*ei).setMeta(newWeight, TValue(0.0));
         else
-          (*ei).meta.setValue(newWeight, TValue(tme.floatV>thisMaxTime ? WEIGHT(*ei) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
+          (*ei).setMeta(newWeight, TValue(tme.floatV>thisMaxTime ? WEIGHT(*ei) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
       }
     }
   }
@@ -663,25 +628,25 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     newWeight = getMetaID();
     PEITERATE(ei, table) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
-        (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
+        (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
       else {
-        const TValue &tme = metatime ? (*ei).meta[-timeIndex] : (*ei)[timeIndex];
+        const TValue &tme = (*ei)[timeIndex];
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous value expected)");
         if (tme.isSpecial())
-          (*ei).meta.setValue(newWeight, TValue(0.0));
+          (*ei).setMeta(newWeight, TValue(0.0));
         else {
           if (tme.floatV > maxTime)
-            (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
+            (*ei).setMeta(newWeight, TValue(WEIGHT(*ei)));
           else {
             float KM_t = KM->p(tme.floatV);
             if (method==km)
               // KM_t shouldn't be 0 here - at least this example DID survive; but let's play it safe
-              (*ei).meta.setValue(newWeight, TValue((KM_t>0) ? WEIGHT(*ei) * (KM_max/KM_t) : 0.0));
+              (*ei).setMeta(newWeight, TValue((KM_t>0) ? WEIGHT(*ei) * (KM_max/KM_t) : 0.0));
             else
-              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * KM_t));
+              (*ei).setMeta(newWeight, TValue(WEIGHT(*ei) * KM_t));
           }
         }
       }

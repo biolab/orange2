@@ -405,7 +405,7 @@ PyObject *TreeSplitConstructor_new(PyTypeObject *type, PyObject *args, PyObject 
 }
 
 
-PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weight, contingency, apriori class distribution, candidates]) -> (Classifier, descriptions, sizes, quality)")
+PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weight, contingency, apriori class distribution, candidates, nodeClassifier]) -> (Classifier, descriptions, sizes, quality)")
 { PyTRY
 
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTreeSplitConstructor_Type) {
@@ -419,8 +419,9 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     PDomainContingency dcont;
     PDistribution apriori;
     PyObject *pycandidates = PYNULL;
+    PClassifier nodeClassifier;
 
-    if (!PyArg_ParseTuple(args, "O&|iO&O&O:TreeSplitConstructor.call", &pt_ExampleGenerator, &gen, &weightID, &ccn_DomainContingency, &dcont, &ccn_Distribution, &apriori, &pycandidates))
+    if (!PyArg_ParseTuple(args, "O&|iO&O&O&O:TreeSplitConstructor.call", &pt_ExampleGenerator, &gen, &weightID, &ccn_DomainContingency, &dcont, &ccn_Distribution, &apriori, &pycandidates, &ccn_Classifier, &nodeClassifier))
       return PYNULL;
 
     vector<bool> candidates;
@@ -449,7 +450,7 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     int spentAttribute;
 
     branchSelector = SELF_AS(TTreeSplitConstructor)(descriptions, subsetSizes, quality, spentAttribute,
-                                                    gen, weightID, dcont, apriori, candidates);
+                                                    gen, weightID, dcont, apriori, candidates, nodeClassifier);
 
     return Py_BuildValue("NNNfi", WrapOrange(branchSelector), WrapOrange(descriptions), WrapOrange(subsetSizes), quality, spentAttribute);
   PyCATCH

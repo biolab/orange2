@@ -292,7 +292,7 @@ int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be contin
 }
 
 
-// specials: 0 = normal, -1 = class, -2 = ignore, >0 = meta id
+// specials: 0 = normal, -1 = class, 1 = ignore, <-1 = meta id
 PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 {
   TFileExampleGenerator::TAttributeDescriptions attributeDescriptions;
@@ -309,7 +309,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
     char *cptr = name;
     if (*cptr && (cptr[1]=='#')) {
       if (*cptr == 'i') {
-        specials.push_back(-2);
+        specials.push_back(1);
         continue;
       }
 
@@ -331,7 +331,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
     else if (*cptr && cptr[1] && (cptr[2]=='#')) {
 
       if (*cptr == 'i') {
-        specials.push_back(-2);
+        specials.push_back(1);
         continue;
       }
       else if ((*cptr == 'm') || (*cptr == 'c'))
@@ -362,7 +362,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       case 'm':
         metas.push_back(TFileExampleGenerator::TAttributeDescription(cptr, type));
         attributeDescription = &metas.back();
-        specials.push_back(1); // this will later be replaced with a real id
+        specials.push_back(-2); // this will later be replaced with a real id
         break;
 
       case 'c':
@@ -409,7 +409,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
 
   int *mid = metaIDs;
   ITERATE(vector<int>, ii, specials)
-    if (*ii == 1)
+    if (*ii == -2)
       *ii = *(mid++);
 
   mldelete metaIDs;
@@ -471,10 +471,10 @@ TExampleTable *TExcelReader::readExamples(PDomain domain, const vector<int> &spe
           readValue(row, col, classVar, value);
           example.setClass(value);
         }
-        else if (*speci>0) {
+        else if (*speci < -1) {
           TValue value;
           readValue(row, col, (*meti).variable, value);
-          example.meta.setValue((*meti).id, value);
+          example.setMeta((*meti).id, value);
           meti++;
         }
 

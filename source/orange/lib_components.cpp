@@ -1394,11 +1394,8 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
         if (PyOrVariable_Check(object1))
           return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(object1), egen, aprClDistr, weightID)));
         else
-          if (varNumFromVarDom(object1, egen->domain, attrNo)) {
-            if (attrNo<0)
-              PYERROR(PyExc_TypeError, "MeasureAttribute.call: cannot assess quality of meta-attributes", PYNULL);
+          if (varNumFromVarDom(object1, egen->domain, attrNo))
             return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
-          }
 
       // Try (variable, domaincontingency, aprior class distribution)
 

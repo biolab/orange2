@@ -83,7 +83,7 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
   for( ; (mi!=me) && ((*mi).variable!=whichVar); mi++);
 
   if (mi!=me)
-    return processValue(transformer, example.meta[(*mi).id], distributionForUnknown);
+    return processValue(transformer, example[(*mi).id], distributionForUnknown);
 
   if (whichVar->getValueFrom)
     return processValue(transformer, whichVar->computeValue(example), distributionForUnknown);
@@ -126,29 +126,8 @@ TValue TClassifierFromVarFD::operator ()(const TExample &example)
     raiseError("wrong domain");
   if (position==ILLEGAL_INT)
     raiseError("'position' not set");
+  if (position>=example.domain->variables->size())
+    raiseError("'position' out of range");
   
   return processValue(transformer, example[position], distributionForUnknown);
-}
-
-
-
-TClassifierFromMeta::TClassifierFromMeta(PVariable acv, const int &ID, PDistribution dun)
-: TClassifier(acv),
-  whichID(ID),
-  distributionForUnknown(dun)
-{}
-
-
-TClassifierFromMeta::TClassifierFromMeta(const TClassifierFromMeta &old)
-: TClassifier(old),
-  whichID(old.whichID),
-  transformer(old.transformer),
-  distributionForUnknown(old.distributionForUnknown)
-{}
-
-
-TValue TClassifierFromMeta::operator ()(const TExample &example)
-{ checkProperty(whichID);
-
-  return processValue(transformer, example.meta[whichID], distributionForUnknown);
 }

@@ -102,7 +102,7 @@ public:
   virtual PDistribution p_classes(const TValue &varValue) const;
   virtual PDistribution p_attrs(const TValue &classValue) const;
 
-  void constructFromGenerator(PVariable outer, PVariable inner, PExampleGenerator, const long &weightID, const int &attrNo, const bool &useValueFrom);
+  void constructFromGenerator(PVariable outer, PVariable inner, PExampleGenerator, const long &weightID, const int &attrNo);
 
 protected:
   virtual void add_gen(PExampleGenerator gen, const int &attrNo, const long &weightID) = 0;

@@ -183,8 +183,6 @@ public:
 
 WRAPPER(AssociationRule)
 
-#include "rule_conditions.hpp"
-
 
 #define TAssociationRules TOrangeVector<PAssociationRule>
 VWRAPPER(AssociationRules)
@@ -198,7 +196,7 @@ public:
 
   float conf; //P required confidence
   float supp; //P required support
-  TRuleCondDisjunctions conditions;
+  bool classificationRules; //P if true, rules will have the class and only the class attribute on the right-hand side
 
 private:
   TItemSetTree tree;
@@ -235,7 +233,6 @@ class TAssociationLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
-  string condfile;
   float conf; //P required confidence
   float supp; //P required support
   int voteWeight; //P vote weight (s=support, c=confidence, p=product)

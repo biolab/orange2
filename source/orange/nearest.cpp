@@ -96,7 +96,7 @@ PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const f
     ITERATE(set<TNNRec>, in, NN) {
       TExample &exam = (*in).example;
       if (distanceID)
-        exam.meta.setValue(distanceID, TValue((*in).dist));
+        exam.setMeta(distanceID, TValue((*in).dist));
       ret->addExample(exam);
     }
   else {
@@ -104,7 +104,7 @@ PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const f
     ITERATE(set<TNNRec>, in, NN) {
       TExample &exam = (*in).example;
       if (distanceID)
-        exam.meta.setValue(distanceID, TValue((*in).dist));
+        exam.setMeta(distanceID, TValue((*in).dist));
       ret->addExample(exam);
       if ((needs -= WEIGHT((*in).example)) <= 0.0)
         break;

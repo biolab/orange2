@@ -29,11 +29,11 @@ const char *_unknownweightexception = "example has undefined weight";
 const char *_noncontinuousweightexception = "example has non-continuous weight";
 const char *_getweightwho = "_getweight";
 
-long metaID=1;
+long metaID = -1;
 
 
 long getMetaID()
-{ return ++metaID; }
+{ return --metaID; }
 
 
 TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar)

@@ -89,7 +89,8 @@ PClassifier TTreeSplitConstructor_Combined::operator()(
 
                              PExampleGenerator gen, const int &weightID ,
                              PDomainContingency dcont, PDistribution apriorClass,
-                             const vector<bool> &candidates
+                             const vector<bool> &candidates,
+                             PClassifier nodeClassifier
                             )
 { checkProperty(discreteSplitConstructor);
   checkProperty(continuousSplitConstructor);
@@ -121,14 +122,14 @@ PClassifier TTreeSplitConstructor_Combined::operator()(
   PDiscDistribution discSizes;
   int discSpent;
   PClassifier discSplit = discreteSplitConstructor->call(discDescriptions, discSizes, discQuality, discSpent,
-                                                               gen, weightID, dcont, apriorClass, discrete);
+                                                               gen, weightID, dcont, apriorClass, discrete, nodeClassifier);
 
   float contQuality;
   PStringList contDescriptions;
   PDiscDistribution contSizes;
   int contSpent;
   PClassifier contSplit = continuousSplitConstructor->call(contDescriptions, contSizes, contQuality, contSpent,
-                                                                 gen, weightID, dcont, apriorClass, continuous);
+                                                                 gen, weightID, dcont, apriorClass, continuous, nodeClassifier);
 
   int N = gen ? gen->numberOfExamples() : -1;
   if (N<0)
@@ -167,7 +168,8 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
 
                              PExampleGenerator gen, const int &weightID,
                              PDomainContingency dcont, PDistribution apriorClass,
-                             const vector<bool> &candidates
+                             const vector<bool> &candidates,
+                             PClassifier nodeClassifier
                             )
 { checkProperty(measure);
 
@@ -333,7 +335,8 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
                              PExampleGenerator gen, const int &weightID ,
                              PDomainContingency dcont, PDistribution apriorClass,
-                             const vector<bool> &candidates
+                             const vector<bool> &candidates,
+                             PClassifier
                             )
 { 
   checkProperty(measure);
@@ -533,7 +536,8 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
                              PExampleGenerator gen, const int &weightID ,
                              PDomainContingency dcont, PDistribution apriorClass,
-                             const vector<bool> &candidates
+                             const vector<bool> &candidates,
+                             PClassifier
                             )
 { checkProperty(measure);
 
@@ -832,7 +836,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
     TExampleIterator ei(gen->begin());
     ITERATE(vector<int>, ii, indices) {
       uexamplePtrs[*ii]->addExample(*ei);
-      (*ei).meta.setValue(newWeights[*ii], TValue(WEIGHT(*ei)));
+      (*ei).setMeta(newWeights[*ii], TValue(WEIGHT(*ei)));
       ++ei;
     }
 
@@ -841,14 +845,14 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
 
       if (!index.isSpecial() && (index.intV>=0) && (index.intV<maxIndex)) {
         uexamplePtrs[index.intV]->addExample(*ei);
-        (*ei).meta.setValue(newWeights[index.intV], TValue(WEIGHT(*ei)));
+        (*ei).setMeta(newWeights[index.intV], TValue(WEIGHT(*ei)));
       }
     
       else {
         if (index.isDC()) {
           for(int branchNo = 0; branchNo<maxIndex; branchNo++) {
             uexamplePtrs[branchNo]->addExample(*ei);
-            (*ei).meta.setValue(newWeights[branchNo], TValue(WEIGHT(*ei)));
+            (*ei).setMeta(newWeights[branchNo], TValue(WEIGHT(*ei)));
           }
         }
         else {
@@ -856,7 +860,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
             float weight = branchSizes.p(branchNo) * WEIGHT(*ei);
             if (weight) {
               uexamplePtrs[branchNo]->addExample(*ei);
-              (*ei).meta.setValue(newWeights[branchNo], TValue(weight));
+              (*ei).setMeta(newWeights[branchNo], TValue(weight));
             }
           }
         }
@@ -893,7 +897,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsSelector::operator()(PTreeN
     TExampleIterator ei(gen->begin());
     ITERATE(vector<int>, ii, indices) {
       uexamplePtrs[*ii]->addExample(*ei);
-      (*ei).meta.setValue(newWeights[*ii], TValue(WEIGHT(*ei)));
+      (*ei).setMeta(newWeights[*ii], TValue(WEIGHT(*ei)));
       ++ei;
     }
 
@@ -902,14 +906,14 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsSelector::operator()(PTreeN
 
       if (!index.isSpecial() && (index.intV>=0) && (index.intV<maxIndex)) {
         uexamplePtrs[index.intV]->addExample(*ei);
-        (*ei).meta.setValue(newWeights[index.intV], TValue(WEIGHT(*ei)));
+        (*ei).setMeta(newWeights[index.intV], TValue(WEIGHT(*ei)));
       }
     
       else {
         if (index.isDC()) {
           for(int branchNo = 0; branchNo<maxIndex; branchNo++) {
             uexamplePtrs[branchNo]->addExample(*ei);
-            (*ei).meta.setValue(newWeights[branchNo], TValue(WEIGHT(*ei)));
+            (*ei).setMeta(newWeights[branchNo], TValue(WEIGHT(*ei)));
           }
         }
         else {
@@ -919,7 +923,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsSelector::operator()(PTreeN
               float weight = distr->p(branchNo) * WEIGHT(*ei);
               if (weight) {
                 uexamplePtrs[branchNo]->addExample(*ei);
-                (*ei).meta.setValue(newWeights[branchNo], TValue(weight));
+                (*ei).setMeta(newWeights[branchNo], TValue(weight));
             }
           }
         }

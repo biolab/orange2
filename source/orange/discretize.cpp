@@ -467,7 +467,7 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
   PEITERATE(ei, gen) {
     TValue &val = (*ei)[varPos];
     if (!val.isSpecial()) {
-	    TValue eclass = (*ei).getClass();
+	    const TValue &eclass = (*ei).getClass();
       if (!eclass.isSpecial()) {
   	    float weight = WEIGHT(*ei);
         S[float(val)].addint(int(eclass), weight);
@@ -647,7 +647,7 @@ TDomainDiscretization::TDomainDiscretization(PDiscretization adisc)
 PDomain TDomainDiscretization::equiDistDomain(PExampleGenerator gen)
 {
   PDomain newDomain = mlnew TDomain();
-  newDomain->metas=gen->domain->metas;
+  newDomain->metas = gen->domain->metas;
 
   TDomainBasicAttrStat valStats(gen);
   const TEquiDistDiscretization &discs = dynamic_cast<TEquiDistDiscretization &>(discretization.getReference());
@@ -679,7 +679,7 @@ PDomain TDomainDiscretization::equiDistDomain(PExampleGenerator gen)
 PDomain TDomainDiscretization::equiNDomain(PExampleGenerator gen, const long &weightID)
 {
   PDomain newDomain = mlnew TDomain();
-  newDomain->metas=gen->domain->metas;
+  newDomain->metas = gen->domain->metas;
   TDomainDistributions valDs(gen, weightID);
 
   const TEquiNDiscretization &discs = dynamic_cast<TEquiNDiscretization &>(discretization.getReference());
@@ -711,7 +711,7 @@ PDomain TDomainDiscretization::equiNDomain(PExampleGenerator gen, const long &we
 PDomain TDomainDiscretization::otherDomain(PExampleGenerator gen, const long &weightID)
 {
   PDomain newDomain = mlnew TDomain();
-  newDomain->metas=gen->domain->metas;
+  newDomain->metas = gen->domain->metas;
 
   PITERATE(TVarList, vi, gen->domain->variables)
     if ((*vi)->varType==TValue::FLOATVAR) {

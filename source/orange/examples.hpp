@@ -63,23 +63,37 @@ public:
   { return values_end; }
 
 
-  TValue &operator[] (int i)
-  { return values[i]; }
+  TValue &operator[] (const int &i)
+  { return i>=0 ? values[i] : meta[i]; }
 
-  const TValue &operator[] (int i) const
-  { return values[i]; }
+  const TValue &operator[] (const int &i) const
+  { return i>=0 ? values[i] : meta[i]; }
 
   TValue &operator[] (PVariable &var);
   const TValue &operator[] (PVariable &var) const;
   TValue &operator[] (const string &name);
   const TValue &operator[] (const string &name) const;
 
-  TValue getClass() const
+  TValue &getClass()
+  { return values_end[-1]; }
+
+  TValue &getClass() const
   { return values_end[-1]; }
 
   void setClass(const TValue &val)
   { values_end[-1] = val; }
 
+  TValue getMeta(const int &i) const
+  { return meta[i]; }
+
+  void setMeta(const int &i, const TValue &val)
+  { meta.setValue(i, val); }
+
+  void removeMeta(const int &i)
+  { meta.removeValue(i); }
+
+  void removeMetaIfExists(const int &i)
+  { meta.removeValueIfExists(i); }
 
   bool operator < (const TExample &) const;
   bool operator == (const TExample &) const;

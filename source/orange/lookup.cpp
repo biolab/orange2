@@ -35,23 +35,8 @@
 
 #include "lookup.ppp"
 
-inline int getVarIndex(PVariable variable, PDomain domain)
-{ int varIndex = domain->getVarNum(variable, false);
-  if (varIndex==-1) {
-    varIndex = -domain->getMetaNum(variable, false);
-    if (varIndex==1)
-      varIndex = numeric_limits<int>::min();
-  }
-  return varIndex;
-}
-
-
 inline TValue getValue(const TExample &ex, const int &varIndex, PVariable variable)
-{ if (varIndex==numeric_limits<int>::min()) 
-    return variable->computeValue(ex);
-  return (varIndex>=0) ? ex[varIndex] : ex.meta[-varIndex];
-}
-  
+{ return (varIndex==ILLEGAL_INT) ? variable->computeValue(ex) : ex[varIndex]; }
 
 
 TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PVariable avar)
@@ -66,7 +51,7 @@ TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PVariable a
 
 
 void TClassifierByLookupTable::setLastDomain(PDomain domain)
-{ lastVarIndex = getVarIndex(variable, domain);
+{ lastVarIndex = domain->getVarNum(variable);
   lastDomainVersion = domain->version;
 }
 
@@ -226,8 +211,8 @@ TClassifierByLookupTable2::TClassifierByLookupTable2(PVariable aclass, PVariable
 
 
 void TClassifierByLookupTable2::setLastDomain(PDomain domain)
-{ lastVarIndex1 = getVarIndex(variable1, domain);
-  lastVarIndex2 = getVarIndex(variable2, domain);
+{ lastVarIndex1 = domain->getVarNum(variable1);
+  lastVarIndex2 = domain->getVarNum(variable2);
   lastDomainVersion = domain->version;
 }
 
@@ -375,9 +360,9 @@ TClassifierByLookupTable3::TClassifierByLookupTable3(PVariable aclass, PVariable
 
 void TClassifierByLookupTable3::setLastDomain(PDomain domain)
 { 
-  lastVarIndex1 = getVarIndex(variable1, domain);
-  lastVarIndex2 = getVarIndex(variable2, domain);
-  lastVarIndex3 = getVarIndex(variable3, domain);
+  lastVarIndex1 = domain->getVarNum(variable1);
+  lastVarIndex2 = domain->getVarNum(variable2);
+  lastVarIndex3 = domain->getVarNum(variable3);
   lastDomainVersion=domain->version;
 }
 

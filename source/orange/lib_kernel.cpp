@@ -247,7 +247,7 @@ bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, 
     PVarList variables = PyOrange_AsVarList(boundList);
     if (checkForIncludance)
       const_PITERATE(TVarList, vi, variables)
-        if (!domain || (!exists(domain->variables.getReference(), *vi) && (domain->getMetaNum(*vi, false)==-1))) {
+        if (!domain || (domain->getVarNum(*vi, false)==ILLEGAL_INT)) {
           PyErr_Format(PyExc_IndexError, "variable '%s' does not exist in the domain", (*vi)->name.c_str());
           return false;
         }
@@ -295,10 +295,10 @@ PVariable varFromArg_byDomain(PyObject *obj, PDomain domain, bool checkForInclud
       if (PyInt_Check(obj)) {
         int idx=PyInt_AsLong(obj);
         if (idx<0) 
-          return domain->getMetaVar(-idx);
+          return domain->getMetaVar(idx);
         if (idx>=int(domain->variables->size()))
           PYERROR(PyExc_IndexError, "index out of range", PVariable());
-        return domain->variables->at(idx);
+        return domain->getVar(idx);
       }
     PyCATCH_r(PVariable())
   }
@@ -306,7 +306,7 @@ PVariable varFromArg_byDomain(PyObject *obj, PDomain domain, bool checkForInclud
   if (PyOrVariable_Check(obj)) {
     PVariable var(PyOrange_AsVariable(obj));
     if (checkForIncludance)
-      if (!domain || (!exists(domain->variables.getReference(), var) && (domain->getMetaNum(var, false)==-1)))
+      if (!domain || (domain->getMetaNum(var, false)==ILLEGAL_INT))
         PYERROR(PyExc_IndexError, "variable does not exist in the domain", PVariable());
     return var;
   }
@@ -402,11 +402,8 @@ bool varNumFromVarDom(PyObject *pyvar, PDomain domain, int &attrNo)
       return true;
     }
 
-  attrNo = -domain->getMetaNum(var, false);
-  if (attrNo<0)
-    return true;
-
-  return false;
+  attrNo = domain->getMetaNum(var, false);
+  return attrNo != ILLEGAL_INT;
 }
 
 
@@ -697,7 +694,7 @@ PyObject *Domain_getitem_sq(TPyOrange *self, int index)
     CAST_TO(TDomain, domain)
     if ((index<0) || (index>=int(domain->variables->size())))
       PYERROR(PyExc_IndexError, "index out of range", PYNULL);
-    return WrapOrange(domain->variables->at(index));
+    return WrapOrange(domain->getVar(index));
   PyCATCH
 }
 
@@ -2776,7 +2773,6 @@ PyObject *DefaultClassifier_get_defaultValue(PyObject *self)
 #include "classfromvar.hpp"
 C_NAMED(ClassifierFromVar, Classifier, "([whichVar=, transformer=])")
 C_NAMED(ClassifierFromVarFD, ClassifierFD, "([position=, transformer=])")
-C_NAMED(ClassifierFromMeta, Classifier, "([whichID=, transformer=])")
 
 #include "cartesian.hpp"
 C_NAMED(CartesianClassifier, ClassifierFD, "()")

@@ -74,7 +74,7 @@ public:
 class TTreeSplitConstructor_Python : public TTreeSplitConstructor {
 public:
   __REGISTER_CLASS
-  virtual PClassifier operator ()(PStringList &, PDiscDistribution &, float &, int &, PExampleGenerator, const int & =0, PDomainContingency =PDomainContingency(), PDistribution = PDistribution(), const vector<bool> & = vector<bool>());
+  virtual PClassifier operator ()(PStringList &, PDiscDistribution &, float &, int &, PExampleGenerator, const int & =0, PDomainContingency =PDomainContingency(), PDistribution = PDistribution(), const vector<bool> & = vector<bool>(), PClassifier nodeClassifier = PClassifier());
 };
 
 

@@ -58,19 +58,4 @@ public:
   virtual TValue operator ()(const TExample &);
 };
 
-
-class TClassifierFromMeta : public TClassifier {
-public:
-  __REGISTER_CLASS
-
-  int whichID; //P id of meta attribute
-  PTransformValue transformer; //P transformer
-  PDistribution distributionForUnknown; //P distribution for unknown value
-
-  TClassifierFromMeta(PVariable classVar=PVariable(), const int & =0, PDistribution = PDistribution());
-  TClassifierFromMeta(const TClassifierFromMeta &);
-
-  virtual TValue operator ()(const TExample &);
-};
-
 #endif

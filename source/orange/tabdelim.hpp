@@ -62,11 +62,11 @@ public:
   __REGISTER_CLASS
 
 /*  A kind of each attribute:
-           -2   pending meta value (used only at construction time)
+            1   pending meta value (used only at construction time)
            -1   normal
             0   skipped
-     positive   meta value. */
-  PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, positive = meta ID)
+          <-1   meta value. */
+  PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, <-1 = meta ID)
 
   PStringList DCs; //P characters that mean DC (for each attribute)
   int classPos; //P position of the class attribute

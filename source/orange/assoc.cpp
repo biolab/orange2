@@ -215,7 +215,8 @@ TAssociationRulesInducer::TAssociationRulesInducer(float asupp, float aconf, int
   maxItemSets(15000),
   conf(aconf),
   supp(asupp),
-  nOfExamples(0.0)
+  nOfExamples(0.0),
+  classificationRules(false)
 {}
 
 PAssociationRules TAssociationRulesInducer::operator()(PExampleGenerator examples)
@@ -421,24 +422,43 @@ void TAssociationRulesInducer::generateRules1(TExample &ex, TItemSetNode *root, 
 
 void TAssociationRulesInducer::find1Rules(TExample &example, const float &nAppliesBoth, int oldk, PAssociationRules rules)
 {
-  TExample w_e(example), e(example.domain);
-  for(TExample::iterator ei(example.begin()), wei(w_e.begin()), eei(e.begin()); ei!=example.end(); ei++, wei++, eei++) 
-    if (!(*ei).isSpecial()) {
-      (*wei).setDC();
-      *eei = *ei;
-      float nAppliesLeft=tree.findSupport(w_e);
+  if (classificationRules) {
+    if (!example.getClass().isSpecial()) {
+      TExample w_e(example);
+      w_e.getClass().setDC();
+      float nAppliesLeft = tree.findSupport(w_e);
       float tconf=nAppliesBoth/nAppliesLeft;
       if (tconf>=conf) {
-        float nAppliesRight=tree.findSupport(e);
-        PAssociationRule rule=mlnew TAssociationRule(mlnew TExample(w_e), mlnew TExample(e), 
-                                                     nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, 
-                                                     oldk-1, 1);
-        if (conditions(rule))
-          rules->push_back(rule);
+        TExample e(example.domain);
+        e.setClass(example.getClass());
+        float nAppliesRight = tree.findSupport(e);
+        PAssociationRule rule = mlnew TAssociationRule(mlnew TExample(w_e), mlnew TExample(e), 
+                                                       nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, 
+                                                       oldk-1, 1);
+        rules->push_back(rule);
       }
-      (*eei).setDC();
-      *wei = *ei;
     }
+  }
+
+  else {
+    TExample w_e(example), e(example.domain);
+    for(TExample::iterator ei(example.begin()), wei(w_e.begin()), eei(e.begin()); ei!=example.end(); ei++, wei++, eei++) 
+      if (!(*ei).isSpecial()) {
+        (*wei).setDC();
+        *eei = *ei;
+        float nAppliesLeft=tree.findSupport(w_e);
+        float tconf=nAppliesBoth/nAppliesLeft;
+        if (tconf>=conf) {
+          float nAppliesRight=tree.findSupport(e);
+          PAssociationRule rule=mlnew TAssociationRule(mlnew TExample(w_e), mlnew TExample(e), 
+                                                       nAppliesLeft, nAppliesRight, nAppliesBoth, nOfExamples, 
+                                                       oldk-1, 1);
+          rules->push_back(rule);
+        }
+        (*eei).setDC();
+        *wei = *ei;
+      }
+  }
 }
 
 
@@ -511,7 +531,9 @@ int TAssociationRulesInducer::generatePairs(TItemSetTree &ruleTree, TItemSetNode
              PAssociationRule rule=mlnew TAssociationRule(mlnew TExample(w_e), mlnew TExample(example), 
                                                           nAppliesLeft, tree.findSupport(example), nAppliesBoth, nOfExamples);
              rule->confidence = aconf;
-             if (conditions(rule))
+
+             // This is not exactly nice (constructing everything, then throwing away), but it will do for now
+             if (w_e.getClass().isSpecial() && !example.getClass().isSpecial())
                rules->push_back(rule);
              itemSets++;
            }
@@ -541,8 +563,7 @@ bool notClassRule(PAssociationRule rule)
 }
 
 TAssociationLearner::TAssociationLearner()
-: condfile(""),
-  conf(0.5),
+: conf(0.5),
   supp(0.5),
   voteWeight('s'),
   maxItemSets(15000)
@@ -554,15 +575,8 @@ PClassifier TAssociationLearner::operator()(PExampleGenerator gen, const int &we
     raiseError("class-less domain");
 
   TAssociationRulesInducer inducer(supp, conf, weight);
-  if (condfile.length()) {
-    ifstream outstr(condfile.c_str());
-    inducer.conditions = TRuleCondDisjunctions(gen->domain, outstr);
-  }
-  /* add the condition that the class value must occur on the right but not on the left side */
-  PAssociationRules rules = inducer(gen);
-  rules->erase(remove_if(rules->begin(), rules->end(), notClassRule), rules->end());
-
-  return mlnew TAssociationClassifier(gen->domain, rules);
+  inducer.classificationRules = true;
+  return mlnew TAssociationClassifier(gen->domain, inducer(gen));
 }
 
 

@@ -61,14 +61,19 @@ PClassifier TBoostLearner::operator()(PExampleGenerator ogen, const int &weight)
 
   if (weight) {
    { PEITERATE(ei, gen) 
-       weights += float((*ei).meta[weight]); }
+       weights += float((*ei)[weight]); }
+   if (weights<=0)
+       raiseError("sum of weights is zero or negative");
    { PEITERATE(ei, gen)
-       (*ei).meta.setValue(myWeight, TValue(float((*ei).meta[weight])/weights)); }
+       (*ei).setMeta(myWeight, TValue(float((*ei)[weight])/weights)); }
   }
   else {
     weights = gen->numberOfExamples();
+    if (weights==0)
+       raiseError("no examples");
+    const TValue w1 = TValue(float(1.0)/weights);
     PEITERATE(ei, gen)
-      (*ei).meta.setValue(myWeight, TValue(float(1.0)/weights));
+      (*ei).setMeta(myWeight, w1);
   }
 
   vector<bool> correct(gen->numberOfExamples());
@@ -81,7 +86,7 @@ PClassifier TBoostLearner::operator()(PExampleGenerator ogen, const int &weight)
         TValue predicted = newClassifier->operator()(*ei);
         *bi = (!predicted.isSpecial() && (predicted==(*ei).getClass()));
         if (!*bi)
-          epsilon += float((*ei).meta[myWeight]);
+          epsilon += float((*ei)[myWeight]);
         bi++;
       }
     }
@@ -98,17 +103,17 @@ PClassifier TBoostLearner::operator()(PExampleGenerator ogen, const int &weight)
     { vector<bool>::iterator bi(correct.begin());
       PEITERATE(ei, gen) {
         if (*(bi++))
-          (*ei).meta[myWeight].floatV *= beta;
-        Z += (*ei).meta[myWeight].floatV;
+          (*ei)[myWeight].floatV *= beta;
+        Z += (*ei)[myWeight].floatV;
       }
     }
 
     PEITERATE(ei, gen)
-      (*ei).meta[myWeight].floatV/=Z;
+      (*ei)[myWeight].floatV/=Z;
   }
 
   PEITERATE(ei, gen)
-    (*ei).meta.removeValue(myWeight);
+    (*ei).removeMeta(myWeight);
 
   return wclassifier;
 }

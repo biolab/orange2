@@ -487,7 +487,7 @@ void TExampleTable::removeDuplicates(const int &weightID)
   while(++fromPtr != ePtr) {
     if (*(*fromPtr).example == *(*toPtr).example) {
       if (weightID)
-        (*toPtr).example->meta[weightID].floatV += WEIGHT(*(*fromPtr).example);
+        (*(*toPtr).example)[weightID].floatV += WEIGHT(*(*fromPtr).example);
       if (ownsPointers)
         delete examples[(*fromPtr).i];
       examples[(*fromPtr).i] = NULL;
@@ -539,7 +539,7 @@ void TExampleTable::changeDomain(PDomain dom)
 
 void TExampleTable::addMetaAttribute(const int &id, const TValue &value)
 { PEITERATE(ei, this)
-    (*ei).meta.setValue(id, value);
+    (*ei).setMeta(id, value);
 
   examplesHaveChanged();
 }
@@ -548,7 +548,7 @@ void TExampleTable::addMetaAttribute(const int &id, const TValue &value)
 void TExampleTable::copyMetaAttribute(const int &id, const int &source, TValue &defaultVal)
 { if (source) {
     PEITERATE(ei, this)
-      (*ei).meta.setValue(id, (*ei).meta[source]);
+      (*ei).setMeta(id, (*ei)[source]);
     examplesHaveChanged();
   }
   else
@@ -558,7 +558,7 @@ void TExampleTable::copyMetaAttribute(const int &id, const int &source, TValue &
 
 void TExampleTable::removeMetaAttribute(const int &id)
 { PEITERATE(ei, this)
-    (*ei).meta.removeValueIfExists(id);
+    (*ei).removeMetaIfExists(id);
 
   examplesHaveChanged();
 }
@@ -590,7 +590,7 @@ void TExampleTable::sort(vector<int> &sortOrder)
   TExample **temp = (TExample **)malloc(ssize * sizeof(TExample *));
 
   const_ITERATE(vector<int>, bi, sortOrder) {
-    int noVal = domain->variables->operator[](*bi)->noOfValues();
+    int noVal = domain->getVar(*bi)->noOfValues();
     if (noVal>0) {
       vector<int> valf(noVal+1, 0);
       TExample **t;

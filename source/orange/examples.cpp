@@ -53,7 +53,7 @@ TExample::TExample(PDomain dom)
     *(vi++) = (*di)->DK();
 
   ITERATE(TMetaVector, mi, dom->metas)
-    meta.setValue((*mi).id, (*mi).variable->DC());
+    setMeta((*mi).id, (*mi).variable->DC());
 }
 
 
@@ -134,19 +134,19 @@ TExample &TExample::operator =(const TExample &orig)
 
 
 TValue &TExample::operator[] (PVariable &var)
-{ return values[domain->getVarNum(var)]; }
+{ return operator[](domain->getVarNum(var)); }
 
 
 const TValue &TExample::operator[] (PVariable &var) const
-{ return values[domain->getVarNum(var)]; }
+{ return operator[](domain->getVarNum(var)); }
 
 
 TValue &TExample::operator[] (const string &name)
-{ return values[domain->getVarNum(name)]; }
+{ return operator[](domain->getVarNum(name)); }
 
 
 const TValue &TExample::operator[] (const string &name) const
-{ return values[domain->getVarNum(name)]; }
+{ return operator[](domain->getVarNum(name)); }
 
 
 bool TExample::operator < (const TExample &other) const

@@ -181,7 +181,7 @@ float TMeasureAttribute::operator ()(PVariable var, PExampleGenerator gen, PDist
     raiseError("can't evaluate attributes on class-less domains");
   
   int attrNo=gen->domain->getVarNum(var, false);
-  if (attrNo>-1)
+  if (attrNo != ILLEGAL_INT)
     return operator()(attrNo, gen, apriorClass, weightID);
 
   if (needs>Contingency_Class)

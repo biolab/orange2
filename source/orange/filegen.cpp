@@ -183,10 +183,10 @@ void TFileExampleGenerator::copyIterator(const TExampleIterator &source, TExampl
 }
 
 
-TFileExampleGenerator::TAttributeDescription::TAttributeDescription(const string &n, const int &vt, bool or)
+TFileExampleGenerator::TAttributeDescription::TAttributeDescription(const string &n, const int &vt, bool ord)
 : name(n),
   varType(vt),
-  ordered(or)
+  ordered(ord)
 {}
 
 
@@ -283,7 +283,7 @@ PVariable createVariable(const string &name, const int &varType, PStringList val
   }
 
   if (varType==-1)
-    raiseErrorWho("makeVariable", "unknown type for attribute '%s'", name.c_str());
+    ::raiseErrorWho("makeVariable", "unknown type for attribute '%s'", name.c_str());
 
   return (TVariable *)NULL;
 }

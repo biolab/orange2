@@ -127,7 +127,7 @@ void TSortedExamples_nodeIndices::sortByAttr_Mult(int attrNo, vector<TEnIIterato
   ITERATE(vector<TEnIIterator>, ii, *sorting) {
     TValue &val = (*ii)->example->operator[](attrNo);
     if (val.isSpecial())
-      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->variables->at(attrNo)->name.c_str());
+      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->name.c_str());
     valf[val.intV]++;
   }
 
@@ -151,7 +151,7 @@ void TSortedExamples_nodeIndices::sortByAttr(int attrNo, vector<TEnIIterator> *&
   ITERATE(vector<TEnIIterator>, ii, *sorting) {
     TValue &val = (*ii)->example->operator[](attrNo);
     if (val.isSpecial())
-      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->variables->at(attrNo)->name.c_str());
+      raiseError("attribute '%s' has undefined values", (*ii)->example->domain->getVar(attrNo)->name.c_str());
     valf[val.intV]++;
   }
 
@@ -324,12 +324,12 @@ PIM TIMConstructor::operator()(PExampleGenerator gen, const TVarList &aboundSet,
   // Identify bound attributes
   vector<bool> bound=vector<bool>(gen->domain->attributes->size(), false);
   { const_ITERATE(TVarList, evi, aboundSet)
-      bound[gen->domain->getVarNum(*evi)]=true;
+      bound[gen->domain->getVarNum(*evi)] = true;
   }
 
   vector<bool> free=vector<bool>(gen->domain->attributes->size(), false);
   { const_ITERATE(TVarList, evi, afreeSet)
-      free[gen->domain->getVarNum(*evi)]=true;
+      free[gen->domain->getVarNum(*evi)] = true;
   }
 
   return operator()(gen, bound, aboundSet, free, weightID);
@@ -752,7 +752,7 @@ PIMByRows TIMByRowsByRelief::operator()(PExampleGenerator gen, const vector<bool
 
       TExample freeExample(freeDomain, *ei);
       if (weightID)
-        freeExample.meta.setValue(weightID, TValue(WEIGHT(*ei)));
+        freeExample.setMeta(weightID, TValue(WEIGHT(*ei)));
       freeExamples.addExample(*ei);
       int classIndex = (*ei).getClass().intV;
       classTables[classIndex].push_back(TCI_w(ci, freeIndex++));

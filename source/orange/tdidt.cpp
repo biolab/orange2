@@ -104,7 +104,8 @@ TTreeLearner::TTreeLearner()
 : storeExamples(false),
   storeDistributions(true),
   storeContingencies(true),
-  storeNodeClassifier(true)
+  storeNodeClassifier(true),
+  maxDepth(-1)
 {}
 
 
@@ -150,7 +151,7 @@ PClassifier TTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 
     vector<bool> candidates(examples->domain->attributes->size(), true);
 
-    PTreeNode root = call(examples, weight, apriorClass, candidates);
+    PTreeNode root = call(examples, weight, apriorClass, candidates, 0);
     if (storeExamples)
       root->examples = examples;
 
@@ -177,7 +178,7 @@ PClassifier TTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 
 
 
-PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weightID, PDistribution apriorClass, vector<bool> &candidates)
+PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weightID, PDistribution apriorClass, vector<bool> &candidates, const int &depth)
 {
   TTreeNode *utreeNode = mlnew TTreeNode();
   PTreeNode treeNode = utreeNode;
@@ -192,7 +193,7 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
   if (storeDistributions)
     utreeNode->distribution = contingency->classes;
 
-  bool isLeaf = stop->call(examples, weightID, contingency);
+  bool isLeaf = ((maxDepth>=0) && (depth == maxDepth)) || stop->call(examples, weightID, contingency);
 
   if (isLeaf || storeNodeClassifier) {
     utreeNode->nodeClassifier = nodeLearner
@@ -208,7 +209,7 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
   utreeNode->branchSelector = split->call(utreeNode->branchDescriptions, utreeNode->branchSizes, quality, spentAttribute,
                                           examples, weightID, contingency,
                                           apriorClass ? apriorClass : contingency->classes,
-                                          candidates);
+                                          candidates, utreeNode->nodeClassifier);
 
 
   if (utreeNode->branchSelector) {
@@ -235,7 +236,7 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
     vector<int>::iterator nwi = newWeights.begin(), nwe = newWeights.end();
     PITERATE(TExampleGeneratorList, gi, subsets) {
       if ((*gi)->numberOfExamples()) {
-        utreeNode->branches->push_back(call(*gi, (nwi!=nwe) ? *nwi : weightID, apriorClass, candidates));
+        utreeNode->branches->push_back(call(*gi, (nwi!=nwe) ? *nwi : weightID, apriorClass, candidates, depth+1));
         // Can store pointers to examples: the original is stored in the root
         if (storeExamples && utreeNode->branches->back())
           utreeNode->branches->back()->examples = *gi;
@@ -261,9 +262,13 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
       candidates[spentAttribute] = true;
   }
 
-  else {
+  else { // no split constructed
     if (!storeContingencies)
       utreeNode->contingency = PDomainContingency();
+    if (!utreeNode->nodeClassifier)
+      utreeNode->nodeClassifier = nodeLearner
+                                ? nodeLearner->smartLearn(examples, weightID, contingency)
+                                : TMajorityLearner().smartLearn(examples, weightID, contingency);
   }
 
   return treeNode;

@@ -206,7 +206,7 @@ PStringList PStringList_FromArguments(PyObject *arg);
 
 PClassifier TTreeSplitConstructor_Python::operator()(
    PStringList &descriptions, PDiscDistribution &subsetSizes, float &quality, int &spentAttribute,
-   PExampleGenerator gen, const int &weightID, PDomainContingency dcont, PDistribution apriorClass, const vector<bool> &candidates)
+   PExampleGenerator gen, const int &weightID, PDomainContingency dcont, PDistribution apriorClass, const vector<bool> &candidates, PClassifier nodeClassifier)
 
 { if (!gen)
     raiseError("invalid example generator");
@@ -226,7 +226,7 @@ PClassifier TTreeSplitConstructor_Python::operator()(
   }
 
   PyObject *res=callCallback((PyObject *)myWrapper,
-     Py_BuildValue("(NiNNN)", WrapOrange(gen), weightID, WrapOrange(dcont), WrapOrange(apriorClass), pycandidates)
+     Py_BuildValue("(NiNNNN)", WrapOrange(gen), weightID, WrapOrange(dcont), WrapOrange(apriorClass), pycandidates, WrapOrange(nodeClassifier))
   );
 
   if (res==Py_None) {

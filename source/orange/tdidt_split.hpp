@@ -72,7 +72,8 @@ public:
                                 PExampleGenerator, const int &weightID = 0,
                                 PDomainContingency = PDomainContingency(),
                                 PDistribution apriorClass = PDistribution(),
-                                const vector<bool> &candidates = vector<bool>()
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
                                )=0;
 
   inline PClassifier returnNothing(PStringList &description, PDiscDistribution &subsetSizes, int &spentAttribute)
@@ -121,7 +122,8 @@ public:
                                 PExampleGenerator, const int &weightID = 0,
                                 PDomainContingency = PDomainContingency(),
                                 PDistribution apriorClass = PDistribution(),
-                                const vector<bool> &candidates = vector<bool>()
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
                                );
 };
 
@@ -139,7 +141,8 @@ public:
                                 PExampleGenerator, const int &weightID = 0,
                                 PDomainContingency = PDomainContingency(),
                                 PDistribution apriorClass = PDistribution(),
-                                const vector<bool> &candidates = vector<bool>()
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
                                );
 };
 
@@ -157,7 +160,8 @@ public:
                                 PExampleGenerator, const int &weightID = 0,
                                 PDomainContingency = PDomainContingency(),
                                 PDistribution apriorClass = PDistribution(),
-                                const vector<bool> &candidates = vector<bool>()
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
                                );
 };
 
@@ -175,7 +179,8 @@ public:
                                 PExampleGenerator, const int &weightID = 0,
                                 PDomainContingency = PDomainContingency(),
                                 PDistribution apriorClass = PDistribution(),
-                                const vector<bool> &candidates = vector<bool>()
+                                const vector<bool> &candidates = vector<bool>(),
+                                PClassifier nodeClassifier = PClassifier()
                                );
 };
 

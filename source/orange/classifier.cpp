@@ -198,7 +198,7 @@ void TExampleForMissing::resetExample()
     }
 
   if (dataDescription->missingWeight) {
-    float weight=dataDescription->originalWeight ? meta[dataDescription->originalWeight].floatV : 1;
+    float weight = dataDescription->originalWeight ? getMeta(dataDescription->originalWeight).floatV : 1;
     if (dataDescription->domainDistributions) {
       TDomainDistributions::const_iterator di(dataDescription->domainDistributions->begin());
       ITERATE(vector<int>, ci, DKs) {
@@ -210,7 +210,7 @@ void TExampleForMissing::resetExample()
     else
       weight=weight*averageWeight;
 
-    meta.setValue(dataDescription->missingWeight, TValue(weight));
+    setMeta(dataDescription->missingWeight, TValue(weight));
   }
 }
 
@@ -235,7 +235,7 @@ bool TExampleForMissing::nextExample()
     return false;
 
   if (dataDescription->missingWeight && dataDescription->domainDistributions) {
-    float weight=dataDescription->originalWeight ? meta[dataDescription->originalWeight].floatV : 1;
+    float weight=dataDescription->originalWeight ? getMeta(dataDescription->originalWeight).floatV : 1;
     if (dataDescription->domainDistributions) {
       TDomainDistributions::const_iterator di(dataDescription->domainDistributions->begin());
       ITERATE(vector<int>, ci, DKs) {
@@ -244,7 +244,7 @@ bool TExampleForMissing::nextExample()
         weight*= dist[operator[](*ci).intV] / dist.abs;
       }
     }
-    meta.setValue(dataDescription->missingWeight, TValue(weight));
+    setMeta(dataDescription->missingWeight, TValue(weight));
   }
 
   return true;
@@ -269,7 +269,7 @@ TValue TClassifier::operator ()(const TExample &example, PEFMDataDescription dat
   do {
     TValue cv = operator()(exMissing);
     if (!cv.isSpecial())
-      classDist.addint(cv.intV, dataDes->missingWeight ? float(exMissing.meta[dataDes->missingWeight]) : 1.0);
+      classDist.addint(cv.intV, dataDes->missingWeight ? float(exMissing[dataDes->missingWeight]) : 1.0);
   } while (exMissing.nextExample());
 
   return classDist.highestProbValue(example);
@@ -285,7 +285,7 @@ PDistribution TClassifier::classDistribution(const TExample &example, PEFMDataDe
   PDiscDistribution classDist = TDistribution::create(classVar);
   do
     if (dataDes->missingWeight)
-      classDist->operator += ((classDistribution(exMissing)->operator *= (exMissing.meta[dataDes->missingWeight])));
+      classDist->operator += ((classDistribution(exMissing)->operator *= (exMissing[dataDes->missingWeight])));
     else 
       classDist->operator += (classDistribution(exMissing).getReference());
   while (exMissing.nextExample());

@@ -73,6 +73,7 @@ public:
   PComputeDomainContingency contingencyComputer; //P computes contingency matrix
   PLearner nodeLearner; //P node learner
   PTreeExampleSplitter exampleSplitter; //P splits examples to branches
+  int maxDepth; //P maximal tree depth (0 = root only, -1 = no limit)
 
   bool storeExamples; //P if true (default: false), learning examples in nodes are stored
   bool storeDistributions; //P if true (default), class distributions of learning examples in nodes are stored
@@ -83,7 +84,7 @@ public:
 
   TTreeLearner();
   virtual PClassifier operator()(PExampleGenerator gen, const int &weight =0);
-  virtual PTreeNode operator()(PExampleGenerator gen, const int &ppWeight, PDistribution apriorClass, vector<bool> &candidates);
+  virtual PTreeNode operator()(PExampleGenerator gen, const int &ppWeight, PDistribution apriorClass, vector<bool> &candidates, const int &depth);
 
   PDiscDistribution branchSizesFromSubsets(PExampleGeneratorList subsets, const int &weightID, const vector<int> &weights) const;
 

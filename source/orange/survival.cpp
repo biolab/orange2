@@ -40,9 +40,9 @@ void survivals(TTimes &times, float &sow, PExampleGenerator gen, const int &outc
   const bool outcomemeta = outcomeIndex<0;
   const bool timemeta = timeIndex<0;
 
-  if (!timemeta && (gen->domain->variables->at(timeIndex)->varType != TValue::FLOATVAR))
+  if (!timemeta && (gen->domain->getVar(timeIndex)->varType != TValue::FLOATVAR))
     raiseError("continuous attribute expected for censoring time");
-  if (!outcomemeta && (gen->domain->variables->at(outcomeIndex)->varType != TValue::INTVAR))
+  if (!outcomemeta && (gen->domain->getVar(outcomeIndex)->varType != TValue::INTVAR))
     raiseError("discrete attribute expected for outcome");
   if (failValue.isSpecial() || (failValue.varType!=TValue::INTVAR))
     raiseError("discrete value needs to be specified for the 'failure'");
@@ -53,13 +53,13 @@ void survivals(TTimes &times, float &sow, PExampleGenerator gen, const int &outc
   PEITERATE(ei, gen) {
     float wei = WEIGHT(*ei);
 
-    TValue &timeval = timemeta ? (*ei).meta[-timeIndex] : (*ei)[timeIndex];
+    TValue &timeval = (*ei)[timeIndex];
     if (timeval.isSpecial())
       continue;
     if (timemeta && timeval.varType != TValue::FLOATVAR)
       raiseError("continuous attribute expected for censoring time");
 
-    TValue &outcomeval = outcomemeta ? (*ei).meta[-outcomeIndex] : (*ei)[outcomeIndex];
+    TValue &outcomeval = (*ei)[outcomeIndex];
     if (outcomeval.isSpecial())
       continue;
     if (outcomemeta && outcomeval.varType != TValue::INTVAR)
