@@ -16,7 +16,7 @@ def listfiles(baseurl, basedir, subdir):
             if fnd:
                 fname, version = fnd.group("fname", "version")
                 if (basedir+subdir+fname).lower() not in exclude:
-                    outf.write("%s=%s:%s\n" % (basedir+subdir+fname, version, baseurl+subdir+fname))
+                    outf.write("%s=%s:%s\n" % (basedir[7:]+subdir+fname, version, baseurl+subdir+fname))
                 else:
                     print basedir+subdir+fname
                 continue
