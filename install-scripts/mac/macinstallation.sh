@@ -85,13 +85,15 @@ rm tmp.dmg
 
 ## copy file to estelle and change version
 ~/mount_estelle
+
 # remember name of old file
-OLDDMGFILE=`grep $VARNAME\= ~/estelleDownload/filenames.set | awk -F\= '{print $2}'`
+OLDDMGFILE=`grep $VARNAME\= ~/estelleDownload/filenames.set | awk -F\= '{print $2}' | tr -d '\r'`
 # change name to new filename
 grep -v $VARNAME\= ~/estelleDownload/filenames.set > filenames.new.set
 echo $VARNAME=$DMGFILE >> filenames.new.set
+
 # first remove old file (in case same name as new)
-rm ~/estelleDownload/$OLDDMGFILE
+rm ~/estelleDownload/$OLDDMGFILE $> cl.err.log.txt
 cp $DMGFILE ~/estelleDownload
 cp filenames.new.set ~/estelleDownload/filenames.set
 # remove old file
