@@ -323,6 +323,10 @@ SOURCE=.\orange\contingency.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\converts.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\cost.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"

@@ -177,26 +177,29 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 
 BASED_ON(Preprocessor, Orange)
 
-C_CALL(Preprocessor_remove_duplicates, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
-C_CALL(Preprocessor_skip_missing, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
-C_CALL(Preprocessor_only_missing, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
-C_CALL(Preprocessor_skip_missing_classes, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
-C_CALL(Preprocessor_only_missing_classes, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
-C_CALL(Preprocessor_class_missing, Preprocessor, "([examples[, weightID]] [classMissing=<float>]) -/-> ExampleTable")
-C_CALL(Preprocessor_class_noise, Preprocessor, "([examples[, weightID]] [classNoise=<float>]) -/-> ExampleTable")
-C_CALL(Preprocessor_class_gaussian_noise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
-C_CALL(Preprocessor_censor_weight, Preprocessor, "([examples[, weightID]] [outComeVar=, eventValue=, timeVar= <string>] [method="km"|"nmr"|"split"] [maxTime=, weightName=]) -/-> ExampleTable")
-C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
-C_CALL(Preprocessor_ignore, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
-C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
-C_CALL(Preprocessor_noise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
-C_CALL(Preprocessor_gaussian_noise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
-C_CALL(Preprocessor_missing, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
-C_CALL(Preprocessor_cost_weight, Preprocessor, "([examples[, weightID]] [equalize=, costs=) -/-> ExampleTable")
-
 C_CALL(Preprocessor_select, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
-C_CALL(Preprocessor_drop, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
+C_CALL(Preprocessor_ignore, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
+
 C_CALL(Preprocessor_take, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
+C_CALL(Preprocessor_drop, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
+C_CALL(Preprocessor_removeDuplicates, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
+C_CALL(Preprocessor_takeMissing, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
+C_CALL(Preprocessor_dropMissing, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
+C_CALL(Preprocessor_takeMissingClasses, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
+C_CALL(Preprocessor_dropMissingClasses, Preprocessor, "([examples[, weightID]]) -/-> ExampleTable")
+
+C_CALL(Preprocessor_addMissing, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addMissingClasses, Preprocessor, "([examples[, weightID]] [classMissing=<float>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addClassNoise, Preprocessor, "([examples[, weightID]] [classNoise=<float>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addGaussianNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
+C_CALL(Preprocessor_addGaussianClassNoise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
+
+C_CALL(Preprocessor_addCostWeight, Preprocessor, "([examples[, weightID]] [equalize=, costs=) -/-> ExampleTable")
+C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [outComeVar=, eventValue=, timeVar= <string>] [method="km"|"nmr"|"split"] [maxTime=, weightName=]) -/-> ExampleTable")
+
+C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
+C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
 
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
@@ -217,6 +220,7 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
 }
 
 
+// modified setitem to accept intervals/names of values
 typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
 INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
 
@@ -239,6 +243,92 @@ PyObject *VariableFilterMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_
 PyObject *VariableFilterMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFilterMap::_items(self); }
 PyObject *VariableFilterMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFilterMap::_update(self, args); }
 
+
+int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObject *pyvalue)
+{
+  PValueFilter value;
+  if (TMM_VariableFilterMap::_valueFromPython(pyvalue, value)) {
+    aMap->__ormap[var] = value;
+    return 0;
+  }
+
+  PyErr_Clear();
+
+  if (var->varType == TValue::FLOATVAR) {
+    float min, max;
+    if (!PyArg_ParseTuple(pyvalue, "ff:VariableFilterMap.__setitem__", &min, &max))
+      return -1;
+
+    aMap->__ormap[var] = (min<max) ? mlnew TValueFilter_continuous(min, max)
+                                   : mlnew TValueFilter_continuous(max, min, true);
+    return 0;
+  }
+
+  if (var->varType == TValue::INTVAR) {
+    TValueFilter_discrete *vfilter = mlnew TValueFilter_discrete(var);
+    PValueFilter wvfilter = vfilter;
+    TValueList &valueList = const_cast<TValueList &>(vfilter->acceptableValues.getReference());
+
+    if (PyTuple_Check(pyvalue) || PyList_Check(pyvalue)) {
+      PyObject *iterator = PyObject_GetIter(pyvalue);
+      for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+        TValue value;
+        if (!convertFromPython(item, value, var)) {
+          Py_DECREF(item);
+          Py_DECREF(iterator);
+          return -1;
+        }
+        valueList.push_back(value);
+      }
+      Py_DECREF(iterator);
+    }
+    else {
+      TValue value;
+      if (!convertFromPython(pyvalue, value, var))
+        return -1;
+      valueList.push_back(value);
+    }
+
+    aMap->__ormap[var] = wvfilter;
+    return 0;
+  }
+
+  PYERROR(PyExc_TypeError, "VariableFilterMap.__setitem__: unrecognized item type", -1);
+}
+
+
+TMM_VariableFilterMap::_setitemlow(TVariableFilterMap *aMap, PyObject *pykey, PyObject *pyvalue)
+{ PyTRY
+    PVariable var;
+    return TMM_VariableFilterMap::_keyFromPython(pykey, var) ? VariableFilterMap_setitemlow(aMap, var, pyvalue) : -1;
+  PyCATCH_1
+}
+
+
+PyObject *TMM_VariableFilterMap::_setdefault(TPyOrange *self, PyObject *args)
+{ PyObject *pykey;
+  PyObject *deflt = Py_None;
+  if (!PyArg_ParseTuple(args, "O|O:get", &pykey, &deflt))
+		return PYNULL;
+
+  CAST_TO(_MapType, aMap)
+
+  PVariable var;
+  if (!TMM_VariableFilterMap::_keyFromPython(pykey, var))
+    return PYNULL;
+
+  iterator fi = aMap->find(var);
+  if (fi==aMap->end()) {
+    if (VariableFilterMap_setitemlow(aMap, var, deflt)<0)
+      return PYNULL;
+
+    // cannot return deflt here, since it is probably a string or tuple which was converted to ValueFilter
+    // we just reinitialize fi and let the function finish :)
+    fi = aMap->find(var);
+  }
+
+  return convertValueToPython((*fi).second);
+}
 
 
 typedef MapMethods<PVariableFloatMap, TVariableFloatMap, PVariable, float> TMM_VariableFloatMap;

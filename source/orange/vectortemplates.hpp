@@ -211,7 +211,7 @@ public:
   static _WrappedListType P_FromArguments(PyObject *arg, PyTypeObject *type = (PyTypeObject *)&PyOrOrange_Type)
   { PyObject *iterator = PyObject_GetIter(arg);
     if (!iterator) {
-      PyErr_Format(PyExc_TypeError, "invalid arguments for '%s' constructor (sequence expected)", typeid(_ListType).name()+7);
+      PyErr_Format(PyExc_TypeError, "invalid arguments for '%s' constructor (sequence expected)", TYPENAME(typeid(_ListType)));
       return _WrappedListType();
     }
 
@@ -619,7 +619,7 @@ public:
 
   static _WrappedListType P_FromArguments(PyObject *arg)
   { if (!PySequence_Check(arg)) {
-      PyErr_Format(PyExc_TypeError, "invalid arguments for '%s' constructor (sequence expected)", typeid(_ListType).name()+7);
+      PyErr_Format(PyExc_TypeError, "invalid arguments for '%s' constructor (sequence expected)", TYPENAME(typeid(_ListType)));
       return _WrappedListType();
     }
 

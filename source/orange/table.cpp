@@ -573,7 +573,7 @@ void TExampleTable::sort()
   sort(empty);
 }
 
-
+// Sort order is reversed (least important first!)
 void TExampleTable::sort(vector<int> &sortOrder)
 { 
   if (!sortOrder.size()) 

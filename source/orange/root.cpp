@@ -22,7 +22,9 @@
 
 #include "values.hpp"
 #include "errors.hpp"
+
 #include "root.ppp"
+
 
 TOrange::TWarningFunction *TOrange::warningFunction = NULL;
 
@@ -84,9 +86,9 @@ const TPropertyDescription *TOrange::propertyDescription(const char *name, bool 
 void TOrange::setProperty(const char *name, const _TYPE &b)     \
 { const TPropertyDescription *pd = propertyDescription(name);   \
   if (pd->readOnly)                                             \
-    raiseError("'%s.%s' is read-only", typeid(*this).name()+7, name);             \
+    raiseError("'%s.%s' is read-only", TYPENAME(typeid(*this)), name);             \
   if (*pd->type != typeid(_TYPE))                               \
-    raiseError("type mismatch, unable to set '%s.%s'", typeid(*this).name()+7, name);           \
+    raiseError("type mismatch, unable to set '%s.%s'", TYPENAME(typeid(*this)), name);           \
   *(_TYPE *)MEMBER(pd->offset) = b;                             \
   afterSet(name);                                               \
 }                                                               \
@@ -95,7 +97,7 @@ void TOrange::setProperty(const char *name, const _TYPE &b)     \
 void TOrange::getProperty(const char *name, _TYPE &b) const     \
 { const TPropertyDescription *pd = propertyDescription(name);   \
   if (*pd->type != typeid(_TYPE))                               \
-    raiseError("type mismatch, unable to read '%s.%s'", typeid(*this).name()+7, name);         \
+    raiseError("type mismatch, unable to read '%s.%s'", TYPENAME(typeid(*this)), name);         \
   b = *(_TYPE const *)CONST_MEMBER(pd->offset);                 \
 }
 
@@ -112,9 +114,9 @@ SIMPLE_GETSET_PROPERTY(TValue)
 void TOrange::wr_setProperty(const char *name, const POrange &b)
 { const TPropertyDescription *pd = propertyDescription(name);
   if (pd->readOnly)
-    raiseError("'%s.%s' is read-only", typeid(*this).name()+7, name);
+    raiseError("'%s.%s' is read-only", TYPENAME(typeid(*this)), name);
   if (b && !castableTo(b->classDescription(), pd->classDescription))
-    raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", typeid(*this).name()+7, name, pd->type->name()+7, typeid(b).name()+7);
+    raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", TYPENAME(typeid(*this)), name, TYPENAME(*pd->type), TYPENAME(typeid(b)));
   *(POrange *)MEMBER(pd->offset) = b;
   afterSet(name);
 }
@@ -160,7 +162,7 @@ void TOrange::raiseError(const char *anerr, ...) const
     va_start(vargs);
   #endif
 
-  snprintf(excbuf, 512, "'orange.%s': %s", typeid(*this).name()+7, anerr);
+  snprintf(excbuf, 512, "'orange.%s': %s", TYPENAME(typeid(*this)), anerr);
   vsnprintf(excbuf2, 512, excbuf, vargs);
   throw mlexception(excbuf2);
 }
@@ -174,7 +176,7 @@ void TOrange::raiseErrorWho(const char *who, const char *anerr, ...) const
     va_start(vargs);
   #endif
 
-  snprintf(excbuf, 512, "'orange.%s.%s': %s", typeid(*this).name()+7, who, anerr);
+  snprintf(excbuf, 512, "'orange.%s.%s': %s", TYPENAME(typeid(*this)), who, anerr);
   vsnprintf(excbuf2, 512, excbuf, vargs);
   throw mlexception(excbuf2);
 }
@@ -190,7 +192,7 @@ void TOrange::raiseWarning(const char *anerr, ...) const
       va_start(vargs);
     #endif
 
-    snprintf(excbuf, 512, "'%s': %s", typeid(*this).name()+7, anerr);
+    snprintf(excbuf, 512, "'%s': %s", TYPENAME(typeid(*this)), anerr);
     vsnprintf(excbuf2, 512, excbuf, vargs);
     warningFunction(excbuf2);
   }
@@ -206,7 +208,7 @@ void TOrange::raiseWarningWho(const char *who, const char *anerr, ...) const
       va_start(vargs);
     #endif
 
-    snprintf(excbuf, 512, "'orange.%s.%s': %s", typeid(*this).name()+7, who, anerr);
+    snprintf(excbuf, 512, "'orange.%s.%s': %s", TYPENAME(typeid(*this)), who, anerr);
     vsnprintf(excbuf2, 512, excbuf, vargs);
     warningFunction(excbuf2);
   }

@@ -1,34 +1,38 @@
-/*
-    This file is part of Orange.
-
-    Orange is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    Orange is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with Orange; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-    Authors: Janez Demsar, Blaz Zupan, 1996--2002
-    Contact: janez.demsar@fri.uni-lj.si
-*/
-
-
-#ifdef _MSC_VER
-  #pragma warning (disable : 4786 4114 4018 4267 4244 4702 4710 4290)
-#endif
-
-
 #include "orvector.hpp"
 #include "cls_orange.hpp"
 #include "vectortemplates.hpp"
 #include "externs.px"
+
+bool convertFromPython(PyObject *, bool &);
+PyObject *convertToPython(const bool &);
+#define TBoolList _TOrangeVector<bool>
+typedef GCPtr< TBoolList > PBoolList;
+
+PBoolList PBoolList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::P_FromArguments(arg); }
+PyObject *BoolList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_FromArguments(type, arg); }
+PyObject *BoolList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of bool>)") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_new(type, arg, kwds); }
+PyObject *BoolList_getitem_sq(TPyOrange *self, int index) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_getitem(self, index); }
+int       BoolList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_setitem(self, index, item); }
+PyObject *BoolList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_getslice(self, start, stop); }
+int       BoolList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_setslice(self, start, stop, item); }
+int       BoolList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_len(self); }
+PyObject *BoolList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_concat(self, obj); }
+PyObject *BoolList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_repeat(self, times); }
+PyObject *BoolList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_str(self); }
+PyObject *BoolList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_str(self); }
+int       BoolList_contains(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_contains(self, obj); }
+PyObject *BoolList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(bool) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_append(self, item); }
+PyObject *BoolList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(bool) -> int") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_count(self, obj); }
+PyObject *BoolList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> BoolList") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_filter(self, args); }
+PyObject *BoolList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(bool) -> int") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_index(self, obj); }
+PyObject *BoolList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_insert(self, args); }
+PyObject *BoolList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_native(self); }
+PyObject *BoolList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> bool") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_pop(self, args); }
+PyObject *BoolList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(bool) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_remove(self, obj); }
+PyObject *BoolList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_reverse(self); }
+PyObject *BoolList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_sort(self, args); }
+
+
 
 bool convertFromPython(PyObject *, int &);
 PyObject *convertToPython(const int &);

@@ -55,7 +55,7 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
   TExample::iterator ei = exam.begin();
   TVarList::iterator vi(mydomain->variables->begin());
   TIdList::iterator ai(atoms.begin());
-  vector<bool>::iterator si(mydomain->skip.begin());
+  vector<bool>::iterator si(mydomain->skip->begin());
   for (; (vi!=domain->variables->end()) && (ai!=atoms.end()); ai++)
     if (!*si++) 
       (*(vi++))->str2val_add(*ai, *(ei++));
@@ -68,12 +68,15 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
 
 
 TC45Domain::TC45Domain(const TC45Domain &old)
- : TDomain(old), skip(old.skip) {}
+: TDomain(old),
+  skip(CLONE(TBoolList, old.skip))
+{}
 
 /* Reads the .names file. The format does not exactly follow Quinlan's specifications (that is, a file, using
    wrong delimiters can be read). However, when writing C4.5 files, they are written correctly.  */
 TC45Domain::TC45Domain(const string &stem, PVarList knownVars)
-  : TDomain(), skip()
+: TDomain(),
+  skip(mlnew TBoolList())
 { TFileExampleIteratorData fei(stem);
   
   TIdList atoms;
@@ -96,9 +99,10 @@ TC45Domain::TC45Domain(const string &stem, PVarList knownVars)
     TIdList::iterator ai(atoms.begin());
     string name=*(ai++);
 
-    if (*ai=="ignore") skip.push_back(true);
+    if (*ai=="ignore")
+      skip->push_back(true);
     else {
-      skip.push_back(false);
+      skip->push_back(false);
 
       if ((ai==atoms.end()) || (string((*ai).begin(), (*ai).begin()+9)=="discrete "))
         attributes->push_back(makeVariable(name, knownVars, TValue::INTVAR));
@@ -116,7 +120,7 @@ TC45Domain::TC45Domain(const string &stem, PVarList knownVars)
   if (!attributes->size())
     raiseError("names file contains no variables but class variable");
 
-  skip.push_back(false); // for class
+  skip->push_back(false); // for class
   variables=mlnew TVarList(attributes.getReference());
   variables->push_back(classVar);
 }

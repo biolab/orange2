@@ -244,13 +244,14 @@ bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, 
     return true;
   }
       
-  else if (allowSingle && PyOrVariable_Check(boundList)) {
+  else if (allowSingle) {
     PVariable variable=varFromArg_byDomain(boundList, domain, checkForIncludance);
-    if (!variable) return false;
-    boundSet.push_back(variable);
-    return true;
+    if (variable) {
+      boundSet.push_back(variable);
+      return true;
+    }
   }
-  PYERROR(PyExc_TypeError, "invalid attribute for list of variables", false);
+  PYERROR(PyExc_TypeError, "invalid argument (list of variables expected)", false);
 }
 
 
@@ -1519,10 +1520,33 @@ PyObject *ExampleTable_removeDuplicates(TPyOrange *self, PyObject *args) PYARGS(
 }
 
 
-PyObject *ExampleTable_sort(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None")
+PyObject *ExampleTable_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> None")
 { PyTRY
-    ((TExampleTable &)(PyOrange_AS_Orange(self).getReference())).sort();
-    RETURN_NONE;
+    CAST_TO(TExampleTable, table);
+
+    if (!args || !PyTuple_Size(args)) {
+      table->sort();
+      RETURN_NONE;
+    }
+
+    PyObject *alist = PyTuple_GET_ITEM(args, 0);
+    /* If the first argument is nor list nor tuple, the whole argument is taken as a list
+       i.e., data.sort("age", "prescr") is interpreted the same as data.sort(["age", "prescr"])
+       All references are borrowed. */
+    if ((PyTuple_Size(args) > 1) || (!PyList_Check(alist) && !PyTuple_Check(alist)))
+      alist = args;
+
+    TVarList attributes;
+    if (varListFromDomain(alist, table->domain, attributes, true, true)) {
+      vector<int> order;
+      for(TVarList::reverse_iterator vi(attributes.rbegin()), ve(attributes.rend()); vi!=ve; vi++)
+        order.push_back(table->domain->getVarNum(*vi));
+      table->sort(order);
+      RETURN_NONE;
+    }
+
+    PYERROR(PyExc_TypeError, "invalid arguments (none, or a list of attributes expected)", PYNULL);
+
   PyCATCH
 }
 
@@ -1868,7 +1892,7 @@ PyObject *convertToPythonNative(const TDistribution &dist, int)
 TDiscDistribution *getDiscDistribution(PyObject *self)
 { TDiscDistribution *disc = PyOrange_AS_Orange(self).AS(TDiscDistribution);
   if (!disc)
-    PyErr_Format(PyExc_TypeError, "invalid distribution type (expected DiscDistribution, got '%s')", typeid(PyOrange_AS_Orange(self).getReference()).name()+7);
+    PyErr_Format(PyExc_TypeError, "invalid distribution type (expected DiscDistribution, got '%s')", TYPENAME(typeid(PyOrange_AS_Orange(self).getReference())));
   return disc;
 }
 
@@ -1876,7 +1900,7 @@ TDiscDistribution *getDiscDistribution(PyObject *self)
 TContDistribution *getContDistribution(PyObject *self)
 { TContDistribution *cont = PyOrange_AS_Orange(self).AS(TContDistribution);
   if (!cont)
-    PyErr_Format(PyExc_TypeError, "invalid distribution type (expected ContDistribution, got '%s')", typeid(PyOrange_AS_Orange(self).getReference()).name()+7);
+    PyErr_Format(PyExc_TypeError, "invalid distribution type (expected ContDistribution, got '%s')", TYPENAME(typeid(PyOrange_AS_Orange(self).getReference())));
   return cont;
 }
 

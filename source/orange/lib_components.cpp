@@ -57,8 +57,10 @@ This file includes constructors and specialized methods for ML* object, defined 
 
 BASED_ON(CostMatrix, Orange)
 
-bool convertFromPython(PyObject *args, PCostMatrix &matrix, bool, PyTypeObject *)
+bool convertFromPython(PyObject *args, PCostMatrix &matrix, bool, PyTypeObject *type)
 {
+  if (!type)
+    type = (PyTypeObject *)&PyOrCostMatrix_Type;
 #ifdef NUMERICAL_PYTHON
   if (PyArray_Check(args)) {
     PyArrayObject *pao=(PyArrayObject *)args;
@@ -475,7 +477,26 @@ int Contingency_len(PyObject *self)
 }
 
 
-DEFINE_CONVERTFROMPYTHON_NODEFAULTS(Contingency)
+bool convertFromPython(PyObject *obj, PContingency &var, bool allowNull, PyTypeObject *type)
+{ if (!type)
+    type = (PyTypeObject *)&PyOrContingency_Type;
+    
+  if (allowNull && (!obj || (obj==Py_None))) {
+    var=GCPtr<TContingency>();
+    return true;
+  }
+  if (!type)
+    type = (PyTypeObject *)FindOrangeType(typeid(TContingency));
+
+  if (!obj || !PyObject_TypeCheck(obj, type)) {
+    PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", type->tp_name, obj ? obj->ob_type->tp_name : "None");
+    return false;
+  }
+  
+  var=GCPtr<TContingency>(PyOrange_AS_Orange(obj));
+  return true;
+}
+
 
 string convertToString(const PContingency &cont)
 { if (!cont->outerVariable)
@@ -834,7 +855,12 @@ PyObject *ExamplesDistance_Normalized_attributeDistances(PyObject *self, PyObjec
 
     vector<float> difs;
     SELF_AS(TExamplesDistance_Normalized).getDifs(PyExample_AS_ExampleReference(pyex1), PyExample_AS_ExampleReference(pyex2), difs);
-    return FloatVector2PyList(difs);
+    
+    PyObject *l = PyList_New(difs.size());
+    for(int i = 0, e = difs.size(); i<e; e++)
+      PyList_SetItem(l, i, PyFloat_FromDouble(difs[i]));
+      
+    return l;
   PyCATCH
 }
 

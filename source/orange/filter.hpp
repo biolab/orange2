@@ -120,9 +120,10 @@ class TValueFilter_discrete : public TValueFilter {
 public:
   __REGISTER_CLASS
 
-  PBoolList acceptableValues; //P acceptable values
+  PValueList acceptableValues; //P acceptable values
 
-  TValueFilter_discrete(PBoolList = PBoolList(), const int &accs = -1);
+  TValueFilter_discrete(PValueList = PValueList(), const int &accs = -1);
+  TValueFilter_discrete(PVariable, const int &accs = -1);
   virtual int operator()(const TValue &) const;
 };
 

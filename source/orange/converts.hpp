@@ -23,52 +23,21 @@
 #ifndef __CONVERTS_HPP
 #define __CONVERTS_HPP
 
-// here, T must be derived from TOrange
-#define _DEFINE_CONVERTFROMPYTHON(_T) \
-{ if (allowNull && (!obj || (obj==Py_None))) { \
-    var=GCPtr<T##_T>(); \
-    return true; \
-  } \
-  if (!type) \
-    type = (PyTypeObject *)FindOrangeType(typeid(T##_T)); \
- \
-  if (!obj || !PyObject_TypeCheck(obj, type)) { \
-    PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", type->tp_name, obj ? obj->ob_type->tp_name : "None"); \
-    return false; \
-  } \
-\
-   var=GCPtr<T##_T>(PyOrange_AS_Orange(obj)); \
-  return true; \
-}
-
-#define DEFINE_CONVERTFROMPYTHON(_T) \
-bool convertFromPython(PyObject *obj, P##_T &var, bool allowNull=false, PyTypeObject *type=NULL) \
-_DEFINE_CONVERTFROMPYTHON(_T)
-
-#define DEFINE_CONVERTFROMPYTHON_TYPE(_T) \
-bool convertFromPython(PyObject *obj, P##_T &var, bool allowNull=false, PyTypeObject *type=(PyTypeObject *)&PyOr##_T##_Type) \
-_DEFINE_CONVERTFROMPYTHON(_T)
-
-#define DEFINE_CONVERTFROMPYTHON_NODEFAULTS(_T) \
-bool convertFromPython(PyObject *obj, P##_T &var, bool allowNull, PyTypeObject *type) \
-_DEFINE_CONVERTFROMPYTHON(_T)
-
-
-#include "externs.px"
 #include "garbage.hpp"
 #include "Python.h"
+
 WRAPPER(Contingency)
 WRAPPER(Distribution)
 WRAPPER(CostMatrix)
-
-bool convertFromPython(PyObject *, PContingency &,     bool allowNull=false, PyTypeObject *type=(PyTypeObject *)&PyOrContingency_Type);
-bool convertFromPython(PyObject *, PCostMatrix &,      bool allowNull=false, PyTypeObject *type=(PyTypeObject *)&PyOrCostMatrix_Type);
 
 bool convertFromPython(PyObject *, string &);
 bool convertFromPython(PyObject *, float &);
 bool convertFromPython(PyObject *, pair<float, float> &);
 bool convertFromPython(PyObject *, int &);
 bool convertFromPython(PyObject *, unsigned char &);
+bool convertFromPython(PyObject *, bool &);
+bool convertFromPython(PyObject *, PCostMatrix &, bool allowNull=false, PyTypeObject *type=NULL);
+bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeObject *type=NULL);
 
 PyObject *convertToPython(const string &);
 PyObject *convertToPython(const PCostMatrix &);
@@ -76,6 +45,7 @@ PyObject *convertToPython(const float &);
 PyObject *convertToPython(const pair<float, float> &);
 PyObject *convertToPython(const int &);
 PyObject *convertToPython(const unsigned char &);
+PyObject *convertToPython(const bool &);
 
 string convertToString(const PDistribution &);
 string convertToString(const string &);
@@ -86,6 +56,14 @@ string convertToString(const unsigned char &);
 string convertToString(const PContingency &);
 
 bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
+
+float PyNumber_AsFloat(PyObject *o);
+
+template<class T>
+PyObject *convertToPython(const T &);
+
+template<class T>
+string convertToString(const T &);
 
 // This is defined by Python but then redefined by STLPort
 #undef LONGLONG_MAX

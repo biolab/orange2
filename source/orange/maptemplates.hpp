@@ -115,13 +115,8 @@ public:
       int pos=0;
       PyObject *pykey, *pyvalue;
       while (PyDict_Next(arg, &pos, &pykey, &pyvalue)) {
-        _Key key;
-        _Value value;
-
-        if (!_keyFromPython(pykey, key) || !_valueFromPython(pyvalue, value))
+        if (_setitemlow(uMap, pykey, pyvalue)<0)
           return false;
-
-        uMap->__ormap[key] = value;
       }
       return true;
     }
@@ -161,13 +156,8 @@ public:
       PyObject *pyvalue = PySequence_Fast_GET_ITEM(fast, 1);
       Py_DECREF(fast);
 
-      _Key key;
-      _Value value;
-
-      if (!_keyFromPython(pykey, key) || !_valueFromPython(pyvalue, value))
+      if (_setitemlow(uMap, pykey, pyvalue)<0)
         return false;
-
-      uMap->__ormap[key] = value;
 	  }
 
     Py_DECREF(it);
@@ -196,7 +186,7 @@ public:
 
     if (PyTuple_Check(args) && PyTuple_Size(args)==1) {
       PyObject *arg = PyTuple_GetItem(args, 0);
-      if (PySequence_Check(arg))
+      if (PySequence_Check(arg) || PyDict_Check(arg))
         return _FromArguments(type, arg);
     }
 
@@ -229,25 +219,29 @@ public:
   }
 
 
+  static int _setitemlow(_MapType *aMap, PyObject *pykey, PyObject *pyvalue)
+  {
+    _Key key;
+    _Value value;
+    if (!_keyFromPython(pykey, key) || !_valueFromPython(pyvalue, value))
+      return -1;
+  
+      aMap->__ormap[key] = value;
+    return 0;
+  }
+
+
   static int _setitem(TPyOrange *self, PyObject *pykey, PyObject *pyvalue)
   { CAST_TO_err(_MapType, aMap, -1)
 
-    if (pyvalue) {
-      _Key key;
-      _Value value;
-      if (!_keyFromPython(pykey, key) || !_valueFromPython(pyvalue, value))
-        return -1;
-  
-      aMap->__ormap[key] = value;
-    }
-    else {
-      iterator fi;
-      if (!findKey(aMap, pykey, fi, true))
-        return -1;
+    if (pyvalue)
+      return _setitemlow(aMap, pykey, pyvalue);
+    
+    iterator fi;
+    if (!findKey(aMap, pykey, fi, true))
+      return -1;
 
-      aMap->erase(fi);
-    }
-
+    aMap->erase(fi);
     return 0;
   }
 

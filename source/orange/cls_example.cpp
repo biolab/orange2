@@ -35,6 +35,7 @@ extern TMLClassDefinition MLDef_Variable;
 #include "cls_example.hpp"
 #include "cls_orange.hpp"
 #include "lib_kernel.hpp"
+#include "converts.hpp"
 
 #include "externs.px"
 

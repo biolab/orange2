@@ -230,7 +230,7 @@ PyObject *WrapOrange(POrange obj)
     if (res->ob_type==(PyTypeObject *)&PyOrOrange_Type) {
       PyTypeObject *type = (PyTypeObject *)FindOrangeType(obj);
       if (!type) {
-        PyErr_Format(PyExc_SystemError, "Orange class '%s' not exported to Python", typeid(obj.getReference()).name()+7);
+        PyErr_Format(PyExc_SystemError, "Orange class '%s' not exported to Python", TYPENAME(typeid(obj.getReference())));
         return PYNULL;
       }
       else
@@ -452,7 +452,7 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 
           PyTypeObject *propertyPyType=(PyTypeObject *)FindOrangeType(*wrappedType);
           if (!propertyPyType) {
-            PyErr_Format(PyExc_SystemError, "Orange class %s, needed for '%s.%s' not exported to Python", wrappedType->name()+7, self->ob_type->tp_name, name);
+            PyErr_Format(PyExc_SystemError, "Orange class %s, needed for '%s.%s' not exported to Python", TYPENAME(*wrappedType), self->ob_type->tp_name, name);
             return -1;
           }
 
@@ -541,17 +541,6 @@ int Orange_init(PyObject *self, PyObject *, PyObject *keywords)
 
 void Orange_dealloc(TPyOrange *self)
 {
-/*
-  if (self->ptr)
-    printf("deallocating %s instance of type '%s' at %p wrapped as '%s'\n", 
-              PyObject_IsReference(self) ? "reference" : "",
-              typeid(*self->ptr).name()+7, 
-              self->ptr,
-              ((PyObject *)self)->ob_type->tp_name);
-  else
-    printf("deallocating something at %p wrapped as '%s'\n", self->ptr, ((PyObject *)self)->ob_type->tp_name);
-*/
-
   if (!self->is_reference) {
     PyObject_GC_UnTrack((PyObject *)self);
     mldelete self->ptr;
@@ -658,8 +647,10 @@ PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
 char const *getName(TPyOrange *self)
 { static char *namebuf = NULL;
 
-  if (namebuf)
+  if (namebuf) {
     delete namebuf;
+    namebuf = NULL;
+  }
     
   PyObject *pystr = PyString_FromString("name");
   PyObject *pyname = Orange_getattr(self, pystr);
@@ -688,7 +679,7 @@ PyObject *Orange_repr(TPyOrange *self)
     if (result)
       return result;
 
-    const char const *name = getName(self);
+    const char *name = getName(self);
     return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
                 : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
   PyCATCH
@@ -701,7 +692,7 @@ PyObject *Orange_str(TPyOrange *self)
     if (result)
       return result;
 
-    const char const *name = getName(self);
+    const char *name = getName(self);
     return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
                 : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
   PyCATCH

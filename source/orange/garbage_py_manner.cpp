@@ -26,6 +26,29 @@
 #include <map>
 using namespace std;
 
+#ifndef _MSC_VER
+
+#include <cxxabi.h>
+
+char *demangled = NULL;
+
+char *demangle(const type_info &type)
+{ if (demangled) {
+    mldelete demangled;
+    demangled = NULL;
+  }
+   
+  int status;
+  char *abidemangle = abi::__cxa_demangle(type.name(), 0, 0, &status);
+  if (!status) {
+    demangled = mlnew char[strlen(abidemangle)+1];
+    strcpy(demangled, abidemangle);
+  }
+  return demangled;
+}
+#endif
+
+
 void floatfloat_mapdestructor(void *x) { mldelete (map<float, float> *) x; }
 TGCCounterNML<map<float, float> >::TDestructor GCPtrNML<map<float, float> >::destructor = floatfloat_mapdestructor;
 

@@ -120,9 +120,15 @@ int TValueFilter_continuous::operator()(const TValue &val) const
 }
 
 
-TValueFilter_discrete::TValueFilter_discrete(PBoolList bl, const int &accs)
+TValueFilter_discrete::TValueFilter_discrete(PValueList bl, const int &accs)
 : TValueFilter(accs),
   acceptableValues(bl)
+{}
+
+
+TValueFilter_discrete::TValueFilter_discrete(PVariable var, const int &accs)
+: TValueFilter(accs),
+  acceptableValues(mlnew TValueList(var))
 {}
 
 
@@ -130,7 +136,11 @@ int TValueFilter_discrete::operator()(const TValue &val) const
 { if (val.isSpecial())
     return acceptSpecial;
 
-  return ((val.intV<acceptableValues->size()) && acceptableValues->operator[](val.intV)) ? 1 : 0;
+  const_PITERATE(TValueList, vi, acceptableValues)
+    if ((*vi).intV == val.intV)
+      return 1;
+
+  return 0;
 }
 
 

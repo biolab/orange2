@@ -20,58 +20,8 @@
 */
 
 
-/*
-
-How to wrap a vector so that it can become a property?
-
-  It depends upon the kind of elements the vector contains.
-
-  1. Say that vector contains Orange objects, for example TVariables.
-     You cannot (well, should not) have vectors of pointers to Orange
-     objects, but always vectors of wrapped orange objects. You don't
-     aggregate TVariable *, but always PVariable. (You could, however,
-     aggregate TVariable, but I think I've never done so.)
-
-     Instead of vector, you should use TOrangeVector. It is a class that
-     inherits from TOrange which enables it to be used as property of
-     other objects, but also behaves as a vector (it uses macro
-     VECTOR_INTERFACE to define vector methods like push_back, clear, ...).
-     Besides, it defines traverse and dropReferences.
-
-     You should not use typedef to define a new type for you vector
-     and WRAPPER to wrap it. Instead, you define it with
-
-     #define TVarList TOrangeVector<PVariable>
-     VWRAPPER(VarList)
-
-  2. If vector contains non-Orange types, elements should not be wrapped.
-     (In general, don't wrap non-Orange types. If you need to wrap them,
-     color them orange.)
-
-     Story is the same as above, except that you take _TOrangeVector instead
-     of TOrangeVector. The only difference is that _TOrangeVector does not
-     have traverse and dropReferences. (Doesn't need them and can apply them
-     since elements are not wrapped.)
-
-     #define TIntList _TOrangeVector<int>
-     VWRAPPER(IntList)
-
-How to make some class vector-like?
-
-  Simply include VECTOR_INTERFACE(TElementType, field-name).
-  Field-name is not used often since VECTOR_INTERFACE provides the class with
-  vector-like methods that transparently access the field-name. You need to use
-  it in constructor, however, if you want to initialize the vector to non-default.
-
-  Warning: If you do this and if vector contains wrapped oranges,
-  you should write traverse and dropReferences (you'll get a memory leak otherwise)
-
-Vectors of non-wrapped elements (point 2) should be declared in this header.
-Vectors of wrapped types should be declared in corresponding headers
-(TVarList, for instance, is declared in vars.hpp).
-
-For instructions on exporting those vectors to Python, see vectortemplates.hpp.
-*/
+#define DEFINE_TOrangeMap_classDescription(_Key,_Value,_Kior,_Vior, _NAME) \
+  TClassDescription TOrangeMap<_Key,_Value,_Kior,_Vior>::st_classDescription = { _NAME, &typeid(TOrangeMap<_Key,_Value,_Kior,_Vior>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
 
 
 #ifndef __ORMAP_HPP
@@ -111,6 +61,11 @@ class TOrangeMap : public TOrange
       clear();
       return 0;
     }
+
+    static TClassDescription st_classDescription;
+
+    virtual TClassDescription const *classDescription() const
+      { return &st_classDescription; }
 };
 
 

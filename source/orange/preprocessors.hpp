@@ -54,6 +54,30 @@ WRAPPER(Preprocessor);
 MWRAPPER(VariableFilterMap)
 
 
+class TPreprocessor_ignore : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  PVarList attributes; //P tells which attributes to remove
+
+  TPreprocessor_ignore();
+  TPreprocessor_ignore(PVarList);
+  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+};
+
+
+class TPreprocessor_select : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  PVarList attributes; //P tells which attributes to select
+
+  TPreprocessor_select();
+  TPreprocessor_select(PVarList);
+  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+};
+
+
 class TPreprocessor_drop : public TPreprocessor {
 public:
   __REGISTER_CLASS
@@ -80,57 +104,32 @@ public:
 };
 
 
-class TPreprocessor_ignore : public TPreprocessor {
-public:
-  __REGISTER_CLASS
-
-  PVarList attributes; //P tells which attributes to remove
-
-  TPreprocessor_ignore();
-  TPreprocessor_ignore(PVarList);
-  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
-};
-
-
-class TPreprocessor_select : public TPreprocessor {
-public:
-  __REGISTER_CLASS
-
-  PVarList attributes; //P tells which attributes to select
-
-  TPreprocessor_select();
-  TPreprocessor_select(PVarList);
-  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
-};
-
-
-
-class TPreprocessor_remove_duplicates : public TPreprocessor {
+class TPreprocessor_removeDuplicates : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_skip_missing : public TPreprocessor {
+class TPreprocessor_dropMissing : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_only_missing: public TPreprocessor {
+class TPreprocessor_takeMissing: public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_skip_missing_classes : public TPreprocessor {
+class TPreprocessor_dropMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_only_missing_classes : public TPreprocessor {
+class TPreprocessor_takeMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
@@ -140,76 +139,54 @@ public:
 #define TVariableFloatMap TOrangeMap<PVariable, float, true, false>
 MWRAPPER(VariableFloatMap)
 
-class TPreprocessor_noise : public TPreprocessor {
+class TPreprocessor_addNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  PVariableFloatMap probabilities; //P probabilities for change for individual attributes
-  float defaultNoise; //P default noise level
+  PVariableFloatMap proportions; //P proportion of changed values for individual attributes
+  float defaultProportion; //P default proportion of changed values (for attributes not specified above)
 
-  TPreprocessor_noise();
-  TPreprocessor_noise(PVariableFloatMap, const float & = 0.0);
+  TPreprocessor_addNoise();
+  TPreprocessor_addNoise(PVariableFloatMap, const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_gaussian_noise : public TPreprocessor {
+class TPreprocessor_addGaussianNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  PVariableFloatMap deviations; //P deviations individual values
+  PVariableFloatMap deviations; //P deviations individual attribute values
   float defaultDeviation; //P default deviation
 
-  TPreprocessor_gaussian_noise();
-  TPreprocessor_gaussian_noise(PVariableFloatMap, const float & = 0.0);
+  TPreprocessor_addGaussianNoise();
+  TPreprocessor_addGaussianNoise(PVariableFloatMap, const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_missing : public TPreprocessor {
+class TPreprocessor_addMissing : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  PVariableFloatMap probabilities; //P probabilities for removal for individual values
-  float defaultMissing; //P default proportion of missing values
+  PVariableFloatMap proportions; //P proportion of removed values for individual values
+  float defaultProportion; //P default proportion of removed values (for attributes not specified above)
   int specialType; //P special value type (1=DC, 2=DK)
 
-  TPreprocessor_missing();
-  TPreprocessor_missing(PVariableFloatMap, const float & = 0.0, const int &specialType = valueDK);
+  TPreprocessor_addMissing();
+  TPreprocessor_addMissing(PVariableFloatMap, const float & = 0.0, const int &specialType = valueDK);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_class_noise : public TPreprocessor {
+class TPreprocessor_addMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  float classNoise; //P class noise level
-
-  TPreprocessor_class_noise(const float & = 0.0);
-  virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
-};
-
-
-class TPreprocessor_class_gaussian_noise : public TPreprocessor {
-public:
-  __REGISTER_CLASS
-
-  float classDeviation; //P class deviation
-
-  TPreprocessor_class_gaussian_noise(const float & = 0.0);
-  virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
-};
-
-
-class TPreprocessor_class_missing : public TPreprocessor {
-public:
-  __REGISTER_CLASS
-
-  float classMissing; //P proportion of missing class values
+  float proportion; //P proportion of removed class values
   int specialType; //P special value type (1=DC, 2=DK)
 
-  TPreprocessor_class_missing(const float & = 0.0, const int & = valueDK);
+  TPreprocessor_addMissingClasses(const float & = 0.0, const int & = valueDK);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 
 private:
@@ -217,20 +194,43 @@ private:
 };
 
 
-class TPreprocessor_cost_weight : public TPreprocessor {
+class TPreprocessor_addClassNoise : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  float proportion; //P proportion of changed class values
+
+  TPreprocessor_addClassNoise(const float & = 0.0);
+  virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
+};
+
+
+class TPreprocessor_addGaussianClassNoise : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  float deviation; //P class deviation
+
+  TPreprocessor_addGaussianClassNoise(const float & = 0.0);
+  virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
+};
+
+
+
+class TPreprocessor_addCostWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
   PFloatList classWeights; //P weights of examples of particular classes
   bool equalize; //P reweight examples to equalize class proportions
 
-  TPreprocessor_cost_weight();
-  TPreprocessor_cost_weight(PFloatList, const bool & = false);
+  TPreprocessor_addCostWeight();
+  TPreprocessor_addCostWeight(PFloatList, const bool & = false);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_censor_weight : public TPreprocessor {
+class TPreprocessor_addCensorWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -243,8 +243,8 @@ public:
   int method; //P weighting method
   float maxTime; //P maximal time
 
-  TPreprocessor_censor_weight();
-  TPreprocessor_censor_weight(PVariable, const TValue & = TValue(), const int & = 0, const int & = km, const float & = 0.0);
+  TPreprocessor_addCensorWeight();
+  TPreprocessor_addCensorWeight(PVariable, const TValue & = TValue(), const int & = 0, const int & = km, const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 

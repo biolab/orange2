@@ -65,22 +65,17 @@ LNKSTL=	-lstdc++
 
 
 ############
-# Patterns:
 #   .ppp and .px files are created by pyprops and pyxtract
 #   which get called to build timestamp.h. The reason is that
 #   all .ppp/.px files are created at the same time, in a single
 #   run of the corresponding tool; the timestamp's time is compared
 #   to a list of cpp/hpp files.
 
-#%.ppp:	
-#	
-#%.px:
-#	
 $(ODIR)/%.o :
 	$(CXX) -c $< -o $@
 
-############
-# Rules
+
+
 
 all	: dirs $(ORANGE_SO)
 

@@ -61,8 +61,7 @@ PyObject *convertToPython(const $elementname$ &);
 #define $listname$ _TOrangeVector<$elementname$>
 typedef GCPtr< $listname$ > $wrappedlistname$;
 """ \
-+ definition \
-+ "inline PyObject *$pyname$_repr(TPyOrange *self) { return $classname$::_str(self); }\n"
++ definition
 
 
 coutf = open("lib_vectors.cpp", "wt")
@@ -75,7 +74,8 @@ coutf.write("""\
 """)
 
 for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
-  [("IntList",          "int",    "PIntList",          "TIntList",          "int"),
+  [("BoolList",         "bool",   "PBoolList",         "TBoolList",         "bool"),
+   ("IntList",          "int",    "PIntList",          "TIntList",          "int"),
    ("FloatList",        "float",  "PFloatList",        "TFloatList",        "float"),
    ("StringList",       "string", "PStringList",       "TStringList",       "string"),
    ("LongList",         "int",    "PLongList",         "TLongList",         "long"),

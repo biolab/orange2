@@ -55,10 +55,13 @@ object receiving the wrapper will die before the wrapped object.
   #include <crtdbg.h>
   #pragma warning (disable : 4786 4114 4018 4267)
   #pragma warning (disable : 4127) // conditional expression is constant (reported by _ASSERT without debug)
+  #define TYPENAME(x) (x).name()+7
 
 #else // !_MSC_VER
   #include <assert.h>
   #define _ASSERT assert
+  char *demangle(const type_info &type);
+  #define TYPENAME(x) demangle(x)+1
 #endif
 
 #define mlnew new
@@ -232,14 +235,14 @@ public:
 
   T *operator -> ()
   { if (!counter)
-      raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return counter->ptr;
   }
 
 
   const T *operator -> () const 
   { if (!counter)
-      raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return counter->ptr;
   }
 
@@ -283,7 +286,7 @@ public:
 
   inline T &getReference() const
   { if (!counter)
-      raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return *counter->ptr;
   }
 
@@ -414,14 +417,14 @@ public:
 
   T *operator -> ()
   { if (!counter)
-      raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return counter->ptr;
   }
 
 
   const T *operator -> () const 
   { if (!counter)
-      raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return counter->ptr;
   }
 
@@ -459,7 +462,7 @@ public:
 
   inline T &getReference() const
   { if (!counter)
-       raiseError("Orange internal error: NULL pointer to '%s'", typeid(T).name()+7);
+       raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
     return *counter->ptr;
   }
 

@@ -45,7 +45,7 @@ public:
 
   static PValueList P_FromArguments(PyObject *arg, PVariable var = PVariable())
   { if (!PySequence_Check(arg)) {
-      PyErr_Format(PyExc_TypeError, "invalid arguments for '%s' constructor (sequence expected)", typeid(TValueList).name()+7);
+      PyErr_Format(PyExc_TypeError, "invalid arguments for 'ValueList' constructor (sequence expected)");
       return PValueList();
     }
 

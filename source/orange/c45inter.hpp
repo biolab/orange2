@@ -49,7 +49,7 @@ class TC45Domain : public TDomain {
 public:
   __REGISTER_CLASS
 
-  vector<bool> skip;
+  PBoolList skip; //P a boolean list, one element per attribute, denoting which attributes to skip
 
   TC45Domain(const string &stem, PVarList knownVars=PVarList());
   TC45Domain(const TC45Domain &);

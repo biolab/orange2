@@ -43,6 +43,9 @@
 #include <string>
 #include "preprocessors.ppp"
 
+DEFINE_TOrangeMap_classDescription(PVariable, PValueFilter, true, true, "VariableFilterMap")
+DEFINE_TOrangeMap_classDescription(PVariable, float, true, false, "VariableFloatMap")
+
 #ifdef _MSC_VER
   #pragma warning (disable : 4100) // unreferenced local parameter (macros name all arguments)
 #endif
@@ -80,6 +83,61 @@ PExampleGenerator TPreprocessor::filterExamples(PFilter filter, PExampleGenerato
 { TFilteredGenerator fg(filter, generator);
   return PExampleGenerator(mlnew TExampleTable(PExampleGenerator(fg))); 
 }
+
+
+
+TPreprocessor_ignore::TPreprocessor_ignore()
+: attributes(mlnew TVarList())
+{}
+
+
+TPreprocessor_ignore::TPreprocessor_ignore(PVarList attrs)
+: attributes(attrs)
+{}
+
+
+PExampleGenerator TPreprocessor_ignore::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{
+  PDomain outDomain = CLONE(TDomain, gen->domain);
+  PITERATE(TVarList, vi, attributes)
+    if (!outDomain->delVariable(*vi))
+      if (*vi == outDomain->classVar)
+        outDomain->removeClass();
+      else
+        raiseError("attribute '%s' not found", (*vi)->name.c_str());
+
+  newWeight = weightID;
+  return PExampleGenerator(mlnew TExampleTable(outDomain, gen));
+}
+
+
+
+TPreprocessor_select::TPreprocessor_select()
+: attributes(mlnew TVarList())
+{}
+
+
+TPreprocessor_select::TPreprocessor_select(PVarList attrs)
+: attributes(attrs)
+{}
+
+
+PExampleGenerator TPreprocessor_select::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{
+  PDomain outDomain = CLONE(TDomain, gen->domain);
+  TVarList::const_iterator bi(attributes->begin()), be(attributes->end());
+
+  PITERATE(TVarList, vi, gen->domain->attributes)
+    if (find(bi, be, *vi)==be)
+      outDomain->delVariable(*vi);
+
+  if (find(bi, be, outDomain->classVar) == be)
+    outDomain->removeClass();
+
+  newWeight = weightID;
+  return PExampleGenerator(mlnew TExampleTable(outDomain, gen));
+}
+
 
 
 
@@ -131,117 +189,75 @@ PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain d
 }
 
 
-TPreprocessor_ignore::TPreprocessor_ignore()
-: attributes(mlnew TVarList())
-{}
 
-
-TPreprocessor_ignore::TPreprocessor_ignore(PVarList attrs)
-: attributes(attrs)
-{}
-
-
-PExampleGenerator TPreprocessor_ignore::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
-{
-  PDomain outDomain = CLONE(TDomain, gen->domain);
-  PITERATE(TVarList, vi, attributes)
-    if (!outDomain->delVariable(*vi))
-      raiseError("attribute '%s' not found", (*vi)->name.c_str());
-
-  newWeight = weightID;
-  return PExampleGenerator(mlnew TExampleTable(outDomain, gen));
-}
-
-
-
-TPreprocessor_select::TPreprocessor_select()
-: attributes(mlnew TVarList())
-{}
-
-
-TPreprocessor_select::TPreprocessor_select(PVarList attrs)
-: attributes(attrs)
-{}
-
-
-PExampleGenerator TPreprocessor_select::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
-{
-  PDomain outDomain = CLONE(TDomain, gen->domain);
-  TVarList::const_iterator bi(attributes->begin()), be(attributes->end());
-
-  PITERATE(TVarList, vi, gen->domain->attributes)
-    if (find(bi, be, *vi)==be)
-      outDomain->delVariable(*vi);
-
-  newWeight = weightID;
-  return PExampleGenerator(mlnew TExampleTable(outDomain, gen));
-}
-
-
-
-
-PExampleGenerator TPreprocessor_remove_duplicates::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_removeDuplicates::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { PExampleGenerator table = mlnew TExampleTable(gen);
 
-  newWeight = getMetaID();
-  table.AS(TExampleTable)->copyMetaAttribute(newWeight, weightID, TValue(0));
+  if (weightID)
+    newWeight = weightID;
+  else {
+    newWeight = getMetaID();
+    TValue val0(float(1.0));
+    table.AS(TExampleTable)->addMetaAttribute(newWeight, val0);
+  }
+
   table.AS(TExampleTable)->removeDuplicates(newWeight);
   return table;
 }
 
 
 
-PExampleGenerator TPreprocessor_skip_missing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_dropMissing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasSpecial(true), gen);
 }
 
 
-PExampleGenerator TPreprocessor_only_missing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_takeMissing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasSpecial(false), gen);
 }
 
 
 
-PExampleGenerator TPreprocessor_skip_missing_classes::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_dropMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasClassValue(true), gen);
 }
 
 
 
-PExampleGenerator TPreprocessor_only_missing_classes::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_takeMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { newWeight = weightID;
   return filterExamples(mlnew TFilter_hasClassValue(false), gen);
 }
 
 
 
-TPreprocessor_noise::TPreprocessor_noise()
-: probabilities(mlnew TVariableFloatMap()),
-  defaultNoise(0.0)  
+TPreprocessor_addNoise::TPreprocessor_addNoise()
+: proportions(mlnew TVariableFloatMap()),
+  defaultProportion(0.0)  
 {}
 
 
-TPreprocessor_noise::TPreprocessor_noise(PVariableFloatMap probs, const float &defprob)
-: probabilities(probs),
-  defaultNoise(defprob)  
+TPreprocessor_addNoise::TPreprocessor_addNoise(PVariableFloatMap probs, const float &defprob)
+: proportions(probs),
+  defaultProportion(defprob)  
 {}
 
 
-PExampleGenerator TPreprocessor_noise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   newWeight = weightID;
 
-  if (!probabilities && (defaultNoise<=0.0))
+  if (!proportions && (defaultProportion<=0.0))
     return mlnew TExampleTable(gen);
 
   const TDomain &domain = gen->domain.getReference();
-  vector<float> ps(domain.attributes->size(), defaultNoise);
+  vector<float> ps(domain.attributes->size(), defaultProportion);
 
-  if (probabilities)
-    PITERATE(TVariableFloatMap, vi, probabilities) {
+  if (proportions)
+    PITERATE(TVariableFloatMap, vi, proportions) {
       if ((*vi).first == domain.classVar)
         ps.push_back((*vi).second);
       ps[domain.getVarNum((*vi).first)] = (*vi).second;
@@ -274,21 +290,21 @@ PExampleGenerator TPreprocessor_noise::operator()(PExampleGenerator gen, const i
 
 
 
-TPreprocessor_gaussian_noise::TPreprocessor_gaussian_noise()
+TPreprocessor_addGaussianNoise::TPreprocessor_addGaussianNoise()
 : deviations(mlnew TVariableFloatMap()),
   defaultDeviation(0.0)
 {}
 
 
 
-TPreprocessor_gaussian_noise::TPreprocessor_gaussian_noise(PVariableFloatMap devs, const float &defdev)
+TPreprocessor_addGaussianNoise::TPreprocessor_addGaussianNoise(PVariableFloatMap devs, const float &defdev)
 : deviations(devs),
   defaultDeviation(defdev)  
 {}
 
 
 
-PExampleGenerator TPreprocessor_gaussian_noise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   newWeight = weightID;
 
@@ -311,32 +327,32 @@ PExampleGenerator TPreprocessor_gaussian_noise::operator()(PExampleGenerator gen
 
 
 
-TPreprocessor_missing::TPreprocessor_missing()
-: probabilities(mlnew TVariableFloatMap()),
-  defaultMissing(0.0),
+TPreprocessor_addMissing::TPreprocessor_addMissing()
+: proportions(mlnew TVariableFloatMap()),
+  defaultProportion(0.0),
   specialType(valueDK)
 {}
 
 
-TPreprocessor_missing::TPreprocessor_missing(PVariableFloatMap probs, const float &defprob, const int &st)
-: probabilities(probs),
-  defaultMissing(defprob),
+TPreprocessor_addMissing::TPreprocessor_addMissing(PVariableFloatMap probs, const float &defprob, const int &st)
+: proportions(probs),
+  defaultProportion(defprob),
   specialType(st)
 {}
 
 
-PExampleGenerator TPreprocessor_missing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addMissing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   newWeight = weightID;
   
-  if (!probabilities && (defaultMissing<=0.0))
+  if (!proportions && (defaultProportion<=0.0))
     return mlnew TExampleTable(gen);
 
   const TDomain &domain = gen->domain.getReference();
-  vector<float> ps(domain.attributes->size(), defaultMissing);
+  vector<float> ps(domain.attributes->size(), defaultProportion);
 
-  if (probabilities)
-    PITERATE(TVariableFloatMap, vi, probabilities) {
+  if (proportions)
+    PITERATE(TVariableFloatMap, vi, proportions) {
       if ((*vi).first == domain.classVar)
         ps.push_back((*vi).second);
       ps[domain.getVarNum((*vi).first)] = (*vi).second;
@@ -369,12 +385,12 @@ PExampleGenerator TPreprocessor_missing::operator()(PExampleGenerator gen, const
 
 
 
-TPreprocessor_class_noise::TPreprocessor_class_noise(const float &cn)
-: classNoise(cn)
+TPreprocessor_addClassNoise::TPreprocessor_addClassNoise(const float &cn)
+: proportion(cn)
 {}
 
 
-PExampleGenerator TPreprocessor_class_noise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   if (!gen->domain->classVar)
     raiseError("Class-less domain");
@@ -382,8 +398,9 @@ PExampleGenerator TPreprocessor_class_noise::operator()(PExampleGenerator gen, c
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
 
-  if (classNoise>0.0) {
-    PLongList rind(TMakeRandomIndices2()(table->size(), 1-classNoise));
+  if (proportion>0.0) {
+    TMakeRandomIndices2 mri2;
+    PLongList rind(mri2(table->size(), 1-proportion));
 
     const TVariable &classVar = table->domain->classVar.getReference();
     int eind = 0;
@@ -400,21 +417,21 @@ PExampleGenerator TPreprocessor_class_noise::operator()(PExampleGenerator gen, c
 
 
 
-TPreprocessor_class_gaussian_noise::TPreprocessor_class_gaussian_noise(const float &dev)
-: classDeviation(dev)
+TPreprocessor_addGaussianClassNoise::TPreprocessor_addGaussianClassNoise(const float &dev)
+: deviation(dev)
 {}
 
 
-PExampleGenerator TPreprocessor_class_gaussian_noise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addGaussianClassNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   if (!gen->domain->classVar)
     raiseError("Class-less domain");
 
   newWeight = weightID;
 
-  if (classDeviation>0.0) {
+  if (deviation>0.0) {
     vector<float> deviations(gen->domain->variables->size(), 0);
-    deviations.back() = classDeviation;
+    deviations.back() = deviation;
     TGaussianNoiseGenerator gngen(deviations, gen);
     return PExampleGenerator(mlnew TExampleTable(PExampleGenerator(gngen)));
   }
@@ -424,13 +441,13 @@ PExampleGenerator TPreprocessor_class_gaussian_noise::operator()(PExampleGenerat
 }
 
 
-TPreprocessor_class_missing::TPreprocessor_class_missing(const float &cm, const int &st)
-: classMissing(cm),
+TPreprocessor_addMissingClasses::TPreprocessor_addMissingClasses(const float &cm, const int &st)
+: proportion(cm),
   specialType(st)
 {}
   
   
-PExampleGenerator TPreprocessor_class_missing::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addMissingClasses::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   if (!gen->domain->classVar)
     raiseError("Class-less domain");
@@ -438,8 +455,9 @@ PExampleGenerator TPreprocessor_class_missing::operator()(PExampleGenerator gen,
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
 
-  if (classMissing>0.0) {
-    PLongList rind(TMakeRandomIndices2()(table->size(), 1-classMissing));
+  if (proportion>0.0) {
+    TMakeRandomIndices2 mri2;
+    PLongList rind(mri2(table->size(), 1-proportion));
 
     const TVariable &classVar = table->domain->classVar.getReference();
     const int &varType = classVar.varType;
@@ -457,19 +475,19 @@ PExampleGenerator TPreprocessor_class_missing::operator()(PExampleGenerator gen,
 
 
 
-TPreprocessor_cost_weight::TPreprocessor_cost_weight()
+TPreprocessor_addCostWeight::TPreprocessor_addCostWeight()
 : classWeights(mlnew TFloatList),
   equalize(false)
 {}
 
 
-TPreprocessor_cost_weight::TPreprocessor_cost_weight(PFloatList cw, const bool &eq)
+TPreprocessor_addCostWeight::TPreprocessor_addCostWeight(PFloatList cw, const bool &eq)
 : equalize(eq),
   classWeights(cw)
 {}
 
 
-PExampleGenerator TPreprocessor_cost_weight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addCostWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   if (!gen->domain->classVar || (gen->domain->classVar->varType != TValue::INTVAR))
     raiseError("Class-less domain or non-discrete class");
@@ -486,9 +504,15 @@ PExampleGenerator TPreprocessor_cost_weight::operator()(PExampleGenerator gen, c
 
   newWeight = getMetaID();
 
-  vector<float> weights(classWeights ? classWeights.getReference() : vector<float>(nocl));
-  for(int i = nocl - weights.size(); i>0; i--)
-    weights.push_back(1.0);
+  vector<float> weights(nocl, 1.0);
+  if (classWeights) {
+    int i = 0;
+    PITERATE(vector<float>, ci, classWeights) {
+      weights[i++] = *ci;
+      if (i==nocl)
+        break;
+    }
+  }  
 
   if (equalize) {
     PDistribution dist(getClassDistribution(gen, weightID));
@@ -512,7 +536,7 @@ PExampleGenerator TPreprocessor_cost_weight::operator()(PExampleGenerator gen, c
 
 
 
-TPreprocessor_censor_weight::TPreprocessor_censor_weight()
+TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight()
 : outcomeVar(),
   eventValue(),
   timeID(0),
@@ -521,7 +545,7 @@ TPreprocessor_censor_weight::TPreprocessor_censor_weight()
 {}
 
 
-TPreprocessor_censor_weight::TPreprocessor_censor_weight(PVariable ov, const TValue &ev, const int &tv, const int &me, const float &mt)
+TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, const TValue &ev, const int &tv, const int &me, const float &mt)
 : outcomeVar(ov),
   eventValue(ev),
   timeID(tv),
@@ -530,7 +554,7 @@ TPreprocessor_censor_weight::TPreprocessor_censor_weight(PVariable ov, const TVa
 {}
 
 
-PExampleGenerator TPreprocessor_censor_weight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   checkProperty(outcomeVar);
 

@@ -46,7 +46,7 @@ PyObject *WrapOrange(POrange);
 template<class T>
 PyObject *WrapNewOrange(T *obj, PyTypeObject *type)
 { if (!obj) {
-    PyErr_Format(PyExc_SystemError, "Constructor for '%s' failed", typeid(*obj).name()+7);
+    PyErr_Format(PyExc_SystemError, "Constructor for '%s' failed", TYPENAME(typeid(*obj)));
     return PYNULL;
   }
   return WrapOrange(POrange(obj, type));
@@ -95,9 +95,9 @@ int ccn_##type(PyObject *obj, void *ptr) \
   PyOrange_AS_Orange(aname).dynamic_cast_to(obj); \
   if (!obj) {\
     if (aname && ((TPyOrange *)aname)->ptr) \
-      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got '%s')", typeid(type).name()+7, typeid(*((TPyOrange *)(aname))->ptr).name()+7); \
+      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got '%s')", TYPENAME(typeid(type)), TYPENAME(typeid(*((TPyOrange *)(aname))->ptr))); \
     else \
-      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got nothing)", typeid(type).name()+7); \
+      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got nothing)", TYPENAME(typeid(type))); \
     return errreturn; \
   }
 

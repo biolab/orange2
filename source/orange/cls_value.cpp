@@ -423,6 +423,30 @@ const char *TPyValue2string(TPyValue *self)
 
 #define errUndefinedIf(cond) if (cond) PYERROR(PyExc_TypeError, "Value.compare: cannot compare with undefined values", PYNULL);
 
+PyObject *richcmp_from_sign(const int &i, const int &op)
+{ int cmp;
+  switch (op) {
+		case Py_LT: cmp = (i<0); break;
+		case Py_LE: cmp = (i<=0); break;
+		case Py_EQ: cmp = (i==0); break;
+		case Py_NE: cmp = (i!=0); break;
+		case Py_GT: cmp = (i>0); break;
+		case Py_GE: cmp = (i>=0); break;
+    default:
+      Py_INCREF(Py_NotImplemented);
+      return Py_NotImplemented;
+  }
+  
+  PyObject *res;
+  if (cmp)
+    res = Py_True;
+  else
+    res = Py_False;
+  Py_INCREF(res);
+  return res;
+}
+
+
 PyObject *Value_richcmp(TPyValue *i, PyObject *j, int op)
 { 
   PyTRY
