@@ -89,14 +89,15 @@ class SchemaDoc(QMainWindow):
             if item.widget.name == widget.name:
                 list.append(item.caption)
 
-        i = 1; found = 0
-        while not found:
-            if newwidget.caption + " (" + str(i) + ")" not in list:
-                found = 1
-                newwidget.caption = newwidget.caption + " (" + str(i) + ")"
-            else:
-                i += 1
-                
+        i = 2; found = 0
+        if len(list) > 0:
+            while not found:
+                if newwidget.caption + " (" + str(i) + ")" not in list:
+                    found = 1
+                    newwidget.caption = newwidget.caption + " (" + str(i) + ")"
+                else:
+                    i += 1
+                    
         newwidget.show()
         newwidget.updateTooltip(self.canvasView)
         self.widgets.append(newwidget)
