@@ -81,8 +81,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         
         self.loadSettings()
 
-        self.pointsName = ["Points","Log Odds"]
-        self.totalPointsName = ["Total Points","Log Odds Sum"]
+        self.pointsName = ["Points","Log OR"]
+        self.totalPointsName = ["Total Points","Log OR Sum"]
         self.bnomogram = None
 
 
@@ -444,8 +444,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.bnomogram.showBaseLine(self.showBaseLine)
 
     def saveToFileCanvas(self):
+        EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
+        
         sizeW = self.graph.canvas().pright
-        sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()
+        sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()+EMPTY_SPACE
         size = QSize(sizeW, sizeH)
 
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
@@ -457,7 +459,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         # create buffers and painters
         headerBuffer = QPixmap(self.header.canvas().size())
-        graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom))
+        graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE))
         footerBuffer = QPixmap(self.footer.canvas().size())
         
         headerPainter = QPainter(headerBuffer)
@@ -470,7 +472,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         footerPainter.fillRect(footerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
         
         self.header.drawContents(headerPainter, 0, 0, sizeW, self.header.canvas().size().height())
-        self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.canvas().gbottom)
+        self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.canvas().gbottom+EMPTY_SPACE)
         self.footer.drawContents(footerPainter, 0, 0, sizeW, self.footer.canvas().size().height())
 
         
@@ -480,8 +482,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
 
         bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.canvas().size().height(), Qt.CopyROP)
-        bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom, Qt.CopyROP)
-        bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
+        bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom+EMPTY_SPACE, Qt.CopyROP)
+        bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom+EMPTY_SPACE, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
 
         painter.end()
         headerPainter.end()

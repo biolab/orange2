@@ -286,12 +286,12 @@ class AttValueMarker(QCanvasEllipse):
 
     
 class AttValue:
-    def __init__(self, name, betaValue, error=0, showErr=False, over=True, lineWidth = 0, markerWidth = 2):
+    def __init__(self, name, betaValue, error=0, showErr=False, over=True, lineWidth = 0, markerWidth = 2, enable = True):
         self.name = name
         self.betaValue = betaValue
         self.error = error
         self.showErr = showErr
-        self.enable = True
+        self.enable = enable
         self.hideAtValue = False
         self.over = over
         self.lineWidth = lineWidth
@@ -449,7 +449,11 @@ class AttrLine:
         percentLine = AttrLine(self.name, canvas)
         percentList = filter(lambda x:x>minPercent and x<1,arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
-            percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
+            #print p, int(10*p),10*p, int(10*p) != 10*p, not p == percentList[0], not p==percentList[len(percentList)-1]
+            if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1, enable = False))
+            else:
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
         return percentLine
 
     def updateValueXY(self, x, y):
@@ -1002,7 +1006,7 @@ class BasicNomogram(QCanvas):
         self.footerCanvas.update()
 
     def paint(self, rect, mapper):
-        self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()+10)
+        self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()-self.parent.verticalSpacing/2 + 5)
         if self.parent.showBaseLine:
             self.zeroLine.show()
         else:
