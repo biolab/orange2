@@ -237,7 +237,7 @@ class OWBaseWidget(QDialog):
             for i in range(len(self.linksIn[key])):
                 (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
                 if handler != None and dirty:
-                    print "processing ", self.name()," , handler = ", str(handler)[13:30]
+                    #print "processing ", self.name()," , handler = ", str(handler)[13:30]
                     self.linksIn[key][i] = (0, widgetFrom, handler, signalData) # clear the dirty flag
                     handler(signalData)
 

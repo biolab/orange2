@@ -411,7 +411,6 @@ class SchemaDoc(QMainWindow):
             inCaption = line.getAttribute("inWidgetCaption")
             outCaption = line.getAttribute("outWidgetCaption")
             Enabled = int(line.getAttribute("enabled"))
-            print Enabled
             signals = line.getAttribute("signals")
             inWidget = self.getWidgetByCaption(inCaption)
             outWidget = self.getWidgetByCaption(outCaption)
