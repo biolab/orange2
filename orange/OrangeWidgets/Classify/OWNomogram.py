@@ -98,7 +98,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.alignRadio = OWGUI.radioButtonsInBox(GeneralTab, self,  'alignType', ['Left', '0-point'], box='Align',
                                                   tooltips=['Attributes in nomogram are left aligned', 'Attributes are not aligned, top scale represents true (normalized) regression coefficient value'],
                                                   callback=self.showNomogram)
-        self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log odds'], 'yAxis',  
+        self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'log OR'], 'yAxis',  
                                 tooltips=['values are normalized on a 0-100 point scale','values on top axis show log-linear contribution of attribute to full model'],
                                 callback=self.showNomogram)
         self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'contType',   ['1D', '2D'], 'Continuous',
