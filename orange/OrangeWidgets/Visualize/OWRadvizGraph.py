@@ -80,6 +80,10 @@ class OWRadvizGraph(OWVisGraph):
         self.clusterOptimization = None
         self.radvizWidget = radvizWidget
 
+        # moving anchors manually
+        self.shownAttributes = []
+        self.selectedAnchorIndex = None
+
         self.hideRadius = 0
         self.showAnchors = 1
         
@@ -102,7 +106,7 @@ class OWRadvizGraph(OWVisGraph):
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setOptions(0) 
         scaleDraw.setTickLength(0, 0, 0)
-        self.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
+        self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
 
@@ -136,6 +140,7 @@ class OWRadvizGraph(OWVisGraph):
 
         self.__dict__.update(args)
         length = len(labels)
+        self.shownAttributes = labels
         xs = []
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
 
@@ -147,11 +152,6 @@ class OWRadvizGraph(OWVisGraph):
         indices = [self.attributeNameIndex[label] for label in labels]
         if setAnchors:
             self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
-
-        # draw "circle"
-        xdata = self.createXAnchors(100)
-        ydata = self.createYAnchors(100)
-        self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         if self.showAnchors:
             if self.hideRadius > 0:
@@ -166,12 +166,17 @@ class OWRadvizGraph(OWVisGraph):
             YAnchors = [a[1] for a in shownAnchorData]
             shownLabels = [a[2] for a in shownAnchorData]
         
-            self.addCurve("dots", QColor(140,140,140), QColor(140,140,140), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
+            self.addCurve("dots", QColor(160,160,160), QColor(160,160,160), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
 
             # draw text at anchors
             if self.showAttributeNames:
                 for i in range(len(shownLabels)):
-                    self.addMarker(shownLabels[i], XAnchors[i]*1.1, YAnchors[i]*1.04, Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
+                    self.addMarker(shownLabels[i], XAnchors[i]*1.07, YAnchors[i]*1.04, Qt.AlignCenter, bold = 1)
+
+        # draw "circle"
+        xdata = self.createXAnchors(100)
+        ydata = self.createYAnchors(100)
+        self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
@@ -208,7 +213,7 @@ class OWRadvizGraph(OWVisGraph):
 
             self.removeMarkers()
             for i in range(graph.nVertices):
-                mkey = self.insertMarker(str(i))
+                mkey = self.insertMarker(str(i+1))
                 self.marker(mkey).setXValue(float(data[i][0]))
                 self.marker(mkey).setYValue(float(data[i][1]))
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
@@ -412,6 +417,25 @@ class OWRadvizGraph(OWVisGraph):
             """
 
 
+    def onMousePressed(self, e):
+        if self.radvizWidget.manualPositioningButton.isOn():
+            self.mouseCurrentlyPressed = 1
+            (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
+            if dist < 5 and str(self.curve(key).title()) == "dots":
+                self.selectedAnchorIndex = index
+            else:
+                self.selectedAnchorIndex = None
+        else:
+            OWVisGraph.onMousePressed(self, e)
+
+
+    def onMouseReleased(self, e):
+        if self.radvizWidget.manualPositioningButton.isOn():
+            self.mouseCurrentlyPressed = 0
+            self.selectedAnchorIndex = None
+        else:
+            OWVisGraph.onMouseReleased(self, e)
+
     # ############################################################## 
     # draw tooltips
     def onMouseMoved(self, e):
@@ -423,15 +447,22 @@ class OWRadvizGraph(OWVisGraph):
         self.tooltipCurveKeys = []
         self.tooltipMarkers = []
 
+        xFloat = self.invTransform(QwtPlot.xBottom, e.x())
+        yFloat = self.invTransform(QwtPlot.yLeft, e.y())
+
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
         if self.mouseCurrentlyPressed:
             OWVisGraph.onMouseMoved(self, e)
             if redraw: self.replot()
+
+            if self.radvizWidget.manualPositioningButton.isOn():
+                if self.selectedAnchorIndex != None:
+                    self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
+                    self.updateData(self.shownAttributes)
+                    self.repaint()
             return 
             
-        xFloat = self.invTransform(QwtPlot.xBottom, e.x())
-        yFloat = self.invTransform(QwtPlot.yLeft, e.y())
         dictValue = "%.1f-%.1f"%(xFloat, yFloat)
         if self.dataMap.has_key(dictValue):
             points = self.dataMap[dictValue]
@@ -445,7 +476,8 @@ class OWRadvizGraph(OWVisGraph):
 
             (x_i, y_i, color, index) = nearestPoint
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
-                for (xAnchor,yAnchor,label) in self.anchorData:
+                shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
+                for (xAnchor,yAnchor,label) in shownAnchorData:
                     # draw lines
                     key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                     self.tooltipCurveKeys.append(key)
@@ -466,7 +498,8 @@ class OWRadvizGraph(OWVisGraph):
                 intY = self.transform(QwtPlot.yLeft, y_i)
                 text = ""
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                    labels = [s for (xA, yA, s) in self.anchorData]
+                    shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
+                    labels = [s for (xA, yA, s) in shownAnchorData]
                 else:
                     labels = self.attributeNames
 

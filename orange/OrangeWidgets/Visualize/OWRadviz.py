@@ -23,7 +23,7 @@ import OWToolbars, OWGUI, orngTest, orangeom
 class OWRadviz(OWWidget):
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
-                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName"
+                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName",
                     "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
@@ -159,9 +159,13 @@ class OWRadviz(OWWidget):
         # ####################################
         # ANCHORS TAB
         # #####
-        self.setAnchorButtons = QHButtonGroup("Set Anchor Positions", self.AnchorsTab)
-        self.radialAnchorsButton = OWGUI.button(self.setAnchorButtons, self, "Radial", callback = self.radialAnchors)
-        self.randomAnchorsButton = OWGUI.button(self.setAnchorButtons, self, "Random", callback = self.randomAnchors)
+        vbox = OWGUI.widgetBox(self.AnchorsTab, "Set Anchor Positions")
+        hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
+        #self.setAnchorButtons = QHButtonGroup("Set Anchor Positions", self.AnchorsTab)
+        self.radialAnchorsButton = OWGUI.button(hbox1, self, "Radial", callback = self.radialAnchors)
+        self.randomAnchorsButton = OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
+        self.manualPositioningButton = OWGUI.button(vbox, self, "Manual positioning")
+        self.manualPositioningButton.setToggleButton(1)
 
         box = OWGUI.widgetBox(self.AnchorsTab, "Anchor Optimization")
         inbox = box #QHBox(box)
