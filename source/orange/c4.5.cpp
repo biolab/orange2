@@ -150,7 +150,7 @@ void loadC45()
   strcpy(bp, "/c45.so");
   #endif
 
-  void *handle = dlopen(buf, 0 /*dlopenflags*/);
+  void *handle = dlopen(buf, PyThreadState_Get()->interp->dlopenflags /*dlopenflags*/);
   if (handle == NULL)
     raiseErrorWho("C45Loader", dlerror());
   
