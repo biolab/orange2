@@ -263,21 +263,22 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
         aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
 
-        for at in cl.domain.attributes:
+        for at in cl.continuizedDomain.attributes:
             at.setattr("visited",0)
             
-        for at in cl.domain.attributes:
+        for at in cl.continuizedDomain.attributes:
             if at.getValueFrom and at.visited==0:
                 name = at.getValueFrom.variable.name
                 var = at.getValueFrom.variable
+                print name, var
                 a = AttrLine(name, self.bnomogram)
                 listOfExcludedValues = []
                 for val in var.values:
                     foundValue = False
-                    for same in cl.domain.attributes:
-                        if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and hasattr(same, "originValue") and same.originValue==val:
+                    for same in cl.continuizedDomain.attributes:
+                        if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
                             same.setattr("visited",1)
-                            a.addAttValue(AttValue(same.originValue, mult*cl.beta[same], error = cl.beta_se[same]))
+                            a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
                             foundValue = True
                     if not foundValue:
                         listOfExcludedValues.append(val)
@@ -475,6 +476,17 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if x<0:
                 return -1;
             return 1;
+        def compare_to_ordering_in_data(x,y):
+            xi = yi = 0
+            for d in self.data.domain.attributes:
+                if d.name == x.name:
+                    break
+                xi+=1
+            for d in self.data.domain.attributes:
+                if d.name == y.name:
+                    break
+                yi+=1
+            return xi-yi
         def compate_beta_difference(x,y):
             return -sign(x.maxValue-x.minValue-y.maxValue+y.minValue)
         def compare_beta_positive(x, y):
@@ -482,6 +494,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         def compare_beta_negative(x, y):
             return sign(x.minValue-y.minValue)
 
+        if self.sort_type == 0 and self.data:
+            self.bnomogram.attributes.sort(compare_to_ordering_in_data)               
         if self.sort_type == 1:
             self.bnomogram.attributes.sort(compate_beta_difference)               
         elif self.sort_type == 2:
@@ -571,8 +585,8 @@ if __name__=="__main__":
     #l = orngSVM.BasicSVMLearner()
     #l.kernel = 0 # linear SVM
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-   # logistic = orngLR.LogRegLearner(data, removeSingular = 1)
-    ow.classifier(bayes)
+    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(logistic)
     ow.cdata(data)
 
     # here you can test setting some stuff
