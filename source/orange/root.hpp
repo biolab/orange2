@@ -124,8 +124,8 @@ public:
   const TPropertyDescription *propertyDescription(const char *name, bool noException = false) const;
   const type_info &propertyType(const char *name) const;
 
-  int traverse(visitproc visit, void *arg) const;
-  int dropReferences();
+  virtual int traverse(visitproc visit, void *arg) const;
+  virtual int dropReferences();
 
   void raiseError(const char *anerr, ...) const;
   void raiseWarning(const char *anerr, ...) const;

@@ -66,7 +66,7 @@ public:
   TExampleGenerator();
   TExampleGenerator(PDomain dom);
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   virtual TExampleIterator begin() =0;
@@ -127,7 +127,7 @@ public:
   TExampleIterator(const TExample &anexam, TExampleGenerator *agen=NULL, void *adata =NULL);
   TExampleIterator(PDomain domain, TExampleGenerator *agen=NULL, void *adata =NULL);
   TExampleIterator::TExampleIterator(const TExampleIterator &other);
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
   ~TExampleIterator();
 

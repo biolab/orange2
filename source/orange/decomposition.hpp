@@ -120,7 +120,7 @@ public:
   vector<T_ExampleIMColumnNode> columns;
 
   TIM(const int &aVarType);
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
   bool fuzzy();
 };
@@ -190,7 +190,7 @@ public:
   vector<TDIMRow> rows;
 
   TIMByRows(const int &avarType);
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 };
 

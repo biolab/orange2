@@ -74,7 +74,7 @@ public:
             void erase(TExample **fromPtr, TExample **toPtr);
             void insert(const int &sti, const TExample &ex);
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   virtual TExampleIterator begin();

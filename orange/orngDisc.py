@@ -8,7 +8,6 @@ def entropyDiscretization(data):
   Results:   a table of examples with discretized atributes. attributes that are
              categorized to a single value (constant) are removed
   """
-  orange.setrandseed(0)
   tablen=orange.Preprocessor_discretize(data, method=orange.EntropyDiscretization())
 
   # print "\nAttributes removed by discretization:\n",

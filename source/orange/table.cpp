@@ -88,10 +88,14 @@ TExampleTable::~TExampleTable()
 }
 
 
-int TExampleTable::traverse(visitproc visit, void *arg) 
+int TExampleTable::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TExampleGenerator::traverse);
-  for(TExample **ee = examples; ee != _Last; ee++)
-    TRAVERSE((*ee)->traverse)
+  if (ownsPointers)
+    for(TExample **ee = examples; ee != _Last; ee++)
+      TRAVERSE((*ee)->traverse)
+
+  if (lock)
+    VISIT(lock.counter);
 
   return 0;
 }
@@ -100,8 +104,9 @@ int TExampleTable::traverse(visitproc visit, void *arg)
 int TExampleTable::dropReferences() 
 { DROPREFERENCES(TExampleGenerator::dropReferences);
   clear();
-  examplesHaveChanged();
-  return 0;
+  if (lock)
+    lock = PExampleGenerator();
+return 0;
 }
 
 
@@ -621,6 +626,7 @@ void TExampleTable::sort(vector<int> &sortOrder)
 
   examplesHaveChanged();
 }
+
 
 
 TExamplePointerTable::TExamplePointerTable(PDomain dom)

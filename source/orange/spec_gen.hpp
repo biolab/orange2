@@ -47,7 +47,7 @@ public:
   TAdapterGenerator(PDomain, PExampleGenerator);
   TAdapterGenerator(PExampleGenerator);
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   virtual TExampleIterator begin();

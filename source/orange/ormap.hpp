@@ -44,10 +44,10 @@ class TOrangeMap : public TOrange
       : __ormap(_X)
       {}
 
-    int traverse(visitproc visit, void *arg)
+    int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
       if (key_is_orange || value_is_orange)
-        for(iterator be=begin(), ee=end(); be!=ee; be++) {
+        for(const_iterator be=begin(), ee=end(); be!=ee; be++) {
           if (key_is_orange)
             PVISIT((*be).first);
           if (value_is_orange)

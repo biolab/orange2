@@ -69,7 +69,7 @@ TContingency::TContingency(const TContingency &old)
 }
 
 
-int TContingency::traverse(visitproc visit, void *arg) 
+int TContingency::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
 
   if (varType==TValue::INTVAR) {

@@ -214,7 +214,7 @@ class _TOrangeVector<TValue> : public TOrange
   virtual TClassDescription const *classDescription() const;
   virtual TOrange *clone() const;
 
-  int traverse(visitproc visit, void *arg)
+  int traverse(visitproc visit, void *arg) const
   { TRAVERSE(TOrange::traverse);
     PVISIT(variable);
     return 0;
@@ -292,9 +292,9 @@ class TOrangeVector : public TOrange
         __orvector(other.__orvector)
       {}
 
-    int traverse(visitproc visit, void *arg)
+    int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(iterator be=begin(), ee=end(); be!=ee; be++)
+      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
         PVISIT(*be);
       return 0;
     }

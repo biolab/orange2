@@ -84,7 +84,7 @@ TDomain::~TDomain()
 { domainChangedDispatcher(); }
 
 
-int TDomain::traverse(visitproc visit, void *arg)
+int TDomain::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   for(TMetaVector::const_iterator mi(metas.begin()), me(metas.end()); mi!=me; mi++)
     PVISIT((*mi).variable);

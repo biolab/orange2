@@ -61,7 +61,7 @@ TIG::TIG()
 {}
 
 
-int TIG::traverse(visitproc visit, void *arg)
+int TIG::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   const_ITERATE(vector<TIGNode>, pi, nodes)
     PVISIT((*pi).example);

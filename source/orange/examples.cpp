@@ -87,6 +87,35 @@ TExample::~TExample()
 { mldelete[] values; }
 
 
+int TExample::traverse(visitproc visit, void *arg) const
+{ TRAVERSE(TOrange::traverse);
+  
+  for(TValue *vi = values, *ve = values_end; vi!=ve; vi++)
+    if (vi->svalV)
+      PVISIT(vi->svalV);
+
+  const_ITERATE(TMetaValues, mi, meta)
+    if ((*mi).second.svalV)
+      PVISIT((*mi).second.svalV);
+
+  return 0;
+}
+
+
+int TExample::dropReferences()
+{
+  for(TValue *vi = values, *ve = values_end; vi!=ve; vi++)
+    if (vi->svalV)
+      vi->svalV.~PSomeValue();
+
+  const_ITERATE(TMetaValues, mi, meta)
+    if ((*mi).second.svalV)
+      (*mi).second.svalV.~PSomeValue();
+
+  return 0;
+}
+
+
 TExample &TExample::operator =(const TExample &orig)
 { domain = orig.domain;
 

@@ -64,7 +64,7 @@ public:
   TContingency &operator=(const TContingency &old);
   ~TContingency();
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   void add(const TValue &outvalue, const TValue &invalue, const float p=1);

@@ -84,7 +84,7 @@ T_ExampleDist::T_ExampleDist(PExample anexample, PDistribution adist)
 {}
 
 
-int TExampleDistVector::traverse(visitproc visit, void *arg)
+int TExampleDistVector::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   const_ITERATE(vector<T_ExampleDist>, pi, values) {
     PVISIT((*pi).example);

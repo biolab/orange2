@@ -42,8 +42,10 @@ public:
   TExample(const TExample &orig);
   virtual ~TExample();
 
-  virtual TExample &operator =(const TExample &orig);
+  int traverse(visitproc visit, void *arg) const;
+  int dropReferences();
 
+  virtual TExample &operator =(const TExample &orig);
 
   typedef TValue *iterator;
   typedef const TValue *const_iterator;

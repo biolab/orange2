@@ -106,7 +106,7 @@ public:
   __REGISTER_CLASS
   vector<T_ExampleDist> values;
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 };
 

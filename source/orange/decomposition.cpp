@@ -265,7 +265,7 @@ TIM::TIM(const int &avarType)
 {}
 
 
-int TIM::traverse(visitproc visit, void *arg)
+int TIM::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   const_ITERATE(vector<T_ExampleIMColumnNode>, pi, columns)
     PVISIT((*pi).example);
@@ -509,7 +509,7 @@ TIMByRows::TIMByRows(const int &avarType)
 
 
 
-int TIMByRows::traverse(visitproc visit, void *arg)
+int TIMByRows::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
   const_ITERATE(vector<PExample>, ei, columnExamples)
     PVISIT(*ei);

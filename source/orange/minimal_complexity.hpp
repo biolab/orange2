@@ -53,7 +53,7 @@ public:
 
   TIG();
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   void removeEmpty();

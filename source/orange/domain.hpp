@@ -86,7 +86,7 @@ public:
   void domainChangedDispatcher();
   void domainChangedNoticeHandler(TDomain *);
 
-  int traverse(visitproc visit, void *arg);
+  int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
   virtual bool addVariable(PVariable var);

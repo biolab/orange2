@@ -135,29 +135,12 @@ int Example_traverse(TPyExample *self, visitproc visit, void *arg)
   if (!self->lock) // don't visit if it's a reference!
     PVISIT(self->example);
 
-  for(TValue *vi = self->example->values, *ve = self->example->values_end; vi!=ve; vi++)
-    if (vi->svalV)
-      PVISIT(vi->svalV);
-
-  ITERATE(TMetaValues, mi, self->example->meta)
-    if ((*mi).second.svalV)
-      PVISIT((*mi).second.svalV);
-
   return 0;
 }
 
 int Example_clear(TPyExample *self)
 { self->lock=POrange();
   self->example=PExample();
-
-  for(TValue *vi = self->example->values, *ve = self->example->values_end; vi!=ve; vi++)
-    if (vi->svalV)
-      vi->svalV.~PSomeValue();
-
-  ITERATE(TMetaValues, mi, self->example->meta)
-    if ((*mi).second.svalV)
-      (*mi).second.svalV.~PSomeValue();
-
   return 0;
 }
 

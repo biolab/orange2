@@ -40,7 +40,7 @@ TExampleGenerator::TExampleGenerator(PDomain dom)
   version(-1)
 {}
 
-int TExampleGenerator::traverse(visitproc visit, void *arg)
+int TExampleGenerator::traverse(visitproc visit, void *arg) const
 { TRAVERSE(TOrange::traverse);
 
 /* No need for this: iterators have just pointers, not references to generators!
@@ -132,7 +132,7 @@ TExampleIterator::TExampleIterator(const TExampleIterator &other)
 }
 
 
-int TExampleIterator::traverse(visitproc visit, void *arg)
+int TExampleIterator::traverse(visitproc visit, void *arg) const
 { /* Iterator has an unwrapped pointer to generator.
      We would have to call generator->traverse if it would not be wrapped.
      However, all generators are expected to be wrapped (sooner or later)

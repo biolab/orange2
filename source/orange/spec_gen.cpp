@@ -94,7 +94,7 @@ int  TAdapterGenerator::numberOfExamples()
 #define AD_cast(x) ((TAdapterIteratorData *&)((x).data))
 
 
-int TAdapterGenerator::traverse(visitproc visit, void *arg)
+int TAdapterGenerator::traverse(visitproc visit, void *arg) const
 { // deliberately skipping TExampleGenerator --- I FORGOT THE REASON WHY!
   TRAVERSE(TOrange::traverse)
   TRAVERSE(first.traverse)
