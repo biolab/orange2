@@ -116,24 +116,19 @@ class OWScatterPlot(OWWidget):
 
 
         # optimization
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea)
-        self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
-        #self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
-        self.interestingProjectionsButton = QPushButton('List of interesting projections', self.attrOrderingButtons)
-        self.connect(self.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea) 
+        self.optimizationDlgButton = QPushButton('Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlg = OptimizationDialog(None)
+        self.optimizationDlg.parentName = "ScatterPlot"
+        self.optimizationDlg.kValue = self.kNeighbours
+        self.optimizationDlg.optimizeAllSubsetSeparationButton.setEnabled(0)
+        self.optimizationDlg.maxLenCombo.setEnabled(0)
 
-
-        self.hbox2 = QHBox(self.attrOrderingButtons)
-        self.attrOrdLabel = QLabel('Number of neighbours (k):', self.hbox2)
-        self.attrKNeighbour = QComboBox(self.hbox2)
-
-        self.interestingprojectionsDlg = InterestingProjections(None)
-        self.interestingprojectionsDlg.parentName = "ScatterPlot"
-        self.interestingprojectionsDlg.kValue = self.kNeighbours
+        self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.show)
+        self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         
-        self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
-        self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
+        self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
+        self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
         
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
@@ -162,8 +157,8 @@ class OWScatterPlot(OWWidget):
 
         # set items in k neighbours combo
         for i in range(len(self.kNeighboursList)):
-            self.attrKNeighbour.insertItem(self.kNeighboursList[i])
-        self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
+            self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
+        self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
 
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
@@ -264,31 +259,31 @@ class OWScatterPlot(OWWidget):
 
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
-        self.interestingprojectionsDlg.kValue = self.kNeighbours
+        self.optimizationDlg.kValue = self.kNeighbours
 
     # ####################################
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
         if self.data != None:
             self.graph.scaleDataNoJittering()
-            (list, value, fullList) = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours)
-            if list == []: return
+            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours)
+            if fullList == []: return
 
             # fill the "interesting visualizations" list box
-            self.interestingprojectionsDlg.optimizedList = []
-            self.interestingprojectionsDlg.interestingList.clear()
-            for i in range(min(100, len(fullList))):
-                ((acc, tableLen), list) = max(fullList)
-                self.interestingprojectionsDlg.optimizedList.append(((acc, tableLen), list))
-                fullList.remove(((acc, tableLen), list))
-                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %1.f) - %s"%(acc, tableLen, str(list)))  
+            self.optimizationDlg.clear()
+            for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
+                (accuracy, tableLen, list) = max(fullList)
+                self.optimizationDlg.insertItem(accuracy, tableLen, list)  
+                fullList.remove((accuracy, tableLen, list))
                 
-            self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
+            self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.interestingList.setCurrentItem(0)
+
 
     def showSelectedAttributes(self):
-        if self.interestingprojectionsDlg.interestingList.count() == 0: return
-        index = self.interestingprojectionsDlg.interestingList.currentItem()
-        (val, list) = self.interestingprojectionsDlg.optimizedList[index]
+        if self.optimizationDlg.interestingList.count() == 0: return
+        index = self.optimizationDlg.interestingList.currentItem()
+        (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFiltered[index]
 
         attrNames = []
         for attr in self.data.domain:
@@ -303,7 +298,7 @@ class OWScatterPlot(OWWidget):
         self.setText(self.attrY, list[1])
         if len(list)>2: self.setText(self.attrShape, list[2])
         else: self.attrShapeCB.setChecked(0)
-        if len(list)>3: self.setText(self.attrSizeShape, list[2])
+        if len(list)>3: self.setText(self.attrSizeShape, list[3])
         else: self.attrSizeShapeCB.setChecked(0)
         self.setText(self.attrColor, self.data.domain.classVar.name)        
         
@@ -414,7 +409,7 @@ class OWScatterPlot(OWWidget):
             return
         
         #self.data = orange.Preprocessor_dropMissing(data.data)
-        self.interestingprojectionsDlg.clear()
+        self.optimizationDlg.clear()
         self.data = data.data
         self.initAttrValues()
         self.graph.setData(self.data)

@@ -458,7 +458,7 @@ class OWPolyvizGraph(OWVisGraph):
                 tempList = []
                 for i in permutation:
                     tempList.append(self.attributeNames[i])
-                fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList, attrOrder))
+                fullList.append((tempPermValue*100.0/float(len(table)), len(table), tempList, attrOrder))
 
         if printTime:
             print "------------------------------"
@@ -468,24 +468,24 @@ class OWPolyvizGraph(OWVisGraph):
         return fullList
                 
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, maxLen):
+    def getOptimalSubsetSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, maxLen, maxResultsLen):
         if attrList == [] or maxLen == 0:
             if len(subsetList) < 3: return []
             return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
-        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, maxLen)
+        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, maxLen, maxResultsLen)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, maxLen-1)
+        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, maxLen-1, maxResultsLen)
 
         # find max values in booth lists
         full = full1 + full2
-        small = []
-        for i in range(min(100, len(full))):
-            (val, list, reverse) = max(full)
-            small.append((val, list, reverse))
-            full.remove((val, list, reverse))
+        shortList = []
+        for i in range(min(maxResultsLen, len(full))):
+            item = max(full)
+            shortList.append(item)
+            full.remove(item)
 
-        return small
+        return shortList
 
     
 if __name__== "__main__":

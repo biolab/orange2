@@ -252,9 +252,7 @@ class OWRadvizGraph(OWVisGraph):
 
         print "Total permutations: ", str(len(indPermutations.values()))
 
-        bestPerm = []; bestPermValue = 0  # we search for maximum bestPermValue
         fullList = []
-
         permutationIndex = 0 # current permutation index
         totalPermutations = len(indPermutations.values())
 
@@ -359,50 +357,40 @@ class OWRadvizGraph(OWVisGraph):
 
             print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(len(table)) )
 
-            if tempPermValue > bestPermValue:
-                bestPermValue = tempPermValue
-                bestPerm = permutation
-
             # save the permutation
             tempList = []
             for i in permutation:
                 tempList.append(self.attributeNames[i])
-            fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList))
+            fullList.append((tempPermValue*100.0/float(len(table)), len(table), tempList))
 
         if printTime:
             secs = time.time() - t
             print "------------------------------"
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
-        # return best permutation
-        retList = []
-        for i in bestPerm:
-            retList.append(self.attributeNames[i])
-        return (retList, bestPermValue, fullList)
+        return fullList
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours, maxLen):
-        if attrList == [] or maxLen == 0:
-            if len(subsetList) < 2: return ([], 0, [])
+    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours, numOfAttr, maxResultsLen):
+        if attrList == [] or numOfAttr == 0:
+            if len(subsetList) < 2: return []
             print "table of possibilities to try: ", self.possibleSubsetsTable
             self.possibleSubsetsTable[len(subsetList)-2] -= 1
             print subsetList,
             return self.getOptimalSeparation(subsetList, className, kNeighbours, printTime = 0)
-        (list1, v1, full1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours, maxLen)
+        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours, numOfAttr, maxResultsLen)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        (list2, v2, full2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours, maxLen-1)
+        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours, numOfAttr-1, maxResultsLen)
 
         # find max values in booth lists
         full = full1 + full2
-        small = []
-        for i in range(min(100, len(full))):
-            (val, list) = max(full)
-            small.append((val, list))
-            full.remove((val, list))
+        shortList = []
+        for i in range(min(maxResultsLen, len(full))):
+            (accuracy, tableLen, list) = max(full)
+            shortList.append((accuracy, tableLen, list))
+            full.remove((accuracy, tableLen, list))
             
-        if (v1 > v2): return (list1, v1, small)
-        else:         return (list2, v2, small)
-
+        return shortList
 
 
 if __name__== "__main__":

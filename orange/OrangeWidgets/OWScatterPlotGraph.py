@@ -299,14 +299,13 @@ class OWScatterPlotGraph(OWVisGraph):
 
                 # save the permutation
                 tempList = [self.attributeNames[x], self.attributeNames[y]]
-                fullList.append(((tempValue*100.0/float(len(table)), len(table)), tempList))
+                fullList.append((tempValue*100.0/float(len(table)), len(table), tempList))
 
         print "------------------------------"
         secs = time.time() - t
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
-        # return best permutation
-        (bestVal, bestList) = max(fullList)
-        return (bestList, bestVal, fullList)
+
+        return fullList
 
     
 if __name__== "__main__":
