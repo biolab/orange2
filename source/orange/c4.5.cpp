@@ -662,7 +662,7 @@ void TC45Classifier::predictionAndDistribution(const TExample &example, TValue &
   dist = tree->classDistribution(example, classVar);
   int bestClass = 0;
   float bestP = -1;
-  for(int cl = 0, ce = classVar.AS(TEnumVariable)->values->size()-1; cl!=ce; cl++) {
+  for(int cl = 0, ce = classVar.AS(TEnumVariable)->values->size(); cl!=ce; cl++) {
     float td = dist->atint(cl);
     if (td > bestP) {
       bestP = td;
