@@ -77,6 +77,7 @@ class OWVisGraph(OWGraph):
         self.pointWidth = 5
         self.jitteringType = 'uniform'
         self.jitterSize = 10
+		self.jitterContinuous = 0
         self.showFilledSymbols = 1
         self.scaleFactor = 1.0
         self.globalValueScaling = 0         # do we want to scale data globally
@@ -182,6 +183,7 @@ class OWVisGraph(OWGraph):
             noJittering = []
             coloring = []
             values = []
+			jitter = self.jitterSize/100.0
 
             # is the attribute discrete
             if attr.varType == orange.VarTypes.Discrete:
@@ -215,6 +217,10 @@ class OWVisGraph(OWGraph):
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: original.append("?"); coloring.append("?"); continue
                     val = (data[i][attr].value - min) / diff
+					if self.jitterContinuous:
+						val += self.rndCorrection(jitter)
+						if val < 0: val = abs(val)
+						elif val > 1.0: val = 2 - val
                     original.append(val)
                     coloring.append(colors.getHue(val))        # we make color palette smaller, because red is in the begining and ending of hsv
                 noJittering = original
