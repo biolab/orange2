@@ -53,10 +53,10 @@ public:
   float nAppliesRight; //P number of examples covered by the rule's right side 
   float nAppliesBoth; //P number of examples covered by the rule
   float nExamples; //P number of learning examples
-  int nleft; //P number of items on the rule's left side
-  int nright; //P number of items on the rule's right side
+  int nLeft; //P number of items on the rule's left side
+  int nRight; //P number of items on the rule's right side
 
-  TAssociationRule();
+  TAssociationRule(PExample = PExample(), PExample = PExample());
 
   TAssociationRule(PExample al, PExample ar,
                    const float &napLeft, const float &napRight, const float &napBoth, const float &nExamples,
@@ -65,14 +65,16 @@ public:
   virtual bool operator ==(const TAssociationRule &other) const
   { return (left->operator==(other.left.getReference())) && (right->operator==(other.right.getReference())); }
 
-  virtual bool appliesLeft(const TExample &ex) const
-  { return left->compatible(ex); }
+  static bool applies(const TExample &ex, const PExample &side);
 
-  virtual bool appliesRight(const TExample &ex) const
-  { return right->compatible(ex); }
+  bool appliesLeft(const TExample &ex) const
+  { return applies(ex, left); }
 
-  virtual bool appliesBoth(const TExample &ex) const
-  { return appliesLeft(ex) && appliesRight(ex); }
+  bool appliesRight(const TExample &ex) const
+  { return applies(ex, right); }
+
+  bool appliesBoth(const TExample &ex) const
+  { return applies(ex, left) && applies(ex, right); }
 
   static int countItems(PExample ex);
 };
