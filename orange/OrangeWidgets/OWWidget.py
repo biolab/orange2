@@ -48,7 +48,7 @@ class OWWidget(OWBaseWidget):
         self.grid.addWidget(self.buttonBackground,1,0)
         self.grid.setRowStretch(0,10)
         self.grid.setColStretch(0,10)
-        self.grid.setColStretch(1,30)
+        self.grid.setColStretch(1,50)
         self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
         self.resize(640,480)
 

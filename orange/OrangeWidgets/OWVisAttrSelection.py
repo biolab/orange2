@@ -125,6 +125,8 @@ def evaluateAttributes(data, contMeasure, discMeasure):
         elif contMeasure == None and attr.varType == orange.VarTypes.Continuous: attrs.append((0.1, attr.name))
         elif attr.varType == orange.VarTypes.Continuous: attrs.append((contMeasure(attr.name, data), attr.name))
         else:                                              attrs.append((discMeasure(attr.name, data), attr.name))
+    attrs.sort()
+    attrs.reverse()
     return attrs
         
 

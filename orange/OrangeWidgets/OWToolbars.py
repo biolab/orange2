@@ -20,7 +20,7 @@ def createButton(parent, text, action = None, icon = None, toggle = 0):
     
 
 class ZoomSelectToolbar(QHButtonGroup):
-    def __init__(self, widget, parent, graph):
+    def __init__(self, widget, parent, graph, autoSend = 0):
         QHButtonGroup.__init__(self, "Zoom / Select", parent)
         
         self.graph = graph # save graph. used to send signals
@@ -34,6 +34,7 @@ class ZoomSelectToolbar(QHButtonGroup):
         self.buttonRemoveLastSelection = createButton(self, 'Remove last selection', self.actionRemoveLastSelection, QPixmap(dlg_undo), toggle = 0)
         self.buttonRemoveAllSelections = createButton(self, 'Remove all selections', self.actionRemoveAllSelections, QPixmap(dlg_clear), toggle = 0)
         self.buttonSendSelections = createButton(self, 'Send selections', icon = QPixmap(dlg_send), toggle = 0)
+        self.buttonSendSelections.setEnabled(not autoSend)
 
         self.actionZooming()    # activate zooming
 

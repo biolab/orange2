@@ -2,6 +2,7 @@ from qt import *
 from qwt import *
 #from Numeric import *
 #from OWGraphTools import *
+from math import sqrt
 
 colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
 
