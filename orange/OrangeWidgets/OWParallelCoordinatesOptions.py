@@ -47,6 +47,8 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.showCorrelations = QCheckBox("Show correlations between attributes", self.visualSettings)      # show correlations
         self.useSplines = QCheckBox("Show lines using splines", self.visualSettings)      # show correlations
         self.lineTracking = QCheckBox("Enable line tracking", self.visualSettings)      # show nearest line in bold
+        self.showLegend = QCheckBox('show legend', self.visualSettings)
+
 
         #####
         # attribute value scaling

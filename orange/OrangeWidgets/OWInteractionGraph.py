@@ -47,6 +47,10 @@ class OWInteractionGraph(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Interaction graph", 'show interaction graph', FALSE, FALSE)
 
+        self.inputs = [("Examples", ExampleTable, self.data, 1)]
+        self.outputs = [("Examples", ExampleTable), ("view", tuple), ("Selection", list)]
+    
+
         #set default settings
         self.originalData = None
         self.data = None
@@ -63,11 +67,6 @@ class OWInteractionGraph(OWWidget):
 
         self.onlyImportantInteractions = 1
         self.mergeAttributes = 0
-
-        self.addInput("cdata")
-        self.addOutput("cdata")
-        self.addOutput("view")      # when user clicks on a link label we can send information about this two attributes to a scatterplot
-        self.addOutput("selection") # when user clicks on "show selection" button we can send information about selected attributes
 
         #load settings
         self.loadSettings()

@@ -49,6 +49,7 @@ class OWVisGraph(OWGraph):
         self.pointWidth = 5
         self.jitteringType = 'none'
         self.jitterSize = 10
+        self.showFilledSymbols = 1
         self.scaleFactor = 1.0
         self.globalValueScaling = 0         # do we want to scale data globally
         self.setCanvasColor(QColor(Qt.white.name()))
@@ -333,9 +334,12 @@ class OWVisGraph(OWGraph):
             b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
                      
 
-    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = []):
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0):
         newCurveKey = self.insertCurve(name)
-        newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
+        if self.showFilledSymbols or forceFilledSymbols:
+            newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
+        else:
+            newSymbol = QwtSymbol(symbol, QBrush(), QPen(penColor), QSize(size, size))
         self.setCurveSymbol(newCurveKey, newSymbol)
         self.setCurveStyle(newCurveKey, style)
         self.setCurvePen(newCurveKey, QPen(penColor))

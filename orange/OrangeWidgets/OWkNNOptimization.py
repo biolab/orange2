@@ -305,7 +305,7 @@ class kNNOptimization(OWBaseWidget):
 
 
     # ###########################
-    # kNNEvaluate - compute brier score for data in table
+    # kNNEvaluate - compute brier score for data in table in percents
     def kNNComputeAccuracy(self, table):
         temp = 0.0
         percentDataUsed = int(str(self.percentDataUsedCombo.currentText()))
@@ -323,7 +323,7 @@ class kNNOptimization(OWBaseWidget):
                 for val in out: sum += val*val
                 temp += sum - 2*out[table[j].getclass()]
                 experiments += 1
-            accuracy = 100.0 * (1 - ((temp + experiments)/(float(len(classValues)*experiments))))
+            accuracy = 1 - ((temp + experiments)/(float(len(classValues)*experiments)))
             #print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, temp)
         else:
             for j in range(len(table)):
@@ -332,9 +332,8 @@ class kNNOptimization(OWBaseWidget):
                 temp += pow(table[j][2].value - knn(table[j]), 2)
                 experiments += 1
             accuracy = temp/float(experiments)
-            #print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, temp) 
 
-        return accuracy
+        return 100.0*accuracy
 
 
     # #############################

@@ -32,6 +32,7 @@ class colorItem(QTableItem):
 
 class OWDataTable(OWWidget):
     settingsList = []
+
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -40,10 +41,11 @@ class OWDataTable(OWWidget):
 """,
         FALSE,
         FALSE)
+
+        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.outputs = []
         
         self.dataset=None
-        self.addInput("cdata")
-        self.addInput("data")
         
         # GUI
         self.layout=QVBoxLayout(self.mainArea)
@@ -51,11 +53,8 @@ class OWDataTable(OWWidget):
         self.table.setSelectionMode(QTable.NoSelection)
         self.layout.add(self.table)
 
-    def cdata(self,dataset):
-        self.data(dataset)
-
     def data(self,dataset):
-        self.dataset=dataset.table
+        self.dataset = dataset
         self.set_table()
     
     def set_table(self):

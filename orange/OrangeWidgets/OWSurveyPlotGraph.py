@@ -13,6 +13,7 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.selectedRectangle = 0
         self.exampleTracking = 1
         self.length = 0 # number of shown attributes - we need it also in mouse movement
+        self.enabledLegend = 0 
         
     #
     # update shown data. Set labels, coloring by className ....
@@ -85,6 +86,18 @@ class OWSurveyPlotGraph(OWVisGraph):
             ckey = self.insertCurve(curve)
             self.setCurveStyle(ckey, QwtCurve.UserCurve)
             self.setCurveData(ckey, xData, yData)
+
+        if self.enabledLegend and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            varName = self.rawdata.domain[className].name
+            varValues = self.getVariableValuesSorted(self.rawdata, className)
+            for ind in range(len(varValues)):
+                newColor = QColor()
+                if len(varValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[ind]*360, 255, 255)
+                else:                                         newColor.setHsv((ind*360)/float(len(valLen), 255, 255))
+                self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
+
+            
+            
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):

@@ -17,6 +17,7 @@ from OData import *
 
 class OWOutcome(OWWidget):
     settingsList = []
+    
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -27,6 +28,9 @@ from all the possible outcomes in the data.
 It also provides some basic data statistics.""",
         FALSE
         )
+
+        self.inputs = [("Examples", ExampleTable, self.data, 1)]
+        self.outputs = [("Classified Examples", ExampleTableWithClass), ("target", int)]
         
         #GUI       
         self.gridr=QGridLayout(self.mainArea,2,2)
@@ -52,14 +56,8 @@ It also provides some basic data statistics.""",
         self.gridr.setRowStretch(1,10)
         self.gridr.setColStretch(1,10)
         
-        #the oData                
-        self.oData=None
-        
-        #inputs & outputs
-        self.addInput("data")
-        self.addOutput("cdata")
-        self.addOutput("target")
-        self.addOutput("pp")
+        #the data                
+        self.data=None
         
         #GUI Connections
         self.connect(self.outcome,SIGNAL('activated ( const QString & )'), self.setOutcome)
@@ -68,43 +66,42 @@ It also provides some basic data statistics.""",
         self.resize(100,100)
 
 
-    def data(self,oData):
+    def data(self,data):
         """
         Sets the oData and extracts all needed info
         """
-        self.oData=oData
-        if oData==None:
+        self.data=data
+        if data==None:
             self.outcome.clear()
             self.tar.clear()
             self.stats.setText("")
-            self.send("cdata",None)
+            self.send("Classified Examples",None)
             return
         
         #set outcomes
         self.outcome.clear()
-        outcomes=self.oData.getPotentialOutcomes()
-        for i in outcomes:
-            self.outcome.insertItem(i)
-        self.outcome.setCurrentItem(len(outcomes)-1)
-        self.setOutcome(outcomes[-1])
+        for attr in data.domain:
+                if attr.varType == orange.VarTypes.Discrete: self.outcome.insertItem(attr.name)
+        self.outcome.setCurrentItem(self.outcome.count()-1)
+        self.setOutcome(str(self.outcome.currentText()))
     
     def setOutcome(self,variable):
         variable=str(variable) #if variable was QString
-        self.tar.clear()       
-        targets=self.oData.getVarValues(variable)
-        for target in targets:
-            self.tar.insertItem(target)
+        self.tar.clear()
+        for val in self.data.domain[variable].values:
+                self.tar.insertItem(val)
 
         self.paintStatistics(variable)
         
-        self.send("cdata",self.oData)
+        self.send("Classified Examples",self.data)
         self.send("target", 0)   # cross fingers, this part should be written clearly
         
     def setTargets(self, value):
-        self.send("target", self.oData.data.domain.classVar.values.index(str(value)))
-#        print 'send target'
+        self.send("target", self.data.domain.classVar.values.index(str(value)))
      
     def paintStatistics(self, out):
+        """
+        TO DO: repair this code not using OData
         out = str(out) #QString to string
         self.oData.setOutcomeByName(out)
         instances = self.oData.getInstances()
@@ -124,6 +121,7 @@ It also provides some basic data statistics.""",
           s += '\n'+(ss+'outcomes with label '+outcomes[i])
 
         self.stats.setText(s)
+        """
 
 if __name__ == "__main__":
     a=QApplication(sys.argv)

@@ -16,26 +16,27 @@ from random import betavariate
 from OWPolyvizGraph import *
 from OData import *
 import OWVisAttrSelection
-from OWVisTools import *
+from OWkNNOptimization import *
 
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor", "showLegend", "showContinuous"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showContinuous", "showFilledSymbols"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
     attributeOrdering  = ["Original", "Optimized class separation"]
     jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
-    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
-    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
     scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", TRUE, TRUE)
+
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
+        self.outputs = []
 
         #set default settings
         self.pointWidth = 5
@@ -47,10 +48,10 @@ class OWPolyviz(OWWidget):
         self.enhancedTooltips = 1
         self.globalValueScaling = 0
         self.jitterSize = 1
-        self.kNeighbours = 1
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
         self.showLegend = 1
         self.showContinuous = 0
+        self.showFilledSymbols = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -73,10 +74,6 @@ class OWPolyviz(OWWidget):
         self.statusBar.message("")
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        # graph main tmp variables
-        self.addInput("cdata")
-        self.addInput("selection")
-
         #connect settingsbutton to show options
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
         self.connect(self.options.scaleCombo, SIGNAL("activated(int)"), self.setScaleFactor)
@@ -85,6 +82,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
+        self.connect(self.options.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)        
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
@@ -107,7 +105,6 @@ class OWPolyviz(OWWidget):
         self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setShowContinuous)
         self.connect(self.showLegendCB, SIGNAL("clicked()"), self.setShowLegend)
         
-
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
@@ -117,37 +114,29 @@ class OWPolyviz(OWWidget):
         self.optimizationDlgButton = QPushButton('kNN Optimization dialog', self.attrOrderingButtons)
         self.tryReverse = QCheckBox("Try reversing attr. values (exponential time)", self.attrOrderingButtons)
 
-        self.optimizationDlg = OptimizationDialog(None)
+        self.optimizationDlg = kNNOptimization(None)
         self.optimizationDlg.parentName = "Polyviz"
-        self.optimizationDlg.kValue = self.kNeighbours
+        self.graph.kNNOptimization = self.optimizationDlg
 
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.show)
         self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        
-        self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)        
-        self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
+
+        self.hbox2  = QHBox(self.shownAttribsGroup)
+        self.buttonUPAttr = QPushButton("Attr UP", self.hbox2)
+        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox2)
 
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
-
-        self.progressGroup = QVGroupBox(self.space)
-        self.progressGroup.setTitle("Optimization progress")
-        self.progressBar = QProgressBar(100, self.progressGroup, "progress bar")
-        self.progressBar.setCenterIndicator(1)
 
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
-        self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
-
         self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
         self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)        
-
         
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
 
@@ -177,6 +166,7 @@ class OWPolyviz(OWWidget):
         self.options.lengthLCD.display(self.lineLength)
         self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.options.showFilledSymbols.setChecked(self.showFilledSymbols)
 
         self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
@@ -188,17 +178,10 @@ class OWPolyviz(OWWidget):
             self.options.scaleCombo.insertItem(self.scaleFactorList[i])
         self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
         
-        # set items in k neighbours combo
-        self.optimizationDlg.attrKNeighbour.clear()
-        for i in range(len(self.kNeighboursList)):
-            self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
-        self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
-        self.graph.updateSettings(kNeighbours = self.kNeighbours)
-
         self.showContinuousCB.setChecked(self.showContinuous)
         self.showLegendCB.setChecked(self.showLegend)
 
-        self.graph.updateSettings(showLegend = self.showLegend)
+        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -236,7 +219,7 @@ class OWPolyviz(OWWidget):
             (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
             sumAcc = 0.0
             print "Experiment %2.d - %s" % (i, str(list))
-            for k in kList: sumAcc += self.graph.getProjectionQuality(list, kNeighbours = k)
+            for k in kList: sumAcc += self.graph.getProjectionQuality(list)
             results.append((sumAcc/float(len(kList)), tableLen, list))
 
         self.optimizationDlg.clear()
@@ -249,11 +232,6 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.save("temp.proj")
         self.optimizationDlg.interestingList.setCurrentItem(0)
 
-
-    def setKNeighbours(self, n):
-        self.kNeighbours = self.kNeighboursNums[n]
-        self.optimizationDlg.kValue = self.kNeighbours
-        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
     # ####################################
     # find optimal class separation for shown attributes
@@ -268,17 +246,16 @@ class OWPolyviz(OWWidget):
             if self.tryReverse.isChecked() == 1: reverseList = None
             else: reverseList = self.attributeReverse
 
-            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             if text == "ALL":
-                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList, progressBar = self.progressBar)
+                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList)
             else:
                 select = int(text)
                 total = len(self.getShownAttributeList())
                 combin = combinations(select, total)
-                self.progressBar.setTotalSteps(combin)
-                self.progressBar.setProgress(0)
-                self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time(), minExamples = int(str(self.optimizationDlg.minTableLenEdit.text())))
-                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, select, int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
+                #self.progressBar.setTotalSteps(combin)
+                #self.progressBar.setProgress(0)
+                self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time())
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, select, int(str(self.optimizationDlg.resultListCombo.currentText())))
                
             if fullList == []: return
 
@@ -319,12 +296,11 @@ class OWPolyviz(OWWidget):
                 table.append(possible)
                 total += possible
 
-            self.graph.updateSettings(possibleSubsetsTable = table, totalPossibleSubsets = total, percentDataUsed = self.optimizationDlg.percentDataUsed, minExamples = int(str(self.optimizationDlg.minTableLenEdit.text())))
-            maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
+            self.graph.updateSettings(possibleSubsetsTable = table, totalPossibleSubsets = total)
             if self.tryReverse.isChecked() == 1:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, maxLen, maxResultsLen, progressBar = self.progressBar)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, maxLen)
             else:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, maxLen, maxResultsLen, progressBar = self.progressBar)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, maxLen)
 
             if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
             else: funct = min
@@ -379,6 +355,12 @@ class OWPolyviz(OWWidget):
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.updateGraph()
 
+    def setShowFilledSymbols(self):
+        self.showFilledSymbols = not self.showFilledSymbols
+        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
+        self.updateGraph()
+
+
     def setPointWidth(self, n):
         self.pointWidth = n
         self.graph.setPointWidth(n)
@@ -420,10 +402,12 @@ class OWPolyviz(OWWidget):
 
     
     #update status on progress bar - gets called by OWPolyvizGraph
+    """
     def updateProgress(self, current, total):
         self.progressBar.setTotalSteps(total)
         self.progressBar.setProgress(current)
-
+    """
+    
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
@@ -605,7 +589,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.clear()
         self.attributeReverse = {}
         #self.data = orange.Preprocessor_dropMissing(data.data)
-        self.data = data.data
+        self.data = data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()

@@ -44,6 +44,10 @@ class OWScatterPlotMatrix(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Scatterplot matrix", 'Show all possible projections of the data', TRUE, TRUE)
 
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
+        self.outputs = [("View", tuple)] 
+
+
         #set default settings
         self.data = None
         self.pointWidth = 5
@@ -61,11 +65,6 @@ class OWScatterPlotMatrix(OWWidget):
         self.shownAttrCount = 0
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
-
-        self.addInput("cdata")
-        self.addInput("selection")
-        #self.addOutput("cdata")
-        self.addOutput("view")      # when user right clicks on one graph we can send information about this graph to a scatterplot
 
         #load settings
         self.loadSettings()
@@ -364,17 +363,15 @@ class OWScatterPlotMatrix(OWWidget):
         for i in range(len(self.graphs)):
             if self.graphs[i].blankClick == 1:
                 (attr1, attr2, className, string) = self.graphParameters[i]
-                self.send("view", (attr1, attr2))
+                self.send("View", (attr1, attr2))
                 self.graphs[i].blankClick = 0
 
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = orange.Preprocessor_dropMissing(data)
 
         if data == None: return
-
-        #self.send("cdata", data)
 
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
@@ -382,6 +379,7 @@ class OWScatterPlotMatrix(OWWidget):
         for attr in self.data.domain.attributes:
             self.shownAttribsLB.insertItem(attr.name)
 
+        self.send("View", (data.domain.attributes[0].name, data.domain.attributes[0].name))
         #self.createGraphs()
 
     #################################################

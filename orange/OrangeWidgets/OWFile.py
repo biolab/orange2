@@ -17,21 +17,22 @@ from OData import *
 
 class OWFile(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
+
     def __init__(self,parent=None):
         OWWidget.__init__(self,parent,"&File Widget",
         "The File Widget is an Orange Widget\nused for selecting and opening data files.",
         FALSE)
-        "Constructor"        
+        "Constructor"
+
+        self.inputs = []
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+    
         #set default settings
         self.recentFiles=[]
         self.selectedFileName = "None"
         #get settings from the ini file, if they exist
         self.loadSettings()
         
-        #add the outputs
-        self.addOutput("data")
-        self.addOutput("cdata")
-               
         #GUI
         vb=QGridLayout(self.mainArea,3)
         rfbox=QVGroupBox("Recent Files",self.mainArea)
@@ -90,14 +91,12 @@ class OWFile(OWWidget):
             self.selectedFileName = fn
             
             #make new data and send it
-            data=OrangeData(tab)
-            data.title = fn
-            self.send("data",data)
-            if data.table.domain.classVar:
-                    self.send("cdata", data)
+            self.send("Examples",tab)
+            if tab.domain.classVar:
+                    self.send("Classified Examples", tab)
         else:
-            self.send("data",None)
-            self.send("cdata", None)
+            self.send("Classified Examples",None)
+            self.send("Examples", None)
 
     def addFileToList(self,fn):
         """

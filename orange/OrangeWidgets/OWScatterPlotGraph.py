@@ -48,36 +48,18 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
 class OWScatterPlotGraph(OWVisGraph):
-    def __init__(self, parent = None, name = None, app = None):
+    def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
 
-        self.application = app
         self.jitterContinuous = 0
         self.enabledLegend = 0
-        self.showFilledSymbols = 1
         self.showAttributeValues = 1
-        self.percentDataUsed = 100
         self.showDistributions = 1
         self.toolRects = []
         self.tooltipData = []
-        self.kNeighbours = 0
         self.showManualAxisScale = 0
-
-    def enableGraphLegend(self, enable):
-        self.enabledLegend = enable
-
-    def setJitterContinuous(self, enable):
-        self.jitterContinuous = enable
-
-    def setShowFilledSymbols(self, filled):
-        self.showFilledSymbols = filled
-
-    def setShowAttributeValues(self, show):
-        self.showAttributeValues = show
-
-    def setShowDistributions(self, show):
-        self.showDistributions = show
+        self.kNNOptimization = None
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
@@ -211,21 +193,11 @@ class OWScatterPlotGraph(OWVisGraph):
             # show quality of knn model with only 2 selected attributes
             if self.showKNNModel == 1:
                 # variables and domain for the table
-                kNNValues = []
+                
                 shortData = self.rawdata.select([self.rawdata.domain[xAttr], self.rawdata.domain[yAttr], self.rawdata.domain.classVar])
                 shortData = orange.Preprocessor_dropMissing(shortData)
-                knn = orange.kNNLearner(shortData, k=self.kNeighbours, rankWeight = 0)
-                if shortData.domain.classVar.varType == orange.VarTypes.Discrete:
-                    classValues = list(shortData.domain.classVar.values)
-                    for j in range(len(shortData)):
-                        prob = knn(shortData[j], orange.GetProbabilities)[shortData[j].getclass()]
-                        if self.showCorrect == 1: prob = 1.0 - prob
-                        kNNValues.append(prob)
-                else:
-                    for j in range(len(shortData)): kNNValues.append(pow(shortData[j][2].value - knn(shortData[j]), 2))
-                    maxError = max(kNNValues)
-                    if self.showCorrect == 1: kNNValues = [val/maxError for val in kNNValues]
-                    else:                     kNNValues = [1.0 - val/maxError for val in kNNValues]
+                kNNValues = self.kNNOptimization.kNNClassifyData(shortData)
+                if self.showCorrect == 1: kNNValues = [1.0 - val for val in kNNValues]
                 for j in range(len(kNNValues)):
                     newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
                     key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [shortData[j][0].value], yData = [shortData[j][1].value])
@@ -317,7 +289,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
 
     # compute how good is a specific projection with given xAttr and yAttr
-    def getProjectionQuality(self, xAttr, yAttr, className, kNeighbours):
+    def getProjectionQuality(self, xAttr, yAttr, className):
         dataSize = len(self.rawdata)
         attrCount = len(self.rawdata.domain.attributes)
         classValsCount = len(self.rawdata.domain[className].values)
@@ -342,18 +314,13 @@ class OWScatterPlotGraph(OWVisGraph):
             example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
             table.append(example)
 
-        knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
-        for j in range(len(table)):
-            out = knn(table[j], orange.GetProbabilities)
-            index = classValues.index(table[j][2].value)
-            tempValue += out[index]
-
-        print "kNeighbours = %3.d - Accuracy: %2.2f" % (kNeighbours, tempValue*100.0/float(len(table)) )
-        return tempValue*100.0/float(len(table))
+        accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+        print "kNeighbours = %3.d - Accuracy: %2.2f" % (self.kNNOptimization.kValue, accuracy)
+        return accuracy
 
 
         
-    def getOptimalSeparation(self, attrCount, className, kNeighbours, minExamples, updateProgress = None):
+    def getOptimalSeparation(self, attrCount, className, updateProgress = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return None
@@ -389,8 +356,6 @@ class OWScatterPlotGraph(OWVisGraph):
                 table = orange.ExampleTable(domain)
 
                 for i in range(dataSize):
-                    if (self.application != None):
-                        self.application.processEvents(5000)
                     xValue = self.noJitteringScaledData[x][i]
                     yValue = self.noJitteringScaledData[y][i]
                     if xValue == '?' or yValue == '?': continue
@@ -398,24 +363,16 @@ class OWScatterPlotGraph(OWVisGraph):
                     example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
                     table.append(example)
 
-                if len(table) < minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
-                classValues = list(self.rawdata.domain[className].values)
-                knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+                if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
 
-                experiments = 0
-                selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
-                for j in range(len(table)):
-                    if selection[j] == 0: continue
-                    out = knn(table[j], orange.GetProbabilities)
-                    index = classValues.index(table[j][2].value)
-                    tempValue += out[index]
-                    experiments += 1
-
-                print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(experiments) )
+                accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+                if table.domain.classVar.varType == orange.VarTypes.Discrete:
+                    print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
+                else:
+                    print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
                 # save the permutation
-                tempList = [self.attributeNames[x], self.attributeNames[y]]
-                fullList.append((tempValue*100.0/float(experiments), len(table), tempList))
+                fullList.append((accuracy, len(table), [self.attributeNames[x], self.attributeNames[y]]))
 
         print "------------------------------"
         secs = time.time() - t
@@ -447,7 +404,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
     def onMouseReleased(self, e):
         OWVisGraph.onMouseReleased(self, e)
-        self.updateTooltips()
+        self.updateLayout()
 
         
 if __name__== "__main__":

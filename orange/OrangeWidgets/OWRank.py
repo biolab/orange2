@@ -41,6 +41,9 @@ by their relevance for particular classification
 """,
         TRUE,
         FALSE)
+
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.outputs = [] 
         
         #set default settings
         self.Precision=3
@@ -73,9 +76,6 @@ by their relevance for particular classification
         self.connect(self.options.nSlider,SIGNAL("valueChanged(int)"),self.setN)
         self.connect(self.options.discretization,SIGNAL("activated(int)"),self.setDM)
         self.connect(self.options.precisionSlider,SIGNAL("valueChanged(int)"),self.setPrecision)
-        
-        #list inputs and outputs
-        self.addInput("cdata")
         
         #GUI
         
@@ -199,12 +199,12 @@ by their relevance for particular classification
 #            self.table.swapCells(i,k,j,k)  #why in heavens name doesn't this work for any other than the current column? 
             #Maybe sorting must be enabled? But how is one supposed to do his own sort?
  
-    def cdata(self,data):
+    def data(self,data):
         if data==None:
             self.data=None
             self.table.setNumRows(0)
         else:
-            self.data=data.table
+            self.data=data
         self.recalculate()
     
     def recalculate(self):

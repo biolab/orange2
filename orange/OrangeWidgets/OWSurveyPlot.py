@@ -21,13 +21,16 @@ import OWVisAttrSelection
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous", "exampleTracking"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous", "exampleTracking", "showLegend"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
-        
+
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", TRUE, TRUE)
         self.resize(700,700)
+
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.outputs = [("Selection", list)] 
 
         #set default settings
         self.attrDiscOrder = "RelieF"
@@ -37,6 +40,7 @@ class OWSurveyPlot(OWWidget):
         self.globalValueScaling = 0
         self.showContinuous = 0
         self.exampleTracking = 1
+        self.showLegend = 1
 
         #load settings
         self.loadSettings()
@@ -51,10 +55,6 @@ class OWSurveyPlot(OWWidget):
         self.box.addWidget(self.graph)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        # graph main tmp variables
-        self.addInput("cdata")
-        self.addInput("selection")
-
         self.selClass = QVGroupBox(self.controlArea)
         self.selClass.setTitle("Class attribute")
         self.classCombo = QComboBox(self.selClass)
@@ -68,6 +68,7 @@ class OWSurveyPlot(OWWidget):
         self.connect(self.options.exampleTracking, SIGNAL("toggled(bool)"), self.setExampleTracking)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
+        self.connect(self.options.showLegend, SIGNAL("toggled(bool)"), self.setLegend)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
@@ -98,9 +99,9 @@ class OWSurveyPlot(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
-        self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
+        self.hbox = QHBox(self.shownAttribsGroup)
+        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
+        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
 
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
@@ -125,9 +126,11 @@ class OWSurveyPlot(OWWidget):
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.options.showLegend.setChecked(self.showLegend)
         self.options.exampleTracking.setChecked(self.exampleTracking)
         self.showContinuousCB.setChecked(self.showContinuous)
-        
+
+        self.graph.updateSettings(enabledLegend = self.showLegend)        
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.updateSettings(exampleTracking = self.exampleTracking)
@@ -169,6 +172,11 @@ class OWSurveyPlot(OWWidget):
     def setCanvasColor(self, c):
         self.GraphCanvasColor = c
         self.graph.setCanvasColor(c)
+
+    def setLegend(self, b):
+        self.showLegend = b
+        self.graph.updateSettings(enabledLegend = self.showLegend)
+        self.updateGraph()
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -338,8 +346,8 @@ class OWSurveyPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        #self.data = orange.Preprocessor_dropMissing(data.data)
-        self.data = data.data
+        #self.data = orange.Preprocessor_dropMissing(data)
+        self.data = data
         self.setClassCombo()
         self.setSortCombo()
         self.shownAttribsLB.clear()

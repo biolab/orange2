@@ -39,9 +39,9 @@ class OWMosaicDisplay(OWWidget):
         self.lines = []
         self.tooltips = []
 
-        self.addInput("cdata")
-        self.addInput("view")
-
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.outputs = [("Classified Examples", ExampleTableWithClass), ("view", tuple)]
+    
         #load settings
         self.showLines = 1
         self.cellspace = 6
@@ -152,10 +152,10 @@ class OWMosaicDisplay(OWWidget):
         self.updateData()
 
     ######################################################################
-    ## CDATA signal
+    ## DATA signal
     # receive new data and update all fields
-    def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data.data)
+    def data(self, data):
+        self.data = orange.Preprocessor_dropMissing(data)
         self.initCombos(self.data)
         self.updateData()
 

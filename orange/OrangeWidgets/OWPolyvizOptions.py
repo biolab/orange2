@@ -16,9 +16,9 @@ class OWPolyvizOptions(OWOptions):
         # point width
         widthBox = QHGroupBox("Point Width", self.top)
         QToolTip.add(widthBox, "The width of points")
-        self.widthSlider = QSlider(2, 9, 1, 3, QSlider.Horizontal, widthBox)
+        self.widthSlider = QSlider(2, 19, 1, 3, QSlider.Horizontal, widthBox)
         self.widthSlider.setTickmarks(QSlider.Below)
-        self.widthLCD = QLCDNumber(1, widthBox)
+        self.widthLCD = QLCDNumber(2, widthBox)
 
         # scale point position
         self.positionBox = QHGroupBox("Point scaling", self.top)
@@ -45,21 +45,19 @@ class OWPolyvizOptions(OWOptions):
 
         ######
         # jittering size
-        self.jitteringOptionsBG = QVButtonGroup("Jittering options", self.top)
+        self.jitteringOptionsBG = QVButtonGroup("Jittering options for discrete attribute", self.top)
         QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
         self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
         self.jitterLabel = QLabel('Jittering size (%)', self.hbox)
         self.jitterSize = QComboBox(self.hbox)
 
-        self.tooltipsOptionsBG = QVButtonGroup("Tooltips", self.top)
-        self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.tooltipsOptionsBG)
+        ######
+        # general graph settings
+        self.graphSettingsBG = QVButtonGroup("General graph settings", self.top)
+        self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.graphSettingsBG)
+        self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
+        self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
 
-        #####
-        # attribute value scaling
-        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
-        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
-
-        
         # continuous attribute selection
         self.attrContButtons = QVButtonGroup("Continuous attribute selection", self.top)
         QToolTip.add(self.attrContButtons, "Select the measure for measuring importance of continuous attributes")

@@ -27,15 +27,15 @@ class OWSieveDiagram(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE)
 
+        self.inputs = [("Examples", ExampleTable, self.data, 1), ("View", tuple, self.view, 1)]
+        self.outputs = []
+
         #set default settings
         self.data = None
         self.rects = []
         self.texts = []
         self.lines = []
         self.tooltips = []
-
-        self.addInput("cdata")
-        self.addInput("view")
 
         #load settings
         self.showLines = 1
@@ -53,25 +53,28 @@ class OWSieveDiagram(OWWidget):
         self.attrSelGroup = QVGroupBox(self.controlArea)
         self.attrSelGroup.setTitle("Shown attributes")
 
-        self.attrXGroup = QVButtonGroup("X axis attribute", self.attrSelGroup)
-        self.attrX = QComboBox(self.attrXGroup)
+        self.hbox1 = QHBox(self.attrSelGroup, "x")
+        self.attrXCaption = QLabel("X attribute: ", self.hbox1)
+        self.attrX = QComboBox(self.hbox1)
         self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateData)
 
-        self.attrYGroup = QVButtonGroup("Y axis attribute", self.attrSelGroup)
-        self.attrY = QComboBox(self.attrYGroup)
+        self.hbox2 = QHBox(self.attrSelGroup, "y")
+        self.attrYCaption = QLabel( "X attribute: ", self.hbox2)
+        self.attrY = QComboBox(self.hbox2)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateData)
 
         self.conditionGroup = QVButtonGroup("Condition", self.controlArea)
-        self.box1 = QHBox(self.conditionGroup, "attribute")
-        self.box2 = QHBox(self.conditionGroup, "value")
-        self.conditionAttrLabel = QLabel("Attribute:", self.box1)
-        self.conditionAttr = QComboBox(self.box1)
-        self.conditionValLabel = QLabel("Value:", self.box2)
-        self.conditionAttrValues  = QComboBox(self.box2)
+        self.box3 = QHBox(self.conditionGroup, "attribute")
+        self.box4 = QHBox(self.conditionGroup, "value")
+        self.conditionAttrLabel = QLabel("Attribute:", self.box3)
+        self.conditionAttr = QComboBox(self.box3)
+        self.conditionValLabel = QLabel("Value:", self.box4)
+        self.conditionAttrValues  = QComboBox(self.box4)
         self.connect(self.conditionAttr, SIGNAL("activated(int)"), self.updateConditionAttr)
         self.connect(self.conditionAttrValues, SIGNAL("activated(int)"), self.updateConditionAttrValue)
-        
-        self.showLinesCB = QCheckBox('Show lines', self.controlArea)
+
+        self.visualSettingsGroup = QVButtonGroup("Visual settings", self.controlArea)        
+        self.showLinesCB = QCheckBox('Show lines', self.visualSettingsGroup)
         self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
 
         self.interestingGroupBox = QVGroupBox ("Interesting attribute pairs", self.space)
@@ -238,12 +241,12 @@ class OWSieveDiagram(OWWidget):
         if self.data == None:
             return
 
-        ind1 = 0; ind2 = 0; classInd = 0
+        ind1 = -1; ind2 = -1; classInd = 0
         for i in range(self.attrX.count()):
             if str(self.attrX.text(i)) == attr1: ind1 = i
             if str(self.attrX.text(i)) == attr2: ind2 = i
 
-        if ind1 == ind2 == 0:
+        if ind1 == ind2 == -1:
             print "no valid attributes found"
             return    # something isn't right
 
@@ -252,11 +255,11 @@ class OWSieveDiagram(OWWidget):
         self.updateData()
 
     ######################################################################
-    ## CDATA signal
+    ## DATA signal
     # receive new data and update all fields
-    def cdata(self, data):
+    def data(self, data):
         self.interestingList.clear()
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = orange.Preprocessor_dropMissing(data)
         self.initCombos(self.data)
         self.updateData()
 

@@ -24,6 +24,7 @@ class OWParallelGraph(OWVisGraph):
         self.toolRects = []
         self.useSplines = 0
         self.lastSelectedKey = 0
+        self.enabledLegend = 0
         
     def setShowDistributions(self, showDistributions):
         self.showDistributions = showDistributions
@@ -174,7 +175,6 @@ class OWParallelGraph(OWVisGraph):
         if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             self.showDistributionValues(className, targetValue, self.rawdata, indices, dataStop)
             
-
         curve = subBarQwtPlotCurve(self)
         newColor = QColor(0, 0, 0)
         curve.color = newColor
@@ -237,6 +237,16 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey1).setXValue(j+0.5)
                 self.marker(mkey1).setYValue(1.0)
                 self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
+
+        if self.enabledLegend == 1 and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            varName = self.rawdata.domain[className].name
+            varValues = self.getVariableValuesSorted(self.rawdata, className)
+            for ind in range(len(varValues)):
+                newColor = QColor()
+                if len(varValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[ind]*360, 255, 255)
+                else:                                         newColor.setHsv((ind*360)/float(len(valLen), 255, 255))
+                self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
+
 
 
     # ##########################################

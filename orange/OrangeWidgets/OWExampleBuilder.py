@@ -17,22 +17,24 @@ from random import *
 
 class OWExampleBuilder(OWWidget):
     settingsList=["codeStr", "domainStr", "numStr"]
+    
     def __init__(self,parent=None):
         OWWidget.__init__(self,parent,"&ExampleBuilder",
         "Builds example table",
         FALSE)
         "Constructor"
         #get settings from the ini file, if they exist
+
+        self.inputs = []
+        self.outputs = [("Classified Examples", ExampleTableWithClass)]
+    
         self.codeStr = ""
         self.domainStr = ""
         self.numStr = ""
         self.loadSettings()
 
         self.data = None
-        self.addOutput("data")
-        self.addOutput("cdata")
-        
-
+                
         #GUI
         self.space.hide()
         self.controlArea.hide()
@@ -117,9 +119,7 @@ class OWExampleBuilder(OWWidget):
             if validExample:
                 self.data.append(example)
 
-        odata = OrangeData(self.data)
-        self.send("cdata", odata)
-        self.send("data", odata)
+        self.send("cdata", self.data)
         
     def save(self):
         qname = QFileDialog.getSaveFileName( os.getcwd() + "/" + "data.tab", "Tabulated data (*.tab)", self, "", "Save Data Table")

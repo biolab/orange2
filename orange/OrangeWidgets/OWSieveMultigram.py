@@ -24,9 +24,12 @@ from orngCI import FeatureByCartesianProduct
 ###########################################################################################
 class OWSieveMultigram(OWWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
-        
+            
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve Multigram", "Show sieve multigram", TRUE, TRUE)
+
+        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]
+        self.outputs = [] 
 
         #set default settings
         
@@ -57,13 +60,6 @@ class OWSieveMultigram(OWWidget):
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         
-        # graph main tmp variables
-        self.addInput("cdata")
-        self.addInput("selection")
-
-        self.interestingButton =QPushButton("Find interesting attr.", self.space)
-        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
-
         #add controls to self.controlArea widget
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
@@ -83,6 +79,9 @@ class OWSieveMultigram(OWWidget):
 
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+
+        self.interestingButton =QPushButton("Find interesting attr.", self.space)
+        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
 
         #connect controls to appropriate functions
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
@@ -170,10 +169,10 @@ class OWSieveMultigram(OWWidget):
     ##############################################
     
     
-    ####### CDATA ################################
+    ####### DATA ################################
     # receive new data and update all fields
-    def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data.data)
+    def data(self, data):
+        self.data = orange.Preprocessor_dropMissing(data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 

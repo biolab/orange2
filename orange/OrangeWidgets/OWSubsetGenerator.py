@@ -21,13 +21,13 @@ class OWSubsetGenerator(OWWidget):
         "Create exaple table subset",
         wantSettings = FALSE, wantGraph = FALSE)
         "Constructor"
+
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.outputs = [("Classified Examples", ExampleTableWithClass)] 
+
         #get settings from the ini file, if they exist
         self.applyGenerateExact = 1 # we remember the last kind of generate
-        
         self.data = None
-        self.addInput("cdata")
-        self.addOutput("cdata")
-
         self.loadSettings()        
         
         #GUI
@@ -95,8 +95,7 @@ class OWSubsetGenerator(OWWidget):
             if selection[i] == 0: continue
             table.append(self.data[i])
 
-        odata = OrangeData(table)
-        self.send("cdata", odata)
+        self.send("Classified Examples", table)
 
     def generatePercent(self):
         dataLen = float(self.percentLCD.intValue())
@@ -107,8 +106,7 @@ class OWSubsetGenerator(OWWidget):
             if selection[i] == 0: continue
             table.append(self.data[i])
 
-        odata = OrangeData(table)
-        self.send("cdata", odata)
+        self.send("Classified Examples", table)
 
     def cdata(self, data):
         self.data = data.data

@@ -29,6 +29,10 @@ class OWScatterPlot3D(OWWidget):
     def __init__(self,parent=None):
         apply(OWWidget.__init__, (self, parent, "ScatterPlot 3D", "Show data using scatterplot", TRUE, TRUE)) 
 
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.outputs = [] 
+
+
         #set default settings
         self.pointWidth = 7
         self.jitteringType = "uniform"
@@ -58,11 +62,6 @@ class OWScatterPlot3D(OWWidget):
         self.graph.setSizePolicy(QSizePolicy(QSizePolicy.Expanding , QSizePolicy.Expanding ))
         self.box.addWidget(self.graph)
         
-
-        # graph main tmp variables
-        self.addInput("cdata")
-        self.addInput("view")
-
         self.activateLoadedSettings()        
         
         #connect settingsbutton to show options
@@ -345,7 +344,7 @@ class OWScatterPlot3D(OWWidget):
             self.repaint()
             return
         
-        self.data = orange.Preprocessor_dropMissing(data.data)
+        self.data = orange.Preprocessor_dropMissing(data)
         self.initAttrValues()
         self.graph.setData(self.data)
         self.updateGraph()

@@ -23,7 +23,7 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines", "lineTracking"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines", "lineTracking", "showLegend"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -31,10 +31,14 @@ class OWParallelCoordinates(OWWidget):
     jitterSizeNums = [2,  5,  10, 15, 20, 30]
     linesDistanceList = ['20', '30', '40', '50', '60', '70', '80', '100']
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100]
-    
+
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", TRUE, TRUE)
         self.resize(700,700)
+
+        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]
+        self.outputs = []
+    
 
         #set default settings
         self.attrDiscOrder = "RelieF"
@@ -56,6 +60,7 @@ class OWParallelCoordinates(OWWidget):
         self.showContinuous = 0
         self.useSplines = 0
         self.lineTracking = 1
+        self.showLegend = 1
 
         #load settings
         self.loadSettings()
@@ -76,10 +81,6 @@ class OWParallelCoordinates(OWWidget):
         self.box.addWidget(self.slider)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        # graph main tmp variables
-        self.addInput("cdata")
-        self.addInput("selection")
-
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
@@ -88,6 +89,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.showAttrValues, SIGNAL("toggled(bool)"), self.setAttrValues)
         self.connect(self.options.hidePureExamples, SIGNAL("toggled(bool)"), self.setHidePureExamples)
         self.connect(self.options.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
+        self.connect(self.options.showLegend, SIGNAL("toggled(bool)"), self.setLegend)
         self.connect(self.options.useSplines, SIGNAL("toggled(bool)"), self.setUseSplines)
         self.connect(self.options.lineTracking, SIGNAL("toggled(bool)"), self.setLineTracking)
         self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
@@ -108,7 +110,9 @@ class OWParallelCoordinates(OWWidget):
 
         self.classCombo = QComboBox(self.selClass)
         self.showContinuousCB = QCheckBox('show continuous', self.selClass)
-        self.targetValueCombo = QComboBox(self.selClass)
+        self.hbox2 = QHBox(self.selClass)
+        self.label = QLabel("Target value: ", self.hbox2)
+        self.targetValueCombo = QComboBox(self.hbox2)
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classComboChange)
         self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
         self.connect(self.targetValueCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
@@ -119,11 +123,9 @@ class OWParallelCoordinates(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
-        #self.attrButtonGroup.setFrameStyle(QFrame.NoFrame)
-        #self.attrButtonGroup.setMargin(0)
-        self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
+        self.hbox = QHBox(self.shownAttribsGroup)
+        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
+        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
 
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
@@ -162,6 +164,7 @@ class OWParallelCoordinates(OWWidget):
         self.options.showDistributions.setChecked(self.showDistributions)
         self.options.showAttrValues.setChecked(self.showAttrValues)
         self.options.hidePureExamples.setChecked(self.hidePureExamples)
+        self.options.showLegend.setChecked(self.showLegend)
         self.options.showCorrelations.setChecked(self.showCorrelations)
         self.options.useSplines.setChecked(self.useSplines)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
@@ -177,6 +180,7 @@ class OWParallelCoordinates(OWWidget):
 
         self.showContinuousCB.setChecked(self.showContinuous)
 
+        self.graph.updateSettings(enabledLegend = self.showLegend)
         self.graph.updateSettings(useSplines = self.useSplines)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
@@ -207,7 +211,7 @@ class OWParallelCoordinates(OWWidget):
 
     def setDistributions(self, b):
         self.showDistributions = b
-        self.graph.setShowDistributions(b)
+        self.graph.updateSettings(showDistributions = b)
         self.updateGraph()
 
     def setAttrValues(self, b):
@@ -228,6 +232,11 @@ class OWParallelCoordinates(OWWidget):
     def setUseSplines(self, b):
         self.useSplines = b
         self.graph.updateSettings(useSplines = b)
+        self.updateGraph()
+
+    def setLegend(self, b):
+        self.showLegend = b
+        self.graph.updateSettings(enabledLegend = self.showLegend)
         self.updateGraph()
 
     def setLineTracking(self, b):
@@ -406,11 +415,11 @@ class OWParallelCoordinates(OWWidget):
     ##############################################
     
     
-    ####### CDATA ################################
+    ####### DATA ################################
     # receive new data and update all fields
-    def cdata(self, data):
+    def data(self, data):
         #self.data = orange.Preprocessor_dropMissing(data.data)
-        self.data = data.data
+        self.data = data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()

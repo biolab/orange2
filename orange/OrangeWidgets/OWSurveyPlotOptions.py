@@ -22,6 +22,7 @@ class OWSurveyPlotOptions(OWOptions):
         # visual settings
         self.visualSettingsButtons = QVButtonGroup("Visual settings", self.top)
         self.exampleTracking = QCheckBox("Enable example tracking", self.visualSettingsButtons)
+        self.showLegend = QCheckBox('show legend', self.visualSettingsButtons)
         
 
         #####        
