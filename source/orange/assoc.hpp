@@ -95,8 +95,8 @@ public:
 
   int maxItemSets; //P maximal number of itemsets (increase if you want)
 
-  float confidence; //P(+conf) required confidence
-  float support; //P(+supp) required support
+  float confidence; //P required confidence
+  float support; //P required support
   bool classificationRules; //P if true, rules will have the class and only the class attribute on the right-hand side
 
 public:
@@ -129,8 +129,8 @@ public:
 
   int maxItemSets; //P maximal number of itemsets (increase if you want)
 
-  float confidence; //P(+conf) required confidence
-  float support; //P(+supp) required support
+  float confidence; //P required confidence
+  float support; //P required support
 
   TAssociationRulesSparseInducer(float asupp=0.1, float aconf=0, int awei=0);
   PAssociationRules operator()(PExampleGenerator, const int &weightID);
@@ -146,8 +146,8 @@ class TAssociationLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
-  float confidence; //P(+conf) required confidence
-  float support; //P(+supp) required support
+  float confidence; //P required confidence
+  float support; //P required support
   int voteWeight; //P vote weight (s=support, c=confidence, p=product)
   int maxItemSets; //P maximal number of itemsets (increase if you want)
  

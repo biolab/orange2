@@ -108,7 +108,7 @@ public:
   __REGISTER_CLASS
 
   int   numberOfIntervals; //P number of intervals
-  float firstCut; //P(+firstVal) the first cut-off point
+  float firstCut; //P the first cut-off point
   float step; //P step (width of interval)
 
   TEquiDistDiscretizer(const int=-1, const float=-1.0, const float=-1.0);

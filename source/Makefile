@@ -12,8 +12,6 @@ INCLUDEDIR = $(SOURCEDIR)/include
 CORNDIR = $(SOURCEDIR)/corn
 STATCDIR = $(SOURCEDIR)/statc
 
-C45DIR = $(EXTERNALDIR)/c45
-
 DEVSCRIPTS= $(ORANGEDIR)/devscripts
 PPPDIR = $(ORANGEDIR)/ppp
 PXDIR = $(ORANGEDIR)/px
@@ -35,7 +33,7 @@ INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
 		-I$(EXTERNALDIR) -I$(PYTHONINCLUDE)
 
-LIBPATH = -L$(C45D) -L$(LOGREGD)
+LIBPATH = -L$(LOGREGD)
 
 ############
 # Paths for extensions
@@ -43,7 +41,6 @@ LIBPATH = -L$(C45D) -L$(LOGREGD)
 vpath %.cpp $(ORANGEDIR):$(CORNDIR):$(STATCDIR):$(INCLUDEDIR)
 vpath %.hpp $(ORANGEDIR):$(CORNDIR):$(STATCDIR):$(INCLUDEDIR)
 vpath %.h $(INCLUDEDIR):$(PYTHONINCLUDE)
-vpath %.i $(C45D)
 vpath %.ppp $(PPPDIR)
 vpath %.px $(PXDIR)
 
@@ -52,8 +49,7 @@ vpath %.px $(PXDIR)
 # Compiler options
 
 CC=	gcc
-#CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -ggdb3
-#CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -O3
+#CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -ggdb3
 CXX=	g++ $(INCLUDEPATH) -fPIC -w -DLINUX -O3
 LINKCC=	$(PURIFY) $(CC)
 
@@ -72,11 +68,7 @@ $(ODIR)/%.o :
 	$(CXX) -c $< -o $@
 
 
-
-
 all	: dirs $(ORANGE_SO)
-
-c45 : dirs $(BINDIR)/c45.so
 
 include makefile.deps
 
@@ -91,10 +83,6 @@ $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 
 $(BINDIR)/statc.so:	$(STATC_OBJECTS)
 	gcc $(STATC_OBJECTS) -o $(BINDIR)/statc.so -shared $(LNKSTL)
-
-$(BINDIR)/c45.so:	$(C45DIR)/ensemble.c
-	gcc $(C45DIR)/ensemble.c -o $(BINDIR)/c45.so -shared $(LNKSTL)
-
 
 
 install:	all

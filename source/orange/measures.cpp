@@ -95,7 +95,7 @@ float TMeasureAttribute::operator()(int attrNo, PDomainContingency domainConting
     raiseError("cannot evaluate attribute from domain contingency only");
   if (attrNo>int(domainContingency->size()))
     raiseError("attribute index out of range");
-  return operator()(domainContingency->operator[](attrNo), domainContingency->classes, apriorClass); 
+  return operator()(domainContingency->operator[](attrNo), domainContingency->classes, apriorClass ? apriorClass : domainContingency->classes); 
 }
 
 
@@ -113,14 +113,14 @@ float TMeasureAttribute::operator()(int attrNo, PExampleGenerator gen, PDistribu
     PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
     classDistribution->operator+= (contingency.innerDistributionUnknown);
 
-    return operator()(PContingency(contingency), classDistribution, apriorClass);
+    return operator()(PContingency(contingency), classDistribution, apriorClass ? apriorClass : classDistribution);
   }
    
  if (needs>DomainContingency)
    raiseError("invalid 'needs'");
 
  TDomainContingency domcont(gen, weightID);
- return operator()(attrNo, PDomainContingency(domcont), apriorClass);
+ return operator()(attrNo, PDomainContingency(domcont), apriorClass ? apriorClass : domcont.classes);
 }
 
 
@@ -140,7 +140,7 @@ float TMeasureAttribute::operator ()(PVariable var, PExampleGenerator gen, PDist
   PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
   classDistribution->operator+= (contingency.innerDistributionUnknown);
 
-  return operator()(PContingency(contingency), PDistribution(classDistribution), apriorClass);
+  return operator()(PContingency(contingency), PDistribution(classDistribution), apriorClass ? apriorClass : classDistribution);
 }
 
 
@@ -208,9 +208,13 @@ float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistrib
   }
 
   if (conditionalEstimatorConstructor) {
-    cont = conditionalEstimatorConstructor->call(cont, aprior)->call();
-    if (!cont)
+    PContingency cont_e = conditionalEstimatorConstructor->call(cont, aprior)->call();
+    if (!cont_e)
       raiseError("'conditionalEstimatorConstructor cannot return contingency matrix");
+    cont_e->outerDistribution = cont->outerDistribution;
+    cont_e->innerDistribution = classDistribution;
+
+    cont = cont_e;
   }
 
   return operator()(cont, CAST_TO_DISCDISTRIBUTION(classDistribution));
