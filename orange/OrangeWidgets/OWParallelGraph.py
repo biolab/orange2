@@ -168,7 +168,7 @@ class OWParallelGraph(QwtPlot):
             for i in range(len(data)):
                 if data[i][index].isSpecial(): temp.append(1)
                 else:
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.3 * self.rndCorrection(1.0/count)
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
                     temp.append(val)
                     
         # is the attribute continuous
@@ -220,6 +220,9 @@ class OWParallelGraph(QwtPlot):
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels), 1)
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
+        self.setAxisMaxMinor(QwtPlot.yLeft, 0)
+        self.setAxisMaxMajor(QwtPlot.yLeft, 1)
+        
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
@@ -267,7 +270,12 @@ class OWParallelGraph(QwtPlot):
         
 
     def showDistributionValues(self, className, data, indices):
-        # create color table
+        # get index of class         
+        classNameIndex = 0
+        for i in range(len(data.domain)):
+            if data.domain[i].name == className: classNameIndex = i
+
+        # create color table            
         count = float(len(data.domain[className].values))
         if count < 1:
             count = 1.0
@@ -301,11 +309,15 @@ class OWParallelGraph(QwtPlot):
                     if not data[i][index].isSpecial():
                         # processing for distributions
                         attrIndex = variableValueIndices[data[i][index].value]
-                        classIndex = classValueIndices[data[i].getclass().value]
+                        classIndex = classValueIndices[data[i][classNameIndex].value]
                         totals[attrIndex] += 1
                         values[classIndex][attrIndex] = values[classIndex][attrIndex] + 1
 
-                
+                maximum = 0
+                for i in range(len(values)):
+                    for j in range(len(values[i])):
+                        if values[i][j] > maximum: maximum = values[i][j]
+                        
                 # create bar curve
                 for i in range(count):
                     curve = subBarQwtPlotCurve(self)
@@ -315,9 +327,9 @@ class OWParallelGraph(QwtPlot):
                     xData = []
                     yData = []
                     for j in range(attrLen):
-                        width = float(values[i][j]*0.5) / float(totals[j])
+                        #width = float(values[i][j]*0.5) / float(totals[j])
+                        width = float(values[i][j]*0.5) / float(maximum)
                         interval = 1.0/float(2*attrLen)
-                        #yOff = (j / float(attrLen-1)) * (1.0-2.0*interval)
                         yOff = float(1.0 + 2.0*j)/float(2*attrLen)
                         height = 0.7/float(count*attrLen)
 
