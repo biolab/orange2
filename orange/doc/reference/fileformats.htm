@@ -29,6 +29,9 @@
 
 <DT><B><a href="tabdelimited.htm">Excel</a></B></DT>
 <DD>This format is only available on Windows. Besides, you need to have Excel installed in order for Orange to be able to read those files. Besides besides, Orange occasionally hangs during communication with Excel, for an unknown reason. The file format is generally the same as the second flavor of <a href="tabdelimited.htm">tab-delimited files</a>, except that tab-separated entries in the former are here substituted by spreadsheet's cells. This format is read-only, for now; if you want to output the file by Orange and then process it with Excel, you can use tab-delimited files.</DD>
+
+<DT><B><A href="userformats.htm">User defined formats</A></B></DT>
+<DD>You can define your own function(s) for reading and/or writing examples, and register them with Orange.</DD>
 </DL>
 
 <H2>Loading Examples</H2>
@@ -63,6 +66,7 @@
 
 
 <H2>Multiple Datafiles with the Same Domain</H2>
+<A name="samedomain">
 
 <P>Special mechanisms are at work when you have, for instance, separate files for training and testing examples, but with the same attribute names and types in the same order.</P>
 
