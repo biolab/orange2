@@ -19,11 +19,28 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
-/*  This file contains two functions (O_OneTree and O_BestTree) that are
-    based on functions OneTree and BestTree from Ross Quinlan's C4.5.
+/*  This file is a part of dynamic library that staticaly links with C4.5.
+    To compile it, download C4.5 (R8) from http://www.cse.unsw.edu.au/~quinlan/,
+    copy this file and buildc45.py to C45's directory R8/Src and run buildc45.py.
 
-    You need to download C4.5 (R8) from http://www.cse.unsw.edu.au/~quinlan/
-    and run i2h.py before compiling this file.
+    The script should work on Windows, Linux and Mac OSX. For other systems, you
+    will need to modify buildc45.py and Orange's c4.5.cpp; contact me for help or,
+    if you manage to do it yourself, send me the patches if you want to make your
+    port available.
+
+
+    This file redefines malloc, calloc, free and cfree to record the (de)allocations,
+    so that any unreleased memory can be freed after learning is done.
+    
+    The library exports a function that calls C4.5's learning, and a function
+    for clearing the memory afterwards.
+
+    Finally, this file contains functions (O_Iterate, O_OneTree and O_BestTree) that
+    are based on functions Iterate, OneTree and BestTree from Ross Quinlan's C4.5.
+    They had to be rewritten to avoid the unnecessary printouts (I don't remember
+    why haven't I simply redefined printf to do nothing). Besides, I have removed
+    from them storing the data that C4.5 needed only for output, not for classification.
+    In other ways, the functions should be equivalent to the originals.
 */
 
 #include <stdio.h>
@@ -57,9 +74,9 @@ void *guarded_alloc(size_t size, size_t elsize, char callo)
   int nal;
 
   if (!allocations) {
-    allocationsSize = 1024;
+    allocationsSize = 2048;
     emptySlot = allocations = malloc(allocationsSize * sizeof(void *));
-    lastAllocation = allocations + 1024;
+    lastAllocation = allocations + allocationsSize;
   }
 
   else if (emptySlot == lastAllocation) {
@@ -70,7 +87,7 @@ void *guarded_alloc(size_t size, size_t elsize, char callo)
       lastAllocation = allocations + allocationsSize;
   }
 
-  *emptySlot = callo ? calloc(size, elsize) : malloc(size);
+  *emptySlot = callo ? calloc(size, elsize + 128) : malloc(size + 128);
   return *(emptySlot++);
 }
 
@@ -83,26 +100,18 @@ void **findSlot(void *ptr)
   return NULL;
 }
 
-void *guarded_realloc(void *ptr, size_t size)
-{ 
-  void **s;
-
-  if (!ptr)
-    return guarded_alloc(size, 0, 0);
-    
-  s = findSlot(ptr);
-  // we assert that s is not NULL
-  *s = realloc(ptr, size);
-  return *s;
-}
-
 
 void guarded_free(void *ptr)
 { 
+/* It seems that there are callocs the manage to
+   avoid being allocated through my macros, so I
+   cannot rely on guarded_collect but must also
+   define  guarded_free.
+
+   (Namely there's one in prune.c that allocates
+    LocalClassDist) */
+
   void **slot = findSlot(ptr);
-  /* I don't like this, but it seems that there are callocs
-     (namely the one in prune.c that allocates LocalClassDist)
-     managed to avoid being allocated through malloc. */
   *slot = NULL;
   free(ptr);
 }
@@ -123,9 +132,11 @@ C45_API void guarded_collect()
 
 #define calloc(x,y) guarded_alloc((x), (y), 1)
 #define malloc(x) guarded_alloc((x), 0, 0)
-#define realloc(p,x) guarded_realloc((p),(x))
 #define free(p) guarded_free((p))
 #define cfree(p) guarded_free((p))
+
+#define realloc(p,x) This is defined just to make sure that we have not missed any reallocs in C4.5 (we found none)
+
 
 void Error(int l, char *s, char *t)
 {}
@@ -133,19 +144,18 @@ void Error(int l, char *s, char *t)
 #include <math.h>
 #include "types.h"
 
-short MaxAtt, MaxClass, MaxDiscrVal = 2;
+short MaxAtt, MaxClass, MaxDiscrVal;
 ItemNo MaxItem;
 Description *Item;
 DiscrValue *MaxAttVal;
 char *SpecialStatus, **ClassName, **AttName, ***AttValName;
 
+#define PrintConfusionMatrix(x) // make besttree.c happy
+
 #include "besttree.c"
 #include "classify.c"
-#include "confmat.c"
 #include "contin.c"
 #include "discr.c"
-#include "genlogs.c"
-#include "getopt.c"
 #include "info.c"
 #include "prune.c"
 #include "sort.c"
@@ -168,38 +178,86 @@ C45_API void *c45Data[] = {
 
 /* These need to be defined since we got rid of files that would otherwise define them */
 char *FileName = "DF";
-Tree		*Pruned;
+Tree		*Pruned = NULL;
 Boolean		AllKnown;
 
 
 /* Need to redefine these to avoid printouts */
 
-void O_OneTree()
+
+void Swap();
+ClassNo Category();
+Tree FormTree();
+
+Tree O_Iterate(ItemNo Window, ItemNo IncExceptions)
 {
-  InitialiseTreeData();
-  InitialiseWeights();
+  Tree Classifier, BestClassifier = Nil;
+  ItemNo i, Errors, TotalErrors, BestTotalErrors = MaxItem+1, Exceptions, Additions;
+  ClassNo Assigned;
 
-  Raw = (Tree *) calloc(1, sizeof(Tree));
-  Pruned = (Tree *) calloc(1, sizeof(Tree));
+  do {
+    InitialiseWeights();
+    AllKnown = true;
+    Classifier = FormTree(0, Window-1);
 
-  AllKnown = true;
-  Raw[0] = FormTree(0, MaxItem);
+    Errors = Round(Classifier->Errors);
 
-  Pruned[0] = CopyTree(Raw[0]);
-  Prune(Pruned[0]);
+    Exceptions = Window;
+    ForEach(i, Window, MaxItem) {
+      Assigned = Category(Item[i], Classifier);
+      if (Assigned != Class(Item[i]) ) {
+        Swap(Exceptions, i);
+        Exceptions++;
+	    }
+	  }
+
+    Exceptions -= Window;
+    TotalErrors = Errors + Exceptions;
+
+    if (!BestClassifier || (TotalErrors < BestTotalErrors)) {
+      if (BestClassifier)
+        ReleaseTree(BestClassifier);
+      BestClassifier = Classifier;
+      BestTotalErrors = TotalErrors;
+    }
+    else 
+	    ReleaseTree(Classifier);
+
+    Additions = Min(Exceptions, IncExceptions);
+    Window = Min(Window + Max(Additions, Exceptions / 2), MaxItem + 1);
+  }
+  while (Exceptions);
+
+  return BestClassifier;
 }
 
 
-short O_BestTree(int trials, int window, int increment)
+Tree O_OneTree(char prune)
 {
-  short t, Best=0;
+  Tree tree;
+
+  InitialiseTreeData();
+  InitialiseWeights();
+
+  AllKnown = true;
+  tree = FormTree(0, MaxItem);
+
+  if (prune)
+    Prune(tree);
+
+  return tree;
+}
+
+
+Tree O_BestTree(int trials, int window, int increment, char prune)
+{
+  short t;
+  
+  Tree best = NULL, tree;
 
   InitialiseTreeData();
 
   TargetClassFreq = (ItemNo *) calloc(MaxClass+1, sizeof(ItemNo));
-
-  Raw    = (Tree *) calloc(trials, sizeof(Tree));
-  Pruned = (Tree *) calloc(trials, sizeof(Tree));
 
   if (!window)
     window = (int)(Max(2 * sqrt(MaxItem+1.0), (MaxItem+1) / 5));
@@ -211,23 +269,32 @@ short O_BestTree(int trials, int window, int increment)
 
   ForEach(t, 0, trials-1 ) {
     FormInitialWindow();
-    Raw[t] = Iterate(window, increment);
+    tree = O_Iterate(window, increment);
 
-    Pruned[t] = CopyTree(Raw[t]);
-    Prune(Pruned[t]);
+    if (prune)
+      Prune(tree);
 
-    if ( Pruned[t]->Errors < Pruned[Best]->Errors )
-      Best = t;
+    if ( !best || tree->Errors < best->Errors )
+      best = tree;
+    else
+      ReleaseTree(tree);
   }
 
-  return Best;
+  return best;
 }
 
 
 C45_API Tree learn(int trials, char gainRatio, char subset, char batch, char probThresh, int minObjs, int window, int increment, float cf, char prune)
 {
-  short Best;
-  
+  Tree best;
+ 
+  /* These get initialized to NULL when c45 is loaded.
+     Since garbage collection frees their memory, we reinitialized
+     them to force c45 to allocate the memory again. */
+
+  ClassSum = NULL;
+  PossibleValues = NULL;
+
   VERBOSITY  = 0;
 
   GAINRATIO  = gainRatio;
@@ -235,17 +302,11 @@ C45_API Tree learn(int trials, char gainRatio, char subset, char batch, char pro
   MINOBJS    = minObjs;
   CF         = cf;
   
-  if (batch) {
-    O_OneTree();
-    Best = 0;
-  }
-  else
-    Best = O_BestTree(trials, window, increment);
-
+  best = batch ? O_OneTree(prune) : O_BestTree(trials, window, increment, prune);
   if (probThresh)
-    SoftenThresh((prune ? Pruned : Raw)[Best]);
+    SoftenThresh(best);
 
-  return (prune ? Pruned : Raw)[Best];
+  return best;
 }
 
 
