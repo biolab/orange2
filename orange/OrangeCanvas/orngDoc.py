@@ -29,10 +29,6 @@ class SchemaDoc(QMainWindow):
         self.hasChanged = FALSE
         self.canvasDlg.enableSave(FALSE)
         self.setIcon(QPixmap(orngResources.file_new))
-        self.canvas = QCanvas(2000,2000)
-        self.canvasView = orngView.SchemaView(self, self.canvas, self)
-        self.setCentralWidget(self.canvasView)
-        self.canvasView.show()
         self.lines = []
         self.widgets = []
         
@@ -44,22 +40,29 @@ class SchemaDoc(QMainWindow):
         self.filename = str(self.caption())
         self.filenameValid = FALSE
  
+
+    def createView(self):
+        self.canvas = QCanvas(2000,2000)
+        self.canvasView = orngView.SchemaView(self, self.canvas, self)
+        self.setCentralWidget(self.canvasView)
+        self.canvasView.show()
         
     def closeEvent(self,ce):
         if not self.hasChanged:
             ce.accept()
-            self.removeAllWidgets()
+            self.clear()
             return
         res = QMessageBox.information(self,'Qrange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
         if res == 0:
             self.saveDocument()
             ce.accept()
+            self.clear()
         elif res == 1:
             ce.accept()
+            self.clear()
         else:
             ce.ignore()
 
-        self.removeAllWidgets()
  
     def addLine(self, outWidget, inWidget, setSignals = TRUE, enabled = TRUE):
         # check if line already exists
@@ -234,6 +237,8 @@ class SchemaDoc(QMainWindow):
         return newwidget
 
     def removeWidget(self, widget):
+        if widget.instance:
+            widget.instance.saveSettings()
         signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
@@ -244,17 +249,10 @@ class SchemaDoc(QMainWindow):
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
         while widget.outLines != []:  self.removeLine1(widget.outLines[0])
 
-    def removeAllWidgets(self):
-        for widget in self.widgets:
-            if (widget.instance != None):
-                try:
-                    code = compile("widget.instance.saveSettings()", ".", "single")
-                    exec(code)
-                except:
-                    pass
-            self.widgets.remove(widget)
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+    def clear(self):
+        while self.widgets != []:
+            self.removeWidget(self.widgets[0])
+        self.canvas.update()
 
     def enableAllLines(self):
         for line in self.lines:

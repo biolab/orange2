@@ -6,6 +6,7 @@ from qt import *
 import sys
 import os
 import string
+import orngDoc
 from xml.dom.minidom import Document, parse
 
 TRUE  = 1
@@ -59,7 +60,7 @@ class WidgetButton(QToolButton):
 
 	def clicked(self):
 		win = self.canvasDlg.workspace.activeWindow()
-		if (win != None):
+		if (win != None and isinstance(win, orngDoc.SchemaDoc)):
 			win.addWidget(self)
 
 class WidgetTab(QWidget):

@@ -5,6 +5,14 @@ import sys, string
 from qt import *
 iDocIndex = 1 
 
+file_new = "./icons/doc.png"
+output = "./icons/output.png"
+file_open = "./icons/open.png"
+file_save = "./icons/save.png"
+file_print = "./icons/print.png"
+file_exit = "./icons/exit.png"
+
+"""
 file_open = [
     '16 13 5 1',
     '. c #040404',
@@ -96,3 +104,4 @@ file_new = [
 "                ",
 "                "
 ]
+"""

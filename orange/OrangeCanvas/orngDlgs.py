@@ -201,7 +201,6 @@ class SignalCanvasView(QCanvasView):
             self.tempLine.hide()
             self.tempLine.setCanvas(None)
             self.canvas().update()
-        print self.dlg._links
         
 
     def findItem(self, items, wantedType):
