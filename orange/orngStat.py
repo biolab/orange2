@@ -787,7 +787,10 @@ def computeCalibrationCurve(res, classIndex=-1):
 
         ## smooth the curve
         maxnPoints = 100
-        loessCurve = statc.loess(curve, -3, 0.6)
+        if len(curve) >= 3:
+            loessCurve = statc.loess(curve, -3, 0.6)
+        else:
+            loessCurve = curve
         clen = len(loessCurve)
         if clen > maxnPoints:
             df = clen / maxnPoints
