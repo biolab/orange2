@@ -153,7 +153,7 @@ PyObject *BasicAttrStat_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 }
 
 
-PyObject *BasicAttrStat_recompute(PyObject *self) PYARGS(METH_), "() -> None")
+PyObject *BasicAttrStat_recompute(PyObject *self) PYARGS(METH_O, "() -> None")
 { PyTRY
     SELF_AS(TBasicAttrStat).recompute();
     RETURN_NONE;

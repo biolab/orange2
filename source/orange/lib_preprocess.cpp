@@ -492,14 +492,15 @@ PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyO
 { PyTRY
     int B = 2;
     PyObject *varlist = NULL;
+    PyObject *res;
 
     // This is for compatibility ...
     if (PyArg_ParseTuple(args, "i|O:SubsetsGenerator_constSize.__new__", &B, &varlist)) {
-      TSubsetsGenerator_constSize *ssg = mlnew TSubsetsGenerator_constSize(B);
-      PyObject *res = WrapNewOrange(ssg, type);
+      TSubsetsGenerator *ssg = mlnew TSubsetsGenerator_constSize(B);
+      res = WrapNewOrange(ssg, type);
       if (varlist) {
-        ssg->varList = varlist;
         SubsetsGenerator_reset(res, varlist);
+      }
       return res;
     }
     PyErr_Clear();
@@ -508,7 +509,7 @@ PyObject *SubsetsGenerator_constSize_new(PyTypeObject *type, PyObject *args, PyO
     if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator_constSize.__new__", &varlist))
       return PYNULL;
       
-    PyObject *res = WrapNewOrange(mlnew TSubsetsGenerator_constSize(B), type);
+    res = WrapNewOrange(mlnew TSubsetsGenerator_constSize(B), type);
     if (SubsetsGeneratorResetFromVars(res, varlist) < 0)
       return PYNULL;
     return res;
