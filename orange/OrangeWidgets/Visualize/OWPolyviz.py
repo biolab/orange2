@@ -30,7 +30,7 @@ class OWPolyviz(OWWidget):
 	scaleFactorList = [str(x) for x in scaleFactorNums]
 		
 	def __init__(self,parent=None):
-		OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", FALSE, TRUE)
+		OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", FALSE, TRUE, icon = "Polyviz.png")
 
 		self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
 		self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]

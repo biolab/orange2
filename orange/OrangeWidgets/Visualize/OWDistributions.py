@@ -284,7 +284,7 @@ distribution of attribute values and
 distribution of classes for each attribute.
         """,
         FALSE,
-        TRUE)
+        TRUE, icon = "Distribution.png")
         # settings
         self.NumberOfBars = 5
         self.BarSize = 50

@@ -30,7 +30,7 @@ class OWRadviz(OWWidget):
 	scaleFactorList = [str(x) for x in scaleFactorNums]
 		
 	def __init__(self,parent=None):
-		OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE)
+		OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE, icon = "Radviz.png")
 
 		self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
 		self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]

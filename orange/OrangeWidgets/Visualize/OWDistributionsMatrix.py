@@ -28,7 +28,7 @@ class OWDistributionsMatrix(OWWidget):
         "&Distributions Matrix",
         "Widget for comparing distributions of two datasets with same domain and different examples.",
         TRUE,
-        TRUE)
+        TRUE, icon = "Distribution.png")
 
         # inputs
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]

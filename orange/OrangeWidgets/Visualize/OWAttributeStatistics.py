@@ -21,7 +21,7 @@ class OWAttributeStatistics(OWWidget):
         OWWidget.__init__(self,
         parent,
         "AttributeStatistics",
-        "OWAttributeStatistics is an Orange Widget that displays basic statistics about attributes")
+        "OWAttributeStatistics is an Orange Widget that displays basic statistics about attributes", icon = "AttributeStatistics.png")
 
         self.callbackDeposit = []
 

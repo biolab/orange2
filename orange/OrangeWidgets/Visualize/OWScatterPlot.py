@@ -28,7 +28,7 @@ class OWScatterPlot(OWWidget):
 
 	def __init__(self, parent=None):
 		#OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
-		apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", FALSE, TRUE))
+		OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", FALSE, TRUE, icon = "Scatterplot.png")
 
 		self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Attribute selection", list, self.attributeSelection, 1)]
 		self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]

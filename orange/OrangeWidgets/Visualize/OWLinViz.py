@@ -24,7 +24,7 @@ class OWLinViz(OWWidget):
     settingsList = []
        
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "LinViz", "TO DO", TRUE, TRUE)
+        OWWidget.__init__(self, parent, "LinViz", "TO DO", TRUE, TRUE, icon = "LinViz.png")
 
         self.inputs = [("Examples", ExampleTable, self.newdata, 1), ("Classifier", orange.Classifier, self.learner, 0)]
         self.outputs = [] 

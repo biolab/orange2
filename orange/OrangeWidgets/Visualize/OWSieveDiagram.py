@@ -24,7 +24,7 @@ class OWSieveDiagram(OWWidget):
     settingsList = ["showLines"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE)
+        OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE, icon = "SieveDiagram.png")
 
         self.inputs = [("Examples", ExampleTable, self.data, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = []

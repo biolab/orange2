@@ -28,7 +28,7 @@ class OWParallelCoordinates(OWWidget):
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE)
+        OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE, icon = "ParallelCoordinates.png")
         self.resize(700,700)
 
         self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]

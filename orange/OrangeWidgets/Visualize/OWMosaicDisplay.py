@@ -29,7 +29,7 @@ class OWMosaicDisplay(OWWidget):
 
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Mosaic display", 'show Mosaic display', FALSE, TRUE)
+        OWWidget.__init__(self, parent, "Mosaic display", 'show Mosaic display', FALSE, TRUE, icon = "MosaicDisplay.png")
 
         #set default settings
         self.data = None

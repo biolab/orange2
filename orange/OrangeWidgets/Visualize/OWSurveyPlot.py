@@ -24,7 +24,7 @@ class OWSurveyPlot(OWWidget):
     attributeDiscOrder = ["None","ReliefF","GainRatio","Gini", "Oblivious decision graphs"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE)
+        OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE, icon = "SurveyPlot.png")
 
         self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
         self.outputs = [("Selection", list)] 
