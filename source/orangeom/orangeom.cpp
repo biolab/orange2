@@ -36,7 +36,7 @@
     #define ORANGEOM_API
 #endif
 
-/* komentar */
+/* dopolnjen komentar */
 
 bool initExceptions()
 { return true; }
