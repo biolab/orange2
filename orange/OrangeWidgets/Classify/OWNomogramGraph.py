@@ -31,11 +31,17 @@ def unique(lst):
 
 # returns difference between continuous label values
 def getDiff(d):
+    if d < 1:
+        mnum = d/pow(10, math.floor(math.log10(d)))
+    else:
+        mnum = d
+        
     if d==0:
         return 0
-
-    if str(d)[0]>'4':
+    if str(mnum)[0]>'4':
         return math.pow(10,math.floor(math.log10(d))+1)
+    elif str(mnum)[0]<'2':
+        return 2*math.pow(10,math.floor(math.log10(d)))
     else:
         return 5*math.pow(10,math.floor(math.log10(d)))
 
@@ -1161,7 +1167,6 @@ class OWNomogramGraph(QCanvasView):
     # ###################################################################
     # mouse button was released #########################################
     def contentsMouseReleaseEvent(self, ev):
-#        print "mouseRelease"
  #       if self.resizing:
  #           self.resizing = False
  #           self.cavnas().show()
@@ -1282,6 +1287,10 @@ class Mapper_Linear_Fixed:
         dSum = unique(dLower+dUpper)
         dSum.sort()
         dSum = filter(lambda x:x>self.minValue-dif, dSum)
+        if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
+            conv = int
+        else:
+            conv = lambda x:x
 
         # set new graph values
 
@@ -1297,7 +1306,7 @@ class Mapper_Linear_Fixed:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
+            headerLine.addAttValue(AttValue(" "+str(conv(dSum[at]))+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
             if at != len(dSum)-1:
                 val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k, markerWidth = 1)
                 val.enable = False
@@ -1353,7 +1362,6 @@ class Mapper_Linear_Center:
                 min_mapped = self.left+k*(self.right-self.left)
             k1 = self.propBeta(at.betaValue-error_factor*at.error, attrLine)
             k2 = self.propBeta(at.betaValue+error_factor*at.error, attrLine)
-#            print k1, k2
             b_error.append([self.left+k1*(self.right-self.left), self.left+k2*(self.right-self.left)])
         if max_mapped<min_mapped+5:
             max_mapped=min_mapped+5
@@ -1412,6 +1420,11 @@ class Mapper_Linear_Center:
             dLower = map(lambda x:-x, dLower)
         dSum = unique(dLower+dUpper)
         dSum.sort()
+        if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
+            conv = int
+        else:
+            conv = lambda x:x
+            
         # set new graph values
         if self.minGraphValue == 0:
             self.minGraphBeta = self.minBeta
@@ -1429,7 +1442,7 @@ class Mapper_Linear_Center:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
+            headerLine.addAttValue(AttValue(" "+str(conv(dSum[at]))+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
             if at != len(dSum)-1:
                 val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+" ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k, markerWidth = 1)
                 val.enable = False
@@ -1497,12 +1510,16 @@ class Mapper_Linear_Left:
         dSum = []
         dSum = arange(0, self.maxLinearValue+dif, dif)
         dSum = map(lambda x:x, dSum)
+        if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
+            conv = int
+        else:
+            conv = lambda x:x
 
         k = self.max_difference/self.maxLinearValue        
 
         headerLine = AttrLine("", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", dSum[at]*k, markerWidth = 1))
+            headerLine.addAttValue(AttValue(" "+str(conv(dSum[at]))+" ", dSum[at]*k, markerWidth = 1))
             # in the middle add disable values, just to see cross lines
             if at != len(dSum)-1:
                 val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", (dSum[at]+dSum[at+1])*k/2, markerWidth = 1)
