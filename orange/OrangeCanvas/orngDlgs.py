@@ -291,13 +291,13 @@ class SignalDialog(QDialog):
         self.canvas.resize(width, height)
         self.resize(width+55, height+90)
 
-    def countCompatibleConnections(self, outputs, inputs, outType, inType):
+    def countCompatibleConnections(self, outputs, inputs, outInstance, inInstance, outType, inType):
         count = 0
         for outS in outputs:
-            if not issubclass(eval(outS.type), eval(outType)): continue
+            if not issubclass(outInstance.getOutputType(outS.name), outType): continue
             for inS in inputs:
-                if not issubclass(eval(inType), eval(inS.type)): continue
-                if issubclass(eval(outS.type), eval(inS.type)): count+= 1
+                if not issubclass(inType, inInstance.getInputType(inS.name)): continue
+                if issubclass(outInstance.getOutputType(outS.name), inInstance.getInputType(inS.name)): count+= 1
 
         return count               
 
@@ -352,7 +352,7 @@ class SignalDialog(QDialog):
                     if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
                         addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                         self.addLink(outS.name, inS.name)
-                    elif self.countCompatibleConnections(nonMinorOutputs, nonMinorInputs, outS.type, inS.type) > 1:
+                    elif self.countCompatibleConnections(nonMinorOutputs, nonMinorInputs, self.outWidget.instance, self.inWidget.instance, outType, inType) > 1:
                         self.multiplePossibleConnections = 1
 
         # if no connections were maid, try adding connections also to minor signals
@@ -373,7 +373,7 @@ class SignalDialog(QDialog):
                         if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
                             addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                             self.addLink(outS.name, inS.name)
-                        elif self.countCompatibleConnections(allOutputs, allInputs, outS.type, inS.type) > 1:
+                        elif self.countCompatibleConnections(allOutputs, allInputs, self.outWidget.instance, self.inWidget.instance, outType, inType) > 1:
                             self.multiplePossibleConnections = 1
 
 
