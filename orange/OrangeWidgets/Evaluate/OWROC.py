@@ -2,7 +2,7 @@
 <name>ROC Anaylsis</name>
 <description>None.</description>
 <category>Evaluation</category>
-<icon>icons\ROCAnalysis.png</icon>
+<icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
 

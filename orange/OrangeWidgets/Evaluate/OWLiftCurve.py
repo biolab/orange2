@@ -2,7 +2,7 @@
 <name>Lift Curve</name>
 <description>None.</description>
 <category>Evaluation</category>
-<icon>icons\LiftCurve.png</icon>
+<icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """
 

@@ -2,7 +2,7 @@
 <name>Calibration Plot</name>
 <description>None.</description>
 <category>Evaluation</category>
-<icon>icons\CalibrationPlot.png</icon>
+<icon>CalibrationPlot.png</icon>
 <priority>1030</priority>
 """
 
