@@ -3,7 +3,7 @@
 <description>Generate a subset of input example table.</description>
 <category>Miscelaneous</category>
 <icon>icons/SubsetGen.png</icon>
-<priority>30</priority>
+<priority>2010</priority>
 """
 
 #

@@ -3,7 +3,7 @@
 <description>Create example table.</description>
 <category>Miscelaneous</category>
 <icon>icons/EBuilder.png</icon>
-<priority>20</priority>
+<priority>2000</priority>
 """
 
 #
