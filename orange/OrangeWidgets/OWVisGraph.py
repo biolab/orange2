@@ -380,7 +380,7 @@ class OWVisGraph(OWGraph):
         if max == 0: return 0.0
         return (random() - 0.5)*2*max
         
-    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0):
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0, lineWidth = 1):
         newCurveKey = self.insertCurve(name)
         if self.showFilledSymbols or forceFilledSymbols:
             newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
@@ -388,7 +388,7 @@ class OWVisGraph(OWGraph):
             newSymbol = QwtSymbol(symbol, QBrush(), QPen(penColor), QSize(size, size))
         self.setCurveSymbol(newCurveKey, newSymbol)
         self.setCurveStyle(newCurveKey, style)
-        self.setCurvePen(newCurveKey, QPen(penColor))
+        self.setCurvePen(newCurveKey, QPen(penColor, lineWidth))
         self.enableLegend(enableLegend, newCurveKey)
         if xData != [] and yData != []:
             self.setCurveData(newCurveKey, xData, yData)
