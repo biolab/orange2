@@ -89,7 +89,7 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
 #include "root.hpp"
 #include "stladdon.hpp"
 
-#ifdef _MSC_VER && _MSC_VER < 1300
+#ifdef _MSC_VER_60
   #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME, _WRAPPED, _API) \
     EXPIMP_TEMPLATE template class _API TOrangeVector< _TYPE, _WRAPPED >; \
     _API TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components }; 
