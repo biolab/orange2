@@ -55,6 +55,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
 # ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
@@ -287,6 +288,16 @@ SOURCE=.\orange\gslconversions.cpp
 # Begin Source File
 
 SOURCE=.\orange\heatmap.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -416,6 +427,16 @@ SOURCE=.\orange\readdata.cpp
 # Begin Source File
 
 SOURCE=.\orange\redundancy.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -456,6 +477,16 @@ SOURCE=.\orange\symmatrix.cpp
 # Begin Source File
 
 SOURCE=.\orange\tabdelim.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
