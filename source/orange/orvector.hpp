@@ -338,8 +338,11 @@ class TOrangeVector : public TOrange
 
     inline void insert(iterator p, const int &n, const T &X)
     {
-      if (_End - _Last < n)
+      if (_End - _Last < n) {
+        const int pi = p - _First;
         _Resize(size() + n);
+        p = _First + pi;
+      }
 
       iterator e = p + n;
       if (p != _Last)
@@ -353,8 +356,12 @@ class TOrangeVector : public TOrange
     inline void insert(iterator p, iterator first, iterator last)
     {
       const int n = last - first;
-      if (_End - _Last < n)
+
+      if (_End - _Last < n) {
+        const int pi = p - _First;
         _Resize(size() + n);
+        p = _First + pi;
+      }
       
       iterator e =  p + n;
       if (p != _Last)
