@@ -833,8 +833,8 @@ class OWRadvizGraph(OWVisGraph):
                         if not self.clusterOptimization.onlyOnePerSubset:
                             allValue = 0.0
                             for key in valueDict.keys():
-                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, int(graph.objects[polygonVerticesDict[key][0]].getclass()), enlargedClosureDict[key], otherDict[key])
-                                classesDict[key] = int(graph.objects[polygonVerticesDict[key][0]].getclass())
+                                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], permutationAttributes, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
+                                classesDict[key] = otherDict[key][OTHER_CLASS]
                                 allValue += valueDict[key]
                             addResultFunct(allValue, closureDict, polygonVerticesDict, permutationAttributes, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
                             
@@ -855,8 +855,8 @@ class OWRadvizGraph(OWVisGraph):
                         allValue = 0.0
                         classesDict = {}
                         for key in valueDict.keys():
-                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], attrs, self.rawdata.domain.classVar.values.index(otherDict[key][0]), enlargedClosureDict[key], otherDict[key])
-                            classesDict[key] = self.rawdata.domain.classVar.values.index(otherDict[key][0])
+                            addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], attrs, otherDict[key][OTHER_CLASS], enlargedClosureDict[key], otherDict[key])
+                            classesDict[key] = otherDict[key][OTHER_CLASS]
                             allValue += valueDict[key]
                         addResultFunct(allValue, closureDict, polygonVerticesDict, attrs, classesDict, enlargedClosureDict, otherDict)     # add all the clusters
 
