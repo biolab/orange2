@@ -123,10 +123,6 @@ SOURCE=.\include\lcomb.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\Nrutil.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\include\stat.hpp
 # End Source File
 # Begin Source File
