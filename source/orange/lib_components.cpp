@@ -368,20 +368,20 @@ int DomainBasicAttrStat_getItemIndex(PyObject *self, PyObject *args)
   if (PyString_Check(args)) {
     char *s=PyString_AsString(args);
     PITERATE(TDomainBasicAttrStat, ci, bas)
-      if ((*ci)->variable && ((*ci)->variable->name==s))
+      if (*ci && (*ci)->variable && ((*ci)->variable->name==s))
         return ci - bas->begin();
 
-    PyErr_Format(PyExc_IndexError, "attribute '%s' not found in domain", s);
+    PyErr_Format(PyExc_IndexError, "attribute '%s' not found", s);
     return -1;
   }
 
   if (PyOrVariable_Check(args)) {
     PVariable var = PyOrange_AsVariable(args);
     PITERATE(TDomainBasicAttrStat, ci, bas)
-      if ((*ci)->variable && ((*ci)->variable==var))
+      if (*ci && (*ci)->variable && ((*ci)->variable==var))
         return ci - bas->begin();
 
-    PyErr_Format(PyExc_IndexError, "attribute '%s' not found in domain", var->name.length() ? var->name.c_str() : "<no name>");
+    PyErr_Format(PyExc_IndexError, "attribute '%s' not found", var->name.length() ? var->name.c_str() : "<no name>");
     return -1;
   }
 
