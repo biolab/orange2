@@ -619,7 +619,10 @@ TTreePruner_m::TTreePruner_m(const float &am)
 {}
 
 PTreeNode TTreePruner_m::operator()(PTreeNode root)
-{ PDistribution dist;
+{ if (m<0.0)
+    raiseError("'m' should be positive");
+  
+  PDistribution dist;
   if (root->distribution)
     dist = root->distribution;
   else if (root->contingency->classes)
@@ -686,7 +689,7 @@ float TTreePruner_m::estimateError(const PTreeNode &node, const float &m_by_se) 
   else if (node->contingency)
     node->contingency->classes.dynamic_cast_to(dist);
   else
-    raiseError("the node does not store class distribution (check you flags for TreeLearner)");
+    raiseError("the node does not store class distribution (check your flags for TreeLearner)");
   if (!dist)
     raiseError("invalid class distribution (ContDistribution expected)");
 
@@ -718,7 +721,7 @@ float TTreePruner_m::operator()(PTreeNode node, const T &m_by_p, PTreeNode &newN
     float backupError = sumerr/sumweights;
     float staticError = estimateError(node, m_by_p);
 
-    if (staticError<=backupError) {
+    if (staticError<backupError) {
       newNode->branches = PTreeNodeList();
       newNode->branchDescriptions = PStringList();
       newNode->branchSelector = PClassifier();

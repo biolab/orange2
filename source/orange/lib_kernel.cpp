@@ -2445,6 +2445,20 @@ PyObject *ContDistribution_items(PyObject *self) PYARGS(0, "() -> [(string, floa
 }
 
 
+PyObject *ContDistribution_percentile(PyObject *self, PyObject *arg) PYARGS(METH_O, "(float) -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+
+    if (!PyFloat_Check(arg))
+      PYERROR(PyExc_TypeError, "float argument expected", PYNULL);
+
+    return PyFloat_FromDouble(cont->percentile(float(PyFloat_AsDouble(arg))));
+  PyCATCH
+}
+
+
 PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weightID]) -> Distribution")
 { PyTRY
     long weightID;
