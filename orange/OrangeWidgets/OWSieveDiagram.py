@@ -23,9 +23,10 @@ from orngCI import FeatureByCartesianProduct
 ##### WIDGET : 
 ###########################################################################################
 class OWSieveDiagram(OWWidget):
-    settingsList = ["showLines", "kvoc"]
-    kvocList = ['1.5','2','3','5','10','20']
-    kvocNums = [1.5,   2,  3,  5,  10,  20]
+    settingsList = ["showLines"]
+    #settingsList = ["showLines", "kvoc"]
+    #kvocList = ['1.5','2','3','5','10','20']
+    #kvocNums = [1.5,   2,  3,  5,  10,  20]
 
     
     def __init__(self,parent=None):
@@ -74,14 +75,26 @@ class OWSieveDiagram(OWWidget):
         self.attrY = QComboBox(self.attrYGroup)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateData)
 
+        """
         self.hbox = QHBox(self.controlArea, "kvocient")
         self.kvocLabel = QLabel('Quotient', self.hbox)
         self.kvocCombo = QComboBox(self.hbox)
         self.connect(self.kvocCombo, SIGNAL('activated ( const QString & )'), self.updateData)
         QToolTip.add(self.hbox, "What is maximum expected ratio between p(x,y) and p(x)*p(y). Greater the ratio, brighter the colors.")
+        """
 
         self.showLinesCB = QCheckBox('Show lines', self.controlArea)
         self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
+
+        self.interestingGroupBox = QVGroupBox ("Interesting attribute pairs", self.space)
+        self.calculateButton =QPushButton("Calculate chi squares", self.interestingGroupBox)
+        self.connect(self.calculateButton, SIGNAL("clicked()"),self.calculatePairs)
+        self.interestingList = QListBox(self.interestingGroupBox)
+        self.connect(self.interestingList, SIGNAL("selectionChanged()"),self.showSelectedPair)
+
+        self.statusBar = QStatusBar(self.mainArea)
+        self.box.addWidget(self.statusBar)
+        
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         #self.saveCanvas = QPushButton("Save diagram", self.controlArea)
@@ -90,20 +103,93 @@ class OWSieveDiagram(OWWidget):
         #connect controls to appropriate functions
         self.activateLoadedSettings()
 
+    ###############################################################
+    # when clicked on a list box item, show selected attribute pair
+    def showSelectedPair(self):
+        if self.interestingList.count() == 0: return
 
+        index = self.interestingList.currentItem()
+        (chisquare, strName, xAttr, yAttr) = self.chisquares[index]
+        attrXName = self.data.domain[xAttr].name
+        attrYName = self.data.domain[yAttr].name
+        for i in range(self.attrX.count()):
+            if attrXName == str(self.attrX.text(i)): self.attrX.setCurrentItem(i)
+            if attrYName == str(self.attrY.text(i)): self.attrY.setCurrentItem(i)
+        self.updateData()
+
+    def calculatePairs(self):
+        self.chisquares = []
+        if self.data == None: return
+
+        self.statusBar.message("Please wait. Computing...")
+        total = len(self.data)
+        conts = {}
+        dc = orange.DomainContingency(self.data)
+        for i in range(len(self.data.domain.attributes)):
+            if self.data.domain[i].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
+
+            cont = dc[i]   # distribution of X attribute
+            vals = []
+            # compute contingency of x attribute
+            for key in cont.keys():
+                sum = 0
+                for val in cont[key]: sum += val
+                vals.append(sum)
+            conts[self.data.domain[i].name] = (cont, vals)
+
+        for attrX in range(len(self.data.domain.attributes)):
+            if self.data.domain[attrX].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
+
+            for attrY in range(attrX+1, len(self.data.domain.attributes)):
+                if self.data.domain[attrY].varType == orange.VarTypes.Continuous: continue  # we can only check discrete attributes
+
+                (contX, valsX) = conts[self.data.domain[attrX].name]
+                (contY, valsY) = conts[self.data.domain[attrY].name]
+
+                # create cartesian product of selected attributes and compute contingency 
+                (cart, profit) = FeatureByCartesianProduct(self.data, [self.data.domain[attrX], self.data.domain[attrY]])
+                tempData = self.data.select(list(self.data.domain) + [cart])
+                contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
+
+                # compute chi-square
+                chisquare = 0.0
+                for i in range(len(valsX)):
+                    valx = valsX[i]
+                    for j in range(len(valsY)):
+                        valy = valsY[j]
+
+                        actual = 0
+                        for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actual += val
+                        expected = float(valx * valy) / float(total)
+                        pearson2 = (actual - expected)*(actual - expected) / expected
+                        chisquare += pearson2
+                self.chisquares.append((chisquare, "%s - %s" % (self.data.domain[attrX].name, self.data.domain[attrY].name), attrX, attrY))
+
+        ########################
+        # populate list box with highest chisquares
+        self.chisquares.sort()
+        self.chisquares.reverse()
+        for (chisquare, attrs, x, y) in self.chisquares:
+            str = "%s (%.3f)" % (attrs, chisquare)
+            self.interestingList.insertItem(str)        
+
+        self.statusBar.message("")
+        
     def activateLoadedSettings(self):
         self.showLinesCB.setChecked(self.showLines)
 
+        """
         # quotien combo box values        
         for item in self.kvocList: self.kvocCombo.insertItem(item)
         index = self.kvocNums.index(self.kvoc)
         self.kvocCombo.setCurrentItem(index)
+        """
 
         # criteria combo values
-        self.criteriaCombo.insertItem("Attribute independence")
+        #self.criteriaCombo.insertItem("Attribute independence")
         self.criteriaCombo.insertItem("Attribute independence (Pearson residuals)")
         self.criteriaCombo.insertItem("Attribute interactions")
-        self.criteriaCombo.setCurrentItem(1)
+        self.criteriaCombo.setCurrentItem(0)
         
     ##################################################
     # initialize lists for shown and hidden attributes
@@ -149,6 +235,7 @@ class OWSieveDiagram(OWWidget):
     ## CDATA signal
     # receive new data and update all fields
     def cdata(self, data):
+        self.interestingList.clear()
         self.data = orange.Preprocessor_dropMissing(data.data)
         self.initCombos(self.data)
         self.updateData()
@@ -160,7 +247,7 @@ class OWSieveDiagram(OWWidget):
         if self.data == None : return
 
         self.showLines = self.showLinesCB.isOn()
-        self.kvoc = float(str(self.kvocCombo.currentText()))
+        #self.kvoc = float(str(self.kvocCombo.currentText()))
         
         attrX = str(self.attrX.currentText())
         attrY = str(self.attrY.currentText())
@@ -204,8 +291,7 @@ class OWSieveDiagram(OWWidget):
                 valy = valsY[j]
 
                 actualProb = 0
-                for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]:
-                    actualProb += val
+                for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actualProb += val
                 probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, total)
        
         # get text width of Y attribute name        
@@ -247,8 +333,9 @@ class OWSieveDiagram(OWWidget):
                 rect.show()
                 self.rects.append(rect)
 
-                if criteriaText == "Attribute independence":  self.addRectIndependence(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
-                elif criteriaText == "Attribute independence (Pearson residuals)": self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                #if criteriaText == "Attribute independence":  self.addRectIndependence(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                #elif criteriaText == "Attribute independence (Pearson residuals)": self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                if criteriaText == "Attribute independence (Pearson residuals)": self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
                 self.addTooltip(currX+1, currY+1, width-2, height-2, (xAttr, xVal),(yAttr, yVal), actual, sum, chisquare)
 
                 currY += height
@@ -282,7 +369,7 @@ class OWSieveDiagram(OWWidget):
 
         self.canvas.update()
 
-
+    """
     ######################################################################
     ## show deviations from attribute independence
     def addRectIndependence(self, rect, x, y, w, h, (xAttr, xVal), (yAttr, yVal), actual, sum):
@@ -309,7 +396,7 @@ class OWSieveDiagram(OWWidget):
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
         if self.showLines == 1 and actualProb > 0 and independentProb > 0: self.addLines(x,y,w,h, independentProb/actualProb, pen)
-
+    """
 
     ######################################################################
     ## show deviations from attribute independence with standardized pearson residuals
