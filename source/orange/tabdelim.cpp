@@ -384,7 +384,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
 
         const char *ceni = atom.c_str();
         if (   !*ceni
-            || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*'))
+            || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
             || (atom == "NA"))
           continue;
 
@@ -393,7 +393,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
           (*wi).suspectedType = 2;
 
         // If the attribute is a digit, it can be anything
-        if ((!*ceni) && (*ceni>='0') && (*ceni<='9'))
+        if ((!ceni[1]) && (*ceni>='0') && (*ceni<='9'))
           continue;
 
         // If it is longer than one character, it cannot be a coded discrete
@@ -409,6 +409,8 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
         // If the attribute cannot be converted into a number, it is enum
         char *eptr;
         strtod(numTest, &eptr);
+        while (*eptr==32)
+          eptr++;
         if (*eptr) {
           if ((*wi).posInDomain<0)
             metas[-(*wi).posInDomain - 1].varType = TValue::INTVAR;
