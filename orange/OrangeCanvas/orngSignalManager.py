@@ -95,7 +95,6 @@ class SignalManager:
         # no need to update topology, just remove the link
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
-                print "removing link ", widgetFrom , widgetTo, signalNameFrom, signalNameTo
                 self.send(widgetFrom, signalNameFrom, None, None)
                 self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
 
@@ -130,12 +129,12 @@ class SignalManager:
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
                 # DEBUG:
-                print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
+                #print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
                 widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id)
                 
 
         if not self.freezing and not self.signalProcessingInProgress:
-            print "processing new signals"
+            #print "processing new signals"
             self.processNewSignals(widgetFrom)
 
     # when a new link is created, we have to 

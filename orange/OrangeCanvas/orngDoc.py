@@ -90,8 +90,8 @@ class SchemaDoc(QMainWindow):
             self.signalManager.setFreeze(1)
             signals = dialog.getLinks()
             for (outName, inName) in signals:
-                widgets = inWidget.instance.removeExistingSingleLink(inName)
-                for widget in  widgets:
+                widget = inWidget.instance.removeExistingSingleLink(inName)
+                if widget:
                     existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
                     existingOutName = None
                     for (outN, inN) in existingSignals:
@@ -140,9 +140,8 @@ class SchemaDoc(QMainWindow):
             
         for (outName, inName) in signals:
             if (outName, inName) not in newSignals:
-                widgets = line.inWidget.instance.removeExistingSingleLink(inName)
-                for widget in  widgets:
-                    self.removeWidgetSignal(widget, line.inWidget.instance, outName, inName)
+                line.inWidget.instance.removeInputConnection(line.outWidget.instance, inName)
+                self.removeWidgetSignal(line.outWidget.instance, line.inWidget.instance, outName, inName)
                 signals.remove((outName, inName))
         
         connected = []
