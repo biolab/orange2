@@ -66,6 +66,8 @@ def SgnRelStress(correct, current, weight=1):
     d = current-correct
     return weight*d/max(1e-6,correct)
 
+default_stress = SgnRelStress
+
 class MDS:
     # initialize with a dissimilarity matrix
     def __init__(self, dissimilarity_matrix, dimensions = 2):
@@ -96,7 +98,7 @@ class MDS:
                     self.dist[j][i] = s
 
     
-    def getStress(self,stressf=SgnRelStress):
+    def getStress(self,stressf=default_stress):
         self.getDistance()        
         self.stress = resize(array([0.0]),(self.n,self.n))
         self.arr = []
@@ -332,7 +334,7 @@ class WMDS(MDS):
         self.M = matrixmultiply(generalized_inverse(T),transpose(V))
         #print self.M
 
-    def getStress(self,stressf=SgnRelStress):
+    def getStress(self,stressf=default_stress):
         self.getDistance()        
         self.stress = resize(array([0.0]),(self.n,self.n))
         self.arr = []
