@@ -11,6 +11,85 @@ from OWTools import *
 from qwt import *
 from Numeric import *
 
+class subBarQwtPlotCurve(QwtPlotCurve):
+    def __init__(self, parent = None, text = None):
+        QwtPlotCurve.__init__(self, parent, text)
+        self.color = Qt.black
+
+    def draw(self, p, xMap, yMap, f, t):
+        p.setBackgroundMode(Qt.OpaqueMode)
+        p.setBackgroundColor(self.color)
+        p.setBrush(self.color)
+        p.setPen(Qt.black)
+        if t < 0: t = self.dataSize() - 1
+        if divmod(f, 2)[1] != 0: f -= 1
+        if divmod(t, 2)[1] == 0:  t += 1
+        for i in range(f, t+1, 2):
+            px1 = xMap.transform(self.x(i))
+            py1 = yMap.transform(self.y(i))
+            px2 = xMap.transform(self.x(i+1))
+            py2 = yMap.transform(self.y(i+1))
+            p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
+
+class errorBarQwtPlotCurve(QwtPlotCurve):
+    def __init__(self, parent = None, text = None, connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
+        QwtPlotCurve.__init__(self, parent, text)
+        self.connectPoints = connectPoints
+        self.tickXw = tickXw
+        self.tickYw = tickYw
+        self.showVerticalErrorBar = showVerticalErrorBar
+        self.showHorizontalErrorBar = showHorizontalErrorBar
+
+    def draw(self, p, xMap, yMap, f, t):
+        self.setPen( self.symbol().pen() )
+        p.setPen( self.symbol().pen() )
+        if self.style() == QwtCurve.UserCurve:
+            p.setBackgroundMode(Qt.OpaqueMode)
+            if t < 0: t = self.dataSize() - 1
+
+            if divmod(f, 3)[1] != 0: f -= f % 3
+            if divmod(t, 3)[1] == 0:  t += 1
+            first = 1
+            for i in range(f, t+1, 3):
+                px = xMap.transform(self.x(i))
+                py = yMap.transform(self.y(i))
+
+                if self.showVerticalErrorBar:
+                    vbxl = xMap.transform(self.x(i) - self.tickXw/2.0)
+                    vbxr = xMap.transform(self.x(i) + self.tickXw/2.0)
+
+                    vbyt = yMap.transform(self.y(i + 1))
+                    vbyb = yMap.transform(self.y(i + 2))
+
+                if self.showHorizontalErrorBar:
+                    hbxl = xMap.transform(self.x(i + 1))
+                    hbxr = xMap.transform(self.x(i + 2))
+
+                    hbyt = yMap.transform(self.y(i) + self.tickYw/2.0)
+                    hbyb = yMap.transform(self.y(i) - self.tickYw/2.0)
+
+                if self.connectPoints:
+                    if first:
+                        first = 0
+                    else:
+                        p.drawLine(ppx, ppy, px, py)
+                    ppx = px
+                    ppy = py
+
+                if self.showVerticalErrorBar:
+                    p.drawLine(px,   vbyt, px,   vbyb)   ## |
+                    p.drawLine(vbxl, vbyt, vbxr, vbyt) ## T
+                    p.drawLine(vbxl, vbyb, vbxr, vbyb) ## _
+
+                if self.showHorizontalErrorBar:
+                    p.drawLine(hbxl, py,   hbxr, py)   ## -
+                    p.drawLine(hbxl, hbyt, hbxl, hbyb) ## |-
+                    p.drawLine(hbxr, hbyt, hbxr, hbyb) ## -|
+
+                self.symbol().draw(p, px, py)
+        else:
+            QwtPlotCurve.draw(self, p, xMap, yMap, f, t)
+
 class DiscreteAxisScaleDraw(QwtScaleDraw):
     def __init__(self, labels):
         apply(QwtScaleDraw.__init__, (self,))
@@ -70,6 +149,7 @@ class OWGraph(QwtPlot):
     def saveToFile(self):
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
         fileName = str(qfileName)
+        if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()

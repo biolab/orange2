@@ -48,6 +48,7 @@ AUC (area under ROC curve), and Brier score.
         self.addInput("cdata")
         self.addInput("learner", FALSE)
         self.addInput("classifier", FALSE)
+        self.addOutput("results")
 
         # Settings
         self.sampleMethod = 0               # cross validation
@@ -144,7 +145,6 @@ AUC (area under ROC curve), and Brier score.
             for k in self.learnDict.keys():
                 self.learners.append(self.learnDict[k])
 
-            print 'xxx 0'
             if self.sampleMethod==0:
                 res = orngTest.crossValidation(self.learners, self.data, folds=self.nFolds, strat=1)
             elif self.sampleMethod==1:
@@ -161,7 +161,8 @@ AUC (area under ROC curve), and Brier score.
             # orngStat.AROCFromCDT(cdt[i])[7])
 
             self.setStatTable()
-            
+
+            self.send("results", res)
         except Exception, msg:
             QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 

@@ -19,27 +19,7 @@ from OWWidget import *
 from OWDistributionsOptions import *
 from OWGraph import *
 
-class subBarQwtPlotCurve(QwtPlotCurve):
-    def __init__(self, parent = None, text = None):
-        QwtPlotCurve.__init__(self, parent, text)
-        self.color = Qt.black
-
-    def draw(self, p, xMap, yMap, f, t):
-        p.setBackgroundMode(Qt.OpaqueMode)
-        p.setBackgroundColor(self.color)
-        p.setBrush(self.color)
-        p.setPen(Qt.black)
-        if t < 0: t = self.dataSize() - 1
-        if divmod(f, 2)[1] != 0: f -= 1
-        if divmod(t, 2)[1] == 0:  t += 1
-        for i in range(f, t+1, 2):
-            px1 = xMap.transform(self.x(i))
-            py1 = yMap.transform(self.y(i))
-            px2 = xMap.transform(self.x(i+1))
-            py2 = yMap.transform(self.y(i+1))
-            p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
-
-class errorBarQwtPlotCurve(QwtPlotCurve):
+class distribErrorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
         QwtPlotCurve.__init__(self, parent, text)
 
@@ -113,7 +93,7 @@ distribution of classes for each attribute.
         self.outcomenames = []
         self.probGraphValues = []
 
-        curve = errorBarQwtPlotCurve(self.graph, '')
+        curve = distribErrorBarQwtPlotCurve(self.graph, '')
         self.probCurveKey = self.graph.insertCurve(curve)
         self.graph.setCurveXAxis(self.probCurveKey, QwtPlot.xBottom)
         self.graph.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
@@ -357,7 +337,7 @@ distribution of classes for each attribute.
                     currentBarsHeight[cn] += subBarHeight
                     cn += 1
 
-        curve = errorBarQwtPlotCurve(self.graph, '')
+        curve = distribErrorBarQwtPlotCurve(self.graph, '')
         self.probCurveKey = self.graph.insertCurve(curve)
         self.graph.setCurveXAxis(self.probCurveKey, QwtPlot.xBottom)
         self.graph.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
