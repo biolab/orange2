@@ -253,8 +253,7 @@ class OWScatterPlot(OWWidget):
         attributeNameOrder.sort()
 
         if len(attributeNameOrder) > 1000:
-            print "Warning. Since there were too many attributes, all but best 1000 attributes were removed."
-            self.warning("Warning. Since there were too many attributes, all but best 1000 attributes were removed.")
+            self.warning("Since there were too many attributes, all but best 1000 attributes were removed.")
             attributeNameOrder = attributeNameOrder[:1000]
 
         projections = []
