@@ -110,13 +110,14 @@ class OWScatterPlotGraph(OWVisGraph):
             self.setXlabels(getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)
-        else: self.setAxisAutoScale(QwtPlot.xBottom)
+        else: self.setXlabels(None)
+            
 
         if self.rawdata.domain[yAttr].varType != orange.VarTypes.Continuous:
             self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
-        else: self.setAxisAutoScale(QwtPlot.yLeft)
+        else: self.setYLlabels(None)
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
