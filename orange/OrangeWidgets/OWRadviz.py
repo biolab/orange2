@@ -44,7 +44,6 @@ class OWRadviz(OWWidget):
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
-        self.optimizedList = []
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -110,6 +109,9 @@ class OWRadviz(OWWidget):
         self.attrKNeighbour = QComboBox(self.hbox2)
 
         self.interestingprojectionsDlg = InterestingProjections(None)
+        self.interestingprojectionsDlg.parentName = "ScatterPlot"
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
+        
         self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
         self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
 
@@ -188,6 +190,7 @@ class OWRadviz(OWWidget):
 
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
@@ -215,17 +218,19 @@ class OWRadviz(OWWidget):
             if list == []: return
 
             # fill the "interesting visualizations" list box
-            self.optimizedList = []
+            self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                (val, list) = max(fullList)
-                self.optimizedList.append((val, list))
-                fullList.remove((val, list))
-                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                ((acc, val), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
+                fullList.remove(((acc, val), list))
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(acc, val, str(list)))  
                 
             self.shownAttribsLB.clear()
             for item in list:
                 self.shownAttribsLB.insertItem(item)
+
+            self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
             self.updateGraph()
 
     # #############################################
@@ -240,17 +245,19 @@ class OWRadviz(OWWidget):
             if list == []: return
             
             # fill the "interesting visualizations" list box
-            self.optimizedList = []
+            self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                (val, list) = max(fullList)
-                self.optimizedList.append((val, list))
-                fullList.remove((val, list))
-                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                ((acc, val), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
+                fullList.remove(((acc, val), list))
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(acc, val, str(list)))  
                 
             self.shownAttribsLB.clear()
             for item in list:
                 self.shownAttribsLB.insertItem(item)
+
+            self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
             self.updateGraph()
 
     # ####################################
@@ -258,7 +265,17 @@ class OWRadviz(OWWidget):
     def showSelectedAttributes(self):
         if self.interestingprojectionsDlg.interestingList.count() == 0: return
         index = self.interestingprojectionsDlg.interestingList.currentItem()
-        (val, list) = self.optimizedList[index]
+        ((acc, val), list) = self.interestingprojectionsDlg.optimizedList[index]
+
+        attrNames = []
+        for attr in self.data.domain:
+            attrNames.append(attr.name)
+        
+        for item in list:
+            if not item in attrNames:
+                print "invalid settings"
+                return
+        
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
         for attr in list: self.shownAttribsLB.insertItem(attr)

@@ -4,6 +4,7 @@
 # the base for scatterplot
 
 from OWVisGraph import *
+import time
 
 
 ###########################################################################################
@@ -127,7 +128,7 @@ class OWScatterPlotGraph(OWVisGraph):
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete:
             discreteY = 1
             attrYIndices = self.getVariableValueIndices(self.rawdata, yAttr)
-        
+
         self.curveKeys = []
         for i in range(len(self.rawdata)):
             if self.rawdata[i][xAttr].isSpecial() == 1: continue
@@ -231,7 +232,9 @@ class OWScatterPlotGraph(OWVisGraph):
         fullList = []
         tempValue= 0
         testIndex = 0
-        totalTestCount = attrCount * (attrCount-1) / 2.0
+        totalTestCount = attrCount * (attrCount-1) / 2
+        print "---------------------"
+        print "total possibilities: ", str(totalTestCount)
 
         # variables and domain for the table
         xVar = orange.FloatVariable("xVar")
@@ -240,6 +243,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
         classValues = list(self.rawdata.domain[className].values)
         classValNum = len(classValues)
+        t = time.time()
 
         for x in range(attrCount):
             for y in range(x+1, attrCount):
@@ -277,12 +281,14 @@ class OWScatterPlotGraph(OWVisGraph):
                     index = classValues.index(table[i].getclass().value)
                     tempValue += float(prob[index])/float(sum)
 
-                print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (testIndex, totalTestCount, tempValue, tempValue*100.0/float(len(table)) )
+                print "possibility %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (testIndex, totalTestCount, tempValue, tempValue*100.0/float(len(table)) )
 
                 # save the permutation
                 tempList = [self.attributeNames[x], self.attributeNames[y]]
-                fullList.append((tempValue*100.0/float(len(table)), tempList))
+                fullList.append(((tempValue*100.0/float(len(table)), len(table)), tempList))
 
+        secs = time.time() - t
+        print "Used time: %d min, %d sec" %(secs/60, secs%60)
         # return best permutation
         (bestVal, bestList) = max(fullList)
         return (bestList, bestVal, fullList)

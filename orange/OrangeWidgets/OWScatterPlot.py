@@ -22,7 +22,7 @@ from OWVisTools import *
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "jitteringType", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "kNeighbours"]
     spreadType=["none","uniform","triangle","beta"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
@@ -33,8 +33,6 @@ class OWScatterPlot(OWWidget):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
         apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)) 
 
-        
-       
         #set default settings
         self.pointWidth = 7
         self.kNeighbours = 1 
@@ -130,6 +128,9 @@ class OWScatterPlot(OWWidget):
         self.attrKNeighbour = QComboBox(self.hbox2)
 
         self.interestingprojectionsDlg = InterestingProjections(None)
+        self.interestingprojectionsDlg.parentName = "ScatterPlot"
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
+        
         self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
         self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         self.connect(self.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
@@ -263,6 +264,7 @@ class OWScatterPlot(OWWidget):
 
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
 
     # ####################################
     # find optimal class separation for shown attributes
@@ -273,20 +275,29 @@ class OWScatterPlot(OWWidget):
             if list == []: return
 
             # fill the "interesting visualizations" list box
-            self.optimizedList = []
+            self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                (val, list) = max(fullList)
-                self.optimizedList.append((val, list))
-                fullList.remove((val, list))
-                self.interestingprojectionsDlg.interestingList.insertItem("%.2f - %s"%(val, str(list)))  
+                ((acc, val), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
+                fullList.remove(((acc, val), list))
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %1.f) - %s"%(acc, val, str(list)))  
                 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
 
     def showSelectedAttributes(self):
         if self.interestingprojectionsDlg.interestingList.count() == 0: return
         index = self.interestingprojectionsDlg.interestingList.currentItem()
-        (val, list) = self.optimizedList[index]
+        (val, list) = self.interestingprojectionsDlg.optimizedList[index]
+
+        attrNames = []
+        for attr in self.data.domain:
+            attrNames.append(attr.name)
+        
+        for item in list:
+            if not item in attrNames:
+                print "invalid settings"
+                return
 
         self.setText(self.attrX, list[0])
         self.setText(self.attrY, list[1])
@@ -403,6 +414,7 @@ class OWScatterPlot(OWWidget):
             return
         
         #self.data = orange.Preprocessor_dropMissing(data.data)
+        self.interestingprojectionsDlg.clear()
         self.data = data.data
         self.initAttrValues()
         self.graph.setData(self.data)

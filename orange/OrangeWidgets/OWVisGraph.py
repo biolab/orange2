@@ -289,9 +289,15 @@ class OWVisGraph(OWGraph):
         text = ""
         for i in range(len(data.domain)):
             if data.domain[i].varType == orange.VarTypes.Discrete:
-                text = "%s%s = %s ; " % (text, data.domain[i].name, str(example[i].value))
+                if example[i].isSpecial():
+                    text = "%s%s = ?; " % (text, data.domain[i].name)
+                else:
+                    text = "%s%s = %s; " % (text, data.domain[i].name, str(example[i].value))
             else:
-                text = "%s%s = %.3f ; " % (text, data.domain[i].name, example[i].value)
+                if example[i].isSpecial():
+                    text = "%s%s = ?; " % (text, data.domain[i].name)
+                else:
+                    text = "%s%s = %.3f; " % (text, data.domain[i].name, example[i].value)
         return text
 
     

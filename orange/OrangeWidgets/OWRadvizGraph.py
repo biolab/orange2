@@ -65,7 +65,7 @@ class OWRadvizGraph(OWVisGraph):
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setTickLength(1, 1, 0)
         
-        self.setAxisScale(QwtPlot.xBottom, -1.1, 1.1, 1)
+        self.setAxisScale(QwtPlot.xBottom, -1.2, 1.2, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.1, 1.1, 1)
 
         length = len(labels)
@@ -115,7 +115,7 @@ class OWRadvizGraph(OWVisGraph):
         # draw text at anchors
         for i in range(length):
             mkey = self.insertMarker(labels[i])
-            self.marker(mkey).setXValue(anchors[0][i]*1.04)
+            self.marker(mkey).setXValue(anchors[0][i]*1.1)
             self.marker(mkey).setYValue(anchors[1][i]*1.04)
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
 
@@ -343,7 +343,7 @@ class OWRadvizGraph(OWVisGraph):
             tempList = []
             for i in permutation:
                 tempList.append(self.attributeNames[i])
-            fullList.append((tempPermValue*100.0/float(len(table)), tempList))
+            fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList))
 
         # return best permutation
         retList = []

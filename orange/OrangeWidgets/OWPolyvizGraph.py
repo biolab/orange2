@@ -437,7 +437,7 @@ class OWPolyvizGraph(OWVisGraph):
                 tempList = []
                 for i in permutation:
                     tempList.append(self.attributeNames[i])
-                fullList.append((tempPermValue*100.0/float(len(table)), tempList, attrOrder))
+                fullList.append(((tempPermValue*100.0/float(len(table)), len(table)), tempList, attrOrder))
 
         return fullList
                 

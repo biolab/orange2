@@ -44,7 +44,6 @@ class OWPolyviz(OWWidget):
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
-        self.optimizedList = []
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
         
         self.graphCanvasColor = str(Qt.white.name())
@@ -113,6 +112,9 @@ class OWPolyviz(OWWidget):
 
 
         self.interestingprojectionsDlg = InterestingProjections(None)
+        self.interestingprojectionsDlg.parentName = "ScatterPlot"
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
+        
         self.connect(self.interestingProjectionsButton, SIGNAL("clicked()"), self.interestingprojectionsDlg.show)
         self.connect(self.interestingprojectionsDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
 
@@ -213,6 +215,7 @@ class OWPolyviz(OWWidget):
 
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
+        self.interestingprojectionsDlg.kValue = self.kNeighbours
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
@@ -244,13 +247,13 @@ class OWPolyviz(OWWidget):
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
-            self.optimizedList = []
+            self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                (val, list, reverse) = max(fullList)
-                fullList.remove((val, list, reverse))
-                self.interestingProjectionsAddItem(val, list, reverse)
-                self.optimizedList.append((val, list, reverse))
+                ((acc, val), list, reverse) = max(fullList)
+                fullList.remove(((acc, val), list, reverse))
+                self.interestingProjectionsAddItem(acc, val, list, reverse)
+                self.interestingprojectionsDlg.optimizedList.append((acc, val, list, reverse))
 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
             self.showSelectedAttributes()
@@ -271,18 +274,18 @@ class OWPolyviz(OWWidget):
             if fullList == []: return
             
             # fill the "interesting visualizations" list box
-            self.optimizedList = []
+            self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                (val, list, reverse) = max(fullList)
-                fullList.remove((val, list, reverse))
-                self.interestingProjectionsAddItem(val, list, reverse)
-                self.optimizedList.append((val, list, reverse))
+                ((acc, val), list, reverse) = max(fullList)
+                fullList.remove(((acc, val), list, reverse))
+                self.interestingProjectionsAddItem(acc, val, list, reverse)
+                self.interestingprojectionsDlg.optimizedList.append((acc, val, list, reverse))
                 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
     
-    def interestingProjectionsAddItem(self, val, attrList, reverse):
-        str = "%.2f - [" %(val)
+    def interestingProjectionsAddItem(self, acc, val, attrList, reverse):
+        str = "(%.2f, %d) - [" %(acc, val)
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
                 str += attrList[i] + "-, "
@@ -298,7 +301,18 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         if self.interestingprojectionsDlg.interestingList.count() == 0: return
         index = self.interestingprojectionsDlg.interestingList.currentItem()
-        (val, list, reverse) = self.optimizedList[index]
+        (acc, val, list, reverse) = self.interestingprojectionsDlg.optimizedList[index]
+
+        # check if all attributes in list really exist in domain        
+        attrNames = []
+        for attr in self.data.domain:
+            attrNames.append(attr.name)
+        
+        for item in list:
+            if not item in attrNames:
+                print "invalid settings"
+                return
+        
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
