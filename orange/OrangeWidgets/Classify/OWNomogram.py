@@ -263,9 +263,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                                 # compute error of loess in logistic space
                                 standard_error= math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.TargetClassIndex])
                          #       print "predse", standard_error, math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.notTargetClassIndex])
+                                lbconditional0 = max(conditional0-standard_error, aproxZero)
+                                lbconditional1 = max(conditional1-standard_error, aproxZero)
                                 
                                 # se = sqrt((log(P(c|a)+st_error / 1-P(c|a)-st_error) - log(P(c|a)-st_error / 1-P(c|a)+st_error))^2 + priorError^2)
-                                se = math.sqrt(math.pow(math.log((conditional0+standard_error)/(conditional1-standard_error)/(conditional0-standard_error)*(conditional1+standard_error)),2)+math.pow(priorError,2))
+                                se = math.sqrt(math.pow(math.log((conditional0+standard_error)/lbconditional1/lbconditional0*(conditional1+standard_error)),2)+math.pow(priorError,2))
                                 # add value to set of values                                
                                 a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)),
                                                        math.log(conditional0/conditional1/prior),
@@ -370,10 +372,16 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         else:
             mult = 1
 
-        visualizer = orngLinVis.Visualizer(self.data, cl, buckets=1, dimensions=1)
-        beta_from_cl = self.cl.estimator.classifier.classifier.beta[0] - self.cl.estimator.translator.trans[0].disp*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
-        beta_from_cl = mult*beta_from_cl
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/visualizer.probfunc(0.0))-1), 0))
+        try:
+            visualizer = orngLinVis.Visualizer(self.data, cl, buckets=1, dimensions=1)
+            beta_from_cl = self.cl.estimator.classifier.classifier.beta[0] - self.cl.estimator.translator.trans[0].disp*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
+            beta_from_cl = mult*beta_from_cl
+        except:
+            QMessageBox("orngLinVis.Visualizer error", str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]), QMessageBox.Warning,
+                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+            return
+        
+        self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
 
         # get maximum and minimum values in visualizer.m        
         maxMap = reduce(Numeric.maximum, visualizer.m)
@@ -408,7 +416,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                     minNew = bas[c[0]].min
 
                 # transform SVM betas to betas siutable for nomogram
-                beta = ((maxMap[coeff]-minMap[coeff])/(maxNew-minNew))*visualizer.coeffs[coeff]
+                if maxNew == minNew:
+                    beta = ((maxMap[coeff]-minMap[coeff])/aproxZero)*visualizer.coeffs[coeff]
+                else:
+                    beta = ((maxMap[coeff]-minMap[coeff])/(maxNew-minNew))*visualizer.coeffs[coeff]
                 n = -minNew+minMap[coeff]
                 
                 numOfPartitions = 50
