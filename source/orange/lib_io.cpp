@@ -162,7 +162,7 @@ PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyOb
 
 int pt_ExampleGenerator(PyObject *args, void *egen);
 
-void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t');
+void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t', bool listDiscreteValues = true);
 void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t');
 
 
@@ -178,7 +178,7 @@ FILE *openExtended(const char *filename, const char *defaultExtension)
   return ostr;
 }
 
-PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool skipAttrTypes, char delim)
+PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool skipAttrTypes, char delim, bool listDiscreteValues = true)
 { PyTRY
     char *filename;
     PExampleGenerator gen;
@@ -190,7 +190,7 @@ PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool 
     if (!ostr)
       return PYNULL;
 
-    tabDelim_writeDomain(ostr, gen->domain, skipAttrTypes, delim);
+    tabDelim_writeDomain(ostr, gen->domain, skipAttrTypes, delim, listDiscreteValues);
     tabDelim_writeExamples(ostr, gen, delim);
     fclose(ostr);
 
@@ -199,9 +199,16 @@ PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool 
 }
 
 
-PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename, examples[, listDiscreteValues=1]) -> None")
 {
-  return tabDelimBasedWrite(args, "tab", false, '\t');
+  bool listDiscrete = true;
+
+  if (keyws) {
+    PyObject *ldv = PyDict_GetItemString(keyws, "listDiscreteValues");
+    listDiscrete = !ldv || (PyObject_IsTrue(ldv)!=0);
+  }
+
+  return tabDelimBasedWrite(args, "tab", false, '\t', listDiscrete);
 }
 
 PyObject *saveTxt(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")

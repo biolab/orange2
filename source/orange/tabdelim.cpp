@@ -853,14 +853,14 @@ string escSpaces(const string &s)
   return res;
 }
     
-void printVarType(FILE *file, PVariable var)
+void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
 {
   TEnumVariable *enumv;
   var.dynamic_cast_to(enumv);
   if (enumv) {
     TValue val;
     string sval;
-    if (!enumv->firstValue(val))
+    if (!enumv->firstValue(val) || !listDiscreteValues)
       fprintf(file, "d");
     else {
       enumv->val2str(val, sval); 
@@ -880,7 +880,7 @@ void printVarType(FILE *file, PVariable var)
 }
 
 
-void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
+void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, bool listDiscreteValues)
 { 
   TVarList::const_iterator vi, vb(dom->variables->begin()), ve(dom->variables->end());
   TMetaVector::const_iterator mi, mb(dom->metas.begin()), me(dom->metas.end());
@@ -902,11 +902,11 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
   ho = false;
   for(vi = vb; vi!=ve; vi++) {
     PUTDELIM;
-    printVarType(file, *vi);
+    printVarType(file, *vi, listDiscreteValues);
   }
   for(mi = mb; mi!=me; mi++) {
     PUTDELIM;
-    printVarType(file, (*mi).variable);
+    printVarType(file, (*mi).variable, listDiscreteValues);
   }
   fprintf(file, "\n");
 
@@ -997,9 +997,9 @@ void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
 }
 
 
-void tabDelim_writeDomain(FILE *file, PDomain dom, bool autodetect, char delim)
+void tabDelim_writeDomain(FILE *file, PDomain dom, bool autodetect, char delim, bool listDiscreteValues)
 { if (autodetect)
     tabDelim_writeDomainWithDetection(file, dom, delim);
   else 
-    tabDelim_writeDomainWithoutDetection(file, dom, delim);
+    tabDelim_writeDomainWithoutDetection(file, dom, delim, listDiscreteValues);
 }
