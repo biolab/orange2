@@ -20,6 +20,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.enabledLegend = 0
         self.showFilledSymbols = 1
         self.showAttributeValues = 1
+        self.percentDataUsed = 100
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
@@ -297,16 +298,22 @@ class OWScatterPlotGraph(OWVisGraph):
                 # to bo delalo, ko bo popravljen orangov kNNLearner
                 classValues = list(self.rawdata.domain[className].values)
                 knn = orange.kNNLearner(table, k=kNeighbours)
+                selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
+                experiments = 0
+                for i in range(len(table)):
+                    if selection[i] == 1: experiments += 1
+                    
                 for j in range(len(table)):
+                    if selection[j] == 0: continue
                     out = knn(table[j], orange.GetProbabilities)
                     index = classValues.index(table[j][2].value)
                     tempValue += out[index]
 
-                print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(len(table)) )
+                print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(experiments) )
 
                 # save the permutation
                 tempList = [self.attributeNames[x], self.attributeNames[y]]
-                fullList.append((tempValue*100.0/float(len(table)), len(table), tempList))
+                fullList.append((tempValue*100.0/float(experiments), len(table), tempList))
 
         print "------------------------------"
         secs = time.time() - t

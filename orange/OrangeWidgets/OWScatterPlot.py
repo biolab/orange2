@@ -271,6 +271,7 @@ class OWScatterPlot(OWWidget):
     def optimizeSeparation(self):
         if self.data != None:
             self.graph.scaleDataNoJittering()
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours, self.updateProgress)
             if fullList == []: return
 
@@ -282,6 +283,7 @@ class OWScatterPlot(OWWidget):
                 fullList.remove((accuracy, tableLen, list))
                 
             self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
             self.optimizationDlg.interestingList.setCurrentItem(0)
 
     #update status on progress bar - gets called by OWScatterplotGraph
