@@ -9,8 +9,8 @@ data = orange.ExampleTable("measure-c")
 
 data2 = orange.ExampleTable(data)
 nulls = [(0, 1, 24, 25), (24, 25), range(24, 34), (24, 25)]
-for attr, li in enumerate(nulls):
-    for e in li:
+for attr in range(len(nulls)):
+    for e in nulls[attr]:
         data2[e][attr]="?"
 
 names = [a.name for a in data.domain.attributes]

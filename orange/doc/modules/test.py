@@ -50,8 +50,8 @@ printResults(res)
 print "\nLearning curve"
 prop = orange.frange(0.2, 1.0, 0.2)
 res = orngTest.learningCurveN(learners, data, folds = 5, proportions = prop)
-for i, p in enumerate(prop):
-    print "%5.3f:" % p,
+for i in range(len(prop)):
+    print "%5.3f:" % prop[i],
     printResults(res[i])
 
 print "\nLearning curve with pre-separated data"
@@ -59,8 +59,8 @@ indices = orange.MakeRandomIndices2(data, p0 = 0.7)
 train = data.select(indices, 0)
 test = data.select(indices, 1)
 res = orngTest.learningCurveWithTestData(learners, train, test, times = 5, proportions = prop)
-for i, p in enumerate(prop):
-    print "%5.3f:" % p,
+for i in range(len(prop)):
+    print "%5.3f:" % prop[i],
     printResults(res[i])
 
 

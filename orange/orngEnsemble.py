@@ -2,6 +2,11 @@ import orange, math, orngTest, orngStat, random, orngMisc
 from operator import add
 inf = 100000
 
+# This function is built-in in Python 2.3,
+# but we define it to be compatible with 2.2 as well
+def sum(x):
+	return reduce(add, x)
+	
 def BoostedLearner(learner=None, t=10, name='boosted classifier', examples=None):
 	learner = BoostedLearnerClass(learner, t, name)
 	if examples:

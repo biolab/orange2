@@ -10,6 +10,7 @@ import orange
 def show_values(data, heading):
     print heading
     for a in data.domain.attributes:
+        print a.name, a
         print "%s: %s" % (a.name, reduce(lambda x,y: x+', '+y, [i for i in a.values]))
         
 data = orange.ExampleTable("iris")

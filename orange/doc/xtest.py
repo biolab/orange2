@@ -1,6 +1,6 @@
 #! usr/bin/env python
 
-import os, os.path, sys, traceback, datetime
+import os, os.path, sys, traceback, time
 from string import rstrip, zfill
 from operator import add
 from xml.dom import minidom
@@ -8,8 +8,7 @@ import re
 
 docdir = os.getcwd()
 
-date = datetime.date.today()
-date = "%s-%s-%s" % tuple([zfill(i, 2) for i in [date.year % 100, date.month, date.day]])
+date = "%2.2i-%2.2i-%2.2i" % time.localtime()[:3]
 
 def findFileNode(files, name, dir):
     for node in files.childNodes:
