@@ -19,9 +19,9 @@ from OWWidget import *
 from OWDistributionsOptions import *
 from OWGraph import *
 
-class subBarQwtCurve(QwtCurve):
+class subBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
-        QwtCurve.__init__(self, parent, text)
+        QwtPlotCurve.__init__(self, parent, text)
         self.color = Qt.black
 
     def draw(self, p, xMap, yMap, f, t):
@@ -37,12 +37,34 @@ class subBarQwtCurve(QwtCurve):
             py1 = yMap.transform(self.y(i))
             px2 = xMap.transform(self.x(i+1))
             py2 = yMap.transform(self.y(i+1))
-#            print "draw from ", px1, ",", py1, "to", px2, ",", py2
             p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
 
-class subBarQwtPlotCurve(QwtPlotCurve, subBarQwtCurve): # there must be a better way to do this
-    def dummy():
-        None
+class errorBarQwtPlotCurve(QwtPlotCurve):
+    def __init__(self, parent = None, text = None):
+        QwtPlotCurve.__init__(self, parent, text)
+
+    def draw(self, p, xMap, yMap, f, t):
+        self.setPen( self.symbol().pen() )
+        p.setPen( self.symbol().pen() )
+        if self.style() == QwtCurve.UserCurve:
+            p.setBackgroundMode(Qt.OpaqueMode)
+            if t < 0: t = self.dataSize() - 1
+            if divmod(f, 3)[1] != 0: f -= f % 3
+            if divmod(t, 3)[1] == 0:  t += 1
+            for i in range(f, t+1, 3):
+                px = xMap.transform(self.x(i))
+                pxl = xMap.transform(self.x(i) - 0.1)
+                pxr = xMap.transform(self.x(i) + 0.1)
+                py1 = yMap.transform(self.y(i + 0))
+                py2 = yMap.transform(self.y(i + 1))
+                py3 = yMap.transform(self.y(i + 2))
+                p.drawLine(px, py1, px, py3)
+                p.drawLine(pxl, py1, pxr, py1)
+                p.drawLine(pxl, py3, pxr, py3)
+                self.symbol().draw(p, px, py2)
+        else:
+            QwtPlotCurve.draw(self, p, xMap, yMap, f, t)
+
 
 class OWDistributions(OWWidget):
     settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth"]
@@ -90,7 +112,12 @@ distribution of classes for each attribute.
         self.visibleOutcomes = []
         self.outcomenames = []
         self.probGraphValues = []
-        self.probCurveKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
+
+        curve = errorBarQwtPlotCurve(self.graph, '')
+        self.probCurveKey = self.graph.insertCurve(curve)
+        self.graph.setCurveXAxis(self.probCurveKey, QwtPlot.xBottom)
+        self.graph.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
+
         self.probCurveUpperCIKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
         self.probCurveLowerCIKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
         self.graph.curve(self.probCurveKey).setEnabled(FALSE)
@@ -307,13 +334,6 @@ distribution of classes for each attribute.
             keys.sort()
 
         self.graph.removeCurves()
-##        newColor = QColor()
-##        newColor.setHsv(5*360/12, 255, 255)
-##        curve = subBarQwtPlotCurve(self.graph)
-##        curve.setPen(QPen(newColor))
-##        ckey = self.graph.insertCurve(curve)
-##        self.graph.setCurveStyle(ckey, QwtCurve.UserCurve)
-##        self.graph.setCurveData(ckey, [10, 11], [5, 7])
 
         currentBarsHeight = [0] * len(keys)
         for oi in range(len(self.visibleOutcomes)):
@@ -336,18 +356,18 @@ distribution of classes for each attribute.
                         self.graph.setCurveData(ckey, [tmpx, tmpx2], [currentBarsHeight[cn], currentBarsHeight[cn] + subBarHeight])
                     currentBarsHeight[cn] += subBarHeight
                     cn += 1
-        self.probCurveKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
+
+        curve = errorBarQwtPlotCurve(self.graph, '')
+        self.probCurveKey = self.graph.insertCurve(curve)
+        self.graph.setCurveXAxis(self.probCurveKey, QwtPlot.xBottom)
+        self.graph.setCurveYAxis(self.probCurveKey, QwtPlot.yRight)
+
         self.probCurveUpperCIKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
         self.probCurveLowerCIKey = self.graph.insertCurve('', QwtPlot.xBottom, QwtPlot.yRight)
         self.refreshProbGraph()
 
     def refreshProbGraph(self):
         if self.ShowProbabilities:
-            if self.VariableContinuous:
-                newSymbol = QwtSymbol()
-            else:
-                newSymbol = QwtSymbol() #QwtSymbol.Cross, QBrush(Qt.red), QPen(Qt.red), QSize(1,100))
-
             self.graph.enableYRaxis(1)
             xs = []
             ups = []
@@ -357,18 +377,41 @@ distribution of classes for each attribute.
             for (x, ps, cis) in self.probGraphValues:
                 if self.VariableContinuous:
                     xs.append(x)
+                    ups.append(ps[self.targetValue] + cis[self.targetValue])
+                    mps.append(ps[self.targetValue] + 0.0)
+                    lps.append(ps[self.targetValue] - cis[self.targetValue])
                 else:
+                    if self.ShowConfidenceIntervals:
+                        xs.append(cn)
+                        mps.append(ps[self.targetValue] + cis[self.targetValue])
+
                     xs.append(cn)
-                ups.append(ps[self.targetValue] + cis[self.targetValue])
-                mps.append(ps[self.targetValue] + 0.0)
-                lps.append(ps[self.targetValue] - cis[self.targetValue])
+                    mps.append(ps[self.targetValue] + 0.0)
+
+                    if self.ShowConfidenceIntervals:
+                        xs.append(cn)
+                        mps.append(ps[self.targetValue] - cis[self.targetValue])
                 cn += 1.0
+
+            ## (re)set the curves
+            if self.VariableContinuous:
+                newSymbol = QwtSymbol(QwtSymbol.None, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(0,0))
+            else:
+                newSymbol = QwtSymbol(QwtSymbol.Diamond, QBrush(Qt.color0), QPen(Qt.black, 2), QSize(7,7))
 
             self.graph.setCurveData(self.probCurveKey, xs, mps)
             self.graph.setCurveSymbol(self.probCurveKey, newSymbol)
-            if self.ShowConfidenceIntervals:
-                self.graph.setCurveData(self.probCurveUpperCIKey, xs, ups)
-                self.graph.setCurveData(self.probCurveLowerCIKey, xs, lps)
+
+            if self.VariableContinuous:
+                self.graph.setCurveStyle(self.probCurveKey, QwtCurve.Lines)
+                if self.ShowConfidenceIntervals:
+                    self.graph.setCurveData(self.probCurveUpperCIKey, xs, ups)
+                    self.graph.setCurveData(self.probCurveLowerCIKey, xs, lps)
+            else:
+                if self.ShowConfidenceIntervals:
+                    self.graph.setCurveStyle(self.probCurveKey, QwtCurve.UserCurve)
+                else:
+                    self.graph.setCurveStyle(self.probCurveKey, QwtCurve.Dots)
         else:
             self.graph.enableYRaxis(0)
             self.graph.setShowYRaxisTitle(0)
