@@ -17,10 +17,16 @@ class subBarQwtPlotCurve(QwtPlotCurve):
         self.color = Qt.black
 
     def draw(self, p, xMap, yMap, f, t):
+        # save ex settings
+        back = p.backgroundMode()
+        pen = p.pen()
+        brush = p.brush()
+        
         p.setBackgroundMode(Qt.OpaqueMode)
         p.setBackgroundColor(self.color)
         p.setBrush(self.color)
         p.setPen(Qt.black)
+        
         if t < 0: t = self.dataSize() - 1
         if divmod(f, 2)[1] != 0: f -= 1
         if divmod(t, 2)[1] == 0:  t += 1
@@ -30,6 +36,12 @@ class subBarQwtPlotCurve(QwtPlotCurve):
             px2 = xMap.transform(self.x(i+1))
             py2 = yMap.transform(self.y(i+1))
             p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
+
+        # restore ex settings
+        p.setBackgroundMode(back)
+        p.setPen(pen)
+        p.setBrush(brush)
+
 
 class errorBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None, connectPoints = 0, tickXw = 0.1, tickYw = 0.1, showVerticalErrorBar = 1, showHorizontalErrorBar = 0):
@@ -41,9 +53,14 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
         self.showHorizontalErrorBar = showHorizontalErrorBar
 
     def draw(self, p, xMap, yMap, f, t):
+        # save ex settings
+        pen = p.pen()
+        
         self.setPen( self.symbol().pen() )
         p.setPen( self.symbol().pen() )
         if self.style() == QwtCurve.UserCurve:
+            back = p.backgroundMode()
+            
             p.setBackgroundMode(Qt.OpaqueMode)
             if t < 0: t = self.dataSize() - 1
 
@@ -87,8 +104,14 @@ class errorBarQwtPlotCurve(QwtPlotCurve):
                     p.drawLine(hbxr, hbyt, hbxr, hbyb) ## -|
 
                 self.symbol().draw(p, px, py)
+
+            p.setBackgroundMode(back)
         else:
             QwtPlotCurve.draw(self, p, xMap, yMap, f, t)
+
+        # restore ex settings
+        p.setPen(pen)
+        
 
 class DiscreteAxisScaleDraw(QwtScaleDraw):
     def __init__(self, labels):
@@ -153,9 +176,9 @@ class OWGraph(QwtPlot):
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
         ext = ext.upper()
-        saveToFile(fileName, ext)
+        self.saveToFileDirect(fileName, ext)
         
-    def saveToFile(self, fileName, ext):
+    def saveToFileDirect(self, fileName, ext):
         buffer = QPixmap(self.size()) # any size can do, now using the window size
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background
