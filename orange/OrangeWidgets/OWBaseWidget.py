@@ -318,7 +318,7 @@ class OWBaseWidget(QDialog):
             text = ""
             if h > 0: text += "%d h, " % (h)
             text += "%d min, %d sec" %(min, sec)
-            self.setCaption(self.captionTitle + " (%.1f%% complete, remaining time: %s)" % (value, text))
+            self.setCaption(self.captionTitle + " (%.2f%% complete, remaining time: %s)" % (value, text))
         else:
             self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)

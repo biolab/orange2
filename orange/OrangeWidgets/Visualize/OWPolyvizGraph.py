@@ -692,9 +692,7 @@ class OWPolyvizGraph(OWVisGraph):
                             self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
 
                     if self.kNNOptimization.onlyOnePerSubset:
-                        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-                        else: funct = min
-                        (acc, other_results, lenTable, attrList, attrOrder) = funct(tempList)
+                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, attrOrder)
 
     
