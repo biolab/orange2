@@ -100,20 +100,12 @@ Page instfiles
 
 
 Section "Orange Modules"
-    !include 
-	SetOutPath $INSTDIR
-	File ${ORANGEDIR}\*.py
-	File ${ORANGEDIR}\*.pyd
+    !include "files_base.inc"
+    !include "files_widgets.inc"
+    !include "files_canvas.inc"
+
 	SetOutPath $INSTDIR\icons
 	File Orange.ico
-	
-	SetOutPath $INSTDIR\OrangeWidgets
-	File /r ${ORANGEDIR}\OrangeWidgets\*.py
-	File /r ${ORANGEDIR}\OrangeWidgets\*.png
-	SetOutPath $INSTDIR\OrangeCanvas
-	File /r ${ORANGEDIR}\OrangeCanvas\*.py
-	File /r ${ORANGEDIR}\OrangeCanvas\*.png
-
 	SetOutPath $INSTDIR\OrangeCanvas\icons
 	File OrangeOWS.ico
 SectionEnd
@@ -121,6 +113,8 @@ SectionEnd
 
 !ifdef INCLUDEGENOMICS
 Section "Genomic Data"
+    !include "files_genomics.inc"
+    
 	SetOutPath $INSTDIR\doc
 	File "various\Orange Genomics.pdf"
 
@@ -128,10 +122,6 @@ Section "Genomic Data"
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets For Functional Genomics.lnk" "$INSTDIR\doc\Orange Genomics.pdf"
 
-	SetOutPath $INSTDIR\OrangeWidgets\Genomics
-	File /r ${ORANGEDIR}\..\Genomics\GO
-	File /r ${ORANGEDIR}\..\Genomics\Annotation
-	File /r "${ORANGEDIR}\..\Genomics\Genome Map"
 	SetOutPath "$INSTDIR\OrangeCanvas"
 	File various\bi-visprog\*.tab
 	File various\bi-visprog\*.ows
@@ -148,28 +138,22 @@ SectionEnd
 			File "various\Orange White Paper.pdf"
 			File "various\Orange Widgets White Paper.pdf"
 
-			!cd ${ORANGEDIR}\doc
-			SetOutPath $INSTDIR\doc
-			File /r ofb
-			File /r modules
-			File /r reference
-			File style.css
+            !include "files_doc.inc"
+
 			SetOutPath $INSTDIR
-                        CreateDirectory "$SMPROGRAMS\Orange"
+            CreateDirectory "$SMPROGRAMS\Orange"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
-			!cd ${CWD}
-			!echo "CHANGING TO ${CWD}"
 		SectionEnd
 	!endif
   
 	!ifdef INCLUDEDATASETS
 		Section "Datasets"
 			SetOutPath $INSTDIR\doc\datasets
-			File /r ${ORANGEDIR}\doc\datasets\*
+			File ${ORANGEDIR}\doc\datasets\*
 			SectionEnd
 	!endif
 
@@ -186,18 +170,10 @@ SectionEnd
 Section ""
 	SetOutPath $INSTDIR
 	
-	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
-	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
-	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
-	Delete $INSTDIR\OrangeWidgets\Classify\OWCalibratedClassifier.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWExampleBuilder.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWSubsetGenerator.py
-	Delete $INSTDIR\OrangeWidgets\Other\OWITree.py
-	
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
+
 	SetOutPath $INSTDIR\OrangeCanvas
 	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0

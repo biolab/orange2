@@ -1,5 +1,5 @@
 @echo off
-set fhandle=%@FILEOPEN[%DOWNLOADDIR\versions.py, write, t]
+set fhandle=%@FILEOPEN[%DOWNLOADDIR\filenames.set, write, t]
 set foo=%@FILEWRITE[%fhandle,VERSION=%VERSION]
 set foo=%@FILEWRITE[%fhandle,STABLE_DATE=%STABLE_DATE]
 set foo=%@FILEWRITE[%fhandle,WIN=%WIN]
