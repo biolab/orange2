@@ -11,7 +11,7 @@ dlg_clear = dir + "Dlg_clear.png"
 dlg_send = dir + "Dlg_send.png"
 
 def createButton(parent, text, action = None, icon = None, toggle = 0):
-    btn = QPushButton(text, parent)
+    btn = QToolButton(parent)
     btn.setToggleButton(toggle)
     if action: parent.connect(btn, SIGNAL("clicked()"), action)
     if icon:   btn.setPixmap(icon)
