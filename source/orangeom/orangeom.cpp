@@ -45,3 +45,5 @@ void gcUnsafeStaticInitialization()
 {}
 
 #include "px/initialization.px"
+
+/* se en komentar */
