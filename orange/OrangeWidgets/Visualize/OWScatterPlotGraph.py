@@ -127,6 +127,7 @@ class OWScatterPlotGraph(OWVisGraph):
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
             colorIndex = self.attributeNames.index(colorAttr)
+            colorIndices = getVariableValueIndices(self.rawdata, colorIndex)
             
         shapeIndex = -1
         shapeIndices = {}
@@ -265,8 +266,7 @@ class OWScatterPlotGraph(OWVisGraph):
             # ##############################################################
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not self.subsetData:
                 if colorIndex != -1:
-                    classIndices = getVariableValueIndices(self.rawdata, colorAttr)
-                    classCount = len(classIndices)
+                    classCount = len(colorIndices)
                     classColors = ColorPaletteHSV(classCount)
                 else: classCount = 1
                     
@@ -282,7 +282,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                    if colorIndex != -1: index = classIndices[self.rawdata[i][colorIndex].value]
+                    if colorIndex != -1: index = colorIndices[self.rawdata[i][colorIndex].value]
                     else: index = 0
                     pos[index][0].append(x)
                     pos[index][1].append(y)
@@ -320,8 +320,10 @@ class OWScatterPlotGraph(OWVisGraph):
                     selected = 1
                     if self.subsetData != None and self.rawdata[i] not in self.subsetData: selected = 0
 
-                    newColor = QColor(0,0,0)
-                    if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
+                    if colorIndex != -1:
+                        if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
+                        else: newColor = classColors[colorIndices[self.rawdata[i][colorIndex].value]]
+                    else: newColor = QColor(0,0,0)
                             
                     Symbol = self.curveSymbols[0]
                     if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
@@ -340,7 +342,6 @@ class OWScatterPlotGraph(OWVisGraph):
                 # if we have a data subset that contains examples that don't exist in the original dataset we show them here
                 if self.subsetData != None and len(self.subsetData) != shownSubsetCount:
                     self.showFilledSymbols = 1
-                    classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
                     for i in range(len(self.subsetData)):
                         if self.subsetData[i] in self.rawdata: continue
                         if self.subsetData[i][xAttr].isSpecial() or self.subsetData[i][yAttr].isSpecial() : continue
@@ -354,8 +355,10 @@ class OWScatterPlotGraph(OWVisGraph):
                         if discreteY == 1: y = attrYIndices[self.subsetData[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                         else:              y = self.subsetData[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                        if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial(): newColor = classColors[self.subsetData[i][colorIndex].value]
-                        else: newColor = QColor(70,70,70)
+                        if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial():
+                            if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(self.scaleExampleValue(self.subsetData[i], colorIndex), 255, 255)
+                            else: newColor = classColors[colorIndices[self.subsetData[i][colorIndex].value]]
+                        else: newColor = QColor(0,0,0)
                                 
                         Symbol = self.curveSymbols[0]
                         if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
