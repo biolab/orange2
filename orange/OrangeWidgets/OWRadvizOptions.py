@@ -47,11 +47,13 @@ class OWRadvizOptions(OWOptions):
         self.jitterSize = QComboBox(self.hbox)
 
 
+        ######
+        # general settings
         self.graphSettingsBG = QVButtonGroup("General graph settings", self.top)
         self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.graphSettingsBG)
         self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
         self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
-
+        self.showLegend = QCheckBox('show legend', self.graphSettingsBG)
         
         # continuous attribute selection
         self.attrContButtons = QVButtonGroup("Continuous attribute selection", self.top)

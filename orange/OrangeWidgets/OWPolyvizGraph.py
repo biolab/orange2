@@ -168,25 +168,23 @@ class OWPolyvizGraph(OWVisGraph):
             y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
             self.anchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
         
-        
+        valLen = 0
         # if we don't want coloring
-        if self.className == "(One color)" or self.showKNNModel:      
-            valLen = 1
-            if self.showKNNModel == 1:
-                # variables and domain for the table
-                domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain[self.className]])
-                table = orange.ExampleTable(domain)
+        if self.showKNNModel:      
+            # variables and domain for the table
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+            table = orange.ExampleTable(domain)
             
             for i in range(len(labels)):
                 polyvizLineCoordsX.append([[]])
                 polyvizLineCoordsY.append([[]])                
 
         # if we have a discrete class
-        elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
+        elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classIsDiscrete = 1
-            classNameIndex = self.attributeNames.index(self.className)
-            valLen = len(self.rawdata.domain[self.className].values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            valLen = len(self.rawdata.domain.classVar.values)
+            classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
             for i in range(len(labels)):
                 tempX = []; tempY = []
                 for j in range(len(classValueIndices)):
@@ -194,8 +192,7 @@ class OWPolyvizGraph(OWVisGraph):
                 polyvizLineCoordsX.append(tempX)
                 polyvizLineCoordsY.append(tempY)
         else:
-            valLen = 0
-            classNameIndex = self.attributeNames.index(self.className)
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
             
         # ######################
         # compute valid data examples
@@ -267,19 +264,15 @@ class OWPolyvizGraph(OWVisGraph):
 
             # #########
             # we add a tooltip for this point
-            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.className])
+            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
             r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             self.tips.addToolTip(r, text)
 
             lineColor = QColor(0,0,0)
             if self.showKNNModel == 1:
-                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]]))
-            elif valLen == 1:
-                curveData[0][0].append(x_i)
-                curveData[0][1].append(y_i)
-                lineColor.setHsv(0, 255, 255)
+                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
             elif classIsDiscrete:
-                index = classValueIndices[self.rawdata[i][self.className].value]
+                index = classValueIndices[self.rawdata[i].getclass().value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
                 lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
@@ -305,11 +298,8 @@ class OWPolyvizGraph(OWVisGraph):
                 if self.showKNNModel:
                     polyvizLineCoordsX[j][0] += [xDataAnchors[j], lineX2]
                     polyvizLineCoordsY[j][0] += [yDataAnchors[j], lineY2]
-                elif valLen == 1:
-                    polyvizLineCoordsX[j][0] += [xDataAnchors[j], lineX2, xDataAnchors[j]]
-                    polyvizLineCoordsY[j][0] += [yDataAnchors[j], lineY2, yDataAnchors[j]]
                 elif classIsDiscrete:
-                    index = classValueIndices[self.rawdata[i][self.className].value]
+                    index = classValueIndices[self.rawdata[i].getclass().value]
                     polyvizLineCoordsX[j][index] += [xDataAnchors[j], lineX2, xDataAnchors[j]]
                     polyvizLineCoordsY[j][index] += [yDataAnchors[j], lineY2, yDataAnchors[j]]
                 else:
@@ -337,7 +327,7 @@ class OWPolyvizGraph(OWVisGraph):
                     self.addCurve('line' + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
 
         ###### ONE COLOR OR DISCRETE CLASS ATTRIBUTE
-        elif valLen == 1 or classIsDiscrete:        
+        elif classIsDiscrete:        
             # create data curves for dots
             for i in range(valLen):
                 newColor = QColor()
@@ -367,11 +357,11 @@ class OWPolyvizGraph(OWVisGraph):
 
         #################
         # draw the legend
-        if self.className != "(One color)" and self.showLegend:
+        if self.showLegend:
             # show legend for discrete class
             if classIsDiscrete:
-                self.addMarker(self.className, 0.87, 1.06, Qt.AlignLeft)
-                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.className)
+                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
+                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
                     newColor = QColor()
                     if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
@@ -379,6 +369,7 @@ class OWPolyvizGraph(OWVisGraph):
                     y = 1.0 - index * 0.05
                     self.addCurve(str(i), newColor, newColor, self.pointWidth, xData= [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
+
             # show legend for continuous class
             else:
                 x0 = 1.20; x1 = 1.24
@@ -391,9 +382,9 @@ class OWPolyvizGraph(OWVisGraph):
                     self.setCurveData(newCurveKey, [x0,x1], [y,y])
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.className]
-                self.addMarker("%s = %.3f" % (self.className, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.className, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
 
     ##########################
@@ -453,7 +444,7 @@ class OWPolyvizGraph(OWVisGraph):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # create a table of indices that stores the sequence of variable indices        
         indices = [];
@@ -462,7 +453,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
         table = orange.ExampleTable(domain)
 
         # which data items have all values valid
@@ -494,7 +485,7 @@ class OWPolyvizGraph(OWVisGraph):
                 x_i += xDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
                 y_i += yDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
                
-            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
+            example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
             table.append(example)
 
         return self.kNNOptimization.kNNComputeAccuracy(table)
@@ -504,14 +495,10 @@ class OWPolyvizGraph(OWVisGraph):
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getOptimalSeparation(self, attrList, attrReverseDict, printTime = 1):
-        if self.className == "(One color)":
-            print "Unable to compute optimal ordering. Please select class attribute first."
-            return []
-
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # create a table of indices that stores the sequence of variable indices        
         indices = [];
@@ -552,7 +539,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
 
         # which data items have all values valid
         validData = [1] * dataSize
@@ -606,7 +593,7 @@ class OWPolyvizGraph(OWVisGraph):
                         x_i += xDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
                         y_i += yDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
                        
-                    example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
+                    example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
                     table.append(example)
 
                 accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
@@ -670,7 +657,7 @@ class OWPolyvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)

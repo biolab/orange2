@@ -69,116 +69,6 @@ class OWRadvizGraph(OWVisGraph):
         self.showLegend = 1
         self.kNNOptimization = None
 
-
-    
-    def drawGnuplot(self, labels):
-        import Gnuplot
-
-        length = len(labels)
-        self.p = Gnuplot.Gnuplot()
-        self.p('set noborder')
-        
-        # circle
-        xs = []; ys = []
-        for phi in range(0, 361):
-             xs.append(cos(phi*math.pi/180.0))
-             ys.append(sin(phi*math.pi/180.0))
-
-        self.p.replot(Gnuplot.Data(xs,ys,with='lines'))
-
-        """        
-        gplt.hold('on')
-        gplt.xaxis((-1.22, 1.22))
-        gplt.yaxis((-1.13, 1.13))
-        gplt.plot(xy,ys)
-        gplt.grid('off')
-        """
-        
-        #anchors
-        xs = []; ys = []
-        anchors = [[],[]]
-        for i in range(length):
-            x = math.cos(2*math.pi * float(i) / float(length)); strX = "%.4f" % (x)
-            y = math.sin(2*math.pi * float(i) / float(length)); strY = "%.4f" % (y)
-            anchors[0].append(float(strX))  # this might look stupid, but this way we get rid of rounding errors
-            anchors[1].append(float(strY))
-            xs.append(x); ys.append(y)
-            
-        self.p.replot(Gnuplot.Data(xs, ys, with='points 8'))
-
-        # ##########
-        # create a table of indices that stores the sequence of variable indices
-        indices = []
-        for label in labels:
-            index = self.attributeNames.index(label)
-            indices.append(index)
-
-        # -----------------------------------------------------------
-        #  create data curves
-        # -----------------------------------------------------------
-        # if we don't want coloring
-        if self.className == "(One color)":      
-            valLen = 1
-        elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:    
-            valLen = len(self.rawdata.domain[self.className].values)
-            # we create a hash table of variable values and their indices
-            classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
-
-        # if we have a continuous class
-        else:
-            valLen = 0
-            if self.className != "(One color)" and self.className != '':
-                scaledClassData, vals = self.scaleData(self.rawdata, self.className, forColoring = 1)
-
-        dataSize = len(self.scaledData[0])
-        curveData = []
-        for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
-
-        validData = [1] * dataSize
-        for i in range(dataSize):
-            for j in range(length):
-                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
-
-        for i in range(dataSize):
-            if validData[i] == 0: continue
-            
-            sum_i = 0.0
-            for j in range(length):
-                sum_i += self.scaledData[indices[j]][i]
-
-            if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
-
-            ##########
-            # calculate the position of the data point
-            x_i = 0.0; y_i = 0.0
-            for j in range(length):
-                index = indices[j]
-                x_i += anchors[0][j]*(self.scaledData[index][i] / sum_i)
-                y_i += anchors[1][j]*(self.scaledData[index][i] / sum_i)
-
-            if valLen == 1:
-                curveData[0][0].append(x_i)
-                curveData[0][1].append(y_i)
-            elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
-                curveData[classValueIndices[self.rawdata[i][self.className].value]][0].append(x_i)
-                curveData[classValueIndices[self.rawdata[i][self.className].value]][1].append(y_i)
-
-        if self.className == "(One color)" or self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
-            for i in range(valLen):
-                self.p.replot(Gnuplot.Data(curveData[i][0], curveData[i][1], with='point 7'))
-
-    def saveGnuplot(self, labels):
-        if self.p == None:
-            self.drawGnuplot(labels)
-
-        qfileName = QFileDialog.getSaveFileName("graph.eps","Enhanced post script (*.EPS)", None, "Save to..", "Save to..")
-        fileName = str(qfileName)
-        if fileName == "": return
-        (fil,ext) = os.path.splitext(fileName)
-        if ext == "": fileName += ".eps"
-        self.p.hardcopy(fileName, enhanced = 1, color = 1)
-      
-
     def setEnhancedTooltips(self, enhanced):
         self.enhancedTooltips = enhanced
         self.dataMap = {}
@@ -209,8 +99,8 @@ class OWRadvizGraph(OWVisGraph):
             exAnchorData.append((float(strX), float(strY), labels[i]))
 
 
-        valLen = len(self.rawdata.domain[self.className].values)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)	# we create a hash table of variable values and their indices            
+        valLen = len(self.rawdata.domain.classVar.values)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
     
         dataSize = len(self.scaledData[0])
         curveData = []
@@ -223,7 +113,7 @@ class OWRadvizGraph(OWVisGraph):
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
         table = orange.ExampleTable(domain)
 
         for i in range(dataSize):
@@ -243,7 +133,7 @@ class OWRadvizGraph(OWVisGraph):
                 x_i += exAnchorData[j][0]*(self.noJitteringScaledData[index][i] / sum_i)
                 y_i += exAnchorData[j][1]*(self.noJitteringScaledData[index][i] / sum_i)
 
-            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
+            example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
             table.append(example)
 
         orange.saveTabDelimited(fileName, table)
@@ -322,20 +212,18 @@ class OWRadvizGraph(OWVisGraph):
         #  create data curves
         # -----------------------------------------------------------
 
-        if self.className == "(One color)":      # if we don't want coloring
-            valLen = 1
-        elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:    	# if we have a discrete class
-            classNameIndex = self.attributeNames.index(self.className)
-            valLen = len(self.rawdata.domain[self.className].values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)	# we create a hash table of variable values and their indices            
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:    	# if we have a discrete class
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            valLen = len(self.rawdata.domain.classVar.values)
+            classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
         else:	# if we have a continuous class
             valLen = 0
-            classNameIndex = self.attributeNames.index(self.className)
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
 
 
         if self.showKNNModel == 1:
             # variables and domain for the table
-            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain[self.className]])
+            domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
             table = orange.ExampleTable(domain)
             
 
@@ -378,13 +266,10 @@ class OWRadvizGraph(OWVisGraph):
 
 
             if self.showKNNModel == 1:
-                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]]))
-            elif valLen == 1:
-                curveData[0][0].append(x_i)
-                curveData[0][1].append(y_i)
-            elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
-                curveData[classValueIndices[self.rawdata[i][self.className].value]][0].append(x_i)
-                curveData[classValueIndices[self.rawdata[i][self.className].value]][1].append(y_i)
+                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()]))
+            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                curveData[classValueIndices[self.rawdata[i].getclass().value]][0].append(x_i)
+                curveData[classValueIndices[self.rawdata[i].getclass().value]][1].append(y_i)
                 newColor = QColor()
                 newColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
             else:
@@ -412,7 +297,7 @@ class OWRadvizGraph(OWVisGraph):
                 key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
                 
         # we add computed data in curveData as curves and show it
-        elif self.className == "(One color)" or self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
+        elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             for i in range(valLen):
                 newColor = QColor()
                 if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
@@ -425,12 +310,12 @@ class OWRadvizGraph(OWVisGraph):
 
         #################
         # draw the legend
-        if self.className != "(One color)" and self.showLegend:
+        if self.showLegend:
             # show legend for discrete class
-            if self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
-                self.addMarker(self.className, 0.87, 1.06, Qt.AlignLeft)
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
                     
-                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.className)
+                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
                     newColor = QColor()
                     if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
@@ -450,9 +335,9 @@ class OWRadvizGraph(OWVisGraph):
                     self.setCurveData(newCurveKey, [x0,x1], [y,y])
 
                 # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.className]
-                self.addMarker("%s = %.3f" % (self.className, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.className, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
                
 
@@ -532,7 +417,7 @@ class OWRadvizGraph(OWVisGraph):
         # variables and domain for the table
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
         table = orange.ExampleTable(domain)
                  
         for i in range(dataSize):
@@ -544,7 +429,7 @@ class OWRadvizGraph(OWVisGraph):
                 x_i = x_i + anchors[0][j]*(self.noJitteringScaledData[indices[j]][i] / sum_i[i])
                 y_i = y_i + anchors[1][j]*(self.noJitteringScaledData[indices[j]][i] / sum_i[i])
             
-            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
+            example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
             table.append(example)
 
         return self.kNNOptimization.kNNComputeAccuracy(table)
@@ -554,10 +439,6 @@ class OWRadvizGraph(OWVisGraph):
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getOptimalSeparation(self, attrList, printTime = 1):
-        if self.className == "(One color)":
-            print "Unable to compute optimal ordering. Please select class attribute first."
-            return []
-
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
@@ -620,7 +501,7 @@ class OWRadvizGraph(OWVisGraph):
         # variables and domain for the table
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
 
         t = time.time()
 
@@ -647,7 +528,7 @@ class OWRadvizGraph(OWVisGraph):
                     x_i = x_i + anchors[0][j]*(self.noJitteringScaledData[index][i] / sum_i[i])
                     y_i = y_i + anchors[1][j]*(self.noJitteringScaledData[index][i] / sum_i[i])
                 
-                example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
+                example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
                 table.append(example)
     
             accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
@@ -710,7 +591,7 @@ class OWRadvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)

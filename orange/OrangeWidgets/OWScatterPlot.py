@@ -422,9 +422,9 @@ class OWScatterPlot(OWWidget):
             self.repaint()
             return
         
-        #self.data = orange.Preprocessor_dropMissing(data.data)
+        #self.data = orange.Preprocessor_dropMissing(data)
         self.optimizationDlg.clear()
-        self.data = data.data
+        self.data = data
         self.initAttrValues()
         self.graph.setData(self.data)
         self.updateGraph()

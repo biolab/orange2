@@ -82,28 +82,19 @@ class OWRadviz(OWWidget):
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
         self.connect(self.options.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)
+        self.connect(self.options.showLegend, SIGNAL("clicked()"), self.setShowLegend)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
-        self.selClass = QVGroupBox(self.space)
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.space)
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
-        self.selClass.setTitle("Class attribute")
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.space)
         
-
-        self.classCombo = QComboBox(self.selClass)
-        self.hbox = QHBox(self.selClass)
-        self.showContinuousCB = QCheckBox('show continuous', self.hbox)
-        self.showLegendCB = QCheckBox('show legend', self.hbox)
-        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setShowContinuous)
-        self.connect(self.showLegendCB, SIGNAL("clicked()"), self.setShowLegend)
-
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
@@ -135,7 +126,6 @@ class OWRadviz(OWWidget):
         self.currentFileIndex = 1
             
         #connect controls to appropriate functions
-        self.connect(self.classCombo, SIGNAL('activated(const QString &)'), self.updateGraph)
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
@@ -181,6 +171,7 @@ class OWRadviz(OWWidget):
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
         self.options.showFilledSymbols.setChecked(self.showFilledSymbols)
+        self.options.showLegend.setChecked(self.showLegend)
 
         # set items in jitter size combo
         self.options.jitterSize.clear()
@@ -192,9 +183,6 @@ class OWRadviz(OWWidget):
         for i in range(len(self.scaleFactorList)):
             self.options.scaleCombo.insertItem(self.scaleFactorList[i])
         self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
-
-        self.showContinuousCB.setChecked(self.showContinuous)
-        self.showLegendCB.setChecked(self.showLegend)
 
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)        
@@ -211,7 +199,7 @@ class OWRadviz(OWWidget):
 
     def evaluateCurrentProjection(self):
         acc = self.graph.getProjectionQuality(self.getShownAttributeList())
-        if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete:
+        if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
             QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
             QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
@@ -273,7 +261,7 @@ class OWRadviz(OWWidget):
                 
             if len(fullList) == 0: return
 
-            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
             self.optimizationDlg.clear()
@@ -314,7 +302,7 @@ class OWRadviz(OWWidget):
             fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), maxLen)
             if len(fullList) == 0: return
 
-            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
             self.optimizationDlg.clear()
@@ -477,46 +465,14 @@ class OWRadviz(OWWidget):
     # #####################
 
     def updateGraph(self):
-        self.graph.updateSettings(className = str(self.classCombo.currentText()))
         self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
         self.repaint()
 
-    def setShowContinuous(self):
-        self.showContinuous = self.showContinuousCB.isChecked()
-        self.setClassCombo()
-        self.updateGraph()
-
     def setShowLegend(self):
-        self.showLegend = self.showLegendCB.isChecked()
+        self.showLegend = self.options.showLegend.isChecked()
         self.graph.updateSettings(showLegend = self.showLegend)
         self.updateGraph()
-
-    # set combo box values with attributes that can be used for coloring the data
-    def setClassCombo(self):
-        exText = str(self.classCombo.currentText())
-        self.classCombo.clear()
-        if self.data == None:
-            return
-
-        # add possible class attributes
-        self.classCombo.insertItem('(One color)')
-        for i in range(len(self.data.domain)):
-            attr = self.data.domain[i]
-            if attr.varType == orange.VarTypes.Discrete or self.showContinuousCB.isOn() == 1:
-                self.classCombo.insertItem(attr.name)
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == exText:
-                self.classCombo.setCurrentItem(i)
-                return
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
-                self.classCombo.setCurrentItem(i)
-                return
-        self.classCombo.setCurrentItem(0)
-
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
@@ -552,8 +508,7 @@ class OWRadviz(OWWidget):
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
-        self.setClassCombo()
-
+        
         if self.data == None:
             self.repaint()
             return
