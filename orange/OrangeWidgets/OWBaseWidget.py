@@ -47,7 +47,8 @@ class OWBaseWidget(QDialog):
         self.widgetDir = os.path.dirname(__file__) + "/"
 
         # create output directory for widget settings
-        self.outputDir = os.path.join(user.home, "Orange")
+        if os.name == "nt": self.outputDir = self.widgetDir
+        else:               self.outputDir = os.path.join(user.home, "Orange")
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
         self.outputDir = os.path.join(self.outputDir, "widgetSettings")
         if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
