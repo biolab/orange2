@@ -31,6 +31,9 @@ C45_OBJECTS = $(C45D)/besttree.o $(C45D)/build.o $(C45D)/classify.o $(C45D)/conf
 		$(C45D)/prune.o $(C45D)/sort.o $(C45D)/st-thresh.o $(C45D)/stats.o \
 		$(C45D)/subset.o $(C45D)/trees.o
 
+LOGREGD = $(EXTERNALDIR)/logreg
+LOGREG_OBJECTS = $(LOGREGD)/logreg.o $(LOGREGD)/lsq.o
+
 ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
 
 
@@ -38,7 +41,7 @@ INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
 		-I$(EXTERNALDIR) -I$(PYTHONINCLUDE)
 
-LIBPATH = -L$(EXTERNALDIR)/c45
+LIBPATH = -L$(C45D) -L$(LOGREGD)
 
 ############
 # Paths for extensions
@@ -84,8 +87,8 @@ include makefile.deps
 dirs:
 	-@mkdir -p $(ODIR) $(BINDIR) > /dev/null
 
-$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ODIR)/c45.a $(ORANGE_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(ODIR)/c45.a -o $(BINDIR)/orange.so -shared $(LNKSTL)
+$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ODIR)/c45.a $(ODIR)/logreg.a $(ORANGE_OBJECTS)
+	gcc $(ORANGE_OBJECTS) $(ODIR)/c45.a $(ODIR)/logreg.a -o $(BINDIR)/orange.so -shared $(LNKSTL)
 
 $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 	gcc $(CORN_OBJECTS) -o $(BINDIR)/corn.so -shared $(LNKSTL)
@@ -96,6 +99,10 @@ $(BINDIR)/statc.so:	$(STATC_OBJECTS)
 $(ODIR)/c45.a:	$(C45_OBJECTS)
 	ar r $(ODIR)/c45.a $(C45_OBJECTS)
 	rm $(C45D)/*.o
+
+$(ODIR)/logreg.a: $(LOGREG_OBJECTS)
+	ar r $(ODIR)/logreg.a $(LOGREG_OBJECTS)
+	rm $(LOGREGD)/*.o
 
 
 install:	all

@@ -22,7 +22,7 @@
 #include "examples.hpp"
 #include "classify.hpp"
 #include "logistic.ppp"
-#include "math.h"
+#include <math.h>
 
 
 TLogisticLearner::TLogisticLearner() 
