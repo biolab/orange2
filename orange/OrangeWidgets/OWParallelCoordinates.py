@@ -16,12 +16,104 @@ from random import betavariate
 from OWParallelGraph import *
 from OData import *
 import orngFSS
+import statc
 
+
+def insertToSortedList(array, val, names):
+    for i in range(len(array)):
+        if val > array[i][0]:
+            array.insert(i, [val, names])
+            return
+    array.append([val, names])
+
+# does value exist in array? return index in array if yes and -1 if no
+def member(array, value):
+    for i in range(len(array)):
+        for j in range(len(array[i])):
+            if array[i][j]==value:
+                return i
+    return -1
+        
+
+# insert two attributes to the array in such a way, that it will preserve the existing ordering of the attributes
+def insertToCorrList(array, attr1, attr2):
+    index1 = member(array, attr1)
+    index2 = member(array, attr2)
+    if index1 == -1 and index2 == -1:
+        array.append([attr1, attr2])
+    elif (index1 != -1 and index2 == -1) or (index1 == -1 and index2 != -1):
+        if index1 == -1:
+            index = index2
+            newVal = attr1
+            existingVal = attr2
+        else:
+            index = index1
+            newVal = attr2
+            existingVal = attr1
+            
+        # we insert attr2 into existing set at index index1
+        pos = array[index].index(existingVal)
+        if pos < len(array[index])/2:   array[index].insert(0, newVal)
+        else:                           array[index].append(newVal)
+    else:
+        # we merge the two lists in one
+        if index1 == index2: return
+        array[index1].extend(array[index2])
+        array.remove(array[index2])
+    
+
+# create such a list of attributes, that attributes with high correlation lie together
+def getCorrelationList(data):
+    # create ordinary list of data values    
+    dataList = []
+    dataNames = []
+    for index in range(len(data.domain)):
+        if data.domain[index].varType != orange.VarTypes.Continuous: continue
+        temp = []
+        for i in range(len(data)):
+            temp.append(data[i][index])
+        dataList.append(temp)
+        dataNames.append(data.domain[index].name)
+
+    # compute the correlations between attributes
+    correlations = []
+    print len(dataNames)
+    for i in range(len(dataNames)):
+        for j in range(i+1, len(dataNames)):
+            val, prob = statc.pearsonr(dataList[i], dataList[j])
+            insertToSortedList(correlations, abs(val), [i,j])
+            print "correlation between %s and %s is %f" % (dataNames[i], dataNames[j], val)
+
+    i=0
+    mergedCorrs = []
+    while i < len(correlations) and correlations[i][0] > 0.1:
+        insertToCorrList(mergedCorrs, correlations[i][1][0], correlations[i][1][1])
+        i+=1
+
+    hiddenList = []
+    while i < len(correlations):
+        if member(mergedCorrs, correlations[i][1][0]) == -1:
+            hiddenList.append(dataNames[correlations[i][1][0]])
+        if member(mergedCorrs, correlations[i][1][1]) == -1:
+            hiddenList.append(dataNames[correlations[i][1][1]])
+
+    shownList = []
+    for i in range(len(mergedCorrs)):
+        for j in range(len(mergedCorrs[i])):
+            shownList.append(dataNames[mergedCorrs[i][j]])
+
+    return (shownList, hiddenList)
+                             
+            
+            
+###########################################################################################
+##### WIDGET : Parallel coordinates visualization
+###########################################################################################
 class OWParallelCoordinates(OWWidget):
     settingsList = ["attrOrder", "jitteringType", "GraphCanvasColor", "showDistributions"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
-        self.attributeOrder = ["None","RelieF","GainRatio","Gini"]
+        self.attributeOrder = ["None","RelieF","GainRatio","Gini", "Correlation"]
         OWWidget.__init__(self,
         parent,
         "Parallel Coordinates",
@@ -230,9 +322,8 @@ class OWParallelCoordinates(OWWidget):
                 self.shownAttribsLB.insertItem(item.name)
             return
 
-        self.shownAttribsLB.insertItem(data.domain.classVar.name)
-                
         if self.attrOrder == "RelieF":
+            self.shownAttribsLB.insertItem(data.domain.classVar.name)
             measure = orange.MeasureAttribute_relief(k=20, m=50)
             newAttrs = orngFSS.attMeasure(data, measure)
             for item in newAttrs:
@@ -245,6 +336,27 @@ class OWParallelCoordinates(OWWidget):
             measure = orange.MeasureAttribute_gainRatio()
         elif self.attrOrder == 'Gini':
             measure = orange.MeasureAttribute_gini()
+        elif self.attrOrder == "Correlation":
+            print "start getting correlation list"
+            (shownList, hiddenList) = getCorrelationList(data)    # get the list of continuous attributes sorted by using correlation
+            for item in shownList:
+                self.shownAttribsLB.insertItem(item)
+            for item in hiddenList:
+                self.hiddenAttribsLB.insertItem(item)
+
+            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+                self.shownAttribsLB.insertItem(data.domain.classVar.name)
+            # rest of the attributes (discrete ones) sort by relieF measure
+            measure = orange.MeasureAttribute_relief(k=20, m=50)
+            newAttrs = orngFSS.attMeasure(data, measure)
+            for item in newAttrs:
+                if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
+                if float(item[1]) > 0.01:
+                    self.shownAttribsLB.insertItem(item[0])
+                else:
+                    self.hiddenAttribsLB.insertItem(item[0])
+            print "finished setting attribute list"
+            
         else:
             print "Incorrect value for attribute order"
             return
@@ -261,6 +373,7 @@ class OWParallelCoordinates(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        print "starting cdata"
         self.data = data
         self.graph.setData(data)
         self.shownAttribsLB.clear()
@@ -273,6 +386,7 @@ class OWParallelCoordinates(OWWidget):
         
         self.setShownAttributeList(self.data.data)
         self.updateGraph()
+        print "finished cdata"
     #################################################
 
 #test widget appearance

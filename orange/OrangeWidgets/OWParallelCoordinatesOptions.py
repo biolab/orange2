@@ -32,6 +32,7 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.attrRelieF = QRadioButton('RelieF', self.attrButtons)
         self.attrGainRatio = QRadioButton('GainRatio', self.attrButtons)
         self.attrGini = QRadioButton('Gini', self.attrButtons)
+        self.attrCorrelation = QRadioButton('Correlation', self.attrButtons)
 
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.top)
         self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)

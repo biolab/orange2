@@ -57,7 +57,7 @@ class OWParallelGraph(OWGraph):
             else: num = float(1)
 
             for i in range(len(data)):
-                if data[i][index].isSpecial(): temp.append(1)
+                if data[i][index].isSpecial(): temp.append(0)
                 else:
                     val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
                     temp.append(val)
@@ -65,9 +65,12 @@ class OWParallelGraph(OWGraph):
         # is the attribute continuous
         else:
             # first find min and max value
-            min = data[0][attr].value
-            max = data[0][attr].value
+            i = 0
+            while data[i][attr].isSpecial() == 1: i+=1
+            min = data[i][attr].value
+            max = data[i][attr].value
             for item in data:
+                if item[attr].isSpecial() == 1: continue
                 if item[attr].value < min:
                     min = item[attr].value
                 elif item[attr].value > max:
@@ -76,7 +79,8 @@ class OWParallelGraph(OWGraph):
             diff = max - min
             # create new list with values scaled from 0 to 1
             for i in range(len(data)):
-                temp.append((data[i][attr].value - min) / diff)
+                if data[i][attr].isSpecial() == 1:  temp.append(0)
+                else:                               temp.append((data[i][attr].value - min) / diff)
         return temp
 
     #
