@@ -38,14 +38,16 @@ DEFINE_TOrangeVector_classDescription(PExample, "TExampleList")
 
 TExample::TExample()
 : values(NULL),
-  values_end(NULL)
+  values_end(NULL),
+  name(NULL)
 {}
 
 
 TExample::TExample(PDomain dom, bool initMetas)
 : domain(dom),
   values(NULL),
-  values_end(NULL)
+  values_end(NULL),
+  name(NULL)
 { if (!dom)
     raiseError("example needs domain");
 
@@ -63,7 +65,8 @@ TExample::TExample(PDomain dom, bool initMetas)
 
 TExample::TExample(const TExample &orig, bool copyMetas)
 : domain(orig.domain),
-  meta(copyMetas ? orig.meta : TMetaValues())
+  meta(copyMetas ? orig.meta : TMetaValues()),
+  name(orig.name ? new string(*orig.name) : NULL)
 { if (domain) {
     const int attrs = domain->variables->size();
     TValue *vi = values = mlnew TValue[attrs];
@@ -76,7 +79,8 @@ TExample::TExample(const TExample &orig, bool copyMetas)
 
 TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 : domain(dom),
-  meta(copyMetas ? orig.meta : TMetaValues())
+  meta(copyMetas ? orig.meta : TMetaValues()),
+  name(NULL)
 { if (!dom)
     raiseError("example needs a domain");
 
@@ -135,7 +139,8 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
 
 
 TExample::TExample(PDomain dom, PExampleList elist)
-: domain(dom)
+: domain(dom),
+  name(NULL)
 {
   if (!dom)
     raiseError("example needs a domain");
@@ -173,7 +178,11 @@ TExample::TExample(PDomain dom, PExampleList elist)
 
 
 TExample::~TExample()
-{ mldelete[] values; }
+{ 
+  mldelete[] values; 
+  if (name)
+    delete name;
+}
 
 
 int TExample::traverse(visitproc visit, void *arg) const
@@ -200,6 +209,9 @@ int TExample::dropReferences()
   const_ITERATE(TMetaValues, mi, meta)
     if ((*mi).second.svalV)
       (*mi).second.svalV.~PSomeValue();
+
+  delete name;
+  name = NULL;
 
   return 0;
 }
@@ -230,6 +242,14 @@ TExample &TExample::operator =(const TExample &orig)
   }
 
   meta = orig.meta;
+  
+  if (name) {
+    delete name;
+    name = NULL;
+  }
+  if (orig.name)
+    name = new string(*orig.name);
+
   return *this;
 }
 

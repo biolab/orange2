@@ -144,7 +144,9 @@ class LogRegLearnerClass:
 
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
-
+        for i in imputer(examples)(examples):
+            print i
+            
         if self.fitter:
             learner.fitter = self.fitter
 

@@ -115,6 +115,14 @@ C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
 
 C_NAMED(DomainContinuizer, Orange, "(domain|examples, convertClass=, invertClass=, zeroBased=, normalizeContinuous=, baseValueSelection=) -/-> Domain")
 
+PYCLASSCONSTANT_INT(DomainContinuizer, LowestIsBase, int(TDomainContinuizer::LowestIsBase))
+PYCLASSCONSTANT_INT(DomainContinuizer, FrequentIsBase, int(TDomainContinuizer::FrequentIsBase))
+PYCLASSCONSTANT_INT(DomainContinuizer, NValues, int(TDomainContinuizer::NValues))
+PYCLASSCONSTANT_INT(DomainContinuizer, Ignore, int(TDomainContinuizer::Ignore))
+PYCLASSCONSTANT_INT(DomainContinuizer, ReportError, int(TDomainContinuizer::ReportError))
+PYCLASSCONSTANT_INT(DomainContinuizer, AsOrdinal, int(TDomainContinuizer::AsOrdinal))
+PYCLASSCONSTANT_INT(DomainContinuizer, AsNormalizedOrdinal, int(TDomainContinuizer::AsNormalizedOrdinal))
+
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
   if (pyval) {
@@ -134,8 +142,7 @@ int getTargetClass(PVariable classVar, PyObject *pyval)
   return -1; // not an error, but undefined!
 }
 
-// WAS: Domain4SVM -- has Aleks used it already?
-PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(domain | examples, weightID) -> domain")
+PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(domain | examples, weightID) -> domain")
 { 
   PyTRY
     SETATTRIBUTES 
@@ -176,7 +183,6 @@ BASED_ON(RemoveRedundant, Orange)
 C_CALL(RemoveRedundantByInduction, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantByQuality, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantOneValue, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
-// C _ C A L L (RemoveNonexistentValues, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 
 C_CALL3(RemoveUnusedValues, RemoveUnusedValues, Orange, "([attribute, examples[, weightId]]) -/-> attribute")
 

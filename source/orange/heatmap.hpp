@@ -46,8 +46,8 @@ public:
   THeatmap(const int &h, const int &w, PExampleTable ex);
   ~THeatmap();
 
-  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
-  unsigned char *averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
+  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
+  unsigned char *averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   float getRowIntensity(const int &y) const;

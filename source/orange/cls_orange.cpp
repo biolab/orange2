@@ -590,8 +590,8 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 }
 
 
-
-
+PyObject *Orange_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(ROOT, "()")
+{ return WrapNewOrange(mlnew TOrange(), type); }
 
 int Orange_init(PyObject *self, PyObject *, PyObject *keywords)
 { PyTRY
@@ -631,6 +631,8 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
   PyCATCH
 }
 
+class TPyOrange_DictProxy;
+extern PyTypeObject PyOrange_DictProxy_Type;
 
 int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn)
 // This calls setattr1; first with the given, than with the translated name
@@ -668,6 +670,8 @@ int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool wa
         return -1;
     }
 
+    // ensure that the constructed dictionary is my proxy, not the generic dict
+    // self->orange_dict = PyObject_GC_New(PyObject, (PyTypeObject *)&PyOrange_DictProxy_Type);
     return PyObject_GenericSetAttr((PyObject *)self, pyname, args);
   PyCATCH_1
 }
@@ -932,5 +936,85 @@ bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base
 
   return true;
 }
+
+
+class TPyOrange_DictProxy : public PyDictObject {
+public:
+  PyDictObject dobj;
+  TOrange *backlink;
+};
+
+
+
+PyObject *PyOrange_DictProxy_setdefault(TPyOrange_DictProxy *dp, PyObject *args)
+{
+ 	PyObject *key;
+	PyObject *failobj = Py_None;
+
+	if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &key, &failobj))
+		return NULL;
+
+  PyObject *val = PyDict_GetItem((PyObject *)dp, key);
+  if (!val) {
+    val = failobj;
+    if (0 > (dp->backlink ? Orange_setattr(dp->backlink->myWrapper, key, val)
+                          : PyDict_SetItem((PyObject *)dp, key, val)))
+      return PYNULL;
+  }
+
+  Py_XINCREF(val);
+  return val;
+}
+
+
+static PyMethodDef mapp_methods[] = {
+	{"setdefault",  (PyCFunction)PyOrange_DictProxy_setdefault,   METH_VARARGS},
+  {NULL, NULL}
+};
+
+PyTypeObject PyOrange_DictProxy_Type = {
+	PyObject_HEAD_INIT(&PyType_Type)
+	0,
+	"orange.dictproxy",
+	sizeof(TPyOrange_DictProxy),
+	0,
+	0,		/* tp_dealloc */
+	0,			/* tp_print */
+	0,					/* tp_getattr */
+	0,					/* tp_setattr */
+	0,			/* tp_compare */
+	0,			/* tp_repr */
+	0,					/* tp_as_number */
+	0,			/* tp_as_sequence */
+	0,			/* tp_as_mapping */
+	0,				/* tp_hash */
+	0,					/* tp_call */
+	0,					/* tp_str */
+	0,		/* tp_getattro */
+	0,					/* tp_setattro */
+	0,					/* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC |
+		Py_TPFLAGS_BASETYPE,		/* tp_flags */
+	0,				/* tp_doc */
+	0,		/* tp_traverse */
+	0,			/* tp_clear */
+	0,			/* tp_richcompare */
+	0,					/* tp_weaklistoffset */
+	0,			/* tp_iter */
+	0,					/* tp_iternext */
+	mapp_methods,				/* tp_methods */
+	0,					/* tp_members */
+	0,					/* tp_getset */
+	0,					/* tp_base */
+	0,					/* tp_dict */
+	0,					/* tp_descr_get */
+	0,					/* tp_descr_set */
+	0,					/* tp_dictoffset */
+	0,			/* tp_init */
+	PyType_GenericAlloc,			/* tp_alloc */
+	0,				/* tp_new */
+	PyObject_GC_Del,        		/* tp_free */
+};
+
 
 #include "cls_orange.px"

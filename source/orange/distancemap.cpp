@@ -35,7 +35,103 @@
 #endif
 
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma, bool grid = true);
+#define PAINT_PIXEL_LINE                     \
+{ unsigned char col;                         \
+  if (*intensity == UNKNOWN_F)   col = 255;  \
+  else if (*intensity < absLow)  col = 253;  \
+  else if (*intensity > absHigh) col = 254;  \
+  else \
+    if (nogamma) col = int(floor(colorFact * (*intensity - absLow))); \
+    else { \
+      float norm = colorFact * (*intensity - colorBase); \
+      if ((norm > -0.008) && (norm < 0.008)) norm = 125; \
+      else norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm)))); \
+\
+      if (norm<0)        col = 0; \
+      else if (norm>249) col = 249; \
+      else col = int(floor(norm)); \
+   } \
+\
+  for(int inpoints = cellWidth; inpoints--; *(resi++) = col); \
+  if (grid) \
+    resi[-1] = 252; \
+}
+
+/* This function was originally stolen from heatmap.cpp, but modified to
+   handle triangular matrices */
+
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size,
+                             float *intensity, const int &width, const int &height,
+                             const float &absLow, const float &absHigh, const float &gamma,
+                             bool grid, const int &matrixType)
+{
+  const int lineWidth = width * cellWidth;
+  const int fill = (4 - lineWidth & 3) & 3;
+  const int rowSize = lineWidth + fill;
+  size = rowSize * height * cellHeight;
+
+  unsigned char *res = new unsigned char[size];
+  unsigned char *resi = res;
+
+  if (grid && ((cellHeight<3) || (cellWidth < 3)))
+    grid = false;
+
+  bool nogamma;
+  float colorFact, colorBase;
+  if (gamma == 1.0) {
+    nogamma = true;
+    colorFact = 249.0/(absHigh - absLow);
+  }
+  else {
+    nogamma = false;
+    colorBase = (absLow + absHigh) / 2;
+    colorFact = 2 / (absHigh - absLow);
+  }
+
+  for(int line = 0; line<height; line++) {
+    int xpoints;
+
+    unsigned char *thisline = resi;
+
+    switch(matrixType) {
+      case 0: // lower
+        for(xpoints = line+1; xpoints--; intensity++)
+          PAINT_PIXEL_LINE;
+
+        memset(resi, 251, (width-line-1)*cellWidth);
+        resi += (width-line-1)*cellWidth;
+        intensity += width-line-1;
+        break;
+
+      case 1: // upper
+        memset(resi, 251, line*cellWidth);
+        resi += line*cellWidth;
+        intensity += line;
+
+        for(xpoints = width-line; xpoints--; intensity++)
+          PAINT_PIXEL_LINE;
+        break;
+
+      case 2:
+      default:
+        for(xpoints = width; xpoints--; intensity++)
+          PAINT_PIXEL_LINE;
+        break;
+    }
+
+    resi += fill;
+    for(xpoints = grid ? cellHeight-2 : cellHeight-1; xpoints--; resi += rowSize)
+      memcpy(resi, thisline, lineWidth);
+
+    if (grid) {
+      memset(resi, 252, rowSize);
+      resi += rowSize;
+    }
+  }
+
+  return res;
+}
+
 
 #define UNKNOWN_F -1e30f
 
@@ -52,9 +148,9 @@ TDistanceMap::~TDistanceMap()
 }
 
 
-unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
+unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, cells, dim, dim, absLow, absHigh, gamma, grid);
+  return bitmap2string(cellWidth, cellHeight, size, cells, dim, dim, absLow, absHigh, gamma, grid, matrixType);
 }
 
 
@@ -271,7 +367,7 @@ unsigned char *TDistanceMapConstructor::getLegend(const int &width, const int &h
   float wi1 = width-1;
   for(int wi = 0; wi<width; *(fmpi++) = (wi++)/wi1);
   
-  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma);
+  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma, false, 2);
   delete fmp;
   return legend;
 }

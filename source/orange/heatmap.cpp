@@ -49,7 +49,10 @@ DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList")
    this does not necessarily equal cellWidth * cellHeight * width * height.
 */
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma, bool grid = true)
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size,
+                             float *intensity, const int &width, const int &height,
+                             const float &absLow, const float &absHigh, const float &gamma,
+                             bool grid)
 {
   const int lineWidth = width * cellWidth;
   const int fill = (4 - lineWidth & 3) & 3;
@@ -232,14 +235,14 @@ THeatmap::~THeatmap()
 }
 
 
-unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma);
+  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma, grid);
 }
 
-unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma);
+  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma, grid);
 }
 
 
@@ -511,7 +514,7 @@ unsigned char *THeatmapConstructor::getLegend(const int &width, const int &heigh
   float wi1 = width-1;
   for(int wi = 0; wi<width; *(fmpi++) = (wi++)/wi1);
   
-  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma);
+  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma, false);
   delete fmp;
   return legend;
 }

@@ -750,6 +750,40 @@ int Example_len(TPyExample *pex)
 }
 
 
+PyObject *Example_getattr(TPyExample *self, PyObject *name)
+{
+  if (!PyString_Check(name) || strcmp(PyString_AsString(name), "name"))
+    return PyObject_GenericGetAttr((PyObject *)self, name);
+
+  const string *ename = self->example->name;
+  return PyString_FromString(ename ? ename->c_str() : "");
+}
+
+
+int Example_setattr(TPyExample *self, PyObject *name, PyObject *text)
+{
+  if (!PyString_Check(name) || strcmp(PyString_AsString(name), "name"))
+    return PyObject_GenericSetAttr((PyObject *)self, name, text);
+
+  string *&ename = self->example->name;
+
+  if (text == Py_None) {
+    if (ename) {
+      delete ename;
+      ename = NULL;
+    }
+    return 0;
+  }
+
+  if (PyString_Check(text)) {
+    if (ename)
+      delete ename;
+    ename = new string(PyString_AsString(name));
+    return 0;
+  }
+
+  PYERROR(PyExc_AttributeError, "Example.name must be a string", -1);
+}
 
 
 extern PyTypeObject PyExampleIter_Type;

@@ -142,14 +142,14 @@ void TNormalizeContinuous::transform(TValue &val)
 { if (val.varType!=TValue::FLOATVAR)
     raiseError("invalid value type (non-float)");
 
-  val = TValue(float(val.isSpecial() ? 0.0 : (2*(val.floatV-average)/span)));
+  val = TValue(float(val.isSpecial() ? 0.0 : (val.floatV-average)/span));
 }
 
 
 TDomainContinuizer::TDomainContinuizer()
 : zeroBased(true),
   normalizeContinuous(false),
-  baseValueSelection(FrequentIsBase),
+  multinomialTreatment(FrequentIsBase),
   classTreatment(ReportError)
 {}
 
@@ -164,11 +164,13 @@ PVariable TDomainContinuizer::discrete2continuous(TEnumVariable *evar, PVariable
 }
 
 
-PVariable TDomainContinuizer::ordinal2continuous(TEnumVariable *evar, PVariable wevar) const
+PVariable TDomainContinuizer::ordinal2continuous(TEnumVariable *evar, PVariable wevar, const float &factor) const
 {
   PVariable newvar = mlnew TFloatVariable("C_"+evar->name);
   TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, wevar);
-  cfv->transformer = mlnew TOrdinal2Continuous(1.0/evar->values->size());
+  TOrdinal2Continuous *transf = mlnew TOrdinal2Continuous(1.0/evar->values->size());
+  cfv->transformer = transf;
+  transf->factor = factor;
   newvar->getValueFrom = cfv;
   return newvar;
 }
@@ -180,32 +182,42 @@ void TDomainContinuizer::discrete2continuous(PVariable var, TVarList &vars, cons
   if (evar->values->size() < 2)
     return;
 
-  if (evar->values->size() == 2)
-    vars.push_back(discrete2continuous(evar, var, 1));
-
   int baseValue;
-  switch (baseValueSelection) {
+  switch (multinomialTreatment) {
     case Ignore:
+      if (evar->values->size() == 2)
+        vars.push_back(discrete2continuous(evar, var, 1));
       return;
 
-    case ReportError: 
+    case ReportError:
+      if (evar->values->size() == 2) {
+        vars.push_back(discrete2continuous(evar, var, 1));
+        return;
+      }
       raiseError("attribute '%s' is multinomial", var->name.c_str());
 
     case AsOrdinal:
-      vars.push_back(ordinal2continuous(evar, var));
+      vars.push_back(ordinal2continuous(evar, var, 1));
+      return;
+
+    case AsNormalizedOrdinal:
+      vars.push_back(ordinal2continuous(evar, var, 1.0 / (evar->values->size()-1.0)));
       return;
  
     default:
       if (evar->baseValue >= 0)
         baseValue = evar->baseValue;
-      else if (baseValueSelection == FrequentIsBase)
+      else if (multinomialTreatment == FrequentIsBase)
         baseValue = mostFrequent;
       else
         baseValue = 0;
     
-      for(int val = 0, mval = evar->values->size(); val<mval; val++)
-        if ((baseValueSelection==NValues) || (val!=baseValue))
-          vars.push_back(discrete2continuous(evar, var, val));
+      if (evar->values->size() == 2)
+        vars.push_back(discrete2continuous(evar, var, 1-baseValue));
+      else
+        for(int val = 0, mval = evar->values->size(); val<mval; val++)
+          if ((multinomialTreatment==NValues) || (val!=baseValue))
+            vars.push_back(discrete2continuous(evar, var, val));
   }
 }
 
@@ -245,10 +257,14 @@ PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const 
   if (eclass->values->size() == 2)
     return discrete2continuous(eclass, classVar, 1);
 
-  if (classTreatment != AsOrdinal)
-    raiseError("class '%s' is multinomial", eclass->name.c_str());
+  if (classTreatment == AsOrdinal)
+    return ordinal2continuous(eclass, classVar, 1.0);
 
-  return ordinal2continuous(eclass, classVar);
+  if (classTreatment == AsNormalizedOrdinal)
+    return ordinal2continuous(eclass, classVar, 1.0 / (eclass->values->size() - 1));
+
+  raiseError("class '%s' is multinomial", eclass->name.c_str());
+  return PVariable();
 }
 
 
@@ -260,14 +276,16 @@ PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) cons
   
   if (normalizeContinuous)
     raiseError("cannot normalize continuous attributes without seeing the data");
-  if (baseValueSelection == FrequentIsBase)
+  if (multinomialTreatment == FrequentIsBase)
     raiseError("cannot determine the most frequent values without seeing the data");
 
   PVariable newClassVar;
-  if (((targetClass>=0) || (classTreatment != Ignore)) && (dom->classVar->varType == TValue::INTVAR))
-    newClassVar = discreteClass2continous(dom->classVar, targetClass);
-  else
-    newClassVar = dom->classVar;
+  if (dom->classVar) {
+    if (((targetClass>=0) || (classTreatment != Ignore)) && (dom->classVar->varType == TValue::INTVAR))
+      newClassVar = discreteClass2continous(dom->classVar, targetClass);
+    else
+      newClassVar = dom->classVar;
+  }
 
   TVarList newvars;
   PITERATE(TVarList, vi, dom->attributes)
@@ -282,12 +300,12 @@ PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) cons
 
 PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weightID, const int &targetClass) const
 { 
-  bool convertClass = (targetClass>=0) || (classTreatment != Ignore);
+  bool convertClass = ((targetClass>=0) || (classTreatment != Ignore)) && egen->domain->classVar;
 
   if (!convertClass && (targetClass>=0))
     raiseWarning("class is not being converted, 'targetClass' argument is ignored");
 
-  if (!normalizeContinuous)
+  if (!normalizeContinuous && (multinomialTreatment != FrequentIsBase))
     return call(egen->domain, targetClass);
 
   const TDomain &domain = egen->domain.getReference();
@@ -300,10 +318,10 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
   vector<float> avgs, spans;
   vector<int> mostFrequent;
 
-  if ((baseValueSelection == FrequentIsBase) && domain.hasDiscreteAttributes(convertClass)) {
+  if ((multinomialTreatment == FrequentIsBase) && domain.hasDiscreteAttributes(convertClass)) {
     TDomainDistributions ddist(egen, weightID, false, true);
     ITERATE(TDomainDistributions, ddi, ddist) {
-      if ((*ddi)->variable->varType == TValue::INTVAR) {
+      if (*ddi) {
         // won't call modus here, I want the lowest values if there are more values with equal frequencies
         int val = 0, highVal = 0;
         float highestF = 0.0;
@@ -320,12 +338,12 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
     }
   }
 
-  if (domain.hasContinuousAttributes(convertClass)) {
+  if (normalizeContinuous && domain.hasContinuousAttributes(convertClass)) {
     TDomainBasicAttrStat dombas(egen);
     ITERATE(TDomainBasicAttrStat, di, dombas)
-    if ((*di)->variable->varType == TValue::FLOATVAR) {
+    if (*di) {
       avgs.push_back((*di)->avg);
-      spans.push_back((*di)->max-(*di)->min);
+      spans.push_back((*di)->dev);
     }
     else {
       avgs.push_back(-1);
@@ -335,12 +353,8 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
 
 
   PVariable newClassVar;
-  if (convertClass) {
-    if (domain.classVar->varType == TValue::INTVAR)
+  if (convertClass && (domain.classVar->varType == TValue::INTVAR))
       newClassVar = discreteClass2continous(domain.classVar, targetClass);
-    else
-      newClassVar = continuous2normalized(domain.classVar, avgs.back(), spans.back());
-  }
   else
     newClassVar = domain.classVar;
 
@@ -350,7 +364,10 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
     if ((*vi)->varType == TValue::INTVAR)
       discrete2continuous(*vi, newvars, mostFrequent[i]);
     else
-      newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
+      if (normalizeContinuous)
+        newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
+      else
+        newvars.push_back(*vi);
     
   return mlnew TDomain(newClassVar, newvars);
 }

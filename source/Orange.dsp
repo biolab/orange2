@@ -58,7 +58,7 @@ LINK32=link.exe
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
+PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	rem "c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -213,6 +213,15 @@ SOURCE=.\orange\distance_dtw.cpp
 # Begin Source File
 
 SOURCE=.\orange\distancemap.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /Zi /Od
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 

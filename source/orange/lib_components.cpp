@@ -2313,13 +2313,14 @@ PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) 
   PyTRY
     int cellWidth, cellHeight;
     float absLow, absHigh, gamma;
-    if (!PyArg_ParseTuple(args, "iifff:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma))
+    int grid = 0;
+    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma, &grid))
       return NULL;
 
     CAST_TO(THeatmap, hm)
 
     int size;
-    unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, size);
+    unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid!=0, size);
     PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
     delete bitmap;
     return res;
@@ -2332,13 +2333,17 @@ PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords
   PyTRY
     int width, height;
     float absLow, absHigh, gamma;
-    if (!PyArg_ParseTuple(args, "iifff:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma))
+    int grid = 0;
+    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma, &grid))
       return NULL;
+
+    if (grid && height<3)
+      grid = 0;
 
     CAST_TO(THeatmap, hm)
 
     int size;
-    unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, size);
+    unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, grid!=0, size);
     PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
     delete bitmap;
     return res;
@@ -2467,13 +2472,14 @@ PyObject *DistanceMap_getBitmap(PyObject *self, PyObject *args, PyObject *keywor
     int cellWidth, cellHeight;
     float absLow, absHigh, gamma;
     int grid = 1;
-    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma, &grid))
+    int matrixType = 2;
+    if (!PyArg_ParseTuple(args, "iifff|ii:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma, &grid, &matrixType))
       return NULL;
 
     CAST_TO(TDistanceMap, dm)
 
     int size;
-    unsigned char *bitmap = dm->distanceMap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid, size);
+    unsigned char *bitmap = dm->distanceMap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid!=0, matrixType, size);
     PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * dm->dim, cellHeight * dm->dim);
     delete bitmap;
     return res;

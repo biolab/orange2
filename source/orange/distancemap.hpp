@@ -42,7 +42,7 @@ public:
   TDistanceMap(const int &);
   ~TDistanceMap();
 
-  unsigned char *distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
+  unsigned char *distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, const int &matrixType, int &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max);

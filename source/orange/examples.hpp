@@ -39,6 +39,7 @@ public:
   PDomain domain; //PR Example's domain
   TValue *values, *values_end;
   TMetaValues meta;
+  string *name;
 
   TExample();
   TExample(PDomain dom, bool initMetas = true);
