@@ -20,7 +20,7 @@ def labelWithSpin(widget, master, text, min, max, value, step=1, tooltip=None, c
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))    
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-    return wa
+    return hb
 
 def labelWithSpin_hb(widget, master, text, min, max, value, step = 1, callback=None):
     hb = QHBox(widget)
@@ -102,31 +102,32 @@ def radioButtonsInBox(widget, master, groupLabel, btnLabels, value, tooltips=Non
             w.setPixmap(btnLabels[i])
         w.setOn(getattr(master, value) == i)
         if tooltips:
-            print 'ttt', tooltips
             QToolTip.add(w, tooltips[i])
     master.connect(bg, SIGNAL("clicked(int)"), ValueCallback(master, value))
     if callback:
         master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
 #        self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
 
-def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.1, callback=None, ticks=0):
+def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.1, callback=None, labelFormat="%d", ticks=0):
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
-        #sliderBox = QHGroupGroup(widget)
-        sliderBox = widget
+        sliderBox = QHBox(widget)
     slider = QSlider(minValue, maxValue, step, getattr(master, value), QSlider.Horizontal, sliderBox)
     if ticks:
         slider.setTickmarks(QSlider.Below)
+        slider.setTickInterval(ticks)
     label = QLabel(sliderBox)
-    label.setNum(minValue)
+    label.setText(labelFormat % minValue)
     width1 = label.sizeHint().width()
-    label.setNum(maxValue)
+    label.setText(labelFormat % maxValue)
     width2 = label.sizeHint().width()
     label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    label.setNum(getattr(master,value))
+    txt = labelFormat % getattr(master,value)
+    label.setText(txt)
+    label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % x)
     master.connect(slider, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setNum)
+    QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
     if callback:
         master.connect(slider, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
 
