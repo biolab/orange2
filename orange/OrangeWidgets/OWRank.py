@@ -4,6 +4,7 @@
 by their relevance for particular classification.</description>
 <category>Data</category>
 <icon>icons/Rank.png</icon>
+<priority>200</priority>
 """
 #
 # OWRank.py

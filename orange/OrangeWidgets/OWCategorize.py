@@ -6,8 +6,9 @@ to be classified. The three methods for categorization
 this widget can use are: entropy-based discretization (finds most approapriate
 cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency intervals
 (intervals contain about the same number of instances), and equal-width intervals.</description>
-<category>Misc</category>
+<category>Data</category>
 <icon>icons/Categorize.png</icon>
+<priority>1100</priority>
 """
 #
 # OWDataTable.py

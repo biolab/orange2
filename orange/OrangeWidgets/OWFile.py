@@ -1,8 +1,9 @@
 """
 <name>File</name>
 <description>The File Widget is used for selecting and opening data files.</description>
-<category>Input</category>
+<category>Data</category>
 <icon>icons/File.png</icon>
+<priority>10</priority>
 """
 
 #

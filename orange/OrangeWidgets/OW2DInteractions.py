@@ -1,8 +1,9 @@
 """
 <name>2D Interactions</name>
 <description>Shows interactions of two attributes (works for discrete and numerical attributes)</description>
-<category>Visualization</category>
+<category>Data</category>
 <icon>icons/2DInteractions.png</icon>
+<priority>2100</priority>
 """
 # OW2DInteractions.py
 #

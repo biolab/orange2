@@ -1,7 +1,8 @@
 # <name>2D Misclassified</name>
 # <description>2D visualization of correct and incorrect classifications)</description>
-# <category>Visualization</category>
+# <category>Classification</category>
 # <icon>icons/2DMisclassified.png</icon>
+# <priority>3100</priority>
 #
 # OW2DMisClassified.py
 #

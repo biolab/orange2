@@ -4,8 +4,9 @@
 evaluate already build classifiers. For testing learners, it implements different sampling techniques.
 It reports on variety of statistics, including accuracy, sensitivity, specificity, information score,
 AUC (area under ROC curve), and Brier score.</description>
-<category>Data</category>
+<category>Evaluation</category>
 <icon>icons/TestLearners.png</icon>
+<priority>200</priority>
 """
 #
 # OWTestLearners.py

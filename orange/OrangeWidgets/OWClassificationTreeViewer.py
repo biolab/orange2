@@ -1,8 +1,9 @@
 """
 <name>Classification Tree Viewer</name>
 <description>ClassificationTreeViewer displays a classification tree in a hierarchical list view.</description>
-<category>Visualization</category>
+<category>Classification</category>
 <icon>icons/ClassificationTreeViewer.png</icon>
+<priority>2100</priority>
 """
 
 from OData import *

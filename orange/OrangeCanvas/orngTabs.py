@@ -15,10 +15,11 @@ class WidgetButton(QToolButton):
 	def __init__(self, *args):
 		apply(QToolButton.__init__,(self,)+ args)
 
-	def setValue(self, name, fileName, inList, outList, icon, description, canvasDlg):
+	def setValue(self, name, fileName, inList, outList, icon, description, priority, canvasDlg):
 		self.name = name
 		self.fileName = fileName
 		self.iconName = icon
+		self.priority = priority
 		self.description = description
 	
 		inList = inList.replace(",", " ")
@@ -125,6 +126,14 @@ class WidgetTabs(QTabWidget):
 			#tab.setMinimumHeight(60)
 			self.tabs.append(tab)
 			self.insertTab(tab, str(category.getAttribute("name")))
+
+		priorityList = []
+		inListList = []
+		outListList = []
+		nameList = []
+		iconNameList = []
+		descriptionList = []
+		fileNameList = []
 		
 		widgetList = category.getElementsByTagName("widget")
 		for widget in widgetList:
@@ -132,6 +141,7 @@ class WidgetTabs(QTabWidget):
 			fileName = widget.getAttribute("file")
 			inList = widget.getAttribute("in")
 			outList = widget.getAttribute("out")
+			priority = int(widget.getAttribute("priority"))
 
 			icon = widget.getAttribute("icon")
 			iconName = icon
@@ -155,10 +165,28 @@ class WidgetTabs(QTabWidget):
 							description = description + n2.nodeValue
 
 			description = string.strip(description)
+			i = 0
+			while i < len(priorityList) and priority > priorityList[i]:
+				i = i + 1
+			priorityList.insert(i, priority)
+			nameList.insert(i, name)
+			fileNameList.insert(i, fileName)
+			inListList.insert(i, inList)
+			outListList.insert(i, outList)
+			iconNameList.insert(i, iconName)
+			descriptionList.insert(i, description)
 
-			button = WidgetButton(tab)			
-			button.setValue(name, fileName, inList, outList, iconName, description, self.canvasDlg)
-			self.connect( button, SIGNAL( 'clicked()' ), button.clicked) 
+		exIndex = 0
+		for i in range(len(priorityList)):			
+			button = WidgetButton(tab)
+			button.setValue(nameList[i], fileNameList[i], inListList[i], outListList[i], iconNameList[i], descriptionList[i], priorityList[i], self.canvasDlg)
+			self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
+			if exIndex != priorityList[i] / 1000:
+				frame = QFrame(tab)
+				frame.setMinimumWidth(20)
+				frame.setMaximumWidth(20)
+				tab.addWidget(frame)
+				exIndex = priorityList[i] / 1000
 			tab.addWidget(button)
 			self.allWidgets.append(button)
 

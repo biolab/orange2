@@ -4,6 +4,7 @@
 distribution of classes for each attribute.</description>
 <category>Data</category>
 <icon>icons/Distribution.png</icon>
+<priority>2100</priority>
 """
 
 #

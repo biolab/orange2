@@ -30,6 +30,10 @@ class WidgetsToXML:
             name        = self.GetCustomText(data, '<name>.*</name>', 6, -7)
             category    = self.GetCustomText(data, '<category>.*</category>', 10, -11)
             icon        = self.GetCustomText(data, '<icon>.*</icon>', 6, -7)
+            priorityStr = self.GetCustomText(data, '<priority>.*</priority>', 10, -11)
+            if priorityStr == None:
+                priorityStr = "5000"
+
             description = self.GetDescription(data)
             inputList   = self.GetAllInputs(data)
             outputList  = self.GetAllOutputs(data)
@@ -56,6 +60,7 @@ class WidgetsToXML:
             widget.setAttribute("in", inputList)
             widget.setAttribute("out", outputList)
             widget.setAttribute("icon", icon)
+            widget.setAttribute("priority", priorityStr)
             if (description != ""):
                 desc = doc.createElement("description")
                 descText = doc.createTextNode(description)

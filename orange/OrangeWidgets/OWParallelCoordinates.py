@@ -3,6 +3,7 @@
 <description>Shows data using parallel coordianates visualization method</description>
 <category>Visualization</category>
 <icon>icons/ParallelCoordinates.png</icon>
+<priority>200</priority>
 """
 # ParallelCoordinates.py
 #

@@ -4,6 +4,7 @@
 It also provides some basic data statistics.</description>
 <category>Input</category>
 <icon>icons/Outcome.png</icon>
+<priority>20</priority>
 """
 #
 # OWOutcome.py

@@ -4,6 +4,7 @@
 (if given a data set) a Naive Bayesian classifier.</description>
 <category>Classification</category>
 <icon>icons/NaiveBayes.png</icon>
+<priority>10</priority>
 """
 #
 # OWDataTable.py

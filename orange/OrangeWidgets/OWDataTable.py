@@ -3,6 +3,7 @@
 <description>DataTable shows the data set in a spreadsheet.</description>
 <category>Data</category>
 <icon>icons/DataTable.png</icon>
+<priority>200</priority>
 """
 
 #
