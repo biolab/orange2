@@ -1157,7 +1157,7 @@ PyObject *py_##name(PyObject *, PyObject *args) \
       return Py_BuildValue("dd", res, prob);  \
     } \
 \
-    PYERROR(PyExc_TypeError, #name": two lists or a list with optinal group and compare functions expected.", PYNULL); \
+    PYERROR(PyExc_TypeError, #name": two lists or a list with optional group and compare functions expected.", PYNULL); \
   PyCATCH \
 }
 
@@ -1167,6 +1167,7 @@ WRAPTEST(ranksums)
 #undef WRAPTEST
 
 DOUBLE_DOUBLE_FROM_LIST_LIST(wilcoxont)
+
 
 /* *********** PROBABILITY CALCULATIONS ************/
 
@@ -1263,23 +1264,73 @@ PyObject *py_rankdata(PyObject *, PyObject *args)
 
 /* *********** LOESS ******************************/
 
+
+
+int cc_list(PyObject *pylist, void *l)
+{ 
+  if (!PyList_Check(pylist))
+    return 0;
+
+  vector<double> *lst = (vector<double> *)l;
+
+  int len = PyList_Size(pylist);
+  *lst = vector<double>();
+  lst->reserve(len);
+
+  for(int i = 0; i<len; i++) {
+    PyObject *asnum = PyNumber_Float(PyList_GET_ITEM(pylist, i));
+    if (!asnum)
+      return 0;
+    lst->push_back(PyFloat_AsDouble(asnum));
+    Py_DECREF(asnum);
+  }
+
+  return 1;
+}
+
+
+PyObject *list2python(const vector<double> &lst)
+{
+  PyObject *res = PyList_New(lst.size());
+  int i = 0;
+  for(vector<double>::const_iterator li(lst.begin()), le(lst.end()); li!=le; li++, i++)
+    PyList_SetItem(res, i, PyFloat_FromDouble(*li));
+  return res;
+}
+
+typedef void TSampFunc(const vector<double> &, int, vector<double> &);
+TSampFunc *sampFuncs[] = {samplingMinimal, samplingFactor, samplingFixed, samplingUniform};
+
 PyObject *py_loess(PyObject *, PyObject *args) 
 { PyTRY
     PyObject *pypoints;
     int nPoints;
     float windowProp;
     int distMethod;
-    if (!PyArg_ParseTuple(args, "Oifi:loess", &pypoints, &nPoints, &windowProp, &distMethod))
-      return PYNULL;
 
-    if ((distMethod < DISTRIBUTE_MINIMAL) || (distMethod > DISTRIBUTE_UNIFORM))
-      PYERROR(PyExc_TypeError, "invalid point distribution method", PYNULL);
+    if (PyTuple_Size(args)<3)
+      PYERROR(PyExc_AttributeError, "loess expects 3 or 4 arguments", PYNULL);
+
+    vector<double> sampPoints;
+
+    bool sampPointsGiven = PyList_Check(PyTuple_GET_ITEM(args, 1));
+    if (sampPointsGiven) {
+      if (!PyArg_ParseTuple(args, "OO&f:loess", &pypoints, cc_list, &sampPoints, &windowProp))
+        return PYNULL;
+    }
+    else {
+      if (!PyArg_ParseTuple(args, "Oif|i:loess", &pypoints, &nPoints, &windowProp, &distMethod))
+        return PYNULL;
+      if ((distMethod < DISTRIBUTE_MINIMAL) || (distMethod > DISTRIBUTE_UNIFORM))
+        PYERROR(PyExc_TypeError, "invalid point distribution method", PYNULL);
+    }
 
     PyObject *iter = PyObject_GetIter(pypoints);
     if (!iter)
       PYERROR(PyExc_TypeError, "loess exects a list (or a tuple) of points", PYNULL);
 
-    map<double, double> points;
+    vector<pair<double, double> > points;
+    vector<double> xpoints;
     PyObject *item;
     int i = 0;
     while ((item = PyIter_Next(iter)) != NULL) {
@@ -1296,20 +1347,29 @@ PyObject *py_loess(PyObject *, PyObject *args)
       }
 
       i++;
-      points[PyFloat_AsDouble(pyx)] = PyFloat_AsDouble(pyy);
+      const double &x = PyFloat_AsDouble(pyx);
+      const double &y = PyFloat_AsDouble(pyy);
+      points.push_back(pair<double, double>(x, y));
+      if (!sampPointsGiven)
+        xpoints.push_back(x);
       Py_DECREF(pyy);
       Py_DECREF(pyx);
       Py_DECREF(item);
     }
     Py_DECREF(iter);
 
-    map<double, double> loess_curve;
-    loess(points, nPoints, windowProp, loess_curve, distMethod);
+    if (!sampPointsGiven)
+      sampFuncs[distMethod](xpoints, nPoints, sampPoints);
+
+    vector<pair<double, double> > loess_curve;
+    loess(sampPoints, points, windowProp, loess_curve);
 
     pypoints = PyList_New(loess_curve.size());
     i = 0;
-    for (map<double, double>::const_iterator pi(loess_curve.begin()), pe(loess_curve.end()); pi != pe; pi++)
-      PyList_SetItem(pypoints, i++, Py_BuildValue("ff", (*pi).first, (*pi).second));
+    vector<pair<double, double> >::const_iterator pi(loess_curve.begin()), pe(loess_curve.end());
+    vector<double>::const_iterator si(sampPoints.begin());
+    for (; pi != pe; pi++, si++)
+      PyList_SetItem(pypoints, i++, Py_BuildValue("fff", *si, (*pi).first, (*pi).second));
 
     return pypoints;
   PyCATCH
@@ -1350,6 +1410,27 @@ DOUBLE_FROM_INT(bell)
 DOUBLE_FROM_INT(logfact)
 DOUBLE_FROM_INT_INT(logcomb)
 
+
+#define PY_SAMPLING(name) \
+PyObject *py_sampling##name(PyObject *, PyObject *args) \
+{ \
+  vector<double> points; \
+  int nPoints; \
+  \
+  if (!PyArg_ParseTuple(args, "O&i:sampling" #name, cc_list, &points, &nPoints)) \
+    return NULL; \
+  \
+  vector<double> lst; \
+  sampling##name(points, nPoints, lst); \
+  return list2python(lst); \
+}
+
+PY_SAMPLING(Factor)
+PY_SAMPLING(Fixed)
+PY_SAMPLING(Uniform)
+PY_SAMPLING(Minimal)
+
+#undef PY_SAMPLING
 
 /* *********** EXPORT DECLARATIONS ************/
 
@@ -1434,6 +1515,10 @@ PyMethodDef statc_functions[]={
      DECLARE(logcomb)
 
      {"loess", (binaryfunc)py_loess, METH_VARARGS},
+     DECLARE(samplingFactor)
+     DECLARE(samplingFixed)
+     DECLARE(samplingMinimal)
+     DECLARE(samplingUniform)
 
      {NULL, NULL}
 };
