@@ -81,6 +81,10 @@ def MSE(res, **argkw):
 
     return [x/totweight for x in MSEs]
 
+
+    
+def RMSE(res, **argkw):
+    return [math.sqrt(x) for x in apply(MSE, (res, ), argkw)]
     
 def CA_se(res, **argkw):
     if res.numberOfIterations==1:
