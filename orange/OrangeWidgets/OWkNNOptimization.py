@@ -1,13 +1,14 @@
 from OWBaseWidget import *
 from OWWidget import OWWidget
 import os
-import orange, orngTest #, orngStat
+import orange, orngTest
 from copy import copy
 from math import sqrt
 import OWGUI, OWDlgs
 import OWVisAttrSelection
 from OWVisGraph import *
 
+# quality measure
 CLASS_ACCURACY = 0
 AVERAGE_CORRECT = 1
 BRIER_SCORE = 2
@@ -17,6 +18,7 @@ LEAVE_ONE_OUT = 0
 TEN_FOLD_CROSS_VALIDATION = 1
 TEST_ON_LEARNING_SET = 2
 
+# results in the list
 ACCURACY = 0 
 OTHER_RESULTS = 1
 LEN_TABLE = 2
@@ -33,8 +35,9 @@ ALGORITHM_HEURISTIC = 1
 
 NUMBER_OF_INTERVALS = 6  # number of intervals to use when discretizing 
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
-discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
+contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure())]
+discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
+
 
 # array of testing methods. used by calling python's apply method depending on the value of self.testingMethod
 testingMethods = [orngTest.leaveOneOut, orngTest.crossValidation, orngTest.learnAndTestOnLearnData]
@@ -46,14 +49,14 @@ class kNNOptimization(OWBaseWidget):
     settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod",
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTimeIndex", "useProjectionValue", "classifierName",
-                    "argumentCountIndex", "canUseMoreArguments", "moreArgumentsIndex"]
-    resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
+                    "argumentCountIndex", "canUseMoreArguments", "moreArgumentsIndex", "reevaluateProjectionsCount", "reevaluateProjections" ]
+    resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
-    argumentCounts = [1, 5, 10, 20, 40, 100, 100000]
+    argumentCounts = [1, 5, 10, 20, 50, 100, 100000]
 
     evaluationTimeNums = [0.5, 1, 2, 5, 10, 20, 60, 120]
     evaluationTimeList = [str(x) for x in evaluationTimeNums]
@@ -61,7 +64,7 @@ class kNNOptimization(OWBaseWidget):
     moreArgumentsNums = [60, 65, 70, 75, 80, 85, 90, 95]
     moreArgumentsList = ["%d %%" % x for x in moreArgumentsNums]
 
-    def __init__(self, parentWidget=None, signalManager = None, graph = None, parentName = "Visualization widget"):
+    def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "Optimization Dialog")
 
         self.parentWidget = parentWidget
@@ -94,6 +97,8 @@ class kNNOptimization(OWBaseWidget):
         self.createSnapshots = 1
         self.evaluationTimeIndex = 4
         self.useProjectionValue = 1
+        self.reevaluateProjections = 1
+        self.reevaluateProjectionsCount = 1000
         self.classifierName = "VizRank learner"
 
         self.showRank = 0
@@ -177,46 +182,45 @@ class kNNOptimization(OWBaseWidget):
 
         # ##########################
         # SAVE & MANAGE TAB
-        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Class values in data set ")        
+        self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select class values you wish to separate ")
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of concurrently visualized attributes ")        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
-        self.evaluateBox = OWGUI.widgetBox(self.ManageTab, " Evaluate Current Projection / Classifier ")
         
-        self.classesCaption = QLabel('Select classes you wish to separate:', self.classesBox)
         self.classesList = QListBox(self.classesBox)
         self.classesList.setSelectionMode(QListBox.Multi)
         self.classesList.setMinimumSize(60,60)
         self.connect(self.classesList, SIGNAL("selectionChanged()"), self.classesListChanged)
         
-        self.buttonBox3 = OWGUI.widgetBox(self.evaluateBox, orientation = "horizontal")
+        self.attrLenList = QListBox(self.visualizedAttributesBox)
+        self.attrLenList.setSelectionMode(QListBox.Multi)
+        self.attrLenList.setMinimumSize(60,60)
+        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+        
+        #self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
+        #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
+
+        self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
+        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
+        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
+
+        self.buttonBox7 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
+        self.graphProjectionsButton = OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
+        self.closeButton = OWGUI.button(self.buttonBox7, self, "Result Analysis", self.resultAnalysis)
+
+        self.buttonBox3 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate projection')
         #self.saveProjectionButton = OWGUI.button(self.buttonBox3, self, 'Save projection')
         self.saveBestButton = OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
 
-        self.buttonBox4 = OWGUI.widgetBox(self.evaluateBox, orientation = "horizontal")
+        self.buttonBox4 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.showKNNCorrectButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN correct')
         self.showKNNWrongButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN wrong')
         self.showKNNCorrectButton.setToggleButton(1); self.showKNNWrongButton.setToggleButton(1)
-                
-        self.attrLenCaption = QLabel('Number of concurrently visualized attributes:', self.manageResultsBox)
-        self.attrLenList = QListBox(self.manageResultsBox)
-        self.attrLenList.setSelectionMode(QListBox.Multi)
-        self.attrLenList.setMinimumSize(60,60)
-        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
 
-        self.reevaluateResults = OWGUI.button(self.manageResultsBox, self, "Reevaluate shown projections")
-        #self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.buttonBox7 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        #self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
-        #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
-        self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
-        self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
-        self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
-        self.closeButton = OWGUI.button(self.buttonBox7, self, "Result Analysis", self.resultAnalysis)
-        self.resize(375,550)
-        self.setMinimumWidth(350)
-        self.tabs.setMinimumWidth(350)
-
+        self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
+        self.reevaluateResults = OWGUI.button(self.buttonBox5, self, "Reevaluate projections")
+        self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
+        
         # ##########################
         # ARGUMENTATION TAB
         self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
@@ -236,9 +240,14 @@ class kNNOptimization(OWBaseWidget):
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection", callback = self.updateClassifierChanges)
+
+        reevalBox = OWGUI.widgetBox(self.ClassificationTab, " Reevaluate projections ")
+        self.reevaluateProjectionsCheck = OWGUI.checkBox(reevalBox, self, "reevaluateProjections", "Reevaluate projections for each learning data set", tooltip = "Do you want to reevaluate projections for each learning data set. \nOtherwise, the same projections will be used in the prediction for each test data set.")
+        self.reevaluateProjectionsCountCombo = OWGUI.comboBoxWithCaption(reevalBox, self, "reevaluateProjectionsCount", "Number of best projections to reevaluate:  ", tooltip = "How many of the best projections do you want to reevaluate when a new learning data set comes?", items = [1, 10, 100, 250, 500, 1000], sendSelectedValue = 1, valueType = int)
+
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "40", "100", "All"], callback = self.updateClassifierChanges)
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["1", "5", "10", "20", "50", "100", "All"], callback = self.updateClassifierChanges)
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -250,6 +259,10 @@ class kNNOptimization(OWBaseWidget):
         self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.classifierNameChanged)
         self.vizRankLearner = VizRankLearner(self, self.parentWidget)
         if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
+
+        self.resize(375,550)
+        self.setMinimumWidth(375)
+        self.tabs.setMinimumWidth(375)
         
     # ##############################################################
     # EVENTS
@@ -341,6 +354,7 @@ class kNNOptimization(OWBaseWidget):
                 self.resultList.insertItem(string)
                 self.shownResults.append(self.allResults[i])
             i+=1
+        qApp.processEvents()
         if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
 
     # set value of k to sqrt(n)
@@ -362,10 +376,11 @@ class kNNOptimization(OWBaseWidget):
         correct = sqrt(len(data))
         i=0
         # set value of k to square root of number of instances in dataset
-        while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
-        if i==0: self.kValue = self.kNeighboursNums[0]
-        if i==len(self.kNeighboursNums): self.kValue = self.kNeighboursNums[-1]
-        else: self.kValue = self.kNeighboursNums[i-1]
+        #while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
+        #if i==0: self.kValue = self.kNeighboursNums[0]
+        #if i==len(self.kNeighboursNums): self.kValue = self.kNeighboursNums[-1]
+        #else: self.kValue = self.kNeighboursNums[i-1]
+        # TO DO: remove this comments
 
         if not sameDomain:
             self.classesList.clear()
@@ -630,49 +645,7 @@ class kNNOptimization(OWBaseWidget):
         del knn, results
         return returnTable
 
-    """
-    # TEST TEST TEST TEST !!!
-    # from a given dataset return list of (acc, attrs), where attrs are subsets of lenght subsetSize of attributes from table
-    # that give the best kNN prediction on table
-    def kNNGetInterestingSubsets(self, subsetSize, attributes, returnListSize, table, testingList = []):
-        if attributes == [] or subsetSize == 0:
-            if len(testingList) != subsetSize: return []
-
-            # do the testing
-            self.currentSubset += 1
-            attrs = []
-            for attr in testingList:
-                attrs.append(table.domain[attr])
-            domain = orange.Domain(attrs + [table.domain.classVar])
-            shortTable = orange.Preprocessor_dropMissing(table.select(domain))
-            text = "Current attribute subset (%d/%d): " % (self.currentSubset, self.totalSubsets)
-            for attr in testingList[:-1]: text += attr + ", "
-            text += testingList[-1]
-            if len(shortTable) < self.minExamples:
-                print text + " - ignoring (too few examples)"
-                return []
-            print text
-            return [(self.kNNComputeAccuracy(shortTable), testingList)]
-
-        full1 = self.kNNGetInterestingSubsets(subsetSize, attributes[1:], returnListSize, table, testingList)
-        testingList2 = copy(testingList)
-        testingList2.insert(0, attributes[0])
-        full2 = self.kNNGetInterestingSubsets(subsetSize, attributes[1:], returnListSize, table, testingList2)
-
-        # find max values in booth lists
-        full = full1 + full2
-        shortList = []
-
-        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.qualityMeasure == CLASS_ACCURACY: funct = max
-        else: funct = min
-        for i in range(min(returnListSize, len(full))):
-            item = funct(full)
-            full.remove(item)
-            shortList.append(item)
-
-        return shortList
-    """
-    
+      
     # ##############################################################
     # Loading and saving projection files
     # ##############################################################
@@ -682,9 +655,9 @@ class kNNOptimization(OWBaseWidget):
         if filename == None:
             # get file name
             if self.datasetName != "":
-                filename = "%s - %s (k - %2d)" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName, self.kValue )
+                filename = "%s - %s" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName)
             else:
-                filename = "%s (k - %2d)" % (self.parentName, self.kValue )
+                filename = "%s" % (self.parentName)
             qname = QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Interesting projections (*.proj)", self, "", "Save Projections")
             if qname.isEmpty(): return
             name = str(qname)
@@ -702,8 +675,9 @@ class kNNOptimization(OWBaseWidget):
         file = open(name, "wt")
         attrs = ["kValue", "minExamples", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm"]
         dict = {}
-        for attr in attrs:
-            dict[attr] = self.__dict__[attr]
+        for attr in attrs: dict[attr] = self.__dict__[attr]
+        dict["dataCheckSum"] = self.rawdata.checksum()
+        
         file.write("%s\n" % (str(dict)))
         file.write("%s\n" % str(self.selectedClasses))
         for (acc, other_results, lenTable, attrList, tryIndex, strList) in self.shownResults:
@@ -726,16 +700,17 @@ class kNNOptimization(OWBaseWidget):
 
 
     # load projections from a file
-    def load(self):
+    def load(self, name = None):
         self.clearResults()
         self.clearArguments()
         if self.rawdata == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
             return
-                
-        name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections")
-        if name.isEmpty(): return
-        name = str(name)
+
+        if name == None:
+            name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections")
+            if name.isEmpty(): return
+            name = str(name)
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
@@ -746,6 +721,11 @@ class kNNOptimization(OWBaseWidget):
             QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
             file.close()
             return
+
+        if settings.has_key("dataCheckSum") and settings["dataCheckSum"] != self.rawdata.checksum():
+            if QMessageBox.information(self, 'VizRank', 'The current data set has a different checksum than the data set that was used to evaluate projections in this file.\nDo you want to continue loading anyway, or cancel?','Continue','Cancel', '', 0,1):
+                file.close()
+                return
 
         self.setSettings(settings)
 
@@ -777,16 +757,20 @@ class kNNOptimization(OWBaseWidget):
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
         self.resultsDetailsBox.setEnabled(0)
+        self.optimizeGivenProjectionButton.setEnabled(0)
         self.SettingsTab.setEnabled(0)
         self.ManageTab.setEnabled(0)
+        self.ClassificationTab.setEnabled(0)
         self.ArgumentationTab.setEnabled(0)
         
     def enableControls(self):    
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
         self.resultsDetailsBox.setEnabled(1)
+        self.optimizeGivenProjectionButton.setEnabled(1)
         self.SettingsTab.setEnabled(1)
         self.ManageTab.setEnabled(1)
+        self.ClassificationTab.setEnabled(1)
         self.ArgumentationTab.setEnabled(1)
         
     # ##############################################################
@@ -822,10 +806,15 @@ class kNNOptimization(OWBaseWidget):
         QDialog.accept(self.sizeDlg)
 
     def resultAnalysis(self):
-        dialog = OWResultAnalysis(self, self.signalManager)
+        dialog = OWResultAnalysis(self, signalManager = self.signalManager)
         dialog.setResults(self.shownResults, VIZRANK)
         dialog.show()
 
+
+    def graphProjectionQuality(self):
+        dialog = OWGraphProjectionQuality(self, signalManager = self.signalManager)
+        dialog.setResults(self.allResults, VIZRANK)
+        dialog.show()
 
     # ######################################################
     # Auxiliary functions
@@ -880,20 +869,20 @@ class kNNOptimization(OWBaseWidget):
     # ######################################################
     # Argumentation functions
     # ######################################################
-    def findArguments(self, selectBest = 1, showClassification = 1):
+    def findArguments(self, selectBest = 1, showClassification = 1, example = None):
         self.cancelArgumentation = 0
         self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
         snapshots = self.createSnapshots
         
-        if self.subsetdata == None:
+        if not example and self.subsetdata == None:
             QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return (None,None)
         if len(self.shownResults) == 0:
             QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return (None,None)
 
-        example = self.subsetdata[0]
+        if example == None: example = self.subsetdata[0]
         testExample = [self.parentWidget.graph.scaleExampleValue(example, i) for i in range(len(example.domain.attributes))]
 
         self.findArgumentsButton.hide()
@@ -956,8 +945,10 @@ class kNNOptimization(OWBaseWidget):
         if foundArguments > argumentCount:
             s += "<nobr>Note: To get the current prediction, <b>%d</b> arguments had to be used (instead of %d)<br>" % (foundArguments, argumentCount)
         s = s[:-4]
-        print s
-        if showClassification: QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+        #print s
+        #if showClassification or (not example[example.domain.classVar.name].isSpecial() and example.getclass().value != classValue):
+        #    QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+        # TO DO
         return classValue, dist
        
     def getArgumentIndex(self, value, classValue):
@@ -986,15 +977,15 @@ class kNNOptimization(OWBaseWidget):
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
-        self.parentWidget.showAttributes(self.arguments[classInd][ind][4], clusterClosure = None)
+        self.parentWidget.showAttributes(self.arguments[classInd][ind][5], clusterClosure = None)
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
         qApp.processEvents()
 
-    
-
-class kNNClassifier(orange.Classifier):
+# #############################################################################
+# class that represents kNN classifier that classifies examples based on top evaluated projections
+class VizRankClassifier(orange.Classifier):
     def __init__(self, kNNOptimizationDlg, visualizationWidget, data, firstTime = 1):
         self.kNNOptimizationDlg = kNNOptimizationDlg
         self.visualizationWidget = visualizationWidget
@@ -1006,7 +997,7 @@ class kNNClassifier(orange.Classifier):
         elif results != None and len(results) > 0:
             computeProjections = 0
         else: computeProjections = 1
-        
+
         if computeProjections == 1:
             self.evaluating = 1
             self.visualizationWidget.cdata(data, clearResults = 0)
@@ -1017,8 +1008,13 @@ class kNNClassifier(orange.Classifier):
             t.stop()
             self.evaluating = 0
         else:
-            #self.kNNOptimizationDlg.setData(data)
             self.visualizationWidget.cdata(data, clearResults = 0)
+            if self.kNNOptimizationDlg.reevaluateProjections:
+                val = self.kNNOptimizationDlg.resultListLen
+                self.kNNOptimizationDlg.resultListLen = self.kNNOptimizationDlg.reevaluateProjectionsCount
+                self.kNNOptimizationDlg.updateShownProjections()
+                self.visualizationWidget.reevaluateProjections()
+                self.kNNOptimizationDlg.resultListLen = val
 
     # timer event that stops evaluation of clusters
     def stopEvaluation(self):
@@ -1030,17 +1026,19 @@ class kNNClassifier(orange.Classifier):
     def __call__(self, example, returnType):
         table = orange.ExampleTable(example.domain)
         table.append(example)
-        self.visualizationWidget.subsetdata(table, 0)
+        self.visualizationWidget.subsetdata(table, 0)       # comment this!!!
         snapshots = self.kNNOptimizationDlg.createSnapshots
         self.kNNOptimizationDlg.createSnapshots = 0
-        classVal, dist = self.kNNOptimizationDlg.findArguments(0, 0)
+        classVal, dist = self.kNNOptimizationDlg.findArguments(0, 0, example)
         self.kNNOptimizationDlg.createSnapshots = snapshots
 
-        del table
+        #del table
         if returnType == orange.GetBoth: return classVal, dist
         else:                            return classVal
         
 
+# #############################################################################
+# learner that builds VizRankClassifier
 class VizRankLearner(orange.Learner):
     def __init__(self, kNNOptimizationDlg, visualizationWidget):
         self.kNNOptimizationDlg = kNNOptimizationDlg
@@ -1050,7 +1048,7 @@ class VizRankLearner(orange.Learner):
         
         
     def __call__(self, examples, weightID = 0):
-        classifier = kNNClassifier(self.kNNOptimizationDlg, self.visualizationWidget, examples, self.firstTime)
+        classifier = VizRankClassifier(self.kNNOptimizationDlg, self.visualizationWidget, examples, self.firstTime)
         self.firstTime = 0
         return classifier
 
@@ -1059,6 +1057,8 @@ class VizRankLearner(orange.Learner):
 VIZRANK = 0
 CLUSTER = 1
 
+# #############################################################################
+# analyse the attributes that appear in the top projections. show how often do they appear also in other top projections
 class OWResultAnalysis(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Result Analysis", wantGraph = 1)
@@ -1076,12 +1076,11 @@ class OWResultAnalysis(OWWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number of attributes', minValue=0, maxValue = 90, step=1, callback = self.updateGraph, ticks=5)
-        self.projectionCountSlider = OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number of projections', minValue=1, maxValue = 100, step=1, callback = self.updateGraph, ticks=5)
+        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number of attributes', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
+        self.projectionCountSlider = OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number of projections', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
         OWGUI.checkBox(self.controlArea, self, 'rotateXAttributes', label = "Rotate X Labels", box = 1, callback = self.updateGraph)
-        
-        #load settings
-        self.loadSettings()
+        box = OWGUI.widgetBox(self.controlArea, box = 1)
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
         
         self.updateGraph()
 
@@ -1098,7 +1097,7 @@ class OWResultAnalysis(OWWidget):
         colors = ColorPaletteHSV(1)
         self.graph.clear()
         self.graph.removeMarkers()
-        if self.results == None and self.dialogType not in [VIZRANK, CLUSTER]: return
+        if self.results == None or  self.dialogType not in [VIZRANK, CLUSTER]: return
 
         attributes = []
         attrDict = {}
@@ -1132,17 +1131,6 @@ class OWResultAnalysis(OWWidget):
                         if attrs[i] not in attributes: attributes.append(attrs[i])
                         if attrs[j] not in attributes: attributes.append(attrs[j])
 
-
-        """
-        attributes = ["test1", "test2", "test3 asd q2 3 1 rsa", "test4 asdf asdf "]
-        attrDict[("test1", "test2")] = 1
-        attrDict[("test3", "test2")] = 1
-        attrDict[("test1", "test3")] = 1
-        attrDict[("test1", "test4")] = 1
-        attrDict[("test2", "test4")] = 1
-        attrDict[("test3", "test4")] = 1
-        """
-        
         eps = 0.05
         num = len(attributes)
         for x in range(num-1):
@@ -1173,9 +1161,70 @@ class OWResultAnalysis(OWWidget):
         self.graph.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
         self.graph.axisScaleDraw(QwtPlot.xBottom).setOptions(0) 
         self.graph.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
-        self.graph.setAxisScale(QwtPlot.xBottom, - 1.3 , num, 1)
-        self.graph.setAxisScale(QwtPlot.yLeft, - 1.0 , num, 1)
+        self.graph.setAxisScale(QwtPlot.xBottom, - 1.2 - 0.1*len(attributes) , num, 1)
+        self.graph.setAxisScale(QwtPlot.yLeft, - 0.9 - 0.1*len(attributes) , num, 1)
         
+        self.graph.update()  # don't know if this is necessary
+        self.graph.repaint()
+            
+
+# #############################################################################
+# draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
+class OWGraphProjectionQuality(OWWidget):
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Projection Quality", wantGraph = 1)
+
+        self.graph = OWVisGraph(self.mainArea)
+        self.results = None
+        self.dialogType = -1
+        self.box = QVBoxLayout(self.mainArea)
+        self.box.addWidget(self.graph)
+        self.box.activate()
+
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        self.updateGraph()
+
+    def setResults(self, results, dialogType):
+        self.results = results
+        self.dialogType = dialogType
+        self.updateGraph()
+
+    def updateGraph(self):
+        colors = ColorPaletteHSV(2)
+        self.graph.clear()
+        if self.results == None or self.dialogType not in [VIZRANK, CLUSTER]: return
+
+        yVals = []
+        yVals2 = []
+        for i in range(len(self.results)):
+            if self.dialogType == VIZRANK:
+                yVals.append(self.results[i][0])
+            else:
+                if type(self.results[i][4]) == dict:
+                    yVals2.append(self.results[i][0])
+                else:
+                    yVals.append(self.results[i][0])
+
+        xVals = range(len(yVals))
+        if len(yVals) > 10:
+            fact = len(yVals)/200
+            if fact > 0:        # make the array of data smaller
+                pos = 0             
+                xTemp = []; yTemp = []
+                while pos < len(yVals):
+                    xTemp.append(xVals[pos])
+                    yTemp.append(yVals[pos])
+                    pos += fact
+                xVals = xTemp; yVals = yTemp
+
+        #c = QColor(0,0,0)
+        c = colors.getColor(0)
+        self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = xVals, yData = yVals, lineWidth = 1)
+
+        if yVals2 != []:
+            c = colors.getColor(1)
+            self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = range(len(yVals2)), yData = yVals2, lineWidth = 1)
+
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
             
@@ -1185,8 +1234,8 @@ class OWResultAnalysis(OWWidget):
 if __name__=="__main__":
     import sys
     a=QApplication(sys.argv)
-    ow=kNNOptimization()
-    #ow = OWResultAnalysis()
+    #ow=kNNOptimization()
+    ow = OWResultAnalysis()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()
