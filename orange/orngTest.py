@@ -403,7 +403,14 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
     testset, testweight = demangleExamples(testset)
 
     if not testResults:
-        testResults=ExperimentResults(1, [l.name for l in classifiers], testset.domain.classVar.values.native(), testweight!=0, testset.domain.classVar.baseValue)
+        classVar = testset.domain.classVar
+        if classVar.varType == orange.VarTypes.Discrete:
+            values = classVar.values.native()
+            baseValue = classVar.baseValue
+        else:
+            values = None
+            baseValue = -1
+        testResults=ExperimentResults(1, [l.name for l in classifiers], values, testweight!=0, baseValue)
     
     for ex in testset:
         te = TestedExample(iterationNumber, int(ex.getclass()), 0, ex.getweight(testweight))
