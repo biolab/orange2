@@ -551,16 +551,13 @@ class OWRadviz(OWWidget):
             data = orange.Preprocessor_dropMissingClasses(data)
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.optimizationDlg.clearResults()
-        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
-        self.clusterDlg.clearResults()
-        self.clusterDlg.setData(data)
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        
         exData = self.data
         self.data = data
         self.graph.setData(self.data)
-
+        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
+        self.clusterDlg.setData(data)
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same                
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
