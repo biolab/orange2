@@ -133,8 +133,8 @@ class LogRegLearnerClass:
         imputer = getattr(self, "imputer", None) or None
         if getattr(self, "removeMissing", 0):
             examples = orange.Preprocessor_dropMissing(examples)
-        if hasDiscreteValues(examples.domain):
-            examples = createNoDiscTable(examples)
+##        if hasDiscreteValues(examples.domain):
+##            examples = createNoDiscTable(examples)
         if getattr(self, "stepwiseLR", 0):
             addCrit = getattr(self, "addcrit", 0.2)
             removeCrit = getattr(self, "removeCrit", 0.3)
@@ -432,7 +432,8 @@ class StepWiseFSS_class:
 
     # get LL for Majority Learner 
     tempDomain = orange.Domain(attr,examples.domain.classVar)
-    tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+    tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
+    #tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
 
     ll_Old = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
     length_Old = float(len(tempData))
@@ -454,7 +455,8 @@ class StepWiseFSS_class:
                 tempAttr = filter(lambda x: x!=at, attr)
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
                 # domain, calculate P for LL improvement.
-                tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+                tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
+#                tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 ll_Delete = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
                 length_Delete = float(len(tempData))
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
@@ -498,7 +500,8 @@ class StepWiseFSS_class:
             tempAttr = attr + [at]
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
             # domain, calculate P for LL improvement.
-            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+#            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+            tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
             ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
 
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
