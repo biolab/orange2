@@ -55,6 +55,7 @@ rm -R orange/doc
 
 # remove files we don't want in the installation
 for f in `cat orange/exclude.lst`; do
+  echo removing orange/$f
   rm orange/$f
 done
 
@@ -80,9 +81,14 @@ rm tmp.dmg
 
 ## copy file to estelle and change version
 ~/mount_estelle
+# remember name of old file
+OLDDMGFILE=`grep MACINTOSH_SNAPSHOT ~/estelleDownload/filenames.set | awk -F\= '{print $2}'`
+# change name to new filename
 grep -v $VARNAME ~/estelleDownload/filenames.set > filenames.new.set
 echo $VARNAME=$DMGFILE >> filenames.new.set
 cp $DMGFILE ~/estelleDownload
 cp filenames.new.set ~/estelleDownload/filenames.set
-~/umount_estelle
+# remove old file
+rm ~/estelleDownload/$OLDDMGFILE
+# ~/umount_estelle
 
