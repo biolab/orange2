@@ -685,7 +685,7 @@ double SWILK(bool INIT, double *X, int N, int N1, int N2, double *A, double& W, 
 		for (I = 2; I <= N1; ++I) {
 			XI = X[I-1]/RANGE;
 			if (XX-XI > SMALL)
-				IFAULT=7;
+				return PW; // FIXED BY JD, WAS: IFAULT=7;
 			SX += XI;
 			if (I != J) 
 				SA += SIGN(I - J) * A[MIN(I, J)-1];
