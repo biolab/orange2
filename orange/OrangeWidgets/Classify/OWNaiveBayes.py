@@ -81,7 +81,7 @@ class OWNaiveBayes(OWWidget):
 
         mValid = QDoubleValidator(self.controlArea)
         mValid.setRange(0,10000,1)
-        self.mwidget = OWGUI.lineEdit(box, self, 'm', label='Parameter for m-estimate:', labelWidth=width, orientation='horizontal', box=None, space=None, tooltip=None, callback=None, valueType = str, validator = mValid)
+        self.mwidget = OWGUI.lineEdit(box, self, 'm', label='Parameter for m-estimate:', labelWidth=width, orientation='horizontal', box=None, tooltip=None, callback=None, valueType = str, validator = mValid)
 
         self.refreshControls()
 
@@ -91,8 +91,7 @@ class OWNaiveBayes(OWWidget):
         kernelSizeValid = QDoubleValidator(self.controlArea)
         kernelSizeValid.setRange(0,1,3)
         OWGUI.lineEdit(box, self, 'windowProportion', label = 'Size of LOESS window:',
-                       labelWidth=width, orientation='horizontal', box=None, space=None,
-                       tooltip='Proportion of examples used for local learning in loess. Use 0 to learn from few local instances (3) and 1 to learn from all in the data set (this kind of learning is not local anymore).',
+                       labelWidth=width, orientation='horizontal', box=None, tooltip='Proportion of examples used for local learning in loess. Use 0 to learn from few local instances (3) and 1 to learn from all in the data set (this kind of learning is not local anymore).',
                        callback=None, valueType = str, validator = kernelSizeValid)
         
         OWGUI.separator(self.controlArea)
