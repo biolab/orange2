@@ -430,6 +430,10 @@ SOURCE=.\orange\svm_filtering.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\symmatrix.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\tabdelim.cpp
 # End Source File
 # Begin Source File
@@ -783,6 +787,10 @@ SOURCE=.\orange\svm.hpp
 # Begin Source File
 
 SOURCE=.\orange\svm_filtering.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\symmatrix.hpp
 # End Source File
 # Begin Source File
 

@@ -15,8 +15,6 @@ def findFileNode(files, name, dir):
         nodeDir, nodeName = node.getAttribute("directory"), node.getAttribute("name")
         if (nodeDir == dir) and (nodeName == name):
             return node, False, None
-        elif (nodeDir > dir) or (nodeDir == dir) and (nodeName > name):
-            break
     else:
         node = None
         

@@ -28,6 +28,9 @@
 
 <DT>normalize</DT>
 <DD>Tells whether the returned probabilities should be normalized (default: <CODE>true</CODE>)</DD>
+
+<DT>threshold</DT>
+<DD>For binary classes, this determines the threshold probability for classifying to class 1. For multiple class problems, it has no effect.</DD>
 </DL>
 
 <P>Class <CODE>BayesClassifier</CODE> represents a naive Bayesian classifier. Probability of class C, knowing that values of attributes A1, A2, ..., An are v1, v2, ..., vn, is computed as
@@ -62,6 +65,9 @@ p(C|v1, v2, ..., vn) = p(C) * [p(C|v1)/p(C)] * [p(C|v2)/p(C)] * ... * [p(C|vn)/p
 
 <DT>normalizePredictions</DT>
 <DD>Tells the classifier whether to normalize predictions (default: <CODE>true</CODE>).</DD>
+
+<DT>adjustThreshold</DT>
+<DD>If set and the class is binary, the classifier's threshold will be set as to optimize the classification accuracy. The threshold is tuned by observing the probabilities predicted on learning data. Default is false (to conform with the usual naive bayesian classifiers), but setting it to true can increase the accuracy considerably.
 </DL>
 
 <P>As first, you do not need to understand anything of above (or below) to use the classifier. You can simply leave everything as is, call the classifier and it will work as you expect. And better, it will even handle continuous attributes as continuous.</P>
