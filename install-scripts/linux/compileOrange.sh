@@ -1,6 +1,8 @@
 ## export the latest version
 TAG=stable
 
+gcc -v
+echo
 echo "checking out sources using tag: $TAG"
 if [ "$1" == "clean" ]; then
 	## force a clean checkout
