@@ -11,7 +11,7 @@ vpath %.cpp orange:corn:statc:include
 vpath %.hpp orange:corn:statc:include
 vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl
 
-$(ODIR)/%.o :
+obj/%.o :
 	g++ $(COMPILEOPTIONS) -c $< -o $@
 
 all	: dirs ../orange.so ../corn.so ../statc.so
@@ -22,7 +22,7 @@ dirs:
 	-@mkdir -p obj > /dev/null
       
 ../orange.so: orange/ppp/stamp orange/px/stamp $(ORANGE_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(LINKOPTIONS) -o ../orange.so
+	gcc $(ORANGE_OBJECTS) $(LINKOPTIONS) -o ../orange.so -lgsl -lgslcblas
 
 ../corn.so:	$(CORN_OBJECTS)
 	gcc $(CORN_OBJECTS) $(LINKOPTIONS) -o ../corn.so
