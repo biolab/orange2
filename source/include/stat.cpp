@@ -434,3 +434,339 @@ void lwr(const vector<double> &refpoints, const map<double, double> &points, con
 
   lwr(refpoints, opoints, smoothFactor, result);
 }
+
+
+
+
+double alnorm(double x, bool upper) {
+	double norm_prob, con=1.28, z,y, ltone = 7.0, utzero = 18.66;
+	double p, r, a2, b1, c1, c3, c5, d1, d3, d5;
+	double q, a1, a3, b2, c2, c4, c6, d2, d4;
+	bool up;
+	
+	p = 0.398942280444;
+	q = 0.39990348504;
+	r = 0.398942280385; 
+	a1 = 5.75885480458;
+	a2 = 2.62433121679; 
+	a3 = 5.92885724438; 
+	b1 = -29.8213557807;
+	b2 = 48.6959930692;
+    c1 = -3.8052e-8;
+	c2 = 3.98064794e-4;       
+    c3 = -0.151679116635;
+	c4 = 4.8385912808;
+	c5 = 0.742380924027;
+	c6 = 3.99019417011; 
+    d1 = 1.00000615302; 
+	d2 = 1.98615381364;  
+	d3 = 5.29330324926;
+	d4 = -15.1508972451;
+    d5 = 30.789933034;
+
+	up = upper;
+	z = x;
+	if(z < 0.0) {
+		up = !up;
+		z = -z;
+	}
+	if(z <= ltone || up && z <= utzero) {
+		y = 0.5*z*z;
+	} else {
+		norm_prob = 0.0;
+	}
+	if(z > con) {
+		norm_prob = r*exp(-y)/(z+c1+d1/(z+c2+d2/(z+c3+d3/(z+c4+d4/(z+c5+d5/(z+c6))))));
+	} else {
+		norm_prob = 0.5 - z*(p-q*y/(y+a1+b1/(y+a2+b2/(y+a3))));
+	}
+	if(!up) 
+		norm_prob = 1.0 - norm_prob;
+
+	return norm_prob;
+}
+
+double PPND(double P,int& IER) {
+	//C
+	//C ALGORITHM AS 111, APPL.STATIST., VOL.26, 118-121, 1977.
+	//C
+	//C PRODUCES NORMAL DEVIATE CORRESPONDING TO LOWER TAIL AREA = P.
+	//C
+	//C	See also AS 241 which contains alternative routines accurate to
+	//C	about 7 and 16 decimal digits.
+	//C
+	double SPLIT = 0.42;
+	double A[] = {2.50662823884,-18.61500062529,41.39119773534,-25.44106049637};
+	double B[] = {-8.47351093090,23.08336743743,-21.06224101826,3.13082909833};
+	double C[] = {-2.78718931138,-2.29796479134,4.85014127135,2.32121276858};
+	double D[] = {3.54388924762,1.63706781897};
+	double ZERO = 0.0, ONE = 1.0, HALF = 0.5;
+	double temp, Q, R;
+	
+	IER = 0;
+	Q = P-HALF;
+	if (fabs(Q) <= SPLIT) {
+		//C
+		//C 0.08 < P < 0.92
+		//C
+		R = Q*Q;
+		return Q*(((A[3]*R + A[2])*R + A[1])*R + A[0])/((((B[3]*R + B[2])*R + B[1])*R + B[0])*R + ONE);
+	} else {
+		//C
+		//C P < 0.08 OR P > 0.92, SET R = MIN(P,1-P)
+		//C
+		R = P;
+		if (Q > ZERO) 
+			R = ONE-P;
+		if (R <= ZERO) {
+			IER = 1;
+			return ZERO;
+		}
+		R = sqrt(-log(R));
+		temp = (((C[3]*R + C[2])*R + C[1])*R + C[0])/((D[1]*R + D[0])*R + ONE);
+		if (Q < ZERO)
+			return -temp;
+		else
+			return temp;
+	}
+}
+
+double POLY(double *c, int nord, double x) {
+	//c
+	//c
+	//C Algorithm AS 181.2   Appl. Statist.  (1982) Vol. 31, No. 2
+	//c
+	//C Calculates the algebraic polynomial of order nored-1 with
+	//C array of coefficients c.  Zero order coefficient is c(1)
+	//c
+	double temp, p;
+	int j,i,n2;
+	
+    temp = c[0];
+    if(nord == 1)
+		return temp;
+    p = x*c[nord-1];
+    if(nord != 2) {
+		n2 = nord-2;
+		j = n2;
+		for (i = 0; i < n2; ++i) {
+			p = (p+c[j])*x;
+			--j;
+		}
+    }
+    return temp + p;
+}
+
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define SIGN(a) ((a) > 0.0 ? (1) : (-1))
+
+// X: SORTED data
+// n: q. of data (3-5000)
+// A: weights?
+
+// does not work when all x identical, or when the range too small
+// n2 = n % 2
+// R call: init=false, X, n, n,n2,single[n2], w, pw, ifault)
+double SWILK(bool INIT, double *X, int N, int N1, int N2, double *A, double& W, double &PW, int& IFAULT) {
+	//
+	//C
+	//C ALGORITHM AS R94 APPL. STATIST. (1995) VOL.44, NO.4
+	//C
+	//C Calculates the Shapiro-Wilk W test and its significance level
+	//C
+	
+	double C1[6] = {0.0E0, 0.221157E0, -0.147981E0, -0.207119E1, 0.4434685E1, -0.2706056E1};
+	double C2[6] = {0.0E0, 0.42981E-1, -0.293762E0, -0.1752461E1, 0.5682633E1, -0.3582633E1};
+	double C3[4] = {0.5440E0, -0.39978E0, 0.25054E-1, -0.6714E-3};
+	double C4[4] = {0.13822E1, -0.77857E0, 0.62767E-1, -0.20322E-2};
+	double C5[4] = {-0.15861E1, -0.31082E0, -0.83751E-1, 0.38915E-2};
+	double C6[3] = {-0.4803E0, -0.82676E-1, 0.30302E-2};
+	double C7[2] = {0.164E0, 0.533E0};
+	double C8[2] = {0.1736E0, 0.315E0};
+	double C9[2] = {0.256E0, -0.635E-2};
+	double G[2] =  {-0.2273E1, 0.459E0};
+	double Z90 = 0.12816E1, Z95 = 0.16449E1, Z99 = 0.23263E1;
+	double ZM = 0.17509E1, ZSS = 0.56268E0;
+	double ZERO = 0.0, ONE = 1.0, TWO = 2.0;
+	double BF1 = 0.8378E0, XX90 = 0.556E0, XX95 = 0.622E0;
+	double THREE = 3.0, SQRTH = 0.70711E0;
+	double QTR = 0.25E0, TH = 0.375E0, SMALL = 1E-19;
+	double PI6 = 0.1909859E1, STQR = 0.1047198E1;
+	
+	double SUMM2, SSUMM2, FAC, RSN, AN, AN25, A1, A2, DELTA, RANGE;
+	double SA, SX, SSX, SSA, SAX, ASA, XSX, SSASSX, W1, Y, XX, XI;
+	double GAMMA, M, S, LD, BF, Z90F, Z95F, Z99F, ZFM, ZSD, ZBAR;
+	
+	int NCENS, NN2, I, I1, J;
+	bool UPPER = true;
+	
+	PW  =  ONE;
+	if (W > ZERO) 
+		W = ONE;
+	AN = N;
+	IFAULT = 3;
+	NN2 = N/2;
+	if (N2 < NN2)
+		return PW;
+	IFAULT = 1;
+	if (N < 3)
+		return PW;
+	
+	//C If INIT is false, calculates coefficients for the test
+	if (!INIT) {
+		if (N == 3)
+			A[0] = SQRTH;
+		else {
+			AN25 = AN + QTR;
+			SUMM2 = ZERO;
+			for(I = 0; I < N2; ++I) {
+				int itmp;
+				A[I] = PPND((I + 1 - TH)/AN25,itmp);
+				SUMM2 += A[I]*A[I];
+			}
+			SUMM2 *= TWO;
+			SSUMM2 = sqrt(SUMM2);
+			RSN = ONE / sqrt(AN);
+			A1 = POLY(C1, 6, RSN) - A[0] / SSUMM2;
+		}
+		//C
+		//C Normalize coefficients
+		//C
+		if (N > 5) {
+			I1 = 3;
+			A2 = -A[1]/SSUMM2 + POLY(C2,6,RSN);
+			FAC = sqrt((SUMM2 - TWO * A[0]*A[0] - TWO * A[1]*A[1])/(ONE - TWO * A1*A1 - TWO * A2*A2));
+			A[0] = A1;
+			A[1] = A2;
+		} else {
+			I1 = 2;
+			FAC = sqrt((SUMM2 - TWO * A[0]*A[0])/(ONE - TWO * A1*A1));
+			A[0] = A1;
+		}
+		for (I = I1; I <= NN2; ++I)
+			A[I-1] = -A[I-1]/FAC;
+		INIT = true;
+	}
+	
+	if (N1 < 3)
+		return PW;
+	NCENS = N - N1;
+	IFAULT = 4;
+	if (NCENS < 0 || (NCENS > 0 && N < 20))
+		return PW;
+	IFAULT = 5;
+	DELTA = float(NCENS)/AN;
+	if (DELTA > 0.8)
+		return PW;
+	//C
+	//C If W input as negative, calculate significance level of -W
+	//C
+	
+	if (W < ZERO) {
+		W1 = ONE + W;
+		IFAULT = 0;
+	} else {
+		//C
+		//C Check for zero range
+		//C
+		IFAULT = 6;
+		RANGE = X[N1-1] - X[0];
+		if (RANGE < SMALL)
+			return PW;
+		//C
+		//C Check for correct sort order on range - scaled X
+		//C
+		IFAULT = 7;
+		XX = X[0]/RANGE;
+		SX = XX;
+		SA = -A[0];
+		J = N;
+		for (I = 2; I <= N1; ++I) {
+			XI = X[I-1]/RANGE;
+			if (XX-XI > SMALL)
+				IFAULT=7;
+			SX += XI;
+			if (I != J) 
+				SA += SIGN(I - J) * A[MIN(I, J)-1];
+			XX = XI;
+			--J;
+		}
+		IFAULT = 0;
+		if (N > 5000) 
+			IFAULT = 2;
+		//C Calculate W statistic as squared correlation
+		//C between data and coefficients
+		SA = SA/N1;
+		SX = SX/N1;
+		SSA = ZERO;
+		SSX = ZERO;
+		SAX = ZERO;
+		J = N;
+		for (I = 1; I <= N1; ++I) {
+			if (I != J) 
+				ASA = SIGN(I - J) * A[MIN(I, J)-1] - SA;
+			else
+				ASA = -SA;
+			
+			XSX = X[I-1]/RANGE - SX;
+			SSA += ASA * ASA;
+			SSX += XSX * XSX;
+			SAX +=  ASA * XSX;
+			--J;
+		}
+		
+		//C W1 equals (1-W) claculated to avoid excessive rounding error
+		//C for W very near 1 (a potential problem in very large samples)
+		SSASSX = sqrt(SSA * SSX);
+		W1 = (SSASSX - SAX) * (SSASSX + SAX)/(SSA * SSX);
+	}
+	
+	W = ONE - W1;
+	//C
+	//C Calculate significance level for W (exact for N=3)
+	//C
+	if (N == 3) {
+		PW = PI6 * (asin(sqrt(W)) - STQR);
+		return PW;
+	}
+	Y = log(W1);
+	XX = log(AN);
+	M = ZERO;
+	S = ONE;
+	if (N <= 11) {
+		GAMMA = POLY(G, 2, AN);
+		if (Y >= GAMMA) {
+			PW = SMALL;
+			return PW;
+		}
+		Y = -log(GAMMA - Y);
+		M = POLY(C3, 4, AN);
+		S = exp(POLY(C4, 4, AN));
+	} else {
+		M = POLY(C5, 4, XX);
+		S = exp(POLY(C6, 3, XX));
+	}
+	if (NCENS > 0) {
+		//C
+		//C Censoring by proportion NCENS/N.  Calculate mean and sd
+		//C of normal equivalent deviate of W.
+		//C
+		LD = -log(DELTA);
+		BF = ONE + XX * BF1;
+		Z90F = Z90 + BF * pow(POLY(C7, 2, pow(XX90,XX)), LD);
+		Z95F = Z95 + BF * pow(POLY(C8, 2, pow(XX95,XX)), LD);
+		Z99F = Z99 + BF * pow(POLY(C9, 2, XX),LD);
+		//C
+		//C Regress Z90F,...,Z99F on normal deviates Z90,...,Z99 to get
+		//C pseudo-mean and pseudo-sd of z as the slope and intercept
+		//C
+		ZFM = (Z90F + Z95F + Z99F)/THREE;
+		ZSD = (Z90*(Z90F-ZFM)+Z95*(Z95F-ZFM)+Z99*(Z99F-ZFM))/ZSS;
+		ZBAR = ZFM - ZSD * ZM;
+		M += ZBAR * S;
+		S *= ZSD;
+	}
+	PW = alnorm((Y - M)/S, UPPER);
+	return PW;
+}

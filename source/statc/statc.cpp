@@ -531,6 +531,20 @@ PyObject *py_##name(PyObject *, PyObject *args) \
 }
 
 
+#define T_T_FROM_LIST(name) \
+PyObject *py_##name(PyObject *, PyObject *args) \
+{ PyTRY \
+    vector<double> flist; \
+    if (!args2flist(args, flist)) \
+      return NULL; \
+\
+      double res1, res2; \
+      res1 = name(flist, res2); \
+      return Py_BuildValue("dd", res1, res2); \
+  PyCATCH \
+}
+
+
 #define T_T_FROM_LIST_plus(name, type, pys) \
 PyObject *py_##name(PyObject *, PyObject *args) \
 { PyTRY \
@@ -1075,7 +1089,7 @@ PyObject *py_linregress(PyObject *, PyObject *args)
 T_T_FROM_LIST_T(ttest_1samp)
 T_T_FROM_LIST_LIST(ttest_ind)
 T_T_FROM_LIST_LIST(ttest_rel)
-
+T_T_FROM_LIST(swilk)
 
 PyObject *py_chisquare(PyObject *, PyObject *args)
 { PyTRY
@@ -1522,6 +1536,7 @@ PyMethodDef statc_functions[]={
      DECLARE(mannwhitneyu)
      DECLARE(ranksums)
      DECLARE(wilcoxont)
+     DECLARE(swilk)
 
      DECLARE(chisqprob)
      DECLARE(zprob)
@@ -1580,6 +1595,7 @@ PyMethodDef statc_functions[]={
 #undef DOUBLE_DOUBLE_FROM_LIST_LIST
 #undef T_T_FROM_LIST_LIST
 #undef T_T_FROM_LIST_plus
+#undef T_T_FROM_LIST
 #undef T_T_FROM_LIST_INT
 #undef T_T_FROM_LIST_DOUBLE
 #undef DOUBLE_DOUBLE_FROM_LIST_plus

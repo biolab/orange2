@@ -906,6 +906,31 @@ double wilcoxont(const vector<T> &x, const vector<T> &y, double &prob)
 }
 
 
+double SWILK(bool INIT, double *X, int N, int N1, int N2, double *A, double& W, double &PW, int& IFAULT);
+
+template<class T>
+double swilk(vector<T> points, double &pw)
+{ int n = points.size();
+  int n2 = points.size()/2;
+  double *x = new double[n];
+  double *a = new double[n2];
+  int ifault;
+  double w;
+
+  double *xi = x;
+  if (points.back() == points.front())
+    throw StatException("cannot normalize, all values are equal");
+
+  double fact = 1 / (points.back() - points.front());
+
+  for(vector<T>::const_iterator pi(points.begin()), pe(points.end()); pi!=pe; *(xi++) = *(pi++)*fact);
+  xi = a;
+  for(int i = n2; i--; *(xi++) = 0.0);
+
+  pw = SWILK(false, x, n, n, n2, a, w, pw, ifault);
+  return w;
+}
+
 
 /* *********** PROBABILITY CALCS ************/
 
