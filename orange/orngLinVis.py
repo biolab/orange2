@@ -381,7 +381,7 @@ class Visualizer:
     def findParser(self, classifier):
         if type(classifier)==orange.BayesClassifier:
             return _parseNB()
-        elif type(classifier)==orange.LogisticClassifier:
+        elif type(classifier)==orange.LogRegClassifier:
             return _parseLR2()
         else:
             try:
@@ -578,7 +578,7 @@ if __name__== "__main__":
 
     print "\n\nLOGISTIC REGRESSION (Martin)"
     print     "==================="
-    c = orngLR.LogisticLearner(t)
+    c = orngLR.LogRegLearner(t)
     printmodel(t,c,printexamples=0)
 
     print "\n\nLINEAR SVM"
