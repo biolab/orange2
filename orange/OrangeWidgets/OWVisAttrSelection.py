@@ -231,13 +231,17 @@ def evaluateAttributes(data, contMeasure, discMeasure):
             v.sort()
             #v.reverse()
             cls.append(v)
-        while len(attrs2) < len(contAttrs):
+        ableToAdd = 1
+        while ableToAdd:    # sometimes some attributes are duplicated. in such cases we will add only one instance of such attribute to the list
+            ableToAdd = 0
             for i in range(len(data.domain.classVar.values)):
-                for j in range(len(cls[i])):
+                added = 0
+                while cls[i] != [] and added == 0:
                     (v,attr) = cls[i].pop()
                     if attr not in attrs2:
                         attrs2.append(attr)
-                        break
+                        added = 1
+                        ableToAdd = 1
     #return attrs
     return [attr for (val, attr) in attrs] + attrs2      # return only the ordered list of attributes and not also their values
         
