@@ -355,11 +355,11 @@ PyObject *py_computeROCCumulative(PyObject *, PyObject *arg)
   PyTRY
     PyObject *pyresults;
     int classIndex=-1;
-    PyObject *pyuseweights;
-    if (!PyArg_ParseTuple(arg, "OiO", &pyresults, &classIndex, &pyuseweights))
-      PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex expected", PYNULL);
+    PyObject *pyuseweights = NULL;
+    if (!PyArg_ParseTuple(arg, "O|iO", &pyresults, &classIndex, &pyuseweights))
+      PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex and 'useWeights' flag expected", PYNULL);
 
-    bool useweights = PyObject_IsTrue(pyuseweights)!=0;
+    bool useweights = pyuseweights && PyObject_IsTrue(pyuseweights)!=0;
 
     ExperimentResults results(pyresults);
     if (results.numberOfIterations>1)
