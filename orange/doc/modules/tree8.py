@@ -1,6 +1,6 @@
 # Description: Builds a classification tree, and prunes it using minimal error
-               prunning with different values of parameter m. Prints
-               out m and the size of the tree.
+#              prunning with different values of parameter m. Prints
+#              out m and the size of the tree.
 #              a tree in text and dot format
 # Category:    modelling
 # Uses:        iris
