@@ -97,6 +97,7 @@ public:
   virtual int  numberOfExamples();
 
   virtual void addExample(const TExample &);
+  virtual void addExample(TExample *);
   virtual void addExamples(PExampleGenerator orig);
 
   virtual bool removeExamples  (TFilter &); 

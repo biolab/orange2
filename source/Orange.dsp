@@ -59,7 +59,7 @@ LINK32=link.exe
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
+PostBuild_Cmds=del "c:\python23\lib\site-packages\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "c:\python23\lib\site-packages\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -273,6 +273,10 @@ SOURCE=.\orange\heatmap.cpp
 
 SOURCE=.\orange\im_col_assess.cpp
 # PROP Exclude_From_Build 1
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\imputation.cpp
 # End Source File
 # Begin Source File
 
@@ -621,6 +625,10 @@ SOURCE=.\orange\getarg.hpp
 # Begin Source File
 
 SOURCE=.\orange\heatmap.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\imputation.hpp
 # End Source File
 # Begin Source File
 

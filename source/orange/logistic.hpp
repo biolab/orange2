@@ -31,6 +31,7 @@
 #include "classify.hpp"
 #include "learn.hpp"
 #include "logfit.hpp"
+#include "imputation.hpp"
 
 // TODO: add other includings
 
@@ -42,6 +43,8 @@ public:
 
 	// fitter
 	PLogRegFitter fitter; //P fits beta coefficients and calculates beta errors.
+
+  PImputerConstructor imputerConstructor; //P if present, it constructs an imputer for unknown values
 
 	// constructors
 	TLogRegLearner();
@@ -78,6 +81,8 @@ public:
 	float likelihood; //P Likelihood: The likelihood function is the function which specifies the probability of the sample observed on the basis of a known model, as a function of the model's parameters. 
 	// 
 	int fit_status; //P Tells how the model fitting ended - either regularly (LogRegFitter.OK), or it was interrupted due to one of beta coefficients escaping towards infinity (LogRegFitter.Infinity) or since the values didn't converge (LogRegFitter.Divergence).
+
+  PImputer imputer; //P if present, it imputes unknown values
 
 	// constructors
 	TLogRegClassifier();

@@ -1184,8 +1184,8 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
-PYCLASSCONSTANT_INT(TExamplesDistance_DTW, Euclidean, TExamplesDistance_DTW::DTW_EUCLIDEAN)
-PYCLASSCONSTANT_INT(TExamplesDistance_DTW, Derivative, TExamplesDistance_DTW::DTW_DERIVATIVE)
+PYCLASSCONSTANT_INT(ExamplesDistance_DTW, Euclidean, TExamplesDistance_DTW::DTW_EUCLIDEAN)
+PYCLASSCONSTANT_INT(ExamplesDistance_DTW, Derivative, TExamplesDistance_DTW::DTW_DERIVATIVE)
 
 
 bool convertFromPython(PyObject *pyobj, TAlignment &align)
@@ -1350,6 +1350,70 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
   PyCATCH
 }
 
+
+/* ************ IMPUTATION ******************** */
+
+#include "imputation.hpp"
+
+BASED_ON(Imputer, Orange)
+C_NAMED(Imputer_asValue, Imputer, "() -> Imputer_asValue")
+C_NAMED(Imputer_model, Imputer, "() -> Imputer_model")
+
+PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer, "(domain) -> Imputer_asValue")
+{
+  PyTRY
+    PDomain domain;
+    if (!PyArg_ParseTuple(args, "O&:Imputer_replace.__new__", cc_Domain, &domain))
+      return PYNULL;
+
+    return WrapNewOrange(mlnew TImputer_defaults(domain), tpe);
+  PyCATCH
+}
+
+BASED_ON(ImputerConstructor, Orange)
+C_CALL(ImputerConstructor_average, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_minimal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_maximal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_model, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+
+PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
+{
+  PyTRY
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrImputer_Type) {
+      PyErr_Format(PyExc_SystemError, "Imputer.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    SETATTRIBUTES
+
+    if ((PyTuple_Size(args) == 1) && PyOrExample_Check(PyTuple_GET_ITEM(args, 0))) {
+      TExample example = PyExample_AS_ExampleReference(PyTuple_GET_ITEM(args, 0));
+      return Example_FromWrappedExample(PExample(PyOrange_AsImputer(self)->call(example)));
+    }
+
+    int weightID = 0;
+    PExampleGenerator gen;
+    if (PyArg_ParseTuple(args, "O&|O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return WrapOrange(SELF_AS(TImputer)(gen, weightID));
+
+    PYERROR(PyExc_TypeError, "example or examples expected", PYNULL);
+  PyCATCH
+}
+
+
+PyObject *ImputerConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
+{
+  PyTRY
+    SETATTRIBUTES
+
+    int weightID=0;
+    PExampleGenerator gen;
+    if (!PyArg_ParseTuple(args, "O&|O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+      return PYNULL;
+
+    return WrapOrange(SELF_AS(TImputerConstructor)(gen, weightID));
+  PyCATCH
+}
 
 
 /* ************ RANDOM INDICES ******************** */

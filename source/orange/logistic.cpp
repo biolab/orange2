@@ -74,17 +74,8 @@ PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
   PVariable var;
   PClassifier cl = fitModel(gen, weight, error, var);
 
-  if (error >= TLogRegFitter::Constant) {
-    raiseError("%s in %s", error==TLogRegFitter::Constant?"constant":"singularity", var->name.c_str());
-/*    
-    string error_str;
-    if (error == TLogRegFitter::Singularity)
-			error_str = "singularity in ";
-		else
-			error_str = "constant variable in ";
-		error_str.append(errorAt->name);
-		raiseError(error_str.c_str()); */
-	}
+  if (error >= TLogRegFitter::Constant)
+    raiseError("%s in %s", error==TLogRegFitter::Constant ? "constant" : "singularity", var->name.c_str());
 
   return cl;
 }
@@ -92,17 +83,19 @@ PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
 
 PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, int &error, PVariable &errorAt)
 { 
+  PImputer imputer = imputerConstructor ? imputerConstructor->call(gen, weight) : PImputer();
+  PExampleGenerator imputed = imputer ? imputer->call(gen, weight) : gen;
   
-  // construct result classifier	
-  TLogRegClassifier *lrc = mlnew TLogRegClassifier(gen->domain);
+  // construct classifier	
+  TLogRegClassifier *lrc = mlnew TLogRegClassifier(imputed->domain);
   PClassifier cl = lrc;
+  lrc->imputer = imputer;
 
   // construct a LR fitter
-  fitter = fitter?fitter:PLogRegFitter(mlnew TLogRegFitter_Cholesky());
+  fitter = fitter ? fitter : PLogRegFitter(mlnew TLogRegFitter_Cholesky());
 
   // fit logistic regression 
-  // mogoce bi bilo bolje poslati kar celotni classifier fitterju ?	
-  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, error, errorAt);
+  lrc->beta = fitter->call(imputed, weight, lrc->beta_se, lrc->likelihood, error, errorAt);
   lrc->fit_status = error;
 
   if (error >= TLogRegFitter::Constant) 
@@ -111,7 +104,7 @@ PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, i
   lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
   lrc->P = computeP(lrc->wald_Z);
 
-  // return classifier containing domain, beta and standard errors of beta 
+  // return classifier with domain, beta and standard errors of beta 
   return cl;
 }
 
@@ -127,36 +120,42 @@ TLogRegClassifier::TLogRegClassifier(PDomain dom)
 
 PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
 {   
-	// domain has to exist, otherwise construction
-	// of new example is impossible
 	checkProperty(domain);
+	TExample cexample(domain, origexam);
+  TExample *example = imputer ? imputer->call(cexample) : &cexample;
 
-	// construct new example from domain & original example
-	TExample example(domain, origexam);
+  float prob1;
+  try {
+	  // multiply example with beta
+	  TFloatList::const_iterator b(beta->begin()), be(beta->end());
+	  TExample::const_iterator ei(example->begin()), ee(example->end());
+	  TVarList::const_iterator vi(example->domain->attributes->begin());
 
+	  // get beta 0
+	  prob1 = *b;
+	  b++;
+	  // multiply beta with example
+	  for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
+		  if ((*ei).isSpecial())
+			  raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
+		  prob1 += (*ei).floatV*(*b); 
+	  }
 
-	// multiply example with beta
-	float *prob = new float[2];
-	TFloatList::const_iterator b(beta->begin()), be(beta->end());
-	TExample::const_iterator ei(example.begin()), ee(example.end());
-	TVarList::const_iterator vi(example.domain->attributes->begin());
+	  prob1=exp(prob1)/(1+exp(prob1));
+  }
+  catch (...) {
+    if (imputer)
+      mldelete example;
+    throw;
+  }
 
-	// get beta 0
-	prob[1] = *b;
-	b++;
-	// multiply beta with example
-	for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
-		if ((*ei).isSpecial())
-			raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
-		prob[1] += (*ei).floatV*(*b); 
-	}
+  mldelete example;
 
-	prob[1]=exp(prob[1])/(1+exp(prob[1]));
-	prob[0]=1-prob[1];
- 
-	// return class distribution
-	// TODO: delete prob
-	return PDistribution(mlnew TDiscDistribution(prob, 2));
+  TDiscDistribution *dist = mlnew TDiscDistribution(classVar);
+  PDistribution res = dist;
+  dist->addint(0, 1-prob1);
+  dist->addint(1, prob1);
+  return res;
 }
 
 

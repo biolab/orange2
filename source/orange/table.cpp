@@ -465,6 +465,14 @@ void TExampleTable::addExample(const TExample &example)
 }
 
 
+void TExampleTable::addExample(TExample *example)
+{
+  if (example->domain != domain)
+    raiseError("cannot add pointers to examples of different domains");
+  push_back(example);
+  examplesHaveChanged();
+}
+
 void TExampleTable::addExamples(PExampleGenerator gen)
 {
   if (ownsExamples)
