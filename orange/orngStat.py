@@ -9,19 +9,19 @@ def log2(x):
 
 def checkNonZero(x):
     if x==0.0:
-        raise SystemError, "cannot compute: no examples or sum of weight is 0.0"
+        raise SystemError, "Cannot compute the score: no examples or sum of weight is 0.0."
 
 def gettotweight(res):
     totweight = reduce(lambda x, y: x+y.weight, res.results, 0)
     if totweight==0.0:
-        raise SystemError, "cannot compute: sum of weights is 0.0"
+        raise SystemError, "Cannot compute the score: sum of weights is 0.0."
     return totweight
 
 def gettotsize(res):
     if len(res.results):
         return len(res.results)
     else:
-        raise SystemError, "cannot compute: no examples"
+        raise SystemError, "Cannot compute the score: no examples."
 
 def gettotconfm(confm):
     tot = confm.TP + confm.FP + confm.TN + confm.FN
@@ -499,10 +499,6 @@ def NPV(confm):
         checkNonZero(tot)
         return confm.TP/tot
 
-
-def AROC(res, classIndex=-1):
-    return apply(AUCWilcoxon, (AUCWilcoxon,), argkw)
-
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
@@ -522,7 +518,6 @@ def AUCWilcoxon(res, classIndex=-1, **argkw):
             Q2 += thisPos * (sqr(lowNeg)  + lowNeg*thisNeg  + sqr(thisNeg)/3.)
             Q1 += thisNeg * (sqr(highPos) + highPos*thisPos + sqr(thisPos)/3.)
 
-
             lowNeg += thisNeg
 
         W  /= (totPos*totNeg)
@@ -533,12 +528,13 @@ def AUCWilcoxon(res, classIndex=-1, **argkw):
         results.append((W, SE))
     return results
 
+AROC = AUCWilcoxon # for backward compatibility, AROC is obsolote
 
-def compare2AROCs(res, lrn1, lrn2, classIndex=-1):
-    compare2AUCs(res, lrn1, lrn2, classIndex)
 def compare2AUCs(res, lrn1, lrn2, classIndex=-1, **argkw):
     import corn
     return corn.compare2ROCs(res, lrn1, lrn2, classIndex, res.weights and not argkw.get("unweighted"))
+
+compare2AROCs = compare2AUCs # for backward compatibility, compare2AROCs is obsolote
 
     
 def computeROC(res, classIndex=-1):
@@ -900,14 +896,14 @@ def computeCDT(res, classIndex=-1, **argkw):
                 CDTs[i].C += expCDTs[i].C
                 CDTs[i].D += expCDTs[i].D
                 CDTs[i].T += expCDTs[i].T
+        for i in range(res.numberOfLearners):
+            if (CDTs[i].C + CDTs[i].D + CDTs[i].T) == 0:
+                return corn.computeCDT(res, classIndex, useweights)
+        
         return CDTs
     else:
         return corn.computeCDT(res, classIndex, useweights)
     
-   
-def AROCFromCDT(cdt, **argkw):
-    return apply(ROCsFromCDT, (cdt,), argkw)
-
 def ROCsFromCDT(cdt, **argkw):
     if type(cdt) == list:
         return [ROCsFromCDT(c) for c in cdt]
@@ -930,6 +926,8 @@ def ROCsFromCDT(cdt, **argkw):
         print " %6d pairs             c         = %1.3f"    % (res[3], res[7])
 
     return res
+
+AROCFromCDT = ROCsFromCDT  # for backward compatibility, AROCFromCDT is obsolote
 
 def AUCFromCDT(cdt, **argkw):
     aucs = apply(ROCsFromCDT, (cdt,), argkw)
