@@ -54,11 +54,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:1
+# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:1
+# SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	rem "c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
+PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -216,7 +217,8 @@ SOURCE=.\orange\distancemap.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
-# ADD CPP /Zi /Od
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
