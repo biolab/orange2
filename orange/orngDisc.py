@@ -50,10 +50,13 @@ class DiscretizedLearner_Class:
     self.baseLearner = baseLearner
     self.discretizer = discretizer
     self.__dict__.update(kwds)
-  def __call__(self, data, weight):
+  def __call__(self, data, weight=None):
     # filter the data and then learn
     ddata = self.discretizer(data)
-    model = self.baseLearner(ddata, weight)
+    if weight<>None:
+      model = self.baseLearner(ddata, weight=weight)
+    else:
+      model = self.baseLearner(ddata)
     return DiscretizedClassifier(classifier = model, domain = model.domain)
 
 class DiscretizedClassifier:
