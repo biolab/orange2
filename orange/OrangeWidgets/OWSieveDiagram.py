@@ -17,6 +17,7 @@ from qtcanvas import *
 import orngInteract
 import statc
 import os
+from orngCI import FeatureByCartesianProduct
 
 class QVerticalCanvasText(QCanvasText):
     def __init__(self, *args):
@@ -38,7 +39,10 @@ class QVerticalCanvasText(QCanvasText):
 ##### WIDGET : 
 ###########################################################################################
 class OWSieveDiagram(OWWidget):
-    settingsList = []
+    settingsList = ["showLines", "kvoc"]
+    kvocList = ['1.5','2','3','5','10','20']
+    kvocNums = [1.5,   2,  3,  5,  10,  20]
+
     
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, FALSE)
@@ -47,10 +51,13 @@ class OWSieveDiagram(OWWidget):
         self.data = None
         self.rects = []
         self.texts = []
+        self.lines = []
 
         self.addInput("cdata")
 
         #load settings
+        self.showLines = 1
+        self.kvoc = 2
         self.loadSettings()
 
         # add a settings dialog and initialize its values
@@ -76,14 +83,28 @@ class OWSieveDiagram(OWWidget):
         self.attrY = QComboBox(self.attrYGroup)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateData)
 
-        self.saveCanvas = QPushButton("Save left canvas", self.controlArea)
+        self.hbox = QHBox(self.controlArea, "kvocient")
+        self.kvocLabel = QLabel('Quotient', self.hbox)
+        self.kvocCombo = QComboBox(self.hbox)
+        self.connect(self.kvocCombo, SIGNAL('activated ( const QString & )'), self.updateData)
+        
+        self.showLinesCB = QCheckBox('Show lines', self.controlArea)
+        self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
+
+
+        self.saveCanvas = QPushButton("Save diagram", self.controlArea)
         self.connect(self.saveCanvas, SIGNAL("clicked()"), self.saveToFileCanvas)
 
         #connect controls to appropriate functions
         self.activateLoadedSettings()
 
+
     def activateLoadedSettings(self):
-        pass
+        self.showLinesCB.setChecked(self.showLines)
+
+        for item in self.kvocList: self.kvocCombo.insertItem(item)
+        index = self.kvocNums.index(self.kvoc)
+        self.kvocCombo.setCurrentItem(index)
 
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
@@ -99,6 +120,10 @@ class OWSieveDiagram(OWWidget):
         
     def updateData(self):
         if self.data == None : return
+
+        self.showLines = self.showLinesCB.isOn()
+        self.kvoc = float(str(self.kvocCombo.currentText()))
+        
         attrX = str(self.attrX.currentText())
         attrY = str(self.attrY.currentText())
 
@@ -110,6 +135,10 @@ class OWSieveDiagram(OWWidget):
         for text in self.texts:
             text.hide()
         self.texts = []
+
+        for line in self.lines:
+            line.hide()
+        self.lines = []
     
         if attrX == "" or attrY == "":
             return
@@ -123,19 +152,43 @@ class OWSieveDiagram(OWWidget):
         # compute contingency of x and y attributes
         for key in contX.keys():
             sum = 0
-            for val in contX[key]:
-                sum += val
+            for val in contX[key]: sum += val
             valsX.append(sum)
 
         for key in contY.keys():
             sum = 0
-            for val in contY[key]:
-                sum += val
+            for val in contY[key]: sum += val
             valsY.append(sum)
 
-        xOff = 40
-        yOff = 40
-        sqareSize = min(self.canvasView.size().width(), self.canvasView.size().height()) - max(xOff, yOff) - 30
+        # create cartesian product of selected attributes and compute contingency 
+        (cart, profit) = FeatureByCartesianProduct(self.data, [self.data.domain[attrX], self.data.domain[attrY]])
+        tempData = self.data.select(list(self.data.domain) + [cart])
+        contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
+
+        # compute probabilities
+        sum = 0
+        probs = {}
+        for val in valsX:
+            sum += val
+
+        for i in range(len(valsX)):
+            valx = valsX[i]
+            for j in range(len(valsY)):
+                valy = valsY[j]
+                independentProb = float(valx*valy)/float(sum*sum)
+                actualProb = 0
+                
+                for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]:
+                    actualProb += val
+                actualProb = float(actualProb) /float(sum)
+                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = (independentProb, actualProb, sum)
+       
+        # get text width of Y attribute name        
+        text = QCanvasText(self.data.domain[attrY].name, self.canvas);
+        font = text.font(); font.setBold(1); text.setFont(font)
+        xOff = text.boundingRect().right() - text.boundingRect().left() + 25
+        yOff = 20
+        sqareSize = min(self.canvasView.size().width() - xOff - 20, self.canvasView.size().height() - yOff - 30)
         if sqareSize < 0: return    # canvas is too small to draw rectangles
 
         currX = xOff
@@ -143,15 +196,15 @@ class OWSieveDiagram(OWWidget):
             itemX = valsX[i]
             currY = yOff
             width = int(float(sqareSize * itemX)/float(total))
+
             for j in range(len(valsY)):
+                (independent, actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
                 itemY = valsY[j]
                 height = int(float(sqareSize * itemY)/float(total))
-                rect = QCanvasRectangle(currX + 1, currY + 1, width-2, height-2, self.canvas)
-                self.rects.append(rect)
-                rect.show()
+                self.addRectLines(currX + 1, currY + 1, width-2, height-2, independent, actual, sum)
                 currY += height
                 if currX == xOff:
-                    text = QVerticalCanvasText(self.data.domain[attrY].values[j], self.canvas);
+                    text = QCanvasText(self.data.domain[attrY].values[j], self.canvas);
                     text.setTextFlags(Qt.AlignRight);
                     text.move(xOff - 10, currY - height/2);
                     text.show()
@@ -165,10 +218,10 @@ class OWSieveDiagram(OWWidget):
             currX += width
 
         # show attribute names
-        text = QVerticalCanvasText(self.data.domain[attrY].name, self.canvas);
-        text.setTextFlags(Qt.AlignCenter);
+        text = QCanvasText(self.data.domain[attrY].name, self.canvas);
+        text.setTextFlags(Qt.AlignLeft);
         font = text.font(); font.setBold(1); text.setFont(font)
-        text.move(xOff - 25, yOff + sqareSize/2);
+        text.move(5, yOff + sqareSize/2);
         text.show()
         self.texts.append(text)
         text = QCanvasText(self.data.domain[attrX].name, self.canvas);
@@ -178,43 +231,6 @@ class OWSieveDiagram(OWWidget):
         text.show()
         self.texts.append(text)
 
-        """
-            rect3 = QCanvasRectangle(x3, rectsYOff, x4-x3, rectHeight, self.canvasL)
-            if interaction < 0.0:
-                color = QColor(200, 0, 0)
-                style = Qt.DiagCrossPattern
-            else:
-                color = QColor(Qt.green)
-                style = Qt.Dense5Pattern
-
-            brush3 = QBrush(Qt.blue); brush3.setStyle(Qt.FDiagPattern)
-            
-            rect3.setBrush(brush3); rect3.setPen(QPen(QColor(Qt.blue)))
-      
-            tooltipRect = QRect(x1-self.viewXPos, rectsYOff-self.viewYPos, x4-x1, rectHeight)
-            tooltipText = "%s : <b>%.1f%%</b><br>%s : <b>%.1f%%</b><br>Interaction : <b>%.1f%%</b><br>Total entropy removed: <b>%.1f%%</b>" %(data.domain[attrIndex1].name, gain1*100, data.domain[attrIndex2].name, gain2*100, interaction*100, total*100)
-            QToolTip.add(self.canvasViewL, tooltipRect, tooltipText)
-
-            # compute line width
-            rect = text2.boundingRect()
-            lineWidth = xOff + xscale*total + 5 + rect.width() + 10
-            if  lineWidth > maxWidth:
-                maxWidth = lineWidth 
-
-            if rectsYOff + rectHeight + 10 > maxHeight:
-                maxHeight = rectsYOff + rectHeight + 10
-
-            self.interactionRects.append((rect1, rect2, rect3, text1, text2, QRect(x1, rectsYOff, x4-x1, rectHeight), tooltipText))
-            index += 1
-
-        # resizing of the left canvas to update width
-        self.canvasViewL.setMaximumSize(QSize(maxWidth + 30, max(2000, maxHeight)))
-        self.canvasViewL.setMinimumWidth(maxWidth + 10)
-        self.canvasL.resize(maxWidth + 10, maxHeight)
-        self.canvasViewL.setMinimumWidth(0)
-
-        
-        """
         self.canvas.update()
 
     ##################################################
@@ -252,6 +268,59 @@ class OWSieveDiagram(OWWidget):
         self.canvasView.drawContents(painter, 0,0, size.width(), size.height())
         painter.end()
         buffer.save(fileName, ext)
+
+    def addRectLines(self, x, y, w, h, independent, actual, sum):
+        # create rectangle
+        rect = QCanvasRectangle(x, y, w, h, self.canvas)
+        rect.setZ(-10)
+        rect.show()
+        self.rects.append(rect)
+
+        if (independent*sum < 5) and (actual*sum < 5): return   # in case we have too little examples we don't estimate the deviation from independence
+
+        constA = -205.0 / float(self.kvoc)
+        constB = 255 - constA
+
+        # set color
+        if actual > independent:
+            pen = QPen(QColor(0,0,255))
+            b = 255
+            if independent == 0: r = g = constA*actual*len(self.data)+ 255
+            else:                r = g = constA*actual/independent + 255 - constA   # if actual/independent = 10 --> r=g=255; actual==independent --> r=g=0
+            r = g = max(r, 50)   # if actual/independent > 10 --> r=g=50     -- we don't go under 50
+        else:
+            pen = QPen(QColor(255,0,0))
+            r = 255
+            if actual == 0: g = b = constA*independent*len(self.data) + 255  
+            else:           g = b = constA*independent/actual + 255 - constA   # if independent/actual= 10 --> g=b=255; actual==independent --> r=g=0
+            g = b = max(g, 50)  # if actual/independent > 10 --> b=g=50     -- we don't go under 50
+        color = QColor(r,g,b)
+        brush = QBrush(color); rect.setBrush(brush)
+
+        if self.showLines == 0: return
+        if actual == 0: return
+
+        # create lines
+        dist = 20   # original distance between two lines in pixels
+        dist = dist * (independent/actual)
+        temp = dist
+        while (temp < w):
+            line = QCanvasLine(self.canvas)
+            line.setPoints(temp+x, y+1, temp+x, y+h-2)
+            line.setPen(pen)
+            line.show()
+            self.lines.append(line)
+            temp += dist
+
+        temp = dist
+        while (temp < h):
+            line = QCanvasLine(self.canvas)
+            line.setPoints(x+1, y+temp, x+w-2, y+temp)
+            line.setPen(pen)
+            line.show()
+            self.lines.append(line)
+            temp += dist
+            
 
 
 #test widget appearance
