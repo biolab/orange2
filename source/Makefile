@@ -28,8 +28,6 @@ INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
 		-I$(PYTHONINCLUDE) -I$(LOGREGD)
 
-LIBPATH = -L$(LOGREGD)
-
 ############
 # Paths for extensions
 

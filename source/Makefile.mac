@@ -4,7 +4,7 @@
 ORANGEHOME= ..
 
 SOURCEDIR = $(ORANGEHOME)/source
-ODIR = /tmp/orange
+ODIR = $(ORANGEHOME)/obj
 BINDIR = $(ORANGEHOME)/modules
 
 ORANGEDIR  = $(SOURCEDIR)/orange
@@ -16,19 +16,13 @@ DEVSCRIPTS= $(ORANGEDIR)/devscripts
 PPPDIR = $(ORANGEDIR)/ppp
 PXDIR = $(ORANGEDIR)/px
 
-EXTERNALDIR = $(ORANGEHOME)/source/external
-
 # Lines below determine the directory with Python.h.
 # If this does not work, find Python.h yourself and enter
 # the directory below.
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 
-LOGREGD = $(EXTERNALDIR)/logreg
-LOGREG_OBJECTS = $(LOGREGD)/logreg.o $(LOGREGD)/lsq.o
-
 ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
-
 
 INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
@@ -39,8 +33,7 @@ INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 
 vpath %.cpp $(ORANGEDIR):$(CORNDIR):$(STATCDIR):$(INCLUDEDIR)
 vpath %.hpp $(ORANGEDIR):$(CORNDIR):$(STATCDIR):$(INCLUDEDIR)
-vpath %.h $(INCLUDEDIR):$(PYTHONINCLUDE)
-vpath %.i $(C45D)
+vpath %.h $(ORANGEDIR):$(INCLUDEDIR):$(PYTHONINCLUDE)
 vpath %.ppp $(PPPDIR)
 vpath %.px $(PXDIR)
 
@@ -50,8 +43,7 @@ vpath %.px $(PXDIR)
 
 CC=	gcc -DHAS_RANDOM
 #CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -ggdb3
-#CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -O3
-CXX=	g++ $(INCLUDEPATH) -fPIC -w -DLINK_C45 -O3
+CXX=	g++ $(INCLUDEPATH) -fPIC -w -DDARWIN -O3
 LINKCC=	$(PURIFY) $(CC)
 
 LNKSTL=	-lstdc++
@@ -67,7 +59,6 @@ LNKSTL=	-lstdc++
 
 $(ODIR)/%.o :
 	$(CXX) -c $< -o $@
-
 
 
 all	: dirs $(ORANGE_SO)
@@ -97,7 +88,7 @@ install:	all
 dist:
 	cd .. ; \
         sh ../dedos ; \
-	tar -czf orange07.tgz source doc modules copying building \
+	tar -czf orange09.tgz source doc modules copying building \
 		--exclude *.ncb --exclude *.plg --exclude *.ppp --exclude *.px \
                 --exclude *.bak --exclude *.opt --exclude stamp --exclude cvs \
                 --exclude *.so --exclude *.pyd --exclude external/*.c --exclude external/*.i \
