@@ -203,13 +203,12 @@ class OWVisGraph(OWGraph):
                 self.attrValues[attr.name] = [0, len(attr.values)-1]
 
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1:
+                    if data[i][index].isSpecial():
                         self.validDataArray[index][i] = 0
-                        continue
-                    
-                    self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
-                    #self.noJitteringScaledData[index][i] = int(data[i][index])
-                    self.coloringScaledData[index][i] = colors.getHue(int(self.noJitteringScaledData[index][i]))
+                    else:                    
+                        self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
+                        #self.noJitteringScaledData[index][i] = int(data[i][index])
+                        self.coloringScaledData[index][i] = colors.getHue(int(self.noJitteringScaledData[index][i]))
 
                 self.noJitteringScaledData[index] = (self.noJitteringScaledData[index]*2 + 1) / float(2*count)
                 self.scaledData[index] = self.noJitteringScaledData[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
@@ -225,10 +224,9 @@ class OWVisGraph(OWGraph):
                 colors = ColorPaletteHSV()
 
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1:
+                    if data[i][index].isSpecial():
                         self.validDataArray[index][i] = 0
-                        continue
-                    self.noJitteringScaledData[index][i] = data[i][index].value
+                    else: self.noJitteringScaledData[index][i] = data[i][index].value
 
                 self.noJitteringScaledData[index] = (self.noJitteringScaledData[index] - float(min)) / diff
                 self.coloringScaledData[index] = self.noJitteringScaledData[index] * colors.maxHueVal
@@ -328,7 +326,7 @@ class OWVisGraph(OWGraph):
 
     # scale example's value at index index to a range between 0 and 1 with respect to self.rawdata
     def scaleExampleValue(self, example, index):
-        if example[index].isSpecial(): return 0
+        if example[index].isSpecial(): return "?"
         if example.domain[index].varType == orange.VarTypes.Discrete:
             d = getVariableValueIndices(example, index)
             return (d[example[index].value]*2 + 1) / float(2*len(d))
