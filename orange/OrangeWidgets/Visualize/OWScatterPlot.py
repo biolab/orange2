@@ -27,8 +27,7 @@ class OWScatterPlot(OWWidget):
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
     def __init__(self, parent=None):
-        #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
-        OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", FALSE, TRUE, icon = "Scatterplot.png")
+        OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
@@ -103,7 +102,7 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "VizRank optimization dialog", callback = self.optimizationDlg.reshow)
         
         # zooming / selection
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         # ####################################

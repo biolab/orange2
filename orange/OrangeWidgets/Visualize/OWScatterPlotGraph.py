@@ -23,7 +23,7 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
 
         p.setBackgroundMode(Qt.OpaqueMode)
         #p.setBackgroundColor(self.color)
-        for i in range(1, self.dataSize()):
+        for i in range(self.dataSize()-1):
             p.setBrush(QBrush(colors.getColor(i)))
             p.setPen(QPen(colors.getColor(i)))
 
@@ -32,7 +32,7 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
             py1 = yMap.transform(self.x(1)-0.1 - 0.5*factor)
             px2 = xMap.transform(self.x(0)+0.1 + 0.5*factor)
             py2 = yMap.transform(self.x(1)+0.1 + 0.5*factor)
-            p.drawPie(px1, py1, px2-px1, py2-py1, self.y(i-1)*16*360, (self.y(i)-self.y(i-1))*16*360)
+            p.drawPie(px1, py1, px2-px1, py2-py1, self.y(i)*16*360, (self.y(i+1)-self.y(i))*16*360)
 
         # restore ex settings
         p.setBackgroundMode(back)
@@ -157,7 +157,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
         #######
         # show the distributions
+        print colorIndex
         if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete and not self.showKNNModel:
+            print "color attr is discrete"
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
             contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
@@ -238,7 +240,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                    if colorIndex != -1: index = classIndices[self.rawdata[i].getclass().value]
+                    if colorIndex != -1: index = classIndices[self.rawdata[i][colorIndex].value]
                     else: index = 0
                     pos[index][0].append(x)
                     pos[index][1].append(y)

@@ -90,7 +90,8 @@ class OWRadviz(OWWidget):
 
         self.optimizationDlgButton = OWGUI.button(self.attrOrderingButtons, self, "VizRank optimization dialog", callback = self.optimizationDlg.reshow)
         
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
+        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
                                
         self.hbox2 = QHBox(self.shownAttribsGroup)
@@ -123,6 +124,7 @@ class OWRadviz(OWWidget):
         box3 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box3, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         OWGUI.checkBox(box3, self, 'sendShownAttributes', 'Send only shown attributes')
+        self.setAutoSendSelection()
 
         # ####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
@@ -272,8 +274,12 @@ class OWRadviz(OWWidget):
             self.graph.triedPossibilities = 0
         
             if self.graph.totalPossibilities > 20000:
-                res = QMessageBox.information(self,'Radviz','There are %d possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (self.graph.totalPossibilities),'Yes','No', QString.null,0,1)
-                if res == 0: return
+                proj = str(self.graph.totalPossibilities)
+                l = len(proj)
+                for i in range(len(proj)-2, 0, -1):
+                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+                res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
+                if res != 0: return
             
             self.progressBarInit()
             self.optimizationDlg.disableControls()

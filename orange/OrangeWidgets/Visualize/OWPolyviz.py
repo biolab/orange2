@@ -94,7 +94,8 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.parentName = "Polyviz"
         self.graph.kNNOptimization = self.optimizationDlg
 
-        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
+        self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
+        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
@@ -279,8 +280,12 @@ class OWPolyviz(OWWidget):
             self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time())
         
             if self.graph.totalPossibilities > 20000:
-                res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (combin),'Yes','No', QString.null,0,1)
-                if res == 0: return
+                proj = str(self.graph.totalPossibilities)
+                l = len(proj)
+                for i in range(len(proj)-2, 0, -1):
+                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+                res = QMessageBox.information(self,'Polyviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
+                if res != 0: return
             
             self.progressBarInit()
             self.optimizationDlg.disableControls()
