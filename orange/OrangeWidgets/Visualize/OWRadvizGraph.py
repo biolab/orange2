@@ -171,7 +171,6 @@ class OWRadvizGraph(OWVisGraph):
 
         dataSize = len(self.rawdata)
         curveData = [[ [] , [] ] for i in range(valLen)]
-        for i in range(valLen): curveData.append()   # we create valLen empty lists with sublists for x and y
 
         validData = self.getValidList(indices)
 
