@@ -33,7 +33,7 @@ OutFile ${OUTFILENAME}
 OutFile "orange-temp.exe"
 !endif
 
-
+!include "Sections.nsh"
 !include "LogicLib.nsh"
 
 licensedata license.txt
@@ -47,6 +47,9 @@ SilentUninstall silent
 
 Var PythonDir
 Var PythonOnDesktop
+Var WhatsDownFile
+Var SingleUser
+Var MissingModules
 
 Page license
 Page directory
@@ -99,14 +102,15 @@ Page instfiles
 !endif
 
 Section ""
-    SetOutPath $INSTDIR ; just to make sure it exists
-    FileOpen $6 $INSTDIR\whatsdown.txt w
+	SetOutPath $INSTDIR ; just to make sure it exists
+	FileOpen $WhatsDownFile $INSTDIR\whatsdown.txt w
+    
+	!include ${INCLUDEPREFIX}_base.inc
 SectionEnd
 
-Section "Orange Modules"
-    !include ${INCLUDEPREFIX}_base.inc
-    !include ${INCLUDEPREFIX}_widgets.inc
-    !include ${INCLUDEPREFIX}_canvas.inc
+Section "Orange Widgets and Canvas" SECCANVAS
+	!include ${INCLUDEPREFIX}_widgets.inc
+	!include ${INCLUDEPREFIX}_canvas.inc
 
 	SetOutPath $INSTDIR\icons
 	File Orange.ico
@@ -116,8 +120,8 @@ SectionEnd
 
 
 !ifdef INCLUDEGENOMICS
-Section "Genomic Data"
-    !include ${INCLUDEPREFIX}_genomics.inc
+Section "Genomic Data" SECGENOMIC
+	!include ${INCLUDEPREFIX}_genomics.inc
     
 	SetOutPath $INSTDIR\doc
 	File "various\Orange Genomics.pdf"
@@ -133,36 +137,30 @@ SectionEnd
 !endif
 	
 
-!ifdef INCLUDESCRIPTDOC | INCLUDEDATASETS
-	Subsection /e "Documentation"
+!ifdef INCLUDESCRIPTDOC
+Section "Documentation" SECDOC
+            	!include ${INCLUDEPREFIX}_doc.inc
 
-	!ifdef INCLUDESCRIPTDOC
-		Section "Scripting Documentation"
-			SetOutPath $INSTDIR\doc
-			File "various\Orange White Paper.pdf"
-			File "various\Orange Widgets White Paper.pdf"
+	SetOutPath $INSTDIR\doc
+	File "various\Orange White Paper.pdf"
+	File "various\Orange Widgets White Paper.pdf"
 
-            !include ${INCLUDEPREFIX}_doc.inc
-
-			SetOutPath $INSTDIR
-            CreateDirectory "$SMPROGRAMS\Orange"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
-		SectionEnd
-	!endif
+	CreateDirectory "$SMPROGRAMS\Orange"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
+SectionEnd
+!endif
   
-	!ifdef INCLUDEDATASETS
-		Section "Datasets"
-			SetOutPath $INSTDIR\doc\datasets
-			File ${ORANGEDIR}\doc\datasets\*
-			SectionEnd
-	!endif
+!ifdef INCLUDEDATASETS
+Section "Datasets" SECDATASETS
+	SetOutPath $INSTDIR\doc\datasets
+	File ${ORANGEDIR}\doc\datasets\*
+SectionEnd
+!endif
 
-	SubsectionEnd
-!endif ;  | INCLUDESCRIPTDOC INCLUDEDATASETS
 
 !ifdef INCLUDESOURCE
 	Section "Orange Source"
@@ -172,7 +170,20 @@ SectionEnd
 !endif
 
 Section ""
-    FileClose $6
+	${Unless} ${SectionIsSelected} ${SECDOC}
+		FileWrite $WhatsDownFile "-Orange Documentation"
+	${EndIf}
+	${Unless} ${SectionIsSelected} ${SECCANVAS}
+		FileWrite $WhatsDownFile "-Orange Widgets"
+	${EndIf}
+!ifdef INCLUDEDATASETS
+	${Unless} ${SectionIsSelected} ${SECDATASETS}
+		FileWrite $WhatsDownFile "-Datasets"
+	${EndIf}
+!endif
+	
+	FileClose $WhatsDownFile
+	
 	SetOutPath $INSTDIR
 	
 	CreateDirectory "$SMPROGRAMS\Orange"
@@ -183,9 +194,15 @@ Section ""
 	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0
 
-	WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
-	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
-	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
+	${If} $SingleUser S!= 0
+		WriteRegStr HKCU "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
+		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
+		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
+	${Else}
+		WriteRegStr HKLM "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
+		WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
+		WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
+	${Endif}
 	
 	;ows icon and association, schema-click launch
 	WriteRegStr HKEY_CLASSES_ROOT ".ows" "" "OrangeCanvas"
@@ -199,8 +216,16 @@ Section Uninstall
 	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" IDNO abort
 	RmDir /R "$INSTDIR"
 	RmDir /R "$SMPROGRAMS\Orange"
-	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
-	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
+	
+	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
+	${If} $PythonDir S!= ""
+		DeleteRegKey HKLM "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
+		DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
+	${Else}
+		DeleteRegKey HKCU "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
+		DeleteRegKey HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
+	${Endif}
+	
 	Delete "$DESKTOP\Orange Canvas.lnk"
 
 	; remove owc icon and file type associations
@@ -220,6 +245,15 @@ SectionEnd
 	SectionSetText ${SECTION} ""
 !macroend
 
+!macro WarnMissingModule FILE MODULE
+	${Unless} ${FileExists} ${FILE}
+		${If} $MissingModules == ""
+			StrCpy $MissingModules ${MODULE}
+		${Else}
+			StrCpy $MissingModules "$MissingModules, ${MODULE}"
+		${EndIf}
+	${EndUnless}
+!macroend
 
 !ifdef INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
 	!macro DisEnSection SECTION
@@ -233,9 +267,14 @@ Function .onGUIInit
 	StrCpy $PythonOnDesktop 0
 
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
-
 	${If} $PythonDir S== ""
-	
+		ReadRegStr $PythonDir HKCU Software\Python\PythonCore\2.3\InstallPath ""
+               	StrCpy $SingleUser 1
+	${Else}
+		StrCpy $SingleUser 0
+	${EndIf}
+		
+	${If} $PythonDir S== ""
 		!ifdef INCLUDEPYTHON
 		  askpython:
 			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.2-1)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
@@ -260,7 +299,7 @@ Function .onGUIInit
 		!endif
 
 		; let the user select the modules
-		!ifdef INCLUDEPYTHONWIN | INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
+		!ifdef INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
 		SectionSetText ${SSPYTHON} "Python Modules" 
 		!endif
 	${Else}
@@ -270,18 +309,24 @@ Function .onGUIInit
 			${If} ${FileExists} $PythonDir\lib\site-packages\qt.py
 				!insertMacro DisEnSection ${SECPYQT}
 			${EndIf}
+		!else
+			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qt.py" "PyQt"
 		!endif
 
 		!ifdef INCLUDEPYQWT
 			${If} ${FileExists} $PythonDir\lib\site-packages\qwt\*.*
 				!insertMacro DisEnSection ${SECPYQWT}
 			${EndIf}
+		!else
+			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\qwt\*.*" "PyQwt"
 		!endif
 
 		!ifdef INCLUDENUMERIC
 			${If} ${FileExists} $PythonDir\lib\site-packages\Numeric\*.*
 				!insertMacro DisEnSection ${SECNUMERIC}
 			${EndIf}
+		!else
+			!insertMacro WarnMissingModule "$PythonDir\lib\site-packages\Numeric\*.*" "Numeric"
 		!endif
 		
 	${EndIf}
@@ -310,9 +355,17 @@ Function .onGUIInit
 		${If} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
 			!insertMacro HideSection ${SECQT}
 		${EndIf}
+	!else
+		!insertMacro WarnMissingModule "$SYSDIR\qt-mt230nc.dll" "Qt"
 	!endif
 	
 	StrCpy $INSTDIR $PythonDir\lib\site-packages\orange
+
+	StrCmp $MissingModules "" continueinst
+	MessageBox MB_YESNO "Missing module(s): $MissingModules$\r$\n$\r$\nThese module(s) are not needed for running scripts in Orange, but Orange Canvas will not work properly until you install them.$\r$\nYou can either download them separately or obtain an Orange installation that includes them.$\r$\n$\r$\nContinue with installation?" IDYES continueinst
+	Quit
+continueinst:
+
 FunctionEnd
 
 
