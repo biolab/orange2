@@ -1,366 +1,355 @@
+# ORANGE Logistic Regression
+#    by Alex Jakulin (jakulin@acm.org)
+#
+#       based on:
+#           Miller, A.J. (1992):
+#           Algorithm AS 274: Least squares routines to supplement
+#                those of Gentleman.  Appl. Statist., vol.41(2), 458-478.
+#
+#       and Alan Miller's F90 logistic regression code
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+#
+#
+# Version 1.7 (11/08/2002)
+#   - Support for new Orange (RandomIndices)
+#   - Assertion error was resulting because Orange incorrectly compared the
+#     attribute values as returned from .getclass() and the values array in
+#     the attribute definition. Cast both values to integer before comparison
+#   - Extended error messages.
+#   - Support for setting the preferred ordinal attribute transformation.
+#   - Prevent divide-by-0 errors in discriminant code.
+#
+# Version 1.6 (31/10/2001)
+#
+# The procedure used by this implementation of LR is minimization of log-likelihood
+# via deviance testing.
+#
+#
+# To Do:
+#   - Trivial imputation is used for missing attribute values. You should use
+#     something better. Eventually, this code might do something automatically.
+#
+#   - MarginMetaLearner is not doing anything when the classifier outputs a
+#     probability distribution. But even in such cases, the PD could be corrected.
+#
+#   - CalibrationMetaLearner  -> calibrates the *PD* estimates via CV
+
 import orange
-import orngCI
+import orng2Array
+import orngCRS
 import math
 
-#######################
-## Print out methods ##
-#######################
 
-def printOUT(classifier):
-    # print out class values
-    print
-    print "class attribute = " + classifier.domain.classVar.name
-    print "class values = " + str(classifier.domain.classVar.values)
-    print
-    
-    # get the longest attribute name
-    longest=0
-    for at in classifier.domain.attributes:
-        if len(at.name)>longest:
-            longest=len(at.name);
-
-    # print out the head
-    formatstr = "%"+str(longest)+"s %10s %10s %10s %10s"
-    print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P")
-    print
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
-    print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
-    for i in range(len(classifier.domain.attributes)):
-        print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]))
+# BEWARE: these routines do not work with orange tables and are not orange-compatible
+class BLogisticLearner:
+    def getmodel(self, examples):
+      errors = ["LogReg: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
+                "LogReg: n[i]<0",
+                "LogReg: r[i]<0",
+                "LogReg: r[i]>n[i]",
+                "LogReg: constant variable",
+                "LogReg: singularity",
+                "LogReg: infinity in beta",
+                "LogReg: no convergence"]
+      model = orngCRS.LogReg(examples)
+      errorno = model[8]
+      if errorno == 5 or errorno == 6:
+        # dependencies between variables, remove them
+        raise RedundanceException(model[9])
+      else:
+        if errorno != 0 and errorno != 7:
+            # unhandled exception
+            raise errors[errorno-1]
+      return (model,errorno)
         
-
-
-#######################
-## LEARNER ENHANCMENT##
-#######################
-#construct "continuous" attributes from discrete attributes
-def createNoDiscDomain(domain):
-    attributes = []
-    #iterate through domain
-    for at in domain.attributes:
-        #if att is discrete, create (numOfValues)-1 new ones and set getValueFrom
-        if at.varType == orange.VarTypes.Discrete:
-            for ival in range(len(at.values)):
-                # continue at first value 
-                if ival == 0:
-                    continue
-                # create attribute
-                newVar = orange.FloatVariable(at.name+"="+at.values[ival])
-                
-                # create classifier
-                vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
-                vals.append("?")
-                #print (vals)
-                cl = orange.ClassifierByLookupTable(newVar, at, vals)                
-                newVar.getValueFrom=cl
-
-                # append newVariable                
-                attributes.append(newVar)
-        else:
-            # add original attribute
-            attributes.append(at)
-    attributes.append(domain.classVar)
-    return orange.Domain(attributes)
-                
-# returns data set without discrete values. 
-def createNoDiscTable(olddata):
-    newdomain = createNoDiscDomain(olddata.domain)
-    #print newdomain
-    return olddata.select(newdomain)
-
-def hasDiscreteValues(domain):
-    for at in domain.attributes:
-        if at.varType == orange.VarTypes.Discrete:
-            return 1
-    return 0
-
-def LogisticLearner(examples = None, weightID=0, **kwds):
-    lr = LogisticLearnerClass(**kwds)
-    if examples:
-        return lr(examples, weightID)
-    else:
-        return lr
-
-class LogisticLearnerClass:
-    def __init__(self, removeSingular=0, showSingularity=1, **kwds):
-        self.__dict__ = kwds
-        self.removeSingular = removeSingular
-        self.showSingularity = showSingularity
-    def __call__(self, examples, weight=0):
-        if hasDiscreteValues(examples.domain):
-            nexamples = createNoDiscTable(examples)
-        else:
-            nexamples = examples
-
-        
-        if self.removeSingular:
-            lr = orange.LogisticLearner(nexamples, weight, showSingularity = not self.removeSingular)
-        else:
-            lr = orange.LogisticLearner(nexamples, weight, showSingularity = self.showSingularity)
-        while (lr.error == 6 or lr.error == 5) and self.removeSingular == 1:
-            print "removing " + lr.error_att.name
-            nexamples.domain.attributes.remove(lr.error_att)
-            nexamples = nexamples.select(orange.Domain(nexamples.domain.attributes, nexamples.domain.classVar))
-            if self.removeSingular:
-                lr = orange.LogisticLearner(nexamples, weight, showSingularity = not self.removeSingular)
-            else:
-                lr = orange.LogisticLearner(nexamples, weight, showSingularity = self.showSingularity)
-        return lr
-
-############################################################
-####  Feature subset selection for logistic regression  ####
-############################################################
-
-
-def StepWiseFSS(examples = None, **kwds):
-    """
-      Constructs and returns a new set of examples that includes a
-      class and attributes selected by stepwise logistic regression. This is an
-      implementation of algorithm described in [Hosmer and Lemeshow, Applied Logistic Regression, 2000]
-
-      examples: data set (ExampleTable)     
-      addCrit: "Alpha" level to judge if variable has enough importance to be added in the new set. (e.g. if addCrit is 0.2, then attribute is added if its P is lower than 0.2)
-      deleteCrit: Similar to addCrit, just that it is used at backward elimination. It should be higher than addCrit!
-      numAttr: maximum number of selected attributes, use -1 for infinity
-    """
-
-    fss = apply(StepWiseFSS_class, (), kwds)
-    if examples:
-        return fss(examples)
-    else:
-        return fss
-
-
-class StepWiseFSS_class:
-  def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
-    self.addCrit = addCrit
-    self.deleteCrit = deleteCrit
-    self.numAttr = numAttr
-  def __call__(self, examples):
-    attr = []
-    # TODO: kako v enem koraku premaknes vse v remain_attr?    
-    remain_attr = []
-    for at in examples.domain.attributes:
-        remain_attr.append(at)
-
-    
-    # get LL for Majority Learner 
-    tempDomain = orange.Domain(attr,examples.domain.classVar)
-    ll_Old = LogisticLearner(examples.select(tempDomain)).likelihood;
-
-    
-    stop = 0
-    while not stop:
-        # LOOP until all variables are added or no further deletion nor addition of attribute is possible
-        
-        # if there are more than 1 attribute then perform backward elimination
-        if len(attr) >= 2:
-            maxG = -1
-            worstAt = attr[0]
-            ll_Best = ll_Old
-            for at in attr:
-                # check all attribute whether its presence enough increases LL?
-
-                # TU SPET, KAKO KOPIRAS?
-                tempAttr = []
-                for at_tmp in attr:
-                    if at_tmp != at:
-                        tempAttr.append(at_tmp)
-
-                
-                tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
-                # domain, calculate P for LL improvement.
-                ll_Delete = LogisticLearner(examples.select(tempDomain), showSingularity = 0).likelihood;
-                # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-                G=-2*(ll_Old-ll_Delete);
-
-                # set new best attribute                
-                if G>maxG:
-                    worstAt = at
-                    maxG=G
-                    ll_Best = ll_Delete
-            # deletion of attribute
-            if worstAt.varType==orange.VarTypes.Continuous:
-                P=lchisqprob(maxG,1);
-            else:
-                P=lchisqprob(maxG,len(worstAt.values)-1);
-            if P<=self.deleteCrit:
-                print "Deleting: "
-                print worstAt
-                attr.remove(worstAt)
-                remain_attr.append(worstAt)
-                nodeletion=0
-                ll_Old = ll_Best
-            else:
-                nodeletion=1
-        else:
-            nodeletion = 1
-            # END OF DELETION PART
-            
-        # if enough attributes has been chosen, stop the procedure
-        if self.numAttr>-1 and len(attr)>=self.numAttr:
-            remain_attr=[]
-         
-        # for each attribute in the remaining
-        maxG=-1
-        ll_Best = ll_Old
-        for at in remain_attr:
-            tempAttr = attr + [at]
-            tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
-            # domain, calculate P for LL improvement.
-            ll_New = LogisticLearner(examples.select(tempDomain), showSingularity = 0).likelihood;
-            # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-            G=-2*(ll_Old-ll_New);
-            if G>maxG:
-                bestAt = at
-                maxG=G
-                ll_Best = ll_New
-
-        if bestAt.varType==orange.VarTypes.Continuous:
-            P=lchisqprob(maxG,1);
-        else:
-            P=lchisqprob(maxG,len(bestAt.values)-1);
-
-        print P
-        # Add attribute with smallest P to attributes(attr)
-        if P<=self.addCrit:
-            attr.append(bestAt)
-            remain_attr.remove(bestAt)
-            ll_Old = ll_Best
-
-        if P>self.addCrit and nodeletion:
-            stop = 1
-
-    #print "Likelihood is:"
-    #print ll_Old
-    #return examples.select(orange.Domain(attr,examples.domain.classVar))
-    return attr
-
-
-def StepWiseFSS_Filter(examples = None, **kwds):
-    """
-        check function StepWiseFSS()
-    """
-
-    filter = apply(StepWiseFSS_Filter_class, (), kwds)
-    if examples:
-        return filter(examples)
-    else:
-        return filter
-
-
-class StepWiseFSS_Filter_class:
-    def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
-        self.addCrit = addCrit
-        self.deleteCrit = deleteCrit
-        self.numAttr = numAttr
     def __call__(self, examples):
-        attr = StepWiseFSS(examples, addCrit=self.addCrit, deleteCrit = self.deleteCrit, numAttr = self.numAttr)
-        return examples.select(orange.Domain(attr, examples.domain.classVar))
-                
+      (model,errorno) = self.getmodel(examples)
+      if errorno == 7:
+        # there exists a perfect discriminant
+        return BDiscriminantClassifier(model, examples)
+      else:
+        return BLogisticClassifier(model)
 
-####################################
-####  PROBABILITY CALCULATIONS  ####
-####################################
 
-def lchisqprob(chisq,df):
-    """
-Returns the (1-tailed) probability value associated with the provided
-chi-square value and df.  Adapted from chisq.c in Gary Perlman's |Stat.
+class BLogisticClassifier:
+    def __init__(self, model):
+        (self.chisq,self.devnce,self.ndf,self.beta,
+        self.se_beta,self.fit,self.stdres,
+        self.covbeta,errorno,masking) = model
+        
+    def getmargin(self,example):
+        # returns the actual probability which is not to be fudged with
+        return self.__call__(example)
 
-Usage:   lchisqprob(chisq,df)
-"""
-    BIG = 20.0
-    def ex(x):
-    	BIG = 20.0
-    	if x < -BIG:
-    	    return 0.0
-    	else:
-    	    return math.exp(x)
-    if chisq <=0 or df < 1:
-    	return 1.0
-    a = 0.5 * chisq
-    if df%2 == 0:
-    	even = 1
-    else:
-    	even = 0
-    if df > 1:
-    	y = ex(-a)
-    if even:
-    	s = y
-    else:
-        s = 2.0 * zprob(-math.sqrt(chisq))
-    if (df > 2):
-        chisq = 0.5 * (df - 1.0)
-        if even:
-            z = 1.0
+    def __call__(self,example):
+        # logistic regression
+        sum = self.beta[0]
+        for i in range(len(self.beta)-1):
+            sum = sum + example[i]*self.beta[i+1]
+        sum = math.exp(sum)
+        p = sum/(1.0+sum) # probability that the class is 1
+        if p < 0.5:
+            return (0,1-p)
         else:
-            z = 0.5
-        if a > BIG:
-            if even:
-            	e = 0.0
-            else:
-            	e = math.log(math.sqrt(math.pi))
-            c = math.log(a)
-            while (z <= chisq):
-            	e = math.log(z) + e
-            	s = s + ex(c*z-a-e)
-            	z = z + 1.0
-            return s
+            return (1,p)
+
+
+class BDiscriminantClassifier:
+    def __init__(self, model, examples):
+        (self.chisq,self.devnce,self.ndf,self.beta,
+        self.se_beta,self.fit,self.stdres,
+        self.covbeta,errorno,masking) = model
+
+        # set up the parameters for discrimination
+        sum = 1.0
+        for i in self.beta[1:]:
+            if abs(i) > 1e-6:
+                sum *= abs(i)
+        scale = math.sqrt(sum)
+        self.beta = [x/scale for x in self.beta]
+
+    def getmargin(self,example):
+        sum = self.beta[0]
+        for i in range(len(self.beta)-1):
+            sum = sum + example[i]*self.beta[i+1]
+        return sum
+
+    def __call__(self, example):
+        sum = self.getmargin(example)
+        # linear discriminant
+        if sum < 0.0:
+            return (0,1.0)
         else:
-            if even:
-                e = 1.0
+            return (1,1.0)
+
+
+class RedundanceException:
+  def __init__(self,redundant_vars):
+    self.redundant_vars = redundant_vars
+
+  def __str__(self):
+    return "Logistic regression cannot work with constant or linearly dependent variables."
+
+
+
+#
+# Logistic regression throws an exception upon constant or linearly
+# dependent attributes. RobustBLogisticLearner remembers to ignore
+# such attributes.
+#
+# returns None, if all attributes singular
+#
+class RobustBLogisticLearner(BLogisticLearner):
+    def __call__(self, examples):
+        skipping = 0
+        na = len(examples[0])
+        mask = [0]*na
+        assert(na > 0)
+        # while there are any unmasked variables
+        while skipping < na-1: 
+            try:
+                if skipping != 0:
+                    # remove some variables
+                    data = []
+                    for ex in examples:
+                        maskv = []
+                        for i in range(len(mask)):
+                            if mask[i] == 0:
+                                maskv.append(ex[i])
+                        data.append(maskv)
+                else:
+                    data = examples
+                classifier = BLogisticLearner.__call__(self,data)
+                return RobustBLogisticClassifierWrap(classifier,mask)
+            except RedundanceException, exp:
+                ext_offs = 0 # offset in the existing mask
+                for i in exp.redundant_vars:
+                    # skip what's already masked
+                    while mask[ext_offs] == 1:
+                        ext_offs += 1
+                    if i != 0:
+                        # new masking
+                        mask[ext_offs] = 1
+                        skipping += 1
+                    ext_offs += 1
+
+
+# this wrapper transforms the example
+#
+# it is a wrapper, because it has to work with both
+# the discriminant and the LR
+class RobustBLogisticClassifierWrap:
+    def __init__(self, classifier, mask):
+        self.classifier = classifier
+        self.mask = mask
+
+    def translate(self,example):
+        assert(len(example) == len(self.mask) or len(example) == len(self.mask)-1) # note that for classification, the class isn't defined
+        maskv = []
+        for i in range(len(example)):
+            if self.mask[i] == 0:
+                maskv.append(example[i])
+        return maskv
+
+    def getmargin(self, example):
+        return self.classifier.getmargin(self.translate(example))
+
+    def __call__(self, example):
+        return self.classifier(self.translate(example))
+
+
+#
+# Logistic regression works with arrays and not Orange domains
+# This wrapper performs the domain translation
+#
+class BasicLogisticLearner(RobustBLogisticLearner):
+    def __init__(self):
+        self.translation_mode = 0 # dummy
+
+    def __call__(self, examples, weight = 0):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            for i in examples.domain.classVar.values:
+                print i
+            raise "Logistic learner only works with binary discrete class."
+        translate = orng2Array.DomainTranslation(self.translation_mode)
+        translate.analyse(examples, weight)
+        translate.prepareLR()
+        mdata = translate.transform(examples)
+        r = RobustBLogisticLearner.__call__(self,mdata)
+        if r == None:
+            if weight != 0:
+                return orange.MajorityLearner()(examples, weight)
             else:
-                e = 1.0 / math.sqrt(math.pi) / math.sqrt(a)
-    		c = 0.0
-    		while (z <= chisq):
-    		    e = e * (a/float(z))
-    		    c = c + e
-    		    z = z + 1.0
-    		return (c*y+s)
-    else:
-    	return s
+                return orange.MajorityLearner()(examples)
+        else:
+            return BasicLogisticClassifier(r,translate)
 
 
-def zprob(z):
-    """
-Returns the area under the normal curve 'to the left of' the given z value.
-Thus, 
-    for z<0, zprob(z) = 1-tail probability
-    for z>0, 1.0-zprob(z) = 1-tail probability
-    for any z, 2.0*(1.0-zprob(abs(z))) = 2-tail probability
-Adapted from z.c in Gary Perlman's |Stat.
+class BasicLogisticClassifier:
+    def __init__(self, classifier, translator):
+        self.classifier = classifier
+        self.translator = translator
 
-Usage:   lzprob(z)
-"""
-    Z_MAX = 6.0    # maximum meaningful z-value
-    if z == 0.0:
-	x = 0.0
-    else:
-	y = 0.5 * math.fabs(z)
-	if y >= (Z_MAX*0.5):
-	    x = 1.0
-	elif (y < 1.0):
-	    w = y*y
-	    x = ((((((((0.000124818987 * w
-			-0.001075204047) * w +0.005198775019) * w
-		      -0.019198292004) * w +0.059054035642) * w
-		    -0.151968751364) * w +0.319152932694) * w
-		  -0.531923007300) * w +0.797884560593) * y * 2.0
-	else:
-	    y = y - 2.0
-	    x = (((((((((((((-0.000045255659 * y
-			     +0.000152529290) * y -0.000019538132) * y
-			   -0.000676904986) * y +0.001390604284) * y
-			 -0.000794620820) * y -0.002034254874) * y
-		       +0.006549791214) * y -0.010557625006) * y
-		     +0.011630447319) * y -0.009279453341) * y
-		   +0.005353579108) * y -0.002141268741) * y
-		 +0.000535310849) * y +0.999936657524
-    if z > 0.0:
-	prob = ((x+1.0)*0.5)
-    else:
-	prob = ((1.0-x)*0.5)
-    return prob
+    def getmargin(self,example):
+        tex = self.translator.extransform(example)
+        r = self.classifier.getmargin(tex)
+        return r
 
-   
+    def __call__(self, example, format = orange.GetValue):
+        tex = self.translator.extransform(example)
+        r = self.classifier(tex)
+        #print example, tex, r
+        v = self.translator.getClass(r[0])
+        p = [0.0,0.0]
+        for i in range(2):
+            if int(v) == i:
+                p[i] = r[1]
+                p[1-i] = 1-r[1]
+                break
+        assert(p[0]+p[1]==1.0)
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
+        
+#
+# Margin Probability Wrap
+#
+# Margin metalearner attempts to use the margin-based classifiers, such as linear
+# discriminants and SVM to return the class probability distribution. Thie metalearner
+# only works with binary classes.
+#
+# Margin classifiers output the distance from the separating hyperplane, not
+# the probability distribution. However, the distance from the hyperplane can
+# be associated with the probability. This is a regression problem, for which
+# we can apply logistic regression.
+#
+# However, one must note that perfect separating hyperplanes generate trivial
+# class distributions. 
+#
+class MarginMetaLearner:
+    def __init__(self, learner, folds = 10, metalearner = BasicLogisticLearner()):
+        self.learner = learner
+        self.folds = 10
+        self.metalearner = metalearner
+        
+    def __call__(self, examples, weight = 0):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            raise "Margin metalearner only works with binary discrete class."
+
+        mv = orange.FloatVariable(name="margin")
+        estdomain = orange.Domain([mv,examples.domain.classVar])
+        mistakes = orange.ExampleTable(estdomain)
+        if weight != 0:
+            mistakes.addMetaAttribute(1)
+            
+        # perform 10 fold CV, and create a new dataset
+        try:
+            selection = orange.MakeRandomIndicesCV(examples, self.folds) # orange 2.2
+        except:
+            selection = orange.RandomIndicesSCVGen(examples, self.folds) # orange 2.1
+        for fold in range(self.folds):
+          learn_data = examples.selectref(selection, fold, negate=1)
+          test_data  = examples.selectref(selection, fold)
+
+          if weight!=0:
+              classifier = self.learner(learn_data, weight=weight)
+          else:
+              classifier = self.learner(learn_data)
+          for ex in test_data:
+              margin = classifier.getmargin(ex)
+              if type(margin)==type(1.0) or type(margin)==type(1):
+                  # ignore those examples which are handled with
+                  # the actual probability distribution
+                  mistake = orange.Example(estdomain,[float(margin), ex.getclass()])
+                  if weight!=0:
+                      mistake.setmeta(ex.getMetaAttribute(weight),1)
+                  mistakes.append(mistake)
+
+        if len(mistakes) < 1:
+            # nothing to learn from
+            if weight == 0:
+                return self.learner(examples)
+            else:
+                return self.learner(examples,weight)
+        
+        if weight != 0:
+            # learn a classifier to estimate the probabilities from margins
+            # learn a classifier for the whole training set
+            estimate = self.metalearner(mistakes, weight = 1)
+            classifier = self.learner(examples, weight)
+        else:
+            estimate = self.metalearner(mistakes)
+            classifier = self.learner(examples)
+
+        return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain)
+
+
+class MarginMetaClassifier:
+    def __init__(self, classifier, estimator, domain, estdomain):
+        self.classifier = classifier
+        self.estimator = estimator
+        self.domain = domain
+        self.estdomain = estdomain
+        self.cv = self.estdomain.classVar(0)
+
+    def __call__(self, example, format = orange.GetValue):
+        r = self.classifier.getmargin(example)
+        if type(r) == type(1.0) or type(r) == type(1):
+            # got a margin
+            ex = orange.Example(self.estdomain,[r,self.cv]) # need a dummy class value
+            (v,p) = self.estimator(ex,orange.GetBoth)
+        else:
+            # got a probability distribution, which can happen with LR... easy
+            (v,p) = r
+
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
+        
+

@@ -218,11 +218,10 @@ class MCMOrdinal:
         return m
 
 class MultiClassLearner:
-    def __init__(self, learner, matrix = MCMOneOne, pestimator = MCPEFriedman, name='MultiClass'):
+    def __init__(self, learner, matrix = MCMOneOne, pestimator = MCPEFriedman):
         self.learner = learner
         self.pestimator = pestimator
         self.matrix = matrix()
-        self.name = name
 
     def __call__(self, examples, weight = 0):
         if examples.domain.classVar.varType != 1:
