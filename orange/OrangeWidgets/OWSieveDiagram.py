@@ -10,7 +10,7 @@
 # 
 
 from OWWidget import *
-from OWSieveDiagramOptions import *
+#from OWSieveDiagramOptions import *
 from OData import *
 from qt import *
 from qtcanvas import *
@@ -97,8 +97,8 @@ class OWSieveDiagram(OWWidget):
         
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-        #self.saveCanvas = QPushButton("Save diagram", self.controlArea)
-        #self.connect(self.saveCanvas, SIGNAL("clicked()"), self.saveToFileCanvas)
+
+        self.resize(800, 480)
 
         #connect controls to appropriate functions
         self.activateLoadedSettings()
