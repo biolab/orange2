@@ -74,7 +74,7 @@ def _bw2(cc):
     return piddle.Color(v,v,v)
 
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0, plot_gains = 0, gains = [], gain_width = 70, plot_ints = 0, im = None):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0, plot_gains = 0, gains = [], gain_width = 70, plot_ints = 0, right_align = 0, im = None):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -93,6 +93,7 @@ class DendrogramPlot:
             for i in xrange(self.n):
                 gain_l.append(gains[i])
     
+        max_intlen = 0.0
         if plot_ints:
             # include the interactions between all pairs
             intlist = []
@@ -103,6 +104,7 @@ class DendrogramPlot:
                 if gains[idx1] < gains[idx2]:
                     idx1,idx2 = idx2,idx1
                 if ig > 0:
+                    max_intlen = max(max_intlen,gain_width*ig*mv)
                     gain_l[idx1] += ig*mv # possibly new maximum width
                     intlist.append((idx1,ig*mv,0.0))
                 else:
@@ -138,6 +140,7 @@ class DendrogramPlot:
                 assert(len(gains)==len(labels))
                 swid += spacew + gain_l[i]*gain_width
             maxlabel = max(maxlabel,swid)
+        maxswid = max(swids)
 
         if canvas == None:
             canvas = piddlePIL.PILCanvas(size=(width,height))
@@ -256,27 +259,34 @@ class DendrogramPlot:
             SWIDTH = 1
             if len(gains) > 0 :
                 # draw the gain line
+                if right_align:
+                    orig = width-margin-gain_width*gains[idx]-max_intlen
+                else:
+                    orig = hook+x+swids[idx]
                 if gain_width*gains[idx] >= 2.0*MULT:
-                    canvas.drawLine(hook+x+swids[idx]+MULT,y,hook+x+swids[idx]+gain_width*gains[idx]-MULT,y,piddle.black,width=MULT) # actual line
-                canvas.drawLine(hook+x+swids[idx],y,hook+x+swids[idx]+gain_width*gains[idx],y,piddle.black,width=SWIDTH) # thin line
-                canvas.drawLine(hook+x+swids[idx],y-GSERIF,hook+x+swids[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif 1
-                canvas.drawLine(hook+x+swids[idx]+gain_width*gains[idx],y-GSERIF,hook+x+swids[idx]+gain_width*gains[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif2
+                    canvas.drawLine(orig+MULT,y,orig+gain_width*gains[idx]-MULT,y,piddle.black,width=MULT) # actual line
+                canvas.drawLine(orig,y,orig+gain_width*gains[idx],y,piddle.black,width=SWIDTH) # thin line
+                canvas.drawLine(orig,y-GSERIF,orig,y+GSERIF,piddle.black,width=SWIDTH) #serif 1
+                canvas.drawLine(orig+gain_width*gains[idx],y-GSERIF,orig+gain_width*gains[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif2
             if len(intlist) > 0 and i > 0:
-                (qidx,width,cc) = intlist[i-1]
-                nx = offset-hs*(origins[qidx])+hook+swids[qidx]+gain_width*gains[qidx]
+                (qidx,widt,cc) = intlist[i-1]
+                if right_align:
+                    nx = width-margin-max_intlen
+                else:
+                    nx = offset-hs*(origins[qidx])+hook+swids[qidx]+gain_width*gains[qidx]
                 ny = y-0.5*lineskip
                 colo = _colorize(cc)
-                if width > 0:
+                if widt > 0:
                     disp = XMULT
                     seri = XSERIF
                 else:
                     disp = -XMULT
                     seri = -XSERIF
-                if abs(gain_width*width) >= 2.0*XMULT:
-                    canvas.drawLine(nx+disp,ny,nx+gain_width*width-disp,ny,colo,width=XMULT) # actual line
-                    canvas.drawLine(nx+gain_width*width-seri,ny-seri,nx+gain_width*width,ny,colo,width=SWIDTH) # arrowpoint 1
-                    canvas.drawLine(nx+gain_width*width-seri,ny+seri,nx+gain_width*width,ny,colo,width=SWIDTH) # arrowpoint 2
-                canvas.drawLine(nx,ny,nx+gain_width*width,ny,colo,width=SWIDTH) # thin line
+                if abs(gain_width*widt) >= 2.0*XMULT:
+                    canvas.drawLine(nx+disp,ny,nx+gain_width*widt-disp,ny,colo,width=XMULT) # actual line
+                    canvas.drawLine(nx+gain_width*widt-seri,ny-seri,nx+gain_width*widt,ny,colo,width=SWIDTH) # arrowpoint 1
+                    canvas.drawLine(nx+gain_width*widt-seri,ny+seri,nx+gain_width*widt,ny,colo,width=SWIDTH) # arrowpoint 2
+                canvas.drawLine(nx,ny,nx+gain_width*widt,ny,colo,width=SWIDTH) # thin line
                 canvas.drawLine(nx,ny-XSERIF,nx,ny+XSERIF,colo,width=SWIDTH) # serif 1            
             y += lineskip
 
