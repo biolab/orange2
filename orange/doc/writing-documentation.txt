@@ -1,9 +1,20 @@
-All files should reside in directories ofb, reference and modules. html2asp does not copy subdirectories.
+All files should reside in directories ofb, reference and
+modules. html2asp does not copy subdirectories.
 
-Each file needs to have a <h1> heading, which is used to extract the page's title. Those headings are removed in .asp version.
+Each file needs to have a <h1> heading, which is used to extract the
+page's title. Those headings are removed in .asp version.
 
-Hrefs pointing to files in the local directory (those that will be included in distribution) should be either 'href="<filename>.htm(l)' or 'href="..\<directory>\<filename>.htm(l)'. This may be followed by whatever you want (usualy a quote or hash). Only href's in this format will be converted into asp's; additionaly, if such a file is missing, a warning shall be given.
+Hrefs pointing to files in the local directory (those that will be
+included in distribution) should be either 'href="<filename>.htm(l)'
+or 'href="..\<directory>\<filename>.htm(l)'. This may be followed by
+whatever you want (usualy a quote or hash). Only href's in this format
+will be converted into asp's; additionaly, if such a file is missing,
+a warning shall be given.
 
-All other hrefs must be a full address, i.e. "http://magix.fri.uni-lj.si/orange/default.asp" and not simply "/orange/default.asp" or "/orange". This is because they must also function on local machine (.html version of documentation).
+All other hrefs must be a full address,
+i.e. "http://magix.fri.uni-lj.si/orange/default.asp" and not simply
+"/orange/default.asp" or "/orange". This is because they must also
+function on local machine (.html version of documentation).
 
-Filenames are case-sensitive. If you miss the case, you'll get a warning, but the script and the web site will still work.
+Filenames are case-sensitive. If you miss the case, you'll get a
+warning, but the script and the web site will still work.

@@ -36,7 +36,7 @@ elif flags == 0x80:
 else:
     import os, time
     
-    os.chdir("D:\\webMagix\\orange\\download\\custom")
+    os.chdir("C:\Inetpub\wwwUsers\orange\download\custom")
     filedir = ("%i" + ("-%2.2i" * 5)) % time.localtime()[:6]
     if os.path.exists(filedir):
         app = 1
@@ -47,7 +47,7 @@ else:
 
     os.mkdir(filedir)
 
-    os.chdir("D:\\webMagix\\orange\\scripts")
+    os.chdir("C:\Inetpub\wwwUsers\orange\scripts")
     args += ' /DORANGEDIR=c:\\inetpub\\wwwusers\\orange\\download\\lastStable\\orange'
     args += ' /DCWD=%s' % os.getcwd()
     args += ' /DOUTFILENAME=c:\\inetpub\\wwwusers\\orange\\download\\custom\\%s\\%s' % (filedir, filename)
