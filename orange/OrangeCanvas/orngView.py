@@ -211,6 +211,7 @@ class SchemaView(QCanvasView):
 
 					for widget in self.selWidgets:
 						widget.setCoords(widget.x(), widget.y())
+						widget.savePosition()
 						widget.removeTooltip()
 						widget.setAllLinesFinished(FALSE)
 						widget.repaintAllLines()
@@ -236,6 +237,10 @@ class SchemaView(QCanvasView):
 	# ###################################################################
 	# mouse button was pressed and mouse is moving ######################
 	def contentsMouseMoveEvent(self, ev):
+		#if not self.bLineDragging and (ev.x() < 0 or ev.x() > self.contentsX() + self.visibleWidth() or ev.y() < 0 or ev.y() > self.contentsY() + self.visibleHeight()):
+		#	self.contentsMouseReleaseEvent(ev)
+		#	return
+
 		if self.bWidgetDragging:
 			for item in self.selWidgets:
 				ex_pos = QPoint(item.x(), item.y())
@@ -252,10 +257,8 @@ class SchemaView(QCanvasView):
 				item.updateLineCoords()
 			self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
 			
-
 		elif self.bLineDragging:
 			self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
-
 
 		elif self.bMultipleSelection:
 			rect = QRect(min (self.moving_start.x(), ev.pos().x()), min (self.moving_start.y(), ev.pos().y()), abs(self.moving_start.x() - ev.pos().x()), abs(self.moving_start.y() - ev.pos().y()))
@@ -273,6 +276,7 @@ class SchemaView(QCanvasView):
 			widgets = self.findAllItemType(items, orngCanvasItems.CanvasWidget)
 			for widget in widgets:
 				widget.selected = TRUE
+				widget.savePosition()
 				widget.repaintWidget()
 				self.selWidgets.append(widget)
 			for widget in self.doc.widgets:
@@ -297,7 +301,8 @@ class SchemaView(QCanvasView):
 			for item in self.selWidgets:
 				item.invalidPosition = FALSE
 				if not validPos:
-					item.setCoordsBy(self.moving_start.x() - ev.pos().x(), self.moving_start.y() - ev.pos().y())
+					#item.setCoordsBy(self.moving_start.x() - ev.pos().x(), self.moving_start.y() - ev.pos().y())
+					item.restorePosition()
 				item.updateTooltip()
 				item.updateLineCoords()
 				item.setAllLinesFinished(TRUE)

@@ -252,6 +252,8 @@ class CanvasWidget(QCanvasRectangle):
 		self.captionWidth = 0
 		self.xPos = 0
 		self.yPos = 0
+		self.oldXPos = 0
+		self.oldYPos = 0
 		self.viewXPos = 0 # this two variables are used as offset for
 		self.viewYPos = 0 # tooltip placement inside canvasView
 		self.lastRect = QRect(0,0,0,0)
@@ -320,6 +322,13 @@ class CanvasWidget(QCanvasRectangle):
 		self.removeTooltip()
 		self.text.hide()
 		
+	def savePosition(self):
+		self.oldXPos = self.xPos
+		self.oldYPos = self.yPos
+
+	def restorePosition(self):
+		self.setCoords(self.oldXPos, self.oldYPos)
+		
 
 	def updateTextCoords(self):
 		self.text.move(self.xPos + 34, self.yPos + 60)
@@ -340,20 +349,19 @@ class CanvasWidget(QCanvasRectangle):
 	
 	# set coordinates of the widget
 	def setCoords(self, x, y):
-		self.xPos = x
-		self.yPos = y
-		self.move(x,y)
+		if x > 0 and x < self.canvas.width():  self.xPos = x
+		if y > 0 and y < self.canvas.height() - 60: self.yPos = y
+		self.move(self.xPos, self.yPos)
 		self.updateTextCoords()
 		self.updateLinePosition()
 		self.updateProgressBarPosition()
 
-	
 
 	# move existing coorinates by dx, dy
 	def setCoordsBy(self, dx, dy):
-		self.xPos = self.xPos + dx
-		self.yPos = self.yPos + dy
-		self.move(self.xPos,self.yPos)
+		if self.xPos + dx > 0 and self.xPos + dx < self.canvas.width(): self.xPos = self.xPos + dx
+		if self.yPos + dy > 0 and self.yPos + dy < self.canvas.height() - 60: self.yPos = self.yPos + dy
+		self.move(self.xPos, self.yPos)
 		self.updateTextCoords()
 		self.updateLinePosition()
 
