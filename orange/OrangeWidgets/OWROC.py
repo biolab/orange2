@@ -2,8 +2,8 @@
 <name>ROC anaylsis</name>
 <description>None.</description>
 <category>Evaluation</category>
-<icon>icons\ROC.png</icon>
-<priority>210</priority>
+<icon>icons\ROCAnalysis.png</icon>
+<priority>1010</priority>
 """
 
 from OData import *
