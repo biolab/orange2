@@ -63,6 +63,10 @@ def _blackwhite(cc):
     v = 1.0-(1.0/cc)
     return piddle.Color(v,v,v)
 
+def _bw2(cc):
+    v = abs(cc)*1.8
+    return piddle.Color(v,v,v)
+
 class DendrogramPlot:    
     def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[]):
         # prevent divide-by-zero...
@@ -100,10 +104,12 @@ class DendrogramPlot:
         else:
             block = 0
 
-        if color_mode:
+        if color_mode==1:
             _colorize = _colorize1 # gregor
-        else:
+        elif color_mode==0:
             _colorize = _colorize0 # aleks
+        else:
+            _colorize = _bw2
 
 
         ### EXTRACT THE DENDROGRAM ###
@@ -255,7 +261,7 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
-    def matrix(self,labels, diss, margin = 10, hook = 10, block = None, line_size = 2.0, att_colors = [], canvas = None,color_mode=0):
+    def matrix(self,labels, diss, margin = 10, hook = 10, block = None, line_size = 2.0, att_colors = [], canvas = None,color_mode=0,diagonal=0):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -298,21 +304,31 @@ class DendrogramPlot:
         for i in range(len(labels)):
             # self.order identifies the label at a particular row
             idx = self.order[i]-1
-            x = offset - labellen[idx] + lineskip/2
-            y = offset + lineskip*(i+1.5)
+            x = offset - labellen[idx] + lineskip
+            y = offset + lineskip*(i+1)
             # horizontal
-            canvas.drawString(labels[idx], x, y,font=normal)
-            x = offset + lineskip/2
-            y = offset + lineskip*(i+1.5)
+            if not diagonal or i > 0 or len(att_colors)>0:
+                canvas.drawString(labels[idx], x, y,font=normal)
+            x2 = offset + lineskip/2
+            y2 = offset + lineskip*(i+1)
             # vertical
-            canvas.drawString(labels[idx], y, x, angle=90,font=normal)
+            if diagonal and i < len(labels)-1:
+                if len(att_colors)>0:
+                    canvas.drawString(labels[idx], y+lineskip, y2-1.2*lineskip, angle=90,font=normal)
+                else:
+                    canvas.drawString(labels[idx], y+lineskip, y2-0.2*lineskip, angle=90,font=normal)
+            elif not diagonal:
+                canvas.drawString(labels[idx], y2+lineskip, x2-1.2*lineskip, angle=90,font=normal)
             for j in range(i):
                 idx2 = self.order[j]-1
                 colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])
-                x = offset+hook+lineskip*(i+1)
-                y = offset+hook+lineskip*(j+1)
+                x = offset+hook+lineskip*(j+1)
+                y = offset+hook+lineskip*(i)
                 canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
-                canvas.drawRect(y-block,x-block,y+block,x+block,edgeColor=colo,fillColor=colo)
+                if not diagonal:
+                    x -= lineskip
+                    y += lineskip
+                    canvas.drawRect(y-block,x-block,y+block,x+block,edgeColor=colo,fillColor=colo)
             if len(att_colors) > 0:
                 # render the gain
                 x = offset+hook+lineskip*(i+1)

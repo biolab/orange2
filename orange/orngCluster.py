@@ -6,9 +6,13 @@
 #                Computational Statistics and Data Analysis, 26, 17-37
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
-# Version 1.7 (11/10/2002)
+# CVS Status: $Id$
 #
 # ChangeLog:
+#
+#   2004/10/4 (aleks)
+#       - dendrogram sorting
+#
 #   2004/4/32 (peter.juvan@fri.uni-lj.si)
 #       - added BIC score for MClustering and DMClustering (requires input vectors)
 #       - added conversion functions: diss ragged list <-> Numeric.array
@@ -112,6 +116,45 @@ class HClustering:
                         self.mapping[j] = i+1
                 #return height
                     
+        def sort(self,seq,lab):
+                # try to sort the dendrogram according to a list
+                merges = []
+                for i in range(self.n):
+                    merges.append([self.n-i-1])
+                merges.append("sentry")
+                p = self.n
+
+                # inverse ordering
+                iord = [0]*self.n
+                for i in xrange(self.n): # i - position
+                        iord[self.order[i]-1] = i # iord[label_i] = position
+                
+                for i in range(self.n-1):
+                        # branches
+                        ba = merges[p+self.merging[i][0]]
+                        bb = merges[p+self.merging[i][1]]
+                        # compute the weight of each branch
+                        wa = 0.0
+                        wb = 0.0
+                        for x in ba:
+                                wa += seq[x]
+                        wa /= len(ba)
+                        for x in bb:
+                                wb += seq[x]
+                        wb /= len(bb)
+                        if wa > wb:
+                                la = len(ba)
+                                lb = len(bb)
+                                for x in ba:
+                                        iord[x] += lb # move forward
+                                for x in bb:
+                                        iord[x] -= la # move backward
+                        merges.append(ba+bb)
+
+                # remap
+                for i in xrange(self.n): # i - label
+                        self.order[iord[i]] = 1+i
+
         def __init__(self, distrlist, metric=2, method=4):
                 assert(metric == 1 or metric == 2)
                 assert(method >= 1 or method <= 5)
