@@ -247,10 +247,11 @@ class SchemaDoc(QMainWindow):
         if x==-1 or y==-1:
             x = self.canvasView.contentsX() + 10
             for w in self.widgets:
-                x = max(w.x() + 90, x)
+                x = max(w.x() + 110, x)
                 x = x/10*10
             y = 150
         newwidget.setCoords(x,y)
+        self.canvasView.ensureVisible(x+50,y)
         newwidget.setViewPos(self.canvasView.contentsX(), self.canvasView.contentsY())
 
         if caption == "": caption = newwidget.caption
