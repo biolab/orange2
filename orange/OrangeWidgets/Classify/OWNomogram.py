@@ -13,7 +13,7 @@
 
 import math
 import orange
-import OWGUI, orngLR_Jakulin
+import OWGUI, orngLR_Jakulin, orngLR
 from OWWidget import *
 from OWNomogramGraph import *
 
@@ -276,7 +276,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
-        aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
+        try:
+            aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
+        except:
+            aprox_prior_error = 0
         
         for at in cl.continuizedDomain.attributes:
             at.setattr("visited",0)
@@ -482,11 +485,13 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
-            for at in self.cl.domain.attributes:
+            for at in self.cl.continuizedDomain.attributes:
                 if not at.getValueFrom:
                     cont = True
             if self.data or not cont:
-                self.lrClassifier(self.cl)            
+                self.lrClassifier(self.cl)
+            else:
+                setNone()
         else:
             setNone()
         if self.sort_type>0:
@@ -709,7 +714,7 @@ if __name__=="__main__":
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
     #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
     ow.classifier(bayes)
-    ow.cdata(data)
+    #ow.cdata(data)
 
     # here you can test setting some stuff
     ow.show()
