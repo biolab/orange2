@@ -48,7 +48,7 @@ public:
   virtual ~TExample();
 
 private:
-  void insertVal(TValue &srcval, PVariable var, const int &metaID = 0);
+  void insertVal(TValue &srcval, PVariable var, const long &metaID = 0);
 
 public:
   int traverse(visitproc visit, void *arg) const;
@@ -92,7 +92,10 @@ public:
   void setClass(const TValue &val)
   { values_end[-1] = val; }
 
-  TValue getMeta(const int &i) const
+  const TValue &getMeta(const int &i) const
+  { return meta[i]; }
+
+  TValue &getMeta(const int &i)
   { return meta[i]; }
 
   bool hasMeta(const int &i) const

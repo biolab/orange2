@@ -206,7 +206,8 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(R
         if (PyList_Check(list) && PyList_Size(list) && PyOrExample_Check(PyList_GET_ITEM(list, 0))) {
           TExampleList elist;
           PyObject *iterator = PyObject_GetIter(list);
-          for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+          PyObject *item = PyIter_Next(iterator);
+          for(; item; item = PyIter_Next(iterator)) {
             if (!PyOrExample_Check(item)) {
               Py_DECREF(item);
               break;

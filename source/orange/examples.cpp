@@ -87,7 +87,7 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 }
 
 
-void TExample::insertVal(TValue &srcval, PVariable var, const int &metaID)
+void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
 {
   int position = var ? domain->getVarNum(var) : ILLEGAL_INT;
   if (position == ILLEGAL_INT)
@@ -135,10 +135,9 @@ TExample::TExample(PDomain dom, PExampleList elist)
     set<int> metasNotToCopy;
     ITERATE(TMetaVector, mai, (*eli)->domain->metas) {
       metasNotToCopy.insert((*mai).id);
-      if (hasMeta((*mai).id)) {
-        TValue &val = getMeta((*mai).id);
-        insertVal(val, (*mai).variable, (*mai).id);
-      }
+      if (hasMeta((*mai).id))
+        TValue val = getMeta((*mai).id);
+        insertVal(getMeta((*mai).id), (*mai).variable, (*mai).id);
     }
 
     set<int>::iterator mend(metasNotToCopy.end());

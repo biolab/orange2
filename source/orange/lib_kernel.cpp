@@ -1555,7 +1555,8 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
         if (PyList_Check(args)) {
           TExampleGeneratorList eglist;
           PyObject *iterator = PyObject_GetIter(args);
-          for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+          PyObject *item = PyIter_Next(iterator);
+          for(; item; item = PyIter_Next(iterator)) {
             if (!PyOrExampleGenerator_Check(item)) {
               Py_DECREF(item);
               break;
