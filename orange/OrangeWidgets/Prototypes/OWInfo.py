@@ -1,7 +1,7 @@
 """
 <name>Information</name>
 <description>The Info Widget allows users to add text information into canvas schemas.</description>
-<category>Miscelaneous</category>
+<category>Other</category>
 <icon>icons/Info.png</icon>
 <priority>10</priority>
 """

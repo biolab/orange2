@@ -1,7 +1,7 @@
 """
 <name>Subset Generator</name>
 <description>Generate a subset of input example table.</description>
-<category>Miscelaneous</category>
+<category>Other</category>
 <icon>icons/SubsetGen.png</icon>
 <priority>2010</priority>
 """

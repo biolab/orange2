@@ -1,7 +1,7 @@
 """
 <name>Example Builder</name>
 <description>Create example table.</description>
-<category>Miscelaneous</category>
+<category>Other</category>
 <icon>icons/EBuilder.png</icon>
 <priority>2000</priority>
 """
