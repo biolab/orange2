@@ -63,14 +63,18 @@ class SchemaView(QCanvasView):
 	# popMenuAction - user selected to rename active widget			
 	def renameActiveWidget(self):
 		exName = str(self.tempWidget.caption)
-		(string,ok) = QInputDialog.getText("Rename", "Enter new name for the widget \"" + exName + "\":", exName)
-		if ok and self.tempWidget != None and str(string) != exName:
+		(newName ,ok) = QInputDialog.getText("Rename", "Enter new name for the widget \"" + exName + "\":", exName)
+		newName = str(newName)
+		if ok and self.tempWidget != None and newName != exName:
 			for widget in self.doc.widgets:
-				if widget.caption.lower() == str(string).lower():
-					QMessageBox.critical(self,'Qrange Canvas','Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
+				if widget.caption.lower() == newName.lower():
+					QMessageBox.critical(self,'Orange Canvas','Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
 					return
-			self.tempWidget.updateText(string)
+			self.tempWidget.updateText(newName)
 			self.tempWidget.updateTooltip()
+			if len(newName) < 3 or newName[:2].lower() != "qt":
+				newName = "Qt " + newName
+			self.tempWidget.instance.setCaption(newName)
 			self.doc.enableSave(TRUE)
 
 	# popMenuAction - user selected to delete active widget
