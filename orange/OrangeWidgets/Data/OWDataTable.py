@@ -15,6 +15,7 @@
 
 from qttable import *
 from OWWidget import *
+import OWGUI
 
 ##############################################################################
 
@@ -50,6 +51,9 @@ class OWDataTable(OWWidget):
         cols = len(self.data.domain.attributes)
         if hasattr(self.data.domain, 'classVar'):
             cols += 1
+        if self.showMetas:
+            metas = self.data.domain.getmetas().values() # getmetas returns a dictionary
+            cols += len(metas)
         self.table.setNumCols(cols)
         self.table.setNumRows(len(self.data))
 
@@ -57,18 +61,26 @@ class OWDataTable(OWWidget):
         self.header=self.table.horizontalHeader()
         for i in range(len(self.data.domain.attributes)):
             self.header.setLabel(i, self.data.domain.attributes[i].name)
+        col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
-            self.header.setLabel(len(self.data.domain.attributes), self.data.domain.classVar.name)
+            self.header.setLabel(col, self.data.domain.classVar.name)
+            col += 1
+        if self.showMetas:
+            for (j,m) in enumerate(metas):
+                self.header.setLabel(j+col, m.name)
 
         # set the contents of the table (values of attributes)
         for i in range(len(self.data)):
             for j in range(len(self.data.domain.attributes)):
                 self.table.setText(i, j, str(self.data[i][j].native()))
+        col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
-            j = len(self.data.domain.attributes)
             for i in range(len(self.data)):
-                item = colorItem(self.table, QTableItem.WhenCurrent, self.data[i].getclass().native())
-                self.table.setItem(i, j, item)
+                OWGUI.tableItem(self.table, i, col, self.data[i].getclass().native(), color=Qt.lightGray)
+            col += 1
+##        for (j,m) in enumerate(metas):
+##            for i in range(len(self.data)):
+##                OWGUI.tableItem(self.table, i, j+col, self.data[m].native(), color=Qt.yellow)
 
         # adjust the width of the table
         for i in range(cols):
@@ -90,18 +102,6 @@ class OWDataTable(OWWidget):
         self.table.sortColumn(col, self.sortby>=0, TRUE)
 
 ##############################################################################
-
-class colorItem(QTableItem):
-    def __init__(self, table, editType, text, color=Qt.lightGray):
-        self.color = color
-        QTableItem.__init__(self, table, editType, str(text))
-
-    def paint(self, painter, colorgroup, rect, selected):
-        g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, self.color)
-        QTableItem.paint(self, painter, g, rect, selected)
-
-##############################################################################
 # Test the widget, run from DOS prompt
 # > python OWDataTable.py)
 # Make sure that a sample data set (adult_sample.tab) is in the directory
@@ -111,7 +111,8 @@ if __name__=="__main__":
     ow = OWDataTable()
     a.setMainWidget(ow)
 
-    data = orange.ExampleTable('adult_sample')
+#    d = orange.ExampleTable('adult_sample')
+    d = orange.ExampleTable('wtclassed')
     ow.show()
-    ow.dataset(data)
+    ow.dataset(d)
     a.exec_loop()

@@ -6,7 +6,9 @@
 # for an example
 
 from qt import *
+from qttable import *
 import qwt
+
 
 ##############################################################################
 
@@ -92,7 +94,10 @@ def button(widget, master, text, callback, disabled=0):
 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, groupLabel, btnLabels, value, tooltips=None, callback=None):
-    bg = QVButtonGroup(groupLabel, widget)
+    if groupLabel:
+        bg = QVButtonGroup(groupLabel, widget)
+    else:
+        bg = widget
     bg.setRadioButtonExclusive(1)
     for i in range(len(btnLabels)):
         if type(btnLabels[i])==type("string"):
@@ -182,17 +187,23 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     slider.box = hb
     return slider
 
-def comboBox(widget, master, value, label=None, items=None, tooltip=None, callback=None):
-    box = QHGroupBox(label, widget)
-    if tooltip: QToolTip.add(box, tooltip)
-    combo = QComboBox(box)
+def comboBox(widget, master, value, box=None, items=None, tooltip=None, callback=None):
+    if box:
+        hb = QHGroupBox(box, widget)
+    else:
+        hb = widget
+    if tooltip: QToolTip.add(hb, tooltip)
+    combo = QComboBox(hb)
     for i in items:
         combo.insertItem(i)
-    combo.setCurrentItem(getattr(master, value))
+    if len(items)>0:
+        combo.setCurrentItem(getattr(master, value))
+    else:
+        combo.setDisabled(True)
     master.connect(combo, SIGNAL("activated(int)"), ValueCallback(master, value))
     if callback:
         master.connect(combo, SIGNAL("activated(int)"), FunctionCallback(master, callback))
-
+    return combo
 
 ##############################################################################
 
@@ -230,3 +241,16 @@ class FunctionCallback:
         if self.id <> None: kwds['id'] = self.id
         if self.getwidget: kwds['widget'] = self.widget
         apply(self.f, (), kwds)
+
+##############################################################################
+
+class tableItem(QTableItem):
+    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, color=Qt.white):
+        self.color = color
+        QTableItem.__init__(self, table, editType, text)
+        table.setItem(x, y, self)
+
+    def paint(self, painter, colorgroup, rect, selected):
+        g = QColorGroup(colorgroup)
+        g.setColor(QColorGroup.Base, self.color)
+        QTableItem.paint(self, painter, g, rect, selected)
