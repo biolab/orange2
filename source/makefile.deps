@@ -145,13 +145,13 @@ orange/px/stamp: lib_vectors.cpp lib_io.cpp cls_orange.cpp orange.cpp cls_exampl
 
 externs.px: 
 
-lib_vectors.px: 
-
 lib_io.px: 
 
 cls_orange.px: 
 
 initialization.px: 
+
+lib_vectors.px: 
 
 cls_example.px: 
 
@@ -159,9 +159,9 @@ cls_misc.px:
 
 cls_value.px: 
 
-lib_learner.px: 
-
 lib_kernel.px: 
+
+lib_learner.px: 
 
 lib_components.px: 
 

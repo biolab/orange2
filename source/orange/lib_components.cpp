@@ -2701,7 +2701,7 @@ int HierarchicalClusterLowSet(PyObject *self, PyObject *arg, const int side)
       cluster->branches = mlnew THierarchicalClusterList(2);
     else 
       if (cluster->branches->size() != 2)
-        PYERROR(PyExc_AttributeError, "'left' not defined (clusters does not have (exactly) two subclusters", -1);
+        PYERROR(PyExc_AttributeError, "'left' not defined (cluster does not have (exactly) two subclusters)", -1);
 
     cluster->branches->at(side) = PyOrange_AsHierarchicalCluster(arg);
     return 0;
@@ -3024,5 +3024,510 @@ PyObject *DistanceMap_getPercentileInterval(PyObject *self, PyObject *args, PyOb
   PyCATCH
 }
 
+
+
+#include "graph.hpp"
+
+extern PyTypeObject PyEdge_Type;
+
+class TPyEdge {
+public:
+  PyObject_HEAD
+
+  PGraph graph;
+  int v1, v2;
+  float *weights;
+  int weightsVersion;
+
+  inline float *getWeights()
+  {
+    if (weightsVersion != (weights ? graph->lastAddition : graph->lastRemoval)) {
+      weights = graph->getEdge(v1, v2);
+      weightsVersion = graph->currentVersion;
+    }
+    return weights;
+  }
+};
+
+
+PyObject *PyEdge_Getitem(TPyEdge *self, int ind)
+{
+  PyTRY
+    if ((ind >= self->graph->nEdgeTypes) || (ind < 0)) {
+      PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", ind, self->graph->nEdgeTypes);
+      return PYNULL;
+    }
+
+    if (self->getWeights())
+      if (self->weights[ind] == GRAPH__NO_CONNECTION)
+        RETURN_NONE
+      else
+        return PyFloat_FromDouble(self->weights[ind]);
+    else
+      RETURN_NONE;
+  PyCATCH
+}
+
+
+int PyEdge_Contains(TPyEdge *self, PyObject *pyind)
+{
+  PyTRY
+    if (!PyInt_Check(pyind))
+      PYERROR(PyExc_IndexError, "edge types must be integers", -1);
+
+    int ind = int(PyInt_AsLong(pyind));
+    if ((ind >= self->graph->nEdgeTypes) || (ind < 0)) {
+      PyErr_Format(PyExc_IndexError, "edge type %i out of range (0-%i)", ind, self->graph->nEdgeTypes);
+      return -1;
+    }
+
+    return self->getWeights() && (self->weights[ind] != GRAPH__NO_CONNECTION) ? 1 : 0;
+  PyCATCH_1
+}
+
+
+int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
+{
+  PyTRY
+    if ((ind >= self->graph->nEdgeTypes) || (ind < 0)) {
+      PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", ind, self->graph->nEdgeTypes);
+      return -1;
+    }
+
+    float w;
+    if (!item || (item == Py_None))
+      w = GRAPH__NO_CONNECTION;
+    else
+      if (!PyNumber_ToFloat(item, w))
+        PYERROR(PyExc_TypeError, "a number expected for edge weight", -1);
+
+    if (self->getWeights()) {
+      self->weights[ind] = w;
+
+      if (w == GRAPH__NO_CONNECTION) {
+        for(float *w = self->weights, *we = self->weights + self->graph->nEdgeTypes; (w != we) && (*w == GRAPH__NO_CONNECTION); w++);
+        if (w == we) {
+          self->graph->removeEdge(self->v1, self->v2);
+          self->weights = NULL;
+          self->weightsVersion = self->graph->currentVersion;
+        }
+      }
+    }
+
+    else {
+      if (w != GRAPH__NO_CONNECTION) {
+        *(self->weights = self->graph->getOrCreateEdge(self->v1, self->v2)) = w;
+        self->weightsVersion = self->graph->currentVersion;
+      }
+    }
+
+    return 0;
+  PyCATCH_1
+}
+
+
+/*
+// I've programmed this by mistake; but it's nice, so let it stay
+// for the case we need it :) 
+PyObject *PyEdge_Str(TPyEdge *self)
+{
+  PyTRY
+     int nEdgeTypes = self->graph->nEdgeTypes;
+
+     if (!self->getWeights()) {
+      if (nEdgeTypes == 1)
+        RETURN_NONE;
+      else {
+        PyObject *res = PyTuple_New(nEdgeTypes);
+        while(nEdgeTypes--) {
+          Py_INCREF(Py_None);
+          PyTuple_SET_ITEM(res, nEdgeTypes, Py_None);
+        }
+        return res;
+      }
+    }
+
+    if (nEdgeTypes == 1)
+      return PyFloat_FromDouble(*self->weights);
+    else {
+      PyObject *res = PyTuple_New(nEdgeTypes);
+      int i = 0;
+      for(float weights = self->weights; i != nEdgeTypes; weights++, i++)
+        PyTuple_SET_ITEM(res, i, PyFloat_FromDouble(*weights));
+      return res;
+    }
+  PyCATCH
+}
+*/
+
+PyObject *PyEdge_Str(TPyEdge *self)
+{
+  PyTRY
+     int nEdgeTypes = self->graph->nEdgeTypes;
+     char *buf;
+
+     if (!self->getWeights()) {
+       if (nEdgeTypes == 1)
+         return PyString_FromString("None");
+       else {
+         buf = new char[nEdgeTypes*6 + 2];
+         char *b2 = buf;
+         *b2++ = '(';
+         while(nEdgeTypes--) {
+           strcpy(b2, "None, ");
+           b2 += 6;
+         }
+         b2[-1] = 0;
+         b2[-2] = ')';
+       }
+    }
+
+    else { 
+      if (nEdgeTypes == 1) {
+        buf = new char[20];
+        char *b2 = buf;
+        sprintf(b2, "%-10g", *self->weights);
+        for(; *b2 > 32; b2++);
+        *b2 = 0;
+      }
+      else {
+        buf = new char[nEdgeTypes*20];
+        char *b2 = buf;
+        *b2++ = '(';
+        for(float *weights = self->weights, *wee = weights + nEdgeTypes; weights != wee; weights++) {
+          if (*weights != GRAPH__NO_CONNECTION) {
+            sprintf(b2, "%-10g", *weights);
+            for(; *b2 > 32; b2++);
+            *b2++ = ',';
+            *b2++ = ' ';
+          }
+          else {
+            strcpy(b2, "None, ");
+            b2 += 6;
+          }
+        }
+        b2[-1] = 0;
+        b2[-2] = ')';
+      }
+    }
+
+    PyObject *res = PyString_FromString(buf);
+    delete buf;
+    return res;
+  PyCATCH
+}
+
+int PyEdge_Len(TPyEdge *self)
+{ return self->graph->nEdgeTypes; }
+
+
+int PyEdge_Nonzero(TPyEdge *self)
+{ return self->getWeights() ? 1 : 0; }
+
+
+int PyEdge_Traverse(TPyEdge *self, visitproc visit, void *arg)
+{ PVISIT(self->graph)
+  return 0;
+}
+
+
+int PyEdge_Clear(TPyEdge *self)
+{ self->graph = POrange();
+  return 0;
+}
+
+
+void PyEdge_Dealloc(TPyEdge *self)
+{
+  self->graph.~PGraph();
+  self->ob_type->tp_free((PyObject *)self);
+}
+
+
+PyNumberMethods PyEdge_as_number = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  (inquiry)PyEdge_Nonzero,                           /* nb_nonzero */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+
+static PySequenceMethods PyEdge_as_sequence = {
+	(inquiry)PyEdge_Len,					/* sq_length */
+	0,					/* sq_concat */
+	0,					/* sq_repeat */
+	(intargfunc)PyEdge_Getitem,					/* sq_item */
+	0,					/* sq_slice */
+	(intobjargproc)PyEdge_Setitem,					/* sq_ass_item */
+	0,					/* sq_ass_slice */
+	(objobjproc)PyEdge_Contains,		/* sq_contains */
+	0,					/* sq_inplace_concat */
+	0,					/* sq_inplace_repeat */
+};
+
+PyTypeObject PyEdge_Type = {
+	PyObject_HEAD_INIT(&PyType_Type)
+	0,					/* ob_size */
+	"Graph.Edge",			/* tp_name */
+	sizeof(TPyEdge),			/* tp_basicsize */
+	0,					/* tp_itemsize */
+	/* methods */
+	(destructor)PyEdge_Dealloc, 		/* tp_dealloc */
+	0,					/* tp_print */
+	0,					/* tp_getattr */
+	0,					/* tp_setattr */
+	0,					/* tp_compare */
+	(reprfunc)PyEdge_Str,					/* tp_repr */
+	&PyEdge_as_number,					/* tp_as_number */
+	&PyEdge_as_sequence,					/* tp_as_sequence */
+	0,					/* tp_as_mapping */
+	0,					/* tp_hash */
+	0,					/* tp_call */
+	(reprfunc)PyEdge_Str,					/* tp_str */
+	0,		/* tp_getattro */
+	0,					/* tp_setattro */
+	0,					/* tp_as_buffer */
+	Py_TPFLAGS_DEFAULT,			/* tp_flags */
+ 	0,					/* tp_doc */
+ 	(traverseproc)PyEdge_Traverse,					/* tp_traverse */
+ 	(inquiry)PyEdge_Clear,					/* tp_clear */
+	0,					/* tp_richcompare */
+	0,					/* tp_weaklistoffset */
+	0,			/* tp_iter */
+	0,	/* tp_iternext */
+	0,					/* tp_methods */
+	0,					/* tp_members */
+	0,					/* tp_getset */
+	0,					/* tp_base */
+	0,					/* tp_dict */
+	0,					/* tp_descr_get */
+	0,					/* tp_descr_set */
+  0,                  /* tp_dictoffset */
+  0,                             /* tp_init */
+  PyType_GenericAlloc,                               /* tp_alloc */
+  0,                               /* tp_new */
+  _PyObject_GC_Del,                                  /* tp_free */
+};
+
+
+PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, float *weights)
+{
+  TPyEdge *self = PyObject_GC_New(TPyEdge, &PyEdge_Type);
+  if (self == NULL)
+    return NULL;
+
+  // The object constructor has never been called, so we must initialize it
+  // before assignign to it
+  self->graph.init();
+
+  self->graph = graph;
+  self->v1 = v1;
+  self->v2 = v2;
+  self->weights = weights;
+
+	PyObject_GC_Track(self);
+	return (PyObject *)self;
+}
+
+
+BASED_ON(Graph, Orange)
+
+PyObject *Graph_getitem(PyObject *self, PyObject *args)
+{
+  PyTRY
+    int v1, v2;
+    if (PyArg_ParseTuple(args, "ii", &v1, &v2)) {
+      PGraph graph = PyOrange_AS_Orange(self);
+      return PyEdge_New(graph, v1, v2, graph->getEdge(v1, v2));
+    }
+
+    PyErr_Clear();
+    int type;
+    if (PyArg_ParseTuple(args, "iii", &v1, &v2, &type)) {
+      PGraph graph = PyOrange_AS_Orange(self);
+      if ((type >= graph->nEdgeTypes) || (type < 0)) {
+        PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
+        return PYNULL;
+      }
+      float *weights = graph->getEdge(v1, v2);
+      if (!weights || (weights[type] == GRAPH__NO_CONNECTION))
+        RETURN_NONE
+      else
+        return PyFloat_FromDouble(weights[type]);
+    }
+
+    PYERROR(PyExc_IndexError, "Graph is indexed by two or three integers (two vertices and a edge type)", PYNULL);
+
+  PyCATCH
+}
+
+int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
+{
+  PyTRY
+    CAST_TO_err(TGraph, graph, -1);
+
+    int v1, v2, type;
+    if (PyArg_ParseTuple(args, "iii", &v1, &v2, &type)) {
+      if ((type >= graph->nEdgeTypes) || (type < 0)) {
+        PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
+        return -1;
+      }
+
+      float w;
+
+      if (!item || (item == Py_None))
+        w = GRAPH__NO_CONNECTION;
+      else
+        if (!PyNumber_ToFloat(item, w))
+          PYERROR(PyExc_TypeError, "a number expected for edge weight", -1);
+
+      // we call getOrCreateEdge only after we check all arguments, so we don't end up
+      // with a half-created edge
+      float *weights = graph->getOrCreateEdge(v1, v2);
+      weights[type] = w;
+
+      for(float *we = weights, *wee = weights + graph->nEdgeTypes; (we != wee) && (*we == GRAPH__NO_CONNECTION); we++);
+      if (we == wee)
+        graph->removeEdge(v1, v2);
+
+      return 0;
+    }
+
+    PyErr_Clear();
+    if (PyArg_ParseTuple(args, "ii", &v1, &v2)) {
+
+      if (!item || (item == Py_None)) {
+        graph->removeEdge(v1, v2);
+        return 0;
+      }
+
+      if (graph->nEdgeTypes == 1) {
+        float w;
+        if (PyNumber_ToFloat(item, w))
+          // first convert, then create the edge
+          *graph->getOrCreateEdge(v1, v2) = w;
+          return 0;
+      }
+
+      if (PySequence_Check(item)) {
+        if (PySequence_Size(item) != graph->nEdgeTypes)
+          PYERROR(PyExc_AttributeError, "invalid size of the list of edge weights", -1);
+
+        float *ww = new float[graph->nEdgeTypes];
+        float *wwi = ww;
+        PyObject *iterator = PyObject_GetIter(item);
+        if (iterator) {
+          for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+            if (item == Py_None)
+              *(wwi++) = GRAPH__NO_CONNECTION;
+            else
+              if (!PyNumber_ToFloat(item, *(wwi++))) {
+                Py_DECREF(item);
+                Py_DECREF(iterator);
+                PyErr_Format(PyExc_TypeError, "invalid number for edge type %i", wwi-ww-1);
+                delete ww;
+                return -1;
+              }
+            Py_DECREF(item);
+          }
+          Py_DECREF(iterator);
+
+          memcpy(graph->getOrCreateEdge(v1, v2), ww, graph->nEdgeTypes * sizeof(float));
+          return 0;
+        }
+      }
+    }
+
+    PYERROR(PyExc_AttributeError, "arguments for __setitem__ are [v1, v2, type] = weight|None,  [v1, v2] = list | weight (if nEdgeType=1)", -1);
+  PyCATCH_1
+}
+
+
+
+PyObject *Graph_getNeighbours(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
+{
+  PyTRY
+    int vertex, edgeType = -1;
+    if (!PyArg_ParseTuple(args, "i|i:Graph.getNeighbours", &vertex, &edgeType))
+      return PYNULL;
+
+    vector<int> neighbours;
+    if (edgeType == -1)
+      SELF_AS(TGraph).getNeighbours(vertex, neighbours);
+    else
+      SELF_AS(TGraph).getNeighbours(vertex, edgeType, neighbours);
+
+    return convertToPython(neighbours);
+  PyCATCH
+}
+
+
+PyObject *Graph_getEdgesFrom(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
+{
+  PyTRY
+    int vertex, edgeType = -1;
+    if (!PyArg_ParseTuple(args, "i|i:Graph.getEdgesFrom", &vertex, &edgeType))
+      return PYNULL;
+
+    vector<int> neighbours;
+    if (edgeType == -1)
+      SELF_AS(TGraph).getNeighboursFrom(vertex, neighbours);
+    else
+      SELF_AS(TGraph).getNeighboursFrom(vertex, edgeType, neighbours);
+
+    return convertToPython(neighbours);
+  PyCATCH
+}
+
+
+PyObject *Graph_getEdgesTo(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
+{
+  PyTRY
+    int vertex, edgeType = -1;
+    if (!PyArg_ParseTuple(args, "i|i:Graph.getEdgesTo", &vertex, &edgeType))
+      return PYNULL;
+
+    vector<int> neighbours;
+    if (edgeType == -1)
+      SELF_AS(TGraph).getNeighboursTo(vertex, neighbours);
+    else
+      SELF_AS(TGraph).getNeighboursTo(vertex, edgeType, neighbours);
+
+    return convertToPython(neighbours);
+  PyCATCH
+}
+
+
+
+PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
+{
+  PyTRY
+    int nVertices, directed, nEdgeTypes = 1;
+    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+      PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
+
+    return WrapNewOrange(mlnew TGraphAsMatrix(nVertices, nEdgeTypes, directed != 0), type);
+  PyCATCH
+}
+
+PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
+{
+  PyTRY
+    int nVertices, directed, nEdgeTypes = 1;
+    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+      PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
+
+    return WrapNewOrange(mlnew TGraphAsList(nVertices, nEdgeTypes, directed != 0), type);
+  PyCATCH
+}
+
+PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
+{
+  PyTRY
+    int nVertices, directed, nEdgeTypes = 1;
+    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+      PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
+
+    return WrapNewOrange(mlnew TGraphAsTree(nVertices, nEdgeTypes, directed != 0), type);
+  PyCATCH
+}
 
 #include "lib_components.px"

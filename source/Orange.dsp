@@ -326,6 +326,10 @@ SOURCE=.\orange\getarg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\graph.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\gslconversions.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -812,6 +816,10 @@ SOURCE=.\orange\garbage_py_manner.hpp
 # Begin Source File
 
 SOURCE=.\orange\getarg.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\graph.hpp
 # End Source File
 # Begin Source File
 

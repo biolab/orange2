@@ -166,3 +166,12 @@ bool PyNumber_ToFloat(PyObject *o, float &res)
 }
 
 
+PyObject *convertToPython(const vector<int> &v)
+{
+  const int e = v.size();
+  PyObject *res = PyList_New(e);
+  vector<int>::const_iterator vi(v.begin());
+  for(int i = 0; i<e; i++, vi++)
+    PyList_SetItem(res, i, PyInt_FromLong(*vi));
+  return res;
+}

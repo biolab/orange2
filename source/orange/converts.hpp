@@ -25,6 +25,7 @@
 
 #include "garbage.hpp"
 #include "Python.h"
+#include <vector>
 
 WRAPPER(Contingency)
 WRAPPER(Distribution)
@@ -43,6 +44,9 @@ PyObject *convertToPython(const pair<float, float> &);
 PyObject *convertToPython(const int &);
 PyObject *convertToPython(const unsigned char &);
 PyObject *convertToPython(const bool &);
+
+PyObject *convertToPython(const vector<int> &v);
+
 
 string convertToString(const PDistribution &);
 string convertToString(const string &);
