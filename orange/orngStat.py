@@ -850,12 +850,13 @@ def computeCDT(res, classIndex=-1, **argkw):
         CDTs = [CDT() for i in range(res.numberOfLearners)]
         iterationExperiments = splitByIterations(res)
         for exp in iterationExperiments:
-            expCDTs = corn.computeCDT(exp, classIndex, useweights)
-            for i in range(len(CDTs)):
-                CDTs[i].C += expCDTs[i].C
-                CDTs[i].D += expCDTs[i].D
-                CDTs[i].T += expCDTs[i].T
-        return CDTs
+##            expCDTs = corn.computeCDT(exp, classIndex, useweights)
+##            for i in range(len(CDTs)):
+##                CDTs[i].C += expCDTs[i].C
+##                CDTs[i].D += expCDTs[i].D
+##                CDTs[i].T += expCDTs[i].T
+##        return CDTs
+            pass
     else:
         return corn.computeCDT(res, classIndex, useweights)
     
