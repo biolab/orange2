@@ -58,6 +58,7 @@ class kNNOptimization(OWBaseWidget):
         self.allResults = []
         self.shownResults = []
         self.attrLenDict = {}
+        self.datasetName = ""
 
         self.cancelOptimization = 0
 
@@ -195,7 +196,12 @@ class kNNOptimization(OWBaseWidget):
 
     # set value of k to sqrt(n)
     def setData(self, data):
-        if not data: return
+        if hasattr(data, "name"): self.datasetName = data.name
+        else: self.datasetName = ""
+
+        if not data:
+            return
+        
         correct = sqrt(len(data))
         i=0
         while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
@@ -304,7 +310,10 @@ class kNNOptimization(OWBaseWidget):
     def save(self, filename = None):
         if filename == None:
             # get file name
-            filename = "%s (k - %2d)" % (self.parentName, self.kValue )
+            if self.datasetName != "":
+                filename = "%s - %s (k - %2d)" % (os.path.splitext(os.path.split(self.datasetName)[1])[0], self.parentName, self.kValue )
+            else:
+                filename = "%s (k - %2d)" % (self.parentName, self.kValue )
             qname = QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
             if qname.isEmpty(): return
             name = str(qname)
