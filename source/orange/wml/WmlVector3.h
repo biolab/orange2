@@ -63,6 +63,9 @@ public:
     WML_ITEM static const Vector3 UNIT_X;
     WML_ITEM static const Vector3 UNIT_Y;
     WML_ITEM static const Vector3 UNIT_Z;
+
+protected:
+    using Vector<3,Real>::m_afTuple;
 };
 
 #include "WmlVector3.inl"

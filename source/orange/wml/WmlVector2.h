@@ -66,6 +66,9 @@ public:
     WML_ITEM static const Vector2 ZERO;
     WML_ITEM static const Vector2 UNIT_X;
     WML_ITEM static const Vector2 UNIT_Y;
+
+protected:
+    using Vector<2,Real>::m_afTuple;
 };
 
 #include "WmlVector2.inl"
