@@ -216,15 +216,14 @@ bool TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
     const char *c = (*ii2).c_str();
     if (!*c)
       return false;
-    if (!c[1]) {
-      if ((* c!= 'd') && (*c != 'c') && (*c != 's'))
-        return false;
-    }
-    else {
-      for(; *c && (*c!=' '); c++);
+    if (!c[1] && ((*c == 'd') || (*c == 'c') || (*c == 's')))
+      continue;
+    if (!strcmp(c, "continuous") || !strcmp(c, "discrete") || !strcmp(c, "string")) 
+      continue;
+      
+    for(; *c && (*c!=' '); c++);
       if (!*c)
         return false; // no space
-    }
   }
 
   // if there is no flags line, it is not .tab
@@ -243,10 +242,10 @@ bool TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
       if (args.direct.size()>1)
         return false;
 
-      static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "m", "meta"};
+      static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "m", "meta", NULL};
       string &direct = args.direct.front();
       const char **lc = legalDirects;
-      while(*lc && (*lc != direct))
+      while(*lc && strcmp(*lc, direct.c_str()))
         lc++;
       if (!*lc)
         return false;
