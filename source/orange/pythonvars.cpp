@@ -395,7 +395,7 @@ void TPythonVariable::filestr2val(const string &valname, TValue &valu, TExample 
   PyObject *wo = Example_FromWrappedExample(PExample(ex));
   PyDict_SetItem(locals, fdoms, wo);
   Py_DECREF(wo);
-  res = PyRun_String(valname.c_str(), Py_eval_input, globals, locals);
+  res = PyRun_String(const_cast<char *>(valname.c_str()), Py_eval_input, globals, locals);
   PyDict_DelItem(locals, fdoms);
   Py_DECREF(fdoms);
 
