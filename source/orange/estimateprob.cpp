@@ -438,7 +438,6 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     raiseError("empty distribution");
 
   PContingency cont = CLONE(TContingency, frequencies);
-  TDistributionList *varianes = mlnew TDistributionList();
 
   const TDistributionMap &points = *frequencies->continuous;
   vector<float> xpoints;
@@ -451,6 +450,9 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
   TDistributionMap::const_iterator highedge = points.end();
 
   int needpoints = int(ceil(points.size() * windowProportion));
+  if (needpoints<3)
+    needpoints = 3;
+
   bool needAll;
   map<float, PDistribution>::const_iterator from, to;
 

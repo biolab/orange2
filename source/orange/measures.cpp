@@ -197,6 +197,10 @@ TMeasureAttributeFromProbabilities::TMeasureAttributeFromProbabilities(const boo
 
 float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistribution classDistribution, PDistribution aprior)
 { 
+  // if unknowns are ignored, we only take the class distribution for examples for which the attribute's value was defined
+  if (unknownsTreatment == IgnoreUnknowns)
+    classDistribution = cont->innerDistribution;
+
   if (estimator) {
     classDistribution = estimator->call(classDistribution, aprior)->call();
     if (!classDistribution)
@@ -209,7 +213,7 @@ float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistrib
       raiseError("'conditionalEstimator cannot return contingency matrix");
   }
 
-  return operator()(cont, CAST_TO_DISCDISTRIBUTION(unknownsTreatment == UnknownsToCommon ? classDistribution : cont->innerDistribution));
+  return operator()(cont, CAST_TO_DISCDISTRIBUTION(classDistribution));
 }
 
 
@@ -233,13 +237,17 @@ float getEntropy(const vector<float> &vf)
 }
 
 
-float getEntropy(PContingency cont, bool unknownsToCommon)
+float getEntropy(PContingency cont, int unknownsTreatment)
 { 
   checkDiscrete(cont, "getEntropy");
 
   float sum = 0.0, N = 0.0;
   const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
-  TDistributionVector::const_iterator mostCommon = unknownsToCommon ? cont->discrete->begin() + outer.highestProbIntIndex() : cont->discrete->end();
+  TDistributionVector::const_iterator mostCommon(
+     unknownsTreatment == TMeasureAttribute::UnknownsToCommon
+       ? cont->discrete->begin() + outer.highestProbIntIndex()
+       : cont->discrete->end());
+
   const_ITERATE(TDistributionVector, ci, *cont->discrete) {
     const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
     if (ci == mostCommon) {
@@ -253,6 +261,13 @@ float getEntropy(PContingency cont, bool unknownsToCommon)
       sum += dist.cases * getEntropy(dist.distribution);
     }
   }
+
+  if (unknownsTreatment == TMeasureAttribute::UnknownsAsValue) {
+    const float &cases = cont->innerDistributionUnknown->cases;
+    N += cases;
+    sum += cases * getEntropy(CAST_TO_DISCDISTRIBUTION(cont->innerDistributionUnknown));
+  }
+
   return N ? sum/N : 0.0;
 }
 
@@ -268,10 +283,10 @@ float TMeasureAttribute_info::operator()(PContingency probabilities, const TDisc
   // checkDiscrete is called by getEntropy
 
   const TDistribution &outer = probabilities->outerDistribution.getReference();
-  if ((unknownsTreatment == ReduceByUnknowns) && (outer.cases == 0))
+  if (!outer.cases)
     return 0.0;
 
-  float info = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment==UnknownsToCommon);
+  float info = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment);
   if (unknownsTreatment == ReduceByUnknowns)
     info *= outer.cases / (outer.unknowns + outer.cases);
 
@@ -296,14 +311,22 @@ float TMeasureAttribute_gainRatio::operator()(PContingency probabilities, const 
   checkDiscrete(probabilities, "MeasureAttribute_gainRatio");
 
   const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
-  if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
+  if (!outer.cases)
     return 0.0;
 
-  float attributeEntropy = getEntropy(outer);
+  float attributeEntropy;
+  if (unknownsTreatment == UnknownsAsValue) {
+    vector<float> dist(outer);
+    dist.push_back(probabilities->innerDistributionUnknown->cases);
+    attributeEntropy = getEntropy(dist);
+  }
+  else
+    attributeEntropy = getEntropy(outer);
+
   if (attributeEntropy<1e-20)
     return 0.0;
   
-  float gain = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment==UnknownsToCommon);
+  float gain = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment);
   if (gain<1e-20)
     return 0.0;
   
@@ -333,11 +356,15 @@ float getGini(const vector<float> &vf)
 }
 
 
-float getGini(PContingency cont, bool unknownsToCommon)
+float getGini(PContingency cont, int unknownsTreatment)
 { 
   float sum = 0.0, N = 0.0;
   const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
-  TDistributionVector::const_iterator mostCommon = unknownsToCommon ? cont->discrete->begin() + outer.highestProbIntIndex() : cont->discrete->end();
+  TDistributionVector::const_iterator mostCommon(
+    unknownsTreatment == TMeasureAttribute::UnknownsToCommon
+      ? cont->discrete->begin() + outer.highestProbIntIndex()
+      : cont->discrete->end());
+
   const_ITERATE(TDistributionVector, ci, *cont->discrete) {
     const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
     if (ci == mostCommon) {
@@ -351,6 +378,13 @@ float getGini(PContingency cont, bool unknownsToCommon)
       sum += dist.cases * getGini(dist.distribution);
     }
   }
+
+  if (unknownsTreatment == TMeasureAttribute::UnknownsAsValue) {
+    const float &cases = cont->innerDistributionUnknown->cases;
+    N += cases;
+    sum += cases * getGini(CAST_TO_DISCDISTRIBUTION(cont->innerDistributionUnknown));
+  }
+
   return N ? sum/N : 0.0;
 }
 
@@ -368,7 +402,7 @@ float TMeasureAttribute_gini::operator()(PContingency probabilities, const TDisc
   if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
     return 0.0;
  
-  float gini = getGini(classProbabilities) - getGini(probabilities, unknownsTreatment==UnknownsToCommon);
+  float gini = getGini(classProbabilities) - getGini(probabilities, unknownsTreatment);
   if (unknownsTreatment == ReduceByUnknowns)
     gini *= (outer.cases / (outer.unknowns + outer.cases));
 
@@ -456,6 +490,13 @@ float TMeasureAttribute_cost::operator()(PContingency probabilities, const TDisc
       continueCost += dist.cases * majorityCost(dist.distribution);
     }
   }
+
+  if (unknownsTreatment == UnknownsAsValue) {
+    const float &cases = probabilities->innerDistributionUnknown->cases;
+    N += cases;
+    continueCost += cases * majorityCost(CAST_TO_DISCDISTRIBUTION(probabilities->innerDistributionUnknown));
+  }
+
   continueCost /= N;
 
   float cost = stopCost - continueCost;
@@ -467,9 +508,10 @@ float TMeasureAttribute_cost::operator()(PContingency probabilities, const TDisc
 
 
 
-TMeasureAttribute_MSE::TMeasureAttribute_MSE()
+TMeasureAttribute_MSE::TMeasureAttribute_MSE(const int &unkTreat)
 : TMeasureAttribute(Contingency_Class, false, true),
-  m(0)
+  m(0),
+  unknownsTreatment(unkTreat)
 {}
 
 

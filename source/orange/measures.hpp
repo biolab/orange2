@@ -38,10 +38,10 @@ using namespace std;
 WRAPPER(Contingency);
 WRAPPER(DiscDistribution);
 
-float getEntropy(PContingency, bool unknownsToCommon = false);
+float getEntropy(PContingency, int unknownsTreatment);
 float getEntropy(const vector<float> &);
 
-float getGini(const vector<float> &);
+float getGini(const vector<float> &, int unknownsTreatment);
 float getGini(PContingency, const TDiscDistribution &caseWeights, const float &classGini=0.0);
 
 WRAPPER(Contingency)
@@ -69,7 +69,7 @@ public:
   __REGISTER_CLASS
 
   enum {Contingency_Class, DomainContingency, Generator};
-  enum { IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon };
+  enum {IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon, UnknownsAsValue};
 
   int needs; //P describes what kind of data is needed for computation
   bool handlesDiscrete; //PR tells whether the measure can handle discrete attributes
@@ -173,7 +173,7 @@ public:
     float m; //P m for m-estimate
     int unknownsTreatment; //P treatment of unknown values
 
-    TMeasureAttribute_MSE();
+    TMeasureAttribute_MSE(const int &unkTreat = ReduceByUnknowns);
     virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
 };
 

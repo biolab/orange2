@@ -1697,6 +1697,7 @@ PYCLASSCONSTANT_INT(MeasureAttribute, NeedsContingency_Class, TMeasureAttribute:
 PYCLASSCONSTANT_INT(MeasureAttribute, IgnoreUnknowns, TMeasureAttribute::IgnoreUnknowns)
 PYCLASSCONSTANT_INT(MeasureAttribute, ReduceByUnknowns, TMeasureAttribute::ReduceByUnknowns)
 PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsToCommon, TMeasureAttribute::UnknownsToCommon)
+PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsAsValue, TMeasureAttribute::UnknownsAsValue)
 
 PYCLASSCONSTANT_FLOAT(MeasureAttribute, Rejected, ATTRIBUTE_REJECTED)
 
