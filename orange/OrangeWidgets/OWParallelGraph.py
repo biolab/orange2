@@ -12,6 +12,26 @@ from OWTools import *
 from qwt import *
 from Numeric import *
 
+class subBarQwtPlotCurve(QwtPlotCurve):
+    def __init__(self, parent = None, text = None):
+        QwtPlotCurve.__init__(self, parent, text)
+        self.color = Qt.black
+
+    def draw(self, p, xMap, yMap, f, t):
+        p.setBackgroundMode(Qt.OpaqueMode)
+        p.setBackgroundColor(self.color)
+        p.setBrush(self.color)
+        p.setPen(self.color)
+        if t < 0: t = self.dataSize() - 1
+        if divmod(f, 2)[1] != 0: f -= 1
+        if divmod(t, 2)[1] == 0:  t += 1
+        for i in range(f, t+1, 2):
+            px1 = xMap.transform(self.x(i))
+            py1 = yMap.transform(self.y(i))
+            px2 = xMap.transform(self.x(i+1))
+            py2 = yMap.transform(self.y(i+1))
+            p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
+
 class DiscreteAxisScaleDraw(QwtScaleDraw):
     def __init__(self, labels):
         apply(QwtScaleDraw.__init__, (self,))
@@ -34,7 +54,9 @@ class OWParallelGraph(QwtPlot):
         self.scaledData = []
         self.scaledDataAttributes = []
         self.jitteringType = 'none'
-        
+        self.showDistributions = 0
+        self.GraphCanvasColor = str(Qt.white.name())
+
         self.enableAxis(QwtPlot.yLeft, 1)
         self.enableAxis(QwtPlot.xBottom, 1)
         self.setAutoReplot(FALSE)
@@ -83,8 +105,16 @@ class OWParallelGraph(QwtPlot):
         self.curveIndex = 0
 
     def setCanvasColor(self, c):
+        self.GraphCanvasColor = c
         self.setCanvasBackground(c)
         self.repaint()
+
+    def setShowDistributions(self, showDistributions):
+        self.showDistributions = showDistributions
+
+
+    def setJitteringOption(self, jitteringType):
+        self.jitteringType = jitteringType
 
 
     def saveToFile(self):
@@ -106,59 +136,39 @@ class OWParallelGraph(QwtPlot):
         self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
-        self.updateToolTips()
+        #self.updateToolTips()
 
-    def updateToolTips(self):
-        "Updates the tool tips"
-#        self.dynamicToolTip.addToolTip(self.yRight, self.tipRight)
-#        self.dynamicToolTip.addToolTip(self.yLeft, self.tipLeft)
-#        self.dynamicToolTip.addToolTip(self.xBottom, self.tipBottom)
 
     def resizeEvent(self, event):
         "Makes sure that the plot resizes"
-        self.updateToolTips()
+        #self.updateToolTips()
         self.updateLayout()
 
     def paintEvent(self, qpe):
         QwtPlot.paintEvent(self, qpe) #let the ancestor do its job
         self.replot()
  
-    def setShowMainTitle(self, b):
-        self.showMainTitle = b
-        if (self.showMainTitle <> 0):
-            self.setTitle(self.mainTitle)
-        else:
-            self.setTitle(None)
-        self.updateLayout()
-        self.repaint()
-
-    def setMainTitle(self, t):
-        self.mainTitle = t
-        if (self.showMainTitle <> 0):
-            self.setTitle(self.mainTitle)
-        else:
-            self.setTitle(None)
-        self.updateLayout()
-        self.repaint()
-
+    #
+    # scale data at index index to the interval 0 - 1
+    #
     def scaleData(self, data, index):
         attr = data.domain[index]
-        temp = []
+        temp = [];
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
-            hashTable = {}
+            variableValueIndices = {}
             for i in range(len(attr.values)):
-                hashTable[attr.values[i]] = i
-            
+                variableValueIndices[attr.values[i]] = i
+
             count = float(len(attr.values))
             if len(attr.values) > 1: num = float(len(attr.values)-1)
             else: num = float(1)
-            
+
             for i in range(len(data)):
                 if data[i][index].isSpecial(): temp.append(1)
                 else:
-                    val = 1/(2*count) + ((hashTable[data[i][index].value] / num) * ((count-1.0)/count)) + 0.3 * self.rndCorrection(1.0/count)
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.3 * self.rndCorrection(1.0/count)
                     temp.append(val)
                     
         # is the attribute continuous
@@ -178,35 +188,42 @@ class OWParallelGraph(QwtPlot):
                 temp.append((data[i][attr].value - min) / diff)
         return temp
 
-
+    #
+    # set new data and scale its values
+    #
     def setData(self, data):
         self.rawdata = data
         self.scaledData = []
         self.scaledDataAttributes = []
         
-        if data == None:
-        	return
+        if data == None: return
 
+        self.distributions = []; self.totals = []
         for index in range(len(data.data.domain)):
             attr = data.data.domain[index]
             self.scaledDataAttributes.append(attr.name)
             scaled = self.scaleData(data.data, index)
             self.scaledData.append(scaled)
 
+    #
+    # update shown data. Set labels, coloring by className ....
+    #
     def updateData(self, labels, className):
         self.removeCurves()
         self.axesKeys = []
         self.curveKeys = []
         
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
+        if self.showDistributions == 1:
+            self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
+        else:
+            self.setAxisScale(QwtPlot.xBottom, 0, len(labels), 1)
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1)
+        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
 
-        if len(self.scaledData) == 0 or len(labels) == 0:
-            self.updateLayout()
-            return
+        if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
+        # draw vertical lines that represent attributes
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
             self.axesKeys.append(newCurveKey)
@@ -243,8 +260,77 @@ class OWParallelGraph(QwtPlot):
                 ys.append(self.scaledData[index][i])
             self.setCurveData(newCurveKey, xs, ys)
 
-    def setJitteringOption(self, jitteringType):
-        self.jitteringType = jitteringType
+        # do we want to show distributions with discrete attributes
+        if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.data.domain[className].varType == orange.VarTypes.Discrete:
+            self.showDistributionValues(className, self.rawdata.data, indices)
+            
+        
+
+    def showDistributionValues(self, className, data, indices):
+        # create color table
+        count = float(len(data.domain[className].values))
+        if count < 1:
+            count = 1.0
+
+        colors = []
+        for i in range(count): colors.append(float(1+2*i)/float(2*count))
+
+        classValueIndices = {}
+        # we create a hash table of possible class values (IF we have a discrete class)
+        for i in range(count):
+            classValueIndices[list(data.domain[className].values)[i]] = i
+
+        for graphAttrIndex in range(len(indices)):
+            index = indices[graphAttrIndex]
+            if data.domain[index].varType == orange.VarTypes.Discrete:
+                attr = data.domain[index]
+                attrLen = len(attr.values)
+                
+                values = []
+                totals = [0] * attrLen
+
+                # we create a hash table of variable values and their indices
+                variableValueIndices = {}
+                for i in range(attrLen):
+                    variableValueIndices[attr.values[i]] = i
+                
+                for i in range(count):
+                    values.append([0] * attrLen)
+
+                for i in range(len(data)):
+                    if not data[i][index].isSpecial():
+                        # processing for distributions
+                        attrIndex = variableValueIndices[data[i][index].value]
+                        classIndex = classValueIndices[data[i].getclass().value]
+                        totals[attrIndex] += 1
+                        values[classIndex][attrIndex] = values[classIndex][attrIndex] + 1
+
+                
+                # create bar curve
+                for i in range(count):
+                    curve = subBarQwtPlotCurve(self)
+                    newColor = QColor()
+                    newColor.setHsv(colors[i]*255, 255, 255)
+                    curve.color = newColor
+                    xData = []
+                    yData = []
+                    for j in range(attrLen):
+                        width = float(values[i][j]*0.5) / float(totals[j])
+                        interval = 1.0/float(2*attrLen)
+                        #yOff = (j / float(attrLen-1)) * (1.0-2.0*interval)
+                        yOff = float(1.0 + 2.0*j)/float(2*attrLen)
+                        height = 0.7/float(count*attrLen)
+
+                        yLowBott = yOff - float(count*height)/2.0 + i*height
+                        xData.append(graphAttrIndex)
+                        xData.append(graphAttrIndex + width)
+                        yData.append(yLowBott)
+                        yData.append(yLowBott + height)
+
+                    ckey = self.insertCurve(curve)
+                    self.setCurveStyle(ckey, QwtCurve.UserCurve)
+                    self.setCurveData(ckey, xData, yData)
+
 
     def rndCorrection(self, max):
         """

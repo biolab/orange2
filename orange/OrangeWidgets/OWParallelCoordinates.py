@@ -18,9 +18,10 @@ from OData import *
 import orngFSS
 
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["jitteringType", "GraphCanvasColor"]
+    settingsList = ["attrOrder", "jitteringType", "GraphCanvasColor", "showDistributions"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
+        self.attributeOrder = ["None","RelieF","GainRatio","Gini"]
         OWWidget.__init__(self,
         parent,
         "Parallel Coordinates",
@@ -29,15 +30,14 @@ class OWParallelCoordinates(OWWidget):
         TRUE)
 
         #set default settings
-        self.jitteringType = "uniform"
+        self.attrOrder = "RelieF"
+        self.jitteringType = "none"
         self.GraphCanvasColor = str(Qt.white.name())
+        self.showDistributions = 0
+        self.GraphGridColor = str(Qt.black.name())
         self.data = None
-        self.ShowMainGraphTitle = FALSE
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
-        self.ShowLegend = FALSE
-        self.GraphGridColor = str(Qt.black.name())
-        self.GraphCanvasColor = str(Qt.white.name())
 
         #load settings
         self.loadSettings()
@@ -58,6 +58,8 @@ class OWParallelCoordinates(OWWidget):
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
+        self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.setShowDistributions)
+        self.connect(self.options.attrButtons, SIGNAL("clicked(int)"), self.setAttrOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
@@ -102,24 +104,40 @@ class OWParallelCoordinates(OWWidget):
 
         #self.repaint()
 
+    # #########################
+    # OPTIONS
+    # #########################
     def setOptions(self):
         self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
-        #self.jitteringType = self.spreadType[self.spreadType.index(self.jitteringType)]
+        self.options.attrButtons.setButton(self.attributeOrder.index(self.attrOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
-        self.setCanvasColor(self.options.gSetCanvasColor)
-        self.setSpreadType(self.spreadType.index(self.jitteringType))
+        self.options.showDistributions.setChecked(self.showDistributions)
+        
+        self.graph.setJitteringOption(self.jitteringType)
+        self.graph.setShowDistributions(self.showDistributions)
+        self.graph.setCanvasColor(self.options.gSetCanvasColor)
 
     # jittering options
     def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.graph.setJitteringOption(self.jitteringType)
+        self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setCanvasColor(self, c):
-        self.GraphCanvasColor = str(c.name())
-        self.graph.setCanvasColor(c)
 
+    def setShowDistributions(self):
+        self.graph.setShowDistributions(self.options.showDistributions.isChecked())
+        self.showDistributions = self.options.showDistributions.isChecked()
+        self.updateGraph()
+
+    # attribute ordering
+    def setAttrOrderType(self, n):
+        self.attrOrder= self.attributeOrder[n]
+        self.cdata(self.data)
+    
+    def setCanvasColor(self, c):
+        self.GraphCanvasColor = c
+        self.graph.setCanvasColor(c)
+        
     # ####################
     # LIST BOX FUNCTIONS
     # ####################
@@ -192,41 +210,63 @@ class OWParallelCoordinates(OWWidget):
             if str(self.classCombo.text(i)) == exText:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.setCurrentItem(0)
+
+        for i in range(self.classCombo.count()):
+            if str(self.classCombo.text(i)) == self.data.data.domain.classVar.name:
+                self.classCombo.setCurrentItem(i)
+                return
+        self.classCombo.insertItem(self.data.data.domin.classVar.name)
+        self.classCombo.setCurrentItem(self.classCombo.count()-1)
 
 
+    # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
-    def setShownAttributeList(self, list):
-        self.attributeList = list
-
+    def setShownAttributeList(self, data):
         self.shownAttribsLB.clear()
-        if len(self.attributeList) == 0:
+        
+        if self.attrOrder == "None":
+            for item in data.domain:
+                self.shownAttribsLB.insertItem(item.name)
             return
-        for item in list:
-            self.shownAttribsLB.insertItem(item.name)
+        elif self.attrOrder == "RelieF":
+            measure = orange.MeasureAttribute_relief(k=20, m=50)
+        elif self.attrOrder == "GainRatio":
+            measure = orange.MeasureAttribute_gainRatio()
+        elif self.attrOrder == 'Gini':
+            measure = orange.MeasureAttribute_gini()
+        else:
+            print "Incorrect value for attribute order"
+            return
 
+        self.shownAttribsLB.insertItem(data.domain.classVar.name)
+        newAttrs = orngFSS.attMeasure(data, measure)
+        for item in newAttrs:
+            self.shownAttribsLB.insertItem(item[0])
+        
     def getShownAttributeList (self):
         list = []
         for i in range(self.shownAttribsLB.count()):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
-
+    ##############################################
+    
+    
+    ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
         self.data = data
         self.graph.setData(data)
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
         self.setClassCombo()
 
         if self.data == None:
-            self.setMainGraphTitle('')
-            self.setAttributeList([])
             self.repaint()
             return
-
         
-        self.setShownAttributeList(self.data.data.domain)
+        self.setShownAttributeList(self.data.data)
         self.updateGraph()
-
+    #################################################
 
 #test widget appearance
 if __name__=="__main__":
