@@ -15,7 +15,7 @@
 # output a new table and export it in variety of formats.
 
 from OData import *
-from OWWidget import *
+from OWWidget import * 
 
 ##############################################################################
 
@@ -23,26 +23,11 @@ class OWNaiveBayes(OWWidget):
     settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation"]
     
     def __init__(self, parent=None, name='NaiveBayes'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """NaiveBayes widget can either \nconstruct a Naive Bayesian learner, or,
-if given a data set, a Naive Bayesian classifier. \nIt can also be combined with
-preprocessors to filter/change the data.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, name, "Constructs a Naive Bayesian learner, or,\nif given a data set, Naive Bayesian classifier.")
 
-        # TODO: dodaj ps
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]
                 
-        #self.addInput("cdata")
-        #self.addInput("pp")
-        #self.addOutput("learner")
-        #self.addOutput("classifier")
-        #self.addOutput("nbClassifier")
-
         # Settings
         self.m = 2.0                        # m for probability estimation
         self.name = 'Naive Bayes'           # name of the classifier/learner
@@ -53,18 +38,19 @@ preprocessors to filter/change the data.
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
         self.loadSettings()
-        
+
+        self.m_estimator = orange.ProbabilityEstimatorConstructor_m()        
         self.estMethods=[("Relative Frequency", orange.ProbabilityEstimatorConstructor_relative()),
                          ("Laplace", orange.ProbabilityEstimatorConstructor_Laplace()),
-                         ("m-Estimate", orange.ProbabilityEstimatorConstructor_m())]
+                         ("m-Estimate", self.m_estimator)]
         self.condEstMethods=[("", None),
                              ("Relative Frequency", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_relative())),
                              ("Laplace", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_Laplace())),
-                             ("m-Estimate", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_m()))]
+                             ("m-Estimate", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=self.m_estimator))]
         self.condEstContMethods=[("", None),
                              ("Relative Frequency", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_relative())),
                              ("Laplace", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_Laplace())),
-                             ("m-Estimate", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=orange.ProbabilityEstimatorConstructor_m())),
+                             ("m-Estimate", orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor=self.m_estimator)),
                              ("LOESS", orange.ConditionalProbabilityEstimatorConstructor_loess())]
 
         # GUI
@@ -82,7 +68,7 @@ preprocessors to filter/change the data.
         self.parBox.setTitle('Probability Estimation')
 
         self.labu = QLabel(self.parBox)
-        self.labu.setText('Unconditional probabilities ')
+        self.labu.setText('Unconditional probabilities:')
 
         self.estBox1 = QHBox(self.parBox)
         self.lab1 = QLabel(self.estBox1)
@@ -96,7 +82,7 @@ preprocessors to filter/change the data.
         QWidget(self.parBox).setFixedSize(0, 8)
 
         self.labc = QLabel(self.parBox)
-        self.labc.setText('Conditional Probabilities ')
+        self.labc.setText('Conditional probabilities:')
         
         self.estBox2 = QHBox(self.parBox)
         self.lab2 = QLabel(self.estBox2)
@@ -159,6 +145,17 @@ preprocessors to filter/change the data.
             return
         
         self.learner = orange.BayesLearner()
+<<<<<<< OWNaiveBayes.py
+        # set the probability estimation!!!
+        if 1:
+            self.m_estimator.m = self.m
+            self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
+            if self.condProbEstimation:
+                self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
+            if self.condProbContEstimation:
+                self.learner.conditionalEstimatorConstructorContinuous = self.condEstContMethods[self.condProbContEstimation][1]
+                
+=======
 
         for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
                             ("conditionalEstimatorConstructor", self.condEstMethods[self.condProbEstimation][1]),
@@ -168,6 +165,7 @@ preprocessors to filter/change the data.
                 if hasattr(cons, "m"):
                     setattr(cons, "m", self.m)
             
+>>>>>>> 1.2
         self.learner.name = self.name
         self.send("Learner", self.learner)
         if self.data <> None:
@@ -180,12 +178,15 @@ preprocessors to filter/change the data.
     # slots: handle input signals        
         
     def cdata(self,data):
-        self.data=data
-        self.setLearner()
-
-    def pp():
-        pass
-        # include preprocessing!!!
+        self.data = data
+        if data:
+            self.setLearner()
+        else:
+            self.learner = None
+            self.classifier = None
+            self.send("Classifier", self.classifier)
+            self.send("Naive Bayesian Classifier", self.classifier)
+            
 
     # signal processing
 
