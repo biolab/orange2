@@ -103,58 +103,72 @@ class Descriptor(QCanvasRectangle):
         # I need mapper to calculate various quantities (said in chemistry way) from the attribute and its selected value
         # happens at the time of drawing header and footer canvases
         # x and y should be on canvas!
-        if not isinstance(self.canvas, BasicNomogram) or not self.canvas.onCanvas(x,y):
+        
+        if ((not isinstance(self.canvas, BasicNomogram) or not self.canvas.onCanvas(x,y)) and
+            (not isinstance(self.canvas, BasicNomogramFooter) or not self.canvas.onCanvas(x,y))):
             return True
 
-        # get points
-        selectedBeta = self.attribute.selectedValue[2]
-        proportionalBeta = self.canvas.mapper.propBeta(selectedBeta, self.attribute)
-        maxValue = self.canvas.mapper.getMaxMapperValue()
-        minValue = self.canvas.mapper.getMinMapperValue()
-        points = minValue+(maxValue-minValue)*proportionalBeta
-
-        self.header.setText(self.canvas.parent.pointsName[self.canvas.parent.yAxis]+":")
-        self.headerValue.setText(str(round(points,2)))
-        
-
-        # continuous? --> get attribute value
-        if isinstance(self.attribute, AttrLineCont):
+        if isinstance(self.canvas, BasicNomogramFooter) and self.canvas.onCanvas(x,y):
+            self.header.setText(self.attribute.name)
+            self.headerValue.setText("")
             self.valName.setText("Value:")
-            if len(self.attribute.selectedValue)==4:
-                self.value.setText(str(round(self.attribute.selectedValue[3],2)))
+            if self.attribute.selectedValue:
+                self.value.setText(str(round(self.attribute.selectedValue[2],2)))
+            else:
+                self.value.setText("None")
+            self.supportingValName.setText("")
+            self.supportingValue.setText("")
+            points = 1
+        else:
+            # get points
+            selectedBeta = self.attribute.selectedValue[2]
+            proportionalBeta = self.canvas.mapper.propBeta(selectedBeta, self.attribute)
+            maxValue = self.canvas.mapper.getMaxMapperValue()
+            minValue = self.canvas.mapper.getMinMapperValue()
+            points = minValue+(maxValue-minValue)*proportionalBeta
+
+            self.header.setText(self.canvas.parent.pointsName[self.canvas.parent.yAxis]+":")
+            self.headerValue.setText(str(round(points,2)))
+            
+
+            # continuous? --> get attribute value
+            if isinstance(self.attribute, AttrLineCont):
+                self.valName.setText("Value:")
+                if len(self.attribute.selectedValue)==4:
+                    self.value.setText(str(round(self.attribute.selectedValue[3],2)))
+                else:
+                    (nleft, nright) = getNearestAtt(selectedBeta)
+                    if nright.betaValue>nleft.betaValue:
+                        prop = (selectedBeta-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
+                    else:
+                        prop = 0
+                    if prop == 0:
+                        avgValue = (float(nleft.name)+float(nright.name))/2.
+                    else:
+                        avgValue = float(nleft.name)+prop*(float(nright.name)-float(nleft.name))
+                    self.value.setText(str(round(avgValue,2)))
+                self.supportingValName.setText("")
+                self.supportingValue.setText("")            
+            # discrete? --> get left and right value, proportional select values
             else:
                 (nleft, nright) = getNearestAtt(selectedBeta)
                 if nright.betaValue>nleft.betaValue:
                     prop = (selectedBeta-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
                 else:
                     prop = 0
-                if prop == 0:
-                    avgValue = (float(nleft.name)+float(nright.name))/2.
+                if prop == 0 or prop == 1:
+                    self.valName.setText("Value:")
+                    self.supportingValName.setText("")
+                    self.supportingValue.setText("")            
+                    if prop == 0:
+                        self.value.setText(nleft.name)
+                    else:
+                        self.value.setText(nright.name)
                 else:
-                    avgValue = float(nleft.name)+prop*(float(nright.name)-float(nleft.name))
-                self.value.setText(str(round(avgValue,2)))
-            self.supportingValName.setText("")
-            self.supportingValue.setText("")            
-        # discrete? --> get left and right value, proportional select values
-        else:
-            (nleft, nright) = getNearestAtt(selectedBeta)
-            if nright.betaValue>nleft.betaValue:
-                prop = (selectedBeta-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
-            else:
-                prop = 0
-            if prop == 0 or prop == 1:
-                self.valName.setText("Value:")
-                self.supportingValName.setText("")
-                self.supportingValue.setText("")            
-                if prop == 0:
-                    self.value.setText(nleft.name)
-                else:
-                    self.value.setText(nright.name)
-            else:
-                self.valName.setText(nleft.name + ":")
-                self.supportingValName.setText(nright.name + ":")
-                self.value.setText(str(round(1-prop,2))+"%")
-                self.supportingValue.setText(str(round(prop,2))+"%")
+                    self.valName.setText(nleft.name + ":")
+                    self.supportingValName.setText(nright.name + ":")
+                    self.value.setText(str(round(1-prop,2))+"%")
+                    self.supportingValue.setText(str(round(prop,2))+"%")
 
         # set height
         height = 15+ self.valName.boundingRect().height() + self.header.boundingRect().height()
@@ -169,15 +183,15 @@ class Descriptor(QCanvasRectangle):
         # if bubble wants to jump of the canvas, better catch it !
         selOffset = 20
         xTemp, yTemp = x+selOffset, y-selOffset-height
-        
-        
-        while not self.canvas.onCanvas(xTemp,yTemp) or not self.canvas.onCanvas(xTemp,yTemp+height) or not self.canvas.onCanvas(xTemp+width,yTemp) or not self.canvas.onCanvas(xTemp+width,yTemp+width):
+        while not self.canvas.onCanvas(xTemp,yTemp) or not self.canvas.onCanvas(xTemp,yTemp+height) or not self.canvas.onCanvas(xTemp+width,yTemp) or not self.canvas.onCanvas(xTemp+width,yTemp+height):
             if yTemp == y-selOffset-height and not xTemp <= x-selOffset-width:
                 xTemp-=1
-            elif xTemp <= x-selOffset-width and not yTemp == y+selOffset:
-                yTemp = y+selOffset
-            elif yTemp == y+selOffset and not xTemp >= x+selOffset:
+            elif xTemp <= x-selOffset-width and not yTemp >= y+selOffset:
+                yTemp+=1
+            elif yTemp >= y+selOffset and not xTemp >= x+selOffset:
                 xTemp+=1
+            elif xTemp>= x+selOffset and not yTemp<y-selOffset-height+2:
+                yTemp-=1
             else:
                 break
 
@@ -254,6 +268,7 @@ class AttValueMarker(QCanvasEllipse):
         #self.canvas = canvas
         self.setZ(z)
         self.setBrush(QBrush(Qt.blue))
+        self.name=""
         #self.borderCircle = QCanvasEllipse(15,15,canvas)
         #self.borderCircle.setBrush(QBrush(Qt.red))
         #self.borderCircle.setZ(z-1)
@@ -284,7 +299,9 @@ class AttValueMarker(QCanvasEllipse):
 
 
 
-    
+# #################################################################### 
+# Single Attribute Value
+# ####################################################################
 class AttValue:
     def __init__(self, name, betaValue, error=0, showErr=False, over=True, lineWidth = 0, markerWidth = 2, enable = True):
         self.name = name
@@ -392,6 +409,9 @@ class AttValue:
         return self.name, "beta =", self.betaValue
 
 
+# #################################################################### 
+# Normal attribute - 1d
+# ####################################################################
 # This is a base class for representing all different possible attributes in nomogram.
 # Use it only for discrete/non-ordered values
 class AttrLine:
@@ -577,6 +597,10 @@ class AttrLine:
         return self.name + str([at.toString() for at in self.attValues])        
         
 
+
+# #################################################################### 
+# Continuous attribute in 2d
+# ####################################################################
 class AttrLineCont(AttrLine):
     def __init__(self, name, canvas):
         AttrLine.__init__(self, name, canvas)
@@ -758,6 +782,11 @@ class AttrLineCont(AttrLine):
         self.box.show()
         self.label.show()
 
+
+
+# #################################################################### 
+# Ordered attribute in 2d
+# ####################################################################
 class AttrLineOrdered(AttrLine):
     def __init__(self, name, canvas):
         AttrLine.__init__(self, name, canvas)
@@ -865,6 +894,10 @@ class AttrLineOrdered(AttrLine):
         self.box.show()
         self.label.show()
 
+
+# #################################################################### 
+# Header CANVAS
+# ####################################################################
 class BasicNomogramHeader(QCanvas):
     def __init__(self, nomogram, parent):
         apply(QCanvas.__init__,(self, parent, ""))
@@ -884,6 +917,10 @@ class BasicNomogramHeader(QCanvas):
         self.resize(self.nomogram.pright, rect.height()+16)
         self.update()
 
+
+# #################################################################### 
+# FOOTER CANVAS, sum and probability 
+# ####################################################################
 class BasicNomogramFooter(QCanvas):
     def __init__(self, nomogram, parent):
         apply(QCanvas.__init__,(self, parent, ""))
@@ -893,6 +930,10 @@ class BasicNomogramFooter(QCanvas):
         self.footer = None
         self.footerPercent = None
         self.parent = parent
+        if self.parent.cl:
+            self.footerPercentName = "P(%s=\"%s\")" % (self.parent.cl.domain.classVar.name,self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex])
+        else:
+            self.footerPercentName = ""
         self.connectedLine = QCanvasLine(self)
         self.connectedLine.setPen(QPen(Qt.blue))
         self.errorLine = QCanvasLine(self)
@@ -969,7 +1010,7 @@ class BasicNomogramFooter(QCanvas):
         self.footerPercent = self.convertToPercent(self.footer)
 
         # create a mapper for footer, BZ CHANGE TO CONSIDER THE TARGET
-        self.footerPercent.name = "P(%s=\"%s\")" % (self.parent.cl.domain.classVar.name,self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex])
+        self.footerPercent.name = self.footerPercentName
         self.footerPercent.paint(self, QRect(rect.left(), rect.top()+height, rect.width(), 2*height), self.m)                         
 
         self.resize(self.nomogram.pright, rect.height()+30)
@@ -1036,14 +1077,15 @@ class BasicNomogramFooter(QCanvas):
         
         self.errorPercentLine.setPoints(ax_minError, self.footerPercent.marker.y(), ax_maxError, self.footerPercent.marker.y())
         
-        self.footer.marker.setX(ax)
+        self.footer.selectedValue = [ax,self.footer.marker.y(),self.m.mapBetaToLinear(sum, self.footer)]
+        self.footer.marker.setPos(ax, self.footer.marker.y())
 
         if ax>axPercentMax:
             ax=axPercentMax
         if ax<axPercentMin:
             ax=axPercentMin
-        self.footerPercent.marker.setX(ax)
-
+        self.footerPercent.selectedValue = [ax,self.footer.marker.y(),1/(1+math.exp(-sum))]
+        self.footerPercent.marker.setPos(ax, self.footerPercent.marker.y())
         
         if self.parent.probability:
             self.footer.marker.show()
@@ -1072,6 +1114,9 @@ class BasicNomogramFooter(QCanvas):
         self.rightPercentArc.hide()
 
 
+# #################################################################### 
+# Main CANVAS
+# ####################################################################
 class BasicNomogram(QCanvas):
     def __init__(self, parent, constant, *args):
         apply(QCanvas.__init__,(self, parent, ""))
@@ -1172,6 +1217,9 @@ class BasicNomogram(QCanvas):
         for at in self.attributes:
             if not (self.parent.contType == 1 and isinstance(at, AttrLineCont)) and at.label.boundingRect().width()>self.gleft:
                 self.gleft = at.label.boundingRect().width()
+        if QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width>self.gleft:
+            self.gleft = QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width()
+            
         #self.gleft = max(self.gleft, 100) # should really test footer width, and with of other lables
         self.gleft = max(self.gleft, 80)
         self.gleft +=20
@@ -1257,6 +1305,27 @@ class BasicNomogram(QCanvas):
 class OWNomogramHeader(QCanvasView):
     def __init__(self, canvas, mainArea):
         apply(QCanvasView.__init__,(self,)+(canvas,mainArea))
+        self.setMouseTracking(True)
+        self.viewport().setMouseTracking(True)
+        self.mouseOverObject = None        
+
+    # ###################################################################
+    # mouse is running around, perhaps Jerry is nearby ##################
+    # or technically: user moved mouse ################################## 
+    def contentsMouseMoveEvent(self, ev):
+        if self.canvas():
+            items = filter(lambda ci: ci.z()==50, self.canvas().collisions(ev.pos()))
+            if len(items)>0:
+                if self.mouseOverObject:
+                    self.mouseOverObject.hideSelected()
+                self.mouseOverObject = items[0]
+                self.mouseOverObject.showSelected()
+                self.canvas().update()
+            elif self.mouseOverObject:
+                self.mouseOverObject.hideSelected()
+                self.mouseOverObject = None
+                self.canvas().update()
+                
 
 class OWNomogramGraph(QCanvasView):
     def __init__(self, canvas, mainArea):
@@ -1369,6 +1438,10 @@ class Mapper_Linear_Fixed:
     def mapBeta(self, betaVal, attrLine):
         k = self.propBeta(betaVal, attrLine)
         return self.left+k*(self.right-self.left)        
+
+    def mapBetaToLinear(self, betaVal, attrLine):
+        k = self.propBeta(betaVal, attrLine)
+        return self.minGraphValue+k*(self.maxGraphValue-self.minGraphValue)  
 
     def getLeftMost(self):
         return self(self.minGraphBeta)
