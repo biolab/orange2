@@ -7,7 +7,7 @@ filenamedef=re.compile(r".*\..pp$")
 includedef=re.compile(r'\s*#include\s*"(?P<filename>.*(([chp]pp)|(px)))"')
 filestemdef=re.compile(r'(?P<filestem>.*)\.(?P<fileextension>[^.]*)$')
 
-dirs = ["orange", "statc", "corn", "include"]
+dirs = ["orange", "orange/wml", "statc", "corn", "include"]
 
 def findfiles():
   files = {}
@@ -74,6 +74,8 @@ deps = {}
 for file in files:
   deps[file]={}
   recdeps(file, file)
+  del deps[file][file]
+
 
 deplist = deps.items()
 deplist.sort(lambda x, y: cmp(x[0], y[0]))
@@ -103,7 +105,7 @@ for (file, filedeps) in deplist:
   if (file[-4:]==".cpp") and (not file in dont_compile):
     dl = filedeps.keys()
     dl.sort()
-    makedepsfile.write("obj/%s.o : %s/%s.cpp %s\n" % (file[:-4], files[file][0], file[:-4], reduce(lambda a, b: a+" "+b, dl)))
+    makedepsfile.write("obj/%s.o : %s/%s.cpp %s\n" % (file[:-4], files[file][0], file[:-4], dl and reduce(lambda a, b: a+" "+b, dl) or ""))
 makedepsfile.write("\n\n")
 
 makedepsfile.write("orange/ppp/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))

@@ -136,14 +136,6 @@ LINK32=link.exe
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlDelaunay2.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlDelaunay2.h
-# End Source File
-# Begin Source File
-
 SOURCE=.\orange\wml\WmlDelaunay2a.cpp
 # End Source File
 # Begin Source File
@@ -201,14 +193,6 @@ SOURCE=.\orange\wml\WmlVector3.h
 # Begin Source File
 
 SOURCE=.\orange\wml\WmlVector3.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlWinSystem.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlWinSystem.h
 # End Source File
 # End Group
 # Begin Source File

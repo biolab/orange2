@@ -32,7 +32,7 @@ class OWNaiveBayes(OWWidget):
         self.name = 'Naive Bayes'           # name of the classifier/learner
         self.probEstimation = 0             # relative frequency
         self.condProbEstimation = 0         # relative frequency
-        self.condProbContEstimation = 3     # relative frequency
+        self.condProbContEstimation = 4     # relative frequency
         self.adjustThreshold = 0            # adjust threshold (for binary classes)
         self.windowProportion = 0.5         # Percentage of instances taken in loess learning
 
@@ -75,7 +75,7 @@ class OWNaiveBayes(OWWidget):
         itms = [e[0] for e in self.condEstContMethods]
         self.est3 = OWGUI.comboBox(box, self, 'condProbContEstimation', items=itms, label='Conditional (continuous):', labelWidth=width, orientation='horizontal',
                                    tooltip='Conditional probability estimation method used for continuous attributes.', callback=self.refreshControls)
-        self.est3.setEnabled(False)
+        self.est3.setEnabled(True)
 
         OWGUI.separator(box)
 
