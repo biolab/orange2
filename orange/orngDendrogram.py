@@ -365,14 +365,14 @@ def Matrix(self,labels, diss, vlabels=[], margin = 10, hook = 10, block = None, 
 
     # print names
     for j in range(len(vlabels)):
-        x = offsetx + lineskip*(j+1)
+        x = offsetx + lineskip*(j+1.5)
         y = offsety + lineskip/2
         canvas.drawString(vlabels[j], x+block, y, angle=90,font=normal)
 
     for i in range(len(labels)):
         # self.order identifies the label at a particular row
         x = offsetx - labellen[i] + lineskip/2
-        y = offsety + lineskip*(i+1)
+        y = offsety + lineskip*(i+1.5)
         canvas.drawString(labels[i], x, y+block,font=normal)
         for j in range(len(vlabels)):
             colo = _colorize(diss[i][j])
