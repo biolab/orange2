@@ -6,9 +6,11 @@ import cPickle
 import os
 
 class OptimizationDialog(OWBaseWidget):
-    settingsList = ["resultListLen"]
+    settingsList = ["resultListLen", "percentDataUsed"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
+    percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
+    percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
 
     def __init__(self,parent=None):
         #QWidget.__init__(self, parent)
@@ -21,6 +23,7 @@ class OptimizationDialog(OWBaseWidget):
 
         self.kValue = 1
         self.resultListLen = 100
+        self.percentDataUsed = 100
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.parentName = "Projection"
         #self.domainName = "Unknown"
@@ -58,19 +61,23 @@ class OptimizationDialog(OWBaseWidget):
         self.interestingList.setMinimumSize(200,200)
 
         self.hbox1 = QHBox(self.optimizeButtonBox)
-        self.attrOrdLabel = QLabel('Number of neighbours (k):', self.hbox1)
+        self.attrOrdLabel = QLabel('Number of neighbours (k): ', self.hbox1)
         self.attrKNeighbour = QComboBox(self.hbox1)
 
         self.hbox2 = QHBox(self.optimizeButtonBox)
-        self.resultListLabel = QLabel('Length of results list:', self.hbox2)
+        self.resultListLabel = QLabel('Length of results list: ', self.hbox2)
         self.resultListCombo = QComboBox(self.hbox2)
-        for item in self.resultsListLenList:
-            self.resultListCombo.insertItem(item)
+        for item in self.resultsListLenList: self.resultListCombo.insertItem(item)
         self.resultListCombo.setCurrentItem(self.resultsListLenNums.index(self.resultListLen))
         self.hbox5 = QHBox(self.optimizeButtonBox)
-        self.minTableLenLabel = QLabel('Minimum examples:', self.hbox5)
+        self.minTableLenLabel = QLabel('Minimum examples in example table: ', self.hbox5)
         self.minTableLenEdit = QLineEdit(self.hbox5)
         self.minTableLenEdit.setText('0')
+        self.hbox6 = QHBox (self.optimizeButtonBox)
+        self.percentDataUsedLabel = QLabel('Percent of data used in evaluation: ', self.hbox6)
+        self.percentDataUsedCombo = QComboBox(self.hbox6)
+        for val in self.percentDataList: self.percentDataUsedCombo.insertItem(val)
+        self.percentDataUsedCombo.setCurrentItem(self.percentDataNums.index(self.percentDataUsed))
 
         self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
         self.numberOfAttrBox.setTitle("Number of attributes")
@@ -108,6 +115,7 @@ class OptimizationDialog(OWBaseWidget):
         self.closeButton = QPushButton("Close", self.manageResultsBox)
         
         self.connect(self.resultListCombo, SIGNAL("activated(int)"), self.setResultListLen)
+        self.connect(self.percentDataUsedCombo, SIGNAL("activated(int)"), self.setPercentDataUsed)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
         self.connect(self.filterButton, SIGNAL("clicked()"), self.filter)
         self.connect(self.removeSelectedButton, SIGNAL("clicked()"), self.removeSelected)
@@ -174,6 +182,10 @@ class OptimizationDialog(OWBaseWidget):
         self.resultListLen = self.resultsListLenNums[n]
         self.saveSettings()
 
+    def setPercentDataUsed(self, n):
+        self.percentDataUsed = self.percentDataNums[n]
+        self.saveSettings()
+
     def clear(self):
         self.optimizedListFull = []
         self.optimizedListFiltered = []
@@ -193,6 +205,7 @@ class OptimizationDialog(OWBaseWidget):
                     # remove from  listbox and original list of results
                     self.interestingList.removeItem(i)
                     self.optimizedListFull.remove((accuracy, itemCount, list, strList))
+        self.updateNewResults()
 
     def removeSelected(self):
         for i in range(self.interestingList.count()-1, -1, -1):
@@ -203,15 +216,19 @@ class OptimizationDialog(OWBaseWidget):
                 self.optimizedListFiltered.remove((accuracy, itemCount, list, strList))
                 self.optimizedListFull.remove((accuracy, itemCount, list, strList))
 
-    def save(self):
-        # get file name
-        filename = "%s (k - %2d)" % (self.parentName, self.kValue )
-        qname = QFileDialog.getSaveFileName( os.getcwd() + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
-        if qname.isEmpty():
-            return
-        name = str(qname)
+    # save the list into a file - filename can be set if you want to call this function without showing the dialog
+    def save(self, filename = None):
+        if filename == None:
+            # get file name
+            filename = "%s (k - %2d)" % (self.parentName, self.kValue )
+            qname = QFileDialog.getSaveFileName( os.getcwd() + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
+            if qname.isEmpty():
+                return
+            name = str(qname)
+        else:
+            name = filename
         if name[-5] != ".":
-            name = name + ".proj"
+                name = name + ".proj"
 
         # open, write and save file
         file = open(name, "wt")
@@ -231,3 +248,11 @@ class OptimizationDialog(OWBaseWidget):
         file.close()
 
         self.updateNewResults()
+
+#test widget appearance
+if __name__=="__main__":
+    a=QApplication(sys.argv)
+    ow=OptimizationDialog()
+    a.setMainWidget(ow)
+    ow.show()
+    a.exec_loop()        
