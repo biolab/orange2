@@ -143,14 +143,12 @@ class OWPolyviz(OWWidget):
         #K-NN OPTIMIZATION functionality
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
-        self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)        
-        
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
@@ -244,7 +242,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.resultList.setCurrentItem(0)
         self.progressBarFinished()
 
-    def startOptimization(self):
+    def optimizeSeparation(self):
         if self.data == None: return
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
@@ -296,104 +294,6 @@ class OWPolyviz(OWWidget):
         secs = time() - startTime
         print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(int(possibilities), secs/60, secs%60)
 
-
-    # ####################################
-    # find optimal class separation for shown attributes
-    # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
-    def optimizeSeparation(self, numberOfAttrs = None, listOfAttributes = None):
-        if self.data == None: return
-    
-        if not listOfAttributes:
-            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-
-        if self.rotateAttributes: reverseList = None
-        else: reverseList = self.attributeReverse
-        
-        if not numberOfAttrs:
-            text = str(self.optimizationDlg.attributeCountCombo.currentText())
-            if text == "ALL": number = len(listOfAttributes)
-            else:             number = int(text)
-        
-            self.optimizationDlg.clearResults()
-            total = len(listOfAttributes)
-            if total < number: return
-            if not self.rotateAttributes: combin = combinations(number, total) * fact(number-1)
-            else: combin = combinations(number, total) * fact(number-1) * pow(2, number)/2
-            self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time())
-        
-            if self.graph.totalPossibilities > 20000:
-                proj = str(self.graph.totalPossibilities)
-                l = len(proj)
-                for i in range(len(proj)-2, 0, -1):
-                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-                self.warning("There are %s possible polyviz projections using currently visualized attributes"% (proj))
-                    
-            self.progressBarInit()
-            self.optimizationDlg.disableControls()
-            startTime = time()
-            
-        else:
-            number = numberOfAttrs
-
-        # create a sorted list of attribute subsets to evaluate
-        projections = self.buildProjections(listOfAttributes, [0.0], number, [])
-        projections.sort()
-        projections.reverse()
-
-        self.graph.getOptimalSeparation(number, reverseList, projections, self.addInterestingProjection)
-
-        if not numberOfAttrs:
-            self.progressBarFinished()
-            self.optimizationDlg.enableControls()
-            self.optimizationDlg.finishedAddingResults()
-        
-            secs = time() - startTime
-            print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(combin, secs/60, secs%60)
-
-
-    # #############################################
-    # find optimal separation for all possible subsets of shown attributes
-    def optimizeAllSubsetSeparation(self):
-        if self.data == None: return
-
-        listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-        
-        text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(listOfAttributes)
-        else:              maxLen = int(text)
-        total = len(listOfAttributes)
-
-        # compute the number of possible projections
-        proj = 0
-        for i in range(3, maxLen+1):
-            if not self.rotateAttributes: proj += combinations(i, total) * fact(i-1)
-            else: proj += combinations(i, total) * fact(i-1) * pow(2, i)/2
-        self.graph.triedPossibilities = 0
-        self.graph.totalPossibilities = proj
-        
-        if proj > 20000:
-            proj = str(self.graph.totalPossibilities)
-            l = len(proj)
-            for i in range(len(proj)-2, 0, -1):
-                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            res = QMessageBox.information(self,'Polyviz','There are %s possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
-            if res != 0: return
-
-        startTime = time()
-        self.graph.startTime = time()
-        self.progressBarInit()
-        self.optimizationDlg.clearResults()
-        self.optimizationDlg.disableControls()
-
-        for val in range(3, maxLen+1):
-            self.optimizeSeparation(val, listOfAttributes)
-
-        self.progressBarFinished()
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        secs = time() - startTime
-        print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(proj, secs/60, secs%60)
-
     
     def addInterestingProjection(self, accuracy, other_results, tableLen, attrList, reverse):
         strList = "["
@@ -426,14 +326,14 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
         
         # check if all attributes in list really exist in domain        
         attrNames = []
         for attr in self.data.domain:
             attrNames.append(attr.name)
         
-        for item in list:
+        for item in attrList:
             if not item in attrNames:
                 print "invalid settings"
                 return
@@ -441,15 +341,15 @@ class OWPolyviz(OWWidget):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        reverseDict = self.buildOrientationDictFromString(list, strList)
+        reverseDict = self.buildOrientationDictFromString(attrList, strList)
 
-        for attr in list:
+        for attr in attrList:
             if reverseDict[attr]: self.shownAttribsLB.insertItem(attr + " -")
             else: self.shownAttribsLB.insertItem(attr + " +")
             self.attributeReverse[attr] = reverseDict[attr]
 
         for attr in attrNames:
-            if attr in list: continue
+            if attr in attrList: continue
             self.hiddenAttribsLB.insertItem(attr + " +")
             self.attributeReverse[attr] = 0
         

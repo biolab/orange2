@@ -692,7 +692,7 @@ class OWPolyvizGraph(OWVisGraph):
                             self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
 
                     if self.kNNOptimization.onlyOnePerSubset:
-                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct(tempList)
+                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList, attrOrder)
 
     
