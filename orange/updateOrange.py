@@ -57,12 +57,13 @@ class updateOrangeDlg(QMainWindow):
         self.setCentralWidget(self.text)
         self.statusBar.message('Ready')
 
-        self.re_vline = re.compile(r'(?P<fname>.*)=(?P<version>[.0-9]*)(:?)(?P<md5>.*)')
+        self.re_vLocalLine = re.compile(r'(?P<fname>.*)=(?P<version>[.0-9]*)(:?)(?P<md5>.*)')
+        self.re_vInternetLine = re.compile(r'(?P<fname>.*)=(?P<version>[.0-9]*)(:?)(?P<location>.*)')
         self.re_widget = re.compile(r'(?P<category>.*)[/,\\].*')
         self.re_documentation = re.compile(r'doc[/,\\].*')
 
         self.downfile = os.path.join(os.path.dirname(orange.__file__),"whatsdown.txt")
-        self.httpconnection = httplib.HTTPConnection('magix.fri.uni-lj.si')
+        self.httpconnection = httplib.HTTPConnection('www.ailab.si')
 
         self.updateGroups = []
         self.dontUpdateGroups = []
@@ -73,11 +74,11 @@ class updateOrangeDlg(QMainWindow):
         self.addText("Welcome to the Orange update.")
         try:
             vf = open(self.downfile)
-            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readVersionFile(vf.readlines(), updateGroups = 1)
+            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
             self.addText("Current versions of Orange files were successfully located.")
         except:
-            self.addText("Orange update failed to locate file '%s'." %(self.downfile))
+            self.addText("Orange update failed to locate file '%s'. There is no information about current versions of Orange files." %(self.downfile), 0)
         
 
         # create buttons
@@ -97,10 +98,10 @@ class updateOrangeDlg(QMainWindow):
         self.dontUpdateGroups = []
         try:
             vf = open(self.downfile)
-            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readVersionFile(vf.readlines(), updateGroups = 1)
+            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
-            self.addText("Failed to locate file '%s'." %(self.downfile))
+            self.addText("Failed to locate file '%s'. There is no information on Orange folders that need to be updated." %(self.downfile), 0)
             self.addText("No folders found.")
             return
             
@@ -122,12 +123,15 @@ class updateOrangeDlg(QMainWindow):
     
 
 
-    def addText(self, text):
-        self.text.append("<nobr>" + text + "</nobr>\n")
+    def addText(self, text, nobr = 1):
+        if nobr:
+            self.text.append("<nobr>" + text + "</nobr>\n")
+        else:
+            self.text.append(text)
         self.text.ensureVisible(0, self.text.contentsHeight())
 
 
-    def readVersionFile(self, data, updateGroups = 1):
+    def readLocalVersionFile(self, data, updateGroups = 1):
         versions = {}
         updateGroups = []; dontUpdateGroups = []
         for line in data:
@@ -139,10 +143,28 @@ class updateOrangeDlg(QMainWindow):
                 elif line[0] == "-":
                     dontUpdateGroups.append(line[1:])
                 else:
-                    fnd = self.re_vline.match(line)
+                    fnd = self.re_vLocalLine.match(line)
                     if fnd:
                         fname, version, md = fnd.group("fname", "version", "md5")
                         versions[fname] = ([int(x) for x in version.split(".")], md)
+        return versions, updateGroups, dontUpdateGroups
+
+    def readInternetVersionFile(self, data, updateGroups = 1):
+        versions = {}
+        updateGroups = []; dontUpdateGroups = []
+        for line in data:
+            if line:
+                line = line.replace("\r", "")   # replace \r in case of linux files
+                line = line.replace("\n", "")
+                if line[0] == "+":
+                    updateGroups.append(line[1:])
+                elif line[0] == "-":
+                    dontUpdateGroups.append(line[1:])
+                else:
+                    fnd = self.re_vInternetLine.match(line)
+                    if fnd:
+                        fname, version, location = fnd.group("fname", "version", "location")
+                        versions[fname] = ([int(x) for x in version.split(".")], location)
         return versions, updateGroups, dontUpdateGroups
 
     def writeVersionFile(self):
@@ -157,76 +179,6 @@ class updateOrangeDlg(QMainWindow):
             vf.write("%s=%s:%s\n" % (fname, reduce(lambda x,y:x+"."+y, [`x` for x in version]), md))
         vf.close()
 
-    # #####################################################
-    # download a file with filename fname from the internet
-    def download(self, fname):
-        self.httpconnection.request("GET", urllib.quote(fname))
-        r = self.httpconnection.getresponse()
-        if r.status != 200:
-            self.addText("Got '%s' while downloading '%s'" % (r.reason, fname))
-            raise "Got '%s' while downloading '%s'" % (r.reason, fname)
-        return r.read()
-        
-
-    # #########################################################
-    # get new file from the internet and overwrite the old file
-    # fname = name of the file
-    # version = the newest file version
-    # md = hash value of the local file when it was downloaded from the internet - needed to compare if the user has changed the local version of the file
-    def updatefile(self, fname, version, md):
-        dname = os.path.dirname(fname)
-        if dname and not os.path.exists(dname):
-            os.makedirs(dname)
-
-        self.addText("downloading <b>%s</b>" % fname)
-        try:
-            newscript = self.download("/orangeUpdate/"+fname)
-        except:
-            return 0
-        
-        if not os.path.exists("test/"+os.path.dirname(fname)):
-            os.makedirs("test/"+os.path.dirname(fname))
-
-        # read existing file
-        saveFile = 1
-        if md != "" and os.path.exists("test/" + fname):
-            existing = open("test/" + fname, "rb")
-            currmd = md5.new()
-            currmd.update(existing.read())
-            existing.close()
-            if currmd.hexdigest() != md:   # the local file has changed
-                res = QMessageBox.information(self,'Update Orange',"Local file '%s' was changed. Do you wish to overwrite local copy with newest version (a backup of current file will be created) or keep current file?" % (os.path.split(fname)[1]),'Overwrite with newest','Keep current file')
-                if res == 0:    # overwrite
-                    saveFile = 2
-                    currmd = md5.new()
-                    currmd.update(newscript)
-                if res == 1:    # keep local
-                    saveFile = 0
-        else:
-            currmd = md5.new()
-            currmd.update(newscript)
-
-        if saveFile == 0:
-            return 0
-        elif saveFile == 2:
-            try:
-                if os.path.exists("test/"+fname+".bak"):
-                    os.remove("test/"+fname+".bak")
-                os.rename("test/"+fname, "test/"+fname+".bak")  # create backup
-            except:
-                self.addText("Unable to rename file <b>'%s'</b> to <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1], os.path.split(fname)[1]+'.bak'))
-                return 0
-
-        try:
-            nf = open("test/"+fname, "wb")
-            nf.write(newscript)
-            nf.close()
-            self.downstuff[fname] = (version, currmd.hexdigest())
-            return 1
-        except:
-            self.addText("Unable to write file <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1]))
-            return 0
-
 
     def executeUpdate(self):
         self.addText("Starting updating new files")
@@ -235,11 +187,11 @@ class updateOrangeDlg(QMainWindow):
         self.updateGroups = [];  self.dontUpdateGroups = []; self.newGroups = []
         self.downstuff = {}
         
-        upstuff, upUpdateGroups, upDontUpdateGroups = self.readVersionFile(self.download("/orangeUpdate/whatsup.txt").split("\n"), updateGroups = 0)
+        upstuff, upUpdateGroups, upDontUpdateGroups = self.readInternetVersionFile(self.download("/orange/download/whatsup.txt").split("\n"), updateGroups = 0)
         try:
             vf = open(self.downfile)
             self.addText("Reading local file status")
-            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readVersionFile(vf.readlines(), updateGroups = 1)
+            self.downstuff, self.updateGroups, self.dontUpdateGroups = self.readLocalVersionFile(vf.readlines(), updateGroups = 1)
             vf.close()
         except:
             self.addText("Failed to locate file '%s'." %(self.downfile))
@@ -280,16 +232,17 @@ class updateOrangeDlg(QMainWindow):
         updatedFiles = 0; newFiles = 0
         self.addText("<hr>\nUpdating files...")
         self.statusBar.message("Updating files")
-        for fname, (version, md) in itms:
+        for fname, (version, location) in itms:
             qApp.processEvents()
+            print fname, location
             cat = self.findFileCategory(fname)
             if self.downstuff.has_key(fname):
                 # there is a newer version
                 if self.downstuff[fname][0] < upstuff[fname][0] and cat in self.updateGroups:
-                    updatedFiles += self.updatefile(fname, version, self.downstuff[fname][1])
+                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1])
             else:
                 if cat in self.updateGroups:
-                    self.updatefile(fname, version, "")
+                    self.updatefile(fname, location, version, "")
                     newFiles += 1
                 #else: 
                 #    self.addText("Ignoring %s. Category %s is in the ignore list" % (fname, cat))
@@ -313,6 +266,77 @@ class updateOrangeDlg(QMainWindow):
         if fnd: return fnd.group("category")
 
         return "Orange Root"
+
+    # #####################################################
+    # download a file with filename fname from the internet
+    def download(self, fname):
+        self.httpconnection.request("GET", urllib.quote(fname))
+        r = self.httpconnection.getresponse()
+        if r.status != 200:
+            self.addText("Got '%s' while downloading '%s'" % (r.reason, fname))
+            raise "Got '%s' while downloading '%s'" % (r.reason, fname)
+        return r.read()
+
+    # #########################################################
+    # get new file from the internet and overwrite the old file
+    # fname = name of the file
+    # location = location on the web, where the file can be found
+    # version = the newest file version
+    # md = hash value of the local file when it was downloaded from the internet - needed to compare if the user has changed the local version of the file
+    def updatefile(self, fname, location, version, md):
+        dname = os.path.dirname(fname)
+        if dname and not os.path.exists(dname):
+            os.makedirs(dname)
+
+        self.addText("downloading <b>%s</b>" % fname)
+        try:
+            newscript = self.download("/orange/download/lastStable/"+location)
+        except:
+            return 0
+        
+        if not os.path.exists(os.path.dirname(fname)):
+            os.makedirs(os.path.dirname(fname))
+
+        # read existing file
+        saveFile = 1
+        if md != "" and os.path.exists(fname):
+            existing = open(fname, "rb")
+            currmd = md5.new()
+            currmd.update(existing.read())
+            existing.close()
+            if currmd.hexdigest() != md:   # the local file has changed
+                res = QMessageBox.information(self,'Update Orange',"Local file '%s' was changed. Do you wish to overwrite local copy with newest version (a backup of current file will be created) or keep current file?" % (os.path.split(fname)[1]),'Overwrite with newest','Keep current file')
+                if res == 0:    # overwrite
+                    saveFile = 2
+                    currmd = md5.new()
+                    currmd.update(newscript)
+                if res == 1:    # keep local
+                    saveFile = 0
+        else:
+            currmd = md5.new()
+            currmd.update(newscript)
+
+        if saveFile == 0:
+            return 0
+        elif saveFile == 2:
+            try:
+                if os.path.exists(fname+".bak"):
+                    os.remove(fname+".bak")
+                os.rename(fname, fname+".bak")  # create backup
+            except:
+                self.addText("Unable to rename file <b>'%s'</b> to <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1], os.path.split(fname)[1]+'.bak'))
+                return 0
+
+        try:
+            nf = open(fname, "wb")
+            nf.write(newscript)
+            nf.close()
+            self.downstuff[fname] = (version, currmd.hexdigest())
+            return 1
+        except:
+            self.addText("Unable to write file <b>'%s'</b>. Please close all programs that are using it." % (os.path.split(fname)[1]))
+            return 0
+        
 
 
 # show application dlg
