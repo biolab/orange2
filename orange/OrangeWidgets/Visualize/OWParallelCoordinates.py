@@ -346,6 +346,11 @@ class OWParallelCoordinates(OWWidget):
         for attr in self.data.domain.attributes:
             if attr.name not in attrList:
                 self.hiddenAttribsLB.insertItem(attr.name)
+
+        if self.optimizationDlg.optimizationMeasure == VIZRANK:
+            self.middleLabels = "VizRank"
+        else:
+            self.middleLabels = "Correlations"
         self.updateGraph()
     
     # #############################################

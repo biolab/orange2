@@ -70,7 +70,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.useDifferentSymbols = 1
         self.optimizeForPrinting = 1
 
-        self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
+        self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
         self.validData = []

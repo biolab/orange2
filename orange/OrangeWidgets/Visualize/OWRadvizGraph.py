@@ -72,8 +72,8 @@ class OWRadvizGraph(OWVisGraph):
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
         self.p = None
-        self.anchorData =[]	    # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
-        self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
+        self.anchorData =[]        # form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
+        self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
         self.kNNOptimization = None
@@ -169,10 +169,10 @@ class OWRadvizGraph(OWVisGraph):
         # -----------------------------------------------------------
 
         classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:    	# if we have a discrete class
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
             valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
-        else:	# if we have a continuous class
+            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
+        else:    # if we have a continuous class
             valLen = 0
 
         
