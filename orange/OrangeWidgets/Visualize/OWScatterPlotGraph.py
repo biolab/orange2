@@ -381,40 +381,27 @@ class OWScatterPlotGraph(OWVisGraph):
         # define lenghts and variables
         dataSize = len(self.rawdata)
         attrCount = len(self.rawdata.domain.attributes)
-        classValsCount = len(self.rawdata.domain[className].values)
 
         fullList = []
-        tempValue= 0
         testIndex = 0
         totalTestCount = attrCount * (attrCount-1) / 2
         print "---------------------"
         print "Total number of possible projections: ", str(totalTestCount)
 
-        # variables and domain for the table
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
-
-        classValues = list(self.rawdata.domain[className].values)
-        classValNum = len(classValues)
         t = time.time()
+
+        # create a dataset with scaled data
+        fullData = orange.ExampleTable(self.rawdata.domain)
+        for i in range(dataSize):
+            fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i][className]])
 
         for x in range(attrCount):
             for y in range(x+1, attrCount):
                 testIndex += 1
                 self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
                 
-                tempValue = 0
-                table = orange.ExampleTable(domain)
-
-                for i in range(dataSize):
-                    xValue = self.noJitteringScaledData[x][i]
-                    yValue = self.noJitteringScaledData[y][i]
-                    if xValue == '?' or yValue == '?': continue
-                    
-                    example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
-                    table.append(example)
-
+                table = fullData.select([x,y, className])
+                table = orange.Preprocessor_dropMissing(table)
                 if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
 
                 accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
