@@ -13,7 +13,7 @@
 
 import math
 import orange
-import OWGUI
+import OWGUI, orngLR_Jakulin
 from OWWidget import *
 from OWNomogramGraph import *
 
@@ -260,6 +260,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
         a = None
 
+        print self.cl
         # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
         aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
@@ -276,8 +277,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 for val in var.values:
                     foundValue = False
                     for same in cl.domain.attributes:
-                        if same.visited==0 and same.getValueFrom and hasattr(same, "originValue") and same.originValue==val:
-                            same.setattr("visited", 1)
+                        if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and hasattr(same, "originValue") and same.originValue==val:
+                            same.setattr("visited",1)
                             a.addAttValue(AttValue(same.originValue, mult*cl.beta[same], error = cl.beta_se[same]))
                             foundValue = True
                     if not foundValue:
@@ -364,7 +365,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                     maxNew = bas[c[0]].max
                     minNew = bas[c[0]].min
 
-                # transform SVM betas to nomogram appropirate betas
+                # transform SVM betas to betas siutable for nomogram
                 beta = ((maxMap[coeff]-minMap[coeff])/(maxNew-minNew))*visualizer.coeffs[coeff]
                 n = -minNew+minMap[coeff]
                 
@@ -387,13 +388,12 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.cl.domain = orange.Domain(self.data.domain.classVar)
 #        self.cl.domain.classVar = orange
 #        self.cl.domain.classVar.values = self.data.domain.classVar.values       
-        self.alignRadio.setDisabled(True)
-        self.alignType = 0
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
        
     def classifier(self, cl):
         self.cl = cl
+        print self.cl
         self.updateNomogram()
         
     # Input channel: data
@@ -435,12 +435,14 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
     def updateNomogram(self):
         import orngSVM
 
+        print "grem v update!"
+        print self.cl
         def setNone():
             self.footer.setCanvas(None)
             self.header.setCanvas(None)
             self.graph.setCanvas(None)
 
-        if self.data and self.cl:
+        if self.data and self.cl and not type(self.cl) == orngLR_Jakulin.MarginMetaClassifier:
             #check domains
             for at in self.cl.domain:
                 if at.getValueFrom:
@@ -450,14 +452,15 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                     if not at in self.data.domain:
                         return
 
-        if type(self.cl) == orngSVM.BasicSVMClassifier and self.data:
-                self.svmClassifier(self.cl)
-        elif type(self.cl) == orange.BayesClassifier:
+        if type(self.cl) == orange.BayesClassifier:
             if len(self.cl.domain.classVar.values)>2:
                 QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
                             QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
             else:
                 self.nbClassifier(self.cl)
+        elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
+                self.svmClassifier(self.cl)
+
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
             cont = False
@@ -537,14 +540,18 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
 # test widget appearance
 if __name__=="__main__":
-    import orngLR
+    import orngLR, orngSVM
     
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
     data = orange.ExampleTable("titanic")
     bayes = orange.BayesLearner(data)
+    l = orngSVM.BasicSVMLearner()
+    l.kernel = 0 # linear SVM
+    svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
     logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    print logistic
     ow.classifier(logistic)
     ow.cdata(data)
 
