@@ -67,17 +67,20 @@ class OWDistanceMap(OWWidget):
         self.ColorSchemas = None
 
         self.shiftPressed = False        
-      
 
         #set default settings
         self.CellWidth = 15; self.CellHeight = 15
-        self.Merge = 1; self.savedMerge = self.Merge
+        self.Merge = 1;
+        self.savedMerge = self.Merge
         self.Gamma = 1
         self.Grid = 1
         self.CutLow = 0; self.CutHigh = 0; self.CutEnabled = 0
         self.Sort = 0
         self.SquareCells = 0
-        self.ShowLegend = 1; self.ShowAnnotations = 1; self.ShowBalloon = 1; self.ShowItemsInBalloon = 1
+        self.ShowLegend = 1;
+        self.ShowAnnotations = 1;
+        self.ShowBalloon = 1;
+        self.ShowItemsInBalloon = 1
         self.SendOnRelease = 1
         
         self.loadSettings()
@@ -123,7 +126,7 @@ class OWDistanceMap(OWWidget):
         tab = QVGroupBox(self)
         box = QVButtonGroup("Annotation && Legends", tab)
         OWGUI.checkBox(box, self, 'ShowLegend', 'Show legend', callback=self.drawDistanceMap)
-        OWGUI.checkBox(box, self, 'ShowAnnotations', 'Show annotations', callback=None)
+        OWGUI.checkBox(box, self, 'ShowAnnotations', 'Show annotations', callback=self.drawDistanceMap)
         
         box = QVButtonGroup("Balloon", tab)
         OWGUI.checkBox(box, self, 'ShowBalloon', "Show balloon", callback=None)
@@ -134,6 +137,7 @@ class OWDistanceMap(OWWidget):
         self.box2 = box2
         self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo, QPixmap(OWToolbars.dlg_undo), toggle = 0)
         self.buttonRemoveAllSelections = OWToolbars.createButton(box2, 'Remove all selections', self.actionRemoveAllSelections, QPixmap(OWToolbars.dlg_clear), toggle = 0)
+
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections', self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
         OWGUI.checkBox(box, self, 'SendOnRelease', "Send after mouse release", callback=None)
 
@@ -146,6 +150,7 @@ class OWDistanceMap(OWWidget):
         self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
 
         self.layout.add(self.canvasView)
+        
 
         #construct selector
         self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.getCellHeight(), self.canvas)
@@ -157,7 +162,7 @@ class OWDistanceMap(OWWidget):
         self.selection = SelectionManager()
 
         self.selectionLines = []
-        self.annotationTexts = []
+        self.annotationText = []
 
         self.legendText1 = QCanvasText(self.canvas)
         self.legendText1.move(0,0)
@@ -240,7 +245,6 @@ class OWDistanceMap(OWWidget):
 
             items = self.matrix.items
             if issubclass(orange.EnumVariable, type(items[0])):
-                print "bbbbbbb"
                 selected = orange.VarList()
                 for i in selectedIndices:
                     selected.append(items[i])
@@ -297,6 +301,8 @@ class OWDistanceMap(OWWidget):
         lo = self.CutEnabled and self.CutLow   or self.lowerBound
         hi = self.CutEnabled and self.CutHigh  or self.upperBound
 
+        self.offsetX = 5
+        
         if self.distanceImage:
             self.distanceImage.setCanvas(None)
 
@@ -319,6 +325,51 @@ class OWDistanceMap(OWWidget):
         bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth), int(self.getCellHeight()), lo, hi, self.Gamma, self.Grid)
 
         self.canvas.resize(2000, 2000) # this needs adjustment
+
+        for tmpText in self.annotationText:
+            tmpText.setCanvas(None)
+
+        self.annotationText = []
+
+        if self.ShowAnnotations==1 and self.Merge==1:
+            items = self.matrix.items
+            if len(self.distanceMap.elementIndices)==0:
+                tmp = [i for i in range(0, len(items))]
+            else:
+                tmp = [self.distanceMap.elementIndices[i] for i in range(0, len(items))]                
+
+            if self.distanceMapConstructor.order:
+                indices = [self.distanceMapConstructor.order[i] for i in tmp]
+            else:
+                indices = tmp
+
+            maxHeight = 0
+            maxWidth = 0
+            for i in range(0, len(indices)):
+#                text = str(i)
+                text = items[indices[i]].name
+                if text<>"":
+                    tmpText = QCustomCanvasText(text, self.canvas, -90.0)
+                    tmpText.show()
+                    if tmpText.height() > maxHeight:
+                        maxHeight = tmpText.height()
+                    self.annotationText += [tmpText]
+
+                    tmpText = QCanvasText(text, self.canvas)
+                    tmpText.show()
+                    if tmpText.boundingRect().width() > maxWidth:
+                        maxWidth = tmpText.boundingRect().width()
+                    self.annotationText += [tmpText]
+
+            for i in range(0, len(self.annotationText)/2):
+                self.annotationText[i*2].setX(self.offsetX + maxWidth + 10 + i*self.CellWidth)
+                self.annotationText[i*2].setY(self.offsetY)
+                self.annotationText[i*2 + 1].setX(self.offsetX)
+                self.annotationText[i*2 + 1].setY(self.offsetY + maxHeight + 10 + i*self.CellHeight)
+                
+            self.offsetX += maxWidth + 10
+            self.offsetY += maxHeight + 10
+                   
         self.distanceImage = ImageItem(bitmap, self.canvas, width, height, palette, x=self.offsetX, y=self.offsetY, z=0)
         self.distanceImage.height = height
         self.distanceImage.width = width
@@ -499,16 +550,47 @@ class ImageItem(QCanvasRectangle):
         self.setSize(width, height)
         self.setX(x); self.setY(y); self.setZ(z)
         self.show()
-
+        
     def drawShape(self, painter):
         painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
 
-class QCustomCanvasText(QCanvasText):
-    def __init__(self, text, canvas = None):
-        QCanvasText.__init__(self, text, canvas)
+class QCustomCanvasText(QCanvasRectangle):
+    def __init__(self, text, canvas = None, rotateAngle = 0.0):
+        QCanvasRectangle.__init__(self, canvas)
+        self.text = text
+        self.rotateAngle = rotateAngle
+        self.hiddenText = QCanvasText(text, canvas)
+        xsize = self.hiddenText.boundingRect().height()
+        ysize = self.hiddenText.boundingRect().width()        
+        self.setSize(xsize, ysize)
 
+    def setText(self, text):
+        self.text = text
+        self.hiddenText = QCanvasText(text, canvas)
+        xsize = self.hiddenText.boundingRect().height()
+        ysize = self.hiddenText.boundingRect().width()        
+        self.setSize(xsize, ysize)
+
+    def setAngle(self, angle):
+        self.rotateAngle = rotateAngle
+        
     def draw(self, painter):
-        QCanvasText.draw(self, painter)
+        pixmap = QPixmap()
+        xsize = self.hiddenText.boundingRect().height()
+        ysize = self.hiddenText.boundingRect().width()
+        pixmap.resize(xsize, ysize)
+
+        helpPainter = QPainter()
+        helpPainter.begin(pixmap)
+
+        helpPainter.setPen( Qt.black );
+        helpPainter.setBrush( Qt.white );
+        helpPainter.drawRect( -1, -1, xsize + 2, ysize + 2);
+        helpPainter.rotate(self.rotateAngle)
+        helpPainter.drawText(-ysize - 1, xsize, self.text)
+        helpPainter.end()
+            
+        painter.drawPixmap(self.x(), self.y(), pixmap)
 ##################################################################################################
 # selection manager class
 
