@@ -367,7 +367,7 @@ def getVerticesInPolygons(verticesDict):
         if len(polygonVerticesDict[key]) < 2: polygonVerticesDict.pop(key)
     return polygonVerticesDict
 
-
+"""
 def pointInsideCluster(data, closure, xTest, yTest):
     p1 = closure[0][0]
     count = 0
@@ -379,17 +379,31 @@ def pointInsideCluster(data, closure, xTest, yTest):
         if pos3 == pos: count += 1
     if count % 2 == 0: return 0
     else: return 1
+"""
+
+
+def pointInsideCluster(data, closure, xTest, yTest):
+    p1 = closure[0][0]
+    count = 0
+    for (p2, p3) in closure[1:]:
+        x1 = data[p2][0] - xTest; y1 = data[p2][1] - yTest
+        x2 = data[p3][0] - xTest; y2 = data[p3][1] - yTest
+        if (y1 > 0 and y2 <= 0) or (y2 > 0 and y1 <= 0):
+            x = (x1 * y2 - x2 * y1) / (y2 - y1)
+            if x > 0: count += 1
+    if count % 2 == 1: return 1
+    else: return 0
         
 
 class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showValue", "jitterDataBeforeTriangulation" ]
+    settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showValue", "jitterDataBeforeTriangulation", "createSnapshots"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
 
-    def __init__(self,parentWidget = None, graph = None):
+    def __init__(self, parentWidget = None, graph = None):
         OWBaseWidget.__init__(self, None, "Cluster Dialog")
 
         self.parentWidget = parentWidget
@@ -427,6 +441,7 @@ class ClusterOptimization(OWBaseWidget):
         self.pointStability = None
         self.pointStabilityCount = None
         self.argumentationClassValue = 0
+        self.createSnapshots = 1
 
         self.loadSettings()
 
@@ -454,12 +469,13 @@ class ClusterOptimization(OWBaseWidget):
         #self.miscSettingsBox.hide()
 
         # argumentation tab        
-        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " ")
+        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
         self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
         self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
+        self.createSnapshotCheck = OWGUI.checkBox(self.argumentationStartBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
         self.argumentList = QListBox(self.argumentBox)
@@ -722,6 +738,8 @@ class ClusterOptimization(OWBaseWidget):
         self.selectedClasses = []
         self.classesList.clear()
         self.classValueList.clear()
+        self.argumentList.clear()
+        self.arguments = []
         self.clearResults()
                 
         if not data: return
@@ -738,6 +756,8 @@ class ClusterOptimization(OWBaseWidget):
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
+        self.arguments = []
+        self.argumentList.clear()
     
                 
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
@@ -899,6 +919,9 @@ class ClusterOptimization(OWBaseWidget):
         self.resultsDetailsBox.setEnabled(0)
         self.miscSettingsBox.setEnabled(0)
         self.optimizeGivenProjectionButton.setEnabled(0)
+        self.argumentBox.setEnabled(0)
+        self.classValueList.setEnabled(0)
+        self.argumentationStartBox.setEnabled(0)
 
     def enableControls(self):    
         self.optimizationTypeCombo.setEnabled(1)
@@ -912,6 +935,9 @@ class ClusterOptimization(OWBaseWidget):
         self.resultsDetailsBox.setEnabled(1)
         self.miscSettingsBox.setEnabled(1)
         self.optimizeGivenProjectionButton.setEnabled(1)
+        self.argumentBox.setEnabled(1)
+        self.classValueList.setEnabled(1)
+        self.argumentationStartBox.setEnabled(1)
 
     # ##############################################################
     # exporting multiple pictures
@@ -989,6 +1015,8 @@ class ClusterOptimization(OWBaseWidget):
     def findArguments(self):
         self.cancelArgumentation = 0
         self.arguments = [[] for i in range(self.classValueList.count())]
+        self.argumentList.clear()
+        snapshots = self.createSnapshots
         
         if self.subsetdata == None:
             QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
@@ -998,14 +1026,17 @@ class ClusterOptimization(OWBaseWidget):
             return
 
         example = self.subsetdata[0]
-        testExample = [example[attr].value - float(self.graph.attrValues[attr.name][0]) / float(self.graph.attrValues[attr.name][1]-self.graph.attrValues[attr.name][0]) for attr in example.domain.attributes]
+        testExample = []
+        for attr in example.domain.attributes:
+            if example[attr].isSpecial(): testExample.append(-1)
+            else: testExample.append((example[attr].value - float(self.graph.attrValues[attr.name][0])) / float(self.graph.attrValues[attr.name][1]-self.graph.attrValues[attr.name][0]))
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()
-        self.parentWidget.removeGraphProperties()
+        if snapshots: self.parentWidget.setMinimalGraphProperties()
 
-        for i in range(len(self.allResults)):
+        for index in range(len(self.allResults)):
             if self.cancelArgumentation: break
-            (value, closure, vertices, attrList, classValue, tryIndex, strList) = self.shownResults[i]
+            (value, closure, vertices, attrList, classValue, tryIndex, strList) = self.allResults[index]
 
             qApp.processEvents()
             
@@ -1017,29 +1048,30 @@ class ClusterOptimization(OWBaseWidget):
                     break
             if not possiblyInside: continue
 
-            xTest = testExample[self.graph.attributeNames.index(attrList[0])]
-            yTest = testExample[self.graph.attributeNames.index(attrList[1])]
-            
+            [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))])
             array = self.graph.createProjectionAsNumericArray([self.graph.attributeNames.index(attr) for attr in attrList])
             short = Numeric.take(array, vertices)
             m = min(short); M = max(short)
             if xTest < m[0] or xTest > M[0] or yTest < m[1] or yTest > M[1]: continue       # the point is definitely not inside the cluster
 
             if not pointInsideCluster(array, closure, xTest, yTest): continue
-            
-            # if the point lies inside a cluster -> save this figure into a pixmap
-            self.parentWidget.showAttributes(attrList, clusterClosure = closure)
-            painter = QPainter()
-            pic = QPixmap(QSize(100,100))
-            painter.begin(pic)
-            painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
-            self.graph.printPlot(painter, pic.rect())
-            painter.flush()
-            painter.end()
 
-            self.arguments[classValue].append((pic, value, attrList, i))
+            pic = None
+            if snapshots:
+                # if the point lies inside a cluster -> save this figure into a pixmap
+                self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                painter = QPainter()
+                pic = QPixmap(QSize(120,120))
+                painter.begin(pic)
+                painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+                self.graph.printPlot(painter, pic.rect())
+                painter.flush()
+                painter.end()
+
+            self.arguments[classValue].append((pic, value, attrList, index))
             if classValue == self.classValueList.currentItem():
-                self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
+                if snapshots: self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
+                else:         self.argumentList.insertItem("%.2f - %s" %(value, attrList))
 
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
@@ -1049,14 +1081,14 @@ class ClusterOptimization(OWBaseWidget):
     def stopArgumentationClick(self):
         self.cancelArgumentation = 1
     
-
     def argumentationClassChanged(self):
         self.argumentList.clear()
         if len(self.arguments) == 0: return
         ind = self.classValueList.currentItem()
         for i in range(len(self.arguments[ind])):
             val = self.arguments[ind][i]
-            self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
+            if val[0] != None:  self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
+            else:               self.argumentList.insertItem("%.2f - %s" %(val[1], val[2]))
 
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
