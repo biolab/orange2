@@ -691,16 +691,16 @@ class ParallelOptimization(OWBaseWidget):
             file.close()
             return
 
-        line = file.readline()[:-1]; ind = 0    # first line is a settings line
         try:
-            (acc, other_results, lenTable, attrList, strList) = eval(line)
+            line = file.readline()[:-1]; ind = 0    # first line is a settings line
+            (acc, other_results, lenTable, attrList, tryIndex, strList) = eval(line)
             if len(attrList) != 2:
                 QMessageBox.information(self, "Incorrect file", "File should contain projections with 2 attributes!", QMessageBox.Ok)
                 file.close()
                 return
             
             while (line != ""):
-                (acc, other_results, lenTable, attrList, strList) = eval(line)
+                (acc, other_results, lenTable, attrList, tryIndex, strList) = eval(line)
                 self.projections += [(acc, attrList)]
                 line = file.readline()[:-1]
         except:
