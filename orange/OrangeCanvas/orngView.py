@@ -207,11 +207,19 @@ class SchemaView(QCanvasView):
                     self.moving_start = QPoint(ev.pos().x(), ev.pos().y())
                     self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
                     self.moving_mouseOffset = QPoint(ev.pos().x() - widget.x(), ev.pos().y() - widget.y())
-                    if widget not in self.selWidgets:   
+
+                    if widget not in self.selWidgets and self.doc.canvasDlg.ctrlPressed == 0:
                         for item in self.selWidgets:
                             item.selected = FALSE
                         self.selWidgets = [widget]
                         self.bMultipleSelection = FALSE
+                    elif self.doc.canvasDlg.ctrlPressed == 1:
+                        if widget not in self.selWidgets:
+                            self.selWidgets.append(widget)
+                        else:
+                            self.selWidgets.remove(widget)
+                            widget.selected = FALSE
+                        self.doc.canvas.update()
 
                     for widget in self.selWidgets:
                         widget.setCoords(widget.x(), widget.y())
@@ -388,6 +396,7 @@ class SchemaView(QCanvasView):
                 self.deleteLink()
             else:
                 line.setEnabled(line.getEnabled())
+
 
 #    def drawContents(self, painter):
 #        for widget in self.doc.widgets:

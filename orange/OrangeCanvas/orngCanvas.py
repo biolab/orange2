@@ -24,6 +24,7 @@ class MDIWorkspace(QWorkspace):
 class OrangeCanvasDlg(QMainWindow):
 	def __init__(self,*args):
 		apply(QMainWindow.__init__,(self,) + args)
+		self.ctrlPressed = 0	# we have to save keystate, so that orngView can access information about keystate
 		self.resize(800,700)
 		self.setCaption("Qt Orange Canvas")
 
@@ -363,7 +364,15 @@ class OrangeCanvasDlg(QMainWindow):
 		if len(self.workspace.windowList()) == 0:
 			ce.accept()
 		else:
-			ce.ignore()			
+			ce.ignore()
+
+	def keyPressEvent(self, e):
+		if e.state() & Qt.ControlButton != 0:
+			self.ctrlPressed = 1
+
+	def keyReleaseEvent(self, e):
+		self.ctrlPressed = 0
+		
 
 app = QApplication(sys.argv) 
 dlg = OrangeCanvasDlg()
