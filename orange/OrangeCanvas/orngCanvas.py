@@ -25,7 +25,7 @@ class OrangeCanvasDlg(QMainWindow):
 	def __init__(self,*args):
 		apply(QMainWindow.__init__,(self,) + args)
 		self.resize(800,700)
-		self.setCaption("Orange Canvas")
+		self.setCaption("Qt Orange Canvas")
 
 		# if widget path not registered -> register
 		self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
