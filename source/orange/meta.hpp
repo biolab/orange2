@@ -69,8 +69,9 @@ public:
   bool operator ==(const TMetaDescriptor &other) const  { return id == other.id; }
 };
 
-
-EXPIMP_TEMPLATE template class ORANGE_API std::vector<TMetaDescriptor>;
+#ifdef _MSC_VER
+  EXPIMP_TEMPLATE template class ORANGE_API std::vector<TMetaDescriptor>;
+#endif
 
 class ORANGE_API TMetaVector : public vector<TMetaDescriptor> {
 public:

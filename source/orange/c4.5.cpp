@@ -495,7 +495,7 @@ PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
     Tree tree = (Tree)c45learn(trials, gainRatio, subset, batch, probThresh, minObjs, window, increment, cf, prune);
 
     PC45TreeNode root = mlnew TC45TreeNode(tree, gen->domain);
-    TC45Classifier *c45classifier = mlnew TC45Classifier(gen->domain->classVar, root);
+    TC45Classifier *c45classifier = mlnew TC45Classifier(gen->domain, root);
     PClassifier res = c45classifier;
 
     c45garbage();
@@ -617,8 +617,8 @@ PDiscDistribution TC45TreeNode::classDistribution(const TExample &example, PVari
 }
 
 
-TC45Classifier::TC45Classifier(PVariable classVar, PC45TreeNode atree)
-: TClassifier(classVar),
+TC45Classifier::TC45Classifier(PDomain domain, PC45TreeNode atree)
+: TClassifierFD(domain),
   tree(atree)
 {}
 
@@ -626,11 +626,18 @@ TC45Classifier::TC45Classifier(PVariable classVar, PC45TreeNode atree)
 
 /* We need to define this separately to ensure that the first class
    is selected in case of a tie */
-TValue TC45Classifier::operator ()(const TExample &example)
+TValue TC45Classifier::operator ()(const TExample &oexample)
 {
   checkProperty(tree);
+  
+  PDiscDistribution classDist;
+  if (oexample.domain != domain) {
+    TExample example(domain, oexample);
+    classDist = tree->classDistribution(example, classVar);
+  }
+  else
+    classDist = tree->classDistribution(oexample, classVar);
 
-  PDiscDistribution classDist = tree->classDistribution(example, classVar);
   int bestClass = 0;
   float bestP = -1;
   TDiscDistribution::const_iterator pi(classDist->begin());
@@ -646,21 +653,34 @@ TValue TC45Classifier::operator ()(const TExample &example)
 
 
 
-PDistribution TC45Classifier::classDistribution(const TExample &example)
+PDistribution TC45Classifier::classDistribution(const TExample &oexample)
 { 
   checkProperty(tree);
 
-  PDiscDistribution classDist = tree->classDistribution(example, classVar);
+  PDiscDistribution classDist;
+  if (oexample.domain != domain) {
+    TExample example(domain, oexample);
+    classDist = tree->classDistribution(example, classVar);
+  }
+  else
+    classDist = tree->classDistribution(oexample, classVar);
+
   classDist->normalize();
   return classDist;
 }
 
 
-void TC45Classifier::predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist)
+void TC45Classifier::predictionAndDistribution(const TExample &oexample, TValue &value, PDistribution &dist)
 {
   checkProperty(tree);
 
-  dist = tree->classDistribution(example, classVar);
+  if (oexample.domain != domain) {
+    TExample example(domain, oexample);
+    dist = tree->classDistribution(example, classVar);
+  }
+  else
+    dist = tree->classDistribution(oexample, classVar);
+
   int bestClass = 0;
   float bestP = -1;
   for(int cl = 0, ce = classVar.AS(TEnumVariable)->values->size(); cl!=ce; cl++) {
