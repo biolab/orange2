@@ -24,7 +24,7 @@ import OWToolbars
 ###########################################################################################
 class OWPolyviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue"]
+    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -53,6 +53,7 @@ class OWPolyviz(OWWidget):
         self.rotateAttributes = 0
         self.tooltipKind = 0
         self.tooltipValue = 0
+        self.toolbarSelection = 0
         self.graphCanvasColor = str(Qt.white.name())
         
         self.data = None
@@ -181,6 +182,7 @@ class OWPolyviz(OWWidget):
         self.graph.useDifferentColors = self.useDifferentColors
         self.graph.tooltipKind = self.tooltipKind
         self.graph.tooltipValue = self.tooltipValue
+        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS

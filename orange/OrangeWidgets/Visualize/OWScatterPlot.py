@@ -22,7 +22,7 @@ import OWToolbars
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "showDistributions", "autoSendSelection", "optimizedDrawing"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "showDistributions", "autoSendSelection", "optimizedDrawing", "toolbarSelection"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -42,6 +42,7 @@ class OWScatterPlot(OWWidget):
         self.showDistributions = 0
         self.optimizedDrawing = 1
         self.tooltipKind = 1
+        self.toolbarSelection = 0
         
         self.jitterContinuous = 0
         self.jitterSize = 5
@@ -176,6 +177,9 @@ class OWScatterPlot(OWWidget):
         
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
+                
+        print self.toolbarSelection
+        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         
 
     # #######################################################################################################

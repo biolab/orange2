@@ -23,7 +23,7 @@ import OWGUI
 ###########################################################################################
 class OWRadviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue"]
+    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -57,7 +57,8 @@ class OWRadviz(OWWidget):
         self.tooltipKind = 0
         self.tooltipValue = 0
         self.graphCanvasColor = str(Qt.white.name())
-        self.data = None 
+        self.data = None
+        self.toolbarSelection = 0
 
         #load settings
         self.loadSettings()
@@ -170,6 +171,7 @@ class OWRadviz(OWWidget):
         self.graph.jitterSize = self.jitterSize
         self.graph.scaleFactor = self.scaleFactor
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
         
 
     # #########################
