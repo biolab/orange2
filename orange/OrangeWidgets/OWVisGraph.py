@@ -679,6 +679,9 @@ class OWVisGraph(OWGraph):
 
             xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
             ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
+
+            self.removeCurve(self.zoomKey)
+            self.tempSelectionCurve = None
             
             if xmin == xmax or ymin == ymax: return
             self.blankClick = 0
@@ -686,8 +689,7 @@ class OWVisGraph(OWGraph):
             self.zoomState = (xmin, xmax, ymin, ymax)
             self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
             self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-            self.removeCurve(self.zoomKey)
-            self.tempSelectionCurve = None
+            
             
         elif e.button() == Qt.RightButton and self.state == ZOOMING:
             if len(self.zoomStack):
