@@ -44,6 +44,7 @@ class OWDemo(QVBox):
         self.owtl.link(self.ownb2, "learner")
         self.owtl.link(self.owtree, "learner")
         self.owroc.link(self.owtl, "results")
+        self.owroc.link(self.owo, "target")
 
         #connect GUI buttons to show widgets
         self.connect(owfButton,SIGNAL("clicked()"),self.owf.show)
