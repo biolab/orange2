@@ -84,6 +84,10 @@ class SchemaDoc(QMainWindow):
             self.resetActiveSignals(outWidget, inWidget, None, enabled)
             return
 
+        if self.signalManager.existsPath(inWidget.instance, outWidget.instance):
+            QMessageBox.critical( None, "Orange Canvas", "Cyclic connections are not allowed in Orange Canvas.", QMessageBox.Ok + QMessageBox.Default )
+            return
+
         dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
         dialog.setOutInWidgets(outWidget, inWidget)
         connectStatus = dialog.addDefaultLinks()
