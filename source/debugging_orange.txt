@@ -1,0 +1,32 @@
+To debug Orange with MS Visual C++ 6.0, you can either change
+settings for Release version to include debug info (set optimization
+to None, and check debug info in 'compile' and 'link' tab) or
+compile Debug version of Orange. The former is suitable for
+minor debugging, while the latter is recommended if you plan
+to play with Orange for a little longer.
+
+The latter also requires a Debug version of Python and its modules
+(they can be recognized by a _d appended at the end of the filename,
+ie. python_d.exe, python23_d.dll, _sre_d.pyd ...). Luckily, source
+distribution of Python includes the necessary .dsw file for Visual
+Studio. All you usually need to do is to correct a few paths.
+
+So, if you want to build a debug version of Python, do the following:
+- Have Python installed as usual, say you've put it in c:\Python23.
+- Download Python sources and unzip them.
+- You'll notice that Python sources are in subdirectory Python-2.3.
+  Copy them to c:\Python23 (so that, for istance, Python-2.3/doc
+  comes over c:\Python23\doc.
+- Open c:\Python23\PCbuild\pcbuild.dsw with Visual Studio.
+- Go to project settings and change Link/General/Output filename as
+  follows:
+  - .pyd need to go to ../Dlls
+  - .exe go to .. (there are three: python, pythonw and w9xpopen)
+  - .dll goes to c:\winnt\system32 (or wherever your windows system
+    directory is)
+- For project 'pythoncore' set General/Output files to ../libs
+- Build. Some projects won't build due to missing stuff. Don't mind,
+  go to the next file.
+  
+That's it. Python_d.exe will appear beside python.exe. If you run it,
+'import orange' will import orange_d.pyd instead of orange.pyd etc.

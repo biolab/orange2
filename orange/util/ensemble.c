@@ -108,7 +108,6 @@ void guarded_free(void *ptr)
   /* I don't like this, but it seems that there are callocs
      (namely the one in prune.c that allocates LocalClassDist)
      managed to avoid being allocated through malloc. */
-  _ASSERT(slot);
   *slot = NULL;
   free(ptr);
 }
