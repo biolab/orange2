@@ -23,12 +23,12 @@ def printOUT(classifier):
             longest=len(at.name);
 
     # print out the head
-    formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
+    formatstr = "%"+str(longest)+"s %18s %10s %10s %10s %10s"
     print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
     print
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.10f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
-    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
+    formatstr = "%"+str(longest)+"s %10.10f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.domain.attributes)):
         print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
         
@@ -64,7 +64,10 @@ def createNoDiscDomain(domain):
             # add original attribute
             attributes.append(at)
     attributes.append(domain.classVar)
-    return orange.Domain(attributes)
+    retDomain = orange.Domain(attributes)
+    for k in domain.getmetas().keys():
+        retDomain.addmeta(orange.newmetaid(), domain.getmetas()[k])
+    return retDomain
 
 def createFullNoDiscDomain(domain):
     attributes = []
@@ -128,10 +131,6 @@ class LogRegLearnerClass:
         else:
             nexamples = nexamples
 
-                    
-        print " n data = " + str(len(nexamples))
-        print self.removeSingular
-        print examples.domain
         learner = orange.LogRegLearner()
 
         #if self.fitter:
@@ -140,7 +139,6 @@ class LogRegLearnerClass:
         if self.removeSingular:
             lr = learner.fitModel(nexamples, weight)
         else:
-            print "pravilno"
             lr = learner(nexamples, weight)
         while isinstance(lr,orange.Variable):
             nexamples.domain.attributes.remove(lr)
@@ -175,15 +173,126 @@ class Univariate_LogRegLearner_Class:
 class Univariate_LogRegClassifier:
     def __init__(self, **kwds):
         self.__dict__ = kwds
-#        self.beta = beta
-#        self.beta_se = beta_se
-#        self.P = P
-#        self.waldZ = waldZ
 
     def __call__(self, example, resultType = orange.GetValue):
         # classification not implemented yet. For now its use is only to provide regression coefficients and its statistics
         pass
     
+
+def LogRegLearner_getPriors(examples = None, weightID=0, **kwds):
+    lr = LogRegLearnerClass_getPriors(**kwds)
+    if examples:
+        return lr(examples, weightID)
+    else:
+        return lr
+
+class LogRegLearnerClass_getPriors:
+    def __init__(self, removeSingular=0, **kwds):
+        self.__dict__ = kwds
+        self.removeSingular = removeSingular
+    def __call__(self, examples, weight=0):
+        # next function changes data set to a extended with unknown values 
+        def createLogRegExampleTable(data):
+            newDomain = orange.Domain(data.domain.attributes+[data.domain.classVar])
+            newDomain.addmeta(orange.newmetaid(), orange.FloatVariable("weight"))
+            dataOrig = data.select(newDomain) #original data
+            dataFinal = dataOrig.select(newDomain) #final results will be stored in this object
+
+            for d in dataFinal:
+                d["weight"]=1000000.
+
+            for at in data.domain.attributes:
+                # za vsak atribut kreiraj nov newExampleTable newData
+                newData = orange.ExampleTable(dataOrig)
+                
+                # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
+                if at.varType == orange.VarTypes.Continuous:
+                    atDisc = orange.FloatVariable(at.name + "Disc")
+                    newDomain = orange.Domain(dataOrig.domain.attributes+[atDisc,dataOrig.domain.classVar])
+                    for (id, metaVar) in dataOrig.domain.getmetas().items():
+                        newDomain.addmeta(id, metaVar)
+                    dataOrig = dataOrig.select(newDomain)
+                    dataFinal = dataFinal.select(newDomain)
+                    newData = newData.select(newDomain)
+                    for d in dataOrig:
+                        d[atDisc] = 0
+                    for d in dataFinal:
+                        d[atDisc] = 0
+                    for d in newData:
+                        d[atDisc] = 1
+                        d[at] = 0
+                
+                # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
+                if at.varType == orange.VarTypes.Discrete:
+                    dataOrigOld = orange.ExampleTable(dataOrig)
+                    dataFinalOld = orange.ExampleTable(dataFinal)
+                    atNew = orange.EnumVariable(at.name, values = at.values + [at.name+"X"])
+                    newDomain = orange.Domain(filter(lambda x: x!=at, dataOrig.domain.attributes)+[atNew,dataOrig.domain.classVar])
+                    for (id, metaVar) in dataOrig.domain.getmetas().items():
+                        newDomain.addmeta(id, metaVar)
+                    dataOrig = dataOrig.select(newDomain)
+                    dataFinal = dataFinal.select(newDomain)
+                    newData = newData.select(newDomain)
+                    for d in range(len(dataOrig)):
+                        dataOrig[d][atNew] = dataOrigOld[d][at]
+                    for d in range(len(dataFinal)):
+                        dataFinal[d][atNew] = dataFinalOld[d][at]
+                    for d in newData:
+                        d[atNew] = at.name+"X"
+
+                for at in newData:
+                    at["weight"]=0.1
+
+                # v newData doloci temu atributu vrednost 1, v drugih dveh pa 0---DONEW
+                # skopiraj vse vrednosti iz newData v dataFinal
+                for d in newData:
+                    dataFinal.append(orange.Example(d))
+                    
+            return dataFinal            
+        def findZero(model, at):
+            if at.varType == orange.VarTypes.Discrete:
+                for i_a in range(len(model.domain.attributes)):
+                    if model.domain.attributes[i_a].name == at.name+"="+at.name+"X":
+                        return model.beta[i_a+1]
+            else:
+                for i_a in range(len(model.domain.attributes)):
+                    if model.domain.attributes[i_a].name == at.name+"Disc":
+                        return model.beta[i_a+1]
+                    
+        nexamples = orange.Preprocessor_dropMissing(examples)
+        # get Original Model
+        orig_model = LogRegLearner(examples)
+
+        # get extended Model (you should not change data)
+        extended_examples = createLogRegExampleTable(examples)
+        extended_model = LogRegLearner(extended_examples, extended_examples.domain.getmeta("weight"))
+
+        print "domains", orig_model.domain, extended_model.domain
+        # izracunas odstopanja
+        # get sum of all betas
+        beta = 0
+        betas_ap = []
+        for at in range(len(nexamples.domain.attributes)):
+            att = nexamples.domain.attributes[at]    
+            beta_add = findZero(extended_model, att)
+            betas_ap.append(beta_add)
+            beta = beta + beta_add
+        
+        # substract it from intercept
+        logistic_prior = extended_model.beta[0]+beta
+        
+        # compare it to bayes prior
+        bayes = orange.BayesLearner(nexamples)
+        bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
+
+        # normalize errors
+        k = (bayes_prior-extended_model.beta[0])/(logistic_prior-extended_model.beta[0])
+
+        betas_ap = [k*x for x in betas_ap]                
+
+        # vrni originalni model in pripadajoce apriorne niclele
+        print "returnam ZDEJ!", orig_model, betas_ap
+        return (orig_model, betas_ap)
 
 
 ######################################
