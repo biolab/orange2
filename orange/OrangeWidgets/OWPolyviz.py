@@ -255,10 +255,10 @@ class OWPolyviz(OWWidget):
             self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                ((acc, val), list, reverse) = max(fullList)
-                fullList.remove(((acc, val), list, reverse))
-                self.interestingProjectionsAddItem(acc, val, list, reverse)
-                self.interestingprojectionsDlg.optimizedList.append((acc, val, list, reverse))
+                ((acc, tableLen), list, reverse) = max(fullList)
+                fullList.remove(((acc, tableLen), list, reverse))
+                self.interestingProjectionsAddItem(acc, tableLen, list, reverse)
+                self.interestingprojectionsDlg.optimizedList.append((acc, tableLen, list, reverse))
 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
             self.showSelectedAttributes()
@@ -287,15 +287,15 @@ class OWPolyviz(OWWidget):
             self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                ((acc, val), list, reverse) = max(fullList)
-                fullList.remove(((acc, val), list, reverse))
-                self.interestingProjectionsAddItem(acc, val, list, reverse)
-                self.interestingprojectionsDlg.optimizedList.append((acc, val, list, reverse))
+                ((acc, tableLen), list, reverse) = max(fullList)
+                fullList.remove(((acc, tableLen), list, reverse))
+                self.interestingProjectionsAddItem(acc, tableLen, list, reverse)
+                self.interestingprojectionsDlg.optimizedList.append((acc, tableLen, list, reverse))
                 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
     
-    def interestingProjectionsAddItem(self, acc, val, attrList, reverse):
-        str = "(%.2f, %d) - [" %(acc, val)
+    def interestingProjectionsAddItem(self, acc, tableLen, attrList, reverse):
+        str = "(%.2f, %d) - [" %(acc, tableLen)
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
                 str += attrList[i] + "-, "
@@ -311,7 +311,7 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         if self.interestingprojectionsDlg.interestingList.count() == 0: return
         index = self.interestingprojectionsDlg.interestingList.currentItem()
-        (acc, val, list, reverse) = self.interestingprojectionsDlg.optimizedList[index]
+        (acc, tableLen, list, reverse) = self.interestingprojectionsDlg.optimizedList[index]
 
         # check if all attributes in list really exist in domain        
         attrNames = []

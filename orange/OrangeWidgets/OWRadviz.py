@@ -224,13 +224,15 @@ class OWRadviz(OWWidget):
             if list == []: return
 
             # fill the "interesting visualizations" list box
-            self.interestingprojectionsDlg.optimizedList = []
-            self.interestingprojectionsDlg.interestingList.clear()
+            self.interestingprojectionsDlg.clear()
             for i in range(min(100, len(fullList))):
-                ((acc, val), list) = max(fullList)
-                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
-                fullList.remove(((acc, val), list))
-                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(acc, val, str(list)))  
+                ((acc, tableLen), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((acc, tableLen), list))
+                fullList.remove(((acc, tableLen), list))
+                text = list[0]
+                for item in list[1:]:
+                    text = text + ", " + item
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(acc, tableLen, text))  
                 
             self.shownAttribsLB.clear()
             for item in list:
@@ -238,6 +240,14 @@ class OWRadviz(OWWidget):
 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
             self.updateGraph()
+
+
+    def fact(self, i):
+        ret = 1
+        while i > 1:
+            ret = ret*i
+            i -= 1
+        return ret
 
     # #############################################
     # find optimal separation for all possible subsets of shown attributes
@@ -252,17 +262,25 @@ class OWRadviz(OWWidget):
                 maxLen = len(self.getShownAttributeList())
             else:
                 maxLen = int(text)
+
+            # compute the number of possible subsets so that when computing we can give a feedback on the progress
+            allVisible = len(self.getShownAttributeList())
+            table = []
+            for i in range(2,maxLen+1):
+                possible = self.fact(allVisible) / (self.fact(i) * self.fact(allVisible-i))
+                table.append(possible)
+
+            self.graph.possibleSubsetsTable = table                
             (list,val, fullList) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, maxLen)
             if list == []: return
             
             # fill the "interesting visualizations" list box
-            self.interestingprojectionsDlg.optimizedList = []
-            self.interestingprojectionsDlg.interestingList.clear()
+            self.interestingprojectionsDlg.clear()
             for i in range(min(100, len(fullList))):
-                ((acc, val), list) = max(fullList)
-                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
-                fullList.remove(((acc, val), list))
-                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(acc, val, str(list)))  
+                ((accuracy, itemCount), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((accuracy, itemCount), list))
+                fullList.remove(((accuracy, itemCount), list))
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %d) - %s"%(accuracy, itemCount, str(list)))  
                 
             self.shownAttribsLB.clear()
             for item in list:
@@ -276,7 +294,7 @@ class OWRadviz(OWWidget):
     def showSelectedAttributes(self):
         if self.interestingprojectionsDlg.interestingList.count() == 0: return
         index = self.interestingprojectionsDlg.interestingList.currentItem()
-        ((acc, val), list) = self.interestingprojectionsDlg.optimizedList[index]
+        ((accuracy, tableLen), list) = self.interestingprojectionsDlg.optimizedList[index]
 
         attrNames = []
         for attr in self.data.domain:

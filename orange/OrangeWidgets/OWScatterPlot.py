@@ -278,10 +278,10 @@ class OWScatterPlot(OWWidget):
             self.interestingprojectionsDlg.optimizedList = []
             self.interestingprojectionsDlg.interestingList.clear()
             for i in range(min(100, len(fullList))):
-                ((acc, val), list) = max(fullList)
-                self.interestingprojectionsDlg.optimizedList.append(((acc, val), list))
-                fullList.remove(((acc, val), list))
-                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %1.f) - %s"%(acc, val, str(list)))  
+                ((acc, tableLen), list) = max(fullList)
+                self.interestingprojectionsDlg.optimizedList.append(((acc, tableLen), list))
+                fullList.remove(((acc, tableLen), list))
+                self.interestingprojectionsDlg.interestingList.insertItem("(%.2f, %1.f) - %s"%(acc, tableLen, str(list)))  
                 
             self.interestingprojectionsDlg.interestingList.setCurrentItem(0)
 

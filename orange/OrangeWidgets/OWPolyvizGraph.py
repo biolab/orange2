@@ -286,12 +286,17 @@ class OWPolyvizGraph(OWVisGraph):
         #################
         # draw the legend
         if className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            mkey = self.insertMarker(className)
+            self.marker(mkey).setXValue(0.87)
+            self.marker(mkey).setYValue(1.06)
+            self.marker(mkey).setLabelAlignment(Qt.AlignLeft)
+            
             classVariableValues = self.getVariableValuesSorted(self.rawdata, className)
             for index in range(len(classVariableValues)):
                 newColor = QColor()
                 newColor.setHsv(index*360/(valLen), 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
-                y = 1.08 - index * 0.05
+                y = 1.0 - index * 0.05
                 self.setCurveData(key, [0.95, 0.95], [y, y])
                 mkey = self.insertMarker(classVariableValues[index])
                 self.marker(mkey).setXValue(0.90)
@@ -373,6 +378,11 @@ class OWPolyvizGraph(OWVisGraph):
             for j in range(attrListLength):
                 if self.scaledData[indices[j]][i] == "?": validData[i] = 0
 
+        count = 0
+        for i in range(dataSize):
+            if validData[i] == 1: count+=1
+        print "Nr. of examples: ", str(count)
+
         # create anchor for every attribute
         anchors = self.createAnchors(attrListLength)
         
@@ -409,8 +419,7 @@ class OWPolyvizGraph(OWVisGraph):
                     example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
                     table.append(example)
 
-                #orange.saveTabDelimited("E:\\temp\\tempData\\data-%d.tab"%(permutationIndex), table)
-
+                """
                 classValues = list(self.rawdata.domain[className].values)
                 classValNum = len(classValues)
                 
@@ -433,8 +442,17 @@ class OWPolyvizGraph(OWVisGraph):
                     
                     index = classValues.index(table[i].getclass().value)
                     tempPermValue += float(prob[index])/float(sumVal)
+                """
 
-                print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (permutationIndex, totalPermutations, tempPermValue, tempPermValue*100.0/float(len(table)) )
+                # to bo delalo, ko bo popravljen orangov kNNLearner
+                classValues = list(self.rawdata.domain[className].values)
+                knn = orange.kNNLearner(table, k=kNeighbours)
+                for j in range(len(table)):
+                    out = knn(table[j], orange.GetProbabilities)
+                    index = classValues.index(table[j][2].value)
+                    tempPermValue += out[index]
+
+                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(len(table)) )
 
                 # save the permutation
                 tempList = []

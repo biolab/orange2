@@ -199,12 +199,17 @@ class OWRadvizGraph(OWVisGraph):
         #################
         # draw the legend
         if className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            mkey = self.insertMarker(className)
+            self.marker(mkey).setXValue(0.87)
+            self.marker(mkey).setYValue(1.06)
+            self.marker(mkey).setLabelAlignment(Qt.AlignLeft)
+                
             classVariableValues = self.getVariableValuesSorted(self.rawdata, className)
             for index in range(len(classVariableValues)):
                 newColor = QColor()
                 newColor.setHsv(index*360/(valLen), 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
-                y = 1.08 - index * 0.05
+                y = 1.0 - index * 0.05
                 self.setCurveData(key, [0.95, 0.95], [y, y])
                 mkey = self.insertMarker(classVariableValues[index])
                 self.marker(mkey).setXValue(0.90)
@@ -258,6 +263,13 @@ class OWRadvizGraph(OWVisGraph):
             for j in range(attrListLength):
                 if self.scaledData[indices[j]][i] == "?": validData[i] = 0
 
+        ###################
+        # print total number of valid examples
+        count = 0
+        for i in range(dataSize):
+            if validData[i] == 1: count+=1
+        print "Nr. of examples: ", str(count)
+
         # store all sums
         sum_i=[]
         for i in range(dataSize):
@@ -299,7 +311,6 @@ class OWRadvizGraph(OWVisGraph):
                 example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
                 table.append(example)
 
-            #orange.saveTabDelimited("E:\\temp\\data.tab", table)
             """
             classValues = list(self.rawdata.domain[className].values)
             classValNum = len(classValues)
@@ -310,12 +321,25 @@ class OWRadvizGraph(OWVisGraph):
             euclidean.normalizers = [1,1]   # our table has attributes x,y, and class
             for i in range(len(table)):
                 prob = [0]*classValNum
-                neighbours = near(kNeighbours, table[i])
-                for neighbour in neighbours:
+                # we call find nearest with k=0 to return all examples sorted by their distance to i-th example
+                neighbours = near(0, table[i])
+
+                #for neighbour in neighbours:
+                for neighbour in neighbours[:kNeighbours]:
                     dist = euclidean(table[i], neighbour)
                     val = math.exp(-(dist*dist))
                     index = classValues.index(neighbour.getclass().value)
                     prob[index] += val
+
+                # we store distance to the k-th neighbour and continue computing for greater neighbours until they are at the same distance
+                # this is probably the correct way of processing when we have  many neighbours at the same distance
+                ind = kNeighbours + 1
+                kthDistance = dist
+                kthValue = val
+                while ind < len(table) and euclidean(table[i], neighbours[ind]) == kthDistance:
+                    index = classValues.index(neighbours[ind].getclass().value)
+                    prob[index] += kthValue
+                    ind += 1
 
                 # calculate sum for normalization
                 sum = 0
@@ -323,7 +347,6 @@ class OWRadvizGraph(OWVisGraph):
                 
                 index = classValues.index(table[i].getclass().value)
                 tempPermValue += float(prob[index])/float(sum)
-
             """
 
             # to bo delalo, ko bo popravljen orangov kNNLearner
@@ -332,10 +355,9 @@ class OWRadvizGraph(OWVisGraph):
             for j in range(len(table)):
                 out = knn(table[j], orange.GetProbabilities)
                 index = classValues.index(table[j][2].value)
-                #if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
                 tempPermValue += out[index]
-         
-            print "permutation %6d / %d. Value : %.2f (Accuracy: %2.2f)" % (permutationIndex, totalPermutations, tempPermValue, tempPermValue*100.0/float(len(table)) )
+
+            print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(len(table)) )
 
             if tempPermValue > bestPermValue:
                 bestPermValue = tempPermValue
@@ -361,7 +383,9 @@ class OWRadvizGraph(OWVisGraph):
     def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours, maxLen):
         if attrList == [] or maxLen == 0:
             if len(subsetList) < 2: return ([], 0, [])
-            print subsetList, 
+            print "table of possibilities to try: ", self.possibleSubsetsTable
+            self.possibleSubsetsTable[len(subsetList)-2] -= 1
+            print subsetList,
             return self.getOptimalSeparation(subsetList, className, kNeighbours, printTime = 0)
         (list1, v1, full1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours, maxLen)
         subsetList2 = copy(subsetList)

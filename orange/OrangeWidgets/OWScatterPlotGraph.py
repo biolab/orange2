@@ -61,7 +61,7 @@ class OWScatterPlotGraph(OWVisGraph):
         toolTipList = [xAttr, yAttr]
         if shapeAttr != "": toolTipList.append(shapeAttr)
         if sizeShapeAttr != "": toolTipList.append(sizeShapeAttr)
-        
+
         (xVarMin, xVarMax) = self.attrVariance[self.attributeNames.index(xAttr)]
         (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
         xVar = xVarMax - xVarMin
@@ -265,7 +265,6 @@ class OWScatterPlotGraph(OWVisGraph):
                     example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
                     table.append(example)
 
-                #orange.saveTabDelimited("E:\\temp\\data.tab", table)
                 """
                 exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
                 near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
@@ -287,15 +286,15 @@ class OWScatterPlotGraph(OWVisGraph):
                     index = classValues.index(table[i].getclass().value)
                     tempValue += float(prob[index])/float(sum)
                 """
+
                 # to bo delalo, ko bo popravljen orangov kNNLearner
                 classValues = list(self.rawdata.domain[className].values)
                 knn = orange.kNNLearner(table, k=kNeighbours)
                 for j in range(len(table)):
                     out = knn(table[j], orange.GetProbabilities)
                     index = classValues.index(table[j][2].value)
-                    #if knn(table[j]) == table[j][2]:  tempPermValue += out[index]  #tempPermValue += 1
                     tempValue += out[index]
-                
+
                 print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(len(table)) )
 
                 # save the permutation
