@@ -33,7 +33,7 @@ class OWRadviz(OWWidget):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE, icon = "Radviz.png")
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
 
         #GUI
         #add a graph widget
@@ -286,6 +286,13 @@ class OWRadviz(OWWidget):
         self.send("Unselected Examples",unselected)
         self.send("Example Distribution", merged)
 
+    def sendShownAttributes(self):
+        attributes = []
+        for i in range(self.shownAttribsLB.count()):
+            attributes.append(str(self.shownAttribsLB.text(i)))
+        self.send("Attribute Selection List", attributes)
+
+
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
@@ -309,6 +316,7 @@ class OWRadviz(OWWidget):
         for attr in self.data.domain:
             if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
         self.updateGraph()
+        self.sendShownAttributes()
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -323,6 +331,7 @@ class OWRadviz(OWWidget):
                 self.shownAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, i-1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
+        self.sendShownAttributes()
         self.updateGraph()
 
     # move selected attribute in "Attribute Order" list one place down  
@@ -335,6 +344,7 @@ class OWRadviz(OWWidget):
                 self.shownAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, i+1)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
+        self.sendShownAttributes()
         self.updateGraph()
 
     def addAttribute(self):
@@ -348,6 +358,7 @@ class OWRadviz(OWWidget):
                 self.shownAttribsLB.insertItem(text, pos)
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.sendShownAttributes()
         self.updateGraph()
         self.graph.replot()
 
@@ -362,6 +373,7 @@ class OWRadviz(OWWidget):
                 self.hiddenAttribsLB.insertItem(text, pos)
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.sendShownAttributes()
         self.updateGraph()
         self.graph.replot()
 
@@ -404,6 +416,7 @@ class OWRadviz(OWWidget):
                 
         self.updateGraph()
         self.sendSelections()
+        self.sendShownAttributes()
 
     def subsetdata(self, data):
         self.graph.subsetData = data

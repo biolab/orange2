@@ -228,8 +228,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    text = self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList) + "; " + qualityMeasure + " : " + "%.3f; "%(kNNValues[j])
-                    self.addTip(x, y, text = text)
+                    self.addTip(x, y, text = self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList) + "; " + qualityMeasure + " : " + "%.3f; "%(kNNValues[j]))
 
             # create a small number of curves which will make drawing much faster
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not self.subsetData:

@@ -403,7 +403,10 @@ class OWRadvizGraph(OWVisGraph):
                     # show values of meta attributes
                     if len(self.rawdata.domain.getmetas()) != 0:
                         for m in self.rawdata.domain.getmetas().values():
-                            text += "%s = %s; " % (m.name, str(self.rawdata[index][m]))
+                            try:
+                                text += "%s = %s; " % (m.name, str(self.rawdata[index][m]))
+                            except:
+                                pass
 
                 self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
                 
