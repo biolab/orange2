@@ -50,7 +50,7 @@ echo URL: http://www.ailab.si/Orange >> $SPECF
 echo Icon: orange.gif >> $SPECF
 echo Vendor: AI lab, University of Ljubljana, Slovenia >> $SPECF
 echo Packager: orange@george.fri.uni-lj.si >> $SPECF
-echo "Requires: qt >= 2.3, python = 2.3" >> $SPECF
+echo "Requires: qt >= 2.3, python" >> $SPECF
 echo BuildRoot: /tmp/orange >> $SPECF 
 echo >> $SPECF
 echo "%description" >> $SPECF
@@ -79,6 +79,7 @@ echo make ROOT="\$RPM_BUILD_ROOT" install >> $SPECF
 
 # files section
 echo %files >> $SPECF
+echo "%defattr(-, root, root)" >> $SPECF
 echo %config /usr/local/lib/python2.3/site-packages/orange/OrangeCanvas/widgetregistry.xml >> $SPECF
 echo /usr/local/lib/python2.3/site-packages/orange >> $SPECF
 echo /usr/local/bin/canvas >> $SPECF
