@@ -296,12 +296,14 @@ class OWBaseWidget(QDialog):
     # ############################################
     # PROGRESS BAR FUNCTIONS
     def progressBarInit(self):
+        self.progressBarValue = 0
         self.startTime = time.time()
         self.setCaption(self.captionTitle + " (0% complete)")
         if self.progressBarHandler: self.progressBarHandler(self, -1)
         
     def progressBarSet(self, value):
         if value > 0:
+            self.progressBarValue = value
             diff = time.time() - self.startTime
             total = diff * 100.0/float(value)
             remaining = max(total - diff, 0)
@@ -315,6 +317,9 @@ class OWBaseWidget(QDialog):
         else:
             self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
+
+    def progressBarAdvance(self, value):
+        self.progressBarSet(self.progressBarValue+value)
 
     def progressBarFinished(self):
         self.setCaption(self.captionTitle)

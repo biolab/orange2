@@ -286,6 +286,7 @@ class ValueCallback:
 		widget.callbackDeposit.append(self)
 
 	def __call__(self, value):
+		if value==None: return
 		if isinstance(value, QString): value = str(value)
 		try:
 			if self.f: setattr(self.widget, self.attribute, self.f(value))
@@ -302,6 +303,7 @@ class ValueCallbackLineEdit:
 		widget.callbackDeposit.append(self)
 
 	def __call__(self, value):
+		if value==None: return
 		if isinstance(value, QString): value = str(value)
 		try:
 			pos = self.control.cursorPosition()
@@ -319,24 +321,30 @@ class SetLabelCallback:
 		self.f = f
 		widget.callbackDeposit.append(self)
 	def __call__(self, value):
+		if value==None: return
 		if self.f:
 			value = self.f(value)
 		self.label.setText(self.format % value)
 
 class FunctionCallback:
-	def __init__(self, master, f, widget=None, id=None, getwidget=None):
-		self.master = master
-		self.widget = widget
-		self.f = f
-		self.id = id
-		self.getwidget = getwidget
-		master.callbackDeposit.append(self)
+    def __init__(self, master, f, widget=None, id=None, getwidget=None):
+        self.master = master
+        self.widget = widget
+        self.f = f
+        self.id = id
+        self.getwidget = getwidget
+        master.callbackDeposit.append(self)
 
-	def __call__(self, value):
-		kwds = {}
-		if self.id <> None: kwds['id'] = self.id
-		if self.getwidget: kwds['widget'] = self.widget
-		apply(self.f, (), kwds)
+    def __call__(self, value):
+        if value==None: return
+        kwds = {}
+        if self.id <> None: kwds['id'] = self.id
+        if self.getwidget: kwds['widget'] = self.widget
+        if type(self.f)==type([]):
+            for f in self.f:
+                apply(f, (), kwds)
+        else:
+            apply(self.f, (), kwds)
 
 ##############################################################################
 # call fronts (this allows that change of the value of the variable
@@ -347,6 +355,7 @@ class CallFront_spin:
 		self.control = control
 
 	def __call__(self, value):
+		if value==None: return
 		self.control.setValue(value)
 
 class CallFront_checkBox:
@@ -354,6 +363,7 @@ class CallFront_checkBox:
 		self.control = control
 
 	def __call__(self, value):
+		if value==None: return
 		self.control.setChecked(value)
 
 class CallFront_comboBox:
@@ -362,6 +372,7 @@ class CallFront_comboBox:
 		self.valType = valType
 
 	def __call__(self, value):
+		if value==None: return
 		if self.valType: 
 			for i in range(self.control.count()):
 				if self.valType(str(self.control.text(i))) == value:
@@ -376,6 +387,7 @@ class CallFront_hSlider:
 		self.control = control
 
 	def __call__(self, value):
+		if value==None: return
 		self.control.setValue(value)
 		
 class CallFront_lineEdit:

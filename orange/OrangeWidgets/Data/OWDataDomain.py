@@ -1,10 +1,10 @@
 """
-<name>DataDomain</name>
+<name>Data Domain</name>
 <description>This widget obtains the data set on the input, and allows the user to redefine the domain
 (select which attributes to use,select if and which attribute will be used as a class variable,
 and which attributes will be used as meta attributes), and output a new data set with that domain.</description>
-<icon>icons/Unknown.png</icon>
-<priority>2000</priority>
+<icon>icons/SelectAttributes.png</icon>
+<priority>20</priority>
 """
 
 from OWTools import *
@@ -20,7 +20,7 @@ class OWDataDomain(OWWidget):
     ## Class initialization ####################################################################################################################################
     ############################################################################################################################################################
     def __init__(self,parent = None):
-        OWWidget.__init__(self, parent, "DataDomain", "Does nothing") #initialize base class
+        OWWidget.__init__(self, parent, "Data Domain", "Attribute selection and data domain construction") #initialize base class
 
         buttonSize = QSize(40, 30)
         upDownButtonSize = QSize(37,30)

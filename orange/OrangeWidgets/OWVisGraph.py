@@ -602,6 +602,7 @@ class OWVisGraph(OWGraph):
     # does a point (x,y) lie inside one of the selection rectangles (polygons)
     def isPointSelected(self, x,y):
         for curveKey in self.selectionCurveKeyList:
+            print "isPointSelected:", x, y
             curve = self.curve(curveKey)
             if curve.isInside(x,y): return 1
         return 0
