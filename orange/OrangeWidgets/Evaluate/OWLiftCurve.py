@@ -6,7 +6,6 @@
 <priority>1020</priority>
 """
 
-from OData import *
 from OWTools import *
 from OWWidget import *
 from OWGraph import *
