@@ -128,12 +128,11 @@ def getCorrelationList(data):
 
     # compute the correlations between attributes
     correlations = []
-    print len(dataNames)
     for i in range(len(dataNames)):
         for j in range(i+1, len(dataNames)):
             val, prob = statc.pearsonr(dataList[i], dataList[j])
             insertToSortedList(correlations, abs(val), [i,j])
-            print "correlation between %s and %s is %f" % (dataNames[i], dataNames[j], val)
+            #print "correlation between %s and %s is %f" % (dataNames[i], dataNames[j], val)
 
     i=0
     mergedCorrs = []
@@ -147,6 +146,7 @@ def getCorrelationList(data):
             hiddenList.append(dataNames[correlations[i][1][0]])
         if member(mergedCorrs, correlations[i][1][1]) == -1:
             hiddenList.append(dataNames[correlations[i][1][1]])
+        i+=1
 
     shownList = []
     for i in range(len(mergedCorrs)):
@@ -161,7 +161,7 @@ def getCorrelationList(data):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF","Correlation"]
@@ -180,6 +180,7 @@ class OWParallelCoordinates(OWWidget):
         self.jitteringType = "none"
         self.GraphCanvasColor = str(Qt.white.name())
         self.showDistributions = 0
+        self.showAttrValues = 0
         self.GraphGridColor = str(Qt.black.name())
         self.data = None
         self.ShowVerticalGridlines = TRUE
@@ -205,6 +206,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.setShowDistributions)
+        self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.setShowAttrValues)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -260,9 +262,11 @@ class OWParallelCoordinates(OWWidget):
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.showDistributions.setChecked(self.showDistributions)
+        self.options.showAttrValues.setChecked(self.showAttrValues)
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
+        self.graph.setShowAttrValues(self.showAttrValues)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
 
     # jittering options
@@ -277,18 +281,23 @@ class OWParallelCoordinates(OWWidget):
         self.showDistributions = self.options.showDistributions.isChecked()
         self.updateGraph()
 
+    def setShowAttrValues(self):
+        self.graph.setShowAttrValues(self.options.showAttrValues.isChecked())
+        self.showAttrValues = self.options.showAttrValues.isChecked()
+        self.updateGraph()
+
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
         self.attrContOrder = self.attributeContOrder[n]
         if self.data != None:
-            self.setShownAttributeList(self.data.data)
+            self.setShownAttributeList(self.data)
         self.updateGraph()
 
     # discrete attribute ordering
     def setAttrDiscOrderType(self, n):
         self.attrDiscOrder = self.attributeDiscOrder[n]
         if self.data != None:
-            self.setShownAttributeList(self.data.data)
+            self.setShownAttributeList(self.data)
         self.updateGraph()
 
         
@@ -360,8 +369,8 @@ class OWParallelCoordinates(OWWidget):
 
         # add possible class attributes
         self.classCombo.insertItem('(One color)')
-        for i in range(len(self.data.data.domain)):
-            attr = self.data.data.domain[i]
+        for i in range(len(self.data.domain)):
+            attr = self.data.domain[i]
             if attr.varType == orange.VarTypes.Discrete or self.showContinuousCB.isOn() == 1:
                 self.classCombo.insertItem(attr.name)
 
@@ -371,10 +380,10 @@ class OWParallelCoordinates(OWWidget):
                 return
 
         for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == self.data.data.domain.classVar.name:
+            if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.insertItem(self.data.data.domin.classVar.name)
+        self.classCombo.insertItem(self.data.domin.classVar.name)
         self.classCombo.setCurrentItem(self.classCombo.count()-1)
 
 
@@ -475,9 +484,8 @@ class OWParallelCoordinates(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        #print "starting cdata"
-        self.data = data
-        self.graph.setData(data)
+        self.data = orange.Preprocessor_dropMissing(data.data)
+        self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
         self.setClassCombo()
@@ -486,9 +494,8 @@ class OWParallelCoordinates(OWWidget):
             self.repaint()
             return
         
-        self.setShownAttributeList(self.data.data)
+        self.setShownAttributeList(self.data)
         self.updateGraph()
-        #print "finished cdata"
     #################################################
 
 #test widget appearance

@@ -25,6 +25,7 @@ class OWParallelCoordinatesOptions(OWOptions):
 
         #####
         self.showDistributions = QCheckBox("Show distributions", self.top)
+        self.showAttrValues = QCheckBox("Show attribute values", self.top)
 
         #####        
         # continuous attribute ordering

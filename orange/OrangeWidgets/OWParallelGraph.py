@@ -38,19 +38,23 @@ class OWParallelGraph(OWGraph):
     def setJitteringOption(self, jitteringType):
         self.jitteringType = jitteringType
 
+    def setShowAttrValues(self, showAttrValues):
+        self.showAttrValues = showAttrValues
 
     #
-    # scale data at index index to the interval 0 - 1
+    # scale data at index index to the interval 0 to 1
     #
     def scaleData(self, data, index):
         attr = data.domain[index]
         temp = [];
+        values = []
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
             variableValueIndices = {}
             for i in range(len(attr.values)):
                 variableValueIndices[attr.values[i]] = i
+                values.append(attr.values[i])
 
             count = float(len(attr.values))
             if len(attr.values) > 1: num = float(len(attr.values)-1)
@@ -77,11 +81,13 @@ class OWParallelGraph(OWGraph):
                     max = item[attr].value
 
             diff = max - min
+            values = [min, max]
+
             # create new list with values scaled from 0 to 1
             for i in range(len(data)):
                 if data[i][attr].isSpecial() == 1:  temp.append(0)
                 else:                               temp.append((data[i][attr].value - min) / diff)
-        return temp
+        return (temp, values)
 
     #
     # set new data and scale its values
@@ -89,36 +95,46 @@ class OWParallelGraph(OWGraph):
     def setData(self, data):
         self.rawdata = data
         self.scaledData = []
+        self.attrValues = {}
         self.scaledDataAttributes = []
         
         if data == None: return
 
         self.distributions = []; self.totals = []
-        for index in range(len(data.data.domain)):
-            attr = data.data.domain[index]
+        for index in range(len(data.domain)):
+            attr = data.domain[index]
             self.scaledDataAttributes.append(attr.name)
-            scaled = self.scaleData(data.data, index)
+            scaled, values = self.scaleData(data, index)
             self.scaledData.append(scaled)
+            self.attrValues[attr.name] = values
 
     #
     # update shown data. Set labels, coloring by className ....
     #
     def updateData(self, labels, className):
         self.removeCurves()
+        self.removeMarkers()
         self.axesKeys = []
         self.curveKeys = []
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
-        
+
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        if self.showDistributions == 1 and self.rawdata.data.domain[labels[len(labels)-1]].varType == orange.VarTypes.Discrete:
+        if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[labels[len(labels)-1]].varType == orange.VarTypes.Discrete:
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
-        else:                           self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
+        else:   self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
+
+        if self.showAttrValues == 1:
+            self.setAxisScale(QwtPlot.yLeft, -0.03, 1.03, 1)
+        else:
+            self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisMaxMinor(QwtPlot.yLeft, 0)
         self.setAxisMaxMajor(QwtPlot.yLeft, 1)
 
+        
         length = len(labels)
         indices = []
         xs = []
@@ -130,12 +146,15 @@ class OWParallelGraph(OWGraph):
 
         # create a table of class values that will be used for coloring the lines
         scaledClassData = []
+        classValues = []
         if className != "(One color)" and className != '':
             ex_jitter = self.jitteringType
             self.setJitteringOption('none')
-            scaledClassData = self.scaleData(self.rawdata.data, className)
+            scaledClassData, classValues = self.scaleData(self.rawdata, className)
             self.setJitteringOption(ex_jitter)
 
+        #############################################
+        # draw the data
         xs = range(length)
         dataSize = len(self.scaledData[0])        
         for i in range(dataSize):
@@ -150,15 +169,61 @@ class OWParallelGraph(OWGraph):
                 ys.append(self.scaledData[index][i])
             self.setCurveData(newCurveKey, xs, ys)
 
+
+        #############################################
+        # do we want to show distributions with discrete attributes
+        if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            self.showDistributionValues(className, self.rawdata, indices)
+            
+
+        curve = subBarQwtPlotCurve(self)
+        newColor = QColor()
+        newColor.setHsv(255, 255, 255)
+        curve.color = newColor
+        curve.setBrush(QBrush(QBrush.NoBrush))
+        ckey = self.insertCurve(curve)
+        self.setCurveStyle(ckey, QwtCurve.UserCurve)
+        self.setCurveData(ckey, [1,1], [2,2])
+
+
+
+        #############################################
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
             self.axesKeys.append(newCurveKey)
             self.setCurveData(newCurveKey, [i,i], [0,1])
+            if self.showAttrValues == 1:
+                attr = self.rawdata.domain[labels[i]]
+                if attr.varType == orange.VarTypes.Continuous:
+                    strVal = "%.2f" % (self.attrValues[attr.name][0])
+                    mkey1 = self.insertMarker(strVal)
+                    self.marker(mkey1).setXValue(i)
+                    self.marker(mkey1).setYValue(0.0)
+                    strVal = "%.2f" % (self.attrValues[attr.name][1])
+                    mkey2 = self.insertMarker(strVal)
+                    self.marker(mkey2).setXValue(i)
+                    self.marker(mkey2).setYValue(1.0)
+                    if i == 0:
+                        self.marker(mkey1).setLabelAlignment(Qt.AlignRight + Qt.AlignBottom)
+                        self.marker(mkey2).setLabelAlignment(Qt.AlignRight + Qt.AlignTop)
+                    elif i == len(labels)-1:
+                        self.marker(mkey1).setLabelAlignment(Qt.AlignLeft + Qt.AlignBottom)
+                        self.marker(mkey2).setLabelAlignment(Qt.AlignLeft + Qt.AlignTop)
+                    else:
+                        self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+                        self.marker(mkey2).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
+                elif attr.varType == orange.VarTypes.Discrete:
+                    attrVals = self.attrValues[attr.name]
+                    valsLen = len(attrVals)
+                    for pos in range(len(attrVals)):
+                        mkey = self.insertMarker(attrVals[pos])
+                        self.marker(mkey).setXValue(i)
+                        self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
+                        self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignHCenter)
+                    
+                    
 
-        # do we want to show distributions with discrete attributes
-        if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.data.domain[className].varType == orange.VarTypes.Discrete:
-            self.showDistributionValues(className, self.rawdata.data, indices)
             
         
 
