@@ -350,7 +350,7 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
         UPDATE_LOW_HIGH;
       }
 
-      squeezedIndices.push_back(row);
+      squeezedIndices.push_back(dim);
 
       return dm;
     }
