@@ -153,6 +153,8 @@ class OWPolyviz(OWWidget):
 		self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
 		self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        
 		# add a settings dialog and initialize its values
 		self.activateLoadedSettings()
 
