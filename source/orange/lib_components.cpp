@@ -1905,38 +1905,39 @@ PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARG
 
 #include "heatmap.hpp"
 
-PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap = None, noSorting = 0])")
+PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")
 {
   PExampleTable table;
   PHeatmapConstructor baseHeatmap;
-  int noSorting = 0;
-  if (!PyArg_ParseTuple(args, "O&|O&:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap))
+  int disregardClass = 0;
+  if (!PyArg_ParseTuple(args, "O&|O&i:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap, &disregardClass))
     return NULL;
-  return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap), type);
+  return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap, (disregardClass!=0)), type);
 }
 
 
-PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze[, lower_bound=0[, upper_bound=0[, gamma=1]]]) -> HeatmapList")
+PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> HeatmapList")
 {
   float squeeze;
-  float lowerBound = 0.0, upperBound = 0.0;
-  float gamma = 1.0;
-  if (!PyArg_ParseTuple(args, "f|fff:HeatmapConstructor.__call__", &squeeze, &lowerBound, &upperBound, &gamma))
+  if (!PyArg_ParseTuple(args, "f:HeatmapConstructor.__call__", &squeeze))
     return NULL;
 
   SETATTRIBUTES
 
-  return WrapOrange(SELF_AS(THeatmapConstructor).call(squeeze, lowerBound, upperBound, gamma));
+  float absLow, absHigh;
+  PHeatmapList hml = SELF_AS(THeatmapConstructor).call(squeeze, absLow, absHigh);
+  return Py_BuildValue("Nff", WrapOrange(hml), absLow, absHigh);
 }
 
 
-PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height) -> bitmap")
-{ float width, height;
-  if (!PyArg_ParseTuple(args, "ff:HeatmapConstructor.getLegend", &width, &height))
+PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height, gamma) -> bitmap")
+{ int width, height;
+  float gamma;
+  if (!PyArg_ParseTuple(args, "iif:HeatmapConstructor.getLegend", &width, &height, &gamma))
     return NULL;
 
   int size;
-  unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, size);
+  unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
   PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
   delete bitmap;
   return res;
@@ -1944,37 +1945,58 @@ PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(ME
 
 BASED_ON(Heatmap, Orange)
 
-PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height) -> bitmap")
+PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
 {
   int cellWidth, cellHeight;
-  if (!PyArg_ParseTuple(args, "ii:Heatmap.getBitmap", &cellWidth, &cellHeight))
+  float absLow, absHigh, gamma;
+  if (!PyArg_ParseTuple(args, "iifff:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma))
     return NULL;
 
   CAST_TO(THeatmap, hm)
 
   int size;
-  unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, size);
+  unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, size);
   PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
   delete bitmap;
   return res;
 }
 
 
-PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height) -> bitmap")
+PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
 {
   int width, height;
-  if (!PyArg_ParseTuple(args, "ii:Heatmap.getAverageBitmap", &width, &height))
+  float absLow, absHigh, gamma;
+  if (!PyArg_ParseTuple(args, "iifff:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma))
     return NULL;
 
   CAST_TO(THeatmap, hm)
 
   int size;
-  unsigned char *bitmap = hm->averages2string(width, height, size);
+  unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, size);
   PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
   delete bitmap;
   return res;
 }
 
+
+PyObject *Heatmap_getCellIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row, column) -> float")
+{
+  int row, column;
+  if (!PyArg_ParseTuple(args, "ii:Heatmap.getCellIntensity", &row, &column))
+    return NULL;
+
+  return PyFloat_FromDouble(SELF_AS(THeatmap).getCellIntensity(row, column));
+}
+
+
+PyObject *Heatmap_getRowIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row) -> float")
+{
+  int row;
+  if (!PyArg_ParseTuple(args, "i:Heatmap.getRowIntensity", &row))
+    return NULL;
+
+  return PyFloat_FromDouble(SELF_AS(THeatmap).getRowIntensity(row));
+}
 
 PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::P_FromArguments(arg); }
 PyObject *HeatmapList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::_FromArguments(type, arg); }

@@ -49,8 +49,8 @@ WRAPPER(ExampleTable);
 #define UNKNOWN_F -1e30f
 
 THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
-: bitmap(new unsigned char [h*w]),
-  averages(new unsigned char[h]),
+: cells(new float [h*w]),
+  averages(new float [h]),
   height(h),
   width(w),
   examples(ex),
@@ -60,11 +60,43 @@ THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
 
 THeatmap::~THeatmap()
 {
-  delete bitmap;
+  delete cells;
   delete averages;
 }
 
-/* Expends the bitmap 
+
+unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+{
+  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma);
+}
+
+unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+{
+  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma);
+}
+
+
+float THeatmap::getCellIntensity(const int &y, const int &x) const
+{ 
+  if ((y<0) || (y>=height))
+    raiseError("row index out of range");
+  if ((x<0) || (y>=height))
+    raiseError("column index out of range");
+
+  return cells[y*width+x];
+}
+
+
+float THeatmap::getRowIntensity(const int &y) const
+{ 
+  if ((y<0) || (y>=height))
+    raiseError("row index out of range");
+
+  return averages[y];
+}
+
+
+/* Expands the bitmap 
    Each pixel in bitmap 'smmp' is replaced by a square with
      given 'cellWidth' and 'cellHeight'
    The original bitmaps width and height are given by arguments
@@ -75,7 +107,7 @@ THeatmap::~THeatmap()
    this does not necessarily equal cellWidth * cellHeight * width * height.
 */
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, unsigned char *smmp, const int &width, const int &height)
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma)
 {
   const int lineWidth = width * cellWidth;
   const int fill = (4 - lineWidth & 3) & 3;
@@ -85,21 +117,75 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   unsigned char *res = new unsigned char[size];
   unsigned char *resi = res;
 
-  for(int line = 0; line<height; line++) {
-    unsigned char *thisline = resi;
-    int xpoints, inpoints;
-    for(xpoints = width; xpoints--; smmp++)
-      for(inpoints = cellWidth; inpoints--; *(resi++) = *smmp);
-    resi += fill;
-    for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
-      memcpy(resi, thisline, rowSize);
+  if (gamma == 1.0) {
+    const float colorFact = 249.0/(absHigh - absLow);
+
+    for(int line = 0; line<height; line++) {
+      unsigned char *thisline = resi;
+      int xpoints;
+      for(xpoints = width; xpoints--; intensity++) {
+        unsigned char col;
+        if (*intensity == UNKNOWN_F)
+          col = 255;
+        else if (*intensity < absLow)
+          col = 253;
+        else if (*intensity > absHigh)
+          col = 254;
+        else
+          col = int(floor(colorFact * (*intensity - absLow)));
+
+        for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
+      }
+
+      resi += fill;
+      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
+        memcpy(resi, thisline, lineWidth);
+    }
+  }
+  else {
+    const float colorBase = (absLow + absHigh) / 2;
+    const float colorFact = 2 / (absHigh - absLow);
+
+    for(int line = 0; line<height; line++) {
+      unsigned char *thisline = resi;
+      int xpoints;
+      for(xpoints = width; xpoints--; intensity++) {
+        unsigned char col;
+
+        if (*intensity == UNKNOWN_F)
+          col = 255;
+        else if (*intensity < absLow)
+          col = 253;
+        else if (*intensity > absHigh)
+          col = 254;
+
+        float norm = colorFact * (*intensity - colorBase);
+        if ((norm > -0.008) && (norm < 0.008))
+          norm = 125;
+        else
+          norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm))));
+
+        if (norm<0)
+          col = 0;
+        else if (norm>249)
+          col = 249;
+        else
+          col = int(floor(col));
+
+        for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
+      }
+
+      resi += fill;
+      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
+        memcpy(resi, thisline, lineWidth);
+    }
   }
 
   return res;
 }
 
 
-THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructor baseHeatmap, bool noSorting)
+THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructor baseHeatmap, bool noSorting, bool disregardClass)
 : sortedExamples(new TExampleTable(table, 1)), // lock, but do not copy
   floatMap(),
   classBoundaries(),
@@ -120,7 +206,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     if ((*ai)->varType != TValue::FLOATVAR)
       raiseError("data contains a discrete attribute '%s'", (*ai)->name.c_str());
 
-  if (etable.domain->classVar) {
+  if (etable.domain->classVar && !disregardClass) {
     if (etable.domain->classVar->varType != TValue::INTVAR)
       raiseError("class attribute is not discrete");
     nClasses = etable.domain->classVar->noOfValues();
@@ -240,45 +326,27 @@ THeatmapConstructor::~THeatmapConstructor()
 }
 
 
-PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, const float &lowerBound, const float &upperBound, const float &agamm)
+PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, float &abslow, float &abshigh)
 {
-  bool adjustMinMax =  (lowerBound==0) && (upperBound==0);
-  float &abslow = absLow;
-  float &abshigh = absHigh;
-  if (adjustMinMax) {
-    abshigh = -1e30f;
-    abslow = 1e30f;
-  }
-  else {
-    abslow = lowerBound;
-    abshigh = upperBound;
-  }
+  abshigh = -1e30f;
+  abslow = 1e30f;
     
-  int ncl = nClasses ? nClasses : 1;
-  float **floatMaps = new float *[ncl];
-  float **averageMaps = new float *[ncl];
-  
-  float **fmi = floatMaps;
-  float **ami = averageMaps;
-  int classNo;
-
   PHeatmapList hml = new THeatmapList;
 
   int *spec = new int[nColumns];
   
-  for(classNo = 0; classNo < ncl; classNo++, fmi++, ami++) {
+  for(int classNo = 0, ncl = nClasses ? nClasses : 1; classNo < ncl; classNo++) {
     const int classBegin = classBoundaries[classNo];
     const int classEnd = classBoundaries[classNo+1];
 
     int nLines = int(floor(0.5 + (classEnd - classBegin) * unadjustedSqueeze));
+    const float squeeze = float(nLines) / (classEnd-classBegin);
 
     THeatmap *hm = new THeatmap(nLines, nColumns, sortedExamples);
     hml->push_back(hm);
 
-    const float squeeze = float(nLines) / (classEnd-classBegin);
-
-    float *fm1i = *fmi = new float [nLines * nColumns]; // that's the space for floatmap for one class
-    float *am1i = *ami = new float [nLines]; // merged line averages
+    float *fmi = hm->cells;
+    float *ami = hm->averages;
 
     float inThisRow = 0;
     float *ri, *fri;
@@ -289,97 +357,56 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
     int exampleIndex = classBegin;
     hm->exampleIndices->push_back(exampleIndex);
 
-    for(vector<float *>::iterator rowi = floatMap.begin()+classBegin, rowe = floatMap.begin()+classEnd; rowi!=rowe; nLines--, inThisRow-=1.0, am1i++) {
-      for(xpoint = nColumns, ri = fm1i, si = spec; xpoint--; *(ri++) = 0, *(si++) = 0);
-      float lineAverage = 0.0;
+    for(vector<float *>::iterator rowi = floatMap.begin()+classBegin, rowe = floatMap.begin()+classEnd; rowi!=rowe; nLines--, inThisRow-=1.0, ami++, fmi+=nColumns) {
+      for(xpoint = nColumns, ri = fmi, si = spec; xpoint--; *(ri++) = 0.0, *(si++) = 0);
+      *ami = 0.0;
       int nDefinedAverages = 0;
 
       for(; (rowi != rowe) && ((inThisRow < 1.0) || (nLines==1)); inThisRow += squeeze, rowi++, exampleIndex++, lavi++) {
-        for(xpoint = nColumns, fri = *rowi, ri = fm1i, si = spec; xpoint--; fri++, ri++, si++)
+        for(xpoint = nColumns, fri = *rowi, ri = fmi, si = spec; xpoint--; fri++, ri++, si++)
           if (*fri != UNKNOWN_F) {
             *ri += *fri;
             (*si)++;
           }
 
         if (*lavi != UNKNOWN_F) {
-          lineAverage += *lavi;
+          *ami += *lavi;
           nDefinedAverages++;
         }
       }
 
       hm->exampleIndices->push_back(exampleIndex);
-      for(xpoint = nColumns, si = spec; xpoint--; fm1i++, si++) {
+      for(xpoint = nColumns, si = spec, ri = fmi; xpoint--; ri++, si++) {
         if (*si) {
-          *fm1i = *fm1i / *si;
-          if (adjustMinMax) {
-            if (*fm1i < abslow)
-              abslow = *fm1i;
-            if (*fm1i > abshigh)
-              abshigh = *fm1i;
-          }
+          *fmi = *fmi / *si;
+          if (*fmi < abslow)
+            abslow = *fmi;
+          if (*fmi > abshigh)
+            abshigh = *fmi;
         }
         else
-          *fm1i = UNKNOWN_F;
+          *fmi = UNKNOWN_F;
       }
 
-      *am1i = nDefinedAverages ? lineAverage/nDefinedAverages : UNKNOWN_F;
+      *ami = nDefinedAverages ? *ami/nDefinedAverages : UNKNOWN_F;
     }
 
   }
 
   delete spec;
 
-  gamma = agamm;
-  bool gammaIs1 = (agamm == 1.0);
-  if (gammaIs1) {
-    colorBase = abslow;
-    colorFact = 249.0/(abshigh - abslow);
-  }
-  else {
-    colorBase = (abslow + abshigh) / 2;
-    colorFact = 2 / (abshigh - abslow);
-  }
-
-  fmi = floatMaps;
-  ami = averageMaps;
-  vector<float>::const_iterator ai(lineAverages.begin());
-
-  PITERATE(THeatmapList, hmi, hml) {
-    float *fm1i;
-    unsigned char *bmi;
-    int idx;
-
-    if (gammaIs1) {
-      for(fm1i = *fmi, bmi = (*hmi)->bitmap,   idx = (*hmi)->height * (*hmi)->width; idx--; *(bmi++) = computePixelGamma1(*(fm1i++)));
-      for(fm1i = *ami, bmi = (*hmi)->averages, idx = (*hmi)->height;                 idx--; *(bmi++) = computePixelGamma1(*(fm1i++)));
-    }
-    else {
-      for(fm1i = *fmi, bmi = (*hmi)->bitmap,   idx = (*hmi)->height * (*hmi)->width; idx--; *(bmi++) = computePixel(*(fm1i++)));
-      for(fm1i = *ami, bmi = (*hmi)->averages, idx = (*hmi)->height;                 idx--; *(bmi++) = computePixel(*(fm1i++)));
-    }
-
-    delete *(fmi++);
-    delete *(ami++);
-  }
-
-  delete floatMaps;
-  delete averageMaps;
-
   return hml;
 }
 
 
-unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, int &size) const
+unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, const float &gamma, int &size) const
 {
-  unsigned char *legendbmp = new unsigned char[width];
-  unsigned char *lbmpi = legendbmp;
-  float intwid = (absHigh - absLow) / (width-1);
-  if (gamma == 1.0)
-    for(int wi = 0; wi<width; *(lbmpi++) = computePixelGamma1(absLow + (wi++) * intwid));
-  else
-    for(int wi = 0; wi<width; *(lbmpi++) = computePixel(absLow + (wi++) * intwid));
+  float *fmp = new float[width], *fmpi = fmp;
 
-  unsigned char *legend = bitmap2string(1, height, size, legendbmp, width, 1);
-  delete legendbmp;
+  float wi1 = width-1;
+  for(int wi = 0; wi<width; *(fmpi++) = (wi++)/wi1);
+  
+  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma);
+  delete fmp;
   return legend;
 }

@@ -7,13 +7,13 @@ WRAPPER(ExampleTable)
 
 #define UNKNOWN_F -1e30f
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, unsigned char *bmp, const int &wdth, const int &height);
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *bmp, const int &wdth, const int &height, const float &absLow, const float &absHigh, const float &gamma);
 
 class THeatmap : public TOrange {
 public:
   __REGISTER_CLASS
-  unsigned char *bitmap;
-  unsigned char *averages;
+  float *cells;
+  float *averages;
 
   int height; //P bitmap height (in cells)
   int width; //P bitmap width (in cells)
@@ -24,13 +24,11 @@ public:
   THeatmap(const int &h, const int &w, PExampleTable ex);
   ~THeatmap();
 
-  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight, int &size) {
-    return bitmap2string(cellWidth, cellHeight, size, bitmap, width, height);
-  }
+  unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
+  unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
 
-  unsigned char *averages2string(const int &cellWidth, const int &cellHeight, int &size) {
-    return bitmap2string(cellWidth, cellHeight, size, averages, 1, height);
-  }
+  float getCellIntensity(const int &y, const int &x) const;
+  float getRowIntensity(const int &y) const;
 };
 
 
@@ -57,58 +55,12 @@ public:
   int nRows; //PR number of rows
   int nClasses; //PR number of classes (0 if the data is not classified)
 
-  float absLow; //PR the lowest intensity that has appeared in the last rendering
-  float absHigh; //PR the highest intensity that has appeared in the last rendering
-
-  float gamma; //PR the gamma of the last rendering
-  float colorBase; //PR the intensity that corresponds to the lowest color (function depends upon gamma!)
-  float colorFact; //PR color scaling factor (function depends upon gamma!)
-
-  THeatmapConstructor(PExampleTable, PHeatmapConstructor baseHeatmap = PHeatmapConstructor(), bool noSorting = false);
+  THeatmapConstructor(PExampleTable, PHeatmapConstructor baseHeatmap = PHeatmapConstructor(), bool noSorting = false, bool disregardClass=false);
   virtual ~THeatmapConstructor();
 
-  PHeatmapList operator ()(const float &squeeze, const float &lowerBound, const float &upperBound, const float &gamma);
+  PHeatmapList operator ()(const float &squeeze, float &absLow, float &absHigh);
 
-  unsigned char *getLegend(const int &width, const int &height, int &size) const;
- 
-  inline int computePixel(float intensity) const
-  {
-    if (intensity == UNKNOWN_F)
-      return 255;
-    if (intensity < absLow)
-      return 253;
-    if (intensity > absHigh)
-      return 254;
-
-    float norm = colorFact * (intensity - colorBase);
-    if ((norm > -0.008) && (norm < 0.008))
-      norm = 125;
-    else
-      norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm))));
-
-    if (norm<0)
-      return 0;
-    if (norm>249)
-      return 249;
-    return int(floor(norm));
-  }
-
-  inline int computePixelGamma1(float intensity) const
-  {
-    if (intensity == UNKNOWN_F)
-      return 255;
-    if (intensity < absLow)
-      return 253;
-    if (intensity > absHigh)
-      return 254;
-    if (intensity < colorBase)
-      return 0;
-
-    const float norm = colorFact * (intensity - colorBase);
-    if (norm>249)
-      return 249;
-    return int(floor(norm));
-  }
+  unsigned char *getLegend(const int &width, const int &height, const float &gamma, int &size) const;
 };
 
 #endif
