@@ -1089,7 +1089,6 @@ PyObject *py_linregress(PyObject *, PyObject *args)
 T_T_FROM_LIST_T(ttest_1samp)
 T_T_FROM_LIST_LIST(ttest_ind)
 T_T_FROM_LIST_LIST(ttest_rel)
-T_T_FROM_LIST(swilk)
 
 PyObject *py_chisquare(PyObject *, PyObject *args)
 { PyTRY
@@ -1536,7 +1535,6 @@ PyMethodDef statc_functions[]={
      DECLARE(mannwhitneyu)
      DECLARE(ranksums)
      DECLARE(wilcoxont)
-     DECLARE(swilk)
 
      DECLARE(chisqprob)
      DECLARE(zprob)
