@@ -71,9 +71,10 @@ public:
   PStringList DCs; //P characters that mean DC (for each attribute)
   int classPos; //P position of the class attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
+  bool csv; //P also allow ',' as a separator
 
   TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
-  TTabDelimExampleGenerator(const string &, bool autoDetect, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
+  TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
   virtual bool readExample (TFileExampleIteratorData &, TExample &);
 
   void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);

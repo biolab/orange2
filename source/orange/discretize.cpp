@@ -868,13 +868,20 @@ void TDiscretizedDomain::learn(PExampleGenerator gen)
 void TDiscretizedDomain::learn(PExampleGenerator gen, const vector<int> &discretizeId)
 { checkProperty(defaultDiscretization);
 
+  vector<int> sorted(discretizeId);
+  sort(sorted.begin(), sorted.end());
+
   metas = gen->domain->metas;
-  vector<int>::const_iterator idi(discretizeId.begin());
+  vector<int>::const_iterator idi(sorted.begin());
   int tid = 0;
 
   PITERATE(TVarList, vi, gen->domain->variables)
-    if ((idi!=discretizeId.end()) && (*idi==tid++) && ((*vi)->varType==TValue::FLOATVAR)) {
-      idi++;
+    if ((idi!=discretizeId.end()) && (*idi==tid) && ((*vi)->varType==TValue::FLOATVAR)) {
+      // if some joker wants the same attribute discretized twice...
+      while (*idi==tid)
+        idi++;
+      tid++;
+      
       PDiscretization disc;
 
       disc = defaultDiscretization;
@@ -885,6 +892,7 @@ void TDiscretizedDomain::learn(PExampleGenerator gen, const vector<int> &discret
       attributes->push_back(evar);
     }
     else {
+      tid++;
       variables->push_back(*vi);
       attributes->push_back(*vi);
     }

@@ -72,7 +72,7 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
     if (!divDot(name, b, a))
       name+=".tab";
 
-    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, false, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), false, false), type);
+    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, false, false, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
 

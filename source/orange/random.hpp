@@ -97,6 +97,18 @@ public:
 };
 
 
+// Same as or_random_shuffle, but uses TRandomGenerator
+template<typename RandomAccessIter>
+void rg_random_shuffle(RandomAccessIter first, RandomAccessIter last, TRandomGenerator &rand)
+{
+  if (first == last)
+    return;
+  
+  for (RandomAccessIter i = first + 1; i != last; ++i)
+    iter_swap(i, first + rand.randint((i - first)));
+}
+    
+
 /* globalRandom is wrapped _globalRandom. Use any of them, they are same... */
 extern TRandomGenerator *_globalRandom;
 extern PRandomGenerator globalRandom;

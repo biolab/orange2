@@ -215,6 +215,53 @@ PExampleGenerator TPreprocessor_takeMissingClasses::operator()(PExampleGenerator
 
 
 
+void addNoise(const int &index, const float &proportion, TMakeRandomIndicesN &mri, TExampleTable *table)
+{ 
+  const int nvals = table->domain->variables->at(index)->noOfValues();
+  const int N = table->size();
+  const int changed = N*proportion;
+  const int cdiv = (changed+(nvals-1)) / nvals;
+  mri.p = mlnew TFloatList(nvals, cdiv);
+  
+  PLongList rind(mri(N));
+  TLongList::const_iterator ri(rind->begin());
+  PEITERATE(ei, table) {
+    if (*ri < nvals)
+        (*ei)[index] = TValue(*ri);
+    ri++;
+  }
+}
+
+
+TPreprocessor_addClassNoise::TPreprocessor_addClassNoise(const float &cn)
+: proportion(cn)
+{}
+
+
+PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{
+  if (!gen->domain->classVar)
+    raiseError("Class-less domain");
+  if (gen->domain->classVar->varType != TValue::INTVAR)
+    raiseError("Discrete class value expected");
+  if ((proportion<0.0) || (proportion>1.0))
+    raiseError("invalid 'proportion'");
+
+  TExampleTable *table = mlnew TExampleTable(gen);
+  PExampleGenerator wtable = table;
+
+  if (proportion>0.0) {
+    TMakeRandomIndicesN mri;
+    mri.randomGenerator = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
+    addNoise(table->domain->attributes->size(), proportion, mri, table);
+  }
+
+  newWeight = weightID;
+  return wtable;
+}
+
+
+
 TPreprocessor_addNoise::TPreprocessor_addNoise()
 : proportions(mlnew TVariableFloatMap()),
   defaultProportion(0.0)
@@ -243,44 +290,29 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
 
   const int n = table->size();
   PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
-  TMakeRandomIndices2 makerind;
-  // We mustn't allow MakeRandomIndices2 to initalize a new generator each time it's called since we'd than always select the same examples
+  TMakeRandomIndicesN makerind;
+  // We mustn't allow MakeRandomIndicesN to initalize a new generator each time it's called since we'd than always select the same examples
   makerind.randomGenerator = rg;
 
   if (proportions)
     PITERATE(TVariableFloatMap, vi, proportions) {
       TVariable &var = (*vi).first.getReference();
+      if (var.varType != TValue::INTVAR)
+        raiseError("Cannot add noise to non-discrete attribute '%s'", var.name.c_str());
       const int idx = domain.getVarNum((*vi).first);
-      if ((*vi).second > 0.0) {
-        PLongList rind = makerind(n, 1 - (*vi).second);
-        int eind = 0;
-        PITERATE(TLongList, ri, rind) {
-          if (*ri)
-            (*table)[eind][idx] = var.randomValue();
-          eind++;
-        }
-      }
+      if ((*vi).second > 0.0)
+        addNoise(idx, (*vi).second, makerind, table);
       if ((idx >= 0) && (idx < attributeUsed.size())) // not a class
         attributeUsed[idx] = true;
     }
 
 
   if (defaultProportion > 0.0) {
-    TVarList::const_iterator vi(table->domain->attributes->begin());
     int idx = 0;
     const vector<bool>::const_iterator bb(attributeUsed.begin()), be(attributeUsed.end());
-    for(vector<bool>::const_iterator bi(bb); bi != be; bi++, vi++, idx++)
-      if (!*bi) {
-        TVariable &var = (*vi).getReference();
-        PLongList rind = makerind(n, 1 - defaultProportion);
-
-        int eind = 0;
-        PITERATE(TLongList, ri, rind) {
-          if (*ri)
-            (*table)[eind][idx] = var.randomValue(rg->randint());
-          eind++;
-        }
-      }
+    for(vector<bool>::const_iterator bi(bb); bi != be; bi++, idx++)
+      if (!*bi)
+        addNoise(idx, defaultProportion, makerind, table);
   }
 
   return wtable;
@@ -418,42 +450,6 @@ PExampleGenerator TPreprocessor_addMissing::operator()(PExampleGenerator gen, co
 
 
 
-TPreprocessor_addClassNoise::TPreprocessor_addClassNoise(const float &cn)
-: proportion(cn)
-{}
-
-
-PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
-{
-  if (!gen->domain->classVar)
-    raiseError("Class-less domain");
-  if (gen->domain->classVar->varType != TValue::INTVAR)
-    raiseError("Discrete class value expected");
-
-  TExampleTable *table = mlnew TExampleTable(gen);
-  PExampleGenerator wtable = table;
-
-  if (proportion>0.0) {
-    TMakeRandomIndices2 mri2;
-    PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
-    mri2.randomGenerator = rg;
-    PLongList rind(mri2(table->size(), 1-proportion));
-
-    TVariable &classVar = table->domain->classVar.getReference();
-    int eind = 0;
-    PITERATE(TLongList, ri, rind) {
-      if (*ri)
-        (*table)[eind].setClass(classVar.randomValue(rg->randint()));
-      eind++;
-    }
-  }
-
-  newWeight = weightID;
-  return wtable;
-}
-
-
-
 TPreprocessor_addGaussianClassNoise::TPreprocessor_addGaussianClassNoise(const float &dev)
 : deviation(dev)
 {}
@@ -557,22 +553,22 @@ PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen
       raiseError("there are out-of-range classes in the data (attribute descriptor has too few values)");
 
     if (classWeights && classWeights->size()) {
-      float total = 0.0;
       float tot_w = 0.0;
       vector<float>::const_iterator cwi(classWeights->begin());
       TDiscDistribution::const_iterator di(ddist.begin()), de(ddist.end());
-      for(; di!=de; di++, cwi++) {
-        total += *di * *cwi;
-        tot_w += *cwi;
-      }
-      if (total == 0.0) {
+      for(; di!=de; di++, cwi++)
+        if (*di > 0.0)
+          tot_w += *cwi;
+
+      if (tot_w == 0.0) {
         newWeight = 0;
         return wtable;
       }
 
-      float fact = tot_w * (ddist.abs / total);
+      float fact = tot_w * ddist.abs;
+      di = ddist.begin();
       PITERATE(vector<float>, wi, classWeights)
-        weights.push_back(*wi * fact);
+        weights.push_back(*wi / *(di++) * fact);
     }
 
     else { // no class weights, only equalization
