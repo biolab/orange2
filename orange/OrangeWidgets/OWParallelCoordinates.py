@@ -23,7 +23,7 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -54,6 +54,7 @@ class OWParallelCoordinates(OWWidget):
         self.ShowHorizontalGridlines = TRUE
         self.globalValueScaling = 0
         self.showContinuous = 0
+        self.useSplines = 0
 
         #load settings
         self.loadSettings()
@@ -86,6 +87,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.showAttrValues, SIGNAL("toggled(bool)"), self.setAttrValues)
         self.connect(self.options.hidePureExamples, SIGNAL("toggled(bool)"), self.setHidePureExamples)
         self.connect(self.options.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
+        self.connect(self.options.useSplines, SIGNAL("toggled(bool)"), self.setUseSplines)
         self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.linesDistance, SIGNAL("activated(int)"), self.setLinesDistance)
@@ -156,6 +158,7 @@ class OWParallelCoordinates(OWWidget):
         self.options.showAttrValues.setChecked(self.showAttrValues)
         self.options.hidePureExamples.setChecked(self.hidePureExamples)
         self.options.showCorrelations.setChecked(self.showCorrelations)
+        self.options.useSplines.setChecked(self.useSplines)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
@@ -165,7 +168,8 @@ class OWParallelCoordinates(OWWidget):
         self.options.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
 
         self.showContinuousCB.setChecked(self.showContinuous)
-        
+
+        self.graph.updateSettings(useSplines = self.useSplines)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
         self.graph.setShowAttrValues(self.showAttrValues)
@@ -210,6 +214,11 @@ class OWParallelCoordinates(OWWidget):
     def setShowCorrelations(self, b):
         self.showCorrelations = b
         self.graph.setShowCorrelations(b)
+        self.updateGraph()
+
+    def setUseSplines(self, b):
+        self.useSplines = b
+        self.graph.updateSettings(useSplines = b)
         self.updateGraph()
 
     def setGlobalValueScaling(self):

@@ -31,7 +31,7 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.jitterLabel = QLabel('Jittering size (% of size)  ', self.hbox)
         self.jitterSize = QComboBox(self.hbox)
 
-        # jittering options
+        # attribute axis options
         self.linesDistanceOptionsBG = QVButtonGroup("Attribute axis distance", self.top)
         QToolTip.add(self.linesDistanceOptionsBG, "What is the minimum distance between two adjecent attributes")
         self.hbox2 = QHBox(self.linesDistanceOptionsBG, "Minimum distance")
@@ -39,11 +39,13 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.linesDistance = QComboBox(self.hbox2)        
 
         #####
+        # visual settings
         self.visualSettings = QVButtonGroup("Visual settings", self.top)
         self.showDistributions = QCheckBox("Show distributions", self.visualSettings)
         self.showAttrValues = QCheckBox("Show attribute values", self.visualSettings)
         self.hidePureExamples = QCheckBox("Hide pure examples", self.visualSettings)
         self.showCorrelations = QCheckBox("Show correlations between attributes", self.visualSettings)      # show correlations
+        self.useSplines = QCheckBox("Show lines using splines", self.visualSettings)      # show correlations
 
         #####
         # attribute value scaling

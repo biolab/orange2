@@ -22,6 +22,7 @@ class OWParallelGraph(OWVisGraph):
         self.metaid = -1
         self.toolInfo = []
         self.toolRects = []
+        self.useSplines = 0
         
 
     def setShowDistributions(self, showDistributions):
@@ -158,6 +159,8 @@ class OWParallelGraph(OWVisGraph):
                 ys.append(self.scaledData[index][i])
                 if index == dataStop[i]: break
             self.setCurveData(newCurveKey, xs, ys)
+            if self.useSplines:
+                self.setCurveStyle(newCurveKey, QwtCurve.Spline)
 
 
         #############################################
