@@ -20,8 +20,7 @@
 */
 
 #include <vector>
-#include "gsl/gsl_multifit.h"
-#include "gslconversions.hpp"
+#include "rconversions.hpp"
 
 #include "stat.hpp"
 
@@ -31,6 +30,7 @@
 
 #include "linreg.ppp"
 
+#include "r_imports.hpp"
 
 TLinRegLearner::TLinRegLearner()
 : multinomialTreatment(0),
@@ -41,40 +41,120 @@ TLinRegLearner::TLinRegLearner()
 {}
 
 
-void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, const int &rows, const int &columns,
-                                bool forward, bool backward,
-                                vector<int> &bestOrder, gsl_vector *&best_c, gsl_vector *&best_se, double &SSres, double &SStot, double &N)
+// X is destroyed (it contains qr upon return)
+void linreg(double *X, double *y, const double &meany, int rows, int columns, double *coeffs, int &rank, int *pivot, double &rss, double &F)
 {
-  gsl_matrix *cov = NULL;
-  gsl_multifit_linear_workspace *work = NULL;
-  gsl_vector *bestc = NULL, *bestc_se = NULL, *cnew = NULL;
+  int one = 1;
+  double tol = 1e-07;
+  
+  double *residuals = (double *)malloc(rows * sizeof(double));
+  double *effects = (double *)malloc(rows * sizeof(double));
+  double *qraux = (double *)malloc(rows * sizeof(double));
+  double *work = (double *)malloc(2 * rows * sizeof(double));
+  dqrls(X, &rows, &columns, y, &one, &tol, coeffs, residuals, effects, &rank, pivot, qraux, work);
+  free(work);
+  free(qraux);
+  free(effects);
+
+  rss = 0.0;
+  double mss = 0.0;
+  for(double *ri = residuals, *re = residuals + rows, *yi = y; ri != re; ri++, y++) {
+    rss += *ri * *ri;
+    const double fted = *yi - meany;
+    mss += fted * fted;
+  }
+
+  int rdf = rows - rank;
+  double resvar = rss / rdf;
+  F = mss / (rank - 1) / resvar;
+}
+
+    
+void unpivot(vector<double> &dest, double *source, int *pivot, int rank, int columns, vector<bool> &selected)
+{
+  dest.clear();
+  selected.clear();
+  selected.insert(selected.begin(), columns, false);
+
+  for(; rank--; pivot++) {
+    dest.push_back(source[*pivot]);
+    selected[*pivot] = true;
+  }
+}
+
+void compute_se(vector<double> &best_se, const int &columns)
+{
+  best_se.insert(best_se.begin(), columns, 0);
+}
+
+void TLinRegLearner::Fselection(double *X, double*y, double *w, const int &rows, const int &columns,
+                                bool forward, bool backward,
+                                int *&pivot, int &rank, double *&coeffs, double *&coeffs_se, double *&cov,
+                                double &SSres, double &SStot, double &N)
+{
+  #define SWAP3(x,y,t) { t = x; x = y; y = t; }
+
+  if (!rows)
+    raiseError("no examples");
+
+  if (forward && backward && (Fout <= Fin))
+    raiseError("Fout should be higher than Fin");
+
 
   double Sy = 0.0, SSy = 0.0;
+  double avg, F;
   N = 0.0;
-  int i;
-  for(i = 0; i<rows; i++) {
-    const double el = gsl_vector_get(y, i);
-    const double we = gsl_vector_get(w, i);
-    Sy += we * el;
-    SSy += we * el * el;
-    N += we;
+  if (w) {
+    for(double *yi = y, *ye = y+rows, *wi = w; yi!=ye; yi++, wi++) {
+      Sy += *wi * *yi;
+      SSy += *wi * *yi * *yi;
+      N += *wi;
+    }
+    if (N == 0.0)
+      raiseError("total weight of examples is zero");
   }
-  if (N == 0.0)
-    raiseError("total weight of examples equals 0.0");
-  
+  else {
+    N = rows;
+    for(double *yi = y, *ye = y+rows; yi!=ye; yi++) {
+      Sy += *yi;
+      SSy += *yi * *yi;
+    }
+  }
+
+  avg = Sy/N;
   SStot = SSy - Sy*Sy/N;
+  SSres = SStot;
+
+  cov = (double *)malloc(columns * rows * sizeof(double));
+  coeffs = (double *)malloc(columns * sizeof(double));
+  coeffs_se = (double *)malloc(columns * sizeof(double));
+  pivot = (int *)malloc(columns * sizeof(int));
+  int usedColumns, *pi;
+  for(rank = 0, pi = pivot; rank < columns; *pi++ = rank++);
+
+  if (!forward && !backward) {
+    linreg(X, y, Sy/N, rows, columns, coeffs, rank, pivot, SSres, F);
+    return;
+  }
+
+  double *tryCoeffs = NULL;
+  double *tryCov = NULL;
+  double *tryCoeffs_se = NULL;
+  int *tryPivot = NULL;
 
   try {
-    int iterations, nSelected;
+    int iterations;
     double SSminimal;
+    double F;
+    double bestSS = 1e30;
 
     if (forward) {
-      nSelected = 1;
+      usedColumns = rank = 1;
+      *coeffs = avg;
+      *coeffs_se = sqrt(SSres/(rows-2)/rows);
 
       if (backward) {
-        if (Fout <= Fin)
-          raiseError("Fout should be higher than Fin");
-        iterations = (maxIterations > columns) ? maxIterations : columns;
+        iterations = (columns < maxIterations) ? columns : maxIterations;
         float columns3 = float(columns)*columns*columns;
         if (iterations > columns3)
           iterations = columns3;
@@ -82,218 +162,118 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
       else
         iterations = columns;
 
-      SSres = SStot;
-      SSminimal = Sy/N*Sy/N*1e-20; // SSres below 1e-20th of average is low enough
-      if (SSres < SSminimal) {
-        bestOrder = vector<int>(1, 0);
-        best_c = gsl_vector_alloc(1);
-        best_se = gsl_vector_alloc(1);
-        gsl_vector_set(best_c, 0, Sy/N);
-        gsl_vector_set(best_se, 0, sqrt(SSres/(rows-2)/rows));
+      SSminimal = avg*avg * 1e-20; // SSres below 1e-20th of average is low enough
+      if (SSres < SSminimal)
         return;
-      }
     }
 
     else { // !forward
-      nSelected = iterations = columns;
-
-      work = gsl_multifit_linear_alloc(rows, columns);
-      cov = gsl_matrix_alloc(columns, columns);
-      best_c = gsl_vector_alloc(columns);
-      gsl_multifit_wlinear(X, w, y, best_c, cov, &SSres, work);
-      GSL_FREE(work, multifit_linear);
-
-      if (!backward) {
-        best_se = gsl_vector_alloc(columns);
-        for(i=0; i<columns; i++)
-          gsl_vector_set(best_se, i, sqrt(gsl_matrix_get(cov, i, i)));
-        GSL_FREE(cov, matrix)
-
-        bestOrder = vector<int>();
-        for(i = 0; i<columns; bestOrder.push_back(i++));
-        return;
-      }
-
-      GSL_FREE(cov, matrix)
-      GSL_FREE(best_c, vector)
+      iterations = usedColumns = columns;
+      memcpy(cov, X, usedColumns * rows);
+      linreg(cov, y, Sy/N, rows, columns, coeffs, rank, pivot, SSres, F);
       SSminimal = 1e-20;
     }
 
-    vector<int> columnOrder;
-    for(i = 0; i<columns; columnOrder.push_back(i++));
+    tryCoeffs = (double *)malloc(columns * sizeof(double));
+    tryCov = (double *)malloc(rows * columns * sizeof(double));
+    tryCoeffs_se = (double *)malloc(columns * sizeof(double));
+    tryPivot = (int *)malloc(columns * sizeof(int));
 
-    /* That's ugly and can cause troubles on future GSLs
-       I should use gsl_matrix_submatrix, but it causes stack problems
-       with MS VC++ (see commented parts of the code; use them on Linux & Mac?!) */
-    gsl_matrix mview = *X;
-    mview.owner = 0;
+    int tint;
+    int *tpint;
+    double *tpdouble;
 
     int changed = 1;
     while(iterations-- && changed-- && (SSres > SSminimal)) {
-      for(int direction = forward ? 1 : -1; direction >= -1; direction -= (backward && (!forward || changed)) ? 2 : 4) {
-        if ((direction == 1) ? (nSelected==columns) : (nSelected <= 2))
+      for(int direction = forward ? 1 : -1; direction >= -1; direction -= (!backward || (forward && changed)) ? 4 : 2) {
+        if ((direction == 1) ? (usedColumns==columns) : (usedColumns <= 2))
           continue;
 
-        int p = nSelected + direction;
-        int swapplace = nSelected - ((direction == -1) ? 1 : 0);
-        // mview = gsl_matrix_submatrix(X, 0, 0, rows, p);
-        mview.size2 = p;
-        work = gsl_multifit_linear_alloc(rows, p);
-        cnew = gsl_vector_alloc(p);
-        cov = gsl_matrix_alloc(p, p);
+        int tryRank;
+        double trySSres;
+        int tryColumns = usedColumns + direction;
+        double SSinit = SSres;
 
-        double bestSS = 1e30, SSnew;
-        int bestplace = 0;
-        bool prevbest = false;
-        vector<int>::iterator swapi(columnOrder.begin()+swapplace);
-        for(int candidate = swapplace - (forward && backward && (direction==-1) ? 1 : 0); // won't remove the one which we just added
-            candidate && (candidate<columns); candidate+=direction) {
-          if (swapplace != candidate) {
-            gsl_matrix_swap_columns(X, swapplace, candidate);
-            swap(*swapi, columnOrder[candidate]);
-            if (prevbest) {
-              // remember the column with the best candidate so far
-              bestplace = candidate;
-              prevbest = false;
-            }
-          }
-          gsl_multifit_wlinear(&mview, w, y, cnew, cov, &SSnew, work);
+        for(int *place = pivot+tryColumns, *sc = place, *se = pivot+columns; sc != se; sc++) {
+          SWAP3(*place, *sc, tint);
 
-          double F = (SSres - SSnew)*direction / (SSnew/(rows-nSelected));
-          double Fprob = (F>1e-10) ? fprob(1.0, double(rows-nSelected), F) : 0.0;
+          double *tryCi = tryCov;
+          for(int *pivoti = pivot, *pivote = pivot+tryColumns; pivoti != pivote; pivoti++, tryCi += rows)
+            memcpy(tryCi, X + *pivoti * rows, rows*sizeof(double));
 
-          if (((direction==1) ? (Fprob < Fin) : (Fprob > Fout)) && (SSnew < bestSS)) {
-            if (!bestc || (bestc->size != p)) {
-              GSL_FREE(best_c, vector);
-              GSL_FREE(best_se, vector);
-              best_c = gsl_vector_alloc(p);
-              best_se = gsl_vector_alloc(p);
-            }
-            gsl_vector_memcpy(best_c, cnew);
-            // should use that, but crashes MS VC
-            // gsl_vector_view gsl_matrix_diagonal (gsl_matrix * m)
-            for(i=0; i<p; i++)
-              gsl_vector_set(best_se, i, gsl_matrix_get(cov, i, i));
+          linreg(tryCov, y, Sy/N, rows, columns, tryCoeffs, tryRank, tryPivot, trySSres, F);
 
-            bestOrder = vector<int>(columnOrder.begin(), columnOrder.begin()+p);
+          double F = (SSinit - trySSres)*direction / (trySSres/(rows-rank));
+          double Fprob = (F>1e-10) ? fprob(1.0, double(rows-rank), F) : 0.0;
 
-            // remember this candidate at the next swap (a few lines above)
-            prevbest = true;
-            bestSS = SSnew;
+          if (((direction==1) ? (Fprob < Fin) : (Fprob > Fout)) && (trySSres < SSres)) {
+            SSres = trySSres;
+            rank = tryRank;
+            SWAP3(cov, tryCov, tpdouble);
+            SWAP3(pivot, tryPivot, tpint);
+            SWAP3(coeffs, tryCoeffs, tpdouble);
+            SWAP3(coeffs_se, tryCoeffs_se, tpdouble);
+            changed = 1;
           }
         }
 
-        GSL_FREE(cnew, vector)
-        GSL_FREE(cov, matrix)
-        GSL_FREE(work, multifit_linear)
-
-        // put the column with the best candidate to the swap place
-        if (bestplace) {
-            gsl_matrix_swap_columns(X, swapplace, bestplace);
-            swap(*swapi, columnOrder[bestplace]);
+        if (changed) {
+          usedColumns = tryColumns;
+          memcpy(tryPivot, pivot, usedColumns * sizeof(int));
         }
-        else
-          // if there is no best candidate place remembered and it was not the last one...
-          if (!prevbest)
-            continue;
-
-        nSelected += direction;
-        SSres = bestSS;
-        changed = 1;
       }
     }
-
-    if (nSelected==1) {
-      GSL_FREE(best_c, vector);
-      GSL_FREE(best_se, vector);
-      bestOrder = vector<int>(1, 0);
-      best_c = gsl_vector_alloc(1);
-      best_se = gsl_vector_alloc(1);
-      gsl_vector_set(best_c, 0, Sy/N);
-      gsl_vector_set(best_se, 0, sqrt(SSres/(rows-2)/rows));
-    }
-
   }
   catch (...) {
-    GSL_FREE(cnew, vector)
-    GSL_FREE(cov, matrix)
-    GSL_FREE(work, multifit_linear)
-    GSL_FREE(best_c, vector)
-    GSL_FREE(best_se, vector)
+    if (tryCov)       free(tryCov);
+    if (tryPivot)     free(tryPivot);
+    if (tryCoeffs)    free(tryCoeffs);
+    if (tryCoeffs_se) free(tryCoeffs_se);
+    free(cov);
+    free(pivot);
+    free(coeffs);
+    free(coeffs_se);
+    cov = coeffs = coeffs_se = NULL;
+    pivot = NULL;
     throw;
   }
+
+  free(tryCov);
+  free(tryPivot);
+  free(tryCoeffs);
+  free(tryCoeffs_se);
+
+  #undef SWAP3
 }
 
 
-gsl_vector *TLinRegLearner::unmix(gsl_vector *mixed, vector<int> columnOrder, int N)
+double *TLinRegLearner::unmix(double *mixed, vector<int> columnOrder, int N)
 {
-  gsl_vector *straight = gsl_vector_calloc(N);
-  int i = 0;
-  for(vector<int>::const_iterator seli(columnOrder.begin()), sele(columnOrder.end()); seli!=sele; seli++, i++)
-    gsl_vector_set(straight, *seli, gsl_vector_get(mixed, i));
-  return straight;
+  return NULL;
 }
 
 
-#include <algorithm>
 
-template<class T>
-class TSortedIndexVector : public vector<int> {
+class tinred {
 public:
-  const vector<T> &vect;
-
-  TSortedIndexVector(vector<T> &v)
-  : vector<int>(),
-    vect(v)
-  { 
-    for(int i(0), e(vect.size()); i<e; push_back(i++));
-    sort(begin(), end(), *this);
-  }
-
-  bool operator ()(const int &ind1, const int &ind2) const
-  { return less<T>()(vect[ind1], vect[ind2]); }
+  const int *pivots;
+  tinred(const int *p) : pivots(p) {}
+  bool operator()(const int &a, const int &b) const { return pivots[a] < pivots[b]; }
 };
-
-
-template<class T, class _Pr>
-class TSortedIndexVectorPred : public vector<int> {
-public:
-  const vector<T> &vect;
-
-  TSortedIndexVectorPred(vector<T> &v, _Pr P)
-  : vector<int>(),
-    vect(v)
-  { 
-    for(int i(0), e(vect.size()); i<e; push_back(i++));
-    sort(begin(), end(), *this);
-  }
-
-  bool operator ()(const int &ind1, const int &ind2) const
-  { return P(vect[ind1], vect[ind2]); }
-};
-
-
-void TLinRegLearner::sort_inPlace(gsl_vector *mixed, vector<int> columnOrder)
-{
-  TSortedIndexVector<int> sorted(columnOrder);
-  gsl_vector *temp = gsl_vector_alloc(columnOrder.size());
-  gsl_vector_memcpy(temp, mixed);
-  int i = 0;
-  ITERATE(vector<int>, si, sorted)
-    gsl_vector_set(mixed, *si, gsl_vector_get(temp, i++));
-  GSL_FREE(temp, vector);
-}
 
 
 PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weightID)
 {
-  gsl_matrix *X = NULL;
-  gsl_vector *y = NULL, *w = NULL;
-  gsl_vector *c = NULL, *c_se = NULL;
+  double *X = NULL;
+  double *y = NULL, *w = NULL;
   int rows, columns;
 
   if ((iterativeSelection < 0) || (iterativeSelection > 3))
     raiseError("invalid 'iterativeSelection'");
+
+  double *cov = NULL;
+  double *dcoeffs = NULL, *dcoeffs_se = NULL;
+  int *pivot = NULL;
 
   try {
     PImputer imputer = imputerConstructor ? imputerConstructor->call(origen, weightID) : PImputer();
@@ -304,51 +284,57 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
       gen = mlnew TExampleTable(regDomain, gen);
     }
 
-    exampleGenerator2gsl(gen, weightID, "A1/CW", multinomialTreatment, X, y, w, rows, columns);
+    exampleGenerator2r(gen, weightID, "1A/Cw", multinomialTreatment, X, y, w, rows, columns);
 
     if (columns==1)
       raiseError("no useful attributes");
 
     double SSres, SStot, N;
-    vector<int> columnOrder;
-    Fselection(X, y, w, rows, columns, (iterativeSelection & 1) == 1, (iterativeSelection & 2) == 2, columnOrder, c, c_se, SSres, SStot, N);
-    GSL_FREE(X, matrix)
-    GSL_FREE(y, vector)
-    GSL_FREE(w, vector)
-
-    if (iterativeSelection) {
-      sort_inPlace(c, columnOrder);
-      sort_inPlace(c_se, columnOrder);
-      sort(columnOrder.begin(), columnOrder.end());
-    }
+    int *pivot, rank;
+    double *dcoeffs, *dcoeffs_se, *cov;
+    Fselection(X, y, w, rows, columns, (iterativeSelection & 1) == 1, (iterativeSelection & 2) == 2, pivot, rank, dcoeffs, dcoeffs_se, cov, SSres, SStot, N);
 
     const TVarList &origattr = gen->domain->attributes.getReference();
-    PVarList dom_attributes = mlnew TVarList();
-    PVarList attributes = mlnew TVarList();
-    PAttributedFloatList coeffs = mlnew TAttributedFloatList(attributes, columnOrder.size());
-    PAttributedFloatList coeffs_se = mlnew TAttributedFloatList(attributes, columnOrder.size());
+    PVarList dom_attributes = mlnew TVarList(rank);
+    PVarList attributes = mlnew TVarList(rank);
 
-    TAttributedFloatList::iterator ci(coeffs->begin()), ce(coeffs->end());
-    TAttributedFloatList::iterator ci_se(coeffs_se->begin());
-    vector<int>::const_iterator cli(columnOrder.begin()), cle(columnOrder.end());
+    int i, e = rank;
+    for(i = 0; pivot[i] && (i != e); i++);
+    int interci = i == e ? -1 : i;
+    int subint = i == e ? 0 : 1;
 
-    for(int i = 0; cli!=cle; cli++, ci++, ci_se++, i++) {
-      if (i) {
-        attributes->push_back(origattr[*cli-1]);
-        dom_attributes->push_back(origattr[*cli-1]);
+    int *spivots = (int *)malloc(rank*sizeof(int));
+    for(i = 0; i != e; spivots[i] = i, i++);
+    sort(spivots, spivots+rank, tinred(spivots));
+
+    for(i = 0; i != e; i++)
+      if (i != interci) {
+        const int &pi = pivot[i]-1;
+        const int &spi = spivots[i]-subint;
+        dom_attributes->at(spi) = origattr[pi];
+        attributes->at(spi) = origattr[pi];
+    }
+    if (interci >= 0)
+      attributes->at(rank-1) = dom_attributes->at(rank-1) = gen->domain->classVar;
+
+    TAttributedFloatList *coeffs = mlnew TAttributedFloatList(attributes, rank);
+    TAttributedFloatList *coeffs_se = mlnew TAttributedFloatList(attributes, rank);
+    PAttributedFloatList wcoeffs = coeffs;
+    PAttributedFloatList wcoeffs_se = coeffs_se;
+
+    for(i = 0; i != e; i++)
+      if (i != interci) {
+        const int &spi = spivots[i]-subint;
+        (*coeffs)[spi] = dcoeffs[i];
+        (*coeffs_se)[spi] = dcoeffs_se[i];
       }
-      else
-        attributes->push_back(gen->domain->classVar);
 
-      *ci = float(gsl_vector_get(c, i));
-      *ci_se = float(gsl_vector_get(c_se, i));
+    if (interci >= 0) {
+      (*coeffs)[rank-1] = dcoeffs[interci];
+      (*coeffs_se)[rank-1] = dcoeffs[interci];
     }
 
-    GSL_FREE(c, vector)
-    GSL_FREE(c_se, vector)
-
-
-    TLinRegClassifier *classifier = mlnew TLinRegClassifier(mlnew TDomain(origen->domain->classVar, dom_attributes.getReference()), coeffs, coeffs_se, SSres, SStot, rows);
+    TLinRegClassifier *classifier = mlnew TLinRegClassifier(mlnew TDomain(origen->domain->classVar, dom_attributes.getReference()), wcoeffs, wcoeffs_se, SSres, SStot, rows);
     PClassifier wclassifier(classifier);
     classifier->imputer = imputer;
 
@@ -358,11 +344,13 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
     return wclassifier;
   }
   catch (...) {
-    GSL_FREE(X, matrix)
-    GSL_FREE(y, vector)
-    GSL_FREE(w, vector)
-    GSL_FREE(c, vector)
-    GSL_FREE(c_se, vector)
+    if (X)          free(X);
+    if (y)          free(y);
+    if (w)          free(w);
+    if (pivot)      free(pivot);
+    if (cov)        free(cov);
+    if (dcoeffs)    free(dcoeffs);
+    if (dcoeffs_se) free(dcoeffs_se);
     throw;
   }
 }
@@ -406,16 +394,17 @@ TValue TLinRegClassifier::operator()(const TExample &ex)
   TExample *example = imputer ? imputer->call(cexample) : &cexample;
 
   try {
-    TAttributedFloatList::const_iterator ci(coefficients->begin()), ce(coefficients->end());
+    TAttributedFloatList::const_iterator ci(coefficients->begin()), ce(coefficients->end()-1);
     TExample::const_iterator ei(example->begin());
     TVarList::const_iterator vi(domain->attributes->begin());
 
-    float prediction = *(ci++);
+    float prediction = 0.0;
     for(; ci!=ce; ci++, ei++, vi++) {
       if ((*ei).isSpecial())
         raiseError("attribute '%s' has unknown value", (*vi)->name.c_str());
       prediction += *ci * ( (*vi)->varType==TValue::INTVAR ? (*ei).intV : (*ei).floatV);
     }
+    prediction += *ci;
 
     if (classVar->varType == TValue::FLOATVAR)
       return TValue(prediction);

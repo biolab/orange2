@@ -294,11 +294,17 @@ PyObject *Variable_nextvalue(PyObject *self, PyObject *val) PYARGS(METH_O, "(val
 PyObject *Variable_computeValue(PyObject *self, PyObject *args) PYARGS(METH_O, "(example) -> Value")
 { PyTRY
     CAST_TO(TVariable, var);
-    if (!var->getValueFrom)
-      PYERROR(PyExc_SystemError, "Variable.computeValue: 'getValueFrom' not defined", PYNULL);
-
     if (!PyOrExample_Check(args))
       PYERROR(PyExc_TypeError, "Variable.computeValue: 'Example' expected", PYNULL);
+
+    const TExample &ex = PyExample_AS_ExampleReference(args);
+
+    int idx = ex.domain->getVarNum(var, false);
+    if (idx != ILLEGAL_INT)
+      return Value_FromVariableValue(var, ex[idx]);
+
+    if (!var->getValueFrom)
+      PYERROR(PyExc_SystemError, "Variable.computeValue: 'getValueFrom' not defined", PYNULL);
 
     return Value_FromVariableValue(var, var->computeValue(PyExample_AS_ExampleReference(args)));
   PyCATCH
@@ -2062,6 +2068,8 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMet
 
           }
 
+          #undef ARRAYTYPE
+
           table->addExample(nex);
           nex = NULL;
         }
@@ -2305,30 +2313,6 @@ PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Ignore, 0)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
 
-#if !defined(NO_GSL) && !defined(NO_NUMERIC)
-
-#include "gsl/gsl_matrix.h"
-#include "gsl/gsl_vector.h"
-#include "gslconversions.hpp"
-#include "numeric_interface.hpp"
-
-typedef struct {
-    PyObject_HEAD
-    gsl_matrix* m;
-} matrix_matrixObject;
-
-
-PyObject *gsl2pygsl(gsl_vector *gslv, int dim)
-{
-  prepareNumeric();
-
-  PyArrayObject *out = (PyArrayObject *) PyArray_FromDims(1, &dim, PyArray_DOUBLE);
-  double *di = (double *)(out->data);
-  for(int i=0; i<dim; i++, di++)
-    *di = gsl_vector_get(gslv, i);
-  return (PyObject *)out;
-}
-
 
 PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
 {
@@ -2365,6 +2349,35 @@ PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
 }
 
 
+void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
+                         bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
+                         vector<bool> &include);
+
+#if defined(XXXX) && !defined(NO_GSL) && !defined(NO_NUMERIC)
+
+#include "gsl/gsl_matrix.h"
+#include "gsl/gsl_vector.h"
+#include "gslconversions.hpp"
+#include "numeric_interface.hpp"
+
+typedef struct {
+    PyObject_HEAD
+    gsl_matrix* m;
+} matrix_matrixObject;
+
+
+PyObject *gsl2pygsl(gsl_vector *gslv, int dim)
+{
+  prepareNumeric();
+
+  PyArrayObject *out = (PyArrayObject *) PyArray_FromDims(1, &dim, PyArray_DOUBLE);
+  double *di = (double *)(out->data);
+  for(int i=0; i<dim; i++, di++)
+    *di = gsl_vector_get(gslv, i);
+  return (PyObject *)out;
+}
+
+
 PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> gsl matrix")
 {
   PyTRY
@@ -2380,8 +2393,8 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
     if (!contents)
       contents = "a/cw";
 
-    gsl_matrix *attrss;
-    gsl_vector *classes, *weights;
+    void *attrss;
+    void *classes, *weights;
     int rows, columns;
     exampleGenerator2gsl(PyOrange_AS_Orange(self), weightID, contents, multinomialTreatment, attrss, classes, weights, rows, columns);
 

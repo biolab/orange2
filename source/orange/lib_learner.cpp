@@ -666,6 +666,58 @@ PyObject *C45TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 C_CALL(kNNLearner, Learner, "([examples] [, weight=, k=] -/-> Classifier")
 C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 
+
+/************* PNN ************/
+
+#ifndef NO_NUMERIC
+#include "Numeric/arrayobject.h"
+#include "numeric_interface.hpp"
+#endif
+
+#include "pnn.hpp"
+
+PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ClassifierFD, "(examples, anchors[, domain]) -> PNN")
+{
+  PyTRY
+    PDomain domain;
+    PExampleGenerator examples;
+    PyObject *pybases;
+    if (!PyArg_ParseTuple(args, "O&O|O&:P2NN", pt_ExampleGenerator, &examples, &pybases, cc_Domain, &domain))
+      return PYNULL;
+
+    if (!domain)
+      domain = examples->domain;
+
+    if (!PyList_Check(pybases))
+      PYERROR(PyExc_AttributeError, "the anchors should be given as a list", PYNULL);
+
+    const int nAnchors = PyList_Size(pybases);
+    if (nAnchors != domain->attributes->size())
+      PYERROR(PyExc_AttributeError, "the number of attributes does not match the number of anchors", PYNULL);
+
+    TFloatList *basesX = mlnew TFloatList(nAnchors);
+    TFloatList *basesY = mlnew TFloatList(nAnchors);
+    PFloatList wbasesX = basesX, wbasesY = basesY;
+   
+    TFloatList::iterator xi(basesX->begin());
+    TFloatList::iterator yi(basesY->begin());
+    PyObject *foo;
+
+    for(int i = 0; i < nAnchors; i++)
+      if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "ff|O", &*xi++, &*yi++, &foo)) {
+        PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
+        return PYNULL;
+      }
+
+    return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY), type);
+
+  PyCATCH;
+}
+
+C_CALL(kNNLearner, Learner, "([examples] [, weight=, k=] -/-> Classifier")
+C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
+
+
 /************* Logistic Regression ************/
 
 #include "logistic.hpp"
@@ -1176,6 +1228,8 @@ PyObject *RuleList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *RuleList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Rule) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_remove(self, obj); }
 PyObject *RuleList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_reverse(self); }
 PyObject *RuleList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PRuleList, TRuleList, PRule, &PyOrRule_Type>::_sort(self, args); }
+
+
 
 #include "lib_learner.px"
 

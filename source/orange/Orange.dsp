@@ -404,6 +404,10 @@ SOURCE=.\induce.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\jit_linker.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\knn.cpp
 # End Source File
 # Begin Source File
@@ -545,6 +549,10 @@ SOURCE=.\orvector.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\pnn.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\preprocessors.cpp
 # End Source File
 # Begin Source File
@@ -557,7 +565,15 @@ SOURCE=.\pythonvars.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\r_imports.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\random.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\rconversions.cpp
 # End Source File
 # Begin Source File
 
@@ -886,6 +902,10 @@ SOURCE=.\induce.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\jit_linker.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\knn.hpp
 # End Source File
 # Begin Source File
@@ -963,6 +983,10 @@ SOURCE=.\ormap.hpp
 # Begin Source File
 
 SOURCE=.\orvector.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\pnn.hpp
 # End Source File
 # Begin Source File
 

@@ -494,7 +494,6 @@ public:
 
   int dropReferences()
   { DROPREFERENCES(TOrange::dropReferences);
-    variable = PVariable();
     return 0;
   }
 };
@@ -512,7 +511,7 @@ class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
 public:
   __REGISTER_CLASS
 
-  PVarList attributes; //P attributes
+  PVarList attributes; //P list of attributes (for indexing)
 
   inline TAttributedFloatList()
   {}
@@ -538,7 +537,7 @@ class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
 public:
   __REGISTER_CLASS
 
-  PVarList attributes; //P attributes
+  PVarList attributes; //P list of attributes (for indexing)
 
   inline TAttributedBoolList()
   {}

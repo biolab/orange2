@@ -43,6 +43,10 @@
   inline PyTypeObject *getNumericArrayType()
   { return PyNumericArrayType ? PyNumericArrayType : doGetNumericArrayType(); }
 
+
+  void numericToDouble(PyObject *num, double *&table, int &columns, int &rows);
+  void numericToDouble(PyObject *num, double *&table, int &rows);
+
 #else
 
   inline void prepareNumeric()
@@ -50,6 +54,9 @@
 
   inline PyTypeObject *getNumericArrayType()
   { raiseErrorWho("import_array()", "this build does not support Numeric"); }
+
+  inline void numericToDouble(PyObject *num, double *&table, int &columns, int &rows)
+  { raiseErrorWho("numericToDouble()", "this build does not support Numeric"); }
 
 #endif // NO_NUMERIC
 #endif // __NUMERIC_INTERFACE

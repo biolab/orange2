@@ -47,10 +47,10 @@ TDomainDepot TTabDelimExampleGenerator::domainDepot_txt;
 
 
 const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerator::typeIdentifiers[] =
- {{"d", 0, TValue::INTVAR},   {"discrete", 0, TValue::INTVAR},     {"e", 0, TValue::INTVAR},   {"enum", 0, TValue::INTVAR},
-  {"c", 0, TValue::FLOATVAR}, {"continuous", 0, TValue::FLOATVAR}, {"f", 0, TValue::FLOATVAR}, {"float", 0, TValue::FLOATVAR},
-  {"string", 0, STRINGVAR},   {"s", 0, STRINGVAR},
-  {"python", 0, PYTHONVAR},   {"python:", 7, PYTHONVAR},
+ {{"discrete", 0, TValue::INTVAR},      {"d", 0, TValue::INTVAR},
+  {"continuous", 0, TValue::FLOATVAR},  {"c", 0, TValue::FLOATVAR},
+  {"string", 0, STRINGVAR},             {"s", 0, STRINGVAR},
+  {"python", 0, PYTHONVAR},             {"python:", 7, PYTHONVAR},
   {NULL, 0}};
 
 

@@ -116,7 +116,11 @@ PyObject *FloatList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(floa
 PyObject *FloatList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_reverse(self); }
 PyObject *FloatList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_sort(self, args); }
 
-
+int pt_FloatList(PyObject *args, void *floatlist)
+{
+  *(PFloatList *)(floatlist) = PFloatList_FromArguments(args);
+  return PyErr_Occurred() ? -1 : 0;
+}
 
 bool convertFromPython(PyObject *, string &);
 PyObject *convertToPython(const string &);

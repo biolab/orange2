@@ -233,8 +233,34 @@ TValue TEnumVariable::randomValue(const int &rand)
 
 
 void TEnumVariable::addValue(const string &val)
-{ if (!exists(values->begin(), values->end(), val))
+{ 
+  if (!exists(values->begin(), values->end(), val))
     values->push_back(val);
+
+  if ((values->size() == 5) && ((values->front() == "f") || (values->front() == "float"))) {
+    TStringList::const_iterator vi(values->begin()), ve(values->end());
+    char *eptr;
+    char numtest[32];
+    while(++vi != ve) { // skip the first (f/float)
+      if ((*vi).length() > 31)
+        break;
+
+      strcpy(numtest, (*vi).c_str());
+      for(eptr = numtest; *eptr; eptr++)
+        if (*eptr == ',')
+          *eptr = '.';
+
+      strtod(numtest, &eptr);
+      while (*eptr==32)
+        eptr++;
+
+      if (*eptr)
+        break;
+    }
+
+    if (vi==ve)
+      raiseWarning("is '%s' a continuous attribute unintentionally defined by '%s'?", name.c_str(), values->front().c_str());
+  }
 }
 
 
@@ -247,7 +273,7 @@ void TEnumVariable::str2val_add(const string &valname, TValue &valu)
   if (vi!=values->end())
     valu = TValue(int(vi - values->begin())); 
   else if (!str2special(valname, valu)) {
-    addValue(valname); 
+    addValue(valname);
     valu = TValue(int(values->size()-1));
   }
 }

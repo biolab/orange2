@@ -26,8 +26,7 @@
 #include "learn.hpp"
 #include "classify.hpp"
 
-#include "gsl/gsl_matrix.h"
-#include "gsl/gsl_vector.h"
+#include "r_imports.hpp"
 
 WRAPPER(Imputer)
 WRAPPER(ImputerConstructor)
@@ -47,14 +46,15 @@ public:
 
   TLinRegLearner();
 
-  void Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, const int &rows, const int &columns,
-                  bool forward, bool backward,
-                  vector<int> &columnOrder, gsl_vector *&c, gsl_vector *&c_se, double &SSres, double &SStot, double &N);
+  void Fselection(double *X, double*y, double *w, const int &rows, const int &columns,
+             bool forward, bool backward,
+             int *&pivot, int &rank, double *&coeffs, double *&coeffs_se, double *&cov,
+             double &SSres, double &SStot, double &N);
 
   virtual PClassifier operator()(PExampleGenerator, const int &weight = 0);
 
-  static gsl_vector *unmix(gsl_vector *mixed, vector<int> columnOrder, int k);
-  static void sort_inPlace(gsl_vector *mixed, vector<int> columnOrder);
+  static double *unmix(double *mixed, vector<int> columnOrder, int k);
+  static void sort_inPlace(double *mixed, vector<int> columnOrder);
 };
 
 

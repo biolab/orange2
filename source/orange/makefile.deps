@@ -1,0 +1,154 @@
+ORANGE_OBJECTS =\
+	 obj/assistant.o obj/assoc.o obj/assoc_sparse.o obj/basket.o obj/basstat.o obj/bayes.o\
+	 obj/boolcnt.o obj/c4.5.o obj/c45inter.o obj/calibrate.o obj/callback.o obj/cartesian.o\
+	 obj/clas_gen.o obj/classfromvar.o obj/classifier.o obj/cls_example.o obj/cls_misc.o obj/cls_orange.o\
+	 obj/cls_value.o obj/contingency.o obj/converts.o obj/cost.o obj/costwrapper.o obj/decomposition.o\
+	 obj/dictproxy.o obj/discretize.o obj/dist_clustering.o obj/distance.o obj/distance_dtw.o obj/distancemap.o\
+	 obj/distvars.o obj/domain.o obj/domaindepot.o obj/errors.o obj/estimateprob.o obj/exampleclustering.o\
+	 obj/examplegen.o obj/examples.o obj/excel.o obj/filegen.o obj/filter.o obj/functions.o\
+	 obj/garbage.o obj/getarg.o obj/graph.o obj/gslconversions.o obj/hclust.o obj/imputation.o\
+	 obj/induce.o obj/knn.o obj/learn.o obj/lib_components.o obj/lib_io.o obj/lib_kernel.o\
+	 obj/lib_learner.o obj/lib_preprocess.o obj/lib_vectors.o obj/linreg.o obj/logfit.o obj/logistic.o\
+	 obj/logreg.o obj/lookup.o obj/lsq.o obj/lwr.o obj/majority.o obj/measures.o\
+	 obj/meta.o obj/minimal_complexity.o obj/minimal_error.o obj/nearest.o obj/numeric_interface.o obj/orange.o\
+	 obj/orvector.o obj/preprocessors.o obj/progress.o obj/pythonvars.o obj/random.o obj/readdata.o\
+	 obj/redundancy.o obj/retisinter.o obj/root.o obj/rule_conditions.o obj/rulelearner.o obj/spec_contingency.o\
+	 obj/spec_gen.o obj/stringvars.o obj/subsets.o obj/survival.o obj/svm.o obj/symmatrix.o\
+	 obj/tabdelim.o obj/table.o obj/tdidt.o obj/tdidt_split.o obj/tdidt_stop.o obj/transdomain.o\
+	 obj/transval.o obj/trindex.o obj/valuelisttemplate.o obj/values.o obj/vars.o
+
+obj/assistant.o : assistant.cpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/assoc.o : assoc.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp trindex.hpp values.hpp vars.hpp
+obj/assoc_sparse.o : assoc_sparse.cpp assoc.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/basket.o : basket.cpp errors.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/basstat.o : basstat.cpp basstat.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/bayes.o : bayes.cpp contingency.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/boolcnt.o : boolcnt.cpp boolcnt.hpp
+obj/c4.5.o : c4.5.cpp c4.5.hpp classfromvar.hpp classify.hpp contingency.hpp discretize.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp tdidt.hpp tdidt_split.hpp transval.hpp values.hpp vars.hpp
+obj/c45inter.o : c45inter.cpp c45inter.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/calibrate.o : calibrate.cpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/callback.o : callback.cpp contingency.hpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp imputation.hpp learn.hpp meta.hpp orange.hpp orvector.hpp progress.hpp random.hpp root.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/cartesian.o : cartesian.cpp boolcnt.hpp classify.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/clas_gen.o : clas_gen.cpp clas_gen.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/classfromvar.o : classfromvar.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp transval.hpp values.hpp
+obj/classifier.o : classifier.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp table.hpp values.hpp
+obj/cls_example.o : cls_example.cpp cls_example.hpp cls_example.px cls_value.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp lib_kernel.hpp meta.hpp orange.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp
+obj/cls_misc.o : cls_misc.cpp cls_example.hpp cls_misc.hpp cls_misc.px cls_value.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp lib_kernel.hpp meta.hpp orange.hpp orange_api.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/cls_orange.o : cls_orange.cpp cls_example.hpp cls_orange.px cls_value.hpp domain.hpp errors.hpp examples.hpp externs.px garbage.hpp meta.hpp orange.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/cls_value.o : cls_value.cpp cls_value.hpp cls_value.px errors.hpp externs.px garbage.hpp orange.hpp orvector.hpp pythonvars.hpp root.hpp valuelisttemplate.hpp values.hpp vars.hpp
+obj/contingency.o : contingency.cpp contingency.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/converts.o : converts.cpp 
+obj/cost.o : cost.cpp cost.hpp distvars.hpp errors.hpp garbage.hpp orvector.hpp root.hpp values.hpp
+obj/costwrapper.o : costwrapper.cpp classify.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp values.hpp vars.hpp
+obj/decomposition.o : decomposition.cpp contingency.hpp decomposition.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp
+obj/dictproxy.o : dictproxy.cpp errors.hpp garbage.hpp orange.hpp root.hpp
+obj/discretize.o : discretize.cpp classfromvar.hpp contingency.hpp discretize.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp transval.hpp values.hpp
+obj/dist_clustering.o : dist_clustering.cpp contingency.hpp cost.hpp dist_clustering.hpp distance.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp pqueue_i.hpp random.hpp root.hpp slist.hpp table.hpp values.hpp vars.hpp
+obj/distance.o : distance.cpp contingency.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/distance_dtw.o : distance_dtw.cpp contingency.hpp distance_dtw.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/distancemap.o : distancemap.cpp errors.hpp externs.px garbage.hpp orvector.hpp root.hpp values.hpp
+obj/distvars.o : distvars.cpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp values.hpp
+obj/domain.o : domain.cpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/domaindepot.o : domaindepot.cpp domain.hpp domaindepot.hpp errors.hpp garbage.hpp meta.hpp orvector.hpp pythonvars.hpp root.hpp values.hpp vars.hpp
+obj/errors.o : errors.cpp garbage.hpp
+obj/estimateprob.o : estimateprob.cpp contingency.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp values.hpp vars.hpp
+obj/exampleclustering.o : exampleclustering.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp learn.hpp lookup.hpp meta.hpp orvector.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/examplegen.o : examplegen.cpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/examples.o : examples.cpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/excel.o : excel.cpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/filegen.o : filegen.cpp domain.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/filter.o : filter.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp trindex.hpp values.hpp vars.hpp
+obj/functions.o : functions.cpp c45inter.hpp contingency.hpp distvars.hpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orange.hpp orvector.hpp random.hpp retisinter.hpp root.hpp tabdelim.hpp table.hpp trindex.hpp values.hpp vars.hpp
+obj/garbage.o : garbage.cpp 
+obj/getarg.o : getarg.cpp errors.hpp garbage.hpp getarg.hpp
+obj/graph.o : graph.cpp errors.hpp garbage.hpp graph.hpp root.hpp
+obj/gslconversions.o : gslconversions.cpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/hclust.o : hclust.cpp errors.hpp garbage.hpp orvector.hpp progress.hpp root.hpp symmatrix.hpp values.hpp vars.hpp
+obj/imputation.o : imputation.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp imputation.hpp learn.hpp lookup.hpp meta.hpp orvector.hpp root.hpp table.hpp transval.hpp values.hpp
+obj/induce.o : induce.cpp errors.hpp garbage.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/knn.o : knn.cpp contingency.hpp distance.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp knn.hpp learn.hpp meta.hpp nearest.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp
+obj/learn.o : learn.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp root.hpp values.hpp vars.hpp
+obj/lib_components.o : lib_components.cpp cls_value.hpp contingency.hpp cost.hpp distance_dtw.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp imputation.hpp learn.hpp lib_components.px meta.hpp nearest.hpp orange.hpp orvector.hpp progress.hpp random.hpp root.hpp symmatrix.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp trindex.hpp valuelisttemplate.hpp values.hpp vars.hpp
+obj/lib_io.o : lib_io.cpp assistant.hpp basket.hpp c45inter.hpp contingency.hpp distvars.hpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp externs.px filegen.hpp garbage.hpp lib_io.px meta.hpp orange.hpp orvector.hpp random.hpp retisinter.hpp root.hpp spec_gen.hpp tabdelim.hpp table.hpp trindex.hpp values.hpp vars.hpp
+obj/lib_kernel.o : lib_kernel.cpp callback.hpp classify.hpp cls_value.hpp contingency.hpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp imputation.hpp learn.hpp lib_kernel.hpp lib_kernel.px lookup.hpp meta.hpp numeric_interface.hpp orange.hpp orvector.hpp preprocessors.hpp progress.hpp pythonvars.hpp random.hpp root.hpp rulelearner.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/lib_learner.o : lib_learner.cpp assoc.hpp c4.5.hpp callback.hpp classify.hpp cls_value.hpp contingency.hpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp externs.px garbage.hpp imputation.hpp learn.hpp lib_kernel.hpp lib_learner.px linreg.hpp logistic.hpp majority.hpp meta.hpp nearest.hpp orange.hpp orvector.hpp progress.hpp random.hpp root.hpp rulelearner.hpp svm.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/lib_preprocess.o : lib_preprocess.cpp boolcnt.hpp contingency.hpp cost.hpp distvars.hpp errors.hpp examples.hpp externs.px garbage.hpp lib_preprocess.px meta.hpp minimal_complexity.hpp orange.hpp ormap.hpp orvector.hpp random.hpp root.hpp slist.hpp subsets.hpp table.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/lib_vectors.o : lib_vectors.cpp contingency.hpp distance.hpp distance_dtw.hpp distvars.hpp errors.hpp externs.px garbage.hpp lib_vectors.px meta.hpp orange.hpp orvector.hpp root.hpp values.hpp
+obj/linreg.o : linreg.cpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp imputation.hpp learn.hpp linreg.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp transval.hpp values.hpp
+obj/logfit.o : logfit.cpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/logistic.o : logistic.cpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp imputation.hpp learn.hpp meta.hpp orvector.hpp root.hpp transval.hpp values.hpp
+obj/logreg.o : logreg.cpp logreg.hpp
+obj/lookup.o : lookup.cpp contingency.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp lookup.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp trindex.hpp values.hpp vars.hpp
+obj/lsq.o : lsq.cpp 
+obj/lwr.o : lwr.cpp contingency.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp learn.hpp linreg.hpp meta.hpp orvector.hpp root.hpp table.hpp values.hpp
+obj/majority.o : majority.cpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp majority.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/measures.o : measures.cpp contingency.hpp cost.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/meta.o : meta.cpp errors.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/minimal_complexity.o : minimal_complexity.cpp contingency.hpp cost.hpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp minimal_complexity.hpp orvector.hpp root.hpp table.hpp values.hpp vars.hpp
+obj/minimal_error.o : minimal_error.cpp contingency.hpp cost.hpp decomposition.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp lookup.hpp meta.hpp minimal_error.hpp orvector.hpp pqueue_i.hpp random.hpp root.hpp slist.hpp values.hpp vars.hpp
+obj/nearest.o : nearest.cpp contingency.hpp distance.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp nearest.hpp orvector.hpp random.hpp root.hpp table.hpp values.hpp
+obj/numeric_interface.o : numeric_interface.cpp numeric_interface.hpp
+obj/orange.o : orange.cpp errors.hpp garbage.hpp initialization.px orange.hpp orange.px root.hpp
+obj/orvector.o : orvector.cpp errors.hpp garbage.hpp orvector.hpp root.hpp values.hpp
+obj/preprocessors.o : preprocessors.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp tabdelim.hpp table.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/progress.o : progress.cpp errors.hpp garbage.hpp progress.hpp root.hpp
+obj/pythonvars.o : pythonvars.cpp cls_example.hpp cls_value.hpp distvars.hpp errors.hpp examples.hpp externs.px garbage.hpp meta.hpp orange.hpp orvector.hpp pythonvars.hpp random.hpp root.hpp values.hpp
+obj/random.o : random.cpp garbage.hpp root.hpp values.hpp
+obj/readdata.o : readdata.cpp assistant.hpp basket.hpp c45inter.hpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp random.hpp retisinter.hpp root.hpp tabdelim.hpp table.hpp values.hpp
+obj/redundancy.o : redundancy.cpp classfromvar.hpp contingency.hpp cost.hpp discretize.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp lookup.hpp meta.hpp orvector.hpp random.hpp redundancy.hpp root.hpp table.hpp transval.hpp values.hpp vars.hpp
+obj/retisinter.o : retisinter.cpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/root.o : root.cpp garbage.hpp root.hpp values.hpp
+obj/rule_conditions.o : rule_conditions.cpp assoc.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp root.hpp rule_conditions.hpp values.hpp
+obj/rulelearner.o : rulelearner.cpp cost.hpp discretize.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp rulelearner.hpp table.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/spec_contingency.o : spec_contingency.cpp contingency.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp ormap.hpp orvector.hpp preprocessors.hpp random.hpp root.hpp spec_contingency.hpp transdomain.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/spec_gen.o : spec_gen.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp transval.hpp trindex.hpp values.hpp vars.hpp
+obj/stringvars.o : stringvars.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp values.hpp vars.hpp
+obj/subsets.o : subsets.cpp boolcnt.hpp errors.hpp garbage.hpp orvector.hpp root.hpp subsets.hpp values.hpp
+obj/survival.o : survival.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+obj/svm.o : svm.cpp contingency.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp svm.hpp table.hpp values.hpp
+obj/symmatrix.o : symmatrix.cpp errors.hpp garbage.hpp root.hpp symmatrix.hpp
+obj/tabdelim.o : tabdelim.cpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp getarg.hpp meta.hpp orvector.hpp pythonvars.hpp root.hpp tabdelim.hpp values.hpp vars.hpp
+obj/table.o : table.cpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp trindex.hpp values.hpp vars.hpp
+obj/tdidt.o : tdidt.cpp contingency.hpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp learn.hpp majority.hpp meta.hpp orvector.hpp random.hpp root.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp values.hpp vars.hpp
+obj/tdidt_split.o : tdidt_split.cpp boolcnt.hpp cost.hpp distvars.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp table.hpp tdidt.hpp tdidt_stop.hpp transval.hpp values.hpp vars.hpp
+obj/tdidt_stop.o : tdidt_stop.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp tdidt_stop.hpp values.hpp
+obj/transdomain.o : transdomain.cpp errors.hpp garbage.hpp meta.hpp orvector.hpp root.hpp transdomain.hpp transval.hpp values.hpp
+obj/transval.o : transval.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp transval.hpp values.hpp
+obj/trindex.o : trindex.cpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp random.hpp root.hpp trindex.hpp values.hpp vars.hpp
+obj/valuelisttemplate.o : valuelisttemplate.cpp cls_value.hpp errors.hpp garbage.hpp orange.hpp orvector.hpp root.hpp valuelisttemplate.hpp values.hpp vectortemplates.hpp
+obj/values.o : values.cpp errors.hpp garbage.hpp root.hpp values.hpp
+obj/vars.o : vars.cpp distvars.hpp errors.hpp examples.hpp garbage.hpp meta.hpp orvector.hpp root.hpp values.hpp
+
+
+ppp/stamp: learn.hpp graph.hpp trindex.hpp basstat.hpp c4.5.hpp values.hpp decomposition.hpp symmatrix.hpp filegen.hpp subsets.hpp distance.hpp progress.hpp cost.hpp tabdelim.hpp minimal_error.hpp calibrate.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp orvector.hpp c45inter.hpp discretize.hpp examplegen.hpp hclust.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp rulelearner.hpp pythonvars.hpp estimateprob.hpp knn.hpp linreg.hpp examples.hpp svm.hpp lookup.hpp root.hpp induce.hpp dist_clustering.hpp majority.hpp spec_contingency.hpp tdidt.hpp costwrapper.hpp table.hpp distancemap.hpp transdomain.hpp domain.hpp contingency.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp retisinter.hpp imputation.hpp assistant.hpp classfromvar.hpp filter.hpp basket.hpp distance_dtw.hpp preprocessors.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp lwr.hpp logfit.hpp logistic.hpp assoc.hpp
+	python ../pyxtract/pyprops.py -n ORANGE
+
+px/stamp: lib_io.cpp cls_orange.cpp orange.cpp lib_vectors.cpp cls_example.cpp pythonvars.cpp cls_misc.cpp cls_value.cpp distancemap.cpp lib_kernel.cpp lib_learner.cpp lib_components.cpp callback.cpp lib_preprocess.cpp
+	python ../pyxtract/pyxtract.py -m -n ORANGE lib_io.cpp cls_orange.cpp orange.cpp lib_vectors.cpp cls_example.cpp pythonvars.cpp cls_misc.cpp cls_value.cpp distancemap.cpp lib_kernel.cpp lib_learner.cpp lib_components.cpp callback.cpp lib_preprocess.cpp
+
+externs.px: 
+
+lib_io.px: 
+
+cls_orange.px: 
+
+orange.px: 
+
+initialization.px: 
+
+lib_vectors.px: 
+
+cls_example.px: 
+
+cls_misc.px: 
+
+cls_value.px: 
+
+lib_kernel.px: 
+
+lib_learner.px: 
+
+lib_components.px: 
+
+lib_preprocess.px: 
+
