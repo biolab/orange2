@@ -32,11 +32,14 @@ class PCA:
             s = 1.0
         self.R_squared = s # percentage of total variance explained by individual components
 
-def Centering(vector, m = None):
+def Centering(vector, m = None, inverse=0):
     assert(len(Numeric.shape(vector))==1) # this must be a vector
     if m == None:
         m = Numeric.average(vector)
-    return (vector-m,m)
+    if inverse==0:
+        return (vector-m,m)
+    else:
+        return vector+m
 
 def MaxScaling(vector, param = None):
     if param == None:
@@ -49,7 +52,7 @@ def MaxScaling(vector, param = None):
         (v,m_) = Centering(vector,m)
     return (v*s,(m,s))
 
-def VarianceScaling(vector,param=None):
+def VarianceScaling(vector,param=None,inverse=0):
     if param == None:
         (v,m) = Centering(vector)
         s = Numeric.sqrt(Numeric.average(Numeric.power(v,2)))
@@ -57,8 +60,14 @@ def VarianceScaling(vector,param=None):
             s = 1.0/s
     else:
         (m,s) = param
-        (v,m_) = Centering(vector,m)
-    return (s*v,(m,s))
+        if inverse == 0:
+            (v,m_) = Centering(vector,m)
+        else:
+            v = Centering(vector,m,1)
+    if inverse == 0:
+        return (s*v,(m,s))
+    else:
+        return s/v
 
 def _BC(vector,lambd):
     if lambd != 0.0:
