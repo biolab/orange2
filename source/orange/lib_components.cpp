@@ -2487,6 +2487,52 @@ PyObject *SymMatrix_repr(PyObject *self)
 { return SymMatrix_str(self); }
 
 
+#include "hclust.hpp"
+
+C_NAMED(HierarchicalCluster, Orange, "()")
+C_CALL3(HierarchicalClustering, HierarchicalClustering, Orange, "(linkage=)")
+
+PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
+{
+  PyTRY
+    PSymMatrix symmatrix;
+
+    if (!PyArg_ParseTuple(args, "O&:HierarchicalClustering", cc_SymMatrix, &symmatrix))
+      return NULL;
+
+    SETATTRIBUTES
+
+    return WrapOrange(SELF_AS(THierarchicalClustering)(symmatrix));
+  PyCATCH
+}
+
+PHierarchicalClusterList PHierarchicalClusterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::P_FromArguments(arg); }
+PyObject *HierarchicalClusterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_FromArguments(type, arg); }
+PyObject *HierarchicalClusterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of HierarchicalCluster>)") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_new(type, arg, kwds); }
+PyObject *HierarchicalClusterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_getitem(self, index); }
+int       HierarchicalClusterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_setitem(self, index, item); }
+PyObject *HierarchicalClusterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_getslice(self, start, stop); }
+int       HierarchicalClusterList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_setslice(self, start, stop, item); }
+int       HierarchicalClusterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_len(self); }
+PyObject *HierarchicalClusterList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_richcmp(self, object, op); }
+PyObject *HierarchicalClusterList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_concat(self, obj); }
+PyObject *HierarchicalClusterList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_repeat(self, times); }
+PyObject *HierarchicalClusterList_str(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_str(self); }
+PyObject *HierarchicalClusterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_str(self); }
+int       HierarchicalClusterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_contains(self, obj); }
+PyObject *HierarchicalClusterList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(HierarchicalCluster) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_append(self, item); }
+PyObject *HierarchicalClusterList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> int") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_count(self, obj); }
+PyObject *HierarchicalClusterList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> HierarchicalClusterList") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_filter(self, args); }
+PyObject *HierarchicalClusterList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> int") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_index(self, obj); }
+PyObject *HierarchicalClusterList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_insert(self, args); }
+PyObject *HierarchicalClusterList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_native(self); }
+PyObject *HierarchicalClusterList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> HierarchicalCluster") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_pop(self, args); }
+PyObject *HierarchicalClusterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(HierarchicalCluster) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_remove(self, obj); }
+PyObject *HierarchicalClusterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_reverse(self); }
+PyObject *HierarchicalClusterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::_sort(self, args); }
+
+
+
 #include "heatmap.hpp"
 
 PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")

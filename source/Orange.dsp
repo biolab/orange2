@@ -291,6 +291,10 @@ SOURCE=.\orange\gslconversions.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\hclust.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\heatmap.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -699,6 +703,10 @@ SOURCE=.\orange\garbage_py_manner.hpp
 # Begin Source File
 
 SOURCE=.\orange\getarg.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\hclust.hpp
 # End Source File
 # Begin Source File
 

@@ -30,8 +30,13 @@ preprocessors to filter/change the data.
         FALSE,
         FALSE)
 
+        from orngTree import TreeLearner
+        imputeByModel = orange.ImputerConstructor_model()
+        imputeByModel.learnerDiscrete = TreeLearner(measure = "infoGain", minSubset = 50)
+        imputeByModel.learnerContinuous = TreeLearner(measure = "retis", minSubset = 50)
+        self.imputationMethods = [imputeByModel, orange.ImputerConstructor_average(), orange.ImputerConstructor_minimal(), orange.ImputerConstructor_maximal(), None]
         self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
-        self.imputationMethods = [orange.ImputerConstructor_model(), orange.ImputerConstructor_average(), orange.ImputerConstructor_minimal(), orange.ImputerConstructor_maximal(), None]
+
         # inputs / outputs
         #self.addInput("cdata")
         #self.addInput("pp")

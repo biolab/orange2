@@ -60,7 +60,8 @@ def ME(res, **argkw):
 
     return [x/totweight for x in MEs]
 
-    
+MAE = ME
+
 def MSE(res, **argkw):
     if argkw.get("SE", 0) and res.numberOfIterations > 1:
         MSEs = [[0.0] * res.numberOfIterations for i in range(res.numberOfLearners)]

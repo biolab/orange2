@@ -60,4 +60,6 @@ public:
   }
 };
 
+WRAPPER(SymMatrix)
+
 #endif
