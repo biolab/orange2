@@ -284,6 +284,13 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
 
 PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, const string &name)
 {
+  if (typeDeclaration.size() == 6) {
+    TPythonVariable *var = mlnew TPythonVariable();
+    var->name = name;
+    return var;
+  }
+
+
   const char *vartypename = typeDeclaration.c_str()+7;
   char *parpos = strchr(vartypename, '(');
   PyObject *var = NULL;

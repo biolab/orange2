@@ -86,10 +86,15 @@ PyObject *convertToPythonNative(const TValue &val, PVariable var)
   if ((val.varType==TValue::FLOATVAR) && !val.isSpecial())
     return PyFloat_FromDouble(double(val.floatV));
 
+  if (val.varType == PYTHONVAR) {
+    PyObject *res = val.svalV ? ((TPythonValue &)(val.svalV.getReference())).value : Py_None;
+    Py_INCREF(res);
+    return res;
+  }
+
   if ((val.varType!=TValue::INTVAR) && val.svalV)
     return WrapOrange(val.svalV);
 
-  
   if (var) { // && (val.varType == TValue::INTVAR || val.isSpecial)
     string vs;
     var->val2str(val, vs);
@@ -191,6 +196,12 @@ bool convertFromPython(PyObject *args, TValue &value, PVariable var)
     return true;
   }
 
+  if (var && var->varType == PYTHONVAR) {
+    Py_INCREF(args);
+    value = TValue(mlnew TPythonValue(args), PYTHONVAR);
+    return true;
+  }
+  
   if (PyInt_Check(args)) {
     int ii = int(PyInt_AsLong(args));
 
@@ -798,6 +809,12 @@ int Value_coerce(PyObject **i, PyObject **obj)
 
 PyObject *Value_get_svalue(TPyValue *self)
 { PyTRY
+    if (self->value.varType == PYTHONVAR) {
+      PyObject *res = self->value.svalV ? ((TPythonValue &)(self->value.svalV.getReference())).value : Py_None;
+      Py_INCREF(res);
+      return res;
+    }
+
     return WrapOrange(self->value.svalV);
   PyCATCH
 }
@@ -805,16 +822,21 @@ PyObject *Value_get_svalue(TPyValue *self)
 
 int Value_set_svalue(TPyValue *self, PyObject *arg)
 { PyTRY
+
     if (arg == Py_None) {
       self->value.svalV = PSomeValue();
       return 0;
     }
-    if (!PyOrSomeValue_Check(arg))
-      PYERROR(PyExc_TypeError, "invalid argument for attribute 'sval'", -1)
-    else {
+
+    if (PyOrSomeValue_Check(arg)) {
       self->value.svalV = PyOrange_AsSomeValue(arg);
       return 0;
     }
+
+    Py_INCREF(arg);
+    self->value.svalV = mlnew TPythonValue(arg);
+    return 0;
+
   PyCATCH_1
 }
 

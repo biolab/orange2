@@ -241,8 +241,21 @@ void TPythonVariable::val2str(const TValue &val, string &str) const
     return;
 
   PyObject *pyvalue = toPyObject(val);
-  PyObject *reprs = PyObject_Str(pyvalue);
-  Py_DECREF(pyvalue);
+  PyObject *reprs = NULL;
+
+  if (isOverloaded("val2str")) {
+    reprs = PyObject_CallMethod(MYSELF, "val2str", "N", pyvalue);
+    if (!PyString_Check(reprs))
+      raiseError("%s.val2str should return a 'string', not '%s'", MYSELF->ob_type->tp_name, reprs->ob_type->tp_name);
+  }
+
+  else {
+    reprs = PyObject_Str(pyvalue);
+    Py_DECREF(pyvalue);
+    if (!PyString_Check(reprs))
+      raiseError("Value.__str__ shoud return a string, not '%s'", reprs->ob_type->tp_name);
+  }
+
   if (!reprs)
     throw pyexception();
 
@@ -378,8 +391,8 @@ void TPythonVariable::filestr2val(const string &valname, TValue &valu, TExample 
   PyObject *globals = PyEval_GetGlobals();
   PyObject *locals = PyEval_GetLocals();
 
-  PyObject *fdoms = PyString_FromString("__fileDomain");
-  PyObject *wo = WrapOrange(PExample(ex));
+  PyObject *fdoms = PyString_FromString("__fileExample");
+  PyObject *wo = Example_FromWrappedExample(PExample(ex));
   PyDict_SetItem(locals, fdoms, wo);
   Py_DECREF(wo);
   res = PyRun_String(valname.c_str(), Py_eval_input, globals, locals);
