@@ -83,7 +83,7 @@ TStringVariable::TStringVariable()
 
 TStringVariable::TStringVariable(const string &aname)
 : TVariable(aname)
-{ varType=TValue::OTHERVAR; };
+{ varType = STRINGVAR; };
 
 
 

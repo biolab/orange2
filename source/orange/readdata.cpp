@@ -44,6 +44,7 @@
 
 #include <string.h>
 
+
 #ifdef _MSC_VER
   TExampleTable *readExcelFile(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 #endif

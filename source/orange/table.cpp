@@ -23,6 +23,7 @@
 #include "random.hpp"
 #include "vars.hpp"
 #include "domain.hpp"
+#include "domaindepot.hpp"
 #include "errors.hpp"
 #include "filter.hpp"
 #include "distvars.hpp"

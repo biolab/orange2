@@ -27,6 +27,7 @@
 #include "cls_value.hpp"
 #include "cls_orange.hpp"
 #include "vars.hpp"
+#include "stringvars.hpp"
 #include "values.hpp"
 
 #include "vectortemplates.hpp"
@@ -40,7 +41,7 @@
 #define CHECK_SPECIAL_OTHER \
   if (self->value.isSpecial()) \
     PYERROR(PyExc_TypeError, "attribute value unknown", PYNULL); \
-  if (self->value.varType==TValue::OTHERVAR) \
+  if ((self->value.varType!=TValue::INTVAR) && (self->value.varType!=TValue::FLOATVAR)) \
     PYERROR(PyExc_TypeError, "attribute is not an ordinary discrete or continuous", PYNULL);
 
 
@@ -84,7 +85,7 @@ PyObject *convertToPythonNative(const TValue &val, PVariable var)
   if ((val.varType==TValue::FLOATVAR) && !val.isSpecial())
     return PyFloat_FromDouble(double(val.floatV));
 
-  if ((val.varType==TValue::OTHERVAR) && val.svalV)
+  if ((val.varType!=TValue::INTVAR) && val.svalV)
     return WrapOrange(val.svalV);
 
   
@@ -313,7 +314,7 @@ PyObject *Value_FromArguments(PyTypeObject *type, PyObject *args)
     }
     else if (PyInt_Check(obj1) && PyInt_Check(obj2)) {
       int vartype = int(PyInt_AsLong(obj1));
-      if (vartype>TValue::OTHERVAR) {
+      if (vartype>=TValue::OTHERVAR) {
         PyErr_Format(PyExc_IndexError, "invalid value type (%i)", vartype);
         return PYNULL;
       }
@@ -387,7 +388,7 @@ const char *TPyValue2string(TPyValue *self)
       sprintf(pvs, "%f", self->value.floatV);
     else if (self->value.varType==TValue::INTVAR)
       sprintf(pvs, "<%i>", self->value.intV);
-    else if ((self->value.varType == TValue::OTHERVAR) && (self->value.svalV)) {
+    else if (self->value.svalV) {
       string str;
       self->value.svalV->val2str(str);
       pvs = (char *)realloc(pvs, str.size()+1);
@@ -942,6 +943,7 @@ PyObject *VarTypes()
   PyModule_AddIntConstant(vartypes, "Discrete", (int)TValue::INTVAR);
   PyModule_AddIntConstant(vartypes, "Continuous", (int)TValue::FLOATVAR);
   PyModule_AddIntConstant(vartypes, "Other", (int)TValue::OTHERVAR);
+  PyModule_AddIntConstant(vartypes, "String", (int)STRINGVAR);
   return vartypes;
 }
 

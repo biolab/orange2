@@ -27,6 +27,7 @@
 
 #include "filegen.hpp"
 #include "domain.hpp"
+#include "domaindepot.hpp"
 
 using namespace std;
 
@@ -79,14 +80,13 @@ public:
 
   void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
+  bool mayBeTabFile(const string &stem);
   PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
-  PDomain domainWithDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
-  PDomain domainWithoutDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
+  PDomain domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
+  PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
 
-  static void destroyNotifier(TDomain *);
-
-protected:
-  static list<TDomain *> knownDomains;
+private:
+  static TDomainDepot domainDepot_tab, domainDepot_txt;
 };
 
 

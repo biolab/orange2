@@ -31,7 +31,7 @@
 #include "retisinter.ppp"
 
 
-list<TDomain *> TRetisExampleGenerator::knownDomains;
+TDomainDepot TRetisExampleGenerator::domainDepot;
 
 TRetisExampleGenerator::TRetisExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 : TFileExampleGenerator(datafile, readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore))
@@ -119,7 +119,7 @@ PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVa
   if (!str.is_open())
     ::raiseError("RetisDomain: file '%s' not found", stem.c_str());
 
-  TAttributeDescriptions attributeDescriptions;
+  TDomainDepot::TAttributeDescriptions attributeDescriptions;
 
   string className = getLine(str);
   getLine(str); getLine(str);
@@ -129,7 +129,7 @@ PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVa
     string name = getLine(str);
     string type = getLine(str);
     if (type=="discrete") {
-      attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
+      attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::INTVAR));
       PStringList values = mlnew TStringList;
       attributeDescriptions.back().values = values;
       int noVals = atoi(getLine(str).c_str());
@@ -137,36 +137,25 @@ PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVa
         values->push_back(getLine(str).c_str());
     }
     else if (type=="continuous") {
-      attributeDescriptions.push_back(TAttributeDescription(name, TValue::FLOATVAR));
+      attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::FLOATVAR));
       getLine(str); getLine(str);
     }
     else
       ::raiseError("RetisDomain: invalid type ('%s') for attribute '%s'", type.c_str(), name.c_str());
   }
 
-  attributeDescriptions.push_back(TAttributeDescription(className, TValue::FLOATVAR));
+  attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(className, TValue::FLOATVAR));
 
   if (sourceDomain) {
-    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
-  bool domainIsNew;
-  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
-
-  if (domainIsNew && !dontStore) {
-    newDomain->destroyNotifier = destroyNotifier;
-    knownDomains.push_front(newDomain.getUnwrappedPtr());
-  }
-
-  return newDomain;
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
 }
 
-
-void TRetisExampleGenerator::destroyNotifier(TDomain *domain)
-{ knownDomains.remove(domain); }
 
 
 void retis_writeDomain(FILE *file, PDomain dom)

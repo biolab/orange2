@@ -33,7 +33,7 @@
 
 bool readC45Atom(TFileExampleIteratorData &fei, TIdList &atoms);
 
-list<TDomain *> TC45ExampleGenerator::knownDomains;
+TDomainDepot TC45ExampleGenerator::domainDepot;
 
 TC45ExampleGenerator::TC45ExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 : TFileExampleGenerator(datafile, PDomain()),
@@ -87,7 +87,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
   for(TIdList::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
     classValues->push_back(*(ai++)); 
 
-  TAttributeDescriptions attributeDescriptions;
+  TDomainDepot::TAttributeDescriptions attributeDescriptions;
 
   do {
     while(!feof(fei.file) && !readC45Atom(fei, atoms));
@@ -105,11 +105,11 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
       skip->push_back(false);
 
       if ((ai==atoms.end()) || (string((*ai).begin(), (*ai).begin()+9)=="discrete "))
-        attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::INTVAR));
       else if (*ai=="continuous")
-        attributeDescriptions.push_back(TAttributeDescription(name, TValue::FLOATVAR));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::FLOATVAR));
       else {
-        attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(name, TValue::INTVAR));
         PStringList values = mlnew TStringList;
         attributeDescriptions.back().values = values;
         while(ai!=atoms.end())
@@ -121,32 +121,19 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
   if (!attributeDescriptions.size())
     ::raiseError("names file contains no variables but class variable");
 
-  attributeDescriptions.push_back(TAttributeDescription("y", TValue::INTVAR));
+  attributeDescriptions.push_back(TDomainDepot::TAttributeDescription("y", TValue::INTVAR));
   attributeDescriptions.back().values = classValues;
   skip->push_back(false);
 
   if (sourceDomain) {
-    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
-  bool domainIsNew;
-  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
-
-  if (domainIsNew && !dontStore) {
-    newDomain->destroyNotifier = destroyNotifier;
-    knownDomains.push_front(newDomain.getUnwrappedPtr());
-  }
-
-  return newDomain;
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
 }
-
-
-void TC45ExampleGenerator::destroyNotifier(TDomain *domain)
-{ knownDomains.remove(domain); }
-
 
 
 bool writeValues(FILE *file, PVariable var, bool justDiscrete=false)

@@ -25,6 +25,7 @@
 
 #include "filegen.hpp"
 #include "domain.hpp"
+#include "domaindepot.hpp"
 
 using namespace std;
 
@@ -38,10 +39,8 @@ public:
 
   PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-  static void destroyNotifier(TDomain *);
-
-protected:
-  static list<TDomain *> knownDomains;
+private:
+  static TDomainDepot domainDepot;
 };
 
 #endif

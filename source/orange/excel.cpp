@@ -2,6 +2,7 @@
 
 #include "table.hpp"
 #include "stringvars.hpp"
+#include "domaindepot.hpp"
 
 #include "filegen.hpp"
 #include <list>
@@ -18,7 +19,7 @@ public:
   TExampleTable *operator ()(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
 protected:
-  static list<TDomain *> knownDomains;
+  static TDomainDepot domainDepot;
 
 private:
   IDispatch *pXlApp;
@@ -61,7 +62,7 @@ private:
 };
 
 
-list<TDomain *> TExcelReader::knownDomains;
+TDomainDepot TExcelReader::domainDepot;
 
 
 TExcelReader::TExcelReader()
@@ -311,12 +312,12 @@ int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be contin
 // specials: 0 = normal, -1 = class, 1 = ignore, <-1 = meta id
 PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 {
-  TFileExampleGenerator::TAttributeDescriptions attributeDescriptions;
-  TFileExampleGenerator::TAttributeDescriptions metas;
-  TFileExampleGenerator::TAttributeDescription classDescription("", -1);
+  TDomainDepot::TAttributeDescriptions attributeDescriptions;
+  TDomainDepot::TAttributeDescriptions metas;
+  TDomainDepot::TAttributeDescription classDescription("", -1);
 
   for (int attrNo = 0; attrNo < nAttrs; attrNo++) {
-    TFileExampleGenerator::TAttributeDescription *attributeDescription;
+    TDomainDepot::TAttributeDescription *attributeDescription;
 
     char *name = cellAsText(0, attrNo);
     char special = 0;
@@ -337,7 +338,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       else if (*cptr == 'C')
         type = TValue::FLOATVAR;
       else if (*cptr == 'S')
-        type = TValue::OTHERVAR;
+        type = STRINGVAR;
       else
         raiseError("unrecognized flags in attribute name '%s'", cptr);
 
@@ -361,7 +362,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       else if (*cptr == 'C')
         type = TValue::FLOATVAR;
       else if (*cptr == 'S')
-        type = TValue::OTHERVAR;
+        type = STRINGVAR;
       else
         raiseError("unrecognized flags in attribute name '%s'", cptr);
 
@@ -370,13 +371,13 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
 
     switch (special) {
       case 0:
-        attributeDescriptions.push_back(TFileExampleGenerator::TAttributeDescription(cptr, type));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(cptr, type));
         attributeDescription = &attributeDescriptions.back();
         specials.push_back(0);
         break;
 
       case 'm':
-        metas.push_back(TFileExampleGenerator::TAttributeDescription(cptr, type));
+        metas.push_back(TDomainDepot::TAttributeDescription(cptr, type));
         attributeDescription = &metas.back();
         specials.push_back(-2); // this will later be replaced with a real id
         break;
@@ -409,20 +410,14 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
     attributeDescriptions.push_back(classDescription);
 
   if (sourceDomain) {
-    if (!TFileExampleGenerator::checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
-  bool domainIsNew;
   int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = TFileExampleGenerator::prepareDomain(&attributeDescriptions, classDescription.varType>=0, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL, metaIDs);
-
-  if (domainIsNew && !dontStore) {
-    newDomain->destroyNotifier = destroyNotifier;
-    knownDomains.push_front(newDomain.getUnwrappedPtr());
-  }
+  PDomain newDomain = domainDepot.prepareDomain(&attributeDescriptions, classDescription.varType>=0, &metas, sourceVars, NULL, dontStore, dontCheckStored, NULL, metaIDs);
 
   int *mid = metaIDs;
   ITERATE(vector<int>, ii, specials)
@@ -433,10 +428,6 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
 
   return newDomain;
 }
-
-
-void TExcelReader::destroyNotifier(TDomain *domain)
-{ knownDomains.remove(domain); }
 
 
 void TExcelReader::readValue(const int &row, const int &col, PVariable var, TValue &value)

@@ -45,7 +45,7 @@ TDomain::TDomain()
   variables(mlnew TVarList()), 
   version(++domainVersion),
   lastDomain(knownDomains.end()),
-  destroyNotifier(NULL)
+  destroyNotifiers()
 {}
 
 
@@ -55,7 +55,7 @@ TDomain::TDomain(const TVarList &vl)
   variables(mlnew TVarList(vl)),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
-  destroyNotifier(NULL)
+  destroyNotifiers()
 { if (attributes->size())
     attributes->erase(attributes->end()-1); 
 }
@@ -67,7 +67,7 @@ TDomain::TDomain(PVariable va, const TVarList &vl)
   variables(mlnew TVarList(vl)),
   version(++domainVersion),
   lastDomain(knownDomains.end()),
-  destroyNotifier(NULL)
+  destroyNotifiers()
 { if (va)
     variables->push_back(va); 
 }
@@ -82,14 +82,14 @@ TDomain::TDomain(const TDomain &old)
   version(++domainVersion),
   knownDomains(old.knownDomains),
   lastDomain(knownDomains.end()),
-  destroyNotifier(NULL)
+  destroyNotifiers()
 {}
 
 
 TDomain::~TDomain()
 { domainChangedDispatcher(); 
-  if (destroyNotifier)
-    (*destroyNotifier)(this);
+  ITERATE(list<TDestroyNotification>, dni, destroyNotifiers)
+    (*(*dni).first)(this, (*dni).second);
 }
 
 
@@ -500,75 +500,3 @@ void TDomain::domainChangedNoticeHandler(TDomain *dom)
   knownByDomains.remove(dom);
 }
 
-
-PDomain combineDomains(PDomainList sources, TDomainMultiMapping &mapping)
-{
-  PVariable classVar;
-  // I would use reverse iterators, but don't have them
-  TDomainList::const_iterator cri(sources->end()), cre(sources->begin());
-  while(!(*--cri)->classVar && (cri!=cre));
-  classVar = (*cri)->classVar; // might have stopped at the classvar and reached cre which has none...
-      
-  TVarList variables;
-
-  mapping.clear();
-  vector<pair<int, int> > classMapping;
-
-  int domainIdx = 0;
-  TDomainList::const_iterator di(sources->begin()), de(sources->end());
-  for(; di!=de; di++, domainIdx++) {
-
-    int varIdx = 0;
-    TVarList::const_iterator vi((*di)->variables->begin()), ve((*di)->variables->end());
-    for(; vi!=ve; vi++, varIdx++) {
-      if (*vi == classVar)
-        classMapping.push_back(make_pair(domainIdx, varIdx));
-      else {
-        TDomainMultiMapping::iterator dmmi(mapping.begin());
-        TVarList::const_iterator hvi(variables.begin()), hve(variables.end());
-        for(; (hvi!=hve) && (*hvi != *vi); hvi++, dmmi++);
-        if (hvi==hve) {
-          variables.push_back(*vi);
-          mapping.push_back(vector<pair<int, int> >());
-          mapping.back().push_back(make_pair(domainIdx, varIdx));
-        }
-        else
-          (*dmmi).push_back(make_pair(domainIdx, varIdx));
-      }
-    }
-  }
-
-  if (classVar)
-    mapping.push_back(classMapping);
-
-  TDomain *newDomain = mlnew TDomain(classVar, variables);
-  PDomain wdomain = newDomain;
-
-  for(domainIdx = 0, di = sources->begin(); di!=de; domainIdx++, di++)
-    const_ITERATE(TMetaVector, mi, (*di)->metas) {
-      PVariable metavar = newDomain->getMetaVar((*mi).id, false);
-      if (!metavar)
-        newDomain->metas.push_back(*mi);
-      else
-        if (metavar != (*mi).variable)
-          raiseError("Id %i represents two different attributes ('%s' and '%s')", (*mi).id, metavar->name.c_str(), (*mi).variable->name.c_str());
-    }
-
-  return wdomain;
-}
-
-
-void computeMapping(PDomain destination, PDomainList sources, TDomainMultiMapping &mapping)
-{
-  mapping.clear();
-  const_PITERATE(TVarList, vi, destination->variables) {
-    mapping.push_back(vector<pair<int, int> >());
-    int domainIdx = 0;
-    TDomainList::const_iterator si(sources->begin()), se(sources->end());
-    for(; si!=se; si++, domainIdx++) {
-      int pos = (*si)->getVarNum(*vi, false);
-      if (pos != ILLEGAL_INT)
-        mapping.back().push_back(make_pair(domainIdx, pos));
-    }
-  }
-}

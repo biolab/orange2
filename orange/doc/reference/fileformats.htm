@@ -5,7 +5,7 @@
 </HEAD>
 
 <BODY>
-<h1>Supported File Formats</h1>
+<h1>Loading Data from Files</h1>
 
 <P>Orange reads and writes files in a number of different formats.
 <DL>
@@ -61,14 +61,17 @@
 >>> data = orange.ExampleTable("iris#train")
 </XMP>
 
-<P>There's one more important thing to care about when loading files. Say that you have separate files for training and testing examples and load them like this (judging by the extensions, these two files must be in C4.5 format).</P>
+
+<H2>Multiple Datafiles with the Same Domain</H2>
+
+<P>Special mechanisms are at work when you have, for instance, separate files for training and testing examples, but with the same attribute names and types in the same order.</P>
 
 <XMP class="code">
->>> train = orange.ExampleTable("iris.data")
->>> test = orange.ExampleTable("iris.test")
+>>> train = orange.ExampleTable("iris_train")
+>>> test = orange.ExampleTable("iris_test")
 </XMP>
 
-<P>Orange needs to do something special here. When loading the first file, it reads the .names file and constructs attribute definitions and the domain descriptor. When it loads the second file, it reads the names file and checks the domains that were already constructed. It finds out that the iris.test's domain is exactly the same as iris.data's and uses the existing domain instead of constructing a new one. In this case, both datasets had the same .names file, but this is not necessary: when loading data, Orange compares whether an old domain can be reused by the names, types and order of the attributes, presence, name and type of the class attribute and names and type of meta-attributes. Order of meta-attributes is not important. Reuse is restricted to domains coming from the same file-format; when reading C4.5 files, only domains constructed from C4.5 files are checked for potential reuse. It is possible to explicitly tell Orange to reuse another domain, though (see below).<P>
+<P>When loading the first file, Orange constructs a corresponding <a href="Domain.htm">domain</A> with descriptions of attributes. When it loads the second file, it notices that the attribute names, types and their order is the (same). In such a case it reuses the existing domain instead of constructing a new one. An old domain can be reused if all the names, types and order of the attributes matches, together with the class attribute if present. Order of meta-attributes is not important. Reuse is restricted to domains coming from the same file-format; when reading C4.5 files, only domains constructed from C4.5 files are checked for potential reuse. It is possible to explicitly tell Orange to reuse another domain, though (see below).<P>
 
 <P>A situtation that would probably occur even more often is to have an Excel file with two spreadsheets, one containing training and the other testing examples. They can be loaded by:</P>
 
@@ -77,7 +80,7 @@
 >>> test = orange.ExampleTable("breast.xls#test")
 </XMP>
 
-<P>The purpose of reuse is not to save space. If new attribute descriptors were constructed for each file, the attributes in the two datasets would have same names, but would be treated as different attributes. Orange does not distinguish attributes by names but by descriptors. Names are there for your eyes only. Classifier induces from dataset <CODE>train</CODE> wouldn't recognize attributes from dataset <CODE>test</CODE> if there was no reuse.</P>
+<P>The purpose of reuse is far beyond saving a little space. If new attribute descriptors were constructed for each file, the attributes in the two datasets would have same names, but would be treated as different attributes. Orange does not distinguish attributes by names but by descriptors. Names are there for your eyes only. Classifier induced from dataset <CODE>iris_train</CODE> wouldn't recognize attributes from dataset <CODE>iris_test</CODE> if there was no reuse.</P>
 
 <P>You can override the default behaviour by adding a few keyword parameters. You can prohibit reusing domains by setting <code>dontCheckStored</code> to 1. Therefore, if you would, for any weird reason, want to have the above iris datasets belonging to two unrelated domains, you can load them by</p>
 
@@ -113,6 +116,7 @@
 
 <p>Here, <code>some.domain</code> does not need to be a domain that was constructed when loading data from files. If the given domain cannot be reused, an error is reported.</p>
 
+<P>Saving and reusing domain descriptors is handled through instances of class <A href="DomainDepot.htm"><CODE>DomainDepot</CODE></A>. Basically, each file type has its own instance of <CODE>DomainDepot</CODE> that stores all active domains loaded from the files of corresponding type. If need arises, you can create new depots, for instance, if you program routines for reading additional file formats.</P>
 
 <H2>Saving Examples</H2>
 

@@ -75,7 +75,7 @@ public:
        FLOATVAR
          floatV stores a continuous value
          sval can contain a continuous PDistribution
-       OTHERVAR
+       OTHERVAR (eg STRINGVAR?)
          sval stores some PSomeValue
 
      If valueType==valueDC or valueDK
@@ -213,7 +213,7 @@ public:
       switch(varType) {               \
         case INTVAR:     return in;   \
         case FLOATVAR:   return fl;   \
-        case OTHERVAR:   return sv;   \
+        default:   return sv;   \
       }                               \
       return (def);                   \
     }

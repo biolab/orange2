@@ -30,8 +30,8 @@
 
 #include "assistant.ppp"
 
+TDomainDepot TAssistantExampleGenerator::domainDepot;
 
-list<TDomain *> TAssistantExampleGenerator::knownDomains;
 
 TAssistantExampleGenerator::TAssistantExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 : TFileExampleGenerator(datafile, readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore))
@@ -51,9 +51,6 @@ TAssistantExampleGenerator::~TAssistantExampleGenerator()
       mldelete *ii;
 }
 
-
-void TAssistantExampleGenerator::destroyNotifier(TDomain *domain)
-{ knownDomains.remove(domain); }
 
 
 // Overloaded to skip the first line of the file (number of examples)
@@ -142,19 +139,19 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
   if (!str.is_open())
     ::raiseError("AssistantDomain: cannot open file '%s'", stem.c_str());
 
-  TAttributeDescription classDescription(getLine(str), TValue::INTVAR);
+  TDomainDepot::TAttributeDescription classDescription(getLine(str), TValue::INTVAR);
   classDescription.values = mlnew TStringList;
   for(int noval = atoi(getLine(str).c_str()); noval; noval--)
     classDescription.values->push_back(getLine(str));
 
-  TAttributeDescriptions attributeDescriptions;
+  TDomainDepot::TAttributeDescriptions attributeDescriptions;
 
   int noAttr = atoi(getLine(str).c_str());
   intervals = vector<vector<float> *>(noAttr, (vector<float> *)NULL);
   vector<vector<float> *>::iterator ri = intervals.begin();
 
   while(noAttr--) {
-    attributeDescriptions.push_back(TAttributeDescription(getLine(str), TValue::INTVAR));
+    attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(getLine(str), TValue::INTVAR));
     PStringList values = mlnew TStringList();
     attributeDescriptions.back().values = values;
 
@@ -183,21 +180,13 @@ PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sour
   attributeDescriptions.push_back(classDescription);
 
   if (sourceDomain) {
-    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
-  bool domainIsNew;
-  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
-
-  if (domainIsNew && !dontStore) {
-    newDomain->destroyNotifier = destroyNotifier;
-    knownDomains.push_front(newDomain.getUnwrappedPtr());
-  }
-
-  return newDomain;
+  return domainDepot.prepareDomain(&attributeDescriptions, true, NULL, sourceVars, NULL, dontStore, dontCheckStored);
 }
 
 

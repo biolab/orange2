@@ -40,7 +40,9 @@
 int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true, bool csv = false);
 bool atomsEmpty(const TIdList &atoms);
 
-list<TDomain *> TTabDelimExampleGenerator::knownDomains;
+
+TDomainDepot TTabDelimExampleGenerator::domainDepot_tab;
+TDomainDepot TTabDelimExampleGenerator::domainDepot_txt;
 
 
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
@@ -75,9 +77,6 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   startDataLine = fei.line;
 }
 
-
-void TTabDelimExampleGenerator::destroyNotifier(TDomain *domain)
-{ knownDomains.remove(domain); }
 
 
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
@@ -187,22 +186,88 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 }
 
 
+bool TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
+{
+  TIdList varNames;
+  TFileExampleIteratorData fei(stem);
 
-PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ bool domainIsNew;
-  PDomain newDomain;
-  
-  if (autoDetect)
-    newDomain = domainWithDetection(stem, domainIsNew, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
-  else
-    newDomain = domainWithoutDetection(stem, domainIsNew, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+  // if there is no names line, it is not .tab
+  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
+  if (varNames.empty())
+    return false;
 
-  if (domainIsNew && !dontStore) {
-    newDomain->destroyNotifier = destroyNotifier;
-    knownDomains.push_back(newDomain.AS(TDomain));
+  // if any name contains the correct hash formatting it is not tab-delim it's more likely .txt
+  ITERATE(TIdList, ii, varNames) {
+    const char *c = (*ii).c_str();
+    if ((*c=='m') || (*c=='c') || (*c=='i'))
+      c++;
+    if (   ((*c=='D') || (*c=='C') || (*c=='S'))
+        && (c[1]=='#'))
+      return false;
   }
 
-  return newDomain;
+  // if there is no var types line, it is not .tab
+  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
+  if (varNames.empty())
+    return false;
+
+  // Each atom must be either 'd', 'c' or 's', or contain a space
+  ITERATE(TIdList, ii2, varNames) {
+    const char *c = (*ii2).c_str();
+    if (!*c)
+      return false;
+    if (!c[1]) {
+      if ((* c!= 'd') && (*c != 'c') && (*c != 's'))
+        return false;
+    }
+    else {
+      for(; *c && (*c!=' '); c++);
+      if (!*c)
+        return false; // no space
+    }
+  }
+
+  // if there is no flags line, it is not .tab
+  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
+  if (varNames.empty())
+    return false;
+
+  // Check flags
+  ITERATE(TIdList, ii3, varNames) {
+    TProgArguments args("dc: ordered", *ii3, false);
+
+    if (args.unrecognized.size())
+      return false;
+
+    if (args.direct.size()) {
+      if (args.direct.size()>1)
+        return false;
+
+      static const char *legalDirects[] = {"s", "skip","i", "ignore", "c", "class", "m", "meta"};
+      string &direct = args.direct.front();
+      const char **lc = legalDirects;
+      while(*lc && (*lc != direct))
+        lc++;
+      if (!*lc)
+        return false;
+    }
+  }
+
+  return true;
+}
+
+PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ 
+  if (autoDetect) {
+    if (mayBeTabFile(stem))
+      raiseWarning("'%s' is being loaded as .txt, but seems to be .tab file", stem.c_str());
+    return domainWithDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+  }
+  else {
+    if (!mayBeTabFile(stem))
+      raiseWarning("'%s' is being loaded as .tab, but looks more like .txt file", stem.c_str());
+    return domainWithoutDetection(stem, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+  }
 }
 
  
@@ -244,7 +309,7 @@ class TSearchWarranty
   {}
 };
 
-PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
+PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
 { 
   headerLines = 1;
 
@@ -256,7 +321,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
   if (varNames.empty())
     ::raiseError("unexpected end of file '%s'", fei.filename.c_str());
 
-  TAttributeDescriptions attributeDescriptions, metas;
+  TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
   classPos = -1;
   int classType = -1;
 
@@ -344,12 +409,12 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
     }
     else {
       if (attributeType == 1) {
-        metas.push_back(TAttributeDescription(*ni, varType));
+        metas.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
         if (varType==-1)
           searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -metas.size()));
       }
       else if (attributeType) {
-        attributeDescriptions.push_back(TAttributeDescription(*ni, varType));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
         if (varType=-1)
           searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), attributeType==-2 ? -1 : attributeDescriptions.size()-1));
       }
@@ -357,7 +422,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
   }
 
   if (classPos > -1) {
-    attributeDescriptions.push_back(TAttributeDescription(varNames[classPos], classType));
+    attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(varNames[classPos], classType));
     if (classType<0)
       searchWarranties.push_back(TSearchWarranty(classPos, attributeDescriptions.size()-1));
   }
@@ -451,14 +516,14 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
   }
 
   if (sourceDomain) {
-    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot_txt.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
   int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = prepareDomain(&attributeDescriptions, true, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, sourceMetas, metaIDs);
+  PDomain newDomain = domainDepot_txt.prepareDomain(&attributeDescriptions, true, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
 
   int *mid = metaIDs;
   PITERATE(TIntList, ii, attributeTypes)
@@ -471,7 +536,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
 }
 
 
-PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
+PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
 {
   TFileExampleIteratorData fei(stem);
   
@@ -494,8 +559,8 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
   while (varFlags.size() < varNames.size())
     varFlags.push_back("");
 
-  TAttributeDescriptions attributeDescriptions, metas;
-  TAttributeDescription classDescription("", 0);
+  TDomainDepot::TAttributeDescriptions attributeDescriptions, metas;
+  TDomainDepot::TAttributeDescription classDescription("", 0);
   classPos = -1;
   headerLines = 3;
 
@@ -507,7 +572,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
   TIdList::iterator fi(varFlags.begin()), fe(varFlags.end());
   TIntList::iterator ati(attributeTypes->begin());
   for(; vni!=vne; fi++, vni++, ti++, ati++) {
-    TAttributeDescription *attributeDescription = NULL;
+    TDomainDepot::TAttributeDescription *attributeDescription = NULL;
     bool ordered = false;
 
     if (fi!=fe) {
@@ -542,11 +607,11 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
 
     if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
       if (*ati==1) {
-        metas.push_back(TAttributeDescription(*vni, -1, ordered));
+        metas.push_back(TDomainDepot::TAttributeDescription(*vni, -1, ordered));
         attributeDescription = &metas.back();
       }
       else {
-        attributeDescriptions.push_back(TAttributeDescription(*vni, -1, ordered));
+        attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*vni, -1, ordered));
         attributeDescription = &attributeDescriptions.back();
       }
     }
@@ -591,14 +656,14 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
     attributeDescriptions.push_back(classDescription);
 
   if (sourceDomain) {
-    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;
   }
 
   int *metaIDs = mlnew int[metas.size()];
-  PDomain newDomain = prepareDomain(&attributeDescriptions, classPos>=0, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, sourceMetas, metaIDs);
+  PDomain newDomain = domainDepot_tab.prepareDomain(&attributeDescriptions, classPos>=0, &metas, sourceVars, sourceMetas, false, dontCheckStored, NULL, metaIDs);
 
   int *mid = metaIDs;
   PITERATE(TIntList, ii, attributeTypes)

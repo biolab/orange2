@@ -161,6 +161,10 @@ SOURCE=.\orange\cls_example.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\cls_misc.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\cls_orange.cpp
 # End Source File
 # Begin Source File
@@ -210,6 +214,10 @@ SOURCE=.\orange\distvars.cpp
 # Begin Source File
 
 SOURCE=.\orange\domain.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\domaindepot.cpp
 # End Source File
 # Begin Source File
 
@@ -522,6 +530,10 @@ SOURCE=.\orange\cls_example.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\cls_misc.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\cls_orange.hpp
 # End Source File
 # Begin Source File
@@ -571,6 +583,10 @@ SOURCE=.\orange\distvars.hpp
 # Begin Source File
 
 SOURCE=.\orange\domain.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\domaindepot.hpp
 # End Source File
 # Begin Source File
 
