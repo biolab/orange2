@@ -618,10 +618,8 @@ class OrangeCanvasDlg(QMainWindow):
 	#######################
 
 	def closeEvent(self, ce):
-		print self.workspace.getDocumentList()
 		for win in self.workspace.getDocumentList():
 			win.close()
-		print self.workspace.getDocumentList()
 
 		self.saveSettings()
 		if len(self.workspace.getDocumentList()) == 0:

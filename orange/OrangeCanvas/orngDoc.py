@@ -59,11 +59,11 @@ class SchemaDoc(QMainWindow):
 			ce.accept()
 			self.clear()
 		elif res == 1:
-			print "accept close"
+			#print "accept close"
 			self.clear()
 			ce.accept()
 		else:
-			print "ignore close"
+			#print "ignore close"
 			ce.ignore()
 
 	def enableSave(self, enable):
@@ -410,7 +410,7 @@ class SchemaDoc(QMainWindow):
 
 	def loadWidgetSettings(self, filename):
 		if not os.path.exists(filename):
-			print "Unable to load settings file. File ", filename, " does not exist."
+			#print "Unable to load settings file. File ", filename, " does not exist."
 			return
 
 		file = open(filename, "rt")
@@ -649,11 +649,10 @@ if os.path.exists(widgetDir):
 		try:
 			file = open("%s", "r")
 		except:
-			print "File %s not found. Unable to load settings."
 			return
 		strSettings = cPickle.load(file)
 		file.close()
-		""" % (fileName + ".sav", fileName + ".sav")
+		""" % (fileName + ".sav")
 		loadSettings += loadSett
 
 		saveSettings = """
