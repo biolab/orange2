@@ -8,7 +8,7 @@ else:
 
 dllname = hppname = None
 for arg in sys.argv:
-    if arg[-4:] == slext:
+    if arg[-len(slext):] == slext:
         dllname = arg
     elif arg[-4:] == ".hpp":
         hppname = arg
