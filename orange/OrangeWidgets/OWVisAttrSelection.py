@@ -284,9 +284,11 @@ def selectAttributes(data, attrContOrder, attrDiscOrder, projections = None):
     # sort continuous attributes
     if attrContOrder == "None":
         shown += contAttrs
-    elif attrContOrder == "ReliefF" or attrContOrder == "Fisher discriminant":
-        if attrContOrder == "ReliefF":   measure = orange.MeasureAttribute_relief()
-        else:                               measure = MeasureFisherDiscriminant()
+    elif attrContOrder in ["ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]:
+        if attrContOrder == "ReliefF":               measure = orange.MeasureAttribute_relief(k=10, m=50)
+        elif attrContOrder == "Fisher discriminant": measure = MeasureFisherDiscriminant()
+        elif attrContOrder == "Signal to Noise":     measure = S2NMeasure()
+        else:                                        measure = S2NMeasureMix()
 
         dataNew = data.select(contAttrs + [data.domain.classVar])
         attrVals = orngFSS.attMeasure(dataNew, measure)
