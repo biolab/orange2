@@ -27,34 +27,36 @@ typedef vector<TdtwElement> TdtwVector;
 typedef vector<TdtwElement*> PdtwVector;
 typedef vector<TdtwVector> TdtwMatrix;
 
-enum { DTW_EUCLIDEAN, DTW_DERIVATIVE, DTW_DERIVATIVE_SMOOTH };
 
 class TExamplesDistance_DTW : public TExamplesDistance_Normalized
 {
 public:
     __REGISTER_CLASS
 
+	enum { DTW_EUCLIDEAN, DTW_DERIVATIVE };
+	
+	int dtwDistance; //P distance measure between individual attributes (default: square of difference)
+		
 	TExamplesDistance_DTW();
-    TExamplesDistance_DTW(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat);
+    TExamplesDistance_DTW(const int &distance, const bool &normalize, const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat);
   
     virtual float operator()(const TExample &, const TExample &) const;
-    virtual float operator()(const TExample &, const TExample &, const int) const;
-    virtual float operator()(const TExample &, const TExample &, PWarpPath &, const int) const;
+    virtual float operator()(const TExample &, const TExample &, PWarpPath &) const;
 
-private:
-	void TExamplesDistance_DTW::getDerivatives(vector<float> &seq1, vector<float> &der1) const;
-	void TExamplesDistance_DTW::getDerivativesSmooth(vector<float> &seq1, vector<float> &der1) const;
+//private:
+	void getDerivatives(vector<float> &seq1, vector<float> &der1) const;
 	void initMatrix(const vector<float> &seq1, const vector<float> &seq2, TdtwMatrix &mtrx) const;
 	float calcDistance(TdtwMatrix &mtrx) const;
 	PWarpPath setWarpPath(const TdtwMatrix &mtrx) const;
-	void destructMatrix(TdtwMatrix &mtrx) const;
 	void printMatrix(const TdtwMatrix &mtrx) const;
 };
 
 
-class TExamplesDistanceConstructor_DTW : public TExamplesDistanceConstructor {
+class TExamplesDistanceConstructor_DTW : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
+
+  int dtwDistance; //P distance measure between individual attributes (default: square of difference)
 
   TExamplesDistanceConstructor_DTW();
   TExamplesDistanceConstructor_DTW(PExampleGenerator);

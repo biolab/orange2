@@ -102,12 +102,23 @@ public:
 
 
   TExamplesDistance_Normalized();
-  TExamplesDistance_Normalized(const bool &ic, const bool &iu, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Normalized(const bool &ic, const bool &no, const bool &iu, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
 
   void getDifs(const TExample &ex1, const TExample &ex2, vector<float> &difs) const;
   void getNormalized(const TExample &e1, vector<float> &normalized) const;
 };
 
+
+class TExamplesDistanceConstructor_Normalized : public TExamplesDistanceConstructor {
+public:
+  __REGISTER_ABSTRACT_CLASS
+
+  bool normalize; //P tells whether to normalize distances between attributes
+  bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
+
+  TExamplesDistanceConstructor_Normalized();
+  TExamplesDistanceConstructor_Normalized(const bool &ic, const bool &norm, const bool &iu);
+};
 
 /* Maximal distance: 
       the largest distance between two corresponding attribute values
@@ -119,16 +130,14 @@ public:
   __REGISTER_CLASS
 
   TExamplesDistance_Maximal();
-  TExamplesDistance_Maximal(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Maximal(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
 
-class TExamplesDistanceConstructor_Maximal : public TExamplesDistanceConstructor {
+class TExamplesDistanceConstructor_Maximal : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
-
-  bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
   virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
 };
@@ -143,16 +152,14 @@ public:
   __REGISTER_CLASS
 
   TExamplesDistance_Manhattan();
-  TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Manhattan(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
 
-class TExamplesDistanceConstructor_Manhattan : public TExamplesDistanceConstructor {
+class TExamplesDistanceConstructor_Manhattan : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
-
-  bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
   TExamplesDistanceConstructor_Manhattan();
   virtual PExamplesDistance operator()(PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat()) const;
@@ -167,16 +174,14 @@ public:
   __REGISTER_CLASS
 
   TExamplesDistance_Euclidean();
-  TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
+  TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
   virtual float operator()(const TExample &, const TExample &) const;
 };
 
 
-class TExamplesDistanceConstructor_Euclidean : public TExamplesDistanceConstructor {
+class TExamplesDistanceConstructor_Euclidean : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
-
-  bool ignoreUnknowns; //P if true (default: false) unknown values are ignored in computation
 
   TExamplesDistanceConstructor_Euclidean();
   TExamplesDistanceConstructor_Euclidean(PExampleGenerator);

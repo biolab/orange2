@@ -1184,6 +1184,22 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 }
 
 
+PYCLASSCONSTANT_INT(TExamplesDistance_DTW, Euclidean, TExamplesDistance_DTW::DTW_EUCLIDEAN)
+PYCLASSCONSTANT_INT(TExamplesDistance_DTW, Derivative, TExamplesDistance_DTW::DTW_DERIVATIVE)
+
+
+bool convertFromPython(PyObject *pyobj, TAlignment &align)
+{
+  return PyArg_ParseTuple(pyobj, "ii:convertFromPython(Alignment)", &align.i, &align.j) != 0;
+}
+
+    
+PyObject *convertToPython(const TAlignment &align)
+{
+  return Py_BuildValue("ii", align.i, align.j);
+}
+
+
 PyObject *ExamplesDistance_DTW_alignment(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example1, example2) -> (distance, path)")
 {
   PyTRY

@@ -81,9 +81,17 @@ public:
 
 
 TExamplesDistance_DTW::TExamplesDistance_DTW()
+: dtwDistance(DTW_EUCLIDEAN)
 {}
 
 
+TExamplesDistance_DTW::TExamplesDistance_DTW(const int &distance, const bool &normalize, const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
+: TExamplesDistance_Normalized(ignoreClass, normalize, ignoreClass, egen, ddist, dstat),
+  dtwDistance(distance)
+{}
+
+
+/*
 float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2) const
 { 
   vector<float> seq1, seq2;
@@ -94,15 +102,15 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2)
   float dtwDistance = calcDistance(mtrx);
   return dtwDistance;
 }
+*/
 
-
-float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, const int distance = DTW_EUCLIDEAN) const
+float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2) const
 { 
   vector<float> seq1, seq2, der1, der2;
   getNormalized(e1, seq1);
   getNormalized(e2, seq2);
   TdtwMatrix mtrx;
-  switch (distance) {
+  switch (dtwDistance) {
 	case DTW_EUCLIDEAN: {
 	  initMatrix(seq1, seq2, mtrx);
 	  break;
@@ -113,25 +121,19 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2,
 		initMatrix(der1, der2, mtrx);
 		break;
 						 }
-	case DTW_DERIVATIVE_SMOOTH: {
-		getDerivatives(seq1, der1);
-		getDerivatives(seq2, der2);
-		initMatrix(der1, der2, mtrx);
-		break;
-								}
   }
-  float dtwDistance = calcDistance(mtrx);
-  return dtwDistance;
+  float dist = calcDistance(mtrx);
+  return dist;
 }
 
 
-float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, PWarpPath &path, const int distance = DTW_EUCLIDEAN) const
+float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, PWarpPath &path) const
 { 
   vector<float> seq1, seq2, der1, der2;
   getNormalized(e1, seq1);
   getNormalized(e2, seq2);
   TdtwMatrix mtrx;
-  switch (distance) {
+  switch (dtwDistance) {
 	case DTW_EUCLIDEAN: {
 	  initMatrix(seq1, seq2, mtrx);
 	  break;
@@ -142,41 +144,50 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2,
 		initMatrix(der1, der2, mtrx);
 		break;
 						 }
-	case DTW_DERIVATIVE_SMOOTH: {
-		getDerivatives(seq1, der1);
-		getDerivatives(seq2, der2);
-		initMatrix(der1, der2, mtrx);
-		break;
-								}
   }
-  float dtwDistance = calcDistance(mtrx);
+  float dist = calcDistance(mtrx);
   path = setWarpPath(mtrx);
-  return dtwDistance;
+  return dist;
 }
 
 
-void TExamplesDistance_DTW::getDerivativesSmooth(vector<float> &seq, vector<float> &der) const
-{
-}
-
-
+/*	REFERENCE: Keogh et al., Derivative Dynamic Time Warping.
+	ADAPTATION: derivative of the 1st and last point calculated from 2 adj. points (instead of 3)
+	EXAMPLE: seq = [s0,s1,s2], der = [d0,d1,d2]
+		d0 = s1-s0
+		d1 = ((s1-s0)+((s2-s0)/2))/2
+		d2 = s2-s1
+*/
 void TExamplesDistance_DTW::getDerivatives(vector<float> &seq, vector<float> &der) const
 {
-  TFloatList::const_iterator sbegin(seq.begin()), sip(sbegin), si(sip+1), sin(si+1), send(seq.end()), sendp(send-1);
+  TFloatList::const_iterator sbegin(seq.begin()), send(seq.end()), sip(sbegin), si(sbegin), sin(sbegin+1);
   der.clear();
   if ( send - sbegin > 2 ) {
-	  // TODO: der.push_back(1st_element)
-	  for(; si != sendp; si++) {
-		if ((*si) == numeric_limits<float>::signaling_NaN() ){
-		}
-		else
-		{
-		}
+	  // d0 = s1-s0
+	  der.push_back( (*sin)-(*si) );
+	  si++;
+	  sin++;
+	  // d1, ...
+	  for(; sin != send; sip++, si++, sin++) {
+		der.push_back( ((*si)-(*sip)+((*sin)-(*sip))/2)/2 );
+			
 	  }
-	  // TODO: normalized.push_back(last_element)
+	  sip++;
+	  si++;
+	  // d2
+	  der.push_back( (*si)-(*sip) );
   }
   else {
-	  // TODO
+	  // 2 time points
+	  if ( sin < send ) {
+		  int diff = (*sin)-(*si);
+		  der.push_back(diff);
+		  der.push_back(diff);
+	  }
+	  // single time point -> NaN
+	  else {
+		  der.push_back(numeric_limits<float>::signaling_NaN());
+	  }
   }
 }
 
@@ -381,26 +392,10 @@ if (	(iii>=0) \
 
 
 TExamplesDistanceConstructor_DTW::TExamplesDistanceConstructor_DTW()
+: dtwDistance(TExamplesDistance_DTW::DTW_EUCLIDEAN)
 {}
 
 
 PExamplesDistance TExamplesDistanceConstructor_DTW::operator()(PExampleGenerator egen, const int &, PDomainDistributions ddist, PDomainBasicAttrStat bstat) const
-{ return mlnew TExamplesDistance_DTW(ignoreClass, egen, ddist, bstat); }
+{ return mlnew TExamplesDistance_DTW(dtwDistance, normalize, ignoreClass, egen, ddist, bstat); }
 
-
-TExamplesDistance_DTW::TExamplesDistance_DTW(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
-: TExamplesDistance_Normalized(ignoreClass, false, egen, ddist, dstat)
-{}
-
-
-
-bool convertFromPython(PyObject *pyobj, TAlignment &align)
-{
-  return PyArg_ParseTuple(pyobj, "ii:convertFromPython(Alignment)", &align.i, &align.j) != 0;
-}
-
-    
-PyObject *convertToPython(const TAlignment &align)
-{
-  return Py_BuildValue("ii", align.i, align.j);
-}
