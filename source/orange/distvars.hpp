@@ -290,7 +290,7 @@ public:
   __REGISTER_CLASS
 
   TDomainDistributions();
-  TDomainDistributions(PExampleGenerator, const long weightID=0);
+  TDomainDistributions(PExampleGenerator, const long weightID=0, bool skipDiscrete = false, bool skipContinuous = false);
   void normalize();
 };
 

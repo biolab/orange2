@@ -3030,7 +3030,7 @@ inline PyObject *DomainDistributions_sort(TPyOrange *self, PyObject *args) PYARG
 /* Note that this is not like callable-constructors. They return different type when given
    parameters, while this one returns the same type, disregarding whether it was given examples or not.
 */
-PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples | <list of Distribution>) -> DomainDistributions")
+PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID] | <list of Distribution>) -> DomainDistributions")
 { PyTRY
     PyObject *obj = ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_new(type, args, keywds);
     if (obj)

@@ -13,6 +13,8 @@
 
 <P>Different measures of distance thus appear in pairs - a class that measures the distance and a class that constructs it based on the data. The abstract classes representing such a pair are <CODE>ExamplesDistance</CODE> and <CODE>ExamplesDistanceConstructor</CODE>. Since most measures work on normalized distances between corresponding attributes, there is an abstract intermediate class <CODE>ExamplesDistance_Normalized</CODE> that takes care of normalizing. The remaining classes correspond to different ways of defining the distances, such as Manhattan or Euclidean distance.</P>
 
+<P>Unknown values are treated correctly only by Euclidean and Relief distance. For other measure of distance, a distance between unknown and known or between two unknown values is always 0.5.</P>
+
 <hr>
 
 <H2>ExamplesDistance</H2>
@@ -43,6 +45,10 @@
 <LI>if a factor is 0, the attribute is ignored.</LI>
 </UL>
 </DD>
+
+<DT>bases, averages, variances</DT>
+<DD>The minimal values, averages and variances (continuous attributes only)</DD>
+
 <DT>domainVersion</DT>
 <DD>stores a domain version for which the normalizers were computed. The domain version is increased each time a domain description is changed (i.e. attributes are added or removed); this is used for a quick check that the user is not attempting to measure distances between examples that do not correspond to normalizers. Since domains are practicably immutable (especially from Python), you don't need to care about this anyway.</DD>
 </DL>
@@ -73,6 +79,28 @@
 <H2>ExamplesDistance_Euclidean / ExamplesDistanceConstructor_Euclidean</H2>
 
 <P>Euclidean distance is a square root of sum of squared per-attribute distances, i.e. <CODE>sqrt(apply(add, [x*x for x in dist]))</CODE>, where <CODE>dist</CODE> is the result of <CODE>ExamplesDistance_Normalized.attributeDistances</CODE>.</P>
+
+<P class=section>Methods</P>
+<DL class=attributes>
+<DT>distributions</DT>
+<DD>An object of type <CODE>DomainDistributions</CODE> that holds the distributions for all discrete attributes. This is needed to compute distances between known and unknown values.</DD>
+
+<DT>bothSpecialDist</DT>
+<DD>A list containing the distance between two unknown values for each discrete attribute.</DD>
+</DL>
+</P>
+
+<P>This measure of distance deals with unknown values by computing the expected square of distance based on the distribution obtained from the "training" data. Squared distance between
+<UL>
+<LI>a known and unknown continuous attribute equals squared distance between the known and the average, plus variance</LI>
+<LI>two unknown continuous attributes equals double variance</LI>
+<LI>a known and unknown discrete attribute equals the probability that the unknown attribute has different value than the known (ie, 1 - probability of the known value)</LI>
+<LI>two unknown discrete attributes equals the probability that two random chosen values are equal, which can be computed as 1 - sum of squares of probabilities.</LI>
+</UL>
+
+<P>Continuous cases can be handled by averages and variances inherited from <CODE>ExamplesDistance_normalized</CODE>. The data for discrete cases are stored in <CODE>distributions</CODE> (used for unknown vs. known value) and in <CODE>bothSpecial</CODE> (the precomputed distance between two unknown values).</P>
+
+<P>See the output of <A href="examplesdistance-missing.py">examplesdistance-missing.py</A> for an example.</A>
 
 
 <H2>ExampleDistance_Relief / ExampleDistanceConstructor_Relief</H2>
