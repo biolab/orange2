@@ -133,6 +133,8 @@ class OWRadviz(OWWidget):
         # K-NN OPTIMIZATION functionality
         self.optimizationDlg.parentName = "Radviz"
         self.graph.kNNOptimization = self.optimizationDlg
+        self.optimizationDlg.optimizeGivenProjectionButton.show()
+        self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
@@ -218,13 +220,13 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.disableControls()
 
         testIndex = 0
-        for (acc, tableLen, other, attrList, strList) in results:
+        for (acc, other, tableLen, attrList, tryIndex, strList) in results:
             if self.optimizationDlg.isOptimizationCanceled(): continue
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
 
             accuracy, other_results = self.graph.getProjectionQuality(attrList)            
-            self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, strList)
+            self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, tryIndex, strList)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
@@ -278,6 +280,20 @@ class OWRadviz(OWWidget):
         secs = time.time() - startTime
         print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections:  %d\nUsed time: %d min, %d sec" %(self.graph.triedPossibilities, possibilities, secs/60, secs%60)        
 
+    def optimizeGivenProjectionClick(self):
+        results = list(self.optimizationDlg.getShownResults())
+        if len(results) == 0:
+            self.error("To optimize a projection you first have to evaluate some projections and select one")
+            return
+        (acc, other, tableLen, attrList, tryIndex, strList) = results[self.optimizationDlg.resultList.currentItem()]
+
+        self.optimizationDlg.disableControls()
+
+        self.graph.optimizeGivenProjection(attrList, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
+
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -301,7 +317,7 @@ class OWRadviz(OWWidget):
         self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, list, tryIndex, strList) = val
         
         attrNames = []
         for attr in self.data.domain:
