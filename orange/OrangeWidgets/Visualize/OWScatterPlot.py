@@ -73,12 +73,12 @@ class OWScatterPlot(OWWidget):
         #x attribute
         self.attrXGroup = QVButtonGroup("X axis attribute", self.GeneralTab)
         self.attrX = QComboBox(self.attrXGroup)
-        self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateGraph)
+        self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.setShownAttribute)
 
         # y attribute
         self.attrYGroup = QVButtonGroup("Y axis attribute", self.GeneralTab)
         self.attrY = QComboBox(self.attrYGroup)
-        self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateGraph)
+        self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.setShownAttribute)
 
         # coloring
         self.attrColorGroup = QVButtonGroup("Coloring attribute", self.GeneralTab)
@@ -440,6 +440,10 @@ class OWScatterPlot(OWWidget):
             if str(combo.text(i)) == text:
                 combo.setCurrentItem(i)
                 return
+
+    def setShownAttribute(self, *args):
+        self.graph.removeAllSelections()
+        self.updateGraph()
 
     def updateGraph(self, *args):
         #if self.data == None: return
