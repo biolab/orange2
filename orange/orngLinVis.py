@@ -353,14 +353,15 @@ class _parseSVM(_parseLR):
 
 
 class _marginConverter:
-    def __init__(self,estdomain,estimator):
+    def __init__(self,coeff,estdomain,estimator):
+        self.coeff = coeff
         self.estdomain = estdomain
         self.cv = self.estdomain.classVar(0)
         self.estimator = estimator
 
     def __call__(self, r):
         # got a margin
-        ex = orange.Example(self.estdomain,[r,self.cv]) # need a dummy class value
+        ex = orange.Example(self.estdomain,[r*self.coeff,self.cv]) # need a dummy class value
         p = self.estimator(ex,orange.GetProbabilities)
 #        print "&(",r,p,')'
         return p[1]
@@ -372,7 +373,7 @@ class _parseMargin(_parse):
 
     def __call__(self,classifier,examples, buckets):
         (beta, coeffs, coeff_names, basis, m, _probfunc) = self.parser(classifier.classifier,examples, buckets)
-        return (beta, coeffs, coeff_names, basis, m, _marginConverter(self.marginc.estdomain, self.marginc.estimator))
+        return (beta, coeffs, coeff_names, basis, m, _marginConverter(self.marginc.coeff, self.marginc.estdomain, self.marginc.estimator))
         
 
 class Visualizer:
