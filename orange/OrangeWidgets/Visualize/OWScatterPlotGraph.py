@@ -464,7 +464,8 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # compute how good is a specific projection with given xAttr and yAttr
     # ##############################################################
-    def getProjectionQuality(self, xAttr, yAttr, className):
+    def getProjectionQuality(self, attrList):
+        xAttr = attrList[0]; yAttr = attrList[1]
         xArray = self.noJitteringScaledData[self.attributeNameIndex[xAttr]]
         yArray = self.noJitteringScaledData[self.attributeNameIndex[yAttr]]
 
