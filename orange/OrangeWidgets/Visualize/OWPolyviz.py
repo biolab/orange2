@@ -24,7 +24,7 @@ import OWToolbars
 ###########################################################################################
 class OWPolyviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "useDifferentColors", "tooltipKind", "tooltipValue"]
+    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -50,7 +50,6 @@ class OWPolyviz(OWWidget):
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
         self.autoSendSelection = 1
-        self.sendShownAttributes = 0
         self.rotateAttributes = 0
         self.tooltipKind = 0
         self.tooltipValue = 0
@@ -134,7 +133,6 @@ class OWPolyviz(OWWidget):
 
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
-        OWGUI.checkBox(box4, self, 'sendShownAttributes', 'Send only shown attributes')
 
         # ####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
@@ -469,21 +467,9 @@ class OWPolyviz(OWWidget):
     def sendSelections(self):   
         if not self.data: return
         (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), self.attributeReverse)
-        if not self.sendShownAttributes:
-            self.send("Selected Examples",selected)
-            self.send("Unselected Examples",unselected)
-            self.send("Example Distribution", merged)
-        else:
-            attrs = self.getShownAttributeList() + [self.data.domain.classVar.name]
-            if selected:    self.send("Selected Examples", selected.select(attrs))
-            else:           self.send("Selected Examples", None)
-            if unselected:  self.send("Unselected Examples", unselected.select(attrs))
-            else:           self.send("Unselected Examples", None)
-            if merged:
-                attrs += [merged.domain.classVar.name]
-                self.send("Example Distribution", merged.select(attrs))
-            else:           self.send("Example Distribution", None)
-
+        self.send("Selected Examples",selected)
+        self.send("Unselected Examples",unselected)
+        self.send("Example Distribution", merged)
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -571,7 +557,9 @@ class OWPolyviz(OWWidget):
             
             if data:
                 for attr in data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
-                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(attr.name + " +")
+                for i in range(len(data.domain.attributes)):
+                    if i < 25: self.shownAttribsLB.insertItem(data.domain.attributes[i].name + " +")
+                    else: self.hiddenAttribsLB.insertItem(data.domain.attributes[i].name + " +")
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
         
         self.updateGraph()

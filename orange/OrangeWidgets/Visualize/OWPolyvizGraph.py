@@ -212,9 +212,6 @@ class OWPolyvizGraph(OWVisGraph):
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
-        selectedData = Numeric.take(self.scaledData, indices)
-        sum_i = Numeric.add.reduce(selectedData)
-
         XAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
         YAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
         XAnchor = self.createXAnchors(length)
@@ -235,6 +232,11 @@ class OWPolyvizGraph(OWVisGraph):
             
         selectedData = Numeric.take(self.scaledData, indices)
         sum_i = Numeric.add.reduce(selectedData)
+
+        # test if there are zeros in sum_i
+        if len(Numeric.nonzero(sum_i)) < len(sum_i):
+            add = Numeric.where(sum_i == 0, 1.0, 0.0)
+            sum_i += add
 
         x_positions = Numeric.sum(Numeric.swapaxes(XAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
         y_positions = Numeric.sum(Numeric.swapaxes(YAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
@@ -641,6 +643,11 @@ class OWPolyvizGraph(OWVisGraph):
                     validData = self.getValidList(indices)                    
                     selectedData = Numeric.take(self.noJitteringScaledData, indices)
                     sum_i = Numeric.add.reduce(selectedData)
+
+                    # test if there are zeros in sum_i
+                    if len(Numeric.nonzero(sum_i)) < len(sum_i):
+                        add = Numeric.where(sum_i == 0, 1.0, 0.0)
+                        sum_i += add
                     
                     count = sum(validData)
                     if count < self.kNNOptimization.minExamples:

@@ -71,9 +71,9 @@ class MyQToolTip(QToolTip):
 
     def maybeTip(self, p):
         if self.rect and self.text:
-            print p.x(), p.y(), self.rect.left()
+            #print p.x(), p.y(), self.rect.left()
             if self.rect.contains(p):
-                print "tip"
+                #print "tip"
                 self.tip(self.rect, text)
         
 
@@ -602,7 +602,7 @@ class OWVisGraph(OWGraph):
     # does a point (x,y) lie inside one of the selection rectangles (polygons)
     def isPointSelected(self, x,y):
         for curveKey in self.selectionCurveKeyList:
-            print "isPointSelected:", x, y
+            #print "isPointSelected:", x, y
             curve = self.curve(curveKey)
             if curve.isInside(x,y): return 1
         return 0

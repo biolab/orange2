@@ -283,6 +283,7 @@ class OWScatterPlot(OWWidget):
         self.progressBar.setProgress(current)
 
     def showSelectedAttributes(self):
+        self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
         (accuracy, tableLen, list, strList) = val
