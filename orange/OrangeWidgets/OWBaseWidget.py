@@ -57,9 +57,10 @@ class OWBaseWidget(QDialog):
             logo - the logo file
         """
         # directories are better defined this way, otherwise .ini files get written in many places
-        fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon 
-        logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
-        self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
+        import os.path
+        self.widgetDir = os.path.dirname(__file__)
+        fullIcon = self.widgetDir + "/icons/" + icon 
+        logo = self.widgetDir + "/icons/" + logo
         #fullIcon = os.path.realpath("./icons") + "/" + icon
         #logo = os.path.realpath("./icons") + "/" +logo
         #self.widgetDir = os.path.realpath(".") + "/"
