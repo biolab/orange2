@@ -345,7 +345,7 @@ class OWParallelCoordinates(OWWidget):
             self.shownAttribsLB.insertItem(attr)
 
         for attr in self.data.domain:
-            if attr.name not in list:
+            if attr.name not in list and attr.name != self.data.domain.classVar.name:
                 self.hiddenAttribsLB.insertItem(attr.name)
             
         self.updateGraph()

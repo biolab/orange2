@@ -29,27 +29,6 @@ class QMyLabel(QLabel):
     def sizeHint(self):
         return self.size
 
-class MessageInfo(QDialog):
-    def __init__(self, parent=None):
-        QDialog.__init__(self, parent)
-        
-        # just so that we get an icon
-        mb = QMessageBox (self)
-        mb.setIcon(QMessageBox.Information)
-        icon = mb.iconPixmap();
-
-        self.setCaption("Qt Info")        
-        self.HItemBox = QHBoxLayout(self)
-        #self.button = QButton(self)
-        #self.button.setMinimumHeight(50)
-        #self.button.setMinimumWidth(50)
-        #self.button.setPixmap(icon)
-        #self.button.show()
-        self.textInfo = QLabel("Please wait while computing...", self)
-        self.textInfo.setMinimumHeight(40)
-        #self.HItemBox.addWidget(self.button)
-        self.HItemBox.addWidget(self.textInfo)
-
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
@@ -65,24 +44,24 @@ class OWScatterPlotMatrix(OWWidget):
 
         #set default settings
         self.data = None
-        self.pointWidth = 7
+        self.pointWidth = 5
         self.jitteringType = "uniform"
-        self.showTitle = 1
-        self.showAttributeValues = 1
-        self.showXAxisTitle = 1
-        self.showYAxisTitle = 1
+        self.showTitle = 0
+        self.showAttributeValues = 0
+        self.showXAxisTitle = 0
+        self.showYAxisTitle = 0
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
         self.showLegend = 0
         self.jitterContinuous = 0
-        self.jitterSize = 5
+        self.jitterSize = 2
         self.showFilledSymbols = 1
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
 
         self.addInput("cdata")
         self.addInput("selection")
-        self.addOutput("cdata")
+        #self.addOutput("cdata")
         self.addOutput("view")      # when user right clicks on one graph we can send information about this graph to a scatterplot
 
         #load settings
@@ -121,8 +100,6 @@ class OWScatterPlotMatrix(OWWidget):
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options, PYSIGNAL("gridColorChange(QColor &)"), self.setGridColor)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
-
-        self.infoDialog = MessageInfo(self)
 
         self.grid = QGridLayout(self.mainArea)
         self.graphs = []
@@ -232,7 +209,6 @@ class OWScatterPlotMatrix(OWWidget):
     
 
     def createGraphs(self):
-        self.infoDialog.show()
         self.removeAllGraphs()
 
         list = []
@@ -265,8 +241,6 @@ class OWScatterPlotMatrix(OWWidget):
             label.show()
             self.labels.append(label)
 
-        self.infoDialog.hide()
-
     # we catch mouse release event so that we can send the "view" signal
     def onMouseReleased(self, e):
         for i in range(len(self.graphs)):
@@ -282,7 +256,7 @@ class OWScatterPlotMatrix(OWWidget):
 
         if data == None: return
 
-        self.send("cdata", data)
+        #self.send("cdata", data)
 
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
