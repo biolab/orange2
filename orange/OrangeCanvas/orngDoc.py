@@ -84,13 +84,19 @@ class SchemaDoc(QMainWindow):
         y = 150
         newwidget.move(x,y)
 
-        count = 0
+        list = []
         for item in self.widgets:
             if item.widget.name == widget.name:
-                count = count+1
+                list.append(item.caption)
 
-        if count > 0:
-            newwidget.caption = newwidget.caption + " (" + str(count+1) + ")"
+        i = 1; found = 0
+        while not found:
+            if newwidget.caption + " (" + str(i) + ")" not in list:
+                found = 1
+                newwidget.caption = newwidget.caption + " (" + str(i) + ")"
+            else:
+                i += 1
+                
         newwidget.show()
         newwidget.updateTooltip(self.canvasView)
         self.widgets.append(newwidget)
@@ -226,7 +232,7 @@ class SchemaDoc(QMainWindow):
                     
     # load a scheme with name "filename"
     def loadDocument(self, filename):
-        
+            
         if not os.path.exists(filename):
             self.close()
             QMessageBox.critical(self,'Qrange Canvas','Unable to find file \"'+ filename,  QMessageBox.Ok + QMessageBox.Default)
