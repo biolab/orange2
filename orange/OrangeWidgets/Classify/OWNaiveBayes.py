@@ -15,7 +15,8 @@
 # output a new table and export it in variety of formats.
 
 from OData import *
-from OWWidget import * 
+from OWWidget import *
+import OWGUI
 
 ##############################################################################
 
@@ -55,89 +56,38 @@ class OWNaiveBayes(OWWidget):
 
         # GUI
         # name
-        self.nameBox = QVGroupBox(self.controlArea)
-        self.nameBox.setTitle('Learner/Classifier Name')
-        QToolTip.add(self.nameBox,"Name to be used by other widgets to identify your learner/classifier.")
+        OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
+                 tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        OWGUI.separator(self.controlArea)
 
-        self.nameEdt = QLineEdit(self.nameBox)
-        self.nameEdt.setText(self.name)
-
-        QWidget(self.controlArea).setFixedSize(0, 8)
         # parameters
-        self.parBox = QVGroupBox(self.controlArea)
-        self.parBox.setTitle('Probability Estimation')
+        box = QVGroupBox(self.controlArea)
+        box.setTitle('Probability Estimation')
 
-        self.labu = QLabel(self.parBox)
-        self.labu.setText('Unconditional probabilities:')
+        width = 123
+        itms = [e[0] for e in self.estMethods]
+        OWGUI.comboBox(box, self, 'probEstimation', items=itms, label='Unconditional:', labelWidth=width, orientation='horizontal',
+                       tooltip='Method to estimate unconditional probability.', callback=self.refreshControls)
+        itms = [e[0] for e in self.condEstMethods]
+        self.est2 = OWGUI.comboBox(box, self, 'condProbEstimation', items=itms, label='Conditional (discrete):', labelWidth=width, orientation='horizontal',
+                                   tooltip='Conditional probability estimation method used for discrete attributes.', callback=self.refreshControls)
+        self.est3 = OWGUI.comboBox(box, self, 'condProbContEstimation', items=itms, label='Conditional (continuous):', labelWidth=width, orientation='horizontal',
+                                   tooltip='Conditional probability estimation method used for continuous attributes.', callback=self.refreshControls)
+        OWGUI.separator(box)
 
-        self.estBox1 = QHBox(self.parBox)
-        self.lab1 = QLabel(self.estBox1)
-        self.lab1.setText('')
-
-        self.est1 = QComboBox(self.estBox1)
-        for e in self.estMethods:
-            self.est1.insertItem(e[0])
-        self.est1.setCurrentItem(self.probEstimation)
-
-        QWidget(self.parBox).setFixedSize(0, 8)
-
-        self.labc = QLabel(self.parBox)
-        self.labc.setText('Conditional probabilities:')
-        
-        self.estBox2 = QHBox(self.parBox)
-        self.lab2 = QLabel(self.estBox2)
-        self.lab2.setText('discrete: ')
-
-        self.est2 = QComboBox(self.estBox2)
-        for e in self.condEstMethods:
-            self.est2.insertItem(e[0])
-        self.est2.setCurrentItem(self.condProbEstimation)
-        
-        self.estBox3 = QHBox(self.parBox)
-        self.lab3 = QLabel(self.estBox3)
-        self.lab3.setText('continuous: ')
-
-        self.est3 = QComboBox(self.estBox3)
-        for e in self.condEstMethods:
-            self.est3.insertItem(e[0])
-        self.est3.setCurrentItem(self.condProbContEstimation)
-
-        QWidget(self.parBox).setFixedSize(0, 8)
-
-        self.mBox = QHBox(self.parBox)
-        self.lab2 = QLabel(self.mBox)
-        self.lab2.setText('              m: ')
-        
-        self.mEdt = QLineEdit(self.mBox)
-        self.mEdt.setText(str(self.m))
-        self.mValid = QDoubleValidator(self.controlArea)
-        self.mValid.setRange(0,10000,1)
-        self.mEdt.setValidator(self.mValid)
+        mValid = QDoubleValidator(self.controlArea)
+        mValid.setRange(0,10000,1)
+        self.mwidget = OWGUI.lineEdit(box, self, 'm', label='Parameter for m-estimate:', labelWidth=width, orientation='horizontal', box=None, space=None, tooltip=None, callback=None, valueType = str, validator = mValid)
 
         self.refreshControls()
 
-        #self.mBox.setDisabled(self.m<>2)        
-                
-        QWidget(self.controlArea).setFixedSize(0, 8)
-        # apply button
-        self.applyBtn = QPushButton("&Apply", self.controlArea)
-        #self.applyBtn.setFixedSize(70,22)
-        
-        # signals
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)
-        self.connect(self.mEdt, SIGNAL("textChanged(const QString &)"), self.setM)
-        self.connect(self.nameEdt, SIGNAL("textChanged(const QString &)"), self.setName)
-        self.connect(self.est1, SIGNAL("activated(int)"), self.setEst1Method)
-        self.connect(self.est2, SIGNAL("activated(int)"), self.setEst2Method)
-        self.connect(self.est3, SIGNAL("activated(int)"), self.setEst3Method)
+        OWGUI.separator(self.controlArea)
+        self.applyBtn = OWGUI.button(self.controlArea, self, "&Apply", callback=self.setLearner)
         
         self.resize(150,100)
+        self.setLearner()                   # this just sets the learner, no data yet
 
-        self.setLearner()                   # this just sets the learner, no data
-                                            # has come to the input yet
-
-    # main part:         
-
+    # setup the bayesian learner
     def setLearner(self):
         if self.m < 0:
             QMessageBox.information(self.controlArea, "Parameter m Out of Bounds",
@@ -146,14 +96,13 @@ class OWNaiveBayes(OWWidget):
         
         self.learner = orange.BayesLearner()
         self.learner.name = self.name
-        # set the probability estimation!!!
-        if 1:
-            self.m_estimator.m = self.m
-            self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
-            if self.condProbEstimation:
-                self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
-            if self.condProbContEstimation:
-                self.learner.conditionalEstimatorConstructorContinuous = self.condEstContMethods[self.condProbContEstimation][1]
+        # set the probability estimation
+        self.m_estimator.m = float(self.m)
+        self.learner.estimatorConstructor = self.estMethods[self.probEstimation][1]
+        if self.condProbEstimation:
+            self.learner.conditionalEstimatorConstructor = self.condEstMethods[self.condProbEstimation][1]
+        if self.condProbContEstimation:
+            self.learner.conditionalEstimatorConstructorContinuous = self.condEstContMethods[self.condProbContEstimation][1]
                 
         for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
                             ("conditionalEstimatorConstructor", self.condEstMethods[self.condProbEstimation][1]),
@@ -161,7 +110,7 @@ class OWNaiveBayes(OWWidget):
             if cons:
                 setattr(self.learner, attr, cons)
                 if hasattr(cons, "m"):
-                    setattr(cons, "m", self.m)
+                    setattr(cons, "m", float(self.m))
                     
         self.send("Learner", self.learner)
         if self.data <> None:
@@ -177,8 +126,7 @@ class OWNaiveBayes(OWWidget):
             self.send("Classifier", self.classifier)
             self.send("Naive Bayesian Classifier", self.classifier)
 
-    # slots: handle input signals        
-        
+    # handles input signal
     def cdata(self,data):
         self.data = data
         if data:
@@ -188,42 +136,19 @@ class OWNaiveBayes(OWWidget):
             self.classifier = None
             self.send("Classifier", self.classifier)
             self.send("Naive Bayesian Classifier", self.classifier)
-            
 
     # signal processing
-
-    def setM(self, value):
-        if str(value) <> '-' and len(str(value))>0:
-            self.m = float(str(value))
-        
-    def setName(self, value):
-        self.name = str(value)
-
     def refreshControls(self):
-        self.mBox.setEnabled(self.probEstimation==2 or self.condProbEstimation==3 or self.condProbContEstimation==3)
+        self.mwidget.box.setEnabled(self.probEstimation==2 or self.condProbEstimation==3 or self.condProbContEstimation==3)
 
-        self.est2.changeItem(QString("same (%s)" % self.est1.currentText()), 0)
-        if self.est2.currentItem():
-          self.est3.changeItem(QString("same (%s)" % self.est2.currentText()), 0)
+        self.est2.changeItem(QString("same (%s)" % self.estMethods[self.probEstimation][0]), 0)
+        if self.est2.currentItem(): # is est3 set to same?
+          self.est3.changeItem(QString("same (%s)" % self.condEstMethods[self.condProbEstimation][0]), 0)
         else:
-          self.est3.changeItem(QString("same (%s)" % self.est1.currentText()), 0)
-        
-    def setEst1Method(self, value):
-        self.probEstimation = value
-        self.refreshControls()
+          self.est3.changeItem(QString("same (%s)" % self.estMethods[self.probEstimation][0]), 0)
 
-    def setEst2Method(self, value):
-        self.condProbEstimation = value
-        self.refreshControls()
-
-    def setEst3Method(self, value):
-        self.condProbContEstimation = value
-        self.refreshControls()
-        
 ##############################################################################
 # Test the widget, run from DOS prompt
-# > python OWDataTable.py)
-# Make sure that a sample data set (adult_sample.tab) is in the directory
 
 if __name__=="__main__":
     a=QApplication(sys.argv)

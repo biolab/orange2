@@ -40,7 +40,6 @@ def widgetLabel(widget, label=None, labelWidth=None):
 ##############################################################################
 # Orange GUI Widgets
 
-# before labelWithSpin
 def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
 	b = widgetBox(widget, box, orientation)
 	widgetLabel(b, label, labelWidth)
@@ -56,17 +55,6 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
 		master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
 	return b
 
-##def labelWithSpin_hb(widget, master, text, min, max, value, step = 1, callback=None):
-##	hb = QHBox(widget)
-##	QLabel(text, hb)
-##	wa = QSpinBox(min, max, step, hb)
-##	wa.setValue(getattr(master, value))
-##
-##	master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))	
-##	if callback:
-##		master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
-##	return hb
-
 def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0):
 	b = widgetBox(widget, box, orientation=None)
 	wa = QCheckBox(text, b)
@@ -79,17 +67,19 @@ def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None,
 		master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
 	return wa
 
-def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, space=None, tooltip=None, callback=None, valueType = str):
+def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, space=None, tooltip=None, callback=None, valueType = str, validator=None):
 	b = widgetBox(widget, box, orientation)
 	widgetLabel(b, label, labelWidth)
 	wa = QLineEdit(b)
 	wa.setText(str(getattr(master,value)))
 	if tooltip: QToolTip.add(wa, tooltip)
+	if validator: wa.setValidator(validator)
 	master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, valueType))
 	master.controledAttributes.append((value, CallFront_lineEdit(wa)))
 	if callback:
 		master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
 	if space: QWidget(widget).setFixedSize(0, space)
+	wa.box = b
 	return wa
 
 def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None):
@@ -105,7 +95,7 @@ def checkWithSpin(widget, master, text, min, max, checked, value, posttext = Non
 	master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, checked))
 	master.connect(wb, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
 	master.controledAttributes.append((checked, CallFront_checkBox(wa)))
-	master.controledAttributes.append((checked, CallFront_spin(wb)))
+	master.controledAttributes.append((value, CallFront_spin(wb)))
 
 	if checkCallback:
 		master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, checkCallback, widget=wa, getwidget=getwidget))
@@ -119,6 +109,9 @@ def button(widget, master, text, callback = None, disabled=0):
 	btn.setDisabled(disabled)
 	if callback: master.connect(btn, SIGNAL("clicked()"), callback)
 	return btn
+
+def separator(widget, width=0, height=8):
+	QWidget(widget).setFixedSize(width, height)
 
 # btnLabels is a list of either char strings or pixmaps
 def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None, callback=None):
@@ -172,7 +165,6 @@ def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.
 	
 	return slider
 
-
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
 	init = getattr(master, value)
 	if box:
@@ -222,11 +214,9 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
 	slider.box = hb
 	return slider
 
-def comboBox(widget, master, value, box=None, items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str):
-	if box:
-		hb = QHGroupBox(box, widget)
-	else:
-		hb = widget
+def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orientation='vertical', items=None, tooltip=None, callback=None, sendSelectedValue = 0, valueType = str):
+	hb = widgetBox(widget, box, orientation)
+	widgetLabel(hb, label, labelWidth)
 	if tooltip: QToolTip.add(hb, tooltip)
 	combo = QComboBox(hb)
 
@@ -258,8 +248,8 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
     combo = comboBox(hbox, master, value, items = items, tooltip = tooltip, callback = callback, sendSelectedValue = sendSelectedValue, valueType = valueType)
     return combo
 
-
 ##############################################################################
+# callback handlers
 
 class ValueCallback:
 	def __init__(self, widget, attribute, f = None):
@@ -304,7 +294,8 @@ class FunctionCallback:
 		apply(self.f, (), kwds)
 
 ##############################################################################
-
+# call fronts (this allows that change of the value of the variable
+# changes the related widget
 
 class CallFront_spin:
 	def __init__(self, control):
@@ -319,7 +310,6 @@ class CallFront_checkBox:
 
 	def __call__(self, value):
 		self.control.setChecked(value)
-
 
 class CallFront_comboBox:
 	def __init__(self, control, valType = None):
@@ -336,7 +326,6 @@ class CallFront_comboBox:
 		else:
 			self.control.setCurrentItem(value)
 		
-
 class CallFront_hSlider:
 	def __init__(self, control):
 		self.control = control
@@ -344,14 +333,12 @@ class CallFront_hSlider:
 	def __call__(self, value):
 		self.control.setValue(value)
 		
-
 class CallFront_lineEdit:
 	def __init__(self, control):
 		self.control = control
 
 	def __call__(self, value):
 		self.control.setText(str(value))
-
 
 class CallFront_radioButtons:
 	def __init__ (self, control):
@@ -360,6 +347,8 @@ class CallFront_radioButtons:
 	def __call__(self, value):
 		self.control.buttons[value].setOn(1)
 		
+##############################################################################
+# some table related widgets
 
 class tableItem(QTableItem):
 	def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white):

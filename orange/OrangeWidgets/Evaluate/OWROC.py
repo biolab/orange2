@@ -60,9 +60,9 @@ class singleClassROCgraph(OWGraph):
         self.setAxisScale(QwtPlot.xBottom, -0.0, 1.0, 0)
         self.setAxisScale(QwtPlot.yLeft, -0.0, 1.0, 0)
         self.setShowXaxisTitle(1)
-        self.setXaxisTitle("FP rate")
+        self.setXaxisTitle("FP Rate")
         self.setShowYLaxisTitle(1)
-        self.setYLaxisTitle("TP rate")
+        self.setYLaxisTitle("TP Rate")
         self.setShowMainTitle(1)
         self.setMainTitle(title)
         self.targetClass = 0
@@ -1017,7 +1017,7 @@ class OWROC(OWWidget):
 
         for c in self.dres.classValues:
             tmpclQVGB = QVGroupBox(self.missClassificationCostQVB)
-            tmpclQVGB.setTitle("cl: " + str(c))
+            tmpclQVGB.setTitle("Predicted Class: " + str(c))
 
             hbl1 = QHBox(tmpclQVGB)
             hb = QHBox(hbl1)
@@ -1071,7 +1071,7 @@ class OWROC(OWWidget):
             self.graphs = []
 
             for i in range(self.numberOfClasses):
-                graph = singleClassROCgraph(self.mainArea, "", "cl: " + self.dres.classValues[i])
+                graph = singleClassROCgraph(self.mainArea, "", "Predicted Class: " + self.dres.classValues[i])
                 self.graphs.append( graph )
             self.target(self.targetClass)
 

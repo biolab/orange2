@@ -25,9 +25,9 @@ class OWC45Tree(OWWidget):
 
         # Settings
         self.name = 'C4.5'
-        self.gainRatio = 1;  self.subset = 0;     self.probThresh = 0;      self.minObjs = 2
+        self.gainRatio = 1;  self.subset = 0;     self.probThresh = 0;     self.minObjs = 2
         self.window = 0;     self.increment = 0;  self.cf = 0.25;          self.trials = 10
-        self.prune = 1;      self.convertToOrange = 0
+        self.prune = 1;      self.convertToOrange = 1
         
         self.loadSettings()
         
@@ -41,7 +41,7 @@ class OWC45Tree(OWWidget):
 
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
 
         self.qMea = QComboBox(self.controlArea)
         self.qMea.insertItem("Information gain")
@@ -51,20 +51,22 @@ class OWC45Tree(OWWidget):
         OWGUI.checkBox(self.controlArea, self, 'subset', 'Subsetting (-s)')
         OWGUI.checkBox(self.controlArea, self, 'probThresh', 'Probabilistic threshold for continuous attributes (-p)')
 
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
 
         self.preLeafBox = OWGUI.spin(self.controlArea, self, "minObjs", 1, 1000, label="Min. instances in leaves (-m)")
         self.windowBox = OWGUI.spin(self.controlArea, self, "window", 1, 1000, label="Size of initial window (-w)")
         self.incrementBox = OWGUI.spin(self.controlArea, self, "increment", 1, 1000, label="Increment (-i)")
         self.cfBox = OWGUI.spin(self.controlArea, self, "cf", 1, 100, label="Pruning confidence level in % (-c)")
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
         
         OWGUI.checkBox(self.controlArea, self, 'prune', 'Return pruned trees')
         OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure')
 
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
+        OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
 
-        self.resize(100,550)
+
+        self.resize(100,350)
 
     # main part:         
 
@@ -94,9 +96,6 @@ class OWC45Tree(OWWidget):
         self.data=data
         self.setLearner()
 
-
-    # signal processing
-
 ##############################################################################
 # Test the widget, run from DOS prompt
 # > python OWDataTable.py)
@@ -104,10 +103,10 @@ class OWC45Tree(OWWidget):
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWClassificationTree()
+    ow=OWC45Tree()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('../adult_sample')
+    dataset = orange.ExampleTable('adult_sample')
     ow.cdata(dataset)
 
     ow.show()

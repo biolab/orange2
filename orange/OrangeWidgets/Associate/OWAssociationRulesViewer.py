@@ -2,7 +2,7 @@
 <name>Association Rules Viewer</name>
 <description>Association rules viewer</description>
 <category>Associations</category>
-<icon>icons/Unknown.png</icon>
+<icon>icons/AssociationRulesViewer.png</icon>
 <priority>300</priority>
 """
 

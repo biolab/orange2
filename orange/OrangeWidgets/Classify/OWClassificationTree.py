@@ -60,7 +60,7 @@ preprocessors to filter/change the data.
         # name
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
         
         # attribute quality estimation
         qBox = QVGroupBox(self.controlArea)
@@ -74,12 +74,12 @@ preprocessors to filter/change the data.
         
         self.hbxRel1 = OWGUI.spin(qBox, self, "relM", 1, 1000, 10, label="Relief's reference examples: ")
         self.hbxRel2 = OWGUI.spin(qBox, self, "relK", 1, 50, label="Relief's neighbours")
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
         self.measureChanged(self.estim)
 
         # structure of the tree
         OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
 
         # prepruning
         self.pBox = QVGroupBox(self.controlArea)
@@ -92,8 +92,7 @@ preprocessors to filter/change the data.
         self.preNodeMajBox, self.preNodeMajPBox = \
           OWGUI.checkWithSpin(self.pBox, self, "Stop splitting nodes with ", 1, 100, "preNodeMaj", "preNodeMajP", "% of majority class")
         
-        QWidget(self.controlArea).setFixedSize(0, 16)
-
+        OWGUI.separator(self.controlArea)
         self.mBox = QVGroupBox(self.controlArea)
 
         # post-pruning
@@ -102,26 +101,24 @@ preprocessors to filter/change the data.
         self.postMPruningBox, self.postMPruningPBox = \
           OWGUI.checkWithSpin(self.mBox, self, "m for m-error pruning ", 0, 1000, 'postMPruning', 'postM')
 
-        QWidget(self.controlArea).setFixedSize(0, 16)
-
         # apply button
-        self.applyBtn = QPushButton("&Apply Changes", self.controlArea)
-        self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)
+        OWGUI.separator(self.controlArea)
+        OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
 
-        self.resize(100,550)
+        self.resize(100,400)
 
     # main part:         
 
     def setLearner(self):
         self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
-                                   reliefK = self.relK, reliefM = self.relM,
-                                   binarization = self.bin,
-                                   minExamples = self.preNodeInst and self.preNodeInstP,
-                                   minSubset = self.preLeafInst and self.preLeafInstP,
-                                   maxMajority = self.preNodeMaj and self.preNodeMajP/100.0,
-                                   sameMajorityPruning = self.postMaj,
-                                   mForPruning = self.postMPruning and self.postM,
-                                   storeExamples = 1)
+            reliefK = self.relK, reliefM = self.relM,
+            binarization = self.bin,
+            minExamples = self.preNodeInst and self.preNodeInstP,
+            minSubset = self.preLeafInst and self.preLeafInstP,
+            maxMajority = self.preNodeMaj and self.preNodeMajP/100.0,
+            sameMajorityPruning = self.postMaj,
+            mForPruning = self.postMPruning and self.postM,
+            storeExamples = 1)
                                    
         self.learner.name = self.name
         self.send("Learner", self.learner)

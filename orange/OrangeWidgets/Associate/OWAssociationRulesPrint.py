@@ -2,7 +2,7 @@
 <name>Association Rules Print</name>
 <description>Association rules print</description>
 <category>Associations</category>
-<icon>icons/Unknown.png</icon>
+<icon>icons/AssociationRulesPrint.png</icon>
 <priority>400</priority>
 """
 

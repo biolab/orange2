@@ -2,14 +2,12 @@
 <name>Association Rules Filter</name>
 <description>Association rules filter</description>
 <category>Associations</category>
-<icon>icons/Unknown.png</icon>
+<icon>icons/AssociationRulesFilter.png</icon>
 <priority>200</priority>
 """
 
-
 import orange
 import orngAssoc
-from OData import *
 from OWWidget import *
 
 import sys
@@ -26,7 +24,7 @@ class AssociationRulesFilterCanvas(QCanvas):
         self.draw(numcols, numrows, support_min, support_max, confidence_min, confidence_max, cell_width, cell_height)
         
     def draw(self, numcols, numrows, support_min, support_max, confidence_min, confidence_max, cell_width, cell_height):
-        # Najprej skrij vse celice nato jih izbriši
+        # hide all cells and delete them
         for a in self.allItems():
             a.hide()
         self.cells = []        
@@ -34,7 +32,7 @@ class AssociationRulesFilterCanvas(QCanvas):
         # nastavi se na ustrezno velikost
         self.resize(numcols * cell_width +1, numrows * cell_height +1)
         
-        # preštej pravila po celicah, ugotovi skupno število pravil
+        # count rules in cells
         rules_count = 0
         cell_rule_counts = []
         for x in range(numcols):
@@ -42,40 +40,40 @@ class AssociationRulesFilterCanvas(QCanvas):
                 cell_rule_counts.append(0)
 
         for rule in self.rules:
-            # Ali je pravilo v zaželenem okvirju
+            # is the rule within the cell?
             if rule.support > support_min and rule.support <= support_max and rule.confidence > confidence_min and rule.confidence <= confidence_max:
                 rules_count += 1
 
                 x = int((rule.support - support_min) * numcols / (support_max - support_min))
 
-                # upoštevaj tudi možnost, da je rezultat na robu
+                # upostevaj tudi moznost, da je rezultat na robu
                 if x == (rule.support - support_min) * numcols / (support_max - support_min):
                     x -= 1
                 y = numrows - 1 - int((rule.confidence - confidence_min) * numrows / (confidence_max - confidence_min))
 
-                # upoštevaj tudi možnost, da je rezultat na robu
+                # upostevaj tudi moznost, da je rezultat na robu
                 if y == numrows - 1 - ((rule.confidence - confidence_min) * numrows / (confidence_max - confidence_min)):
                     y += 1
 
                 cell_rule_counts[x * numrows + y] += 1
             
 
-        # poiši maksimalno število pravil v celici                            
+        # poisi maksimalno stevilo pravil v celici                            
         max_cell_rule_count = 1
         for x in cell_rule_counts:
             if x > max_cell_rule_count:
                 max_cell_rule_count = x
 
-        # èrna naj pomeni vsaj 10 pravil
+        # crna naj pomeni vsaj 10 pravil
         if max_cell_rule_count < 10:
             max_cell_rule_count = 10
             
-        # nariši mrežo
+        # narisi mrezo
         for x in range(numcols):
             for y in range(numrows):
-                # število pravil v trenutni celici
+                # stevilo pravil v trenutni celici
                 cell_rule_count = cell_rule_counts[x*numrows + y]
-                # nastavi velikost in položaj posamezne celice
+                # nastavi velikost in polozaj posamezne celice
                 cell = QCanvasRectangle(x * cell_width, y * cell_height, cell_width+1, cell_height+1, self)
                 # nastavi barvo celice
                 if cell_rule_count == 0:
@@ -85,9 +83,9 @@ class AssociationRulesFilterCanvas(QCanvas):
                     cell.setBrush(QBrush(QColor(color-20, color-20, color)))
                 # nastavi barvo in tip roba celice
                 cell.setPen(QPen(QColor(200,200,200), 1));
-                # pokaži celico
+                # pokazi celico
                 cell.show()
-                # shrani celico, da je garbage collector ne izbriše
+                # shrani celico, da je garbage collector ne izbrise
                 self.cells.append(cell)
         
         self.update()
@@ -102,7 +100,7 @@ class AssociationRulesFilterBrowser(QCanvasView):
         self.setFixedSize(365, 365)
         self.update()
 
-    # miškin klik, zapomni si koordinato    
+    # miskin klik, zapomni si koordinato    
     def contentsMousePressEvent(self, ev):
         self.startX = ev.pos().x()
         self.startY = ev.pos().y()
@@ -119,7 +117,7 @@ class AssociationRulesFilterBrowser(QCanvasView):
         self.rectangle.show()
         self.canvas().update()
 
-    # miška premaknjena, tipka še ne spušèena (javljaj dogodek za izris legende)                                                  
+    # miska premaknjena, tipka se ne spuscena (javljaj dogodek za izris legende)                                                  
     def contentsMouseMoveEvent(self, ev):
         self.endX = ev.pos().x()
         self.endY = ev.pos().y()
@@ -127,7 +125,7 @@ class AssociationRulesFilterBrowser(QCanvasView):
         self.rectangle.setSize(self.endX - self.startX, self.endY - self.startY)
         self.canvas().update()
 
-    # tipka na miški spušèena, poglej za katero tipko je šlo in sproži ustrezni dogodek            
+    # tipka na miski spuscena, poglej za katero tipko je slo in sprozi ustrezni dogodek            
     def contentsMouseReleaseEvent(self, ev):
         if (self.startX > self.endX):
             t = self.startX
@@ -138,7 +136,7 @@ class AssociationRulesFilterBrowser(QCanvasView):
             self.startY = self.endY
             self.endY = t
             
-        # popravi selekcijo na mrežo
+        # popravi selekcijo na mrezo
         #if (ev.button() & QMouseEvent.LeftButton):
         if True:
             if (self.startX < 0):
@@ -175,10 +173,10 @@ class AssociationRulesFilterBrowser(QCanvasView):
             self.rectangle.setPen(QPen(QColor(Qt.gray), 2, Qt.DashLine))
             self.rectangle.show()
 
-        # nariši spremembe
+        # narisi spremembe
         self.canvas().update()
         
-        # ali je bil pritisnjen levi ali desni miškin gumb        
+        # ali je bil pritisnjen levi ali desni miskin gumb        
         if (ev.button() & QMouseEvent.LeftButton):    
             self.emit(PYSIGNAL("sigNewRulesAreaSelected"),(self.startX, self.startY, self.endX, self.endY, ))
         else:
@@ -254,21 +252,7 @@ class OWAssociationRulesFilter(OWWidget):
         self.confidenceMaxValueSpinBox = QSpinBox(self.confidence)
         self.confidenceMaxValueSpinBox.setRange(1,100)
         self.confidenceMaxValueSpinBox.setSuffix(' %')
-        
-        #self.gridsettings = QGroupBox(5, QGroupBox.Vertical , 'Grid View Settings', self)
-        #self.gridsettingsCellWidthLabel = QLabel('Cell Width:', self.gridsettings)
-        #self.gridsettingsCellHeightLabel = QLabel('Cell Height:', self.gridsettings)
-        #self.gridsettingsCellNumLabel = QLabel('Num of cells in', self.gridsettings)
-        #self.gridsettingsCellRowNumLabel = QLabel('Row:', self.gridsettings)
-        #self.gridsettingsCellColNumLabel = QLabel('Column:', self.gridsettings)
-        #self.gridsettingsCellWidthSpinBox = QSpinBox(self.gridsettings)
-        #self.gridsettingsCellWidthSpinBox.setSuffix(' px')
-        #self.gridsettingsCellHeightSpinBox = QSpinBox(self.gridsettings)
-        #self.gridsettingsCellHeightSpinBox.setSuffix(' px')
-        #self.gridsettingsCellNumLabel2 = QLabel(self.gridsettings)
-        #self.gridsettingsCellRowNumSpinBox = QSpinBox(self.gridsettings)
-        #self.gridsettingsCellColNumSpinBox = QSpinBox(self.gridsettings)
-        
+                
         self.buttonApply = QPushButton('Zoom In', self.controlArea)
         self.buttonReset = QPushButton('Default Zoom', self.controlArea)
         self.buttonShowEntire = QPushButton('No Zoom', self.controlArea)
@@ -280,7 +264,7 @@ class OWAssociationRulesFilter(OWWidget):
         self.vbox.addWidget(self.statusBar)
         self.hbox3.addWidget(self.edtRulesGB)        
 
-        # poberi odveèen prostor pod mrežo
+        # poberi odvecen prostor pod mrezo
         self.vbox1spacer = QSpacerItem(0, 0, QSizePolicy.Fixed , QSizePolicy.Expanding)
         self.vbox1.addItem(self.vbox1spacer)
 
@@ -296,7 +280,7 @@ class OWAssociationRulesFilter(OWWidget):
         self.connect(self.AssociationRulesFilterBrowser, PYSIGNAL("sigNewRulesAreaSelected"), self.slotNewGridAreaSelected)
         self.connect(self,PYSIGNAL("rulesChanged"),self.displayRules)
     
-    # ponovno nariši grid po podatkih, ki jih hraniš
+    # draw grid for the stored data
     def redrawGrid(self):
         if self.support_min == self.support_max:
             self.support_max = self.support_max + 0.01
@@ -306,11 +290,11 @@ class OWAssociationRulesFilter(OWWidget):
         self.gridGB.setTitle('Support Horizontal('+ str(self.support_min) +':'+ str(self.support_max) +')     Confidence Vertical('+ str(self.confidence_min) +':'+ str(self.confidence_max) +')')        
         self.AssociationRulesFilterCanvas.draw(self.numcols, self.numrows, self.support_min, self.support_max, self.confidence_min, self.confidence_max, self.cellwidth, self.cellheight)
         
-    # podatke, ki jih hraniš, izpiši v okenca    
+    # update the info windows
     def writeValuesToUser(self, support_min, support_max, confidence_min, confidence_max):
         self.supportMinValueSpinBox.setValue(support_min * 100)
 
-        # upoštevaj tudi tisoèice pri support in confidence max
+        # upostevaj tudi tisocice pri support in confidence max
         if int(support_max * 100) < 100 * support_max:
             self.supportMaxValueSpinBox.setValue(support_max * 100 + 1)
         else:
@@ -327,7 +311,7 @@ class OWAssociationRulesFilter(OWWidget):
         #self.gridsettingsCellColNumSpinBox.setValue(self.numcols)
         #self.gridsettingsCellRowNumSpinBox.setValue(self.numrows)
     
-    # podatke iz okenc preberi v podatke, ki jih hraniš
+    # podatke iz okenc preberi v podatke, ki jih hranis
     def readValuesFromUser(self):
         #self.numcols = self.gridsettingsCellColNumSpinBox.value()
         #self.numrows = self.gridsettingsCellRowNumSpinBox.value()
@@ -350,7 +334,7 @@ class OWAssociationRulesFilter(OWWidget):
         del(self.rules[:])
         self.rules.extend(self.allrules)
 
-        # nastavi priporoèeno obmoèje
+        # nastavi priporoceno obmocje
         if len(self.allrules) > 0:
             rule = self.allrules[0]
             self.support_max = rule.support
@@ -431,7 +415,7 @@ class OWAssociationRulesFilter(OWWidget):
                 if not confidence_max < 1:
                     confidence_max = 1
 
-                # normaliziraj na normalno število digitalk
+                # normaliziraj na normalno stevilo digitalk
                 confidence_max = round(confidence_max, 3)
                 confidence_min = round(confidence_min, 3)
                 support_min = round(support_min, 3)
@@ -465,31 +449,18 @@ class OWAssociationRulesFilter(OWWidget):
                 support_max = (self.support_max - self.support_min) / (self.numcols) * x12 + self.support_min
                 confidence_min = ((self.numrows) - y11) * (self.confidence_max - self.confidence_min) / (self.numrows) + self.confidence_min
                 confidence_max = ((self.numrows) - y12) * (self.confidence_max - self.confidence_min) / (self.numrows) + self.confidence_min
-                
-                if support_min < 0.0:
-                    support_min = 0.0
-                
-                if support_max > 1.0:
-                    support_max = 1.0
-                
-                if confidence_min < 0.0:
-                    confidence_min = 0.0
-                    
-                if confidence_max > 1.0:
-                    confidence_max = 1.0
 
-                # normaliziraj na normalno število digitalk
-                confidence_max = round(confidence_max, 3)
-                confidence_min = round(confidence_min, 3)
-                support_min = round(support_min, 3)
-                support_max = round(support_max, 3)
+                support_min = round(max(support_min, 0.0), 3)
+                support_max = round(min(support_max, 1.0), 3)
+                confidence_min = round(max(confidence_min, 0.0), 3)
+                confidence_max = round(min(confidence_max, 1.0), 3)
 
                 rules_count = 0
                 del (self.rules[:])
                 for rule in self.allrules:
-                    if round(rule.support, 3) > support_min:
+                    if round(rule.support, 3) >= support_min:
                         if round(rule.support, 3) <= support_max:
-                            if round(rule.confidence, 3) > confidence_min:
+                            if round(rule.confidence, 3) >= confidence_min:
                                 if round(rule.confidence, 3) <= confidence_max:
                                     rules_count = rules_count + 1
                                     self.rules.append(rule)
@@ -507,6 +478,7 @@ class OWAssociationRulesFilter(OWWidget):
         for rule in self.rules:
             self.edtRules.append(`rule`)
         self.send("Association Rules", self.rules)
+
     def arules(self,rules):                # channel po katerem dobi podatke
         del(self.allrules[:])
         self.allrules.extend(rules)
@@ -527,4 +499,3 @@ if __name__=="__main__":
     ow.show()
     a.exec_loop()
     ow.saveSettings()
-            

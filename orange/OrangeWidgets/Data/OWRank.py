@@ -161,13 +161,7 @@ by their relevance for particular classification
         self.recalculate()
 
     def sort(self,col):
-        "Sort the column col"
-#        print col
-        if col==self.sortby:
-            samecolumn=TRUE
-        else:
-            samecolumn=FALSE
-        if not samecolumn:
+        if not col==self.sortby:
             if col<2: 
                 #table.sortColumn sort in alphabetical order, so it can only by used for the attribute and C/D columns
                 self.table.sortColumn(col,TRUE,TRUE)
@@ -179,9 +173,7 @@ by their relevance for particular classification
                     x=float(str(self.table.text(i,col)))
                     for j in range(i+1,self.table.numRows()):
                         y=float(str(self.table.text(j,col)))
-#                        print x,y, cmp(x,y)
                         if x>y:
-#                            print "swap!"
                             self.swapRows(i,j)
                             x=y
         else:   #reversing selection is faster

@@ -32,14 +32,7 @@ class OWClassificationTreeViewer(OWWidget):
     settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
 
     def __init__(self, parent=None, name='Classification Tree Viewer'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """ClassificationTreeViewer displays a classification
-tree in a hierarchical list view.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, name, "ClassificationTreeViewer displays a classification tree in a hierarchical list view.")
 
         self.dataLabels = (('Majority class', 'Class'),
                   ('Probability of majority class', 'P(Class)'),
@@ -71,7 +64,6 @@ tree in a hierarchical list view.
         self.dBox.setTitle('Show Data')
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
-        # QWidget(self.controlArea).setFixedSize(0, 16)
 
         self.expBox = QHGroupBox(self.controlArea)
         self.expBox.setTitle('Expand/Shrink to Level')

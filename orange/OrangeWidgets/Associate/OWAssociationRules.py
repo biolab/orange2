@@ -2,7 +2,7 @@
 <name>Association Rules</name>
 <description>Association rules inducer</description>
 <category>Associations</category>
-<icon>icons/Unknown.png</icon>
+<icon>icons/AssociationRules.png</icon>
 <priority>100</priority>
 """
 
@@ -59,10 +59,8 @@ class OWAssociationRules(OWWidget):
                     rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100.)
                 else:
                     rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules)
-                print len(rules)
                 if len(rules) >= self.maxRules:
                     break
-            print len(rules)
             self.send("Association Rules", rules)
 
     def checkSparse(self):

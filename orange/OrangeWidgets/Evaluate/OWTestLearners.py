@@ -1,9 +1,6 @@
 """
 <name>Test Learners</name>
-<description>TestLearners widget can take learners on the input and tests them on a single data set. Alternatively, it can
-evaluate already build classifiers. For testing learners, it implements different sampling techniques.
-It reports on variety of statistics, including accuracy, sensitivity, specificity, information score,
-AUC (area under ROC curve), and Brier score.</description>
+<description>Estimates the predictive performance of learners on a data set.</description>
 <category>Evaluation</category>
 <icon>icons/TestLearners.png</icon>
 <priority>200</priority>
@@ -31,19 +28,7 @@ class OWTestLearners(OWWidget):
            )
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "TestLearners",
-        """TestLearners widget can take learners
-on the input and tests them\n on a single data set. Alternatively, it can
-evaluate already build classifiers. For testing learners,
-it implements different sampling techniques.
-It reports on variety of statistics, including accuracy,
-sensitivity, specificity, information score,
-AUC (area under ROC curve), and Brier score.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, "TestLearners", "Takes a set of learners and tests\nthem on a single data set.")
         
         self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata, 1), ("Learner", orange.Learner, self.learner, 0)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
@@ -62,7 +47,7 @@ AUC (area under ROC curve), and Brier score.
         self.results = None; self.scores = None
 
         # GUI
-        self.s = [None, None, None]
+        self.s = [None, None, None, None]
         self.sBox = QVButtonGroup("Sampling", self.controlArea)        
         self.s[0] = QRadioButton('Cross Validation', self.sBox)
 
@@ -84,12 +69,14 @@ AUC (area under ROC curve), and Brier score.
         QWidget(box).setFixedSize(19, 8)
         OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
 
+        self.s[3] = QRadioButton('Test on Train Data', self.sBox)        
+
         QWidget(self.sBox).setFixedSize(0, 8)
         self.applyBtn = QPushButton("&Apply", self.sBox)
         self.applyBtn.setDisabled(TRUE)
 
         self.s[self.sampleMethod].setChecked(TRUE)        
-        QWidget(self.controlArea).setFixedSize(0, 16)
+        OWGUI.separator(self.controlArea)
         
         # statistics
         self.statBox = QVGroupBox(self.controlArea)
@@ -112,8 +99,8 @@ AUC (area under ROC curve), and Brier score.
             
         # signals
         self.connect(self.applyBtn, SIGNAL("clicked()"), self.test)
-        self.dummy1 = [None]*3
-        for i in range(3):
+        self.dummy1 = [None]*len(self.s)
+        for i in range(len(self.s)):
             self.dummy1[i] = lambda x, v=i: self.sChanged(x, v)
             self.connect(self.s[i], SIGNAL("toggled(bool)"), self.dummy1[i])
         self.dummy2 = [None]*len(self.stat)
@@ -128,61 +115,80 @@ AUC (area under ROC curve), and Brier score.
     # be tested. the list in results should either be recomputed or added
     # else, if learner=None, all results are recomputed (user pressed apply button)
     def test(self, learner=None):
-#        try:
-            pb = ProgressBar(self, iterations=self.nFolds)
-
-            # testing
-            if self.results and learner:
-                learners = [learner]
-            else:
-                learners = self.learnDict.values()
-
-            if self.sampleMethod==0:
-                res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=1, callback=pb.advance)
-            elif self.sampleMethod==1:
-                res = orngTest.leaveOneOut(learners, self.data)
-            elif self.sampleMethod==2:
-                res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat)
-
-            cm = orngStat.computeConfusionMatrices(res, classIndex = self.classindex)
-            cdt = orngStat.computeCDT(res, classIndex = self.classindex)
-
-            # merging of results and scores (if necessary)
-            if self.results and learner:
-                if len(self.learners) > len(self.scores[0]):
-                    # this is a new learner, add new results
-                    self.results.classifierNames.append(learner.name)
-                    self.results.numberOfLearners += 1
-                    for i,r in enumerate(self.results.results):
-                        r.classes.append(res.results[i].classes[0])
-                        r.probabilities.append(res.results[i].probabilities[0])
-                    for (i, stat) in enumerate(self.stat):
-                        self.scores[i].append(eval('orngStat.' + stat[2])[0])
-                else:
-                    # this is an old but updated learner
-                    indx = self.learners.index(learner)
-                    for i,r in enumerate(self.results.results):
-                        r.classes[indx] = res.results[i].classes[0]
-                        r.probabilities[indx].append(res.results[i].probabilities[0])
-                    for (i, stat) in enumerate(self.stat):
-                        self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
-            else: # test on all learners
-                self.results = res
-                self.scores = []
-                for i in range(len(self.stat)):
-                    self.scores.append(eval('orngStat.' + self.stat[i][2]))
-
-            # update the tables that show the results
-            self.setStatTable()
-            self.send("Evaluation Results", self.results)
-            pb.finish()
+        if self.data:
+            print 'ddd', len(self.data)
+        else:
+            print 'no data'
             
+        pb = ProgressBar(self, iterations=self.nFolds)
+
+        # testing
+        if self.results and learner:
+            learners = [learner]
+        else:
+            learners = self.learnDict.values()
+
+        if self.sampleMethod==0:
+            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=1, callback=pb.advance)
+        elif self.sampleMethod==1:
+            res = orngTest.leaveOneOut(learners, self.data)
+        elif self.sampleMethod==2:
+            res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat)
+        elif self.sampleMethod==3:
+            res = orngTest.learnAndTestOnLearnData(learners, self.data)
+
+        cm = orngStat.computeConfusionMatrices(res, classIndex = self.classindex)
+        cdt = orngStat.computeCDT(res, classIndex = self.classindex)
+
+        # merging of results and scores (if necessary)
+        if self.results and learner:
+            if len(self.learners) > len(self.scores[0]):
+                # this is a new learner, add new results
+                print 'new learner'
+                self.results.classifierNames.append(learner.name)
+                self.results.numberOfLearners += 1
+                for i,r in enumerate(self.results.results):
+                    r.classes.append(res.results[i].classes[0])
+                    r.probabilities.append(res.results[i].probabilities[0])
+                for (i, stat) in enumerate(self.stat):
+                    self.scores[i].append(eval('orngStat.' + stat[2])[0])
+            else:
+                # this is an old but updated learner
+                indx = self.learners.index(learner)
+                print 'old learner', indx
+                self.results.classifierNames[indx] = learner.name
+                for i,r in enumerate(self.results.results):
+                    r.classes[indx] = res.results[i].classes[0]
+                    r.probabilities[indx] = res.results[i].probabilities[0]
+                for (i, stat) in enumerate(self.stat):
+                    self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
+        else: # test on all learners
+            print 'all learners', learner
+            self.results = res
+            self.scores = []
+            for i in range(len(self.stat)):
+                self.scores.append(eval('orngStat.' + self.stat[i][2]))
+
+        # update the tables that show the results
+        self.setStatTable()
+        self.send("Evaluation Results", self.results)
+        pb.finish()
+
+        print 'XXX RESULTS'
+        for r in self.results.results:
+            for p in r.probabilities:
+                print '%1.2f' % p[0],
+            print
+
 #        except Exception, msg:
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 
     # slots: handle input signals        
-        
     def cdata(self,data):
+        if data:
+            print 'GOT DATA', len(data)
+        else:
+            print 'GOT EMPTY DATA'
         if not data:
             return # have to handle this appropriately
         self.data = orange.Filter_hasClassValue(data)
@@ -193,24 +199,39 @@ AUC (area under ROC curve), and Brier score.
             self.test()
 
     def learner(self, learner, id=None):
-        # what if None is send (widget is removed!). Then remove the learner,
-        # and corresponding data in self.results and self.scores, and refresh everything
-        if not learner:
-            pass
-        if not self.learnDict.has_key(id):
-            self.learners.append(learner)
-        else:
-            self.learners[self.learners.index(self.learnDict[id])] = learner
-        self.learnDict[id] = learner
-        if self.data:
-            self.test(learner)
-            self.applyBtn.setDisabled(FALSE)
-        
-    def classifier(self, classifier, id):
-        pass
+        print
+        if learner: print 'xxx UPDATE/NEW', id
+        else: print 'xxx REMOVE', id
 
+        if not learner: # remove a learner and corresponding results
+            indx = self.learners.index(self.learnDict[id])
+            for i,r in enumerate(self.results.results):
+                del r.classes[indx]
+                del r.probabilities[indx]
+            del self.results.classifierNames[indx]
+            self.results.numberOfLearners -= 1
+            for (i, stat) in enumerate(self.stat):
+                del self.scores[i][indx]
+            del self.learners[indx]
+            del self.learnDict[id]
+            self.setStatTable()
+            self.send("Evaluation Results", self.results)
+        else: # a new or updated learner
+            if not self.learnDict.has_key(id):
+                self.learners.append(learner)
+            else:
+                self.learners[self.learners.index(self.learnDict[id])] = learner
+            self.learnDict[id] = learner
+            if self.data:
+                self.test(learner)
+                self.applyBtn.setDisabled(FALSE)
+        for k in self.learnDict.keys():
+            print '     ', k
+        print 'xxx LEARNERS'
+        for k in self.learners:
+            print '     ', k
+            
     # signal processing
-
     def statChanged(self, value, id):
         self.useStat[id] = value
         if value:
@@ -223,7 +244,6 @@ AUC (area under ROC curve), and Brier score.
         self.sampleMethod = id
 
     # reporting on evaluation results
-
     def setStatTable(self):
         self.tab.setNumCols(len(self.stat)+1)
         self.tabHH=self.tab.horizontalHeader()
@@ -269,12 +289,10 @@ if __name__=="__main__":
     ow=OWTestLearners()
     a.setMainWidget(ow)
 
-    data = orange.ExampleTable('outcome')
+    data = orange.ExampleTable('voting')
     ow.cdata(data)
 
-    l1 = orange.BayesLearner()
-    l1.name = 'Naive Bayes'
-    ow.learner(l1,1)
+    ow.learner(l1, 1)
 
 ##    l2 = orange.BayesLearner()
 ##    l2.name = 'Naive Bayes(m=10)'
@@ -286,10 +304,13 @@ if __name__=="__main__":
 ##    l3 = orange.BayesLearner()
 ##    l3.name = 'NB First'
 ##    ow.learner(l3,1)
+
     import orngTree
     l4 = orngTree.TreeLearner(minSubset=2)
     l4.name = "Decision Tree"
     ow.learner(l4, 4)
+
+    ow.learner(None, 1)    
 
     ow.show()
     a.exec_loop()
