@@ -1,3 +1,4 @@
+# orngWrap.Tune1Parameter(object=bayes, parameter='m', values=[0,10,20,30])
 
 class Tune1Parameter:
     returnNone=0
@@ -16,7 +17,7 @@ class Tune1Parameter:
             lastobj=getattr(lastobj, i)
         return lastobj, names[-1]
         
-    def __call__(self, table, weight, verbose=0):
+    def __call__(self, table, weight=None, folds=5, verbose=0):
         import types, whrandom
         import orange, orngTest, orngStat
         
@@ -25,7 +26,7 @@ class Tune1Parameter:
         else:
             to_set=[self.findobj(self.parameter)]
 
-        cvind = orange.MakeRandomIndicesCV(table, 5)
+        cvind = orange.MakeRandomIndicesCV(table, folds)
         bestres = None
 
         evaluate = getattr(self, "evaluate", orngStat.CA)
@@ -36,9 +37,12 @@ class Tune1Parameter:
             for i in to_set:
                 setattr(i[0], i[1], par)
             # self.evaluate could be, for example, orngEval.CA
-            res=evaluate(orngTest.testWithIndices([self.object], (table, weight), cvind))
+            if weight==None:
+                res=evaluate(orngTest.testWithIndices([self.object], (table), cvind))
+            else:
+                res=evaluate(orngTest.testWithIndices([self.object], (table, weight), cvind))
             if verbose:
-                print par, res
+                print 'orngWrap:\n', par, res
             if not bestres:
                 bestres, bestpar, wins = res, par, 1
             else:
@@ -62,4 +66,7 @@ class Tune1Parameter:
         elif returnWhat==Tune1Parameter.returnLearner:
             return self.object
         else:
-            return self.object(table)
+            classifier = self.object(table)
+            classifier.fittedParameter = bestpar
+            return classifier
+##            setattr(self, "fittedParameter", bestpar)
