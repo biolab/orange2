@@ -29,15 +29,20 @@ OTHER_ACCURACY = 0
 OTHER_PREDICTIONS = 1
 OTHER_DISTRIBUTION = 2
 
+ALGORITHM_KNN = 0
+ALGORITHM_HEURISTIC = 1
+
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
+# array of testing methods. used by calling python's apply method depending on the value of self.testingMethod
+testingMethods = [orngTest.leaveOneOut, orngTest.crossValidation, orngTest.learnAndTestOnLearnData]
 
 class kNNOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances"]
+    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
@@ -62,6 +67,7 @@ class kNNOptimization(OWBaseWidget):
         self.testingMethod = 1
         self.optimizationType = 0
         self.attributeCountIndex = 0
+        self.evaluationAlgorithm = 0
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         self.onlyOnePerSubset = 1    # used in radviz and polyviz
         self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
@@ -103,7 +109,8 @@ class kNNOptimization(OWBaseWidget):
         self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting First ")
         self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
         
-        self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Optimization Settings ")
+        self.methodTypeCombo = OWGUI.comboBox(self.SettingsTab, self, "evaluationAlgorithm", box = "Projection evaluation method", tooltip = "Which learning method to use to use to evaluate given projections. \nk nearest neighbor or a very fast but not so perfect heuristic.", items = ["k-Nearest Neighbor", "Heuristic (very fast)"])
+        self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Optimization Settings for k-Nearest Neighbors")
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ordering ")
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
         #self.miscSettingsBox.hide()
@@ -468,7 +475,7 @@ class kNNOptimization(OWBaseWidget):
 
         # open, write and save file
         file = open(name, "wt")
-        attrs = ["kValue", "minExamples", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName"]
+        attrs = ["kValue", "minExamples", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName", "evaluationAlgorithm"]
         dict = {}
         for attr in attrs:
             dict[attr] = self.__dict__[attr]
@@ -536,26 +543,55 @@ class kNNOptimization(OWBaseWidget):
             indices = orange.MakeRandomIndices2(table, 1.0-float(percentDataUsed)/100.0)
             testTable = table.select(indices)
         else: testTable = table
-        
-        #qApp.processEvents()        # allow processing of other events
-
-        knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
-
-        if self.testingMethod == LEAVE_ONE_OUT:    
-            results = orngTest.leaveOneOut([knn], testTable)
-        elif self.testingMethod == TEN_FOLD_CROSS_VALIDATION:
-            results = orngTest.crossValidation([knn], testTable)
-        else:
-            # wrong but fast way to evaluate the accuracy
-            results = orngTest.ExperimentResults(1, ["kNN"], list(testTable.domain.classVar.values), 0, testTable.domain.classVar.baseValue)
-            results.results = [orngTest.TestedExample(i, int(testTable[i].getclass()), 1) for i in range(len(testTable))]
-            classifier = knn(testTable)
-            for i in range(len(testTable)):
-                cls, pro = classifier(testTable[i], orange.GetBoth)
-                results.results[i].setResult(0, cls, pro)
 
         currentClassDistribution = orange.Distribution(testTable.domain.classVar, testTable)
         prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
+        
+        # ###############################
+        # if we want to use very fast heuristic
+        # ###############################
+        if self.evaluationAlgorithm == ALGORITHM_HEURISTIC:
+            domainStat = orange.DomainBasicAttrStat(testTable)
+            minX = domainStat[0].min; maxX = domainStat[0].max
+            minY = domainStat[1].min; maxY = domainStat[1].max
+            diffX = maxX - minX
+            diffY = maxY - minY
+            classes = [0 for i in range(len(prediction))]
+
+            from copy import deepcopy
+            ys = [deepcopy(classes) for i in range(10)]
+            table = [deepcopy(ys) for i in range(10)]
+
+            # place each example in the correct cell of the table
+            for example in testTable:
+                x = int((example[0].value - minX)*10.0 / diffX)
+                y = int((example[1].value - minY)*10.0 / diffY)
+                if x > 9: x = 9
+                if y > 9: y = 9
+                table[x][y][int(example.getclass())] += 1
+
+            for x in range(10):
+                for y in range(10):
+                    s = sum(table[x][y])
+                    if s == 0: continue
+                    m = max(table[x][y])
+                    prediction[table[x][y].index(m)] += m * m/float(s)  # each example that belongs to the majority class adds the probability of correct classification
+
+            for i in range(len(prediction)): prediction[i] *= 100.0     # turn prediction array into percents
+            acc = sum(prediction) / float(len(testTable))               # compute accuracy for all classes
+            val = 0.0; s = 0.0
+            for index in self.selectedClasses:                          # compute accuracy for selected classes
+                val += prediction[index]; s += currentClassDistribution[index]
+            for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
+            return val/float(s), (acc, prediction, list(currentClassDistribution))
+        
+        # ###############################
+        # we want to use k nearest neighbor algorithm
+        # ###############################
+        
+        knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+        results = apply(testingMethods[self.testingMethod], [[knn], testTable])
+        
         # compute classification success using selected measure
         if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
             if self.qualityMeasure == AVERAGE_CORRECT:
@@ -581,14 +617,14 @@ class kNNOptimization(OWBaseWidget):
                 # compute n/N * sum_i n_i/n * N_i/n_i * P_r_i = n/N * sum_i N_i/n * P_r_i
                 pass
 
+            # compute accuracy only for classes that are selected as interesting. other class values do not participate in projection evaluation
             acc = sum(prediction) / float(len(testTable))
             val = 0.0; s = 0.0
             for index in self.selectedClasses:
                 val += prediction[index]; s += currentClassDistribution[index]
-            val /= float(s)
             for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
 
-            return val, (acc, prediction, list(currentClassDistribution))
+            return val/float(s), (acc, prediction, list(currentClassDistribution))
             
             
         else:
@@ -606,20 +642,8 @@ class kNNOptimization(OWBaseWidget):
         qApp.processEvents()        # allow processing of other events
         
         knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
-
-        if self.testingMethod == LEAVE_ONE_OUT:    
-            results = orngTest.leaveOneOut([knn], table)
-        elif self.testingMethod == TEN_FOLD_CROSS_VALIDATION:
-            results = orngTest.crossValidation([knn], table)
-        else:
-            # wrong but fast way to evaluate the accuracy
-            results = orngTest.ExperimentResults(1, ["kNN"], list(table.domain.classVar.values), 0, table.domain.classVar.baseValue)
-            results.results = [orngTest.TestedExample(i, int(table[i].getclass()), 1) for i in range(len(table))]
-            classifier = knn(table)
-            for i in range(len(table)):
-                cls, pro = classifier(table[i], orange.GetBoth)
-                results.results[i].setResult(0, cls, pro)
-    
+        results = apply(testingMethods[self.testingMethod], [[knn], table])
+            
         returnTable = []
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
             lenClassValues = len(list(table.domain.classVar.values))
@@ -698,6 +722,7 @@ class kNNOptimization(OWBaseWidget):
         self.resultsDetailsBox.setEnabled(0)
         self.classesList.setEnabled(0)
         self.miscSettingsBox.setEnabled(0)
+        self.methodTypeCombo.setEnabled(0)
 
     def enableControls(self):    
         self.optimizationSettingsBox.setEnabled(1)
@@ -713,6 +738,7 @@ class kNNOptimization(OWBaseWidget):
         self.resultsDetailsBox.setEnabled(1)
         self.classesList.setEnabled(1)
         self.miscSettingsBox.setEnabled(1)
+        self.methodTypeCombo.setEnabled(1)
 
 
 #test widget appearance
