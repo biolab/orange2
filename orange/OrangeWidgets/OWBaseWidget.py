@@ -12,7 +12,7 @@ import cPickle
 from OWTools import *
 from OWAboutX import *
 from orngSignalManager import *
-
+import time
 
 
 class ExampleTable(orange.ExampleTable):
@@ -80,7 +80,11 @@ class OWBaseWidget(QDialog):
         self.wrappers =[]    # stored wrappers for widget events
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: (signalData, id)
+        self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
+        self.callbackDeposit = []
+        self.startTime = time.time()    # used in progressbar
+
     
         #the map with settings
         if not hasattr(self, 'settingsList'):
@@ -283,11 +287,23 @@ class OWBaseWidget(QDialog):
     # ############################################
     # PROGRESS BAR FUNCTIONS
     def progressBarInit(self):
+        self.startTime = time.time()
         self.setCaption(self.captionTitle + " (0% complete)")
         if self.progressBarHandler: self.progressBarHandler(self, -1)
         
     def progressBarSet(self, value):
-        self.setCaption(self.captionTitle + " (%d%% complete)" % (value))
+        if value > 0:
+            diff = time.time() - self.startTime
+            remaining = diff * 100.0/float(value)
+            h = int(remaining/3600)
+            min = int((remaining - h*3600)/60)
+            sec = int(remaining - h*3600 - min*60)
+            text = ""
+            if h > 0: text += "%d h, " % (h)
+            text += "%d min, %d sec" %(min, sec)
+            self.setCaption(self.captionTitle + " (%.1f%% complete, remaining time: %s)" % (value, text))
+        else:
+            self.setCaption(self.captionTitle + " (0% complete)" )
         if self.progressBarHandler: self.progressBarHandler(self, value)
 
     def progressBarFinished(self):
@@ -297,6 +313,13 @@ class OWBaseWidget(QDialog):
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
     def progressBarSetHandler(self, handler):
         self.progressBarHandler = handler
+
+    def __setattr__(self, name, value):
+        self.__dict__[name] = value
+        if hasattr(self, "controledAttributes"):
+            for attrname, func in self.controledAttributes:
+                if attrname == name:
+                    func(value)
 
     
 if __name__ == "__main__":  
