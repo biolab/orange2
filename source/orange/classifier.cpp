@@ -365,16 +365,36 @@ TValue TDefaultClassifier::operator ()(const TExample &exam)
 
 
 PDistribution TDefaultClassifier::classDistribution(const TExample &)
-{ return CLONE(TDistribution, defaultDistribution); }
+{ 
+  if (defaultDistribution)
+    return CLONE(TDistribution, defaultDistribution);
+
+  if (!classVar || defaultVal.isSpecial())
+    checkProperty(defaultDistribution); // we call it to raise an exception
+
+  PDistribution dist = TDistribution::create(classVar);
+  dist->add(defaultVal);
+  return dist;
+}
 
 
 void TDefaultClassifier::predictionAndDistribution(const TExample &exam, TValue &val, PDistribution &dist)
-{ if (defaultVal.isSpecial())
+{ 
+  if (defaultVal.isSpecial()) {
+    checkProperty(defaultDistribution);
     val = defaultDistribution->supportsContinuous ? TValue(defaultDistribution->average()) : defaultDistribution->highestProbValue(exam);
+  }
   else
     val = defaultVal;
 
-  dist = CLONE(TDistribution, defaultDistribution);
+  if (defaultDistribution)
+    dist = CLONE(TDistribution, defaultDistribution);
+  else {
+    if (!classVar)
+      checkProperty(defaultDistribution); // we call it to raise an exception
+    dist = TDistribution::create(classVar);
+    dist->add(defaultVal);
+  }
 }
 
 

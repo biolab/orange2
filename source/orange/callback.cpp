@@ -389,6 +389,34 @@ bool TProgressCallback_Python::operator()(const float &f, POrange o)
   return res;
 }
 
+
+PImputer TImputerConstruct_Python::operator()(PExampleGenerator eg, const int &weight)
+{ 
+  if (!eg)
+    raiseError("invalid example generator");
+
+  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight));
+
+  if (!PyOrImputer_Check(res)) 
+    raiseError("__call__ is expected to return something derived from Imputer");
+
+  PImputer imp = PyOrange_AsImputer(res);
+  Py_DECREF(res);
+  return imp;
+}
+
+
+TExample *TImputer_Python::operator()(TExample &example)
+{
+  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", Example_FromExampleCopyRef(example), 0));
+  if (!PyOrExample_Check(result))
+    raiseError("__call__ is expected to return an instance of Example");
+
+  TExample *res = CLONE(TExample, PyExample_AS_Example(result));
+  Py_DECREF(result);
+  return res;
+}
+
 /*
 PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID)
 { if (!gen)

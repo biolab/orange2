@@ -81,6 +81,11 @@ TImputer_defaults::TImputer_defaults(PDomain domain)
 {}
 
 
+TImputer_defaults::TImputer_defaults(PExample example)
+: defaults(example)
+{}
+
+
 TImputer_defaults::TImputer_defaults(const TExample &valu)
 : defaults(mlnew TExample(valu))
 {}
@@ -107,6 +112,8 @@ TExample *TImputer_asValue::operator()(TExample &example)
 
 TExample *TImputer_model::operator ()(TExample &example)
 {
+  checkProperty(models);
+
   if (models->size() != example.domain->variables->size())
     raiseError("wrong domain (invalid size)");
 
@@ -114,13 +121,21 @@ TExample *TImputer_model::operator ()(TExample &example)
 
   try {
     TExample::iterator ei(imputed->begin()), eie(imputed->end());
-    TClassifierList::iterator mi(models->begin());
+    TClassifierList::iterator mi(models->begin()), me(models->end());
     TVarList::const_iterator di(example.domain->variables->begin());
-    for(; ei!=eie; ei++, mi++, di++) {
+    for(; (ei!=eie) && (mi!=me); ei++, mi++, di++) {
       if ((*ei).isSpecial() && *mi) {
-        if ((*mi)->classVar != *di)
-          raiseError("wrong domain (wrong model for '%s')", (*di)->name.c_str());
-        *ei = (*mi)->call(example);
+        if ((*mi)->classVar) {
+          if ((*mi)->classVar != *di)
+            raiseError("wrong domain (wrong model for '%s')", (*di)->name.c_str());
+          *ei = (*mi)->call(example);
+        }
+        else {
+          TValue val = (*mi)->call(example);
+          if (val.varType != (*di)->varType)
+            raiseError("wrong domain (wrong model for '%s')", (*di)->name.c_str());
+          *ei = val;
+        }
       }
     }
   }

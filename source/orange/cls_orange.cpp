@@ -452,6 +452,51 @@ PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname)
 }
 
 
+PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType)
+{
+  PyObject *emptyDict = PyDict_New();
+  PyObject *targs;
+  if (PyTuple_Check(args)) {
+    targs = args;
+    Py_INCREF(targs);
+  }
+  else
+    targs = Py_BuildValue("(O)", args);
+
+  PyObject *obj = NULL;
+  try {
+    obj = objectType->tp_new(objectType, targs, emptyDict);
+  }
+  catch (...) {
+    // do nothing; if it failed, the user probably didn't mean it
+  }
+
+  // If this failed, maybe the constructor actually expected a tuple...
+  if (!obj && PyTuple_Check(args)) {
+     PyErr_Clear();
+     Py_DECREF(targs);
+     targs = Py_BuildValue("(O)", args);
+     try {
+       obj = objectType->tp_new(objectType, targs, emptyDict);
+     }
+     catch (...) 
+     {}
+  }
+
+  if (obj) {
+    if (   objectType->tp_init != NULL
+        && objectType->tp_init(obj, targs, emptyDict) < 0) {
+          Py_DECREF(obj);
+          obj = NULL;
+    }
+  }
+
+  Py_DECREF(emptyDict);
+  Py_DECREF(targs);
+
+  return obj;
+}
+
 
 int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 // This is a complete setattr, but without translation of obsolete names.
@@ -561,58 +606,18 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 
           // User might have supplied parameters from which we can construct the object
           if (propertyPyType->tp_new) {
-            PyObject *emptyDict = PyDict_New();
-            PyObject *targs;
-            if (PyTuple_Check(args)) {
-              targs = args;
-              Py_INCREF(targs);
-            }
-            else
-              targs = Py_BuildValue("(O)", args);
-
-            PyObject *obj = NULL;
-            try {
-              obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict);
-            }
-            catch (...) {
-              // do nothing; if it failed, the user probably didn't mean it
-            }
-
-            // If this failed, maybe the constructor actually expected a tuple...
-            if (!obj && PyTuple_Check(args)) {
-              PyErr_Clear();
-              Py_DECREF(targs);
-              targs = Py_BuildValue("(O)", args);
-              try { obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict); }
-              catch (...) {}
-            }
-
+            PyObject *obj = objectOnTheFly(args, propertyPyType);
             if (obj) {
-              if (   propertyPyType->tp_init != NULL
-		              && propertyPyType->tp_init(obj, targs, emptyDict) < 0) {
-			          Py_DECREF(obj);
-			          obj = NULL;
-		          }
-
-              Py_DECREF(emptyDict);
-              Py_DECREF(targs);
-
-              if (obj) {
-                bool success = true;
-                try {
-                  self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
-                }
-                catch (...) {
-                  success = false;
-                }
-                Py_DECREF(obj);
-                if (success)
-                  return 0;
+              bool success = true;
+              try {
+                self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
               }
-            }
-            else {
-              Py_DECREF(emptyDict);
-              Py_DECREF(targs);
+              catch (...) {
+                success = false;
+              }
+              Py_DECREF(obj);
+              if (success)
+                return 0;
             }
           }
 

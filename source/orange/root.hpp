@@ -133,7 +133,7 @@ public:
   void raiseErrorWho(const char *who, const char *anerr, ...) const;
   void raiseWarningWho(const char *who, const char *anerr, ...) const;
 
-  #define checkProperty(name) if (!name) raiseError("'"#name"' not set");
+  #define checkProperty(name) { if (!name) raiseError("'"#name"' not set"); }
 };
 
 extern TPropertyDescription TOrange_properties[];

@@ -62,6 +62,7 @@ public:
   PExample defaults; //P values that are to be inserted instead of missing ones
 
   TImputer_defaults(PDomain domain);
+  TImputer_defaults(PExample example);
   TImputer_defaults(const TExample &example);
   virtual TExample *operator()(TExample &);
 };
@@ -82,7 +83,7 @@ class TImputer_model : public TImputer
 public:
   __REGISTER_CLASS
 
-  PClassifierList models;
+  PClassifierList models; //P classifiers
   virtual TExample *operator()(TExample &example);
 };
 

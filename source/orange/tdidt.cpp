@@ -180,14 +180,18 @@ PClassifier TTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 
 PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weightID, PDistribution apriorClass, vector<bool> &candidates, const int &depth)
 {
+  PDomainContingency contingency = contingencyComputer
+                            ? contingencyComputer->call(examples, weightID)
+                            : PDomainContingency(mlnew TDomainContingency(examples, weightID));
+
+  if (!contingency->classes->abs)
+    return PTreeNode();
+
   TTreeNode *utreeNode = mlnew TTreeNode();
   PTreeNode treeNode = utreeNode;
 
   utreeNode->weightID = weightID;
 
-  PDomainContingency contingency = contingencyComputer
-                            ? contingencyComputer->call(examples, weightID)
-                            : PDomainContingency(mlnew TDomainContingency(examples, weightID));
   utreeNode->contingency = contingency;
 
   if (storeDistributions)

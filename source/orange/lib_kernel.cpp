@@ -825,6 +825,17 @@ int Domain_len(TPyOrange *self)
 }
 
 
+PyObject *Domain_index(PyObject *self, PyObject *arg) PYARGS(METH_O, "(variable) -> int")
+{
+  PyTRY
+    CAST_TO(TDomain, domain);
+
+    PVariable variable = varFromArg_byDomain(arg, domain, true);
+    return variable ? PyInt_FromLong(domain->getVarNum(variable)) : PYNULL;
+  PyCATCH
+}
+
+
 CONSTRUCTOR_KEYWORDS(ExampleTable, "source")
 
 PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
@@ -1640,7 +1651,7 @@ TExampleTable *readListOfExamples(PyObject *args)
     return table;
   }
 
-  PYERROR(PyExc_TypeError, "invalid type", NULL);
+  PYERROR(PyExc_TypeError, "a list of examples expected", NULL);
 }
 
 
@@ -3377,7 +3388,37 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
 #include "classify.hpp"
 
 BASED_ON(ClassifierFD, Classifier)
-C_NAMED(DefaultClassifier, Classifier, "([defaultVal=])")
+
+PyObject *DefaultClassifier_new(PyTypeObject *tpe, PyObject *args, PyObject *kw) BASED_ON(Classifier, "([defaultVal])")
+{
+  PyObject *arg1 = NULL, *arg2 = NULL;
+  if (!PyArg_UnpackTuple(args, "DefaultClassifier.__new__", 0, 2, &arg1, &arg2))
+    return PYNULL;
+
+  if (!arg1)
+    return WrapNewOrange(mlnew TDefaultClassifier(), tpe);
+
+  if (!arg2) {
+    if (PyOrVariable_Check(arg1))
+      return WrapNewOrange(mlnew TDefaultClassifier(PyOrange_AsVariable(arg1)), tpe);
+    TValue val;
+    if (convertFromPython(arg1, val)) {
+      PVariable var = PyOrValue_Check(arg1) ? PyValue_AS_Variable(arg1) : PVariable();
+      return WrapNewOrange(mlnew TDefaultClassifier(var, val, PDistribution()), tpe);
+    }
+  }
+
+  else
+    if (PyOrVariable_Check(arg1)) {
+      PVariable classVar = PyOrange_AsVariable(arg1);
+      TValue val;
+      if (convertFromPython(arg2, val, classVar))
+        return WrapNewOrange(mlnew TDefaultClassifier(classVar, val, PDistribution()), tpe);
+    }
+
+  PYERROR(PyExc_TypeError, "DefaultClassifier's constructor expects a Variable, a Value or both", PYNULL);
+}
+
 C_NAMED(RandomClassifier, Classifier, "([probabilities=])")
 
 PClassifierList PClassifierList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::P_FromArguments(arg); }

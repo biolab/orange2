@@ -114,6 +114,8 @@ PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname);
 
 int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
 
+PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType);
+
 PyObject *PyOrange_DictProxy_New(TPyOrange *);
 extern PyTypeObject PyOrange_DictProxy_Type;
 

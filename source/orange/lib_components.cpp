@@ -1589,14 +1589,18 @@ BASED_ON(Imputer, Orange)
 C_NAMED(Imputer_asValue, Imputer, "() -> Imputer_asValue")
 C_NAMED(Imputer_model, Imputer, "() -> Imputer_model")
 
-PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer, "(domain) -> Imputer_asValue")
+PyObject *Imputer_defaults_new(PyTypeObject *tpe, PyObject *args) BASED_ON(Imputer, "(domain | example) -> Imputer_defaults")
 {
   PyTRY
-    PDomain domain;
-    if (!PyArg_ParseTuple(args, "O&:Imputer_replace.__new__", cc_Domain, &domain))
-      return PYNULL;
+    if (PyTuple_Size(args) == 1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+      if (PyOrDomain_Check(arg))
+        return WrapNewOrange(mlnew TImputer_defaults(PyOrange_AsDomain(arg)), tpe);
+      if (PyOrExample_Check(arg))
+        return WrapNewOrange(mlnew TImputer_defaults(PyExample_AS_Example(arg)), tpe);
+    }
 
-    return WrapNewOrange(mlnew TImputer_defaults(domain), tpe);
+    PYERROR(PyExc_TypeError, "Imputer_defaults.__init__ expects an example or domain", PYNULL);
   PyCATCH
 }
 

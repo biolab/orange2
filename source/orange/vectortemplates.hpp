@@ -199,16 +199,27 @@ public:
   typedef typename _ListType::iterator iterator;
   typedef typename _ListType::const_iterator const_iterator;
 
-  static _WrappedElement _fromPython(PyObject *obj)
-  { if (obj == Py_None)
-      return _WrappedElement();
-  
-    if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
-      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "NULL");
-      return _WrappedElement();
+  static bool _fromPython(PyObject *obj, _WrappedElement &res)
+  { if (obj == Py_None) {
+      res = _WrappedElement();
+      return true;
     }
   
-    return _WrappedElement(PyOrange_AS_Orange(obj));
+    if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
+      if (PyOrange_CheckType(_PyElementType) && _PyElementType->tp_new) {
+        PyObject *pyel = objectOnTheFly(obj, _PyElementType);
+        if (pyel)
+          res = PyOrange_AS_Orange(pyel);
+          return true;
+      }
+        
+      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "NULL");
+      res = _WrappedElement();
+      return false;
+    }
+  
+    res = _WrappedElement(PyOrange_AS_Orange(obj));
+    return true;
   }
 
   static _WrappedListType P_FromArguments(PyObject *arg, PyTypeObject *type = (PyTypeObject *)&PyOrOrange_Type)
@@ -222,8 +233,8 @@ public:
 
     int i = 0;
     for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator), i++) {
-      _WrappedElement obj = _fromPython(item);
-      if (!obj) {
+      _WrappedElement obj;
+      if (!_fromPython(item, obj)) {
         PyErr_Format(PyExc_TypeError, "element at index %i is of wrong type ('%s')", i, item->ob_type->tp_name);
         Py_DECREF(item);
         Py_DECREF(iterator);
@@ -275,8 +286,8 @@ public:
         aList->erase(aList->begin()+index);
       }
       else {
-        _WrappedElement citem = _fromPython(item);
-        if (!citem)
+        _WrappedElement citem;
+        if (!_fromPython(item, citem))
           return -1;
         aList->operator[](index)=citem;
       }
@@ -426,8 +437,8 @@ public:
 
   static PyObject *_append(TPyOrange *self, PyObject *item)
   { PyTRY
-      _WrappedElement obj = _fromPython(item);
-      if (PyErr_Occurred())
+      _WrappedElement obj;
+      if (!_fromPython(item, obj))
         return PYNULL;
 
       CAST_TO(_ListType, aList);
@@ -438,8 +449,8 @@ public:
 
   static PyObject *_count(TPyOrange *self, PyObject *item)
   { PyTRY
-      _WrappedElement obj = _fromPython(item);
-      if (!obj)
+      _WrappedElement obj;
+      if (!_fromPython(item, obj))
         return PYNULL;
 
       CAST_TO(_ListType, aList);
@@ -454,8 +465,8 @@ public:
 
   static int _contains(TPyOrange *self, PyObject *item)
   { PyTRY
-      _WrappedElement obj = _fromPython(item);
-      if (!obj)
+      _WrappedElement obj;
+      if (!_fromPython(item, obj))
         return -1;
 
       CAST_TO_err(_ListType, aList, -1);
@@ -507,8 +518,8 @@ public:
 
   static PyObject *_index(TPyOrange *self, PyObject *item)
   { PyTRY
-      _WrappedElement obj = _fromPython(item);
-      if (!obj)
+      _WrappedElement obj;
+      if (!_fromPython(item, obj))
         return PYNULL;
 
       CAST_TO(_ListType, aList);
@@ -530,7 +541,7 @@ public:
 
       if (   !PyArg_ParseTuple(args, "iO", &index, &obj)
           || !checkIndex(index, aList->size())
-          || !(item = _fromPython(obj)))
+          || !_fromPython(obj, item))
         return PYNULL;
       
       aList->insert(aList->begin()+index, item);
@@ -572,8 +583,8 @@ public:
 
   static PyObject *_remove(TPyOrange *self, PyObject *item)
   { PyTRY
-      _WrappedElement obj = _fromPython(item);
-      if (!obj)
+      _WrappedElement obj;
+      if (!_fromPython(item, obj))
         return PYNULL;
 
       CAST_TO(_ListType, aList);

@@ -939,6 +939,8 @@ TContDistribution::TContDistribution(PVariable var)
 
 
 TContDistribution::TContDistribution(PExampleGenerator gen, const int &position, const int &weightID)
+: sum(0.0),
+  sum2(0.0)
 {
   supportsContinuous = true;
 
@@ -955,7 +957,9 @@ TContDistribution::TContDistribution(PExampleGenerator gen, const int &position,
 
 
 TContDistribution::TContDistribution(PExampleGenerator gen, PVariable var, const int &weightID)
-: TDistribution(var)
+: TDistribution(var),
+  sum(0.0),
+  sum2(0.0)
 {
   supportsContinuous = true;
 

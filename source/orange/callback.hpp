@@ -123,6 +123,22 @@ public:
   virtual bool operator()(const float &, POrange);
 };
 
+
+#include "imputation.hpp"
+
+class TImputerConstruct_Python : public TImputerConstructor {
+public:
+  __REGISTER_CLASS
+  virtual PImputer operator()(PExampleGenerator, const int &);
+};
+
+
+class TImputer_Python : public TImputer {
+public:
+  __REGISTER_CLASS
+  virtual TExample *operator()(TExample &example);
+};
+
 /*
 Not verified yet:
 
