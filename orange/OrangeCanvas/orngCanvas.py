@@ -113,7 +113,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.show()
         
         # create new schema
-        self.menuItemNewSchema()
+        win = self.menuItemNewSchema()
+        if len(sys.argv) > 1:
+            win.loadDocument(sys.argv[1])
         self.workspace.cascade()
 
     def createWidgetsToolbar(self, rebuildRegistry):
@@ -695,7 +697,7 @@ class WidgetWorkspace(QWorkspace):
                 item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
 
 
-app = QApplication(sys.argv) 
+app = QApplication(sys.argv)
 dlg = OrangeCanvasDlg(None, "", Qt.WDestructiveClose)
 app.setMainWidget(dlg)
 dlg.show()
