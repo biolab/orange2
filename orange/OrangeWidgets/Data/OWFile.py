@@ -14,6 +14,7 @@
 
 from OWWidget import *
 from OData import *
+import OWGUI
 
 class OWFile(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
@@ -34,35 +35,28 @@ class OWFile(OWWidget):
         self.loadSettings()
         
         #GUI
-        vb=QGridLayout(self.mainArea,3)
-        rfbox=QVGroupBox("Recent Files",self.mainArea)
-        self.filecombo=QComboBox(rfbox)
-        self.filecombo.setMinimumWidth(150)
-        fbox=QVGroupBox("New File",self.mainArea)
-        browse=QPushButton("&Browse...",fbox)
-        vb.addWidget(rfbox,0,0)
-        vb.addWidget(fbox,0,1)
-        x=QWidget(self.mainArea)
-        vb.addWidget(x,1,0)
-        vb.addWidget(x,0,2)
-        vb.setRowStretch(1,10)
-        vb.setColStretch(2,10)
-        self.adjustSize()
-        
-        #check if files actually exist
+        box = QHGroupBox("Data File", self.controlArea)
+        self.filecombo=QComboBox(box)
+        self.filecombo.setMinimumWidth(250)
+        button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
+        button.setMaximumWidth(25)
+
+        # info
+        box = QVGroupBox("Info", self.controlArea)
+        self.infoa = QLabel('No data loaded.', box)
+        self.infob = QLabel('', box)
+            
         self.recentFiles=filter(os.path.exists,self.recentFiles)
         self.setFilelist()
-        
-        #
         self.filecombo.setCurrentItem(0)
-        #this makes no difference, because when the file widget is created there are no connection yet
+        # this makes no difference, because when the file widget is created there are no connection yet
         if self.recentFiles!=[]:
             self.openFile(self.recentFiles[0])
         
-        #connecting GUI to code
-        self.connect(browse,SIGNAL('clicked()'),self.browseFile)        
+        # connecting GUI to code
         self.connect(self.filecombo,SIGNAL('activated(int)'),self.selectFile)
-    
+        self.resize(150,100)
+
     def browseFile(self):
         "Display a FileDialog and select a file"
         if self.recentFiles==[]:
@@ -74,40 +68,65 @@ class OWFile(OWWidget):
         None,'Open Orange Data File')
         self.openFile(str(filename))
 
+    def setInfo(self, info):
+        for (i, s) in enumerate(info):
+            self.info[i].setText(s)            
+
+    def xsp(self, l):
+        n = len(l)
+        if n>1: return n, 's'
+        else: return n, ''
+        
     def openFile(self,fn):
         "Open a file, create data from it and send it over the data channel"
         if fn!="(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             if fileExt in (".txt",".tab",".xls"):
-                tab=orange.ExampleTable(fn, dontCheckStored = 1)
+                data = orange.ExampleTable(fn, dontCheckStored = 1)
             elif fileExt in (".c45",):
-                tab=orange.C45ExampleGenerator(fn)
+                data = orange.C45ExampleGenerator(fn)
             else:
                 return
                 
-            #update recent file list
+            # update recent file list
             self.addFileToList(fn)
 
-            #set setting
+            # update data info
+            def sp(l):
+                n = len(l)
+                if n <> 1: return n, 's'
+                else: return n, ''
+
+            self.infoa.setText('%d example%s, ' % sp(data) + '%d attribute%s, ' % sp(data.domain.attributes) + '%d meta attribute%s.' % sp(data.domain.getmetas()))
+            cl = data.domain.classVar
+            if cl:
+                if cl.varType == orange.VarTypes.Continuous:
+                    self.infob.setText('Regression; Numerical class.')
+                elif cl.varType == orange.VarTypes.Discrete:
+                    self.infob.setText('Classification; Discrete class with %d value%s.' % sp(cl.values))
+                else:
+                    self.infob.setText("This won't work. Class neither descrete nor continuous.")
+            else:
+                self.infob.setText('Classless domain')
+
+            # set setting
             self.selectedFileName = fn
             
-            #make new data and send it
-            tab.name = fn
-            self.send("Examples",tab)
-            if tab.domain.classVar:
-                    self.send("Classified Examples", tab)
+            # make new data and send it
+            data.name = fn
+            self.send("Examples", data)
+            if data.domain.classVar:
+                    self.send("Classified Examples", data)
         else:
             self.send("Classified Examples",None)
             self.send("Examples", None)
 
     def addFileToList(self,fn):
-        """
-        Add a file to the start of the file list. 
-        If it exists, move it to the start of the list
-        """
+        # Add a file to the start of the file list. 
+        # If it exists, move it to the start of the list
         if fn in self.recentFiles:
             self.recentFiles.remove(fn)
-        self.recentFiles.insert(0,fn)
+        self.recentFiles.insert(0, fn)
         self.setFilelist()       
 
     def setFilelist(self):

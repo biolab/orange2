@@ -88,6 +88,7 @@ class OWAttributeStatistics(OWWidget):
             self.canvasview.hide()
         else:
             self.attributes.clear()
+            self.canvasview.show()
             # we do a trick here, and make a new domain that includes the class var, if one exists
             # this for a reason to change any of the code, plus to be able to use such functions
             # as DomainDistributions
