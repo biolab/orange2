@@ -52,7 +52,10 @@ class OWDataTable(OWWidget):
         if hasattr(self.data.domain, 'classVar'):
             cols += 1
         if self.showMetas:
-            metas = self.data.domain.getmetas().values() # getmetas returns a dictionary
+            m = self.data.domain.getmetas() # getmetas returns a dictionary
+            ml = [(k, m[k]) for k in m]
+            ml.sort(lambda x,y: cmp(y[0], x[0]))
+            metas = [x[1] for x in ml]
             cols += len(metas)
         self.table.setNumCols(cols)
         self.table.setNumRows(len(self.data))
@@ -76,11 +79,12 @@ class OWDataTable(OWWidget):
         col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
             for i in range(len(self.data)):
-                OWGUI.tableItem(self.table, i, col, self.data[i].getclass().native(), color=Qt.lightGray)
+                OWGUI.tableItem(self.table, i, col, self.data[i].getclass().native(), background=QColor(160,160,160))
             col += 1
-##        for (j,m) in enumerate(metas):
-##            for i in range(len(self.data)):
-##                OWGUI.tableItem(self.table, i, j+col, self.data[m].native(), color=Qt.yellow)
+        for (j,m) in enumerate(metas):
+            for i in range(len(self.data)):
+##                print str(self.data[i][m])
+                OWGUI.tableItem(self.table, i, j+col, str(self.data[i][m]), background=QColor(220,220,220))
 
         # adjust the width of the table
         for i in range(cols):

@@ -245,12 +245,12 @@ class FunctionCallback:
 ##############################################################################
 
 class tableItem(QTableItem):
-    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, color=Qt.white):
-        self.color = color
+    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white):
+        self.background = background
         QTableItem.__init__(self, table, editType, text)
         table.setItem(x, y, self)
 
     def paint(self, painter, colorgroup, rect, selected):
         g = QColorGroup(colorgroup)
-        g.setColor(QColorGroup.Base, self.color)
+        g.setColor(QColorGroup.Base, self.background)
         QTableItem.paint(self, painter, g, rect, selected)
