@@ -10,7 +10,6 @@ import ConfigParser,os
 from string import *
 import cPickle
 from OWTools import *
-from OWAboutX import *
 
 class OWWidget(OWBaseWidget):
     def __init__(
@@ -40,6 +39,7 @@ class OWWidget(OWBaseWidget):
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)
+        self.controlArea.setMaximumWidth(250)
         self.space=QVBox(self)
         self.grid=QGridLayout(self,3,2,5)
         self.grid.addWidget(self.buttonBackground,2,0)

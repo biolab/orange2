@@ -491,7 +491,7 @@ distribution of classes for each attribute.
             self.graph.setYLlabels(None)
             self.graph.setShowYRaxisTitle(0)
             self.graph.setVisibleOutcomes(None)
-            self.graph.setData(None)
+            self.graph.setData(None, None)
             self.data = None
             return
 

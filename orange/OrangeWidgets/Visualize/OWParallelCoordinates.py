@@ -312,7 +312,7 @@ class OWParallelCoordinates(OWWidget):
 
         if data == None: return
         
-        shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder, self.projections)
+        shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder, self.projections)
         self.setSliderIndex = maxIndex
         if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
             self.shownAttribsLB.insertItem(data.domain.classVar.name)

@@ -137,7 +137,7 @@ def evaluateAttributes(data, contMeasure, discMeasure):
 # #############################################
 # SELECT ATTRIBUTES ##########################
 # #############################################
-def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = None):
+def selectAttributes(data, attrContOrder, attrDiscOrder, projections = None):
     if data.domain.classVar.varType != orange.VarTypes.Discrete:
         return ([attr.name for attr in data.domain.attributes], [], 0)
 
