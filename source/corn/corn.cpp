@@ -436,8 +436,8 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
     bool useweights = PyObject_IsTrue(pyuseweights)!=0;
 
     ExperimentResults results(pyresults);
-    if (results.numberOfIterations>1)
-      PYERROR(PyExc_SystemError, "computeCDT: cannot compute CDT for experiments with multiple iterations", PYNULL);
+//    if (results.numberOfIterations>1)
+//      PYERROR(PyExc_SystemError, "computeCDT: cannot compute CDT for experiments with multiple iterations", PYNULL);
 
     pp totals;
     vector<TCummulativeROC> cummlists;
