@@ -24,6 +24,11 @@
 #include "../external/logreg/logreg.hpp"
 
 TLogisticFitterMinimization::TLogisticFitterMinimization()
+: throwSingularity(true)
+{}
+
+TLogisticFitterMinimization::TLogisticFitterMinimization(bool throwSingularity)
+: throwSingularity(throwSingularity)
 {}
 
 // set error values thrown by logistic fitter
@@ -51,7 +56,7 @@ double *ones(int n) {
 }
 
 
-PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloatList &beta_se, float &likelihood) {
+PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
 	// get all needed/necessarily attributes and set
 	LRInput input = LRInput();
 	LRInfo O = LRInfo();
@@ -59,8 +64,9 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloa
 
 	// fill input data
 	input.data = generateDoubleXMatrix(gen, input.nn, input.k);
-	input.success = generateDoubleYVector(gen);
-	input.trials = ones(input.nn+1);
+	input.success = generateDoubleYVector(gen, weight);
+	//input.trials = ones(input.nn+1);
+	input.trials = generateDoubleTrialsVector(gen, weight);
 
 	// initialize output data
 	O.nn = input.nn;
@@ -83,12 +89,38 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloa
 		O.fit, O.cov_beta, O.stdres, O.dependent
 	);
 
+	// set error code
+	error = O.error;
+
 	// error at computing/fitting logistic regression model
-	// error at computing/fitting logistic regression model
-	if (O.error==7) 
+	if (O.error==7) // infinitive beta
 		raiseWarning(errors[O.error-1]);
-	else if (O.error>0) 
+	else if (O.error == 6 || O.error == 5) // singularity in data or constant variable
+	{
+		int i=1;
+		PITERATE(TVarList, vli, gen->domain->attributes) {
+			if (O.dependent[i]==1) {
+				error_att=*vli;
+				break;
+			}
+			i++;
+		}
+		if (throwSingularity) { // throw singularity error
+			string error_str;
+			if (O.error == 6)
+				error_str = "singularity in ";
+			else
+				error_str = "constant variable in ";
+			error_str.append(error_att->name);
+			raiseError(error_str.c_str());
+		}
+		likelihood = -gen->numberOfExamples(); // set worst possible likelihood. Well not really the worst possible, it is the 
+											    // the likelihood of majority learner	
+		return PFloatList(mlnew TFloatList);
+	}
+	else if (O.error>0) {
 		raiseError(errors[O.error-1]);
+	}
 
 	// tranfsorm *beta into a PFloatList
 	PFloatList beta=PFloatList(mlnew TFloatList);
@@ -101,7 +133,7 @@ PFloatList TLogisticFitterMinimization::operator ()(PExampleGenerator gen, PFloa
 	}
 
 	// Calculate likelihood
-	likelihood = - O.devnce; // I am not sure if this is OK?. Added by: Martin Mozina, 9.10.2003
+	likelihood = - O.devnce; // 
 
 	return beta;
 }
@@ -142,7 +174,7 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 	return matrix;
 }
 
-double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen) {
+double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen, const int &weight) {
 	// initialize vector
 	double *Y = new double[gen->numberOfExamples()+1];
 
@@ -150,12 +182,36 @@ double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen) {
 	int n=0;
 	PEITERATE(ei, gen) {
 		// copy class value
-		Y[n+1]=(*ei).getClass().intV;
-
+		if (weight!=0) {
+			Y[n+1]=((float)((*ei).getClass().intV)) * (*ei)[weight].floatV;
+		}
+		else
+			Y[n+1]=(*ei).getClass().intV;
 		n++;
 	}    
 
 	return Y;
+}
+
+
+double *TLogisticFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weight) {
+	// initialize vector
+	double *T = new double[gen->numberOfExamples()+1];
+
+	// copy gen class to vector *Y
+	int n=0;
+	PEITERATE(ei, gen) {
+		// copy class value
+		if (weight!=0) {
+			T[n+1]=(*ei)[weight].floatV;
+		}
+		else
+			T[n+1]=1.;
+
+		n++;
+	}    
+
+	return T;
 }
 
 

@@ -26,6 +26,7 @@
 
 
 TLogisticLearner::TLogisticLearner() 
+: showSingularity(true)
 {}
 
 // TODO: najdi pametno mesto za naslednji dve funkciji
@@ -88,10 +89,13 @@ PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weigh
   PClassifier cl = lrc;
 
   // construct a LR fitter
-  fitter = PLogisticFitter(mlnew TLogisticFitterMinimization());
+  fitter = PLogisticFitter(mlnew TLogisticFitterMinimization(showSingularity));
 
   // fit logistic regression 
-  lrc->beta = fitter->call(gen, lrc->beta_se, lrc->likelihood);
+  // mogoce bi bilo bolje poslati kar celotni classifier fitterju ?	
+  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, lrc->error, lrc->error_att);
+  if (lrc->error == 6 || lrc->error == 5) // singularity & we did not throw error
+      return cl;
   lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
   lrc->P = computeP(lrc->wald_Z);
 

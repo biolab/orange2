@@ -52,9 +52,11 @@ public:
 	// P for chi square (PFloatList wald_Z)
 	PFloatList computeP(PFloatList &);
 
+	bool showSingularity; //P Defines whether singularity should be thrown as error
 
-	// Constructs a Logistic classifier
-	virtual PClassifier operator()(PExampleGenerator gen, const int & =0);
+	// Constructs a Logistic classifier 
+	// weights are not implemented at the moment
+	virtual PClassifier operator()(PExampleGenerator gen, const int & = 0);
 };
 
 
@@ -75,7 +77,9 @@ public:
 	PFloatList P; //P estimated significances for beta coefficients
 	// likelihood
 	float likelihood; //P Likelihood: The likelihood function is the function which specifies the probability of the sample observed on the basis of a known model, as a function of the model's parameters. 
-
+	// error
+	int error; //P Error code thrown by the selected fitter. 0(zero) means that no errors occured while fitting.
+	PVariable error_att; //P Attribute that causes singularity if it occurs. 
 
 	// constructors
 	TLogisticClassifier();

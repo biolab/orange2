@@ -37,14 +37,15 @@ public:
 
 	// main function call, fits LR, returns coefficients and their 
 	// corres. standard errors
-	virtual PFloatList operator()(PExampleGenerator, PFloatList &, float &)=0;
+	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &)=0;
 
 	// transforms orange PExampleGenerator attributes in a classic C double 2D array
 	// returns number of examples and number of attributes as well
 	virtual double** generateDoubleXMatrix(PExampleGenerator, long &nexamples, long &nattr);
 
 	// transforms orange PExampleGenerator class in a classic C double array 
-	virtual double* generateDoubleYVector(PExampleGenerator);
+	virtual double* generateDoubleYVector(PExampleGenerator, const int &);
+	virtual double* generateDoubleTrialsVector(PExampleGenerator, const int &);
 };
 
 
@@ -94,13 +95,15 @@ public:
 	double eps; //difference in `-2  log' likelihood for declaring convergence.
 	double penalty; //penalty (scalar), substract from ML beta'×penalty×beta. Set if 
 				    //model doesnt converge */
+	bool throwSingularity;
 
 
 	// constructor
 	TLogisticFitterMinimization();
+	TLogisticFitterMinimization(bool showErrors);
 
-	// Public main function, use it fot fitting LR
-	virtual PFloatList operator()(PExampleGenerator, PFloatList &, float &);
+	// Public main function, use it for fitting LR
+	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
 
 
 private:
