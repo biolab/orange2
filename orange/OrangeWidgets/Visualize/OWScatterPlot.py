@@ -469,13 +469,17 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def cdata(self, data):
+        if data:
+            name = ""
+            if hasattr(data, "name"): name = data.name
+            data = orange.Preprocessor_dropMissingClasses(data)
+            data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.optimizationDlg.clearResults()
         self.clusterDlg.clearResults()
         exData = self.data
-        self.data = None
-        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
-        self.graph.setData(self.data)
+        self.data = data
+        self.graph.setData(data)
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         self.clusterDlg.setData(data)
         self.graph.insideColors = None; self.graph.clusterClosure = None

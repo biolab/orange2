@@ -365,15 +365,20 @@ class OWParallelCoordinates(OWWidget):
     # ###### DATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if data:
+            name = ""
+            if hasattr(data, "name"): name = data.name
+            data = orange.Preprocessor_dropMissingClasses(data)
+            data.name = name
+            
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         
         self.projections = None
         self.correlationDict = {}
         
         exData = self.data
-        self.data = None
-        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
-
+        self.data = data
+        
         if self.exampleSelectionList and data and len(data) == len(self.exampleSelectionList):
             self.graph.setData(data.select(self.exampleSelectionList))
             self.warning(None)

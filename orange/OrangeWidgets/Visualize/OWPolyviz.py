@@ -443,12 +443,16 @@ class OWPolyviz(OWWidget):
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if data:
+            name = ""
+            if hasattr(data, "name"): name = data.name
+            data = orange.Preprocessor_dropMissingClasses(data)
+            data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.optimizationDlg.clearResults()
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         exData = self.data
-        self.data = None
-        if data: self.data = orange.Preprocessor_dropMissingClasses(data)
+        self.data = data
         self.graph.setData(self.data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same
