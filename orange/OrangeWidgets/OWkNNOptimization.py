@@ -41,7 +41,7 @@ class kNNOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm", "evaluateEachClassValue"]
+    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
@@ -74,7 +74,6 @@ class kNNOptimization(OWBaseWidget):
         self.lastSaveDirName = os.getcwd() + "/"
         self.attrCont = 1
         self.attrDisc = 1
-        #self.evaluateEachClassValue = 0
         self.dataDistribution = None    # distribution of class attribute
         self.selectedClasses = []
         self.rawdata = None
@@ -160,7 +159,6 @@ class kNNOptimization(OWBaseWidget):
         #OWGUI.radioButtonsInBox(self.heuristicsSettingsBox, self, "attrDisc", [val for (val, measure) in discMeasures], box = " Ordering of Discrete Attributes")
         contHeuristic = OWGUI.widgetBox(self.heuristicsSettingsBox, " Ordering of Continuous Attributes", orientation = "vertical")
         OWGUI.comboBox(contHeuristic, self, "attrCont", items = [val for (val, m) in contMeasures])
-        #OWGUI.checkBox(contHeuristic, self, "evaluateEachClassValue", "Evaluate attributes for each class value separately")
         OWGUI.comboBox(self.heuristicsSettingsBox, self, "attrDisc", box = " Ordering of Discrete Attributes", items = [val for (val, m) in discMeasures])
 
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
