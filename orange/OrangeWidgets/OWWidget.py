@@ -34,6 +34,7 @@ class OWWidget(OWBaseWidget):
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)
+        self.widgetStatusArea = QHBox(self)
         self.space = self.controlArea
         #self.controlArea.setMaximumWidth(250)
         #self.space=QVBox(self)
@@ -45,8 +46,22 @@ class OWWidget(OWBaseWidget):
         self.grid.setColStretch(0,10)
         self.grid.setColStretch(1,50)
         self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
+        self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
+
+        self.widgetStatus = QStatusBar(self.widgetStatusArea, )
+        #self.widgetStatus.setSizeGripEnabled(0)
+        #self.widgetStatus.setWFlags( Qt.WStyle_DialogBorder)
+        self.widgetStatus.hide()
+        
         self.resize(640,480)
 
+    def warning(self, text = None):
+        if text == None:
+            self.widgetStatus.clear()
+            self.widgetStatus.hide()
+        else:
+            self.widgetStatus.show()
+            self.widgetStatus.message(text)
 
     
 if __name__ == "__main__":  
