@@ -25,6 +25,8 @@ from OWWidget import *
 ##############################################################################
 
 class OWCategorize(OWWidget):
+    settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals"]
+    
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -47,7 +49,6 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
         self.Categorization = 0  # default to entropy
         self.NumberOfIntervals = 5
         self.ShowIntervals = 0
-        self.settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals"]
         self.loadSettings()
         
         # GUI: CATEGORIZATION DETAILS
@@ -219,7 +220,7 @@ if __name__=="__main__":
     ow=OWCategorize()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('test')
+    dataset = orange.ExampleTable(r'..\datasets\adult_sample')
     od = OrangeData(dataset)
     ow.cdata(od)
 

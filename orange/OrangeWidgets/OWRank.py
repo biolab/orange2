@@ -29,6 +29,7 @@ from OWRankOptions import *
 #        return what?
 
 class OWRank(OWWidget):
+    settingsList=["Precision","ReliefK","ReliefN","DiscretizationMethod","DisplayReliefF","DisplayInfoGain","DisplayGainRatio","DisplayGini"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -42,7 +43,6 @@ by their relevance for particular classification
         FALSE)
         
         #set default settings
-        self.settingsList=["Precision","ReliefK","ReliefN","DiscretizationMethod","DisplayReliefF","DisplayInfoGain","DisplayGainRatio","DisplayGini"]
         self.Precision=3
         self.ReliefK=11
         self.ReliefN=20

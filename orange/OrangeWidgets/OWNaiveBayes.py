@@ -22,7 +22,7 @@ from OWWidget import *
 class OWNaiveBayes(OWWidget):
     settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation"]
     
-    def __init__(self, parent=None, name='xxNaiveBayes'):
+    def __init__(self, parent=None, name='NaiveBayes'):
         OWWidget.__init__(self,
         parent,
         name,
@@ -37,14 +37,14 @@ preprocessors to filter/change the data.
         self.addInput("pp")
         self.addOutput("learner")
         self.addOutput("classifier")
-        self.addOutput("nb-classifier")
+        self.addOutput("nbClassifier")
 
         # Settings
         self.m = 2.0                        # m for probability estimation
         self.name = 'Naive Bayes'           # name of the classifier/learner
         self.probEstimation = 0             # relative frequency
         self.condProbEstimation = 0         # relative frequency
-        self.condProbContEstimation = 4     # relative frequency
+        self.condProbContEstimation = 0     # relative frequency
 
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
@@ -111,7 +111,7 @@ preprocessors to filter/change the data.
         for e in self.condEstMethods:
             self.est3.insertItem(e[0])
         self.est3.setCurrentItem(self.condProbContEstimation)
-        
+
         QWidget(self.parBox).setFixedSize(0, 8)
 
         self.mBox = QHBox(self.parBox)
@@ -169,8 +169,9 @@ preprocessors to filter/change the data.
         if self.data <> None:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
+
             self.send("classifier", self.classifier)
-            self.send("nb-classifier", self.classifier)
+            self.send("nbClassifier", self.classifier)
 
     # slots: handle input signals        
         

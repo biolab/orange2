@@ -21,6 +21,7 @@ from OWWidget import *
 ##############################################################################
 
 class OWDataTable(OWWidget):
+    settingsList = []
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,

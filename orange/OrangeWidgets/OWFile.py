@@ -16,12 +16,12 @@ from OWWidget import *
 from OData import *
 
 class OWFile(OWWidget):
+    settingsList=["RecentFiles","selectedFileName"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,parent,"&File Widget",
         "The File Widget is an Orange Widget\nused for selecting and opening data files.",
         FALSE)
         "Constructor"        
-        self.settingsList=["RecentFiles","selectedFileName"]
         #set default settings
         self.RecentFiles=[]
         self.selectedFileName = "None"

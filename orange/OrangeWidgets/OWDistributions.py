@@ -45,6 +45,8 @@ class subBarQwtPlotCurve(QwtPlotCurve, subBarQwtCurve): # there must be a better
         None
 
 class OWDistributions(OWWidget):
+    settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth"]
+
     def __init__(self,parent=None):
         "Constructor"
         OWWidget.__init__(self,
@@ -58,7 +60,6 @@ distribution of classes for each attribute.
         TRUE,
         TRUE)
         # settings
-        self.settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth"]
         self.NumberOfBars = 5
         self.BarSize = 50
         self.ShowProbabilities = 0

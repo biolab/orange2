@@ -17,7 +17,7 @@ class OWWidget(QWidget):
     parent=None,
     title="O&range Widget",
     description="This a general Orange Widget\n from which all the other Orange Widgets are derived.",
-    wantSettings=TRUE,
+    wantSettings=FALSE,
     wantGraph=FALSE,
     icon="OrangeWidgetsIcon.png",
     logo="OrangeWidgetsLogo.png",
@@ -45,7 +45,8 @@ class OWWidget(QWidget):
         #list of outputs - should list all the channels that can be emited
         self.outputs=[]
         #the map with settings
-        self.settingsList=[]
+        if not hasattr(self, 'settingsList'):
+            type(self).settingsList = []
         #is widget enabled?
         self.enabled=TRUE
         #the title

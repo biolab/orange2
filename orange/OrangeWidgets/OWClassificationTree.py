@@ -56,7 +56,8 @@ preprocessors to filter/change the data.
         self.postMaj = 0; self.postMPrunning = 0; self.postM = 2.0
         
         self.loadSettings()
-
+        
+        
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
         # self.setLearner()                   # this just sets the learner, no data

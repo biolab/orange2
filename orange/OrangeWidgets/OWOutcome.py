@@ -16,6 +16,7 @@ from OWWidget import *
 from OData import *
 
 class OWOutcome(OWWidget):
+    settingsList = []
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,

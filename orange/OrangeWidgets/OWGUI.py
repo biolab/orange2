@@ -33,11 +33,25 @@ def checkOnly(widget, master, text, value):
 
 def lineEditOnly(widget, master, text, value):
     if text:
-		QLabel(text, hb)
+        hb = QHBox(widget)
+        QLabel(text, hb)
     wa = QLineEdit(widget)
     wa.setText(getattr(master,value))
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
     return wa
+
+def boxedLineEdit(widget, master, text, value, boxText, space=None):
+    nb = QVGroupBox(widget)
+    nb.setTitle(boxText)
+    if text:
+        hb = QHBox(nb)
+        QLabel(text, hb)
+    wa = QLineEdit(nb)
+    wa.setText(getattr(master,value))
+    master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
+    if space:
+        QWidget(widget).setFixedSize(0, space)
+    return nb
 
 def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1):
     hb = QHBox(widget)

@@ -30,6 +30,7 @@ def checkColumn(widget, master, text, value):
     return wa
 
 class OWClassificationTreeViewer(OWWidget):
+    settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
     visComboWin = []
     def __init__(self, parent=None, name='Classification Tree Viewer'):
         OWWidget.__init__(self,
@@ -40,8 +41,6 @@ tree in a hierarchical list view.
 """,
         FALSE,
         FALSE)
-
-        self.settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
 
         self.dataLabels = (('Majority class', 'Class'),
                   ('Probability of majority class', 'P(Class)'),

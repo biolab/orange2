@@ -19,6 +19,9 @@ from OWGraph import *
 from OData import *
 
 class OW2DInteractions(OWWidget):
+    settingsList = ["PointWidth", "RandomSpreadType", "ShowMainGraphTitle", "ShowXAxisTitle",
+                    "ShowYAxisTitle", "ShowVerticalGridlines", "ShowHorizontalGridlines",
+                    "ShowLegend", "GraphGridColor", "GraphCanvasColor"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         OWWidget.__init__(self,
@@ -33,9 +36,6 @@ shows interactions of two attributes
         TRUE)
 
         #set default settings
-        self.settingsList = ["PointWidth", "RandomSpreadType", "ShowMainGraphTitle", "ShowXAxisTitle",
-                             "ShowYAxisTitle", "ShowVerticalGridlines", "ShowHorizontalGridlines",
-                             "ShowLegend", "GraphGridColor", "GraphCanvasColor"]
         self.PointWidth = 3
         self.RandomSpreadType = "uniform"
         self.ShowMainGraphTitle = FALSE

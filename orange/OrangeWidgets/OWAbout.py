@@ -15,25 +15,23 @@ class OWAbout(QTabDialog):
         self.setIconText("Orange Widgets")
 
         #some text about visual orange
-        orangewidgets="""Orange Widgets is a free, widget based,
-public domain visual data mining software.
-It is developed in the python programming language
-on top of the Orange data mining software
-using the powerful Qt library from Trolltech.
+        orangewidgets="""Orange Widgets is a free platform for embedding
+data mining functions in easy-to-use graphical user
+interface components. Widgets are developed in Python
+programming language on top of Orange data mining and
+using the Qt GUI library from Trolltech. Orange Widgets
+are best used within Orange Canvas.
 
-Authors: Marko Kavcic and Blaz Zupan
-Version 0.80
-January 5, 2003"""
+   Orange Widgets concept by B. Zupan, J. Demsar, M. Kavcic    
+Version 0.90, January - April, 2003"""
         #some text about orange, copied from its homepage
-        orange="""Orange is a free, component-based, 
-public domain data mining software. 
-Currently it includes a range of preprocessing, 
-modeling and data exploration techniques. 
-It is based on C++ components, 
-that are accessed either directly 
+        orange="""Orange is a free, component-based, public domain data
+mining software. It includes a range of preprocessing,
+modeling and data exploration techniques. It is based
+on C++ components, that are accessed either directly
 or through Python scripts.
 
-Principal authors: Janez Demsar and Blaz Zupan"""
+Principal authors of Orange J. Demsar and B. Zupan"""
 
         tab1=QVBox(self)
         tab2=QVBox(self)
