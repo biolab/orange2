@@ -115,17 +115,16 @@ bool exists(const T &cont, const C &value)   { return exists(cont.begin(), cont.
     Copyright (c) 1996 Silicon Graphics Computer Systems, Inc.
 */
 
-template<typename _RandomAccessIter, typename _RandomNumberGenerator>
-void or_random_shuffle(_RandomAccessIter __first, _RandomAccessIter __last,
-                    _RandomNumberGenerator& __rand)
+template<typename RandomAccessIter, typename RandomNumberGenerator>
+void or_random_shuffle(RandomAccessIter first, RandomAccessIter last, RandomNumberGenerator& rand)
 {
-  if (__first == __last)
+  if (first == last)
     return;
   
-  for (_RandomAccessIter __i = __first + 1; __i != __last; ++__i)
-    iter_swap(__i, __first + __rand((__i - __first) + 1));
+  for (RandomAccessIter i = first + 1; i != last; ++i)
+    iter_swap(i, first + rand((i - first)));
 }
-    
+
 // Folowing two functions call sort and then randomly shuffle members with the same key value
 //  The second functions uses predicates for testing order and equality (spr and epr)
 
