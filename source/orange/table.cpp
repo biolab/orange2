@@ -275,6 +275,21 @@ void TExampleTable::push_back(TExample *x)
 }
 
 
+TExample &TExampleTable::new_example()
+{
+  TExample *x = mlnew TExample(domain);
+  push_back(x);
+  return *x;
+}
+
+
+void TExampleTable::delete_last()
+{ if (_Last == examples)
+    raiseError("no examples");
+  erase(_Last-1);
+}
+
+
 int TExampleTable::size() const
 {
   return examples ? _Last - examples : 0;

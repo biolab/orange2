@@ -1507,11 +1507,10 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_O, "(e
     CAST_TO(TExampleTable, table)
 
     if (table->ownsExamples) {
-      TExample example(table->domain);
-      if (!convertFromPythonExisting(args, example))
+      if (!convertFromPythonExisting(args, table->new_example())) {
+        table->delete_last();
         return PYNULL;
-    
-      table->addExample(example);
+      }
     }
     else {
       if (!PyOrExample_Check(args) || (((TPyExample *)(args))->lock != table->lock))

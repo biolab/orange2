@@ -118,16 +118,28 @@ int TExample::dropReferences()
 
 
 TExample &TExample::operator =(const TExample &orig)
-{ domain = orig.domain;
+{
+  if (!orig.domain) {
+    values = values_end = NULL;
+    domain = PDomain();
+  }
 
-  if (domain) {
-    const int attrs = domain->variables->size();
-    values = mlnew TValue[attrs];
-    values_end = values + attrs;
+  else {
+    const int attrs = orig.domain->variables->size();
+
+    if (domain != orig.domain) {
+      if (domain->variables->size() != attrs) {
+        if (values)
+          mldelete[] values;
+        values = mlnew TValue[attrs];
+        values_end = values + attrs;
+      }
+
+      domain = orig.domain;
+    }
+
     for(TValue *origi = orig.values, *thisi = values; thisi != values_end; *(thisi++) = *(origi++));
   }
-  else
-    values = values_end = NULL;
 
   meta = orig.meta;
   return *this;

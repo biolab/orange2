@@ -72,6 +72,10 @@ public:
             void erase(TExample **fromPtr, TExample **toPtr);
             void insert(const int &sti, const TExample &ex);
 
+
+  TExample &new_example();
+  void delete_last();
+
   int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 
