@@ -84,22 +84,14 @@ class WidgetTabs(QTabWidget):
 		self.canvasDlg = None
 		self.allWidgets = []
 		self.useLargeIcons = FALSE
+		self.tabDict = {}
 
-		tab = WidgetTab(self, "Data")
+	def insertWidgetTab(self, name):
+		tab = WidgetTab(self, name)
 		self.tabs.append(tab)
-		self.insertTab(tab, "Data")
-		
-		tab = WidgetTab(self, "Classification")
-		self.tabs.append(tab)
-		self.insertTab(tab, "Classification")
-		
-		tab = WidgetTab(self, "Evaluation")
-		self.tabs.append(tab)
-		self.insertTab(tab, "Evaluation")
-		
-		tab = WidgetTab(self, "Visualization")
-		self.tabs.append(tab)
-		self.insertTab(tab, "Visualization")
+		self.insertTab(tab, name)
+		self.tabDict[name] = tab
+		return tab
 		
 	def setCanvasDlg(self, canvasDlg):
 		self.canvasDlg = canvasDlg
@@ -120,17 +112,17 @@ class WidgetTabs(QTabWidget):
 		for category in categoryList:
 			self.addWidgetCategory(category)
 
+		# remove empty categories
+		for i in range(len(self.tabs)-1, -1, -1):
+			if self.tabs[i].widgets == []:
+				self.removePage(self.tabs[i])
+				self.tabs.remove(self.tabs[i])
+
 	# add all widgets inside the category to the tab
 	def addWidgetCategory(self, category):
-		tab = None
-		for madeTab in self.tabs:
-			if madeTab.name() == str(category.getAttribute("name")):
-				tab = madeTab
-		if tab == None:
-			tab = WidgetTab(self, str(category.getAttribute("name")))
-			#tab.setMinimumHeight(60)
-			self.tabs.append(tab)
-			self.insertTab(tab, str(category.getAttribute("name")))
+		strCategory = str(category.getAttribute("name"))
+		if self.tabDict.has_key(strCategory): tab = self.tabDict[strCategory]
+		else:	tab = self.insertWidgetTab(strCategory)
 
 		priorityList = []
 		inListList = []
@@ -151,7 +143,9 @@ class WidgetTabs(QTabWidget):
 			icon = widget.getAttribute("icon")
 			iconName = icon
 			if (icon != ""):
-				if os.path.isfile(self.picsDir + icon):
+				if os.path.isfile(self.widgetDir + str(category.getAttribute("name")) + icon):
+					iconName = self.widgetDir + str(category.getAttribute("name")) + icon
+				elif os.path.isfile(self.picsDir + icon):
 					iconName = self.picsDir + icon			
 				elif os.path.isfile(self.widgetDir + icon):
 					iconName = self.widgetDir + icon

@@ -9,17 +9,45 @@ import re
 from xml.dom.minidom import Document
 
 class WidgetsToXML:
-    def ParseDirectory(self, widgetDirName, canvasDir):
+
+    # read all installed widgets, build a registry and store widgets.pth with directory names in python dir
+    def ParseWidgetRoot(self, widgetDirName, canvasDir):
         # create xml document
         doc = Document()
         canvas = doc.createElement("orangecanvas")
         categories = doc.createElement("widget-categories")
         doc.appendChild(canvas)
         canvas.appendChild(categories)
+
+        # open widgets.pth
+        widgetDirList = open(sys.prefix + "\\widgets.pth", "wt")
         
-        #os.chdir(widgetDirName)
         for filename in os.listdir(widgetDirName):
             full_filename = os.path.join(widgetDirName, filename)
+            if os.path.isdir(full_filename):
+                widgetDirList.write(os.path.realpath(full_filename) + "\n")
+                self.ParseDirectory(doc, categories, full_filename, filename)
+
+        # we put widgets that are in the root dir of widget directory to category "Unsorted"
+        widgetDirList.write(os.path.realpath(widgetDirName) + "\n")
+        self.ParseDirectory(doc, categories, widgetDirName, "Unsorted")
+        #widgetDirList.flush()
+        #widgetDirList.close()
+        
+        xmlText = doc.toprettyxml()
+        file = open(canvasDir + "widgetregistry.xml", "wt")
+        file.write(xmlText)
+        file.flush()
+        file.close()
+        doc.unlink()
+
+    # parse all widgets in directory widgetDirName\categoryName into new category named categoryName
+    def ParseDirectory(self, doc, categories, full_dirname, categoryName):
+        if sys.path.count(full_dirname) == 0:       # add directory to orange path
+            sys.path.append(full_dirname)
+        
+        for filename in os.listdir(full_dirname):
+            full_filename = os.path.join(full_dirname, filename)
             if os.path.isdir(full_filename) or os.path.islink(full_filename) or not (full_filename[-2:] == "py"):
                 continue
 
@@ -28,7 +56,7 @@ class WidgetsToXML:
             file.close()
 
             name        = self.GetCustomText(data, '<name>.*</name>', 6, -7)
-            category    = self.GetCustomText(data, '<category>.*</category>', 10, -11)
+            #category    = self.GetCustomText(data, '<category>.*</category>', 10, -11)
             icon        = self.GetCustomText(data, '<icon>.*</icon>', 6, -7)
             priorityStr = self.GetCustomText(data, '<priority>.*</priority>', 10, -11)
             if priorityStr == None:
@@ -41,17 +69,14 @@ class WidgetsToXML:
             if (name == None):      # if the file doesn't have a name, we treat it as a non-widget file
                 continue
             
-            if (category == None):
-                category = "Unknown"
-
             # create XML node for the widget
             child = categories.firstChild
-            while (child != None and child.attributes.get("name").nodeValue != category):
+            while (child != None and child.attributes.get("name").nodeValue != categoryName):
                 child= child.nextSibling
     
             if (child == None):
                 child = doc.createElement("category")
-                child.setAttribute("name", category)
+                child.setAttribute("name", categoryName)
                 categories.appendChild(child)
     
             widget = doc.createElement("widget")
@@ -61,19 +86,7 @@ class WidgetsToXML:
             widget.setAttribute("out", str(outputList))
             widget.setAttribute("icon", icon)
             widget.setAttribute("priority", priorityStr)
-            """
-            # inputlist
-            ins = doc.createElement("inputs")
-            insText = doc.createTextNode(inputList)
-            ins.appendChild(insText)
-            widget.appendChild(ins)
-
-            # outlist
-            outs = doc.createElement("outputs")
-            outsText = doc.createTextNode(outputList)
-            ins.appendChild(outsText)
-            widget.appendChild(outs)
-            """
+            
             # description            
             if (description != ""):
                 desc = doc.createElement("description")
@@ -83,12 +96,6 @@ class WidgetsToXML:
 
             child.appendChild(widget)
 
-        xmlText = doc.toprettyxml()
-        file = open(canvasDir + "widgetregistry.xml", "wt")
-        file.write(xmlText)
-        file.flush()
-        file.close()
-        doc.unlink()
 
     def GetDescription(self, data):
         #read the description from widget
@@ -147,4 +154,4 @@ if __name__=="__main__":
     parse = WidgetsToXML()
     canvasDir = sys.prefix + "./"
     widgetDir = sys.prefix + "../orangeWidgets/"
-    parse.ParseDirectory(widgetDir, canvasDir)
+    parse.ParseWidgetRoot(widgetDir, canvasDir)

@@ -27,10 +27,11 @@ class OrangeCanvasDlg(QMainWindow):
 		self.windows = []	# list of id for windows in Window menu
 
 		# if widget path not registered -> register
-		self.widgetDir = "../OrangeWidgets/"
-		self.picsDir = "../OrangeWidgets/icons/"
+		self.widgetDir = os.path.realpath("../OrangeWidgets") + "/"
+		self.picsDir = os.path.realpath("../OrangeWidgets/icons") + "/"
+		self.canvasDir = os.path.realpath("./") + "/"
+
 		self.defaultPic = self.picsDir + "Unknown.png"
-		self.canvasDir = "./"
 		self.registryFileName = self.canvasDir + "widgetregistry.xml"
 		
 		if sys.path.count(self.widgetDir) == 0:
@@ -41,12 +42,17 @@ class OrangeCanvasDlg(QMainWindow):
 		self.setCentralWidget(self.workspace)
 		self.statusBar = QStatusBar(self)
 		self.connect(self.workspace, SIGNAL("windowActivated(QWidget*)"), self.focusDocument)
-
 		
 		self.settings = {}
 		self.loadSettings()
-		self.rebuildSignals()
-
+		self.rebuildSignals()	# coloring of signals - unused!
+		self.useLargeIcons = FALSE
+		self.snapToGrid = TRUE
+		if self.settings.has_key("useLargeIcons"): self.useLargeIcons = self.settings["useLargeIcons"]
+		if self.settings.has_key("snapToGrid"): self.snapToGrid = self.settings["snapToGrid"]
+		if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 0
+		if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
+		
 		self.toolbar = QToolBar(self, 'toolbar')
 		self.widgetsToolBar = QToolBar( self, 'Widgets')
 
@@ -59,32 +65,43 @@ class OrangeCanvasDlg(QMainWindow):
 		self.toolbar.addSeparator()
 		toolPrint = QToolButton(QPixmap(orngResources.file_print), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
 		self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, TRUE)
-	
+
+		# read widgets	
 		self.widgetsToolBar.setHorizontalStretchable(TRUE)		
 		self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
 
+		# read recent files
 		self.recentDocs = []
 		self.readRecentFiles()
-		self.show()
-
+		
 		# center window in the desktop
 		deskH = app.desktop().height()
 		deskW = app.desktop().width()
 		h = deskH/2 - self.height()/2
 		w = deskW/2 - self.width()/2
-		h = max(h,0)	# if the screen is to small position the window in the upper left corner
-		w = max(w,0)
-		self.move(w,h)
-
+		if h<0 or w<0:	# if the window is too small, resize the window to desktop size
+			self.resize(app.desktop().height(), app.desktop().width())
+			self.move(0,0)
+		else:			
+			self.move(w,h)
+		
+		# apply output settings
 		self.output = orngOutput.OutputWindow(self, self.workspace)
 		self.output.show()
 		self.output.catchException(self.settings["catchException"])
 		self.output.catchOutput(self.settings["catchOutput"])
 		self.output.setFocusOnException(self.settings["focusOnCatchException"])
 		self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+		self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
+		self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
 
+		self.show()
+		
+		# create new schema
 		win = self.menuItemNewSchema()
 		win.showMaximized()
+
+		
 
 	
 	def createWidgetsToolbar(self, rebuildRegistry):
@@ -97,15 +114,29 @@ class OrangeCanvasDlg(QMainWindow):
 		# if registry doesn't exist yet, we create it
 		if rebuildRegistry == 1:
 			parse = xmlParse.WidgetsToXML()
-			parse.ParseDirectory(self.widgetDir, self.canvasDir)
+			parse.ParseWidgetRoot(self.widgetDir, self.canvasDir)
 			
 		# if registry still doesn't exist then something is very wrong...
 		if not os.path.exists(self.registryFileName):
 			QMessageBox.error( None, "Orange Canvas", "Unable to create widget registry. Exiting...", QMessageBox.Ok + QMessageBox.Default )
 			self.quit()
+
+		if self.settings.has_key("WidgetTabs"):
+			widgetTabList = self.settings["WidgetTabs"]
+		else:
+			widgetTabList = ["Data", "Classification", "Evaluation", "Standard Visualizations", "Advanced Visualizations", "Associations", "Genomics", "Miscelaneous"]
 			
+		for tab in widgetTabList: self.tabs.insertWidgetTab(tab)
+				
 		# read widget registry file and create tab with buttons
 		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
+
+		# store order to settings list
+		widgetTabList = []
+		for tab in self.tabs.tabs:
+			widgetTabList.append(str(self.tabs.tabLabel(tab)))
+		self.settings["WidgetTabs"] = widgetTabList
+			
 		
 	def initMenu(self):
 		# ###################
@@ -143,24 +174,9 @@ class OrangeCanvasDlg(QMainWindow):
 		#self.menuOptions.insertSeparator()
 		#self.menuOptions.insertItem( "Show Grid",  self.menuItemShowGrid)
 
-		# snap to grid option
-		self.menupopupSnapToGridID = self.menuOptions.insertItem( "Snap to Grid",  self.menuItemSnapToGrid )
-		if self.settings.has_key("snapToGrid"): self.snapToGrid = self.settings["snapToGrid"]
-		else:									self.snapToGrid = TRUE
-		self.menuOptions.setItemChecked(self.menupopupSnapToGridID, self.snapToGrid)
-
-		# use large icons with text option
-		self.menupopupLargeIconsID = self.menuOptions.insertItem( "Use large icons",  self.menuItemLargeIcons )
-		if self.settings.has_key("useLargeIcons"): self.useLargeIcons = self.settings["useLargeIcons"]
-		else:									   self.useLargeIcons = FALSE
-
-		self.menuOptions.insertSeparator()
-
-		self.menuOptions.setItemChecked(self.menupopupLargeIconsID, self.useLargeIcons)
-		self.menuOptions.insertSeparator()
-		self.menuOptions.insertItem( "Enable All Links",  self.menuItemEnableAll)
-		self.menuOptions.insertItem( "Disable All Links",  self.menuItemDisableAll)
-		self.menuOptions.insertItem( "Clear All",  self.menuItemClearWidgets)
+		self.menuOptions.insertItem( "Enable All Links",  self.menuItemEnableAll, Qt.CTRL+Qt.Key_E)
+		self.menuOptions.insertItem( "Disable All Links",  self.menuItemDisableAll, Qt.CTRL+Qt.Key_D)
+		self.menuOptions.insertItem( "Clear Scheme",  self.menuItemClearWidgets)
 		self.menuOptions.insertSeparator()
 		#self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
 		#self.menuOptions.insertSeparator()
@@ -349,12 +365,7 @@ class OrangeCanvasDlg(QMainWindow):
 	def menuItemShowGrid(self):
 		return
 		
-	def menuItemSnapToGrid(self):
-		self.snapToGrid = not self.snapToGrid
-		self.settings["snapToGrid"] = self.snapToGrid
-		self.menuOptions.setItemChecked(self.menupopupSnapToGridID, self.snapToGrid)
-
-		# reposition all widgets in all documents so that the widgets are aligned
+	def updateSnapToGrid(self):
 		if self.snapToGrid == TRUE:
 			for win in self.workspace.windowList():
 				if not isinstance(win, orngDoc.SchemaDoc): continue
@@ -364,10 +375,7 @@ class OrangeCanvasDlg(QMainWindow):
 					widget.repaintAllLines()
 				win.canvas.update()
 
-	def menuItemLargeIcons(self):
-		self.useLargeIcons = not self.useLargeIcons
-		self.settings["useLargeIcons"] = self.useLargeIcons
-		self.menuOptions.setItemChecked(self.menupopupLargeIconsID, self.useLargeIcons)
+	def updateUseLargeIcons(self):
 		self.tabs.hide()
 		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
 		self.tabs.setCanvasDlg(self)
@@ -459,22 +467,58 @@ class OrangeCanvasDlg(QMainWindow):
 	def menuItemCanvasOptions(self):
 		dlg = orngDlgs.CanvasOptionsDlg(self, None, "", TRUE)
 
-		# set current settings
+		# set general options settings
+		dlg.snapToGridCB.setChecked(self.snapToGrid)
+		dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
+
+		# set current exception settings
 		dlg.catchExceptionCB.setChecked(self.settings["catchException"])
 		dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
+		dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
 		dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
 		dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
-        
+		dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
+
+		# fill categories tab list
+		oldTabList = []
+		for tab in self.tabs.tabs:
+			dlg.tabOrderList.insertItem(self.tabs.tabLabel(tab))
+			oldTabList.append(str(self.tabs.tabLabel(tab)))
+
 		dlg.exec_loop()
 		if dlg.result() == QDialog.Accepted:
+			# save general settings
+			if self.snapToGrid != dlg.snapToGridCB.isChecked():
+				self.snapToGrid = dlg.snapToGridCB.isChecked()
+				self.settings["snapToGrid"] = self.snapToGrid
+				self.updateSnapToGrid()
+
+			if self.useLargeIcons != dlg.useLargeIconsCB.isChecked():
+				self.useLargeIcons = dlg.useLargeIconsCB.isChecked()
+				self.settings["useLargeIcons"] = self.useLargeIcons
+				self.updateUseLargeIcons()
+					
+			# save exceptions settings
 			self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
 			self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
+			self.settings["printExceptionInStatusBar"] = dlg.printExceptionInStatusBarCB.isChecked()
 			self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
 			self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
+			self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
 			self.output.catchException(self.settings["catchException"])
 			self.output.catchOutput(self.settings["catchOutput"])
+			self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
+			self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
 			self.output.setFocusOnException(self.settings["focusOnCatchException"])
 			self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+
+			# save tab order settings
+			newTabList = []
+			for i in range(dlg.tabOrderList.count()):
+				newTabList.append(str(dlg.tabOrderList.text(i)))
+			if newTabList != oldTabList:
+				self.settings["WidgetTabs"] = newTabList
+				self.createWidgetsToolbar(0)
 
 
 	def setStatusBarEvent(self, text):

@@ -465,6 +465,7 @@ class SchemaDoc(QMainWindow):
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
         manager = ""
+        progressHandlers = ""
         # add widgets to application as they are topologically sorted
         for instance in signalManager.widgets:
             widget = None
@@ -482,6 +483,7 @@ class SchemaDoc(QMainWindow):
             buttons += "owButton" + name + " = QPushButton(\"" + widget.caption + "\", self)\n"+t+t
             buttonsConnect += "self.connect( owButton" + name + ",SIGNAL(\"clicked()\"), self.ow" + name + ".reshow)\n"+t+t
             save += "self.ow" + name + ".saveSettings()\n"+t+t
+            progressHandlers += "self.ow" + name + ".progressBarSetHandler(self.progressHandler)\n"+t+t
             
         for line in self.lines:
             if not line.getEnabled(): continue
@@ -507,15 +509,49 @@ class SchemaDoc(QMainWindow):
         classinit = """
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        self.setCaption("Qt %s")
-        self.bottom=QHBox(self)""" % (fileName)
+        self.setCaption("Qt %s")""" % (fileName)
 
         if asTabs == 1:
             classinit += """
         self.tabs = QTabWidget(self, 'tabWidget')
-        self.resize(640,480)"""
-        
+        self.resize(800,600)"""
 
+        progress = """
+        statusBar = QStatusBar(self)
+        self.caption = QLabel('', statusBar)
+        self.caption.setMaximumWidth(200)
+        self.caption.hide()
+        self.progress = QProgressBar(100, statusBar)
+        self.progress.setMaximumWidth(100)
+        self.progress.hide()
+        self.progress.setCenterIndicator(1)
+        statusBar.addWidget(self.caption, 1)
+        statusBar.addWidget(self.progress, 1)"""
+        """
+        else:
+            progress =
+        self.caption = QLabel('', self)
+        self.caption.hide()
+        self.progress = QProgressBar(100, self)
+        self.progress.hide()
+        self.progress.setCenterIndicator(1)
+        """
+
+        handlerFunct = """
+    def progressHandler(self, widget, val):
+        if val < 0:
+            self.caption.setText("<nobr>Processing: <b>" + str(widget.caption()) + "</b></nobr>")
+            self.caption.show()
+            self.progress.setProgress(0)
+            self.progress.show()
+        elif val >100:
+            self.caption.hide()
+            self.progress.hide()
+        else:
+            self.progress.setProgress(val)
+            self.update()"""    
+
+                
         finish = """
 a=QApplication(sys.argv)
 ow=""" + classname + """()
@@ -528,9 +564,9 @@ a.exec_loop()"""
             save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + "\n"+t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n\n" + handlerFunct + "\n\n" + save + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" +t+t+ buttonsConnect + "\n" +t+t + links + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + save + "\n\n" + finish
         
         #save app
         fileApp = open(appName, "wt")

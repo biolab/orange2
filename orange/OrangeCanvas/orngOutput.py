@@ -31,6 +31,10 @@ class OutputWindow(QMainWindow):
 
 		self.defaultExceptionHandler = sys.excepthook
 		self.defaultSysOutHandler = sys.stdout
+		self.focusOnCatchException = 1
+		self.focusOnCatchOutput  = 0
+		self.printOutput = 0
+		self.printException = 1
 		
 		#sys.excepthook = self.exceptionHandler
 		#sys.stdout = self
@@ -51,6 +55,12 @@ class OutputWindow(QMainWindow):
 	def setFocusOnOutput(self, focusOnCatchOutput):
 		self.focusOnCatchOutput = focusOnCatchOutput
 
+	def printOutputInStatusBar(self, printOutput):
+		self.printOutput = printOutput
+
+	def printExceptionInStatusBar(self, printException):
+		self.printException = printException
+
 	def clear(self):
 		self.textOutput.setText("")
 	
@@ -59,7 +69,8 @@ class OutputWindow(QMainWindow):
 			self.canvasDlg.menuItemShowOutputWindow()
 		self.textOutput.append(text)
 		self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-		self.canvasDlg.setStatusBarEvent(text)
+		if self.printOutput:
+			self.canvasDlg.setStatusBarEvent(text)
 
 	def keyReleaseEvent (self, event):
 		if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:	# user pressed CTRL+"C"
@@ -72,7 +83,8 @@ class OutputWindow(QMainWindow):
 		t = time.localtime()
 		self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))
 		self.textOutput.append("<nobr>Traceback:</nobr>")
-		self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%d:%d" % ( str(type) , t[3],t[4],t[5]))
+		if self.printException:
+			self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%d:%d" % ( str(type) , t[3],t[4],t[5]))
 
 		# TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
 		

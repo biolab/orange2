@@ -373,25 +373,69 @@ class CanvasOptionsDlg(QDialog):
         self.setCaption("Qt Canvas Options")
         #self.controlArea = QVBoxLayout (self)
         self.topLayout = QVBoxLayout( self, 10 )
+        self.resize(500,500)
 
-        exceptions = QVButtonGroup(self, "Exceptions")
+        self.tabs = QTabWidget(self, 'tabWidget')
+        GeneralTab = QVGroupBox(self.tabs)
+        ExceptionsTab = QVGroupBox(self.tabs)
+        TabOrderTab = QVGroupBox(self.tabs)
+        self.tabs.insertTab(GeneralTab, "General")
+        self.tabs.insertTab(ExceptionsTab, "Exception handling")
+        self.tabs.insertTab(TabOrderTab, "Widget tab order")
+
+        # general tab options
+        self.snapToGridCB = QCheckBox("Snap widgets to grid", GeneralTab)
+        self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
+
+        # exception tab options
+        exceptions = QVGroupBox("Exceptions", ExceptionsTab)
         self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
         self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
+        self.printExceptionInStatusBarCB = QCheckBox('Print last exception in status bar', exceptions)
         
-        output = QVButtonGroup(self, "System output")
+        output = QVGroupBox("System output", ExceptionsTab)
         self.catchOutputCB = QCheckBox('Catch system output', output)
         self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
-        
+        self.printOutputInStatusBarCB = QCheckBox('Print last system output in status bar', output)
+
+        # tab order options
+        caption = QLabel("Set order of widget categories", TabOrderTab)
+        self.tabOrderList = QListBox(TabOrderTab)
+        self.tabOrderList.setSelectionMode(QListBox.Single)
+        hbox2 = QHBox(TabOrderTab)
+        self.upButton = QPushButton("Up", hbox2)
+        self.downButton = QPushButton("Down", hbox2)
+        self.connect(self.upButton, SIGNAL("clicked()"), self.moveUp)
+        self.connect(self.downButton, SIGNAL("clicked()"), self.moveDown)
+
+        # OK, Cancel buttons
         hbox = QHBox(self)
         self.okButton = QPushButton("OK", hbox)
         self.cancelButton = QPushButton("Cancel", hbox)
 
-        self.topLayout.addWidget(exceptions)
-        self.topLayout.addWidget(output)
+        self.topLayout.addWidget(self.tabs)
         self.topLayout.addWidget(hbox)
 
         self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
+
+    # move selected widget category up
+    def moveUp(self):
+        for i in range(1, self.tabOrderList.count()):
+            if self.tabOrderList.isSelected(i):
+                text = self.tabOrderList.text(i)
+                self.tabOrderList.removeItem(i)
+                self.tabOrderList.insertItem(text, i-1)
+                self.tabOrderList.setSelected(i-1, TRUE)
+
+    # move selected widget category down
+    def moveDown(self):
+        for i in range(self.tabOrderList.count()-2,-1,-1):
+            if self.tabOrderList.isSelected(i):
+                text = self.tabOrderList.text(i)
+                self.tabOrderList.removeItem(i)
+                self.tabOrderList.insertItem(text, i+1)
+                self.tabOrderList.setSelected(i+1, TRUE)
 
 
         

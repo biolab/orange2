@@ -368,6 +368,15 @@ class SchemaView(QCanvasView):
             widget.setViewPos(x,y)
             widget.updateTooltip()
 
+    def progressBarHandler(self, widgetInstance, value):
+        qApp.processEvents()        # allow processing of other events
+        for widget in self.doc.widgets:
+            if widget.instance == widgetInstance:
+                if value < 0: widget.showProgressBar()
+                elif value > 100: widget.hideProgressBar()
+                else: widget.setProgressBarValue(value)
+                return
+
 #    def drawContents(self, painter):
 #        for widget in self.doc.widgets:
 #            widget.drawShape(painter)

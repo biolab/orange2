@@ -231,16 +231,36 @@ class CanvasWidget(QCanvasRectangle):
         exec(code)
         code = compile(widget.fileName + "." + widget.fileName + "()", ".", "eval")
         self.instance = eval(code)
-
+        self.instance.progressBarSetHandler(self.view.progressBarHandler)   # set progress bar event handler
 
         self.text = QCanvasText(self.caption, canvas)
         self.text.show()
         self.text.setTextFlags(Qt.AlignCenter)
         self.updateTextCoords()
 
+        # create and hide progressbar items
+        self.progressBarRect = QCanvasRectangle(self.xPos+8, self.yPos - 20, self.width()-16, 16, canvas)
+        self.progressRect = QCanvasRectangle(self.xPos+8, self.yPos - 20, 0, 16, canvas)
+        self.progressRect.setBrush(QBrush(QColor(0,128,255)))
+        self.progressText = QCanvasText(canvas)
+        self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
+        self.progressText.setTextFlags(Qt.AlignCenter)
+        self.progressBarRect.setZ(-100)
+        self.progressRect.setZ(-50)
+        self.progressText.setZ(-10)
+        
+
     def remove(self):
+        self.progressBarRect.hide()
+        self.progressRect.hide()
+        self.progressText.hide()
+        self.progressBarRect.setCanvas(None)
+        self.progressRect.setCanvas(None)
+        self.progressText.setCanvas(None)
+
         self.hide()
         self.setCanvas(None)    # hide the widget
+        
         # save settings
         if (self.instance != None):
             self.instance.saveSettings()
@@ -258,6 +278,12 @@ class CanvasWidget(QCanvasRectangle):
     def updateLinePosition(self):
         for line in self.inLines: line.updateLinePos()
         for line in self.outLines: line.updateLinePos()
+
+    def updateProgressBarPosition(self):
+        self.progressBarRect.move(self.xPos+8, self.yPos - 20)
+        self.progressRect.move(self.xPos+8, self.yPos - 20)
+        self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
+
     
     # set coordinates of the widget
     def setCoords(self, x, y):
@@ -266,6 +292,9 @@ class CanvasWidget(QCanvasRectangle):
         self.move(x,y)
         self.updateTextCoords()
         self.updateLinePosition()
+        self.updateProgressBarPosition()
+
+    
 
     # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
@@ -414,7 +443,7 @@ class CanvasWidget(QCanvasRectangle):
 
     def updateTooltip(self):
         self.removeTooltip()
-        string = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br><hr><u>Input Signals</u>:"
+        string = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br><hr><u>Inputs</u>:"
 
         if self.widget.inList == []: string += "<br>None<br>"
         else:
@@ -429,7 +458,7 @@ class CanvasWidget(QCanvasRectangle):
                     string += "<li>" + self.canvasDlg.getChannelName(signal) + "</li>"
             string += "</ul>"
 
-        string += "<hr><u>Output Signals</u>:"
+        string += "<hr><u>Outputs</u>:"
         if self.widget.outList == []: string += "<br>None"
         else:
             string += "<ul>"
@@ -454,7 +483,27 @@ class CanvasWidget(QCanvasRectangle):
         #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         #QToolTip.remove(self.view, self.rect())
         QToolTip.remove(self.view, self.lastRect)
-              
+
+    def showProgressBar(self):
+        self.progressRect.setSize(0, self.progressRect.height())
+        self.progressText.setText("0%")
+        self.progressBarRect.show()
+        self.progressRect.show()
+        self.progressText.show()
+        self.canvas.update()
+
+    def hideProgressBar(self):
+        self.progressBarRect.hide()
+        self.progressRect.hide()
+        self.progressText.hide()
+        self.canvas.update()
+
+    def setProgressBarValue(self,value):
+        totalSize = self.progressBarRect.width()
+        self.progressRect.setSize(totalSize*(float(value)/100.0), self.progressRect.height())
+        self.progressText.setText(str(int(value)) + " %")
+        self.canvas.update()
+        
         
     def rtti(self):
         return 1001
