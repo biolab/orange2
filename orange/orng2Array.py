@@ -75,6 +75,99 @@ def _getattr(ex,attr):
             pass
     return (v,spec)
 
+
+
+class Gaussianizer:
+    def __init__(self,idx,attr,isclass=0,n_bells=3):
+        assert(n_bells >= 1)
+        self.n_bells = n_bells
+        self.idx = idx
+        self.nidx = idx+n_bells
+        self.attr= attr
+        self.values = []
+        self.isclass = isclass
+
+    def learn(self,value):
+        try:
+            spec = value.isSpecial()
+        except:
+            spec = 0
+        if not spec:
+            value = float(value)
+            self.values.append(value)
+
+    def activate(self):
+        pass
+
+    def status(self):
+        print "Gaussianizer: "
+        print "\tattr:",self.attr
+        print "\tidx: ",self.idx,'-',self.nidx
+        print '\t',
+        for i in xrange(self.n_bells):
+            print '%f(%f)'%(self.avg[i],self.std[i]),
+        print
+            
+    def prep(self):
+        self.values.sort()
+        l = self.values
+        m = len(l)/self.n_bells
+        if m == 0:
+            self.n_bells = 1
+            m = len(l)
+        sets = [l[:m]]
+        if self.n_bells > 2:
+            for x in range(1,self.n_bells-1):
+                sets.append(l[m*x:m*(x+1)])
+        sets.append(l[m*(self.n_bells-1):])
+        self.avg = []
+        self.std = []
+        for s in sets:
+            if len(s) > 2:
+                mmin = min(s)
+                mmax = max(s)
+                if mmin < mmax:
+                    self.avg.append((mmax+mmin)/2.0)
+                    #self.std.append(-2/(mmax-mmin))      # vee-shaped basis
+                    self.std.append(-4/((mmax-mmin)**2)) # gaussian basis
+        self.n_bells = len(self.avg)
+        #self.invert = 1.0/self.n_bells
+        self.invert = 1.0
+
+    def prepareSVM(self,nomo):
+        self.prep()
+        if self.isclass == 1:
+            self.missing = 3.14159   # a special value!
+        else:
+            self.missing = (0,1)
+
+    def prepareLR(self):
+        self.prep()
+        self.missing = 0.0
+        
+    def apply(self,ex,list):
+        (value,spec) = _getattr(ex,self.attr)
+        if spec:
+            for i in xrange(self.n_bells):
+                list[self.idx+i] = self.missing
+        else:
+            fv = float(value)
+            for i in xrange(self.n_bells):
+                v = abs(fv-self.avg[i])
+                v *= v # gaussian basis
+                list[self.idx+i] = self.invert*math.exp(v*self.std[i])
+        return
+
+    def descript(self):
+        return ['%s'%(self.attr.name)]
+
+    def description(self):
+        return (0,'%s'%(self.attr.name))
+
+    def inverse(self,list):
+        raise "Gaussianizer is not (yet) invertible."
+
+
 class Scalizer:
     def __init__(self,idx,attr,isclass=0):
         self.min = 1e200
@@ -620,6 +713,7 @@ class DomainTranslation:
         # 1 : standardize
         # 2 : quadratize
         # 3 : cubize
+        # negative : Gaussianize
         self.mode = mode
         self.floatmode = float_mode
 
@@ -639,6 +733,8 @@ class DomainTranslation:
                     t = Quadratizer(idx,i)
                 elif self.floatmode == 3:
                     t = Cubizer(idx,i)
+                elif self.floatmode < 0:
+                    t = Gaussianizer(idx,i,isclass=0,n_bells=-self.floatmode)
             else:
                 if i.varType == 1:
                     

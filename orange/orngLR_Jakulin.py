@@ -427,7 +427,7 @@ class BasicCalibrationClassifier(orange.Classifier):
 class MarginMetaLearner(orange.Learner):
     def __init__(self, learner, folds = 10, replications = 1, normalization=0, fulldata=0, metalearner = BasicLogisticLearner()):
         self.learner = learner
-        self.folds = 10
+        self.folds = folds
         self.metalearner = metalearner
         self.replications = replications
         self.normalization = normalization
