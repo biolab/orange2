@@ -318,8 +318,8 @@ class SignalDialog(QDialog):
                 for (inName, inType, handler, single) in self.inList:
                     try:
                         eval(inType)
-                        if issubclass(eval(inType), eval(outType)): canConnect = 1
-                        if outName == inName and issubclass(eval(inType), eval(outType)):
+                        if issubclass(eval(outType), eval(inType)): canConnect = 1
+                        if outName == inName and issubclass(eval(outType), eval(inType)):
                             self.addLink(outName, inName)
                     except:
                         print "unknown type: ", inType
@@ -337,7 +337,7 @@ class SignalDialog(QDialog):
                 if name == inName: inType = type
             for (name, type) in self.outList:
                 if name == outName: outType = type
-            if not issubclass(eval(inType), eval(outType)): return 0
+            if not issubclass(eval(outType), eval(inType)): return 0
         except:
             "unknown type: ", outType, " or ", inType
             return 0
