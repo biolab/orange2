@@ -267,20 +267,6 @@ class ContingencyTable2:
         self.dof = dof-1 # degrees of freedom is the number of fields with non-zero counts
         return
 
-
-def get3Int(t,a,b,c):
-    ni = len(a.values)
-    nj = len(b.values)
-    nk = len(c.values)
-    M = Numeric.zeros((ni,nj,nk),Numeric.Float)
-    for ex in t:
-        if not (ex[a].isSpecial() or ex[b].isSpecial() or ex[c].isSpecial()):
-            M[int(ex[a]),int(ex[b]),int(ex[c])] += 1
-    N = [t.domain.attributes[i].name,t.domain.attributes[j].name,t.domain.classVar.name]
-    V = [[a.values[k] for k in range(ni)],[b.values[k] for k in range(nj)],[c.values[k] for k in range(nk)]]
-    c = ContingencyTable(M,N,V)
-    return c
-
 def get3Int(t,a,b,c):
     ni = len(a.values)
     nj = len(b.values)
