@@ -58,6 +58,12 @@ class SchemaDoc(QMainWindow):
         self.removeAllWidgets()
  
     def addLine(self, outWidget, inWidget, setSignals = TRUE):
+        # check if line already exists
+        for line in self.lines:
+            if line.inWidget == inWidget and line.outWidget == outWidget:
+                QMessageBox.information( None, "Orange Canvas", "This connection already exists.", QMessageBox.Ok + QMessageBox.Default )
+                return None
+            
         line = orngCanvasItems.CanvasLine(self.canvas)
         line.setInOutWidget(inWidget, outWidget)
         if setSignals == TRUE:
