@@ -38,8 +38,8 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "c:\temp\orange\release"
-# PROP Intermediate_Dir "c:\temp\orange\release"
+# PROP Output_Dir "obj\release"
+# PROP Intermediate_Dir "obj\release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGENE_EXPORTS" /YX /FD /c
@@ -53,10 +53,10 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"c:\temp\orange\release\orangene.pyd" /libpath:"$(PYTHON)\libs"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj\release\orangene.pyd" /libpath:"$(PYTHON)\libs"
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "c:\janez\orange\modules\orangene.pyd"	"c:\program files\upx" "c:\temp\orange\release\orangene.pyd" -o "c:\janez\orange\modules\orangene.pyd"
+PostBuild_Cmds=del "..\..\orangene.pyd"	"c:\program files\upx" "obj\release\orangene.pyd" -o "..\..\orangene.pyd"	copy obj\Release\orangene.lib ..\..\lib\orangene.lib
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "orangene - Win32 Debug"
@@ -68,8 +68,8 @@ PostBuild_Cmds=del "c:\janez\orange\modules\orangene.pyd"	"c:\program files\upx"
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "c:\temp\orange\debug"
-# PROP Intermediate_Dir "c:\temp\orange\debug"
+# PROP Output_Dir "obj\debug"
+# PROP Intermediate_Dir "obj\debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGENE_EXPORTS" /YX /FD /GZ /c
@@ -83,7 +83,11 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"c:\temp\orange\debug/orangene_d.pyd" /pdbtype:sept /libpath:"$(PYTHON)/libs"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"..\..\orangene_d.pyd" /pdbtype:sept /libpath:"$(PYTHON)/libs"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=copy obj\Debug\orangene_d.lib ..\lib\orangene_d.lib
+# End Special Build Tool
 
 !ENDIF 
 
@@ -96,7 +100,7 @@ LINK32=link.exe
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\orangene\orangene.cpp
+SOURCE=.\orangene.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -104,7 +108,7 @@ SOURCE=.\orangene\orangene.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\orangene\orangene.hpp
+SOURCE=.\orangene.hpp
 # End Source File
 # End Group
 # End Target

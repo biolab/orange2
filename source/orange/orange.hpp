@@ -26,7 +26,7 @@
 #include "../pyxtract/pyxtract_macros.hpp"
 
 #include "c2py.hpp"
-#include "root.hpp"PyOr<type>_Type.ot_converter
+#include "root.hpp"
 
 ORANGE_API PyObject *PyOrType_GenericAbstract(PyTypeObject *thistype, PyTypeObject *type, PyObject *args, PyObject *kwds);
 ORANGE_API PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds);

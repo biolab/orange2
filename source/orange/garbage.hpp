@@ -189,7 +189,7 @@ public:
       counter->call_constructed = false;
       counter->is_reference = false;
       counter->ptr = (TWrapped *)ptr;
-      _ASSERT(!ptr->myWrapper);
+      _ASSERT(!((TWrapped *)ptr)->myWrapper);
       ((TWrapped *)ptr)->myWrapper = counter;
     }
   }

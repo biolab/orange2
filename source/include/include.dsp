@@ -38,11 +38,11 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "c:\temp\orange\release"
-# PROP Intermediate_Dir "c:\temp\orange\release"
+# PROP Output_Dir "obj/Release"
+# PROP Intermediate_Dir "obj/Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # SUBTRACT CPP /Fr
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -62,12 +62,12 @@ LIB32=link.exe -lib
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "c:\temp\orange\debug"
-# PROP Intermediate_Dir "c:\temp\orange\debug"
+# PROP Output_Dir "obj\Debug"
+# PROP Intermediate_Dir "obj\Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "$(PYTHON)\include" /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /FD /GZ /c
+# SUBTRACT CPP /Fr /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -91,7 +91,7 @@ LIB32=link.exe -lib
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
 # SUBTRACT CPP /Fr
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -114,23 +114,23 @@ LIB32=link.exe -lib
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 # Begin Source File
 
-SOURCE=.\include\c2py.cpp
+SOURCE=.\c2py.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\common.cpp
+SOURCE=.\common.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\crc32.cpp
+SOURCE=.\crc32.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\lcomb.cpp
+SOURCE=.\lcomb.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\stat.cpp
+SOURCE=.\stat.cpp
 
 !IF  "$(CFG)" == "include - Win32 Release"
 
@@ -148,11 +148,11 @@ SOURCE=.\include\stat.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\statexceptions.cpp
+SOURCE=.\statexceptions.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\strings.cpp
+SOURCE=.\strings.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -160,35 +160,35 @@ SOURCE=.\include\strings.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\include\c2py.hpp
+SOURCE=.\c2py.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\cMersenneTwister.h
+SOURCE=.\cMersenneTwister.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\crc.h
+SOURCE=.\crc.h
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\lcomb.hpp
+SOURCE=.\lcomb.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\stat.hpp
+SOURCE=.\stat.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\statexceptions.hpp
+SOURCE=.\statexceptions.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\stladdon.hpp
+SOURCE=.\stladdon.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\strings.hpp
+SOURCE=.\strings.hpp
 # End Source File
 # End Group
 # End Target

@@ -39,13 +39,13 @@ RSC=rc.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "c:\temp\orange\release"
-# PROP Intermediate_Dir "c:\temp\orange\release"
-# PROP Ignore_Export_Lib 1
+# PROP Output_Dir "obj/Release"
+# PROP Intermediate_Dir "obj/Release"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
+# SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -55,12 +55,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 # SUBTRACT LINK32 /debug
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\orange\release\orange.pyd" -o "d:\ai\orange\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"
+PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -72,13 +72,13 @@ PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\ora
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 1
-# PROP Output_Dir "c:\temp\orange\debug"
-# PROP Intermediate_Dir "c:\temp\orange\debug"
-# PROP Ignore_Export_Lib 1
+# PROP Output_Dir "obj\Debug"
+# PROP Intermediate_Dir "obj\Debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I "include" /I "orange/ppp" /I "orange/px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /Zm700 /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "include" /I "orange/ppp" /I "orange/px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /FD /GZ /Zm700 /c
+# SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -88,8 +88,12 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"c:\temp\orange\debug\orange_d.pyd" /pdbtype:sept /libpath:"$(PYTHON)/libs" /libpath:"$(GNUWIN32)/lib"
+# ADD LINK32 libgslcblas.a libgsl.a ole32.lib oleaut32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\..\orange_d.pyd" /libpath:"$(PYTHON)/libs" /libpath:"$(GNUWIN32)/lib"
 # SUBTRACT LINK32 /verbose /nodefaultlib
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\lib\orange_d.lib
+# End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
@@ -101,14 +105,14 @@ LINK32=link.exe
 # PROP BASE Target_Dir ""
 # PROP Use_MFC 0
 # PROP Use_Debug_Libraries 0
-# PROP Output_Dir "c:\temp\orange\release_debug"
-# PROP Intermediate_Dir "c:\temp\orange\release_debug"
-# PROP Ignore_Export_Lib 1
+# PROP Output_Dir "obj/Release_debug"
+# PROP Intermediate_Dir "obj/Release_debug"
+# PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
-# SUBTRACT CPP /Fr
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
+# SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -119,7 +123,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 # SUBTRACT BASE LINK32 /debug
-# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"d:\ai\orange\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 
 !ENDIF 
 
@@ -131,189 +135,125 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
-# Begin Group "wml"
-
-# PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlDelaunay2a.cpp
+SOURCE=.\assistant.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlDelaunay2a.h
+SOURCE=.\assoc.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlMath.cpp
+SOURCE=.\assoc_sparse.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlMath.h
+SOURCE=.\basket.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlMath.inl
+SOURCE=.\basstat.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlSystem.cpp
+SOURCE=.\bayes.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlSystem.h
+SOURCE=.\boolcnt.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlSystem.inl
+SOURCE=.\c4.5.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector.h
+SOURCE=.\c45inter.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector.inl
+SOURCE=.\calibrate.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector2.cpp
+SOURCE=.\callback.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector2.h
+SOURCE=.\cartesian.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector2.inl
+SOURCE=.\clas_gen.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector3.h
+SOURCE=.\classfromvar.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\wml\WmlVector3.inl
-# End Source File
-# End Group
-# Begin Source File
-
-SOURCE=.\orange\assistant.cpp
+SOURCE=.\classifier.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\assoc.cpp
+SOURCE=.\cls_example.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\assoc_sparse.cpp
+SOURCE=.\cls_misc.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\basket.cpp
+SOURCE=.\cls_orange.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\basstat.cpp
+SOURCE=.\cls_value.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\bayes.cpp
+SOURCE=.\contingency.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\boolcnt.cpp
+SOURCE=.\converts.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\c4.5.cpp
+SOURCE=.\cost.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\c45inter.cpp
+SOURCE=.\costwrapper.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\calibrate.cpp
+SOURCE=.\decomposition.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\callback.cpp
+SOURCE=.\dictproxy.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cartesian.cpp
+SOURCE=.\discretize.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\clas_gen.cpp
+SOURCE=.\dist_clustering.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\classfromvar.cpp
+SOURCE=.\distance.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\classifier.cpp
+SOURCE=.\distance_dtw.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cls_example.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\cls_misc.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\cls_orange.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\cls_value.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\contingency.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\converts.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\cost.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\costwrapper.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\decomposition.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\dictproxy.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\discretize.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\dist_clustering.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\distance.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\distance_dtw.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\distancemap.cpp
+SOURCE=.\distancemap.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
@@ -334,67 +274,11 @@ SOURCE=.\orange\distancemap.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\distvars.cpp
+SOURCE=.\distvars.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\domain.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\domaindepot.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\errors.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\estimateprob.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\exampleclustering.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\examplegen.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\examples.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\excel.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\filegen.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\filter.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\functions.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\garbage_py_manner.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\getarg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\graph.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\gslconversions.cpp
+SOURCE=.\domain.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
@@ -402,30 +286,84 @@ SOURCE=.\orange\gslconversions.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD CPP /Zi /Od
+# ADD CPP /Zi
 
 !ENDIF 
 
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\hclust.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\heatmap.cpp
+SOURCE=.\domaindepot.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD BASE CPP /O2
-# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /Zi /O2 /Ob1 /FAs /Fa"obj/Release_debug/dd.asm"
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\errors.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\estimateprob.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\exampleclustering.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\examplegen.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\examples.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\excel.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\filegen.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\filter.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\functions.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\garbage.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\getarg.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\graph.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\gslconversions.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
 # ADD CPP /O2
 # SUBTRACT CPP /Z<none>
 
@@ -434,7 +372,11 @@ SOURCE=.\orange\heatmap.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\im_col_assess.cpp
+SOURCE=.\hclust.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\im_col_assess.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
@@ -454,31 +396,23 @@ SOURCE=.\orange\im_col_assess.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\imputation.cpp
+SOURCE=.\imputation.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\induce.cpp
+SOURCE=.\induce.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\knn.cpp
+SOURCE=.\knn.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\learn.cpp
+SOURCE=.\learn.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lib_components.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lib_io.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lib_kernel.cpp
+SOURCE=.\lib_components.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
@@ -486,130 +420,25 @@ SOURCE=.\orange\lib_kernel.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD CPP /Zi /Od
+# ADD CPP /Zi
 
 !ENDIF 
 
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lib_learner.cpp
+SOURCE=.\lib_io.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lib_preprocess.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lib_vectors.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\linreg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\logfit.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\logistic.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\logreg.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lookup.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lsq.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\lwr.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\majority.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\measures.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\meta.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\minimal_complexity.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\minimal_error.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\module.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\nearest.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\numeric_interface.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\obsolete.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\orange.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\orvector.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\preprocessors.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\progress.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\pythonvars.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\random.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\readdata.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\redundancy.cpp
+SOURCE=.\lib_kernel.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD BASE CPP /O2
-# SUBTRACT BASE CPP /Z<none>
 # ADD CPP /O2
 # SUBTRACT CPP /Z<none>
 
@@ -618,47 +447,125 @@ SOURCE=.\orange\redundancy.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\retisinter.cpp
+SOURCE=.\lib_learner.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\root.cpp
+SOURCE=.\lib_preprocess.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /O2 /Oy /Ob1 /FAs
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\rulelearner.cpp
+SOURCE=.\lib_vectors.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\spec_contingency.cpp
+SOURCE=.\linreg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\spec_gen.cpp
+SOURCE=.\logfit.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\stringvars.cpp
+SOURCE=.\logistic.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\subsets.cpp
+SOURCE=.\logreg.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\survival.cpp
+SOURCE=.\lookup.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\svm.cpp
+SOURCE=.\lsq.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\symmatrix.cpp
+SOURCE=.\lwr.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tabdelim.cpp
+SOURCE=.\majority.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\measures.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\meta.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\minimal_complexity.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\minimal_error.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\nearest.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\numeric_interface.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orvector.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\preprocessors.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\progress.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\pythonvars.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\random.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\readdata.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\redundancy.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
 
@@ -679,47 +586,115 @@ SOURCE=.\orange\tabdelim.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\table.cpp
+SOURCE=.\retisinter.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt.cpp
+SOURCE=.\root.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt_split.cpp
+SOURCE=.\rulelearner.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt_stop.cpp
+SOURCE=.\spec_contingency.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\transdomain.cpp
+SOURCE=.\spec_gen.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\transval.cpp
+SOURCE=.\stringvars.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\triangulate.cpp
+SOURCE=.\subsets.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\trindex.cpp
+SOURCE=.\survival.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\valuelisttemplate.cpp
+SOURCE=.\svm.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\values.cpp
+SOURCE=.\symmatrix.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\vars.cpp
+SOURCE=.\tabdelim.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
+!ENDIF 
+
+# End Source File
+# Begin Source File
+
+SOURCE=.\table.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\tdidt.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\tdidt_split.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\tdidt_stop.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\transdomain.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\transval.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\trindex.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\valuelisttemplate.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\values.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\vars.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi
+
+!ENDIF 
+
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -727,399 +702,391 @@ SOURCE=.\orange\vars.cpp
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
 # Begin Source File
 
-SOURCE=.\orange\assistant.hpp
+SOURCE=.\assistant.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\assoc.hpp
+SOURCE=.\assoc.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\basket.hpp
+SOURCE=.\basket.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\basstat.hpp
+SOURCE=.\basstat.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\bayes.hpp
+SOURCE=.\bayes.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\boolcnt.hpp
+SOURCE=.\boolcnt.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\c4.5.hpp
+SOURCE=.\c4.5.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\c45inter.hpp
+SOURCE=.\c45inter.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\calibrate.hpp
+SOURCE=.\calibrate.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\callback.hpp
+SOURCE=.\callback.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cartesian.hpp
+SOURCE=.\cartesian.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\clas_gen.hpp
+SOURCE=.\clas_gen.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\classfromvar.hpp
+SOURCE=.\classfromvar.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\classify.hpp
+SOURCE=.\classify.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cls_example.hpp
+SOURCE=.\cls_example.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cls_misc.hpp
+SOURCE=.\cls_misc.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cls_orange.hpp
+SOURCE=.\cls_orange.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cls_value.hpp
+SOURCE=.\cls_value.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\contingency.hpp
+SOURCE=.\contingency.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\converts.hpp
+SOURCE=.\converts.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\cost.hpp
+SOURCE=.\cost.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\costwrapper.hpp
+SOURCE=.\costwrapper.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\decomposition.hpp
+SOURCE=.\decomposition.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\discretize.hpp
+SOURCE=.\discretize.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\dist_clustering.hpp
+SOURCE=.\dist_clustering.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\distance.hpp
+SOURCE=.\distance.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\distance_dtw.hpp
+SOURCE=.\distance_dtw.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\distancemap.hpp
+SOURCE=.\distancemap.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\distvars.hpp
+SOURCE=.\distvars.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\domain.hpp
+SOURCE=.\domain.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\domaindepot.hpp
+SOURCE=.\domaindepot.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\errors.hpp
+SOURCE=.\errors.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\estimateprob.hpp
+SOURCE=.\estimateprob.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\exampleclustering.hpp
+SOURCE=.\exampleclustering.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\examplegen.hpp
+SOURCE=.\examplegen.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\examples.hpp
+SOURCE=.\examples.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\filegen.hpp
+SOURCE=.\filegen.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\filter.hpp
+SOURCE=.\filter.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\garbage.hpp
+SOURCE=.\garbage.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\garbage_py_manner.hpp
+SOURCE=.\getarg.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\getarg.hpp
+SOURCE=.\graph.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\graph.hpp
+SOURCE=.\gslconversions.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\gslconversions.hpp
+SOURCE=.\hclust.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\hclust.hpp
+SOURCE=.\heatmap.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\heatmap.hpp
+SOURCE=.\imputation.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\imputation.hpp
+SOURCE=.\induce.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\induce.hpp
+SOURCE=.\knn.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\knn.hpp
+SOURCE=.\learn.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\learn.hpp
+SOURCE=.\lib_kernel.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lib_kernel.hpp
+SOURCE=.\linreg.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\linreg.hpp
+SOURCE=.\logfit.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\logfit.hpp
+SOURCE=.\logistic.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\logistic.hpp
+SOURCE=.\lookup.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lookup.hpp
+SOURCE=.\lwr.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\lwr.hpp
+SOURCE=.\majority.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\majority.hpp
+SOURCE=.\maptemplates.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\maptemplates.hpp
+SOURCE=.\measures.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\measures.hpp
+SOURCE=.\meta.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\meta.hpp
+SOURCE=.\minimal_complexity.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\minimal_complexity.hpp
+SOURCE=.\minimal_error.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\minimal_error.hpp
+SOURCE=.\nearest.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\module.hpp
+SOURCE=.\numeric_interface.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\nearest.hpp
+SOURCE=.\orange.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\numeric_interface.hpp
+SOURCE=.\ormap.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\orange.hpp
+SOURCE=.\orvector.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ormap.hpp
+SOURCE=.\pqueue_i.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\orvector.hpp
+SOURCE=.\preprocessors.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\pqueue_i.hpp
+SOURCE=.\progress.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\preprocessors.hpp
+SOURCE=.\pythonvars.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\progress.hpp
+SOURCE=.\pyxtract_macros.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\pythonvars.hpp
+SOURCE=.\random.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\pyxtract_macros.hpp
+SOURCE=.\readdata.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\random.hpp
+SOURCE=.\redundancy.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\readdata.hpp
+SOURCE=.\relief.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\redundancy.hpp
+SOURCE=.\retisinter.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\relief.hpp
+SOURCE=.\root.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\retisinter.hpp
+SOURCE=.\rulelearner.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\root.hpp
+SOURCE=.\slist.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\rulelearner.hpp
+SOURCE=.\spec_contingency.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\slist.hpp
+SOURCE=.\spec_gen.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\spec_contingency.hpp
+SOURCE=.\stringvars.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\spec_gen.hpp
+SOURCE=.\student.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\stringvars.hpp
+SOURCE=.\subsets.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\student.hpp
+SOURCE=.\svm.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\subsets.hpp
+SOURCE=.\symmatrix.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\svm.hpp
+SOURCE=.\tabdelim.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\symmatrix.hpp
+SOURCE=.\table.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tabdelim.hpp
+SOURCE=.\tdidt.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\table.hpp
+SOURCE=.\tdidt_split.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt.hpp
+SOURCE=.\tdidt_stop.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt_split.hpp
+SOURCE=.\transdomain.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\tdidt_stop.hpp
+SOURCE=.\transval.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\transdomain.hpp
+SOURCE=.\trindex.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\transval.hpp
+SOURCE=.\valuelisttemplate.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\trindex.hpp
+SOURCE=.\values.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\valuelisttemplate.hpp
+SOURCE=.\vars.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\values.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\vars.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\vectortemplates.hpp
+SOURCE=.\vectortemplates.hpp
 # End Source File
 # End Group
 # Begin Group "ppp files"
@@ -1127,267 +1094,267 @@ SOURCE=.\orange\vectortemplates.hpp
 # PROP Default_Filter "ppp"
 # Begin Source File
 
-SOURCE=.\orange\ppp\assistant.ppp
+SOURCE=.\ppp\assistant.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\assoc.ppp
+SOURCE=.\ppp\assoc.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\basstat.ppp
+SOURCE=.\ppp\basstat.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\bayes.ppp
+SOURCE=.\ppp\bayes.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\bayes_clustering.ppp
+SOURCE=.\ppp\bayes_clustering.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\boosting.ppp
+SOURCE=.\ppp\boosting.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\c4.5.ppp
+SOURCE=.\ppp\c4.5.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\c45inter.ppp
+SOURCE=.\ppp\c45inter.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\callback.ppp
+SOURCE=.\ppp\callback.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\cartesian.ppp
+SOURCE=.\ppp\cartesian.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\clas_gen.ppp
+SOURCE=.\ppp\clas_gen.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\classfromvar.ppp
+SOURCE=.\ppp\classfromvar.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\classify.ppp
+SOURCE=.\ppp\classify.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\contingency.ppp
+SOURCE=.\ppp\contingency.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\cost.ppp
+SOURCE=.\ppp\cost.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\costwrapper.ppp
+SOURCE=.\ppp\costwrapper.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\decomp.ppp
+SOURCE=.\ppp\decomp.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\decomposition.ppp
+SOURCE=.\ppp\decomposition.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\discretize.ppp
+SOURCE=.\ppp\discretize.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\dist_clustering.ppp
+SOURCE=.\ppp\dist_clustering.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\distance.ppp
+SOURCE=.\ppp\distance.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\distance_dtw.ppp
+SOURCE=.\ppp\distance_dtw.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\distvars.ppp
+SOURCE=.\ppp\distvars.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\domain.ppp
+SOURCE=.\ppp\domain.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\estimateprob.ppp
+SOURCE=.\ppp\estimateprob.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\examplegen.ppp
+SOURCE=.\ppp\examplegen.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\examples.ppp
+SOURCE=.\ppp\examples.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\filegen.ppp
+SOURCE=.\ppp\filegen.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\filter.ppp
+SOURCE=.\ppp\filter.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\induce.ppp
+SOURCE=.\ppp\induce.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\knn.ppp
+SOURCE=.\ppp\knn.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\learn.ppp
+SOURCE=.\ppp\learn.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\linreg.ppp
+SOURCE=.\ppp\linreg.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\lookup.ppp
+SOURCE=.\ppp\lookup.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\majority.ppp
+SOURCE=.\ppp\majority.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\measures.ppp
+SOURCE=.\ppp\measures.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\memory.ppp
+SOURCE=.\ppp\memory.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\minimal_complexity.ppp
+SOURCE=.\ppp\minimal_complexity.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\minimal_error.ppp
+SOURCE=.\ppp\minimal_error.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\nearest.ppp
+SOURCE=.\ppp\nearest.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\preprocess.ppp
+SOURCE=.\ppp\preprocess.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\preprocessors.ppp
+SOURCE=.\ppp\preprocessors.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\random.ppp
+SOURCE=.\ppp\random.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\readdata.ppp
+SOURCE=.\ppp\readdata.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\redundancy.ppp
+SOURCE=.\ppp\redundancy.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\relief.ppp
+SOURCE=.\ppp\relief.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\retisinter.ppp
+SOURCE=.\ppp\retisinter.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\root.ppp
+SOURCE=.\ppp\root.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\spec_contingency.ppp
+SOURCE=.\ppp\spec_contingency.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\spec_gen.ppp
+SOURCE=.\ppp\spec_gen.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\stringvars.ppp
+SOURCE=.\ppp\stringvars.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\survival.ppp
+SOURCE=.\ppp\survival.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\svm.ppp
+SOURCE=.\ppp\svm.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\svm_filtering.ppp
+SOURCE=.\ppp\svm_filtering.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\tabdelim.ppp
+SOURCE=.\ppp\tabdelim.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\table.ppp
+SOURCE=.\ppp\table.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\tdidt.ppp
+SOURCE=.\ppp\tdidt.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\tdidt_split.ppp
+SOURCE=.\ppp\tdidt_split.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\tdidt_stop.ppp
+SOURCE=.\ppp\tdidt_stop.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\timestamp
+SOURCE=.\ppp\timestamp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\transdomain.ppp
+SOURCE=.\ppp\transdomain.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\transval.ppp
+SOURCE=.\ppp\transval.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\trindex.ppp
+SOURCE=.\ppp\trindex.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\valuefex.ppp
+SOURCE=.\ppp\valuefex.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\values.ppp
+SOURCE=.\ppp\values.ppp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\ppp\vars.ppp
+SOURCE=.\ppp\vars.ppp
 # End Source File
 # End Group
 # Begin Group "px files"
@@ -1395,67 +1362,55 @@ SOURCE=.\orange\ppp\vars.ppp
 # PROP Default_Filter "px"
 # Begin Source File
 
-SOURCE=.\orange\px\callback.px
+SOURCE=.\px\cls_example.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\changes.px
+SOURCE=.\px\cls_orange.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\cls_example.px
+SOURCE=.\px\cls_value.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\cls_orange.px
+SOURCE=.\px\externs.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\cls_value.px
+SOURCE=.\px\initialization.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\externs.px
+SOURCE=.\px\lib_components.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\functions.px
+SOURCE=.\px\lib_io.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\initialization.px
+SOURCE=.\px\lib_kernel.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\lib_components.px
+SOURCE=.\px\lib_learner.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\lib_io.px
+SOURCE=.\px\lib_preprocess.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\lib_kernel.px
+SOURCE=.\px\lib_vectors.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\lib_learner.px
+SOURCE=.\px\orange.px
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\px\lib_preprocess.px
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\px\lib_vectors.px
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\px\obsolete.px
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\px\timestamp
+SOURCE=.\px\timestamp
 # End Source File
 # End Group
 # End Target
