@@ -201,6 +201,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
                 if self.showCorrect == 1: kNNValues = [1.0 - val for val in kNNValues]
+                qualityMeasure = self.kNNOptimization.getQualityMeasureStr()
 
                 for j in range(len(kNNValues)):
                     fillColor = bwColors.getColor(kNNValues[j])
@@ -211,6 +212,10 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = shortData[j][1].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
+
+                    # we add a tooltip for this point
+                    text= self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList)
+                    self.addTip(x,y,xVar,yVar, toolTipList, self.rawdata[j], text + "; " + qualityMeasure + " : " + "%.2f"%(kNNValues[j]))
 
             # create a small number of curves which will make drawing much faster
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1:
@@ -236,9 +241,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     pos[classIndices[self.rawdata[i].getclass().value]][2].append(i)
 
                     # we add a tooltip for this point
-                    r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
-                    text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
-                    self.tips.addToolTip(r, text)
+                    self.addTip(x, y, xVar, yVar, toolTipList, self.rawdata[i])
                 
                 for i in range(classCount):
                     newColor = QColor(0,0,0)
@@ -274,12 +277,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
-                    ##########
                     # we add a tooltip for this point
-                    r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
-                    text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
-                    self.tips.addToolTip(r, text)
-                    ##########
+                    self.addTip(x, y, xVar, yVar, toolTipList, self.rawdata[i])
+
                 
 
         # show legend if necessary
@@ -344,6 +344,10 @@ class OWScatterPlotGraph(OWVisGraph):
 
     # -----------------------------------------------------------
     # -----------------------------------------------------------
+    def addTip(self, x, y, xVar, yVar, toolTipList, dataitem, text = None):
+        r = QRectFloat(x-xVar/150.0, y-yVar/150.0, xVar/75.0, yVar/75.0)
+        if not text: text= self.getShortExampleText(self.rawdata, dataitem, toolTipList)
+        self.tips.addToolTip(r, text)
 
 
     # compute how good is a specific projection with given xAttr and yAttr
