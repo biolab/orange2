@@ -214,7 +214,7 @@ class OWVisGraph(OWGraph):
                         arr[index] = line   # save the changed array
                         break
 
-                if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)-1]
+                if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
                 count = self.attrValues[attr.name][1]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
                 self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
