@@ -96,7 +96,7 @@ def removeSingleLines(graph, edgesDict, clusterDict, verticesDict, minimumValidI
 def removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, newVal):
     for key in edgesDict.keys():
         #if len(verticesDict[key]) < 5 or len(verticesDict[key]) == len(edgesDict[key]):    # use this to remove groups where all points lie on the hull
-        if len(verticesDict[key]) < 5:
+        if len(verticesDict[key]) < 4:
             for (i,j) in edgesDict[key]:
                 graph[i,j][VALUE] = newVal
                 graph[i,j][CLUSTER] = -1
@@ -390,6 +390,7 @@ def pointInsideCluster(data, closure, xTest, yTest):
     return count % 2 
         
 
+# compute average distance between points inside each cluster
 def computeAverageDistance(graph, verticesDict):
     ave_distDict = {}
     for key in verticesDict.keys():
@@ -407,7 +408,9 @@ class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showValue", "jitterDataBeforeTriangulation", "createSnapshots"]
+    settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank",
+                    "showValue", "jitterDataBeforeTriangulation", "createSnapshots", "useProjectionValue",
+                    "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
 
@@ -452,6 +455,11 @@ class ClusterOptimization(OWBaseWidget):
         self.pointStabilityCount = None
         self.argumentationClassValue = 0
         self.createSnapshots = 1
+        self.distributionScale = 1
+        self.useProjectionValue = 0
+        self.evaluationTime = 30
+        self.useAlphaShapes = 1
+        self.removeDistantPoints = 1
 
         self.loadSettings()
 
@@ -461,12 +469,15 @@ class ClusterOptimization(OWBaseWidget):
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
         self.ArgumentationTab = QVGroupBox(self)
+        self.ClassificationTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")
+        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
+        self.tabs.insertTab(self.ClassificationTab, "Classification")
+        
         
         # main tab
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
@@ -475,6 +486,12 @@ class ClusterOptimization(OWBaseWidget):
 
         # settings tab
         self.jitteringBox = OWGUI.checkBox(self.SettingsTab, self, 'jitterDataBeforeTriangulation', 'Use data jittering', box = " Jittering options ", tooltip = "Use jittering if you get an exception when evaluating clusters. \nIt adds a small random noise to poins which fixes the triangluation problems.")
+        self.clusterEvaluationBox = OWGUI.widgetBox(self.SettingsTab, " Cluster detection settings ")
+        OWGUI.checkBox(self.clusterEvaluationBox, self, "useAlphaShapes", "Use alpha shapes", tooltip = "Break separated clusters with same class value into subclusters")
+        OWGUI.checkBox(self.clusterEvaluationBox, self, "removeDistantPoints", "Remove distant points", tooltip = "Remove points from the cluster boundary that lie closer to examples with different class value")
+        
+        
+        self.distributionScaleCheck = OWGUI.checkBox(self.SettingsTab, self, "distributionScale", "Scale values according to data distribution", box = "Cluster value scaling")
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ordering ")
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
         #self.miscSettingsBox.hide()
@@ -492,6 +509,10 @@ class ClusterOptimization(OWBaseWidget):
         self.argumentList = QListBox(self.argumentBox)
         self.argumentList.setMinimumSize(200,200)
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
+
+        # classification tab
+        self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTime", "Time for evaluating projections (sec): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = [10, 20, 30, 40, 60, 80, 100, 120, 150, 200], sendSelectedValue = 1, valueType = int)
 
 
         # manage tab
@@ -567,7 +588,7 @@ class ClusterOptimization(OWBaseWidget):
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
         self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
         self.closeButton = OWGUI.button(self.buttonBox7, self, "Close", self.hide)
-        self.resize(350,550)
+        self.resize(375,550)
         self.setMinimumWidth(350)
         self.tabs.setMinimumWidth(350)
 
@@ -625,13 +646,16 @@ class ClusterOptimization(OWBaseWidget):
         otherClassDict = getPointsWithDifferentClassValue(graph, closureDict)   # this dict is used when evaluating a cluster to find nearest points that belong to a different class
         removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, -1)
         bigPolygonVerticesDict = copy(verticesDict)
-        
-        computeAlphaShapes(graph, edgesDict, -1, 0)                                   # try to break too empty clusters into more clusters
-        edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # create the new clustering
-        fixDeletedEdges(graph, edgesDict, clusterDict, 0, 1, -1)  # None             # restore edges that were deleted with computeAlphaShapes and did not result breaking the cluster
+
+        if self.useAlphaShapes:
+            computeAlphaShapes(graph, edgesDict, -1, 0)                                   # try to break too empty clusters into more clusters
+            edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # create the new clustering
+            fixDeletedEdges(graph, edgesDict, clusterDict, 0, 1, -1)  # None             # restore edges that were deleted with computeAlphaShapes and did not result breaking the cluster
         closureDict = computeClosure(graph, edgesDict, 1, 1, 2, -3, -4)
-        removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, -2)
-        #removeClosureTriangles
+
+        if self.removeDistantPoints:
+            removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, -2)
+            #removeClosureTriangles
         removeSingleLines(graph, edgesDict, clusterDict, verticesDict, 1, -1)   # None
         edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # reevaluate clusters - now some clusters might have disappeared
         removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, -1)
@@ -641,10 +665,10 @@ class ClusterOptimization(OWBaseWidget):
         #polygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
 
         # compute areas of all found clusters
-        areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
+        #areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
 
         # computer the average distance of a point inside a cluster to the center of the cluster - alternative to computing area of cluster
-        aveDistDict = computeAverageDistance(graph, polygonVerticesDict)
+        #aveDistDict = computeAverageDistance(graph, polygonVerticesDict)
 
         # create a list of vertices that lie on the boundary of all clusters - used to determine the distance to the examples with different class
         allOtherClass = []
@@ -662,31 +686,21 @@ class ClusterOptimization(OWBaseWidget):
             if points < 2: continue                     # ignore clusters that don't have at least 2 points in the interior of the cluster
             points += len(closureDict[key])/float(2)     # points on the edge only contribute with 1/2 of the value - punishment for very complex boundaries
             if points < 5: continue                     # ignore too small clusters
-            
-            index = -1
-            for bigKey in bigPolygonVerticesDict.keys():
-                if polygonVerticesDict[key][0] in bigPolygonVerticesDict[bigKey]:
-                    index = bigKey
-                    break
-            if index != -1:
-                # compute the center of the current cluster
-                xAve = sum([graph.objects[i][0] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
-                yAve = sum([graph.objects[i][1] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
-                diffClass = []
-                for v in allOtherClass:
-                    if graph.objects[v].getclass() == graph.objects[i].getclass(): continue # ignore examples with the same class value
-                    d = sqrt((graph.objects[v][0]-xAve)*(graph.objects[v][0]-xAve) + (graph.objects[v][1]-yAve)*(graph.objects[v][1]-yAve))
-                    diffClass.append(d)
-                diffClass.sort()
-                #diffClass = [i*i for i in diffClass[:3]]
-                dist = sum(diffClass[:3]) / float(len(diffClass[:3]))
-            
-            else:
-                print "index is -1"
-                continue
 
-            points = sqrt(points)       # make a smaller effect of the number of points
-            
+            # compute the center of the current cluster
+            xAve = sum([graph.objects[i][0] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
+            yAve = sum([graph.objects[i][1] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
+
+            # and compute the average distance of 3 nearest points that belong to different class to this center
+            diffClass = []
+            for v in allOtherClass:
+                if graph.objects[v].getclass() == graph.objects[i].getclass(): continue # ignore examples with the same class value
+                d = sqrt((graph.objects[v][0]-xAve)*(graph.objects[v][0]-xAve) + (graph.objects[v][1]-yAve)*(graph.objects[v][1]-yAve))
+                diffClass.append(d)
+            diffClass.sort()
+            dist = sum(diffClass[:3]) / float(len(diffClass[:3]))
+
+            #points = sqrt(points)       # make a smaller effect of the number of points
 
             """
             # one way of computing the value
@@ -701,12 +715,19 @@ class ClusterOptimization(OWBaseWidget):
             #value = points * dist / aveDistDict[key]
 
             # and another
-            value = points * dist 
+            value = points * dist
+
+            if self.distributionScale:
+                d = orange.Distribution(graph.objects.domain.classVar, graph.objects)
+                v = d[graph.objects[polygonVerticesDict[key][0]].getclass()]
+                if v == 0: continue
+                value *= sum(d)/float(v)
             
             valueDict[key] = value
             
             #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass(), value, points, dist, area)
-            otherDict[key] = (int(graph.objects[polygonVerticesDict[key][0]].getclass()), value, points, dist, aveDistDict[key])
+            #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, aveDistDict[key])
+            otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, 0)
         
 
         #return graph, {}, closureDict, polygonVerticesDict, {}
@@ -729,7 +750,8 @@ class ClusterOptimization(OWBaseWidget):
                 tempArray = Numeric.zeros(len(self.rawdata))
                 Numeric.put(tempArray, indicesToOriginalTable, Numeric.ones(len(indicesToOriginalTable)))
                 self.pointStability += tempArray
-
+    
+        print self.pointStability
         for i in range(len(self.rawdata)):
             self.pointStability[i] /= float(self.pointStabilityCount[int(self.rawdata[i].getclass())])
         #self.pointStability = [1.0 - val for val in self.pointStability]
@@ -941,34 +963,20 @@ class ClusterOptimization(OWBaseWidget):
         self.attributeCountCombo.setEnabled(0)
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
-        self.manageResultsBox.setEnabled(0)
-        self.evaluateBox.setEnabled(0)
-        self.heuristicsSettingsBox.setEnabled(0)
-        self.classesList.setEnabled(0)
-        self.resultsDetailsBox.setEnabled(0)
-        self.miscSettingsBox.setEnabled(0)
-        self.optimizeGivenProjectionButton.setEnabled(0)
-        self.argumentBox.setEnabled(0)
-        self.classValueList.setEnabled(0)
-        self.argumentationStartBox.setEnabled(0)
-        self.jitteringBox.setEnabled(0)
+        self.SettingsTab.setEnabled(0)
+        self.ManageTab.setEnabled(0)
+        self.ArgumentationTab.setEnabled(0)
+        self.ClassificationTab.setEnabled(0)
 
     def enableControls(self):    
         self.optimizationTypeCombo.setEnabled(1)
         self.attributeCountCombo.setEnabled(1)
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
-        self.manageResultsBox.setEnabled(1)
-        self.evaluateBox.setEnabled(1)
-        self.heuristicsSettingsBox.setEnabled(1)
-        self.classesList.setEnabled(1)
-        self.resultsDetailsBox.setEnabled(1)
-        self.miscSettingsBox.setEnabled(1)
-        self.optimizeGivenProjectionButton.setEnabled(1)
-        self.argumentBox.setEnabled(1)
-        self.classValueList.setEnabled(1)
-        self.argumentationStartBox.setEnabled(1)
-        self.jitteringBox.setEnabled(1)
+        self.SettingsTab.setEnabled(1)
+        self.ManageTab.setEnabled(1)
+        self.ArgumentationTab.setEnabled(1)
+        self.ClassificationTab.setEnabled(1)
 
     # ##############################################################
     # exporting multiple pictures
@@ -1137,10 +1145,9 @@ class clusterClassifier(orange.Classifier):
         self.majorityClassifier = orange.MajorityLearner(data)
         self.visualizationWidget.cdata(data)
         self.evaluating = 1
-        #QTimer.singleShot(60*1000, self.stopEvaluation)
         t = QTimer(self.visualizationWidget)
         self.visualizationWidget.connect(t, SIGNAL("timeout()"), self.stopEvaluation)
-        t.start(120*1000, 1)
+        t.start(self.clusterOptimizationDlg.evaluationTime * 1000, 1)
         self.visualizationWidget.optimizeClusters()
         t.stop()
         self.evaluating = 0
@@ -1162,9 +1169,13 @@ class clusterClassifier(orange.Classifier):
         self.clusterOptimizationDlg.createSnapshots = snapshots
 
         vals = [0.0 for i in range(len(self.clusterOptimizationDlg.arguments))]
-        for i in range(len(self.clusterOptimizationDlg.arguments)):
-            for j in range(len(self.clusterOptimizationDlg.arguments[i])):
-                vals[i] += self.clusterOptimizationDlg.arguments[i][j][1]
+        if self.clusterOptimizationDlg.useProjectionValue:
+            for i in range(len(self.clusterOptimizationDlg.arguments)):
+                for j in range(len(self.clusterOptimizationDlg.arguments[i])):
+                    vals[i] += self.clusterOptimizationDlg.arguments[i][j][1]
+        else:
+            for i in range(len(self.clusterOptimizationDlg.arguments)):
+                vals[i] = len(self.clusterOptimizationDlg.arguments[i])
 
         l = [len(self.clusterOptimizationDlg.arguments[i]) for i in range(len(self.clusterOptimizationDlg.arguments))]
         print l
