@@ -9,6 +9,7 @@
 from OData import *
 from OWWidget import *
 from orngSVM import *
+import orngLR_Jakulin
 
 ##############################################################################
 
@@ -193,10 +194,22 @@ preprocessors to filter/change the data.
             
         self.send("Learner", self.learner)
         if self.data <> None:
-            self.classifier = self.learner(self.data)
-            self.classifier.name = self.name
-            self.send("Classifier", self.classifier)
-
+            try: 
+                self.classifier = orngLR_Jakulin.MarginMetaLearner(self.learner,folds = 1)(self.data)
+                self.classifier.name = self.name
+                self.classifier.domain = self.data.domain
+                self.send("Classifier", self.classifier)
+            except Exception, (errValue):
+                self.classifier = None
+                QMessageBox("SVM error:", str(errValue), QMessageBox.Warning,
+                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                return                
+            except:
+                self.classifier = None
+                QMessageBox("SVM error:", "Unidentified error!", QMessageBox.Warning,
+                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                return                
+            
     def cdata(self,data):
         self.data=data
         self.applySettings()
