@@ -15,8 +15,8 @@ BRIER_SCORE = 1
 
 class kNNOptimization(OWBaseWidget):
     settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut"]
-    resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000']
-    resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
+    resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000', '4000', '8000']
+    resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ,  4000,   8000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursList = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
@@ -40,7 +40,7 @@ class kNNOptimization(OWBaseWidget):
         self.bestSubsets = 100
         self.measureType = 0
         self.useLeaveOneOut = 0
-        self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
+        self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.parentName = "Projection"
         self.useHeuristics = 0
         self.onlyOnePerSubset = 0
