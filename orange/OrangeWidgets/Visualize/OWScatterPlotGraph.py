@@ -435,7 +435,7 @@ class OWScatterPlotGraph(OWVisGraph):
         (xArray, yArray) = self.createProjection(xAttr, yAttr)
                  
         for i in range(len(self.rawdata)):
-            if xArray[i] == "?": continue
+            if xArray[i] == "?" or yArray[i]=="?": continue
             
             if self.isPointSelected(xArray[i], yArray[i]): selected.append(self.rawdata[i])
             else:                                          unselected.append(self.rawdata[i])
