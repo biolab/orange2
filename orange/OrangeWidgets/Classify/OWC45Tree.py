@@ -12,8 +12,10 @@ import OWGUI
 
 class OWC45Tree(OWWidget):
     settingsList = ["name",
-                    "gainRatio", "subset", "probThresh", "minObjs", "window",
-                    "increment", "cf", "trials", "prune", "convertToOrange"]
+                    "infoGain", "subset", "probThresh",
+                    "minObjs", "prune", "cf",
+                    "iterative", "manualWindow", "window", "manualIncrement", "increment", "trials",
+                    "convertToOrange"]
 
     def __init__(self, parent=None, name='C4.5'):
         OWWidget.__init__(self, parent, name, "Construct a C4.5 classification tree")
@@ -25,9 +27,11 @@ class OWC45Tree(OWWidget):
 
         # Settings
         self.name = 'C4.5'
-        self.gainRatio = 1;  self.subset = 0;     self.probThresh = 0;     self.minObjs = 2
-        self.window = 0;     self.increment = 0;  self.cf = 0.25;          self.trials = 10
-        self.prune = 1;      self.convertToOrange = 1
+        self.infoGain = 0;  self.subset = 0;       self.probThresh = 0;
+        self.useMinObjs = 1; self.minObjs = 2;   self.prune = 1;       self.cf = 25
+        self.iterative = 0; self.manualWindow = 0; self.window = 50;     self.manualIncrement = 0;  self.increment = 10;   self.trials = 10
+
+        self.convertToOrange = 1
         
         self.loadSettings()
         
@@ -36,35 +40,39 @@ class OWC45Tree(OWWidget):
         self.setLearner()                   # this just sets the learner, no data
                                             # has come to the input yet
         
-        # GUI
-        # name
-
         OWGUI.lineEdit(self.controlArea, self, 'name', box='Learner/Classifier Name', \
                  tooltip='Name to be used by other widgets to identify your learner/classifier.')
         OWGUI.separator(self.controlArea)
 
-        self.qMea = QComboBox(self.controlArea)
-        self.qMea.insertItem("Information gain")
-        self.qMea.insertItem("Gain ratio")
-        self.qMea.setCurrentItem(self.gainRatio)
-
-        OWGUI.checkBox(self.controlArea, self, 'subset', 'Subsetting (-s)')
-        OWGUI.checkBox(self.controlArea, self, 'probThresh', 'Probabilistic threshold for continuous attributes (-p)')
+        self.wbSplit = OWGUI.widgetBox(self.controlArea, "Splitting")
+        OWGUI.checkBox(self.wbSplit, self, 'infoGain', 'Use information gain instead of ratio (-g)')
+        OWGUI.checkBox(self.wbSplit, self, 'subset', 'Subsetting (-s)')
+        OWGUI.checkBox(self.wbSplit, self, 'probThresh', 'Probabilistic threshold for continuous attributes (-p)')
 
         OWGUI.separator(self.controlArea)
 
-        self.preLeafBox = OWGUI.spin(self.controlArea, self, "minObjs", 1, 1000, label="Min. instances in leaves (-m)")
-        self.windowBox = OWGUI.spin(self.controlArea, self, "window", 1, 1000, label="Size of initial window (-w)")
-        self.incrementBox = OWGUI.spin(self.controlArea, self, "increment", 1, 1000, label="Increment (-i)")
-        self.cfBox = OWGUI.spin(self.controlArea, self, "cf", 1, 100, label="Pruning confidence level in % (-c)")
+        self.wbPruning = OWGUI.widgetBox(self.controlArea, "Pruning")
+        OWGUI.checkWithSpin(self.wbPruning, self, 'Minimal examples in leaves (-m)', 1, 1000, 'useMinObjs', 'minObjs', '', 1, labelWidth = 225)
+        OWGUI.checkWithSpin(self.wbPruning, self, 'Post pruning with confidence level (-cf) of ', 0, 100, 'prune', 'cf', '', 5, labelWidth = 225)
+
+        OWGUI.separator(self.controlArea)
+
+        self.wbIterative = OWGUI.widgetBox(self.controlArea, "Iterative generation")
+        self.cbIterative = OWGUI.checkBox(self.wbIterative, self, 'iterative', 'Generate the tree iteratively (-i, -t, -w)')
+        self.spTrial = OWGUI.spin(self.wbIterative, self, 'trials', 1, 30, 1, '', "       Number of trials (-t)", orientation = "horizontal", labelWidth = 225)
+        self.csWindow = OWGUI.checkWithSpin(self.wbIterative, self, "Manually set initial window size (-w) to ", 10, 1000, 'manualWindow', 'window', '', 10, labelWidth = 225)
+        self.csIncrement = OWGUI.checkWithSpin(self.wbIterative, self, "Manually set window increment (-i) to ", 10, 1000, 'manualIncrement', 'increment', '', 10, labelWidth = 225)
+
+        self.cbIterative.disables = [self.spTrial, self.csWindow, self.csIncrement]
+        self.cbIterative.makeConsistent()
+
         OWGUI.separator(self.controlArea)
         
-        OWGUI.checkBox(self.controlArea, self, 'prune', 'Return pruned trees')
-        OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure')
+        OWGUI.checkBox(self.controlArea, self, 'convertToOrange', 'Convert to orange tree structure', box = 1)
 
         OWGUI.separator(self.controlArea)
+        
         OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
-
 
         self.resize(100,350)
 
@@ -72,13 +80,15 @@ class OWC45Tree(OWWidget):
 
     def setLearner(self):
         #print 'MinEx', self.preNodeInst, self.preNodeInstP, '|', self.preLeafInst, self.preLeafInstP
-        try:
-            self.learner = orange.C45Learner(gainRatio=self.gainRatio, subset=self.subset, probThresh=self.probThresh,
-                                             minObjs=self.minObjs, window=self.window, increment=self.increment, cf=self.cf, trials=self.trials,
-                                             prune=self.prune, convertToOrange = self.convertToOrange, storeExamples = 1)
-        except:
-            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found! For details, see: http://magix.fri.uni-lj.si/orange/doc/reference/C45Learner.asp', QMessageBox.Ok)
-            return
+#        try:
+        if 1:
+            self.learner = orange.C45Learner(gainRatio=not self.infoGain, subset=self.subset, probThresh=self.probThresh,
+                                             minObjs=self.useMinObjs and self.minObjs or 0, prune=self.prune, cf=self.cf/100., 
+                                             batch = not self.iterative, window=self.manualWindow and self.window or 0, increment=self.manualIncrement and self.increment or 0, trials=self.trials,
+                                             convertToOrange = self.convertToOrange, storeExamples = 1)
+##        except:
+##            QMessageBox.warning( None, "C4.5 plug-in", 'File c45.dll not found! For details, see: http://magix.fri.uni-lj.si/orange/doc/reference/C45Learner.asp', QMessageBox.Ok)
+##            return
 
         self.learner.name = self.name
         self.send("Learner", self.learner)
@@ -106,8 +116,8 @@ if __name__=="__main__":
     ow=OWC45Tree()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('adult_sample')
-    ow.cdata(dataset)
+##    dataset = orange.ExampleTable('adult_sample')
+##    ow.cdata(dataset)
 
     ow.show()
     a.exec_loop()
