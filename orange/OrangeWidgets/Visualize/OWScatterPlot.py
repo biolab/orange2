@@ -126,7 +126,6 @@ class OWScatterPlot(OWWidget):
 
         # ####################################
         #K-NN OPTIMIZATION functionality
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
@@ -238,38 +237,6 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.showKNNCorrectButton.setOn(0) 
         self.showSelectedAttributes()
 
-         
-    # reevaluate projections in result list with different k values
-    def reevaluateProjections(self):
-        results = list(self.optimizationDlg.getShownResults())
-        self.optimizationDlg.clearResults()
-
-        self.progressBarInit()
-        self.optimizationDlg.disableControls()
-
-        # create a dataset with scaled data
-        fullData = orange.ExampleTable(self.data.domain)
-        for i in range(len(self.data)):
-            fullData.append([self.graph.noJitteringScaledData[ind][i] for ind in range(len(self.data.domain.attributes))] + [self.data[i][self.data.domain.classVar.name]])
-
-        testIndex = 0
-        for (acc, tableLen, other, [xattr, yattr], tryIndex, strList) in results:
-            if self.optimizationDlg.isOptimizationCanceled(): continue
-            testIndex += 1
-            self.progressBarSet(100.0*testIndex/float(len(results)))
-            
-            table = fullData.select([xattr,yattr, self.data.domain.classVar.name])
-            table = orange.Preprocessor_dropMissing(table)
-            if len(table) < self.optimizationDlg.minExamples: continue
-
-            accuracy, other_results = self.optimizationDlg.kNNComputeAccuracy(table)
-            self.optimizationDlg.addResult(accuracy, other_results, len(table), [xattr, yattr], tryIndex, strList)
-            self.optimizationDlg.setStatusBarText("Evaluated %d projections..." % (testIndex))
-
-        self.progressBarFinished()
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        
 
     # ################################################################################################
     # find projections where different class values are well separated

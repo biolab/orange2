@@ -153,7 +153,6 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
 
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
@@ -235,27 +234,7 @@ class OWRadviz(OWWidget):
             else:
                 QMessageBox.information( None, "Radviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
             
-    # reevaluate projections in result list with different k values
-    def reevaluateProjections(self):
-        results = list(self.optimizationDlg.getShownResults())
-        self.optimizationDlg.clearResults()
-
-        self.progressBarInit()
-        self.optimizationDlg.disableControls()
-
-        testIndex = 0
-        for (acc, other, tableLen, attrList, tryIndex, strList) in results:
-            if self.optimizationDlg.isOptimizationCanceled(): continue
-            testIndex += 1
-            self.progressBarSet(100.0*testIndex/float(len(results)))
-
-            accuracy, other_results = self.graph.getProjectionQuality(attrList)            
-            self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, tryIndex, strList)
-
-        self.progressBarFinished()
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
-        
+       
     # ################################################################################################
     # find projections where different class values are well separated
     def optimizeSeparation(self):
@@ -525,9 +504,8 @@ class OWRadviz(OWWidget):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
             if data:
-                for i in range(len(data.domain.attributes)):
-                    if i < 50: self.shownAttribsLB.insertItem(data.domain.attributes[i].name)
-                    else: self.hiddenAttribsLB.insertItem(data.domain.attributes[i].name)
+                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(attr.name)
+                for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
         self.updateGraph()
@@ -548,7 +526,7 @@ class OWRadviz(OWWidget):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        if self.data == None: return
+        if self.data == None or list == None: return
 
         for attr in self.data.domain:
             if attr.name in list: self.shownAttribsLB.insertItem(attr.name)

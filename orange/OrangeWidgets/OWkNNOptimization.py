@@ -111,6 +111,7 @@ class kNNOptimization(OWBaseWidget):
         self.dataset = None
         self.cancelOptimization = 0
         self.argumentCountIndex = 1     # when classifying use 10 best arguments
+        self.autoSetTheKValue = 1       # automatically set the value k to square root of the number of examples in the data 
 
         self.loadSettings()
 
@@ -209,8 +210,7 @@ class kNNOptimization(OWBaseWidget):
 
         self.buttonBox3 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate projection')
-        #self.saveProjectionButton = OWGUI.button(self.buttonBox3, self, 'Save projection')
-        self.saveBestButton = OWGUI.button(self.buttonBox3, self, "Save best graphs", self.exportMultipleGraphs)
+        self.reevaluateResults = OWGUI.button(self.buttonBox3, self, "Reevaluate projections", callback = self.reevaluateAllProjections)
 
         self.buttonBox4 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.showKNNCorrectButton = OWGUI.button(self.buttonBox4, self, 'Show k-NN correct')
@@ -218,7 +218,7 @@ class kNNOptimization(OWBaseWidget):
         self.showKNNCorrectButton.setToggleButton(1); self.showKNNWrongButton.setToggleButton(1)
 
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.reevaluateResults = OWGUI.button(self.buttonBox5, self, "Reevaluate projections")
+        self.saveBestButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
         
         # ##########################
@@ -372,15 +372,13 @@ class kNNOptimization(OWBaseWidget):
             self.classValueList.clear()
             self.selectedClasses = []
             return
-        
-        correct = sqrt(len(data))
-        i=0
-        # set value of k to square root of number of instances in dataset
-        #while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
-        #if i==0: self.kValue = self.kNeighboursNums[0]
-        #if i==len(self.kNeighboursNums): self.kValue = self.kNeighboursNums[-1]
-        #else: self.kValue = self.kNeighboursNums[i-1]
-        # TO DO: remove this comments
+
+        if self.autoSetTheKValue:
+            correct = sqrt(len(data)); i=0
+            #set value of k to square root of number of instances in dataset
+            while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
+            if i==0: self.kValue = self.kNeighboursNums[0]
+            else: self.kValue = self.kNeighboursNums[i-1]
 
         if not sameDomain:
             self.classesList.clear()
@@ -425,26 +423,6 @@ class kNNOptimization(OWBaseWidget):
             data2 = orange.ExampleTable(d1, shortData2)
             data1.extend(data2)
             data = data1
-        
-        """
-        attrDict = {}
-        if self.evaluateEachClassValue:
-            for classVal in data.domain.classVar.values:
-                if classVal == "nonSelectedClass": continue
-                tempVar = orange.EnumVariable("OneClassVar", values = ["0","1"])
-                tempVar.getValueFrom = lambda ex, foo: orange.Value(tempVar, str(int(ex[data.domain.classVar] == classVal)))
-                tempData = orange.ExampleTable(orange.Domain(data.domain.attributes + [tempVar]), data)
-                attrVals = OWVisAttrSelection.evaluateAttributes(tempData, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-                for (val, attr) in attrVals:
-                    if attrDict.has_key(attr): attrDict[attr] += val
-                    else: attrDict[attr] = val
-            attributes = [(val, name) for (name, val) in attrDict.items()]
-            attributes.sort()
-            attributes.reverse()
-            return attributes
-        else:
-            return OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-        """
         
         attrs = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         self.setStatusBarText("")
@@ -645,6 +623,31 @@ class kNNOptimization(OWBaseWidget):
         del knn, results
         return returnTable
 
+
+    # reevaluate projections in result list with the current VizRank settings (different k value, different measure of classification succes, ...)
+    def reevaluateAllProjections(self):
+        results = list(self.getShownResults())
+        self.clearResults()
+
+        self.parentWidget.progressBarInit()
+        self.disableControls()
+
+        testIndex = 0
+        strTotal = createStringFromNumber(len(results))
+        for (acc, other, tableLen, attrList, tryIndex, strList) in results:
+            if self.isOptimizationCanceled(): continue
+            testIndex += 1
+            self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
+
+            accuracy, other_results = self.graph.getProjectionQuality(attrList)            
+            self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, strList)
+            self.setStatusBarText("Evaluated %s/%s projections..." % (createStringFromNumber(testIndex), strTotal))
+
+        self.setStatusBarText("")
+        self.parentWidget.progressBarFinished()
+        self.enableControls()
+        self.finishedAddingResults()
+    
       
     # ##############################################################
     # Loading and saving projection files
@@ -1065,7 +1068,8 @@ class OWResultAnalysis(OWWidget):
 
         self.attributeCount = 10
         self.projectionCount = 50
-        self.rotateXAttributes = 0
+        self.rotateXAttributes = 1
+        self.onlyLower = 1
         self.results = None
         self.dialogType = -1
 
@@ -1076,9 +1080,10 @@ class OWResultAnalysis(OWWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number of attributes', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
-        self.projectionCountSlider = OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number of projections', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
+        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number Of Attributes', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
+        self.projectionCountSlider = OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number Of Projections', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
         OWGUI.checkBox(self.controlArea, self, 'rotateXAttributes', label = "Rotate X Labels", box = 1, callback = self.updateGraph)
+        OWGUI.checkBox(self.controlArea, self, 'onlyLower', label = "Show Only Lower Diagonal", box = 1, callback = self.updateGraph)
         box = OWGUI.widgetBox(self.controlArea, box = 1)
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
         
@@ -1094,7 +1099,8 @@ class OWResultAnalysis(OWWidget):
         self.updateGraph()
 
     def updateGraph(self):
-        colors = ColorPaletteHSV(1)
+        black = QColor(0,0,0)
+        white = QColor(255,255,255)
         self.graph.clear()
         self.graph.removeMarkers()
         if self.results == None or  self.dialogType not in [VIZRANK, CLUSTER]: return
@@ -1130,30 +1136,48 @@ class OWResultAnalysis(OWWidget):
                         attrDict[(attrs[i], attrs[j])] = 1
                         if attrs[i] not in attributes: attributes.append(attrs[i])
                         if attrs[j] not in attributes: attributes.append(attrs[j])
-
+   
         eps = 0.05
         num = len(attributes)
-        for x in range(num-1):
-            for y in range(num-x-1):
+        #for x in range(num-1):
+        #    for y in range(num-x-1):
+        for x in range(num):
+            for y in range(num-x):
                 yy = num-y-1
                 if not attrDict.has_key((attributes[x], attributes[yy])) and not attrDict.has_key((attributes[yy], attributes[x])): continue
-                c = colors.getColor(0, 200)
-                curve = PolygonCurve(self.graph, QPen(c), QBrush(c))
+                
+                curve = PolygonCurve(self.graph, QPen(black), QBrush(black))
                 key = self.graph.insertCurve(curve)
                 self.graph.setCurveData(key, [x+eps, x+1-eps, x+1-eps, x+eps], [y+eps, y+eps, y+1-eps, y+1-eps])
 
-        for x in range(num-1):
+                if not self.onlyLower:
+                    curve = PolygonCurve(self.graph, QPen(black), QBrush(black))
+                    key = self.graph.insertCurve(curve)
+                    self.graph.setCurveData(key, [num-1-y+eps, num-1-y+eps, num-y-eps, num-y-eps], [num-1-x+eps, num-x-eps, num-x-eps, num-1-x+eps] )
+
+        # draw empty boxes at the diagonal
+        for x in range(num):
+            curve = PolygonCurve(self.graph, QPen(black), QBrush(white))
+            key = self.graph.insertCurve(curve)
+            self.graph.setCurveData(key, [x+eps, x+1-eps, x+1-eps, x+eps], [num-x-1+eps, num-x-1+eps, num-x-eps, num-x-eps])
+
+
+        # draw x markers
+        for x in range(num):
             if self.rotateXAttributes: marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 90)
             else: marker = MyMarker(self.graph, attributes[x], x + 0.5, -0.3, 0)
             mkey = self.graph.insertMarker(marker)
             if self.rotateXAttributes: self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft+ Qt.AlignCenter)
             else: self.graph.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
 
-        for y in range(num-1):
+        # draw y markers
+        for y in range(num):
             mkey = self.graph.insertMarker(attributes[num-y-1])
             self.graph.marker(mkey).setXValue(-0.3)
             self.graph.marker(mkey).setYValue(y + 0.5)
             self.graph.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
+
+            
             
         self.graph.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.graph.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -1173,6 +1197,9 @@ class OWResultAnalysis(OWWidget):
 class OWGraphProjectionQuality(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Projection Quality", wantGraph = 1)
+
+        self.lineWidth = 1
+        OWGUI.comboBox(self.controlArea, self, "lineWidth", box = "Line width", items = range(5), sendSelectedValue = 1, valueType = int)        
 
         self.graph = OWVisGraph(self.mainArea)
         self.results = None
@@ -1219,11 +1246,11 @@ class OWGraphProjectionQuality(OWWidget):
 
         #c = QColor(0,0,0)
         c = colors.getColor(0)
-        self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = xVals, yData = yVals, lineWidth = 1)
+        self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = xVals, yData = yVals, lineWidth = self.lineWidth)
 
         if yVals2 != []:
             c = colors.getColor(1)
-            self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = range(len(yVals2)), yData = yVals2, lineWidth = 1)
+            self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = range(len(yVals2)), yData = yVals2, lineWidth = self.lineWidth)
 
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
