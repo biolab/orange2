@@ -226,15 +226,16 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_kernel::operator()(PDistr
 
 TProbabilityEstimatorConstructor_loess::TProbabilityEstimatorConstructor_loess(const float &windowProp, const int &ak)
 : windowProportion(windowProp),
-  nPoints(ak)
+  nPoints(ak),
+  distributionMethod(DISTRIBUTE_MINIMAL)
 {}
 
 
 
-PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistribution frequencies, PDistribution, PExampleGenerator, const long &, const int &) const
+PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistribution frequencies, PDistribution, PExampleGenerator, const long &weightID, const int &attrNo) const
 { TContDistribution *cdist = frequencies.AS(TContDistribution);
   if (!cdist)
-    if (cdist->variable)
+    if (frequencies && frequencies->variable)
       raiseError("attribute '%s' is not continuous", cdist->variable->name.c_str());
     else
       raiseError("continuous distribution expected");
@@ -242,7 +243,7 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_loess::operator()(PDistri
     raiseError("empty distribution");
 
   map<float, float> loesscurve;
-  loess(cdist->distribution, nPoints, windowProportion, loesscurve);
+  loess(cdist->distribution, nPoints, windowProportion, loesscurve, distributionMethod);
   return mlnew TProbabilityEstimator_FromDistribution(mlnew TContDistribution(loesscurve));
 }
 
@@ -419,7 +420,8 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_ByR
 
 TConditionalProbabilityEstimatorConstructor_loess::TConditionalProbabilityEstimatorConstructor_loess(const float &windowProp, const int &ak)
 : windowProportion(windowProp),
-  nPoints(ak)
+  nPoints(ak),
+  distributionMethod(DISTRIBUTE_MINIMAL)
 {}
 
 
@@ -437,7 +439,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
 
   const TDistributionMap &points = *frequencies->continuous;
   vector<float> xpoints;
-  distributePoints(points, nPoints, xpoints);
+  distributePoints(points, nPoints, xpoints, distributionMethod);
 
   if (!points.size())
     raiseError("no points for the curve (check 'nPoints')");

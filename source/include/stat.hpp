@@ -1366,57 +1366,110 @@ T loess_y(const T &refx, map<T, T> points, const float &windowProp)
 }
 
 
+enum { DISTRIBUTE_MINIMAL, DISTRIBUTE_FACTOR, DISTRIBUTE_FIXED, DISTRIBUTE_UNIFORM };
+
 template<class T, class U>
-void distributePoints(const map<T, U> points, int nPoints, vector<T> &result)
+void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, int method = DISTRIBUTE_MINIMAL)
 { typedef typename map<T, U>::const_iterator mapiterator;
 
-  if (nPoints<0)
-    for (mapiterator pi(points.begin()), pe(points.end());;) {
-      T ax = (*pi).first;
-      result.push_back(ax);
+  if ((method == DISTRIBUTE_MINIMAL) && (nPoints<0)) {
+    nPoints = -nPoints;
+    method = DISTRIBUTE_FACTOR;
+  }
 
-      if (++pi==pe)
-        break;
+  result.clear();
 
-      // We could write this faster, but we don't want to run into problems with rounding floats
-      T div = ((*pi).first - ax) / -nPoints;
-      for (int i=1; i < -nPoints; i++)
-        result.push_back(ax + i*div);
+  switch (method) {
+    case DISTRIBUTE_FACTOR: {
+      for (mapiterator pi(points.begin()), pe(points.end());;) {
+        T ax = (*pi).first;
+        result.push_back(ax);
+
+        if (++pi==pe)
+          break;
+
+        // We could write this faster, but we don't want to run into problems with rounding floats
+        T div = ((*pi).first - ax) / nPoints;
+        for (int i=1; i < nPoints; i++)
+          result.push_back(ax + i*div);
+      }
+      return;
     }
 
-  else if (nPoints<=points.size())
-    for (mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
-      result.push_back((*pi).first);
 
-  else {
-    T ineach = float(nPoints - points.size()) / float(points.size()-1);
-    T inthis = T(0.0);
+    case DISTRIBUTE_MINIMAL: {
+      if (nPoints<=points.size()) {
+        for (mapiterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
+          result.push_back((*pi).first);
+      }
+      else {
+        T ineach = float(nPoints - points.size()) / float(points.size()-1);
+        T inthis = T(0.0);
     
-    for (mapiterator pi(points.begin()), pe(points.end());;) {
-      T ax = (*pi).first;
-      result.push_back(ax);
+        for (mapiterator pi(points.begin()), pe(points.end());;) {
+          T ax = (*pi).first;
+          result.push_back(ax);
 
-      if (++pi==pe)
-        break;
+          if (++pi==pe)
+            break;
 
-      inthis += ineach;
-      if (inthis>=T(0.5)) {
-        T dif = ((*pi).first - ax) / (int(floor(inthis))+1);
-        while (inthis>T(0.5)) {
-          result.push_back(ax += dif);
-          inthis -= T(1.0);
+          inthis += ineach;
+          if (inthis>=T(0.5)) {
+            T dif = ((*pi).first - ax) / (int(floor(inthis))+1);
+            while (inthis>T(0.5)) {
+              result.push_back(ax += dif);
+              inthis -= T(1.0);
+            }
+          }
         }
       }
+      return;
+    }
+
+
+    case DISTRIBUTE_FIXED: {
+      float step = points.size()/(nPoints-2);
+      float up = 1.5;
+
+      T x1 = T(0.0);
+      T dx = T(0.0);
+      for(mapiterator pi(points.begin()), pe(points.end());;) {
+        do {
+          x1 = (*pi).first;
+          if (++pi==pe)
+            break;
+          T dx = (*pi).first - x1;
+          up -= 1.0;
+        } while (up>1.0);
+        if (pi==pe)
+          break;
+
+        for (; up<1.0; up += step)
+          result.push_back(x1 + dx*up);
+      }
+      result.push_back(x1);
+      return;
+    }
+
+
+    case DISTRIBUTE_UNIFORM: {
+      T fi = (*points.begin()).first;
+      mapiterator pe(points.end());
+      pe--;
+      T rg = (*pe).first / (nPoints-1);
+      for (int i = 0; i<nPoints; i++)
+        result.push_back(fi + i*rg);
+      return;
     }
   }
 }
 
 
 template<class T>
-void loess(const map<T, T> &points, int nPoints, const float &windowProp, map<T, T> &loess_curve)
+void loess(const map<T, T> &points, int nPoints, const float &windowProp, map<T, T> &loess_curve, int distributionMethod = DISTRIBUTE_MINIMAL)
 { DEFINE_TYPENAME
   vector<T> xpoints;
-  distributePoints(points, nPoints, xpoints);
+  distributePoints(points, nPoints, xpoints, distributionMethod);
   for (const_iterator xi(xpoints.begin()), xe(xpoints.end()); xi!=xe; xi++) 
     loess_curve[*xi] = loess_y(*xi, points, windowProp);
 }

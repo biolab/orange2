@@ -802,8 +802,9 @@ C_CALL(ExamplesDistanceConstructor_Relief, ExamplesDistanceConstructor, "([examp
 
 
 
-PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
+PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
 { PyTRY
+    SETATTRIBUTES
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PExampleGenerator gen;
@@ -1242,9 +1243,10 @@ C_NAMED(ConditionalProbabilityEstimator_ByRows, ConditionalProbabilityEstimator,
 C_CALL(ConditionalProbabilityEstimatorConstructor_ByRows, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ConditionalProbabilityEstimator_[FromDistribution|ByRows]")
 C_CALL(ConditionalProbabilityEstimatorConstructor_loess, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromCurves")
 
-PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs) PYDOC("([distribution[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
+PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([distribution[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
 { PyTRY
     CAST_TO(TProbabilityEstimatorConstructor, cest);
+    SETATTRIBUTES
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PDistribution dist, apriori;
@@ -1281,9 +1283,10 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs) 
 }
 
 
-PyObject *ProbabilityEstimator_call(PyObject *self, PyObject *args) PYDOC("(Value) -> float  |  () -> Distribution")
+PyObject *ProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Value) -> float  |  () -> Distribution")
 { PyTRY
     CAST_TO(TProbabilityEstimator, cest);
+    SETATTRIBUTES
 
     PyObject *pyobj = PYNULL;
     if (!PyArg_ParseTuple(args, "|O:ProbabilityEstimator.call", &pyobj)) 
@@ -1303,9 +1306,10 @@ PyObject *ProbabilityEstimator_call(PyObject *self, PyObject *args) PYDOC("(Valu
 
 
 
-PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs) PYDOC("([contingency[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
+PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([contingency[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
 { PyTRY
     CAST_TO(TConditionalProbabilityEstimatorConstructor, cest);
+    SETATTRIBUTES
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PContingency cont, apriori;
@@ -1342,9 +1346,10 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 }
 
 
-PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args) PYDOC("(Value, Condition) -> float  |  (Condition) -> Distribution | () -> Contingency")
+PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Value, Condition) -> float  |  (Condition) -> Distribution | () -> Contingency")
 { PyTRY
     CAST_TO(TConditionalProbabilityEstimator, cest);
+    SETATTRIBUTES
 
     PyObject *pyobj1 = PYNULL, *pyobj2 = PYNULL;
     if (!PyArg_ParseTuple(args, "|OO:ProbabilityEstimator.call", &pyobj1, &pyobj2)) 
