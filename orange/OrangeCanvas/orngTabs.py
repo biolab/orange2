@@ -20,8 +20,8 @@ class DirectionButton(QToolButton):
 		self.connect( self, SIGNAL( 'clicked()' ), self.clicked)
 		self.setAutoRepeat(1)
 
-		if self.leftDirection: 	self.setPixmap(QPixmap(orngResources.move_left))
-		else:					self.setPixmap(QPixmap(orngResources.move_right))
+		if self.leftDirection: 	self.setIconSet(QIconSet(QPixmap(orngResources.move_left)))
+		else:					self.setIconSet(QIconSet(QPixmap(orngResources.move_right)))
 		
 		if useLargeIcons == 1:
 			self.setUsesBigPixmap(TRUE)
@@ -30,7 +30,7 @@ class DirectionButton(QToolButton):
 		else:
 			self.setMaximumSize(24, 48)
 			self.setMinimumSize(24, 48)
-	
+				
 	def clicked(self):
 		if self.leftDirection:  self.parent.moveWidgetsToLeft()
 		else:					self.parent.moveWidgetsToRight()
@@ -69,9 +69,10 @@ class WidgetButton(QToolButton):
 		QToolTip.add( self, tooltipText)
 
 		self.canvasDlg = canvasDlg
-
-		self.setTextLabel(name, FALSE)		
-		self.setPixmap(QPixmap(self.widgetTabs.widgetInfo[nameKey]["iconName"]))
+		self.setTextLabel(name, FALSE)
+		
+		self.setIconSet(QIconSet(QPixmap(str(self.widgetTabs.widgetInfo[nameKey]["iconName"]))))
+		
 		if useLargeIcons == 1:
 			self.setUsesTextLabel (TRUE)
 			self.setUsesBigPixmap(TRUE)
@@ -82,16 +83,16 @@ class WidgetButton(QToolButton):
 			self.setMinimumSize(48, 48)
 
 	def getFileName(self):
-		return self.widgetTabs.widgetInfo[self.nameKey]["fileName"]
+		return str(self.widgetTabs.widgetInfo[self.nameKey]["fileName"])
 
 	def getIconName(self):
-		return self.widgetTabs.widgetInfo[self.nameKey]["iconName"]
+		return str(self.widgetTabs.widgetInfo[self.nameKey]["iconName"])
 
 	def getPriority(self):
 		return self.widgetTabs.widgetInfo[self.nameKey]["priority"]
 
 	def getDescription(self):
-		return self.widgetTabs.widgetInfo[self.nameKey]["description"]
+		return str(self.widgetTabs.widgetInfo[self.nameKey]["description"])
 
 	def getInList(self):
 		return self.widgetTabs.widgetInfo[self.nameKey]["inList"]
@@ -191,7 +192,7 @@ class WidgetTabs(QTabWidget):
 		self.tabDict = {}
 		self.setMinimumWidth(10)	# this way the < and > button will show if tab dialog is too small
 		self.widgetInfo = widgetInfo
-
+		
 	def insertWidgetTab(self, name):
 		tab = WidgetTab(self.useLargeIcons, self, name)
 		self.tabs.append(tab)
@@ -241,8 +242,8 @@ class WidgetTabs(QTabWidget):
 		
 		widgetList = category.getElementsByTagName("widget")
 		for widget in widgetList:
-			name = widget.getAttribute("name")
-			fileName = widget.getAttribute("file")
+			name = str(widget.getAttribute("name"))
+			fileName = str(widget.getAttribute("file"))
 			inList = eval(widget.getAttribute("in"))
 			outList = eval(widget.getAttribute("out"))
 			priority = int(widget.getAttribute("priority"))
