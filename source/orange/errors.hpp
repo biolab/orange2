@@ -23,6 +23,7 @@
 #ifndef __ERRORS_HPP
 #define __ERRORS_HPP
 
+#include "orange_api.hpp"
 #include <string>
 
 using namespace std;
@@ -32,7 +33,7 @@ extern bool exhaustiveWarnings;
 #ifdef _MSC_VER
 #define mlexception exception
 #else
-class mlexception : public exception {
+class ORANGE_API mlexception : public exception {
 public:
    string err_desc;
 
@@ -48,8 +49,8 @@ public:
 };
 #endif
 
-void raiseError(const char *anerr, ...);
-void raiseErrorWho(const char *who, const char *anerr, ...);
+void ORANGE_API raiseError(const char *anerr, ...);
+void ORANGE_API raiseErrorWho(const char *who, const char *anerr, ...);
 
 #endif
 

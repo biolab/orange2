@@ -34,7 +34,7 @@ WRAPPER(RandomGenerator);
 /*  A base for 'filter generators' i.e. generators, which can be put on top of other generator and modify its
     examples (usualy skip or add examples...). The behaviour of the generator is modified by overriding iterator
     handling method (usualy begin and increaseIterator). */
-class TAdapterGenerator : public TExampleGenerator {
+class ORANGE_API TAdapterGenerator : public TExampleGenerator {
 public:
   __REGISTER_CLASS
 
@@ -63,7 +63,7 @@ public:
 };
 
 
-class TAdapterIteratorData {
+class ORANGE_API TAdapterIteratorData {
 public:
   TExampleIterator subIterator;
   void *data;
@@ -73,7 +73,7 @@ public:
 
 /*  Derived from TAdapterGenerator, this class overrides the begin() and increaseIterator(void *) methods to
     skip the examples which are not accepted by the given filter. */
-class TFilteredGenerator : public TAdapterGenerator {
+class ORANGE_API TFilteredGenerator : public TAdapterGenerator {
 public:
   __REGISTER_CLASS
 
@@ -92,7 +92,7 @@ WRAPPER(EFMDataDescription)
 
 /*  Changes the example someway by redefining begin and increaseIterator to call an abstract
     method changeExample */
-class TChangeExampleGenerator : public TAdapterGenerator {
+class ORANGE_API TChangeExampleGenerator : public TAdapterGenerator {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -108,7 +108,7 @@ public:
 
 /*  Derived from TChangeExampleGenerator, TMissValuesGenerator replaces values of certain
     attributes (given the probability for change) with DK or DC */
-class TMissValuesGenerator : public TChangeExampleGenerator {
+class ORANGE_API TMissValuesGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 
@@ -122,7 +122,7 @@ public:
 };
 
 
-class TNoiseValuesGenerator : public TChangeExampleGenerator {
+class ORANGE_API TNoiseValuesGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 
@@ -136,7 +136,7 @@ public:
 };
 
 
-class TGaussianNoiseGenerator : public TChangeExampleGenerator {
+class ORANGE_API TGaussianNoiseGenerator : public TChangeExampleGenerator {
 public:
   __REGISTER_CLASS
 

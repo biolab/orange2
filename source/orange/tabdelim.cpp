@@ -26,8 +26,8 @@
 
 #include <math.h>
 #include "stladdon.hpp"
-#include "errors.hpp"
 #include "strings.hpp"
+#include "getarg.hpp"
 
 #include "values.hpp"
 #include "vars.hpp"
@@ -38,8 +38,8 @@
 
 #include "tabdelim.ppp"
 
-int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true, bool csv = false);
-bool atomsEmpty(const TIdList &atoms);
+int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces=true, bool csv = false);
+bool atomsEmpty(const vector<string> &atoms);
 
 
 TDomainDepot TTabDelimExampleGenerator::domainDepot_tab;
@@ -57,17 +57,19 @@ const TTabDelimExampleGenerator::TIdentifierDeclaration TTabDelimExampleGenerato
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
 : TFileExampleGenerator(old),
   attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
-  DCs(CLONE(TStringList, old.DCs)),
+  DCs(old.DCs),
   classPos(old.classPos),
   headerLines(old.headerLines),
   csv(old.csv)
 {}
 
 
-TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, bool acsv, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore, const char *aDK, const char *aDC)
 : TFileExampleGenerator(afname, PDomain()),
   attributeTypes(mlnew TIntList()),
-  DCs(mlnew TStringList()),
+  DCs(),
+  DK(aDK ? strcpy((char *)malloc(strlen(aDK)+1), aDK) : NULL),
+  DC(aDC ? strcpy((char *)malloc(strlen(aDC)+1), aDC) : NULL),
   classPos(-1),
   headerLines(0),
   csv(acsv)
@@ -77,7 +79,7 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
 
   TFileExampleIteratorData fei(afname);
   
-  TIdList atoms;
+  vector<string> atoms;
   for (int i = headerLines; !feof(fei.file) && i--; )
     // read one line (not counting comment lines, but counting empty lines)
     while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv) == -1));
@@ -87,12 +89,21 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
 }
 
 
+TTabDelimExampleGenerator::~TTabDelimExampleGenerator()
+{
+  if (DK)
+    free(DK);
+
+  if (DC)
+    free(DC);
+}
+
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
-  TIdList atoms;
+  vector<string> atoms;
   // read lines until eof or a non-empty line
   while(!feof(fei.file) && ((readTabAtom(fei, atoms, true, csv)>0) || atomsEmpty(atoms))) {
-    TIdList::iterator ii(atoms.begin()), ie(atoms.end());
+    vector<string>::iterator ii(atoms.begin()), ie(atoms.end());
     while ((ii!=ie) && !(*ii).length())
       ii++;
     if (ii==ie)
@@ -111,34 +122,28 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 
   TExample::iterator ei(exam.begin());
   TVarList::iterator vi(domain->attributes->begin());
-  TIdList ::iterator ai(atoms.begin());
+  vector<string>::iterator ai(atoms.begin());
   vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
-  bool dcs = DCs && DCs->size();
-  vector<string>::iterator dci(DCs->begin());
+  vector<vector<string> >::iterator dci(DCs.begin()), dce(DCs.end());
   int pos=0;
-  for (; (si!=se); pos++, si++, ai++, dci++)
+  for (; (si!=se); pos++, si++, ai++) {
     if (*si) { // if attribute is not to be skipped
       string valstr;
 
       // Check for don't care
-      if (!(*ai).length() || (valstr=="NA"))
-        valstr = "?"; // empty fields are treated as don't care
-      else { // else check if one of don't care symbols
-        valstr = *ai;
-        if (valstr.length()==1) {
-          if (dcs && (*dci).size()) {
-            string::iterator dcii = (*dci).begin();
-            for(; (dcii!=(*dci).end()) && (*dcii!=valstr[0]); dcii++);
-            if (dcii!=(*dci).end())
-              valstr[0]='?';
+      valstr = *ai;
+      if (dci != dce)
+        ITERATE(vector<string>, dcii, *dci)
+          if (*dcii == valstr) {
+            valstr = '?';
+            break;
           }
-          else
-            if (valstr[0]=='.')
-              valstr[0]='?';
-        }
-        else
-          if (valstr=="*")
-            valstr[0]='~';
+
+      if (valstr != "?") {
+        if (!valstr.length() || (valstr == "NA") || (valstr == ".") || (DC && (valstr == DC)))
+          valstr = "?";
+        else if ((valstr == "*") || (DK && (valstr == DK)))
+          valstr = "~";
       }
 
       try {
@@ -165,13 +170,17 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
       }
     }
 
+    if (dci != dce)
+      dci++;
+  }
+
   if (pos==classPos) // if class is the last value in the line, it is set here
     domain->classVar->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1], exam);
 
   while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
 
   if (ai!=atoms.end()) {
-	TIdList::iterator ii=atoms.begin();
+	vector<string>::iterator ii=atoms.begin();
 	string s=*ii;
 	while(++ii!=atoms.end()) s+=" "+*ii;
     raiseError("example of invalid length (%s)", s.c_str());
@@ -183,8 +192,8 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
 
 char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
 {
-  TIdList varNames, atoms;
-  TIdList::const_iterator vi, ai, ei;
+  vector<string> varNames, atoms;
+  vector<string>::const_iterator vi, ai, ei;
 
   TFileExampleIteratorData fei(stem);
 
@@ -356,7 +365,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
 
   TFileExampleIteratorData fei(stem);
   
-  TIdList varNames;
+  vector<string> varNames;
   // read the next non-comment line
   while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
   if (varNames.empty())
@@ -498,7 +507,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
         const char *ceni = atom.c_str();
         if (   !*ceni
             || !ceni[1] && ((*ceni=='?') || (*ceni=='.') || (*ceni=='~') || (*ceni=='*') || (*ceni=='-'))
-            || (atom == "NA"))
+            || (atom == "NA") || (DC && (atom == DC)) || (DK && (atom == DK)))
           continue;
 
         // we have encountered some value
@@ -581,7 +590,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
 {
   TFileExampleIteratorData fei(stem);
   
-  TIdList varNames, varTypes, varFlags;
+  vector<string> varNames, varTypes, varFlags;
   
   while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv) == -1));
   if (varNames.empty())
@@ -606,11 +615,10 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
   headerLines = 3;
 
   attributeTypes = mlnew TIntList(varNames.size(), -1);
-  DCs = mlnew TStringList(varNames.size(), "");
 
-  TIdList::iterator vni(varNames.begin()), vne(varNames.end());
-  TIdList::iterator ti(varTypes.begin());
-  TIdList::iterator fi(varFlags.begin()), fe(varFlags.end());
+  vector<string>::iterator vni(varNames.begin()), vne(varNames.end());
+  vector<string>::iterator ti(varTypes.begin());
+  vector<string>::iterator fi(varFlags.begin()), fe(varFlags.end());
   TIntList::iterator ati(attributeTypes->begin());
   for(; vni!=vne; fi++, vni++, ti++, ati++) {
     TDomainDepot::TAttributeDescription *attributeDescription = NULL;
@@ -637,8 +645,15 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
           *ati = 1;
       }
 
-      if (args.exists("dc"))
-        DCs->at(vni-varNames.begin()) = args["dc"];
+      if (args.exists("dc")) {
+        const int ind = vni-varNames.begin();
+        ITERATE(TMultiStringParameters, mi, args.options)
+          if ((*mi).first == "dc") {
+            while (DCs.size() <= ind)
+              DCs.push_back(vector<string>());
+            DCs.at(ind).push_back((*mi).second);
+          }
+      }
 
       ordered = args.exists("ordered");
     }
@@ -718,8 +733,8 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
 }
 
 
-bool atomsEmpty(const TIdList &atoms)
-{ const_ITERATE(TIdList, ai, atoms)
+bool atomsEmpty(const vector<string> &atoms)
+{ const_ITERATE(vector<string>, ai, atoms)
     if ((*ai).length())
       return false;
   return true;
@@ -732,7 +747,7 @@ bool atomsEmpty(const TIdList &atoms)
    
     Returns number of atoms, -1 for comment line and -2 for EOF
     */
-int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces, bool csv)
+int readTabAtom(TFileExampleIteratorData &fei, vector<string> &atoms, bool escapeSpaces, bool csv)
 {
   atoms.clear();
 
@@ -763,7 +778,7 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
       case '\r':
       case '\n':
         if (atom.length() || atoms.size())
-          atoms.push_back(atom);  // end of line
+          atoms.push_back(trim(atom));  // end of line
         if (c == '\r') {
           c = fgetc(fei.file);
           if (c != '\n')
@@ -772,7 +787,7 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
         return atoms.size();
 
       case '\t':
-        atoms.push_back(atom);
+        atoms.push_back(trim(atom));
         atom = string();
         break;
 
@@ -796,6 +811,7 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
         }
 
       default:
+        // trim left
         if ((c>=' ') || (c<0))
           atom += c;
     };
@@ -807,6 +823,8 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
   if (atom.length() || atoms.size())
     atoms.push_back(csv ? trim(atom) : atom);
 
+  ITERATE(vector<string>, ai, atoms) {
+  }
   return atoms.size();
 }
 
@@ -819,28 +837,43 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
 #define PUTDELIM { if (ho) putc(delim, file); else ho = true; }
 
 void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
-{ TVarList::const_iterator vi(ex.domain->variables->begin()), ve(ex.domain->variables->end());
-  TExample::const_iterator ri(ex.begin());
-  string st;
-  bool ho = false;
-  for(; vi!=ve; vi++, ri++) {
-    PUTDELIM;
-    (*vi)->val2filestr(*ri, st, ex);
-    fprintf(file, st.c_str());
-  }
-
-  const_ITERATE(TMetaVector, mi, ex.domain->metas) {
-    PUTDELIM;
-    (*mi).variable->val2filestr(ex[(*mi).id], st, ex);
-    fprintf(file, "%s", st.c_str());
-  }
-  fprintf(file, "\n");
+{ 
 }
 
 
-void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim)
-{ PEITERATE(gi, rg)
-    tabDelim_writeExample(file, *gi, delim);
+void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim, const char *DK, const char *DC)
+{ 
+  PEITERATE(ex, rg) {
+    TVarList::const_iterator vi((*ex).domain->variables->begin()), ve((*ex).domain->variables->end());
+    TExample::const_iterator ri((*ex).begin());
+    string st;
+    bool ho = false;
+
+    for(; vi!=ve; vi++, ri++) {
+      PUTDELIM;
+      if (DK && ((*ri).valueType == valueDK))
+        fprintf(file, DK);
+      else if (DC && ((*ri).valueType == valueDC))
+        fprintf(file, DC);
+      else {
+        (*vi)->val2filestr(*ri, st, *ex);
+        fprintf(file, st.c_str());
+      }
+    }
+
+    const_ITERATE(TMetaVector, mi, (*ex).domain->metas) {
+      PUTDELIM;
+      if (DK && ((*ri).valueType == valueDK))
+        fprintf(file, DK);
+      else if (DC && ((*ri).valueType == valueDC))
+        fprintf(file, DC);
+      else {
+        (*mi).variable->val2filestr((*ex)[(*mi).id], st, *ex);
+        fprintf(file, "%s", st.c_str());
+      }
+    }
+    fprintf(file, "\n");
+  }
 }
 
 string escSpaces(const string &s)
@@ -857,8 +890,7 @@ extern TOrangeType PyOrPythonVariable_Type;
 
 void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
 {
-  TEnumVariable *enumv;
-  var.dynamic_cast_to(enumv);
+  TEnumVariable *enumv = var.AS(TEnumVariable);
   if (enumv) {
     TValue val;
     string sval;

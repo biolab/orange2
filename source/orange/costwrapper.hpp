@@ -28,7 +28,7 @@
 
 WRAPPER(CostMatrix)
 
-class TCostWrapperLearner : public TLearner {
+class ORANGE_API TCostWrapperLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -41,7 +41,7 @@ public:
 };
 
 
-class TCostWrapperClassifier : public TClassifier {
+class ORANGE_API TCostWrapperClassifier : public TClassifier {
 public:
   __REGISTER_CLASS
 

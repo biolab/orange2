@@ -29,7 +29,7 @@
 
 using namespace std;
 
-class TRetisExampleGenerator : public TFileExampleGenerator {
+class ORANGE_API TRetisExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 

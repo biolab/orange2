@@ -23,107 +23,31 @@
 #ifndef __CLS_ORANGE_HPP
 #define __CLS_ORANGE_HPP
 
-#include <list>
-#include <vector>
 #include <typeinfo>
 
-#include "garbage.hpp"
 #include "root.hpp"
-#include "module.hpp"
-#include "errors.hpp"
+#include "orange.hpp"
 
-PyObject *PyOrType_GenericAbstract(PyTypeObject *thistype, PyTypeObject *type, PyObject *args, PyObject *kwds);
-PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds);
-PyObject *PyOrType_GenericNamedNew(PyTypeObject *type, PyObject *args, PyObject *kwds);
-PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObject *kwds);
-POrange PyOrType_NoConstructor();
+ORANGE_API PyObject *Orange_getattr(TPyOrange *self, PyObject *name);
+ORANGE_API PyObject *Orange_getattr1(TPyOrange *self, const char *name);
+ORANGE_API PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname);
 
-#define SETATTRIBUTES if (!SetAttr_FromDict(self, keywords)) return PYNULL;
+ORANGE_API int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+ORANGE_API int Orange_setattr1(TPyOrange *self, char *name, PyObject *args);
+ORANGE_API int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args);
 
+ORANGE_API PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType);
 
-PyObject *WrapOrange(POrange);
-
-// This is to be used on just constructed objects only
-template<class T>
-PyObject *WrapNewOrange(T *obj, PyTypeObject *type)
-{ if (!obj) {
-    PyErr_Format(PyExc_SystemError, "Constructor for '%s' failed", TYPENAME(typeid(*obj)));
-    return PYNULL;
-  }
-  return WrapOrange(POrange(obj, type));
-}
-
-inline TOrangeType *FindOrangeType(POrange obj)
-{ return FindOrangeType(typeid(*obj.counter->ptr)); }
-
-
-//XXX Here, you must force GCPtr to use the correct constructor
-#define PyOrange_AS_Orange(op) (GCPtr<TOrange>((TPyOrange *)op, true))
-
-template<class T>
-inline T &cast_to(PyObject *op, T *)
-{ T *ret = dynamic_cast<T *>(((TPyOrange *)op)->ptr);
-  if (!ret)
-    raiseError("invalid (null or wrong type) pointer to '%s'", typeid(T).name());
-  return *ret;
-}
-
-
-PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
+ORANGE_API PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
                          char *formatname1, char *formatname2 = NULL,
                          PyTypeObject *toBase = (PyTypeObject *)&PyOrOrange_Type);
 
-#define PyOrange_AS(type, op) (cast_to(op, (type *)NULL))
-#define SELF_AS(type)         (cast_to(self, (type *)NULL))
-
-#define DEFINE_cc(type) \
-int cc_##type(PyObject *obj, void *ptr) \
-{ if (!PyOr##type##_Check(obj)) \
-    return 0; \
-  *(GCPtr< T##type > *)(ptr) = PyOrange_As##type(obj); \
-  return 1; \
-} \
-\
-int ccn_##type(PyObject *obj, void *ptr) \
-{ if (obj == Py_None) {\
-    *(GCPtr< T##type > *)(ptr) = GCPtr< T##type >(); \
-    return 1; \
-  } \
-  else \
-    return cc_##type(obj, ptr); \
-}
-
-#define NAME_CAST_TO_err(type, aname, obj, errreturn) \
-  type *obj; \
-  PyOrange_AS_Orange(aname).dynamic_cast_to(obj); \
-  if (!obj) {\
-    if (aname && ((TPyOrange *)aname)->ptr) \
-      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got '%s')", TYPENAME(typeid(type)), TYPENAME(typeid(*((TPyOrange *)(aname))->ptr))); \
-    else \
-      PyErr_Format(PyExc_TypeError, "invalid object type (expected '%s', got nothing)", TYPENAME(typeid(type))); \
-    return errreturn; \
-  }
-
-#define NAME_CAST_TO(type, name, obj)     NAME_CAST_TO_err(type, name, obj, PYNULL)
-#define CAST_TO_err(type, obj, errreturn) NAME_CAST_TO_err(type, self, obj, errreturn)
-#define CAST_TO(type, obj)                NAME_CAST_TO_err(type, self, obj, PYNULL)
 
 
-PyObject *Orange_getattr(TPyOrange *self, PyObject *name);
-PyObject *Orange_getattr1(TPyOrange *self, const char *name);
-PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname);
+ORANGE_API PyObject *PyOrange_DictProxy_New(TPyOrange *);
+ORANGE_API extern PyTypeObject PyOrange_DictProxy_Type;
 
-int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
-
-PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType);
-
-PyObject *PyOrange_DictProxy_New(TPyOrange *);
-extern PyTypeObject PyOrange_DictProxy_Type;
-
-class TPyOrange_DictProxy : public PyDictObject {
-public:
-  TPyOrange *backlink;
-};
+class ORANGE_API TPyOrange_DictProxy : public PyDictObject { public: TPyOrange *backlink; };
 
 
 #endif

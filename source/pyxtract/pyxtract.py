@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import re, os, sys, os.path, string
+import re, os, sys, os.path, string, pickle
 from pyxtractstructures import *
 
                 
@@ -92,10 +92,7 @@ if 1: ### Definitions of method slots
                 ("setitem", "mp_ass_subscript", "objobjargproc")
                 ]
 
-  specialorangemethods=[
-                ]
-                
-
+  
   genericconstrs = {'C_UNNAMED': 'PyOrType_GenericNew',
                     'C_NAMED'  : 'PyOrType_GenericNamedNew',
                     'C_CALL'   : 'PyOrType_GenericCallableNew',
@@ -114,7 +111,7 @@ if 1: ### Definitions of regular expressions
   hiddendef=re.compile(r'HIDDEN\s*\(\s*(?P<typename>\w*)\s*,\s*(?P<basename>\w*)\s*\)')
   
 
-  allspecial=['('+m[0]+')' for m in specialmethods+specialnumericmethods+specialsequencemethods+specialmappingmethods+specialorangemethods]
+  allspecial=['('+m[0]+')' for m in specialmethods+specialnumericmethods+specialsequencemethods+specialmappingmethods]
   allspecial=filter(lambda x:x!='()', allspecial)
   allspecial=reduce(lambda x,y:x+'|'+y, allspecial)
   specialmethoddef=re.compile(r'((PyObject\s*\*)|(int)|(void))\s*(?P<typename>\w*)_(?P<methodname>'+allspecial+r')\s*\(')
@@ -124,17 +121,24 @@ if 1: ### Definitions of regular expressions
   setdef=re.compile(r'int\s*(?P<typename>\w*)_(?P<method>set)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   methoddef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)_(?P<cname>\w*)\s*\([^)]*\)\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)(\s*//>(?P<methodname>\w\w+))?')
 
-  funcdef=re.compile(r'PYFUNCTION\((?P<pyname>\w*)\s*,\s*(?P<cname>\w*)\s*,\s*(?P<argkw>[^,]*)\s*(,\s*"(?P<doc>[^"]*)"\))?[\s;]*$')
   funcdef2=re.compile(r'(?P<defpart>PyObject\s*\*(?P<pyname>\w*)\s*\([^)]*\))\s*;?\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
-  funcwarndef=re.compile("PYFUNCTION|PYARGS")
+  funcwarndef=re.compile("PYARGS")
   keywargsdef=re.compile(r"METH_VARARGS\s*\|\s*METH_KEYWORDS")
 
   classconstantintdef=re.compile(r"PYCLASSCONSTANT_INT\((?P<typename>\w*)\s*,\s*(?P<constname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
   classconstantfloatdef=re.compile(r"PYCLASSCONSTANT_FLOAT\((?P<typename>\w*)\s*,\s*(?P<constname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
+  classconstantdef=re.compile(r"PYCLASSCONSTANT\((?P<typename>\w*)\s*,\s*(?P<constname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
+  
+  constantintdef=re.compile(r"PYCONSTANT_INT\((?P<pyname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
+  constantfloatdef=re.compile(r"PYCONSTANT_FLOAT\((?P<pyname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
   constantdef=re.compile(r"PYCONSTANT\((?P<pyname>\w*)\s*,\s*(?P<ccode>.*)\)\s*$")
   constantfuncdef=re.compile(r"PYCONSTANTFUNC\((?P<pyname>\w*)\s*,\s*(?P<cfunc>.*)\)\s*$")
   constantwarndef=re.compile("PYCONSTANT")
   recognizedattrsdef = re.compile(r'RECOGNIZED_ATTRIBUTES\s*\(\s*(?P<typename>\w*)\s*, \s*"(?P<attributes>[^"]*)"\s*\)')
+
+if 1:
+  cc_functions = "int cc_func_%(type)s(PyObject *obj, void *ptr) { if (!PyOr%(type)s_Check(obj)) return 0;      *(GCPtr<T%(type)s> *)(ptr) = PyOrange_As%(type)s(obj); return 1; }\n" + \
+                 "int ccn_func_%(type)s(PyObject *obj, void *ptr) { if (obj == Py_None) { *(GCPtr<T%(type)s> *)(ptr) = GCPtr<T%(type)s>(); return 1; }      if (!PyOr%(type)s_Check(obj)) return 0;      *(GCPtr<T%(type)s> *)(ptr) = PyOrange_As%(type)s(obj); return 1; }\n\n\n"
 
 
 def detectConstructors(line, classdefs):
@@ -177,7 +181,7 @@ def detectAttrs(line, classdefs):
     printV2("%s: constant definition (%s)", (typename, constname))
     addClassDef(classdefs, typename, parsedFile)
     if not classdefs[typename].constants.has_key(constname):
-      classdefs[typename].constants[constname] = "PyInt_FromLong((long)(%s))" % constant
+      classdefs[typename].constants[constname] = ConstantDefinition(ccode=("PyInt_FromLong((long)(%s))" % constant))
     else:
       printV0("Warning: constant %s.%s duplicated", (typename, constname))
     return
@@ -188,7 +192,18 @@ def detectAttrs(line, classdefs):
     printV2("%s: constant definition (%s)", (typename, constname))
     addClassDef(classdefs, typename, parsedFile)
     if not classdefs[typename].constants.has_key(constname):
-      classdefs[typename].constants[constname] = "PyFloat_FromDouble((double)(%s))" % constant
+      classdefs[typename].constants[constname] = ConstantDefinition(ccode=("PyFloat_FromDouble((double)(%s))" % constant))
+    else:
+      printV0("Warning: constant %s.%s duplicated", (typename, constname))
+    return
+
+  found=classconstantdef.search(line)
+  if found:
+    typename, constname, constant = found.group("typename", "constname", "constant")
+    printV2("%s: constant definition (%s)", (typename, constname))
+    addClassDef(classdefs, typename, parsedFile)
+    if not classdefs[typename].constants.has_key(constname):
+      classdefs[typename].constants[constname] = ConstantDefinition(ccode=constant)
     else:
       printV0("Warning: constant %s.%s duplicated", (typename, constname))
     return
@@ -267,21 +282,14 @@ def detectCallDoc(line, classdefs):
 
 
 def detectFunctions(line, functiondefs):     
-  found=funcdef.search(line)
+  found=funcdef2.search(line)
   if found:
-    pyname, cname, argkw, doc = found.group("pyname", "cname", "argkw", "doc")
-    printV2("%s: function definition (%s)" , (pyname, cname))
-    functiondefs[pyname]=FunctionDefinition(cname=cname, argkw=argkw, arguments=doc)
+    defpart, pyname, argkw, doc =found.group("defpart", "pyname", "argkw", "doc")
+    printV2("%s: function definition (%s)", (pyname, pyname))
+    functiondefs[pyname]=FunctionDefinition(cname=pyname, argkw=argkw, definition=defpart, arguments=doc)
     return 1
-  else:
-    found=funcdef2.search(line)
-    if found:
-      defpart, pyname, argkw, doc =found.group("defpart", "pyname", "argkw", "doc")
-      printV2("%s: function definition (%s)", (pyname, pyname))
-      functiondefs[pyname]=FunctionDefinition(cname=pyname, argkw=argkw, definition=defpart, arguments=doc)
-      return 1
-    if funcwarndef.search(line):
-      printV0("Warning: looks like function, but syntax is not matching")
+  if funcwarndef.search(line):
+    printV0("Warning: looks like function, but syntax is not matching")
 
 
 def detectConstants(line, constantdefs):
@@ -290,6 +298,22 @@ def detectConstants(line, constantdefs):
     pyname, ccode = found.group("pyname", "ccode")
     printV2("%s: constant definition (%s)", (pyname, ccode))
     constantdefs[pyname]=ConstantDefinition(ccode=ccode)
+    #constantdefs.append((pyname, ccode))
+    return 1
+
+  found=constantintdef.search(line)
+  if found:
+    pyname, constant = found.group("pyname", "constant")
+    printV2("%s: constant definition (%s)", (pyname, constant))
+    constantdefs[pyname]=ConstantDefinition(ccode=("PyInt_FromLong((long)(%s))" % constant))
+    #constantdefs.append((pyname, ccode))
+    return 1
+
+  found=constantfloatdef.search(line)
+  if found:
+    pyname, constant = found.group("pyname", "constant")
+    printV2("%s: constant definition (%s)", (pyname, constant))
+    constantdefs[pyname]=ConstantDefinition(ccode=("PyFloat_FromDouble((double)(%s))" % constant))
     #constantdefs.append((pyname, ccode))
     return 1
 
@@ -310,6 +334,15 @@ def parseFiles():
   global parsedFile
   functions, constants, classdefs = {}, {}, {}
 
+  for l in libraries:
+    f = open(l, "rt")
+    cd = pickle.load(f)
+    #ignore functions and constants - we don't need them
+    for c in cd.values():
+      c.imported = True
+    classdefs.update(cd)
+    
+    
   aliases=readAliases()  
 
   filenamedef=re.compile(r"(?P<stem>.*)\.\w*$")
@@ -346,7 +379,9 @@ def parseFiles():
 
 def findDataStructure(classdefs, typename):
   while typename and typename!="ROOT" and classdefs.has_key(typename) and not classdefs[typename].datastructure:
-    typename=classdefs[typename].basetype
+    typename = classdefs[typename].basetype
+    if classdefs[typename].imported:
+      classdefs[typename].used = True
   if not typename or not classdefs.has_key(typename) or typename=="ROOT":
     return None
   else:
@@ -371,23 +406,25 @@ def classdefsEffects(classdefs):
 
 
 def readAliases():
-  f=open("devscripts/aliases.txt", "rt")
   aliases={}
-  actClass, aliasList = "", []
-  for line in f:
-    ss=line.split()
-    if len(ss):
-      if len(ss)==2:
-        aliasList.append(ss)
-      if (len(ss)==1) or (len(ss)==3):
-        if actClass and len(aliasList):
-          aliases[actClass]=aliasList
-        actClass=ss[0]
-        aliasList=[]
+  if os.path.isfile("_aliases.txt"):
+    f=open("_aliases.txt", "rt")
+    actClass, aliasList = "", []
+    for line in f:
+      ss=line.split()
+      if len(ss):
+        if len(ss)==2:
+          aliasList.append(ss)
+        if (len(ss)==1) or (len(ss)==3):
+          if actClass and len(aliasList):
+            aliases[actClass]=aliasList
+          actClass=ss[0]
+          aliasList=[]
 
-  if actClass and len(aliasList):
-    aliases[actClass]=aliasList
-  f.close()
+    if actClass and len(aliasList):
+      aliases[actClass]=aliasList
+    f.close()
+    
   return aliases
         
 def findSpecialMethod(classdefs, type, name):
@@ -435,9 +472,12 @@ def writeAppendix(filename, targetname, classdefs, aliases):
 
   usedbases=usedbases.keys()
   usedbases.sort()
-  outfile.write("extern TOrangeType PyOrOrangeType_Type;\n")
+  #outfile.write("extern TOrangeType PyOrOrangeType_Type;\n")
   for type in usedbases:
-    outfile.write("extern TOrangeType PyOr"+type+"_Type;\n")
+    if classdefs[type].imported:
+      outfile.write("extern IMPORT_DLL TOrangeType PyOr"+type+"_Type;\n")
+    else:
+      outfile.write("extern %s_API TOrangeType PyOr%s_Type;\n" % (modulename.upper(), type))
   outfile.write("\n\n")
 
   for (type, fields) in classdefi:
@@ -482,7 +522,7 @@ def writeAppendix(filename, targetname, classdefs, aliases):
 
     # Write doc strings
     if fields.call and fields.call.arguments and len(fields.call.arguments):
-      outfile.write('char '+type+'_call_doc[] = "'+fields.call.arguments+'";\n')
+      outfile.write('char '+type+'[] = "'+fields.call.arguments+'";\n')
     if fields.description:
       outfile.write('char '+type+'_doc[] = "'+fields.description+'";\n')
     outfile.write('\n')
@@ -490,8 +530,11 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     # Write constants
     if fields.constants:
       outfile.write("void %s_addConstants()\n{ PyObject *&dict = PyOr%s_Type.ot_inherited.tp_dict;\n  if (!dict) dict = PyDict_New();\n" % (type, type))
-      for i in fields.constants.items():
-        outfile.write('  PyDict_SetItemString(dict, "%s", %s);\n' % i)
+      for name, const in fields.constants.items():
+        if const.ccode:
+          outfile.write('  PyDict_SetItemString(dict, "%s", %s);\n' % (name, const.ccode))
+        else:
+          outfile.write('  PyDict_SetItemString(dict, "%s", %s());\n' % (name, const.cfunc))
       outfile.write("}\n\n")
 
     # Write default constructor
@@ -622,18 +665,20 @@ def writeAppendix(filename, targetname, classdefs, aliases):
     innulls=writeslots(specialmethods, 1)
     outfile.write((innulls and '\n' or '') + '};\n\n')
 
-    outfile.write('TOrangeType PyOr'+type+'_Type (PyOr'+type+'_Type_inh, typeid(T'+type+')')
+    if fields.datastructure == "TPyOrange":
+      outfile.write(cc_functions % {"type": type})
+
+    outfile.write('%(modulename)s_API TOrangeType PyOr%(type)s_Type (PyOr%(type)s_Type_inh, typeid(T%(type)s)' % {"modulename": modulename.upper(), "type": type})
     outfile.write(', ' + (fields.constructor and fields.constructor.type!="MANUAL" and type+'_default_constructor' or '0'))
+    if fields.datastructure == "TPyOrange":
+      outfile.write(', cc_%s, ccn_%s' % (type, type))
+    else:
+      outfile.write(', PyOr_noConversion, PyOr_noConversion')
     outfile.write(', ' + (fields.constructor_keywords and type+'_constructor_keywords' or 'NULL'))
     outfile.write(', ' + (fields.recognized_attributes and type+'_recognized_attributes' or 'NULL'))
-                          
-    if aliases.has_key(type):
-      outfile.write(', '+type+'_aliases')
-    outfile.write(');\n\n')
+    outfile.write(', ' + (aliases.has_key(type) and type+'_aliases' or 'NULL'))
+    outfile.write(');\n\n\n\n')
 
-    if fields.datastructure == "TPyOrange":
-      outfile.write('DEFINE_cc('+type+')\n\n\n\n')
-    
   outfile.close()
 
 
@@ -648,45 +693,59 @@ def writeAppendices(classdefs):
     writeAppendix(filename, filestem+".px", classdefs, aliases)
     printV1()
 
-def writeExterns(targetname):
-  externsfile=open("px/"+targetname+".new", "wt")
-  newfiles.append(targetname)
+def writeExterns():
+  externsfile=open("px/externs.px.new", "wt")
+  newfiles.append("externs.px")
 
   externsfile.write("/* This file was generated by pyxtract \n   Do not edit.*/\n\n")
 
+  externsfile.write("#ifdef _MSC_VER\n  #define IMPORT_DLL __declspec(dllimport)\n#else\n  #define IMPORT_DLL\n#endif\n\n")
   ks=classdefs.keys()
   ks.sort()
   for type in ks:
-    externsfile.write("extern TOrangeType PyOr"+type+"_Type;\n")
+
+    if not classdefs[type].imported:
+      externsfile.write("extern %s_API TOrangeType PyOr%s_Type;\n" % (modulename.upper(), type))
+    else:
+      externsfile.write("extern IMPORT_DLL TOrangeType PyOr%s_Type;\n" % type)
+
     externsfile.write('#define PyOr%s_Check(op) PyObject_TypeCheck(op, (PyTypeObject *)&PyOr%s_Type)\n' % (type, type))
-    externsfile.write("int cc_"+type+"(PyObject *, void *);\n")
-    externsfile.write("int ccn_"+type+"(PyObject *, void *);\n")
     if classdefs[type].datastructure == "TPyOrange":
-      externsfile.write('#define PyOrange_As%s(op) (GCPtr< T%s >(PyOrange_AS_Orange(op)))\n' % (type, type))
-    externsfile.write('\n')
-  externsfile.write("\n\n")
+      externsfile.write('#define PyOrange_As%s(op) (*(GCPtr< T%s > *)(void *)(&PyOrange_AS_Orange(op)))\n' % (type, type))
+      externsfile.write('\n')
+
+  classdefi=classdefs.items()
+  classdefi.sort(lambda x,y:cmp(x[0],y[0]))
+  externsfile.write("#if defined(%s_EXPORTS) || !defined(_MSC_VER)\n\n" % modulename.upper())  
+  for (type, fields) in classdefi:
+    if fields.datastructure == "TPyOrange":
+      if not fields.imported: 
+        externsfile.write("  int cc_func_"+type+"(PyObject *, void *);\n")
+        externsfile.write("  int ccn_func_"+type+"(PyObject *, void *);\n")
+        externsfile.write("  #define cc_%s cc_func_%s\n" % (type, type))
+        externsfile.write("  #define ccn_%s ccn_func_%s\n\n" % (type, type))
+      else:
+        externsfile.write("  #define cc_%s PyOr%s_Type.ot_converter\n" % (type, type))
+        externsfile.write("  #define ccn_%s PyOr%s_Type.ot_nconverter\n\n" % (type, type))
+  externsfile.write("#else\n\n")
+  for (type, fields) in classdefi:
+    if not fields.imported and fields.datastructure == "TPyOrange":
+      externsfile.write("  #define cc_%s PyOr%s_Type.ot_converter\n" % (type, type))
+      externsfile.write("  #define ccn_%s PyOr%s_Type.ot_nconverter\n\n" % (type, type))
+  externsfile.write("#endif\n")
+
+  externsfile.write("\n\n")  
 
   externsfile.close()
 
 
-def writeInitialization(targetname, functions, constants, externsname):
-  functionsfile=open("px/"+targetname+".new", "wt")
-  newfiles.append(targetname)
+def writeInitialization(functions, constants):
+  functionsfile=open("px/initialization.px.new", "wt")
+  newfiles.append("initialization.px")
   functionsfile.write("/* This file was generated by pyxtract \n   Do not edit.*/\n\n")
-  functionsfile.write('#include "'+externsname+'"\n\n')
+  functionsfile.write('#include "externs.px"\n\n')
 
-  if len(classdefs):
-    ks=classdefs.keys()
-    ks.sort()
-    printV1NoNL("\nClasses:")
-    functionsfile.write("int noOfOrangeClasses=%i;\n\n" % len(ks))
-    functionsfile.write("TOrangeType *orangeClasses[]={\n")
-    for i in ks:
-      functionsfile.write("    &PyOr%s_Type,\n" % i)
-      printV1NoNL(i)
-    functionsfile.write("    NULL};\n\n")
-    printV1()
-
+  myclasses = dict(filter(lambda x:not x[1].imported, classdefs.items()))
   if len(functions):
     olist=functions.keys()
     olist.sort()
@@ -699,18 +758,21 @@ def writeInitialization(targetname, functions, constants, externsname):
           functionsfile.write("PyObject *"+function.cname+"(PyObject *, PyObject *, PyObject *);\n")
         else:
           functionsfile.write("PyObject *"+function.cname+"(PyObject *, PyObject *);\n")
+  else:
+    olist = []
 
-    printV1NoNL("\nFunctions:")
-    functionsfile.write("\n\nPyMethodDef orangeFunctions[]={\n")
-    for functionname in olist:
-      function=functions[functionname]
-      printV1NoNL(functionname)
-      if function.arguments:
-        functionsfile.write('     {"'+functionname+'", (binaryfunc)'+function.cname+', '+function.argkw+', "'+function.arguments+'"},\n')
-      else:
-        functionsfile.write('     {"'+functionname+'", (binaryfunc)'+function.cname+', '+function.argkw+'},\n')
-    functionsfile.write("     {NULL, NULL}\n};\n\n")
-    printV1()
+  printV1NoNL("\nFunctions:")
+  functionsfile.write("\n\nPyMethodDef %sFunctions[]={\n" % modulename)
+  for functionname in olist:
+    function=functions[functionname]
+    printV1NoNL(functionname)
+    if function.arguments:
+      functionsfile.write('     {"'+functionname+'", (binaryfunc)'+function.cname+', '+function.argkw+', "'+function.arguments+'"},\n')
+    else:
+      functionsfile.write('     {"'+functionname+'", (binaryfunc)'+function.cname+', '+function.argkw+'},\n')
+  functionsfile.write("     {NULL, NULL}\n};\n\n")
+  printV1()
+    
 
   olist=constants.keys()
   olist.sort()
@@ -720,26 +782,39 @@ def writeInitialization(targetname, functions, constants, externsname):
     if constant.cfunc:
       functionsfile.write("PyObject *"+constant.cfunc+"();\n")
 
-  for classname in ks:
-    if classdefs[classname].constants:
-      functionsfile.write('\nvoid %s_addConstants();' % classname)
+  addconstscalls = ""
+  if len(myclasses):
+    ks=myclasses.keys()
+    ks.sort()
+    printV1NoNL("\nClasses:")
+    functionsfile.write("int noOf%sClasses=%i;\n\n" % (modulename, len(ks)))
+    functionsfile.write("TOrangeType *%sClasses[]={\n" % modulename)
+    for i in ks:
+      functionsfile.write("    &PyOr%s_Type,\n" % i)
+      printV1NoNL(i)
+    functionsfile.write("    NULL};\n\n")
+    printV1()
+
+    for i in ks:
+      if classdefs[i].constants:
+        functionsfile.write('\nvoid %s_addConstants();' % i)
+        addconstscalls += ('     %s_addConstants();\n' % i)
   functionsfile.write("\n")
 
   printV1NoNL("\nConstants:")
   functionsfile.write("\nvoid addConstants(PyObject *mod) {\n")
-  for constantname in olist:
-    constant=constants[constantname]
-    printV1NoNL(constantname)
-    if constant.cfunc:
-      functionsfile.write('     PyModule_AddObject(mod, "'+constantname+'", '+constant.cfunc+'());\n')
-    else:
-      functionsfile.write('     PyModule_AddObject(mod, "'+constantname+'", '+constant.ccode+');\n')
-  functionsfile.write("\n\n")
+  if olist:
+    for constantname in olist:
+      constant=constants[constantname]
+      printV1NoNL(constantname)
+      if constant.cfunc:
+        functionsfile.write('     PyModule_AddObject(mod, "'+constantname+'", '+constant.cfunc+'());\n')
+      else:
+        functionsfile.write('     PyModule_AddObject(mod, "'+constantname+'", '+constant.ccode+');\n')
+    functionsfile.write("\n\n")
 
-  for classname in ks:
-    if classdefs[classname].constants:
-      functionsfile.write('     %s_addConstants();\n' % classname)
-  functionsfile.write("\n\n")
+  if addconstscalls:
+    functionsfile.write(addconstscalls + "\n\n")
   
   for classname in ks:
     if not classdefs[i].hidden:
@@ -747,61 +822,36 @@ def writeInitialization(targetname, functions, constants, externsname):
   functionsfile.write("}\n\n")
   printV1("\n")
 
+  functionsfile.write("""
+#ifdef _MSC_VER
+  #define WIN32_LEAN_AND_MEAN
+  #include <windows.h>
+  BOOL APIENTRY DllMain( HANDLE, DWORD  ul_reason_for_call, LPVOID)  { return TRUE; }
+#endif
+
+PyObject *%(modulename)sModule;
+
+ORANGE_API void addClassList(TOrangeType **);
+
+extern "C" %(MODULENAME)s_API void init%(modulename)s()
+{ 
+  if (!initExceptions())
+    return;
+
+  for(TOrangeType **type=%(modulename)sClasses; *type; type++)
+    if (PyType_Ready((PyTypeObject *)*type)<0)
+      return;
+
+  gcUnsafeStaticInitialization();
+
+  addClassList(%(modulename)sClasses);
+
+  %(modulename)sModule = Py_InitModule("%(modulename)s", %(modulename)sFunctions);  
+  addConstants(%(modulename)sModule);
+}
+""" % {"modulename" : modulename, "MODULENAME": modulename.upper()})
+
   functionsfile.close()
-
-
-def writeChanges(of, year, month, date, changes):
-    of.write("  changesVector.push_back(\n")
-    of.write("    TDateChanges(%d, %d, %d,\n" % (year+2000, month, date))
-
-    for i in range(len(changes)):
-        if len(changes[i]):
-            break
-    changes=changes[i:]
-
-    for i in range(len(changes)-1, -1, -1):
-        if len(changes[i]):
-            break
-    changes=changes[:i+1]
-        
-    for i in changes:
-        of.write('        "%s\\n"\n' % i)
-    of.write("  ));\n\n")
-
-
-def parseChanges():
-  f = open("devdoc/changes.txt", "rt")
-  of= open("px/changes.px.new", "wt")
-  newfiles.append("changes.px")
-
-  of.write("/* This file was generated by pyxtract \n   Do not edit.*/\n\n")
-  of.write("void initializeChangesVector() {\n")
-  
-  thisPack=[]
-  year=None
-  while 1:
-    line=f.readline()
-    if not len(line):
-      break
-    
-    datedef=re.compile(r"(?P<year>\d\d)-(?P<month>\d\d)-(?P<date>\d\d)")                     
-    found=datedef.search(line)
-    if found:
-      if year and len(thisPack):
-        writeChanges(of, year, month, date, thisPack)
-        thisPack=[]
-      year, month, date = tuple(map(int, found.group("year", "month", "date")))
-    else:
-      if line[-1]=="\012":
-        thisPack.append(line[:-1])
-      else:
-        thisPack.append(line)
-    
-  writeChanges(of, year, month, date, thisPack)
-
-  of.write("}\n")
-  of.close()
-  f.close()
 
 def samefiles(n1, n2):
   f1, f2 = open(n1, "rt"), open(n2, "rt")
@@ -832,12 +882,14 @@ def make():
   if not os.path.isdir("px"):
     os.mkdir("px")
   writeAppendices(classdefs)
-  writeExterns(externsname)
-  writeInitialization(initializationname, functions, constants, externsname)
-  #parseChanges()
+  writeExterns()
+  writeInitialization(functions, constants)
   renewfiles(newfiles)
 
   f=open("px/stamp", "wt")
+  pickle.dump(classdefs, f)
+  pickle.dump(functions, f)
+  pickle.dump(constants, f)
   f.close()
   
 
@@ -868,162 +920,15 @@ def listOfExports():
   for cons in constants:
     print "%s" % cons[0]
 
-
-
-def htmlString(s):
-  d="%s" %s
-  d=d.replace('<', '&lt;')
-  d=d.replace('>', '&gt;')
-  return d
-
-def exportXML(filename):
-  re_lastline=re.compile("\s+\Z", re.MULTILINE)
-  def relal(s):
-    return re_lastline.sub("", s or "")+"\n"
-  
-  xml=open(filename, "wt")
-  olist=classdefs.items()
-  olist.sort(lambda x,y:cmp(x[0], y[0]))
-
-  xml.write('<ORANGEEXPORTS>\n')
-  xml.write('<CLASSES>\n')
-  for name, c in olist:
-    xml.write('<CLASS name="%s">\n' % name)
-
-    if c.description:
-      xml.write('  <DESCRIPTION>')
-      xml.write('    '+relal(c.description))
-      xml.write('  </DESCRIPTION>\n')
-    
-    xml.write('  <ANCESTORS>\n')
-    d=c
-    while d and d.basetype:
-      xml.write('    <BACK>%s</BACK>\n' % d.basetype)
-      d=classdefs.get(d.basetype)
-    xml.write('  </ANCESTORS>\n')
-    xml.write('\n')
-
-    properties = c.properties.items()
-    properties.sort(lambda x,y: cmp(x[0], y[0]))
-    xml.write('  <PROPERTIES>\n')
-    for name, property in properties:
-      xml.write('    <PROPERTY name="%s">' % name)
-      xml.write('      '+relal(property.description))
-      xml.write('    </PROPERTY>\n')
-    xml.write('  </PROPERTIES>\n')
-    xml.write('\n')
-
-    methods = c.methods.items()
-    methods.sort(lambda x,y: cmp(x[0], y[0]))
-    xml.write('  <METHODS>\n')
-    for name, method in methods:
-      xml.write('    <METHOD name="%s" arguments="%s">' % (name, htmlString(method.arguments)))
-      xml.write('      '+relal(method.description))
-      xml.write('    </METHOD>\n')
-    xml.write('  </METHODS>\n')
-    xml.write('\n')
-
-    if c.constructor:
-      if c.constructor.arguments:
-        xml.write('  <CONSTRUCTOR arguments="%s">' % htmlString(c.constructor.arguments))
-      else:
-        xml.write('  <CONSTRUCTOR>')
-      xml.write('    '+relal(c.constructor.description))
-      xml.write('  </CONSTRUCTOR>\n')
-      xml.write('\n')
-
-    if c.call:
-      if c.call.arguments:
-        xml.write('  <CALL arguments="%s">' % htmlString(c.call.arguments))
-      else:
-        xml.write('  <CALL>')
-      xml.write('    '+relal(c.call.description))
-      xml.write('  </CALL>\n')
-      xml.write('\n')
-    xml.write('</CLASS>\n')
-
-    xml.write('\n')
-    xml.write('\n')
-  xml.write('</CLASSES>\n')
-
-  olist=functions.items()
-  olist.sort(lambda x,y:cmp(x[0], y[0]))
-  xml.write('<FUNCTIONS>\n')
-  for name, c in olist:
-    if c.arguments:
-      xml.write('<FUNCTION name="%s" arguments="%s">' % (name, htmlString(c.arguments)))
-    else:
-      xml.write('<FUNCTION name="%s">' % name)
-    xml.write('  '+relal(c.description))
-    xml.write('</FUNCTION>\n')
-    xml.write('\n')
-  xml.write('</FUNCTIONS>\n')
-  xml.write('\n')
-
-  olist=constants.items()
-  olist.sort(lambda x,y:cmp(x[0], y[0]))
-  xml.write('<CONSTANTS>\n')
-  for name, c in olist:
-    xml.write('<CONSTANT name="%s">' % name)
-    xml.write('  '+relal(c.description))
-    xml.write('</CONSTANT>')
-    xml.write('\n')
-  xml.write('</CONSTANTS>\n')
-  xml.write('\n')
-  xml.write('</ORANGEEXPORTS>\n')
-
-  xml.close()  
-
-
-def descriptionsFromXML(filename):
-  def mergeText(node):
-    return reduce(lambda x, y:x+y.toxml(), node.childNodes, "")
-      
-  def getChildrenByName(node, name):
-    return filter(lambda child:child.nodeName==name, node.childNodes)
-  
-  from xml.dom.minidom import parse
-  try:
-    fle=open(filename, "rt")
-  except:
-    return
-  
-  dom1=parse(filename)
-  
-  domclasses=dom1.getElementsByTagName("CLASS")
-  for domclass in domclasses:
-    name=domclass.getAttribute("name")
-    if classdefs.has_key(name):
-      classdef=classdefs[name]
-      desc=getChildrenByName(domclass, "DESCRIPTION")
-      if len(desc):
-        classdef.description=mergeText(desc[0])
-
-      if classdef.constructor:
-        cons=getChildrenByName(domclass, "CONSTRUCTOR")
-        if len(cons):
-          classdef.constructor.description=mergeText(cons[0])
-
-      if classdefs.has_key("call"):
-        cons=getChildrenByName(domclass, "CALL")
-        if len(cons):
-          classdefs.call.description=mergeText(cons[0])
-
-      props=domclass.getElementsByTagName("PROPERTY")
-      for prop in props:
-        propname=prop.attributes.get("name").value
-        if classdefs[name].properties and classdefs[name].properties.has_key(propname):
-          classdefs[name].properties[propname].description=mergeText(prop)
-
   
 def saferemove(fname):
   if os.path.isfile(fname):
     os.remove(fname)
     
 def removeFiles():
-  print "Removing %s, %s," % (externsname, initializationname),
-  saferemove(externsname)
-  saferemove(initializationname)
+  print "Removing externs.px, initialization.px,"
+  saferemove("externs.px")
+  saferemove("initialization.px")
 
   for filename in filenames:
     found=filenamedef.match(filename)
@@ -1036,10 +941,8 @@ def removeFiles():
 
 
 def readArguments(args):
-  global filenames, verbose, recreate, externsname, initializationname, action, listname, xmlname
-  filenames, verbose, recreate = [], 0, 0
-  externsname, initializationname = "externs.px", "initialization.px"
-  listname = xmlname = ""
+  global filenames, verbose, recreate, action, libraries, modulename
+  filenames, libraries, verbose, recreate, modulename = [], [], 0, 0, ""
   action = []
   i=0
   while(i<len(args)):
@@ -1055,26 +958,28 @@ def readArguments(args):
         action.append("clean")
       elif opt=="m":
         action.append("make")
-      elif opt=="l":
-        action.append("list")
-        i=i+1
-        listname=args[i]
-      elif opt=="x":
-        action.append("xml")
-        i=i+1
-        xmlname=args[i]
-      elif opt=="e":
-        i=i+1
-        externsname=args[i]
       elif opt=="i":
+        action.append("list")
+      elif opt=="l":
         i=i+1
-        externsname=args[i]
+        libraries.append(args[i])
+      elif opt=="n":
+        i=i+1
+        modulename = args[i].lower()
+      elif opt=="d":
+        import os
+        i+=1
+        os.chdir(args[i])
       else:
         print "Unrecognized option %s" % args[i]
     else:
-      filenames.append(args[i])
+      if not "pyxtract.py" in args[i]:
+        filenames.append(args[i])
     i=i+1
 
+  if not modulename:
+    print "Module name (-n) missing"
+    sys.exit()
   if not len(action):
     action=["make"]
     
@@ -1094,22 +999,10 @@ def printV1NoNL(str="", tup=()):
   if verbose>=1:
     print str % tup,
         
-
-args=["lib_kernel.cpp", "lib_components.cpp", "lib_preprocess.cpp", "lib_learner.cpp", "lib_io.cpp", "lib_vectors.cpp",
-      "cls_example.cpp", "cls_value.cpp", "cls_orange.cpp", "cls_misc.cpp",
-      "functions.cpp", "obsolete.cpp",
-      "-m" # "-r" if you want to recreate all files
-      #, "-x", "names2.xml"
-     ]
+args = sys.argv
 
 readArguments(args)
 parsedFile=""
-
-orig_dir = os.getcwd()
-if len(sys.argv)<2:
-    os.chdir("..")
-else:
-    os.chdir(sys.argv[1])
 
 if action.count("clean"):
   removeFiles()
@@ -1118,14 +1011,8 @@ if action.count("clean"):
 if len(action):  
   newfiles=[]
   functions, constants, classdefs, aliases = parseFiles()
-  if action.count("xml") or action.count("list"):
-    descriptionsFromXML(xmlname)
     
   if action.count("list"):
-    listOfExports(listname)
-  if action.count("xml"):
-    exportXML(xmlname)
+    listOfExports()
   if action.count("make"):
     make()
-
-os.chdir(orig_dir)

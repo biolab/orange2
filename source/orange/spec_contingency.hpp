@@ -29,7 +29,7 @@
 WRAPPER(Learner)
 WRAPPER(Preprocessor)
 
-class TComputeDomainContingency_DomainTransformation : public TComputeDomainContingency {
+class ORANGE_API TComputeDomainContingency_DomainTransformation : public TComputeDomainContingency {
 public:
   __REGISTER_CLASS
 
@@ -52,7 +52,7 @@ public:
 };
 
 
-class TComputeDomainContingency_ImputeWithClassifier : public TComputeDomainContingency {
+class ORANGE_API TComputeDomainContingency_ImputeWithClassifier : public TComputeDomainContingency {
 public:
   __REGISTER_CLASS
 
@@ -63,7 +63,7 @@ public:
 };
 
 
-class TComputeDomainContingency_Preprocessor : public TComputeDomainContingency {
+class ORANGE_API TComputeDomainContingency_Preprocessor : public TComputeDomainContingency {
 public:
   __REGISTER_CLASS
 
@@ -77,7 +77,7 @@ public:
   virtual PDomainContingency operator()(PExampleGenerator, const long &weightID=0);
 };
 
-WRAPPER(TComputeDomainContingency_DomainTransformation)
-WRAPPER(TComputeDomainContingency_Preprocessor)
+WRAPPER(ComputeDomainContingency_DomainTransformation)
+WRAPPER(ComputeDomainContingency_Preprocessor)
 
 #endif

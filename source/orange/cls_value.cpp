@@ -93,7 +93,7 @@ PyObject *convertToPythonNative(const TValue &val, PVariable var)
   }
 
   if ((val.varType!=TValue::INTVAR) && val.svalV)
-    return WrapOrange(val.svalV);
+    return WrapOrange((const_cast<TValue &>(val)).svalV);
 
   if (var) { // && (val.varType == TValue::INTVAR || val.isSpecial)
     string vs;

@@ -37,7 +37,7 @@ WRAPPER(ExampleGenerator)
 WRAPPER(ExampleTable)
 WRAPPER(Filter)
 
-class TRule : public TOrange {
+class ORANGE_API TRule : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -92,7 +92,7 @@ public:
 
 
 WRAPPER(RuleValidator)
-class TRuleValidator : public TOrange {
+class ORANGE_API TRuleValidator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -100,7 +100,7 @@ public:
 };
 
 
-class TRuleValidator_LRS : public TRuleValidator {
+class ORANGE_API TRuleValidator_LRS : public TRuleValidator {
 public:
   __REGISTER_CLASS
 
@@ -112,7 +112,7 @@ public:
 
 
 WRAPPER(RuleEvaluator)
-class TRuleEvaluator : public TOrange {
+class ORANGE_API TRuleEvaluator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -120,20 +120,20 @@ public:
 };
 
 
-class TRuleEvaluator_Entropy : public TRuleEvaluator {
+class ORANGE_API TRuleEvaluator_Entropy : public TRuleEvaluator {
   __REGISTER_CLASS
 
   virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 
-class TRuleEvaluator_Laplace : public TRuleEvaluator {
+class ORANGE_API TRuleEvaluator_Laplace : public TRuleEvaluator {
   __REGISTER_CLASS
 
   virtual float operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 
 WRAPPER(RuleFinder)
-class TRuleFinder : public TOrange {
+class ORANGE_API TRuleFinder : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -145,7 +145,7 @@ public:
 
 
 WRAPPER(RuleBeamInitializer)
-class TRuleBeamInitializer : public TOrange {
+class ORANGE_API TRuleBeamInitializer : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -153,7 +153,7 @@ public:
 };
 
 
-class TRuleBeamInitializer_Default : public TRuleBeamInitializer {
+class ORANGE_API TRuleBeamInitializer_Default : public TRuleBeamInitializer {
 public:
   __REGISTER_CLASS
 
@@ -162,7 +162,7 @@ public:
 
 
 WRAPPER(RuleBeamRefiner)
-class TRuleBeamRefiner : public TOrange {
+class ORANGE_API TRuleBeamRefiner : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -170,7 +170,7 @@ public:
 };
 
 
-class TRuleBeamRefiner_Selector : public TRuleBeamRefiner {
+class ORANGE_API TRuleBeamRefiner_Selector : public TRuleBeamRefiner {
 public:
   __REGISTER_CLASS
 
@@ -181,7 +181,7 @@ public:
 
 
 WRAPPER(RuleBeamCandidateSelector)
-class TRuleBeamCandidateSelector : public TOrange {
+class ORANGE_API TRuleBeamCandidateSelector : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -189,7 +189,7 @@ public:
 };
 
 
-class TRuleBeamCandidateSelector_TakeAll : public TRuleBeamCandidateSelector {
+class ORANGE_API TRuleBeamCandidateSelector_TakeAll : public TRuleBeamCandidateSelector {
 public:
   __REGISTER_CLASS
 
@@ -198,7 +198,7 @@ public:
 
 
 WRAPPER(RuleBeamFilter)
-class TRuleBeamFilter : public TOrange {
+class ORANGE_API TRuleBeamFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -206,7 +206,7 @@ public:
 };
 
 
-class TRuleBeamFilter_Width : public TRuleBeamFilter {
+class ORANGE_API TRuleBeamFilter_Width : public TRuleBeamFilter {
 public:
   __REGISTER_CLASS
 
@@ -219,7 +219,7 @@ public:
 
 
 
-class TRuleBeamFinder : public TRuleFinder {
+class ORANGE_API TRuleBeamFinder : public TRuleFinder {
 public:
   __REGISTER_CLASS
 
@@ -234,7 +234,7 @@ public:
 
 
 WRAPPER(RuleDataStoppingCriteria)
-class TRuleDataStoppingCriteria : public TOrange {
+class ORANGE_API TRuleDataStoppingCriteria : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -242,7 +242,7 @@ public:
 };
 
 
-class TRuleDataStoppingCriteria_NoPositives : public TRuleDataStoppingCriteria {
+class ORANGE_API TRuleDataStoppingCriteria_NoPositives : public TRuleDataStoppingCriteria {
 public:
   __REGISTER_CLASS
 
@@ -251,14 +251,14 @@ public:
 
 
 WRAPPER(RuleStoppingCriteria)
-class TRuleStoppingCriteria : public TOrange {
+class ORANGE_API TRuleStoppingCriteria : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
   virtual bool operator()(PRuleList, PRule, PExampleTable, const int &weightID) const = 0;
 };
 
-class TRuleStoppingCriteria_NegativeDistribution : public TRuleStoppingCriteria {
+class ORANGE_API TRuleStoppingCriteria_NegativeDistribution : public TRuleStoppingCriteria {
 public:
   __REGISTER_CLASS
 
@@ -266,7 +266,7 @@ public:
 };
 
 WRAPPER(RuleCovererAndRemover)
-class TRuleCovererAndRemover : public TOrange {
+class ORANGE_API TRuleCovererAndRemover : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -274,7 +274,7 @@ public:
 };
 
 
-class TRuleCovererAndRemover_Default : public TRuleCovererAndRemover {
+class ORANGE_API TRuleCovererAndRemover_Default : public TRuleCovererAndRemover {
 public:
   __REGISTER_CLASS
 
@@ -283,7 +283,7 @@ public:
 
 WRAPPER(RuleClassifierConstructor)
 WRAPPER(RuleClassifier)
-class TRuleClassifierConstructor : public TOrange {
+class ORANGE_API TRuleClassifierConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -291,14 +291,14 @@ public:
 };
 
 
-class TRuleClassifierConstructor_firstRule: public TRuleClassifierConstructor {
+class ORANGE_API TRuleClassifierConstructor_firstRule: public TRuleClassifierConstructor {
   __REGISTER_CLASS
   virtual PRuleClassifier operator()(PRuleList, PExampleTable, const int &weightID = 0);
 };
 
 
 WRAPPER(RuleLearner)
-class TRuleLearner : public TLearner {
+class ORANGE_API TRuleLearner : public TLearner {
 public:
   __REGISTER_CLASS
   
@@ -320,7 +320,7 @@ public:
 
 
 
-class TRuleClassifier : public TClassifier {
+class ORANGE_API TRuleClassifier : public TClassifier {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -335,7 +335,7 @@ public:
 };
 
 // Zakaj moram se enkrat definirati konstruktor;
-class TRuleClassifier_firstRule : public TRuleClassifier {
+class ORANGE_API TRuleClassifier_firstRule : public TRuleClassifier {
 public:
   __REGISTER_CLASS
 

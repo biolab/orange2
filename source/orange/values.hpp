@@ -24,9 +24,7 @@
 #define __VALUES_HPP
 
 #include <limits>
-#include "garbage.hpp"
 #include "root.hpp"
-#include "errors.hpp"
 
 #ifdef _MSC_VER
   #pragma warning (disable : 4786 4114 4018 4267 4244)
@@ -37,7 +35,7 @@ template<class T>int sign(const T &v) { return (v==0) ? 0 : ( (v>0) ? 1: -1); }
 
 /* A more general value holder than TValue. Derived objects will include additional field(s) for
    storing and handling the data, and define abstract methods get a functional class. */
-class TSomeValue : public TOrange {
+class ORANGE_API TSomeValue : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -63,7 +61,7 @@ WRAPPER(SomeValue)
    derived from TValue.
 */
 
-class TValue {
+class ORANGE_API TValue {
 public:
   /* valueType determines whether the value is regular (known) or not (valueDC, valueDK or some other)
      varType determines the type of the value (discrete, continuous...)
@@ -263,6 +261,7 @@ public:
   }
 };
 
+
 inline void intValInit(TValue &val, const int &i)
 { 
   val.varType = TValue::INTVAR;
@@ -271,12 +270,28 @@ inline void intValInit(TValue &val, const int &i)
   val.svalV = PSomeValue();
 }
 
+
 inline void floatValInit(TValue &val, const float &f)
 { 
   val.varType = TValue::FLOATVAR;
   val.valueType = valueRegular;
   val.floatV = f;
   val.svalV = PSomeValue();
+}
+
+
+inline bool mergeTwoValues(TValue &mergedValue, const TValue &newValue, bool alreadyDefined)
+{
+  if (alreadyDefined)
+    if (mergedValue.isSpecial()) {
+      if (newValue.isSpecial())
+        return mergedValue.valueType == newValue.valueType;
+    }
+    else
+      return newValue.isSpecial() || (mergedValue == newValue);
+
+  mergedValue = newValue;
+  return true;
 }
 
 #endif

@@ -45,15 +45,6 @@ bool castableTo(const TClassDescription *objecttype, const TClassDescription *ba
 
 
 
-TOrange::TOrange()
-: myWrapper(NULL)
-{}
-
-
-TOrange::TOrange(const TOrange &orb) 
-: myWrapper(NULL)
-{}
-
 
 TOrange::~TOrange()
 {}
@@ -132,7 +123,7 @@ void TOrange::wr_getProperty(const char *name, POrange &b) const
 int TOrange::traverse(visitproc visit, void *arg) const
 { for(size_t const *ci = classDescription()->components; *ci; ci++) {
     // shouldn't take POrange's -- don't want to create any additional references
-    TGCCounter<TOrange> *ptr = ((POrange const *)CONST_MEMBER(*ci))->counter;
+    TGCCounter *ptr = ((POrange const *)CONST_MEMBER(*ci))->counter;
     if (ptr)
       VISIT(ptr)
   }

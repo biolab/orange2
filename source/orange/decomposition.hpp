@@ -30,17 +30,22 @@
 
 WRAPPER(Example)
 
-class TExample_nodeIndex
+class ORANGE_API TExample_nodeIndex
 { public:
     PExample example;
     int nodeIndex;
 
-    TExample_nodeIndex(PExample);
+    TExample_nodeIndex(PExample = PExample());
+    // this needs to be defined to be able to export this class to DLL...
+    bool operator<(const TExample_nodeIndex &) const { return false; }
+    bool operator==(const TExample_nodeIndex &) const { return false; }
 };
 
 typedef vector<TExample_nodeIndex>::iterator TEnIIterator;
+template class ORANGE_API std::vector<TExample_nodeIndex>;
+ 
 
-class TSortedExamples_nodeIndices : public vector<TExample_nodeIndex>
+class ORANGE_API TSortedExamples_nodeIndices : public vector<TExample_nodeIndex>
 { public: 
     PExampleGenerator exampleTable;
     int maxIndex;
@@ -54,7 +59,7 @@ class TSortedExamples_nodeIndices : public vector<TExample_nodeIndex>
 
 /* Incompatibility matrix */
 
-class TIMColumnNode {
+class ORANGE_API TIMColumnNode {
 public:
   int index;
   TIMColumnNode *next;
@@ -67,7 +72,7 @@ public:
 };
 
 
-class TDIMColumnNode : public TIMColumnNode {
+class ORANGE_API TDIMColumnNode : public TIMColumnNode {
 public:
   int noOfValues;
   float *distribution;
@@ -85,7 +90,7 @@ public:
 };
 
 
-class TFIMColumnNode : public TIMColumnNode {
+class ORANGE_API TFIMColumnNode : public TIMColumnNode {
 public:
   float sum, sum2, N;
 
@@ -96,7 +101,7 @@ public:
 };
 
 
-class T_ExampleIMColumnNode {
+class ORANGE_API T_ExampleIMColumnNode {
 public:
   PExample example;
   TIMColumnNode *column;
@@ -111,7 +116,7 @@ public:
 
 WRAPPER(ExampleTable)
 
-class TIM : public TOrange {
+class ORANGE_API TIM : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -130,7 +135,7 @@ WRAPPER(IMByRows);
 
 
 /* An abstract class to construct the incompatibility matrix. */
-class TIMConstructor : public TOrange {
+class ORANGE_API TIMConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -148,7 +153,7 @@ public:
 WRAPPER(IMConstructor);
 
 
-class TIMBySorting : public TIMConstructor {
+class ORANGE_API TIMBySorting : public TIMConstructor {
 public:
   __REGISTER_CLASS
   virtual PIM operator()(PExampleGenerator, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID=0);
@@ -156,13 +161,13 @@ public:
 
 
 /* A class to obtain the incompatibility matrix from examples; not defined yet. */
-class TIMFromExamples : public TOrange {
+class ORANGE_API TIMFromExamples : public TOrange {
   __REGISTER_ABSTRACT_CLASS
   virtual PIM operator()(PExampleGenerator, TVarList &, const int &weightID=0) =0;
 };
 
 
-class TPreprocessIM : public TOrange {
+class ORANGE_API TPreprocessIM : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual bool operator()(PIM)=0;
@@ -170,7 +175,7 @@ public:
 
 
 
-class TDIMRow {
+class ORANGE_API TDIMRow {
 public:
   PExample example;
   int noOfValues;
@@ -181,7 +186,7 @@ public:
 };
 
 
-class TIMByRows : public TOrange {
+class ORANGE_API TIMByRows : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -197,7 +202,7 @@ public:
 WRAPPER(IMByRows)
 
 
-class TIMByRowsConstructor : public TOrange {
+class ORANGE_API TIMByRowsConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -210,7 +215,7 @@ public:
 WRAPPER(IMByRowsConstructor)
 
 
-class TIMByRowsBySorting : public TIMByRowsConstructor {
+class ORANGE_API TIMByRowsBySorting : public TIMByRowsConstructor {
 public:
   __REGISTER_CLASS
   virtual PIMByRows operator()(PExampleGenerator, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID=0);
@@ -219,7 +224,7 @@ public:
 
 WRAPPER(ExamplesDistance_Relief)
 
-class TIMByRowsByRelief : public TIMByRowsConstructor {
+class ORANGE_API TIMByRowsByRelief : public TIMByRowsConstructor {
 public:
   __REGISTER_CLASS
 
@@ -239,14 +244,14 @@ public:
 
 
 
-class TIMByIMByRows : public TIMConstructor {
+class ORANGE_API TIMByIMByRows : public TIMConstructor {
 public:
   __REGISTER_CLASS
   virtual PIM operator()(PExampleGenerator, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID=0);
 };
 
 
-class TIMByRelief: public TIMConstructor {
+class ORANGE_API TIMByRelief: public TIMConstructor {
 public:
   __REGISTER_CLASS
 
@@ -267,7 +272,7 @@ public:
 
 
 
-class TIMByRowsPreprocessor : public TOrange {
+class ORANGE_API TIMByRowsPreprocessor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual bool operator()(PIMByRows)=0;
@@ -275,7 +280,7 @@ public:
 
 
 
-class TIMBlurer : public TIMByRowsPreprocessor {
+class ORANGE_API TIMBlurer : public TIMByRowsPreprocessor {
 public:
   __REGISTER_CLASS
 

@@ -53,7 +53,7 @@ char *demangle(const type_info &type)
 #endif
 
 
-void floatfloat_mapdestructor(void *x) { mldelete (map<float, float> *) x; }
+/*void floatfloat_mapdestructor(void *x) { mldelete (map<float, float> *) x; }
 template<>
 TGCCounterNML<map<float, float> >::TDestructor GCPtrNML<map<float, float> >::destructor = floatfloat_mapdestructor;
 
@@ -69,20 +69,21 @@ PyTypeObject PyNotOrOrange_Type =  {
   0,
   "Not Orange",
   sizeof(TPyNotOrange), 0,
-  (destructor)NotOrange_dealloc,                     /* tp_dealloc */
+  (destructor)NotOrange_dealloc,                     // tp_dealloc 
   0, 0, 0, 0,
-  0,                             /* tp_repr */
-  0,                                 /* tp_as_number */
+  0,                             // tp_repr 
+  0,                                 // tp_as_number 
   0, 0, 0, 0,
-  0,                              /* tp_str */
-  0,                      /* tp_getattro */
-  0,                      /* tp_setattro */
+  0,                              // tp_str 
+  0,                      // tp_getattro 
+  0,                      // tp_setattro 
   0,
-  Py_TPFLAGS_HAVE_CLASS | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_SEQUENCE_IN, /* tp_flags */
+  Py_TPFLAGS_HAVE_CLASS | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_SEQUENCE_IN, // tp_flags 
   0, 0, 0, 0, 0, 0, 0,
-  0,                                    /* tp_methods */
+  0,                                    // tp_methods 
   0, 0, 0, 0, 0, 0,
-  offsetof(TPyNotOrange, notorange_dict),                  /* tp_dictoffset */
+  offsetof(TPyNotOrange, notorange_dict),                  // tp_dictoffset 
 };
 
 
+*/

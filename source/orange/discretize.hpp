@@ -66,7 +66,7 @@ WRAPPER(EquiDistDiscretizer)
 WRAPPER(IntervalDiscretizer)
 
 
-class TDiscretization : public TOrange {
+class ORANGE_API TDiscretization : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -75,7 +75,7 @@ public:
 };
 
 
-class TDiscretizer : public TTransformValue {
+class ORANGE_API TDiscretizer : public TTransformValue {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -89,7 +89,7 @@ public:
 WRAPPER(Discretizer)
 
 
-class TDomainDiscretization : public TOrange {
+class ORANGE_API TDomainDiscretization : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -105,7 +105,7 @@ protected:
 };
 
 
-class TEquiDistDiscretizer : public TDiscretizer {
+class ORANGE_API TEquiDistDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
@@ -122,7 +122,7 @@ public:
 };
 
 
-class TThresholdDiscretizer : public TDiscretizer {
+class ORANGE_API TThresholdDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
@@ -137,7 +137,7 @@ public:
 };
 
 
-class TIntervalDiscretizer : public TDiscretizer  {
+class ORANGE_API TIntervalDiscretizer : public TDiscretizer  {
 public:
   __REGISTER_CLASS
 
@@ -154,7 +154,7 @@ public:
 };
 
 
-class TBiModalDiscretizer : public TDiscretizer {
+class ORANGE_API TBiModalDiscretizer : public TDiscretizer {
 public:
   __REGISTER_CLASS
 
@@ -171,7 +171,7 @@ public:
 
 
 
-class TEquiDistDiscretization : public TDiscretization {
+class ORANGE_API TEquiDistDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
@@ -186,7 +186,7 @@ public:
 
 
 
-class TFixedDiscretization : public TDiscretization {
+class ORANGE_API TFixedDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
@@ -200,7 +200,7 @@ public:
 
 
 
-class TEquiNDiscretization : public TDiscretization {
+class ORANGE_API TEquiNDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
@@ -222,7 +222,7 @@ public:
 
 class TSimpleRandomGenerator;
 
-class TEntropyDiscretization : public TDiscretization {
+class ORANGE_API TEntropyDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
@@ -243,7 +243,7 @@ protected:
 
 
 
-class TBiModalDiscretization : public TDiscretization {
+class ORANGE_API TBiModalDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
 
@@ -257,7 +257,7 @@ public:
 
 /* OBSOLETE */
 
-class TDiscretizedDomain : public TDomain {
+class ORANGE_API TDiscretizedDomain : public TDomain {
 public:
   __REGISTER_CLASS
 

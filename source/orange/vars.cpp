@@ -40,8 +40,8 @@
 #include "vars.ppp"
 
 
-DEFINE_TOrangeVector_classDescription(PVariable, "TVarList")
-DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList")
+DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
 
 
 TPropertyDescription TAttributedFloatList_properties[] = {
@@ -65,17 +65,6 @@ TClassDescription TAttributedBoolList::st_classDescription = { "TAttributedBoolL
 TClassDescription const *TAttributedBoolList::classDescription() const { return &TAttributedBoolList::st_classDescription; }
 TOrange *TAttributedBoolList::clone() const { return mlnew TAttributedBoolList(*this); }
 
-
-
-TPropertyDescription TValueList_properties[] = {
-  {"variable", "The attribute to which the list applies", &typeid(POrange), &TVariable::st_classDescription, offsetof(TValueList, variable), false, false},
-  {NULL}
-};
-
-size_t const TValueList_components[] = { 0};
-TClassDescription TValueList::st_classDescription = { "TValueList", &typeid(TValueList), &TOrange::st_classDescription, TValueList_properties, TValueList_components };
-TClassDescription const *TValueList::classDescription() const { return &TValueList::st_classDescription; }
-TOrange *TValueList::clone() const { return mlnew TValueList(*this); }
 
 
 TVariable::TVariable(const int &avarType, const bool &ord)

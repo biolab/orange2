@@ -29,7 +29,7 @@
 WRAPPER(FindNearestConstructor);
 WRAPPER(FindNearest);
 
-class TkNNLearner : public TLearner {
+class ORANGE_API TkNNLearner : public TLearner {
 public:
   __REGISTER_CLASS
   
@@ -42,7 +42,7 @@ public:
 };
 
 
-class TkNNClassifier : public TClassifierFD {
+class ORANGE_API TkNNClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

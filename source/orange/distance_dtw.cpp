@@ -26,7 +26,7 @@
 #include "examplegen.hpp"
 #include "distance_dtw.ppp"
 
-DEFINE__TOrangeVector_classDescription(TAlignment, "TAlignmentList")
+DEFINE_TOrangeVector_classDescription(TAlignment, "TAlignmentList", false, ORANGE_API)
 
 
 TAlignment::TAlignment()
@@ -182,7 +182,7 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2,
 */
 void TExamplesDistance_DTW::getDerivatives(vector<float> &seq, vector<float> &der) const
 {
-  TFloatList::const_iterator sbegin(seq.begin()), send(seq.end()), sip(sbegin), si(sbegin), sin(sbegin+1);
+  vector<float>::const_iterator sbegin(seq.begin()), send(seq.end()), sip(sbegin), si(sbegin), sin(sbegin+1);
   der.clear();
   if ( send - sbegin > 2 ) {
 	  // d0 = s1-s0

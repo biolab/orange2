@@ -24,15 +24,16 @@
 #define __RANDOM_HPP
 
 #include <string>
-#include "garbage.hpp"
 #include "root.hpp"
 using namespace std;
 
 #include "cMersenneTwister.h"
 
+class ORANGE_API cMersenneTwister;
+
 WRAPPER(RandomGenerator)
 
-class TRandomGenerator : public TOrange {
+class ORANGE_API TRandomGenerator : public TOrange {
 public:
     __REGISTER_CLASS
 
@@ -121,7 +122,7 @@ extern PRandomGenerator globalRandom;
 
    The below formula is the same as used in MS VC 6.0 library. */
 
-class TSimpleRandomGenerator {
+class ORANGE_API TSimpleRandomGenerator {
 public:
   int seed;
   

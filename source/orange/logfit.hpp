@@ -31,7 +31,7 @@ WRAPPER(LogRegFitter)
 
 // abstract class for LR fitters. 
 // New fitters should be derived from this one
-class TLogRegFitter : public TOrange {
+class ORANGE_API TLogRegFitter : public TOrange {
 public:
 	__REGISTER_ABSTRACT_CLASS
 
@@ -53,7 +53,7 @@ public:
 
 
 // output values computed in logistic fitter
-class LRInfo {
+class ORANGE_API LRInfo {
 public:
 	LRInfo();	
 	~LRInfo();
@@ -72,7 +72,7 @@ public:
 };
 
 // input values for logistic fitter
-class LRInput {
+class ORANGE_API LRInput {
 public:
 	LRInput();
 	~LRInput();
@@ -88,7 +88,7 @@ public:
 // Logistic regression fitter via minimization of log-likelihood
 // orange integration of Aleks Jakulin version of LR
 // based on Alan Miller's(1992) F90 logistic regression code
-class TLogRegFitter_Cholesky : public TLogRegFitter {
+class ORANGE_API TLogRegFitter_Cholesky : public TLogRegFitter {
 public:
 	__REGISTER_CLASS
 

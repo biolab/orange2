@@ -118,7 +118,7 @@ private:
 };
 
 // A wrapper for libsvm
-class TSVMLearner : public TLearner {
+class ORANGE_API TSVMLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -145,7 +145,7 @@ public:
 };
 
 
-class TSVMClassifier : public TClassifierFD {
+class ORANGE_API TSVMClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

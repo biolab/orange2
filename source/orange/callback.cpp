@@ -27,7 +27,6 @@
 #include "table.hpp"
 #include "contingency.hpp"
 #include "distance.hpp"
-#include "errors.hpp"
 
 #include "cls_example.hpp"
 #include "cls_value.hpp"

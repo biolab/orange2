@@ -23,7 +23,7 @@
 
 #include "hclust.ppp"
 
-DEFINE_TOrangeVector_classDescription(PHierarchicalCluster, "THierarchicalClusterList")
+DEFINE_TOrangeVector_classDescription(PHierarchicalCluster, "THierarchicalClusterList", true, ORANGE_API)
 
 class TClusterW {
 public:

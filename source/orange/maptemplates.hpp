@@ -53,12 +53,12 @@ static bool _nonOrangeValueFromPython(PyObject *obj, T &val, PyTypeObject *PyKey
 
 template<class T>
 static PyObject *_orangeValueToPython(const T &val)
-{ return WrapOrange(val); }
+{ return WrapOrange(const_cast<T &>(val)); }
 
 
 template<class T>
 static PyObject *_nonOrangeValueToPython(const T &val)
-{ return convertToPython(val); }
+{ return convertToPython(const_cast<T &>(val)); }
 
 
 #ifdef _MSC_VER

@@ -21,13 +21,12 @@
 
 
 #include <math.h>
-#include "errors.hpp"
-#include "stladdon.hpp"
 
 #include "vars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
+#include "getarg.hpp"
 
 #include "classify.hpp"
 #include "random.hpp"
@@ -314,7 +313,7 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
     evar->addValue("C");
 
   else {
-    vector<float>::iterator vb(points->begin()), ve(points->end()), vi;
+    TFloatList::iterator vb(points->begin()), ve(points->end()), vi;
     float mindiff = 1.0;
     for(vi=vb+1; vi!=ve; vi++) {
       float ndiff = *vi - *(vi-1);
@@ -421,7 +420,7 @@ TFixedDiscretization::TFixedDiscretization(TFloatList &pts)
 
 TFixedDiscretization::TFixedDiscretization(const string &boundaries)
 : points()
-{ TIdList atoms;
+{ vector<string> atoms;
   string2atoms(boundaries, atoms);
   points = mlnew TFloatList(atoms.size());
   TFloatList::iterator pi(points->begin());

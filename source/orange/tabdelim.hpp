@@ -31,8 +31,6 @@
 
 using namespace std;
 
-typedef vector<string> TIdList;
-
 /*  A descendant from TFileExampleGenerator, specialized for tab delimited files.
     File starts with a line containing names of attributes, the second line describes their types.
     and the third can contain 'ignore' (or 'i', 'skip', 's') if attribute is to be ignored or
@@ -58,7 +56,7 @@ typedef vector<string> TIdList;
     14          45           M           no
     ?           ?            F           polo
 */
-class TTabDelimExampleGenerator : public TFileExampleGenerator {
+class ORANGE_API TTabDelimExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
@@ -69,7 +67,9 @@ public:
           <-1   meta value. */
   PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, <-1 = meta ID)
 
-  PStringList DCs; //P characters that mean DC (for each attribute)
+  vector<vector<string> > DCs; // DC symbol(s) for each attribute
+  char *DK; // general character that denotes DK
+  char *DC; // general character that denotes DC
   int classPos; //P position of the class attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
   bool csv; //P also allow ',' as a separator
@@ -83,10 +83,12 @@ public:
   static const TIdentifierDeclaration typeIdentifiers[] ;
 
   TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
-  TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
+  TTabDelimExampleGenerator(const string &, bool autoDetect, bool csv, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false, const char *aDK = NULL, const char *aDC = NULL);
+  ~TTabDelimExampleGenerator();
+
   virtual bool readExample (TFileExampleIteratorData &, TExample &);
 
-  void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);
+  void atomList2Example(vector<string> &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
   char *mayBeTabFile(const string &stem);
   PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
@@ -94,7 +96,8 @@ public:
   PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
 
 private:
-  static TDomainDepot domainDepot_tab, domainDepot_txt;
+  static TDomainDepot domainDepot_tab;
+  static TDomainDepot domainDepot_txt;
 };
 
 

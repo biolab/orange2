@@ -29,7 +29,7 @@
 class TFilter;
 
 // Example generator which stores examples in STL's vector.
-class TExampleTable : public TExampleGenerator {
+class ORANGE_API TExampleTable : public TExampleGenerator {
 public:
   __REGISTER_CLASS
 

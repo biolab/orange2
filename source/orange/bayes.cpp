@@ -21,8 +21,6 @@
 
 
 #include <math.h>
-#include "stladdon.hpp"
-#include "errors.hpp"
 
 #include "vars.hpp"
 #include "domain.hpp"

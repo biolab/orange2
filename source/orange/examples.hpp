@@ -32,7 +32,7 @@ WRAPPER(Example)
 VWRAPPER(ExampleList)
 
 // A vector of attribute and class values
-class TExample : public TOrange {
+class ORANGE_API TExample : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -49,7 +49,7 @@ public:
   virtual ~TExample();
 
 private:
-  void insertVal(TValue &srcval, PVariable var, const long &metaID = 0);
+  void insertVal(TValue &srcval, PVariable var, const long &metaID, vector<bool> &defined);
 
 public:
   int traverse(visitproc visit, void *arg) const;

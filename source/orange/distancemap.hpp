@@ -26,9 +26,10 @@
 #include "root.hpp"
 #include "orvector.hpp"
 
-WRAPPER(DistanceMatrix)
 
-class TDistanceMap : public TOrange {
+void ORANGE_API getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
+
+class ORANGE_API TDistanceMap : public TOrange {
 public:
   __REGISTER_CLASS
   float *cells;
@@ -52,7 +53,7 @@ WRAPPER(DistanceMap)
 
 WRAPPER(DistanceMapConstructor)
 
-class TDistanceMapConstructor : public TOrange {
+class ORANGE_API TDistanceMapConstructor : public TOrange {
 public:
   __REGISTER_CLASS
 

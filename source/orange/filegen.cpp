@@ -20,7 +20,6 @@
 */
 
 #include <stdio.h>
-#include "errors.hpp"
 
 #include "vars.hpp"
 #include "domain.hpp"

@@ -20,32 +20,28 @@
 */
 
 
-#ifdef _MSC_VER
-  #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
-  #include <windows.h>
-  #define EXPORT_DLL __declspec(dllexport)
-#else
-  #define EXPORT_DLL
-#endif
+//   #pragma warning (disable : 4786 4114 4018 4267 4244 4702 4710 4290)
 
-void tdidt_cpp_gcUnsafeInitialization();
-void random_cpp_gcUnsafeInitialization();
-void pythonVariables_unsafeInitializion();
-
-void gcUnsafeStaticInitialization()
-{ tdidt_cpp_gcUnsafeInitialization();
-  random_cpp_gcUnsafeInitialization();
-  pythonVariables_unsafeInitializion();
-}
-
-#include "Python.h"
-#include "module.hpp"
+#include "converts.hpp"
+#include "errors.hpp"
+#include "root.hpp"
+#include "../pyxtract/pyxtract_macros.hpp"
+#include "c2py.hpp"
 #include "stladdon.hpp"
+#include "orange.hpp"
 
-extern PyMethodDef orangeFunctions[];
-void addConstants(PyObject *);
+/* Technically, exceptions and warnings belong to entire
+   module, not just cls_orange.cpp. On the other hand, they
+   need to be in orange_core.
 
-#include "initialization.px"
+   As orange_core does not (yet) have a general .cpp file,
+   I've put this here. */
+
+ORANGE_API PyObject *PyExc_OrangeKernel;
+ORANGE_API PyObject *PyExc_OrangeKernelWarning;
+ORANGE_API PyObject *PyExc_OrangeAttributeWarning;
+ORANGE_API PyObject *PyExc_OrangeWarning;
+ORANGE_API PyObject *PyExc_OrangeCompatibilityWarning;
 
 bool initExceptions()
 { if (   ((PyExc_OrangeKernel = makeExceptionClass("orange.KernelException", "An error occurred in Orange's C++ kernel")) == NULL)
@@ -72,40 +68,169 @@ bool initExceptions()
 
 }
 
+PyObject *orangeVersion = PyString_FromString("0.99b ("__TIME__", "__DATE__")");
 
-PyObject *orangeModule;
+PYCONSTANT(version, orangeVersion)
+PYCONSTANT(KernelException, PyExc_OrangeKernel)
+PYCONSTANT(AttributeWarning, PyExc_OrangeAttributeWarning)
+PYCONSTANT(KernelWarning, PyExc_OrangeKernelWarning)
+PYCONSTANT(Warning, PyExc_OrangeWarning)
+PYCONSTANT(CompatibilityWarning, PyExc_OrangeCompatibilityWarning)
 
-extern "C" EXPORT_DLL void initorange()
+PYCONSTANT_FLOAT(Illegal_Float, ILLEGAL_FLOAT)
+
+
+void tdidt_cpp_gcUnsafeInitialization();
+void random_cpp_gcUnsafeInitialization();
+void pythonVariables_unsafeInitializion();
+
+void gcUnsafeStaticInitialization()
+{ tdidt_cpp_gcUnsafeInitialization();
+  random_cpp_gcUnsafeInitialization();
+  pythonVariables_unsafeInitializion();
+}
+
+
+int PyOr_noConversion(PyObject *obj, void *ptr)
+{ return 0; }
+
+
+void raiseWarning(bool exhaustive, const char *s)
+{ if (   (!exhaustive || exhaustiveWarnings)
+      && (PyErr_Warn(exhaustive ? PyExc_OrangeCompatibilityWarning : PyExc_OrangeKernelWarning, const_cast<char *>(s))))
+    throw mlexception(s);
+}
+
+
+extern char excbuf[256]; // defined in errors.cpp
+
+bool raiseWarning(PyObject *warnType, const char *s, ...)
 { 
-  if (!initExceptions())
-    return;
+  va_list vargs;
+  #ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, s);
+  #else
+    va_start(vargs);
+  #endif
 
-  for(TOrangeType **type=orangeClasses; *type; type++)
-    if (PyType_Ready((PyTypeObject *)*type)<0)
-      return;
+  vsnprintf(excbuf, 512, s, vargs);
 
-  gcUnsafeStaticInitialization();
-
-  orangeModule = Py_InitModule("orange", orangeFunctions);  
-  addConstants(orangeModule);
-
-  PyModule_AddObject(orangeModule, "version", PyString_FromString("0.99b (" __TIME__ ", " __DATE__ ")"));
-  PyModule_AddObject(orangeModule, "KernelException", PyExc_OrangeKernel);
-  PyModule_AddObject(orangeModule, "AttributeWarning", PyExc_OrangeAttributeWarning);
-  PyModule_AddObject(orangeModule, "KernelWarning", PyExc_OrangeKernelWarning);
-  PyModule_AddObject(orangeModule, "Warning", PyExc_OrangeWarning);
-  PyModule_AddObject(orangeModule, "CompatibilityWarning", PyExc_OrangeCompatibilityWarning);
-
-  PyModule_AddObject(orangeModule, "_orangeClasses", PyCObject_FromVoidPtr((void *)orangeClasses, NULL));
-
-  PyModule_AddObject(orangeModule, "Illegal_Float", PyFloat_FromDouble(ILLEGAL_FLOAT));
+  return PyErr_Warn(warnType, const_cast<char *>(excbuf)) >= 0;
 }
 
 
-#ifdef _MSC_VER
-BOOL APIENTRY DllMain( HANDLE, DWORD  ul_reason_for_call, LPVOID)
-{ switch (ul_reason_for_call)
-	{ case DLL_PROCESS_ATTACH:case DLL_THREAD_ATTACH:case DLL_THREAD_DETACH:case DLL_PROCESS_DETACH:break; }
-  return TRUE;
+bool raiseCompatibilityWarning(const char *s, ...)
+{ 
+  va_list vargs;
+  #ifdef HAVE_STDARG_PROTOTYPES
+    va_start(vargs, s);
+  #else
+    va_start(vargs);
+  #endif
+
+  vsnprintf(excbuf, 512, s, vargs);
+
+  return PyErr_Warn(PyExc_OrangeCompatibilityWarning, const_cast<char *>(excbuf)) >= 0;
 }
-#endif
+
+
+vector<TOrangeType **> classLists;
+
+POrange PyOrType_NoConstructor()
+{ throw mlexception("no constructor for this type");
+  return POrange();
+}
+
+ORANGE_API void addClassList(TOrangeType **classes)
+{
+  classLists.push_back(classes);
+}
+
+
+TOrangeType *FindOrangeType(const type_info &tinfo)
+{ 
+  for(vector<TOrangeType **>::const_iterator cli(classLists.begin()), cle(classLists.end()); cli != cle; cli++)
+    for(TOrangeType **orty = *cli; *orty; orty++)
+      if ((*orty)->ot_classinfo == tinfo)
+        return *orty;
+
+  return NULL;
+}
+
+
+bool PyOrange_CheckType(PyTypeObject *pytype)
+{ 
+  TOrangeType *type = (TOrangeType *)pytype;
+  for(vector<TOrangeType **>::const_iterator cli(classLists.begin()), cle(classLists.end()); cli != cle; cli++)
+    for(TOrangeType **orty = *cli; *orty; orty++)
+      if (*orty == type)
+        return true;
+
+  return false;
+}
+
+
+// Ascends the hierarchy until it comes to a class that is from orange's hierarchy
+TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *pytype)
+{ 
+  while (pytype && !PyOrange_CheckType(pytype))
+    pytype=pytype->tp_base;
+  return (TOrangeType *)pytype;
+}
+
+
+void *pNotConstructed = malloc(1);
+
+PyObject *WrapWrappedOrange(TWrapped *obj)
+{ 
+  if (obj==pNotConstructed)
+    return PYNULL;
+
+  if (!obj)
+    RETURN_NONE;
+
+  if (!obj->myWrapper)
+    PYERROR(PyExc_SystemError, "wrong wrapping function called ('WrapOrange' instead of 'WrapNewOrange')", PYNULL);
+
+  PyObject *res = (PyObject *)(obj->myWrapper);
+
+  if (res->ob_type == (PyTypeObject *)&PyOrOrange_Type) {
+    PyTypeObject *type = (PyTypeObject *)FindOrangeType(typeid(*obj));
+    if (!type) {
+      PyErr_Format(PyExc_SystemError, "Orange class '%s' not exported to Python", TYPENAME(typeid(*obj)));
+      return PYNULL;
+    }
+    else
+      res->ob_type = type;
+  }
+      
+  Py_INCREF(res);
+  return res;
+}
+
+
+bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
+{
+  if (dict) {
+    int pos = 0;
+    PyObject *key, *value;
+    char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
+    while (PyDict_Next(dict, &pos, &key, &value)) {
+      if (kc) {
+        char *kw = PyString_AsString(key);
+        char **akc;
+        for (akc = kc; *akc && strcmp(*akc, kw); akc++);
+        if (*akc)
+          continue;
+      }
+      if (PyObject_SetAttr(self, key, value)<0)
+        return false;
+    }
+  }
+  return true;
+}
+
+
+
+#include "orange.px"
+#include "initialization.px"

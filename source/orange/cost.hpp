@@ -23,14 +23,10 @@
 #ifndef __COST_HPP
 #define __COST_HPP
 
-#include <vector>
-using namespace std;
-
-#include "garbage.hpp"
 #include "vars.hpp"
 #include "distvars.hpp"
 
-class TCostMatrix : public TOrange {
+class ORANGE_API TCostMatrix : public TOrange {
 public:
   __REGISTER_CLASS
 

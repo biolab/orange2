@@ -39,7 +39,7 @@ WRAPPER(Filter);
 class TExampleTable;
 
 
-class TPreprocessor : public TOrange {
+class ORANGE_API TPreprocessor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -55,7 +55,7 @@ WRAPPER(Preprocessor);
 MWRAPPER(VariableFilterMap)
 
 
-class TPreprocessor_ignore : public TPreprocessor {
+class ORANGE_API TPreprocessor_ignore : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -67,7 +67,7 @@ public:
 };
 
 
-class TPreprocessor_select : public TPreprocessor {
+class ORANGE_API TPreprocessor_select : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -79,7 +79,7 @@ public:
 };
 
 
-class TPreprocessor_drop : public TPreprocessor {
+class ORANGE_API TPreprocessor_drop : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -92,7 +92,7 @@ public:
 };
 
 
-class TPreprocessor_take : public TPreprocessor {
+class ORANGE_API TPreprocessor_take : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -107,32 +107,32 @@ public:
 };
 
 
-class TPreprocessor_removeDuplicates : public TPreprocessor {
+class ORANGE_API TPreprocessor_removeDuplicates : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
 
-class TPreprocessor_dropMissing : public TPreprocessor {
+class ORANGE_API TPreprocessor_dropMissing : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_takeMissing: public TPreprocessor {
+class ORANGE_API TPreprocessor_takeMissing: public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_dropMissingClasses : public TPreprocessor {
+class ORANGE_API TPreprocessor_dropMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
-class TPreprocessor_takeMissingClasses : public TPreprocessor {
+class ORANGE_API TPreprocessor_takeMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
@@ -142,7 +142,7 @@ public:
 #define TVariableFloatMap TOrangeMap_K<PVariable, float>
 MWRAPPER(VariableFloatMap)
 
-class TPreprocessor_addNoise : public TPreprocessor {
+class ORANGE_API TPreprocessor_addNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -156,7 +156,7 @@ public:
 };
 
 
-class TPreprocessor_addGaussianNoise : public TPreprocessor {
+class ORANGE_API TPreprocessor_addGaussianNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -170,7 +170,7 @@ public:
 };
 
 
-class TPreprocessor_addMissing : public TPreprocessor {
+class ORANGE_API TPreprocessor_addMissing : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -185,7 +185,7 @@ public:
 };
 
 
-class TPreprocessor_addMissingClasses : public TPreprocessor {
+class ORANGE_API TPreprocessor_addMissingClasses : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -201,7 +201,7 @@ private:
 };
 
 
-class TPreprocessor_addClassNoise : public TPreprocessor {
+class ORANGE_API TPreprocessor_addClassNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -213,7 +213,7 @@ public:
 };
 
 
-class TPreprocessor_addGaussianClassNoise : public TPreprocessor {
+class ORANGE_API TPreprocessor_addGaussianClassNoise : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -226,7 +226,7 @@ public:
 
 
 
-class TPreprocessor_addClassWeight : public TPreprocessor {
+class ORANGE_API TPreprocessor_addClassWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -240,7 +240,7 @@ public:
 };
 
 
-class TPreprocessor_addCensorWeight : public TPreprocessor {
+class ORANGE_API TPreprocessor_addCensorWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -263,7 +263,7 @@ public:
 
 WRAPPER(Discretization);
 
-class TPreprocessor_discretize : public TPreprocessor {
+class ORANGE_API TPreprocessor_discretize : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -282,7 +282,7 @@ public:
 WRAPPER(Learner);
 WRAPPER(ClassifierFromVar);
 
-class TImputeClassifier : public TClassifier {
+class ORANGE_API TImputeClassifier : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -296,7 +296,7 @@ public:
 };
 
 
-class TPreprocessor_imputeByLearner : public TPreprocessor {
+class ORANGE_API TPreprocessor_imputeByLearner : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
@@ -306,7 +306,7 @@ public:
 };
 
 
-class TPreprocessor_filter : public TPreprocessor {
+class ORANGE_API TPreprocessor_filter : public TPreprocessor {
 public:
   __REGISTER_CLASS
 

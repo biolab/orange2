@@ -25,7 +25,6 @@
 
 #include <string>
 #include <list>
-#include <vector>
 
 #include "examplegen.hpp"
 
@@ -34,7 +33,7 @@ bool skipNonEmptyLine(FILE *file, const char *filename, const char &commentChar)
 const char *getExtension(const char *filename);
 char *replaceExtension(const char *filename, const char *extension, const char *oldExtension);
 
-class TFileExampleIteratorData {
+class ORANGE_API TFileExampleIteratorData {
 public:
   FILE *file;
   const string &filename;
@@ -50,7 +49,7 @@ public:
 /*  A generator which retrieves examples from the file. It has an abstract
     method for reading a TExample; by defining it, descendants of
     TFileExampleGenerator can read different file formats. */
-class TFileExampleGenerator : public TExampleGenerator {
+class ORANGE_API TFileExampleGenerator : public TExampleGenerator {
 public:
   __REGISTER_ABSTRACT_CLASS
 

@@ -36,7 +36,7 @@ WRAPPER(HierarchicalCluster)
 #define THierarchicalClusterList TOrangeVector<PHierarchicalCluster> 
 VWRAPPER(HierarchicalClusterList)
 
-class THierarchicalCluster : public TOrange {
+class ORANGE_API THierarchicalCluster : public TOrange {
 public:
     __REGISTER_CLASS
 
@@ -59,7 +59,7 @@ protected:
 
 
 
-class THierarchicalClustering : public TOrange {
+class ORANGE_API THierarchicalClustering : public TOrange {
 public:
     __REGISTER_CLASS
 

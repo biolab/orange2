@@ -24,14 +24,14 @@
 #define __CLS_VALUE_HPP
 
 #include "c2py.hpp"
-#include "module.hpp"
+#include "orange.hpp"
 
 #include "values.hpp"
 #include "vars.hpp"
 
-extern TOrangeType PyOrValue_Type;
+extern ORANGE_API TOrangeType PyOrValue_Type;
 
-class TPyValue {
+class ORANGE_API TPyValue {
 public:
   PyObject_HEAD
   TValue value;

@@ -28,7 +28,7 @@
 
 WRAPPER(TransformValue);
 
-class TClassifierFromVar : public TClassifier {
+class ORANGE_API TClassifierFromVar : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -51,7 +51,7 @@ protected:
 };
 
 
-class TClassifierFromVarFD : public TClassifierFD {
+class ORANGE_API TClassifierFromVarFD : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

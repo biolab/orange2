@@ -21,7 +21,6 @@
 
 
 #include "stladdon.hpp"
-#include "errors.hpp"
 #include "random.hpp"
 
 #include "vars.hpp"
@@ -42,7 +41,7 @@
 #include "tdidt.ppp"
 
 
-DEFINE_TOrangeVector_classDescription(PTreeNode, "TTreeNodeList")
+DEFINE_TOrangeVector_classDescription(PTreeNode, "TTreeNodeList", true, ORANGE_API)
 
 
 /* Default components for split constructor -- split constructors for
@@ -661,11 +660,12 @@ PTreeNode TTreePruner_m::operator()(PTreeNode root)
 
 
 float TTreePruner_m::estimateError(const PTreeNode &node, const vector<float> &m_by_p) const
-{ TDiscDistribution *dist;
+{ 
+  const TDiscDistribution *dist;
   if (node->distribution)
-    node->distribution.dynamic_cast_to(dist);
+    dist = node->distribution.AS(TDiscDistribution);
   else if (node->contingency)
-    node->contingency->classes.dynamic_cast_to(dist);
+    dist = node->contingency->classes.AS(TDiscDistribution);
   else
     raiseError("the node does not store class distribution (check your flags for TreeLearner)");
 
@@ -677,7 +677,7 @@ float TTreePruner_m::estimateError(const PTreeNode &node, const vector<float> &m
 
   float maxe = 0.0;
   vector<float>::const_iterator mi(m_by_p.begin());
-  for(TDiscDistribution::iterator di(dist->begin()), de(dist->end()); di!=de; di++, mi++) {
+  for(TDiscDistribution::const_iterator di(dist->begin()), de(dist->end()); di!=de; di++, mi++) {
     float thise = *di + *mi;
     if (thise>maxe)
       maxe = thise;
@@ -688,11 +688,11 @@ float TTreePruner_m::estimateError(const PTreeNode &node, const vector<float> &m
 
 
 float TTreePruner_m::estimateError(const PTreeNode &node, const float &m_by_se) const
-{ TContDistribution *dist;
+{ const TContDistribution *dist;
   if (node->distribution)
-    node->distribution.dynamic_cast_to(dist);
+    dist = node->distribution.AS(TContDistribution);
   else if (node->contingency)
-    node->contingency->classes.dynamic_cast_to(dist);
+    dist = node->contingency->classes.AS(TContDistribution);
   else
     raiseError("the node does not store class distribution (check your flags for TreeLearner)");
   if (!dist)

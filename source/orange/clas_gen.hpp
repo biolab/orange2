@@ -28,7 +28,7 @@
 
 /*  TClassifier generator constructs examples. For each attribute in examples, values are set by using TVariable's
     firstValue and nextValue methods. The class of example is determined by using a TClassifier object. */
-class TClassifierGenerator : public TExampleGenerator {
+class ORANGE_API TClassifierGenerator : public TExampleGenerator {
 public:
   __REGISTER_CLASS
 
@@ -55,7 +55,7 @@ protected:
 
 /*  TClassifier generator that constructs examples by choosing random values of attributes and determining the
     class a TClassifier object. The number of examples can be infinite or limited */
-class TClassifierRandomGenerator : public TExampleGenerator {
+class ORANGE_API TClassifierRandomGenerator : public TExampleGenerator {
 public:
   __REGISTER_CLASS
 

@@ -28,7 +28,6 @@
 
 #include "contingency.hpp"
 
-WRAPPER(PruneTree);
 WRAPPER(TreeSplitConstructor);
 WRAPPER(TreeStopCriteria);
 WRAPPER(Distribution)
@@ -40,7 +39,7 @@ WRAPPER(TreeNode)
 VWRAPPER(TreeNodeList)
 
 
-class TTreeNode : public TOrange {
+class ORANGE_API TTreeNode : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -64,7 +63,7 @@ WRAPPER(TreeNode)
 WRAPPER(TreeDescender)
 
 
-class TTreeLearner : public TLearner {
+class ORANGE_API TTreeLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -93,7 +92,7 @@ public:
 WRAPPER(TreeLearner)
 
 
-class TTreeDescender: public TOrange {
+class ORANGE_API TTreeDescender: public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -104,7 +103,7 @@ WRAPPER(TreeDescender)
 
 // (the comment below prevent pyprops from matching the lines)
 #define DEFINEDESCENDER(name) \
-class TTreeDescender_##name: public TTreeDescender { \
+class ORANGE_API TTreeDescender_##name: public TTreeDescender { \
 public: virtual PTreeNode operator()(PTreeNode node, const TExample &, PDiscDistribution &); \
 /**/  __REGISTER_CLASS \
 };
@@ -117,7 +116,7 @@ DEFINEDESCENDER(UnknownMergeAsBranchSizes)
 DEFINEDESCENDER(UnknownMergeAsSelector)
 
 
-class TTreeClassifier : public TClassifierFD {
+class ORANGE_API TTreeClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 
@@ -137,14 +136,14 @@ public:
 WRAPPER(TreeClassifier)
 
 
-class TTreePruner : public TOrange {
+class ORANGE_API TTreePruner : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
   virtual PTreeNode operator()(PTreeNode) =0; 
 };
 
-class TTreePruner_SameMajority : public TTreePruner {
+class ORANGE_API TTreePruner_SameMajority : public TTreePruner {
 public:
   __REGISTER_CLASS
 
@@ -152,7 +151,7 @@ public:
   virtual PTreeNode operator()(PTreeNode node, vector<bool> &bestValues);
 };
 
-class TTreePruner_m : public TTreePruner {
+class ORANGE_API TTreePruner_m : public TTreePruner {
 public:
   __REGISTER_CLASS
 

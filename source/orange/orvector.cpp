@@ -24,21 +24,47 @@
   #pragma warning (disable : 4290)
 #endif
 
-#include "orvector.hpp"
+#include "orvector.ppp"
 
-DEFINE__TOrangeVector_classDescription(bool, "TBoolList")
-DEFINE__TOrangeVector_classDescription(char, "TBoolList")
-DEFINE__TOrangeVector_classDescription(int, "TIntList")
-DEFINE__TOrangeVector_classDescription(long, "TLongList")
-DEFINE__TOrangeVector_classDescription(float, "TFloatList")
-DEFINE__TOrangeVector_classDescription(double, "TDoubleList")
-DEFINE__TOrangeVector_classDescription(string, "TStringList")
+DEFINE_TOrangeVector_classDescription(bool, "TBoolList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(char, "TBoolList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(int, "TIntList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(long, "TLongList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(float, "TFloatList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(double, "TDoubleList", false, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(string, "TStringList", false, ORANGE_API)
+
 
 // TValueList's properties are defined in vars.cpp
 // TAttributeFloatList's properties are defined in vars.cpp
 
 #define pff pair<float, float>
-DEFINE__TOrangeVector_classDescription(pff, "TFloatFloatList")
+DEFINE_TOrangeVector_classDescription(pff, "TFloatFloatList", false, ORANGE_API)
 
 #define pif pair<int, float>
-DEFINE__TOrangeVector_classDescription(pif, "TIntFloatList")
+DEFINE_TOrangeVector_classDescription(pif, "TIntFloatList", false, ORANGE_API)
+
+#ifdef _MSC_VER
+TClassDescription template TOrangeVector<TValue, false>::st_classDescription;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<TValue, false>;
+#else
+ DEFINE_TOrangeVector_classDescription(TValue, "TOrangeVector<TValue, false>", false, ORANGE_API)
+//template<> TClassDescription TOrangeVector<TValue, false>::st_classDescription; // =  = { "StringList", &typeid(TValueList), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+#endif
+
+
+
+/* This function is stolen from Python 2.3 (file listobject.c):
+   n between 2^m-1 and 2^m, is round up to a multiple of 2^(m-5) */
+int _RoundUpSize(const int &n)
+{
+	unsigned int nbits = 0;
+	unsigned int n2 = (unsigned int)n >> 5;
+	do {
+		n2 >>= 3;
+		nbits += 3;
+	} while (n2);
+	return ((n >> nbits) + 1) << nbits;
+}
+
+

@@ -27,7 +27,7 @@
 #include "learn.hpp"
 
 
-class TC45Learner : public TLearner {
+class ORANGE_API TC45Learner : public TLearner {
 public:
     __REGISTER_CLASS
 
@@ -91,7 +91,7 @@ typedef  struct _tree_record {
 
 WRAPPER(TreeNode);
 
-class TC45TreeNode : public TOrange {
+class ORANGE_API TC45TreeNode : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -121,7 +121,7 @@ public:
 
 WRAPPER(TreeClassifier);
 
-class TC45Classifier : public TClassifier {
+class ORANGE_API TC45Classifier : public TClassifier {
 public:
   __REGISTER_CLASS
 

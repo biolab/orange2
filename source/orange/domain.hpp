@@ -36,7 +36,7 @@ WRAPPER(Domain);
 
 /*  A mapping from one domain to another. It is used by the convert method of the TDomain object which
     owns the TDomainMapping to convert an example from the domain, described in this object, to the owning domain. */
-class TDomainMapping {
+class ORANGE_API TDomainMapping {
 public:
   TDomain *domain;
   /*  Positions of attributes from owning domain in the domain, denoted by 'domain' field. For example,
@@ -50,13 +50,20 @@ public:
 
   /* These are metas not to copy: metas that are copied through one of the above two or those that appear in
      definition of the 'domain' */
+  #ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable: 4251)
+  #endif
   set<int> metasNotToCopy;
+  #ifdef _MCS_VER
+    #pragma warning(pop)
+  #endif
 
   TDomainMapping(TDomain *);
 };
 
 
-class TDomain : public TOrange {
+class ORANGE_API TDomain : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -70,6 +77,11 @@ public:
       The value of this field is compared to TDomainMapping's field with the same name. */
   int version; //PR unique version identifier; it's changed each time a domain is changed
 
+  #if _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable: 4251)
+  #endif
+
   list<TDomainMapping> knownDomains;
   list<TDomainMapping>::iterator lastDomain;
 
@@ -78,6 +90,10 @@ public:
   typedef void TDestroyNotifier(TDomain *, void *);
   typedef pair<TDestroyNotifier *, void *> TDestroyNotification;
   list<TDestroyNotification> destroyNotifiers;
+
+  #ifdef _MSC_VER
+    #pragma warning(pop)
+  #endif
 
   TDomain();
   TDomain(PVariable, const TVarList &attributes);

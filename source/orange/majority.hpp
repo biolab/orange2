@@ -29,7 +29,7 @@ WRAPPER(Distribution)
 WRAPPER(ProbabilityEstimator);
 WRAPPER(CostMatrix)
 
-class TMajorityLearner : public TLearner {
+class ORANGE_API TMajorityLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -42,7 +42,7 @@ public:
 
 
 
-class TCostLearner : public TMajorityLearner {
+class ORANGE_API TCostLearner : public TMajorityLearner {
 public:
   __REGISTER_CLASS
 

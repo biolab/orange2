@@ -32,14 +32,14 @@ WRAPPER(ExamplesDistanceConstructor);
 WRAPPER(ExampleGenerator);
 
 
-class TExamplesDistance : public TOrange {
+class ORANGE_API TExamplesDistance : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual float operator()(const TExample &, const TExample &) const=0;
 };
 
 
-class TExamplesDistanceConstructor : public TOrange {
+class ORANGE_API TExamplesDistanceConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   bool ignoreClass; //P if true (default), class value is ignored when computing distances
@@ -53,7 +53,7 @@ public:
 /* Hamiltonian distance: 
       the number of different (incompatible) attribute values.
 */
-class TExamplesDistance_Hamiltonian : public TExamplesDistance {
+class ORANGE_API TExamplesDistance_Hamiltonian : public TExamplesDistance {
 public:
   __REGISTER_CLASS
 
@@ -65,7 +65,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Hamiltonian : public TExamplesDistanceConstructor {
+class ORANGE_API TExamplesDistanceConstructor_Hamiltonian : public TExamplesDistanceConstructor {
 public:
   __REGISTER_CLASS
 
@@ -90,7 +90,7 @@ public:
       0 or 1 for nominal attributes
    Distance between two values can be greater than 1!
 */
-class TExamplesDistance_Normalized : public TExamplesDistance {
+class ORANGE_API TExamplesDistance_Normalized : public TExamplesDistance {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -111,7 +111,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Normalized : public TExamplesDistanceConstructor {
+class ORANGE_API TExamplesDistanceConstructor_Normalized : public TExamplesDistanceConstructor {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -127,7 +127,7 @@ public:
    Be careful about nominal attributes - they will often prevail since
    the distance between them is too easily 1
 */
-class TExamplesDistance_Maximal : public TExamplesDistance_Normalized {
+class ORANGE_API TExamplesDistance_Maximal : public TExamplesDistance_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -137,7 +137,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Maximal : public TExamplesDistanceConstructor_Normalized {
+class ORANGE_API TExamplesDistanceConstructor_Maximal : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -149,7 +149,7 @@ public:
 /* Manhattan distance:
       a sum of absolute differences between pairs attribute values
 */
-class TExamplesDistance_Manhattan : public TExamplesDistance_Normalized {
+class ORANGE_API TExamplesDistance_Manhattan : public TExamplesDistance_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -159,7 +159,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Manhattan : public TExamplesDistanceConstructor_Normalized {
+class ORANGE_API TExamplesDistanceConstructor_Manhattan : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -171,7 +171,7 @@ public:
 /* Euclidean distance:
      square root of sum of squared distances between corresponding attribute values
 */
-class TExamplesDistance_Euclidean : public TExamplesDistance_Normalized {
+class ORANGE_API TExamplesDistance_Euclidean : public TExamplesDistance_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -184,7 +184,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Euclidean : public TExamplesDistanceConstructor_Normalized {
+class ORANGE_API TExamplesDistanceConstructor_Euclidean : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
 
@@ -196,7 +196,7 @@ public:
 
 /* Relief distance */
 
-class TExamplesDistance_Relief : public TExamplesDistance {
+class ORANGE_API TExamplesDistance_Relief : public TExamplesDistance {
 public:
   __REGISTER_CLASS
 
@@ -210,7 +210,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_Relief : public TExamplesDistanceConstructor {
+class ORANGE_API TExamplesDistanceConstructor_Relief : public TExamplesDistanceConstructor {
 public:
   __REGISTER_CLASS
 

@@ -33,7 +33,7 @@
 
 #include "assoc.ppp"
 
-DEFINE_TOrangeVector_classDescription(PAssociationRule, "TAssociationRules")
+DEFINE_TOrangeVector_classDescription(PAssociationRule, "TAssociationRules", true, ORANGE_API)
 
 
 class TItemSetNode;

@@ -36,8 +36,8 @@
 #include "filter.ppp"
 
 
-DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList")
-DEFINE_TOrangeVector_classDescription(PFilter, "TFilterList")
+DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList", true, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PFilter, "TFilterList", true, ORANGE_API)
 
 // Sets the negate field (default is false)
 TFilter::TFilter(bool anegate, PDomain dom) 

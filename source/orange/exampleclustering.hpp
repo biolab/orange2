@@ -23,7 +23,6 @@
 #ifndef __EXAMPLECLUSTERING_HPP
 #define __EXAMPLECLUSTERING_HPP
 
-#include "garbage.hpp"
 #include "root.hpp"
 
 #include "orvector.hpp"
@@ -36,7 +35,7 @@ PClassifier completeTable(PExampleGenerator examples, int completion, int weight
 WRAPPER(ExampleCluster);
 WRAPPER(Example);
 
-class TExampleCluster : public TOrange {
+class ORANGE_API TExampleCluster : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -68,7 +67,7 @@ WRAPPER(ExampleClusters)
    class. Example clusters are recorded in a specific format - as
    vector of integers, representing colors for graph nodes.
 */
-class TGeneralExampleClustering : public TOrange {
+class ORANGE_API TGeneralExampleClustering : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -93,7 +92,7 @@ public:
 WRAPPER(GeneralExampleClustering)
 
 
-class TExampleClusters : public TGeneralExampleClustering {
+class ORANGE_API TExampleClusters : public TGeneralExampleClustering {
 public:
   __REGISTER_CLASS
 

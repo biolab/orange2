@@ -30,8 +30,6 @@
 
 bool convertFromPython(PyObject *, bool &);
 PyObject *convertToPython(const bool &);
-#define TBoolList _TOrangeVector<bool>
-typedef GCPtr< TBoolList > PBoolList;
 
 PBoolList PBoolList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::P_FromArguments(arg); }
 PyObject *BoolList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_FromArguments(type, arg); }
@@ -62,8 +60,6 @@ PyObject *BoolList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(
 
 bool convertFromPython(PyObject *, int &);
 PyObject *convertToPython(const int &);
-#define TIntList _TOrangeVector<int>
-typedef GCPtr< TIntList > PIntList;
 
 PIntList PIntList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::P_FromArguments(arg); }
 PyObject *IntList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_FromArguments(type, arg); }
@@ -94,8 +90,6 @@ PyObject *IntList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([
 
 bool convertFromPython(PyObject *, float &);
 PyObject *convertToPython(const float &);
-#define TFloatList _TOrangeVector<float>
-typedef GCPtr< TFloatList > PFloatList;
 
 PFloatList PFloatList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(arg); }
 PyObject *FloatList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_FromArguments(type, arg); }
@@ -126,8 +120,6 @@ PyObject *FloatList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 
 bool convertFromPython(PyObject *, string &);
 PyObject *convertToPython(const string &);
-#define TStringList _TOrangeVector<string>
-typedef GCPtr< TStringList > PStringList;
 
 PStringList PStringList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::P_FromArguments(arg); }
 PyObject *StringList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_FromArguments(type, arg); }
@@ -158,8 +150,6 @@ PyObject *StringList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, 
 
 bool convertFromPython(PyObject *, long &);
 PyObject *convertToPython(const long &);
-#define TLongList _TOrangeVector<long>
-typedef GCPtr< TLongList > PLongList;
 
 PLongList PLongList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::P_FromArguments(arg); }
 PyObject *LongList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_FromArguments(type, arg); }
@@ -190,8 +180,8 @@ PyObject *LongList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(
 
 bool convertFromPython(PyObject *, TAlignment &);
 PyObject *convertToPython(const TAlignment &);
-#define TAlignmentList _TOrangeVector<TAlignment>
-typedef GCPtr< TAlignmentList > PAlignmentList;
+#define TAlignmentList TWarpPath
+#define PAlignmentList PWarpPath
 
 PAlignmentList PAlignmentList_FromArguments(PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::P_FromArguments(arg); }
 PyObject *AlignmentList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfUnwrappedMethods<PAlignmentList, TAlignmentList, TAlignment>::_FromArguments(type, arg); }

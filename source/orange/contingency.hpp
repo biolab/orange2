@@ -43,7 +43,7 @@ typedef map<float, PDistribution> TDistributionMap;
     for the variable's values; each element of the vector<TDiscDistribution> corresponds to one of
     possible variable's values and each element of the 'subvector' corresponds to a class value and
     holds the number of examples which had the corresponding value of attribute and class. */
-class TContingency : public TOrange {
+class ORANGE_API TContingency : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -92,7 +92,7 @@ public:
 };
 
 
-class TContingencyClass : public TContingency {
+class ORANGE_API TContingencyClass : public TContingency {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -115,7 +115,7 @@ protected:
 };
 
 
-class TContingencyClassAttr : public TContingencyClass {
+class ORANGE_API TContingencyClassAttr : public TContingencyClass {
 public:
   __REGISTER_CLASS
 
@@ -136,7 +136,7 @@ protected:
 };
 
 
-class TContingencyAttrClass : public TContingencyClass {
+class ORANGE_API TContingencyAttrClass : public TContingencyClass {
 public:
   __REGISTER_CLASS
 
@@ -157,7 +157,7 @@ protected:
 };
 
 
-class TContingencyAttrAttr : public TContingency { 
+class ORANGE_API TContingencyAttrAttr : public TContingency { 
 public:
   __REGISTER_CLASS
 
@@ -176,12 +176,25 @@ WRAPPER(Contingency)
 WRAPPER(ContingencyClass)
 WRAPPER(ContingencyClassAttr)
 WRAPPER(ContingencyAttrClass)
-WRAPPER(TContingencyAttrAttr);
+WRAPPER(ContingencyAttrAttr);
 
 WRAPPER(ProbabilityEstimator);
 
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4275)
+#endif
+
+// We need this to correctly instantiate the vector as ORANGE_API
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PContingencyClass>;
+
 /* Stores TContingency's for all attributes from the generator. Additional field holds frequencies of class values. */
-class TDomainContingency : public TOrangeVector<PContingencyClass> {
+class ORANGE_API TDomainContingency : public TOrangeVector<PContingencyClass> {
+
+#ifdef _MSC_VER
+  #pragma warning(pop)
+#endif
+
 public:
   __REGISTER_CLASS
 
@@ -201,7 +214,7 @@ public:
 
 WRAPPER(DomainContingency)
 
-class TComputeDomainContingency : public TOrange {
+class ORANGE_API TComputeDomainContingency : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -212,6 +225,6 @@ public:
   virtual PDomainContingency operator()(PExampleGenerator, const long &weightID=0);
 };
 
-WRAPPER(TComputeDomainContingency)
+WRAPPER(ComputeDomainContingency)
 
 #endif

@@ -23,12 +23,13 @@
 #ifndef __CONVERTS_HPP
 #define __CONVERTS_HPP
 
-#include "garbage.hpp"
 #include "Python.h"
 #include <vector>
+#include <string>
+using namespace std;
 
-WRAPPER(Contingency)
-WRAPPER(Distribution)
+//WRAPPER(Contingency)
+//WRAPPER(Distribution)
 
 bool convertFromPython(PyObject *, string &);
 bool convertFromPython(PyObject *, float &);
@@ -36,7 +37,7 @@ bool convertFromPython(PyObject *, pair<float, float> &);
 bool convertFromPython(PyObject *, int &);
 bool convertFromPython(PyObject *, unsigned char &);
 bool convertFromPython(PyObject *, bool &);
-bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeObject *type=NULL);
+//bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeObject *type=NULL);
 
 PyObject *convertToPython(const string &);
 PyObject *convertToPython(const float &);
@@ -48,14 +49,15 @@ PyObject *convertToPython(const bool &);
 PyObject *convertToPython(const vector<int> &v);
 
 
-string convertToString(const PDistribution &);
+//string convertToString(const PDistribution &);
 string convertToString(const string &);
 string convertToString(const float &);
 string convertToString(const pair<float, float> &);
 string convertToString(const int &);
 string convertToString(const unsigned char &);
-string convertToString(const PContingency &);
+//string convertToString(const PContingency &);
 
+class TOrangeType;
 bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
 
 bool PyNumber_ToFloat(PyObject *o, float &);

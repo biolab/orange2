@@ -36,7 +36,7 @@ typedef TPriorityQueue<TProfitNode> TProfitQueue;
 
 typedef slist<TProfitNode> TProfitNodeList;
 
-class TIMClusterNode {
+class ORANGE_API TIMClusterNode {
 public:
   TIMClusterNode *nextNode, *prevNode;
   TProfitNodeList mergeProfits;
@@ -49,7 +49,7 @@ public:
 };
 
 
-class TColumnAssessor : public TOrange {
+class ORANGE_API TColumnAssessor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -64,7 +64,7 @@ public:
 WRAPPER(ColumnAssessor)
 
 
-class TColumnAssessor_m : public TColumnAssessor {
+class ORANGE_API TColumnAssessor_m : public TColumnAssessor {
 public:
   __REGISTER_CLASS
 
@@ -84,7 +84,7 @@ private:
 
 
 
-class TColumnAssessor_Laplace : public TColumnAssessor {
+class ORANGE_API TColumnAssessor_Laplace : public TColumnAssessor {
 public:
   __REGISTER_CLASS
   virtual float nodeQuality(TIMColumnNode &node) const;
@@ -94,7 +94,7 @@ public:
 
 
 
-class TColumnAssessor_N : public TColumnAssessor {
+class ORANGE_API TColumnAssessor_N : public TColumnAssessor {
 public:
   __REGISTER_CLASS
 
@@ -104,7 +104,7 @@ public:
 };
 
 
-class TColumnAssessor_Relief : public TColumnAssessor {
+class ORANGE_API TColumnAssessor_Relief : public TColumnAssessor {
 public:
   __REGISTER_CLASS
 
@@ -114,7 +114,7 @@ public:
 };
 
 
-class TColumnAssessor_Kramer: public TColumnAssessor {
+class ORANGE_API TColumnAssessor_Kramer: public TColumnAssessor {
 public:
   __REGISTER_CLASS
 
@@ -124,7 +124,7 @@ public:
 };
 
 
-class TColumnAssessor_Measure : public TColumnAssessor  {
+class ORANGE_API TColumnAssessor_Measure : public TColumnAssessor  {
 public:
   __REGISTER_CLASS
 
@@ -138,7 +138,7 @@ public:
 };
 
 
-class TColumnAssessor_mf : public TColumnAssessor {
+class ORANGE_API TColumnAssessor_mf : public TColumnAssessor {
 public:
   __REGISTER_CLASS
 
@@ -159,7 +159,7 @@ private:
 };
 
 
-class TStopIMClusteringByAssessor : public TOrange {
+class ORANGE_API TStopIMClusteringByAssessor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual bool operator()(const float &baseQuality, const TProfitQueue &, const TIMClusterNode *clusters) const =0;
@@ -167,7 +167,7 @@ public:
 
 WRAPPER(StopIMClusteringByAssessor);
 
-class TStopIMClusteringByAssessor_noProfit : public TStopIMClusteringByAssessor {
+class ORANGE_API TStopIMClusteringByAssessor_noProfit : public TStopIMClusteringByAssessor {
 public:
   __REGISTER_CLASS
 
@@ -177,14 +177,14 @@ public:
   virtual bool operator()(const float &, const TProfitQueue &, const TIMClusterNode *clusters) const;
 };
 
-class TStopIMClusteringByAssessor_noBigChange : public TStopIMClusteringByAssessor {
+class ORANGE_API TStopIMClusteringByAssessor_noBigChange : public TStopIMClusteringByAssessor {
 public:
   __REGISTER_CLASS
   virtual bool operator()(const float &, const TProfitQueue &, const TIMClusterNode *clusters) const;
 };
 
 
-class TStopIMClusteringByAssessor_binary : public TStopIMClusteringByAssessor {
+class ORANGE_API TStopIMClusteringByAssessor_binary : public TStopIMClusteringByAssessor {
 public:
   __REGISTER_CLASS
   virtual bool operator()(const float &, const TProfitQueue &, const TIMClusterNode *clusters) const;
@@ -192,7 +192,7 @@ public:
 
 
 
-class TStopIMClusteringByAssessor_n : public TStopIMClusteringByAssessor {
+class ORANGE_API TStopIMClusteringByAssessor_n : public TStopIMClusteringByAssessor {
 public:
   __REGISTER_CLASS
 
@@ -203,7 +203,7 @@ public:
 };
 
 
-class TAssessIMQuality : public TOrange {
+class ORANGE_API TAssessIMQuality : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -216,7 +216,7 @@ public:
 WRAPPER(AssessIMQuality);
 
 
-class TProfitNode {
+class ORANGE_API TProfitNode {
 public:
   TIMClusterNode *column1, *column2;
   float profit;
@@ -235,7 +235,7 @@ public:
 
 
 
-class TIMClustering : public TOrange {
+class ORANGE_API TIMClustering : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -249,7 +249,7 @@ public:
 
 WRAPPER(IMClustering)
 
-class TClustersFromIM : public TOrange {
+class ORANGE_API TClustersFromIM : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual PExampleClusters operator()(PIM im)=0;
@@ -258,7 +258,7 @@ public:
 WRAPPER(ClustersFromIM);
 
 
-class TClustersFromIMByAssessor : public TClustersFromIM {
+class ORANGE_API TClustersFromIMByAssessor : public TClustersFromIM {
 public:
   __REGISTER_CLASS
 
@@ -284,7 +284,7 @@ protected:
 WRAPPER(ClustersFromIMByAssessor);
 
 
-class TFeatureByIM : public TFeatureInducer {
+class ORANGE_API TFeatureByIM : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 
@@ -297,7 +297,7 @@ public:
 };
 
 
-class TMeasureAttribute_IM : public TMeasureAttribute
+class ORANGE_API TMeasureAttribute_IM : public TMeasureAttribute
 { public:
     __REGISTER_CLASS
 

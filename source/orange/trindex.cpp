@@ -25,14 +25,12 @@
 #include <set>
 
 #include "stladdon.hpp"
-#include "errors.hpp"
 #include "random.hpp"
 
 #include "vars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
-#include "module.hpp"
 
 #include "trindex.ppp"
 

@@ -38,7 +38,7 @@
 
 
 // Logistic regression learner
-class TLogRegLearner : public TLearner {
+class ORANGE_API TLogRegLearner : public TLearner {
 public:
 	__REGISTER_CLASS
 
@@ -66,7 +66,7 @@ public:
 
 // Logistic regression classifier
 // coefficients are needed for each attribute
-class TLogRegClassifier : public TClassifierFD {
+class ORANGE_API TLogRegClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
 

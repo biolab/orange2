@@ -163,7 +163,7 @@ PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyOb
 int pt_ExampleGenerator(PyObject *args, void *egen);
 
 void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t', bool listDiscreteValues = true);
-void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t');
+void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t', const char *DK = NULL, const char *DC = NULL);
 
 
 FILE *openExtended(const char *filename, const char *defaultExtension)
@@ -178,20 +178,67 @@ FILE *openExtended(const char *filename, const char *defaultExtension)
   return ostr;
 }
 
-PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool skipAttrTypes, char delim, bool listDiscreteValues = true)
+
+int getStringIfExists(PyObject *keyws, const char *name, char *&res)
+{
+  PyObject *ldv = PyDict_GetItemString(keyws, name);
+  if (ldv) {
+    if (!PyString_Check(ldv)) {
+      PyErr_Format(PyExc_TypeError, "string value expected for '%s'", name);
+      return -1;
+    }
+   
+    res = PyString_AsString(ldv);
+    return 0;
+  }
+
+  return 1;
+}
+
+
+bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC)
+{
+  if (keyws) {
+    int res;
+
+    char *tmp;
+    res = getStringIfExists(keyws, "NA", tmp);
+    if (res == -1)
+      return false;
+    if (res)
+      DK = DC = tmp;
+
+    res = getStringIfExists(keyws, "DC", DC);
+    if (res == -1)
+      return false;
+
+    res = getStringIfExists(keyws, "DK", DK);
+    if (res == -1)
+      return false;
+  }
+
+  return true;
+}
+
+
+PyObject *tabDelimBasedWrite(PyObject *args, PyObject *keyws, const char *defaultExtension, bool skipAttrTypes, char delim, bool listDiscreteValues = true)
 { PyTRY
     char *filename;
     PExampleGenerator gen;
 
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
+
+    char *DK = NULL, *DC = NULL;
+    if (!readUndefinedSpecs(keyws, DK, DC))
+      return PYNULL;
   
     FILE *ostr = openExtended(filename, defaultExtension);
     if (!ostr)
       return PYNULL;
 
     tabDelim_writeDomain(ostr, gen->domain, skipAttrTypes, delim, listDiscreteValues);
-    tabDelim_writeExamples(ostr, gen, delim);
+    tabDelim_writeExamples(ostr, gen, delim, DK, DC);
     fclose(ostr);
 
     RETURN_NONE
@@ -208,18 +255,18 @@ PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws) PYARGS(M
     listDiscrete = !ldv || (PyObject_IsTrue(ldv)!=0);
   }
 
-  return tabDelimBasedWrite(args, "tab", false, '\t', listDiscrete);
+  return tabDelimBasedWrite(args, keyws, "tab", false, '\t', listDiscrete);
 }
 
-PyObject *saveTxt(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+PyObject *saveTxt(PyObject *, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename, examples) -> None")
 {
-  return tabDelimBasedWrite(args, "txt", true, '\t');
+  return tabDelimBasedWrite(args, keyws, "txt", true, '\t');
 }
 
 
-PyObject *saveCsv(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+PyObject *saveCsv(PyObject *, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename, examples) -> None")
 {
-  return tabDelimBasedWrite(args, "csv", true, ',');
+  return tabDelimBasedWrite(args, keyws, "csv", true, ',');
 }
 
 

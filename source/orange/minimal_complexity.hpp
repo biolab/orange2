@@ -30,7 +30,7 @@
 WRAPPER(Example)
 
 
-class TIGNode {
+class ORANGE_API TIGNode {
 public:
   PExample example;
   TDiscDistribution incompatibility, compatibility;
@@ -44,7 +44,7 @@ public:
     attributes and a distribution of incompatibilities with other graph nodes. Additional methods are
     provided for removing not connected nodes, making the incompatibility weights 0 or 1, and for
     normalizing them. */
-class TIG : public TOrange {
+class ORANGE_API TIG : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -65,7 +65,7 @@ public:
 WRAPPER(IG);
 
 
-class TIGConstructor : public TOrange {
+class ORANGE_API TIGConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual PIG operator()(PExampleGenerator, TVarList &boundSet, const int &weight) =0;
@@ -74,7 +74,7 @@ public:
 WRAPPER(IGConstructor);
 
 
-class TIGByIM : public TIGConstructor  {
+class ORANGE_API TIGByIM : public TIGConstructor  {
 public:
   __REGISTER_CLASS
 
@@ -84,7 +84,7 @@ public:
 };
 
 
-class TIGBySorting: public TIGConstructor {
+class ORANGE_API TIGBySorting: public TIGConstructor {
 public:
   __REGISTER_CLASS
 
@@ -93,7 +93,7 @@ public:
 
 
 
-class TColoredIG : public TGeneralExampleClustering {
+class ORANGE_API TColoredIG : public TGeneralExampleClustering {
 public:
   __REGISTER_CLASS
 
@@ -109,7 +109,7 @@ public:
 WRAPPER(ColoredIG);
 
 
-class TColorIG : public TOrange {
+class ORANGE_API TColorIG : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -119,7 +119,7 @@ public:
 WRAPPER(ColorIG);
 
 
-class TColorIG_MCF : public TColorIG {
+class ORANGE_API TColorIG_MCF : public TColorIG {
 public:
   __REGISTER_CLASS
 
@@ -127,7 +127,7 @@ public:
 };
 
 
-class TFeatureByMinComplexity : public TFeatureInducer {
+class ORANGE_API TFeatureByMinComplexity : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 

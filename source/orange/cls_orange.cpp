@@ -39,59 +39,6 @@ DATASTRUCTURE(Orange, TPyOrange, orange_dict)
 RECOGNIZED_ATTRIBUTES(Orange, "name shortDescription description")
 
 
-POrange PyOrType_NoConstructor()
-{ throw mlexception("no constructor for this type");
-  return POrange();
-}
-
-
-TOrangeType *FindOrangeType(const type_info &tinfo)
-{ TOrangeType **orty=orangeClasses;
-  while (*orty && ((*orty)->ot_classinfo!=tinfo))
-    orty++;
-
-  return *orty;
-}
-
-bool PyOrange_CheckType(PyTypeObject *pytype)
-{ TOrangeType *type=(TOrangeType *)pytype;
-  for(TOrangeType **orty=orangeClasses; *orty; orty++)
-    if (*orty==type)
-      return true;
-  return false;
-}
-
-
-// Ascends the hierarchy until it comes to a class that is from orange's hierarchy
-TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *pytype)
-{ while (pytype && !PyOrange_CheckType(pytype))
-    pytype=pytype->tp_base;
-  return (TOrangeType *)pytype;
-}
-
-
-bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
-{
-  if (dict) {
-    int pos = 0;
-    PyObject *key, *value;
-    char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
-    while (PyDict_Next(dict, &pos, &key, &value)) {
-      if (kc) {
-        char *kw = PyString_AsString(key);
-        char **akc;
-        for (akc = kc; *akc && strcmp(*akc, kw); akc++);
-        if (*akc)
-          continue;
-      }
-      if (PyObject_SetAttr(self, key, value)<0)
-        return false;
-    }
-  }
-  return true;
-}
-
-
 PyObject *PyOrType_GenericAbstract(PyTypeObject *thistype, PyTypeObject *type, PyObject *args, PyObject *kwds)
 { PyTRY
     // if the user wants to create an instance of abstract class, we stop him
@@ -222,10 +169,8 @@ PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObje
 
     PyObject *self1 = WrapOrange(obj);
 
-    if (!PyTuple_Size(args)) {
-      Orange_init(self1, args, kwds);
+    if (!PyTuple_Size(args))
       return self1;
-    }
 
     else {
 /*      if (self1->ob_type != type) {
@@ -239,7 +184,13 @@ PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObje
         goto err;
       }
 
-      // tp_call also sets the properties from kwds; no need to call tp_init before
+      /* We should manually call init - Python will call init on self2, and it won't do anything.
+         It's important to call it prior to setting call_constructed (below) */
+      Orange_init(self1, args, kwds);
+
+      /* this is to tell tp_call(self1) not to complain about keyword arguments;
+         self1 is disposed later in this function, so this should cause no problems */
+      ((TPyOrange *)self1)->call_constructed = true;
       PyObject *self2=self1->ob_type->tp_call(self1, args, kwds);
 
       if (self2) {
@@ -282,32 +233,6 @@ err:
 }
 
 
-
-PyObject *WrapOrange(POrange obj)
-{ 
-  if (!obj)
-    RETURN_NONE;
-
-  PyTRY
-    PyObject *res=(PyObject *)obj.counter;
-
-    if (res->ob_type==(PyTypeObject *)&PyOrOrange_Type) {
-      PyTypeObject *type = (PyTypeObject *)FindOrangeType(obj);
-      if (!type) {
-        PyErr_Format(PyExc_SystemError, "Orange class '%s' not exported to Python", TYPENAME(typeid(obj.getReference())));
-        return PYNULL;
-      }
-      else
-        res->ob_type = type;
-    }
-      
-    Py_INCREF(res);
-    return res;
-  PyCATCH
-}
-
-
-
 int Orange_traverse(TPyOrange *self, visitproc visit, void *arg)
 {
   if (self->orange_dict) {
@@ -316,13 +241,13 @@ int Orange_traverse(TPyOrange *self, visitproc visit, void *arg)
       return err;
   }
 
-  return self->ptr->traverse(visit, arg);
+  return ((TOrange *)self->ptr)->traverse(visit, arg);
 }
 
 
 int Orange_clear(TPyOrange *self)
 { 
-  return self->ptr->dropReferences();
+  return ((TOrange *)self->ptr)->dropReferences();
 }
 
 
@@ -368,42 +293,43 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
     if (!self)
       PYERROR(PyExc_SystemError, "NULL Orange object", PYNULL);
 
+    TOrange *me = (TOrange *)self->ptr;
     try {
-      const type_info &propertyType=self->ptr->propertyType(name);
+      const type_info &propertyType = me->propertyType(name);
 
       if (propertyType==typeid(bool)) {
         bool value;
-        self->ptr->getProperty(name, value);
+        me->getProperty(name, value);
         return Py_BuildValue("i", value ? 1 : 0);
       }
 
       if (propertyType==typeid(int)) {
         int value;
-        self->ptr->getProperty(name, value);
+        me->getProperty(name, value);
         return Py_BuildValue("i", value);
       }
 
       if (propertyType==typeid(float)) {
         float value;
-        self->ptr->getProperty(name, value);
+        me->getProperty(name, value);
         return Py_BuildValue("f", value);
       }
 
       if (propertyType==typeid(string)) {
         string value;
-        self->ptr->getProperty(name, value);
+        me->getProperty(name, value);
         return Py_BuildValue("s", value.c_str());
       }
 
       if (propertyType==typeid(TValue)) {
         TValue value;
-        self->ptr->getProperty(name, value);
+        me->getProperty(name, value);
         return Value_FromValue(value);
       }
 
       if (propertyType==typeid(TExample)) {
         POrange mlobj;
-        self->ptr->wr_getProperty(name, mlobj);
+        me->wr_getProperty(name, mlobj);
         if (mlobj)
           return Example_FromWrappedExample(PExample(mlobj));
         else
@@ -411,7 +337,7 @@ PyObject *Orange_getattr1(TPyOrange *self, const char *name)
       }
       
       POrange mlobj;
-      self->ptr->wr_getProperty(name, mlobj);
+      me->wr_getProperty(name, mlobj);
       return (PyObject *)WrapOrange(mlobj);
     } catch (exception err)
     {};
@@ -513,157 +439,166 @@ PyObject *objectOnTheFly(PyObject *args, PyTypeObject *objectType)
 }
 
 
-int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
-// This is a complete setattr, but without translation of obsolete names.
-{ if (!self)
-    PYERROR(PyExc_SystemError, "NULL Orange object", -1);
+int Orange_setattr1(TPyOrange *self, char *name, PyObject *args)
+{
+  TOrange *me = (TOrange *)self->ptr;
 
-  char *name=PyString_AsString(pyname);
-  const TPropertyDescription *propertyDescription = self->ptr->propertyDescription(name, true);
+  const TPropertyDescription *propertyDescription = me->propertyDescription(name, true);
+  if (!propertyDescription)
+    return 1;
 
   PyTRY
-    if (propertyDescription) {
-      if (propertyDescription->readOnly) {
-        /* Property might be marked as readOnly, but have a specialized set function.
-           The following code is pasted from PyObject_GenericSetAttr.
-           If I'd call it here and the attribute is really read-only, PyObject_GenericSetAttr
-           would blatantly store it in the dictionary. */
-        PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
-	      PyObject *f = PYNULL;
-	      if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
-		      descrsetfunc f = descr->ob_type->tp_descr_set;
-		      if (f != NULL && PyDescr_IsData(descr))
-			      return f(descr, (PyObject *)self, args);
-        }
-
-        PyErr_Format(PyExc_TypeError, "%s.%s: read-only attribute", self->ob_type->tp_name, name);
-        return -1;
+    if (propertyDescription->readOnly) {
+      /* Property might be marked as readOnly, but have a specialized set function.
+         The following code is pasted from PyObject_GenericSetAttr.
+         If I'd call it here and the attribute is really read-only, PyObject_GenericSetAttr
+         would blatantly store it in the dictionary. */
+      PyObject *pyname = PyString_FromString(name);
+      PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
+	    PyObject *f = PYNULL;
+	    if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
+		    descrsetfunc f = descr->ob_type->tp_descr_set;
+		    if (f != NULL && PyDescr_IsData(descr))
+			    return f(descr, (PyObject *)self, args);
       }
-    
-      try {
-        const type_info &propertyType = *propertyDescription->type;
 
-        if ((propertyType==typeid(bool)) || (propertyType==typeid(int))) {
-          int value;
-          if (!PyArg_Parse(args, "i", &value)) {
-            PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (int expected)", self->ob_type->tp_name, name);
-            return -1;
-          }
-          if (propertyType==typeid(bool))
-            self->ptr->setProperty(name, value!=0);
-          else
-            self->ptr->setProperty(name, value);
+      PyErr_Format(PyExc_TypeError, "%s.%s: read-only attribute", self->ob_type->tp_name, name);
+      return -1;
+    }
+  
+    try {
+      const type_info &propertyType = *propertyDescription->type;
+
+      if ((propertyType==typeid(bool)) || (propertyType==typeid(int))) {
+        int value;
+        if (!PyArg_Parse(args, "i", &value)) {
+          PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (int expected)", self->ob_type->tp_name, name);
+          return -1;
+        }
+        if (propertyType==typeid(bool))
+          me->setProperty(name, value!=0);
+        else
+          me->setProperty(name, value);
+        return 0;
+      }
+
+      if (propertyType==typeid(float)) {
+        float value;
+        if (!PyArg_Parse(args, "f", &value)) {
+          PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (float expected)", self->ob_type->tp_name, name);
+          return -1;
+        }
+        me->setProperty(name, value);
+        return 0;
+      }
+
+      if (propertyType==typeid(string)) {
+        char *value;
+        if (!PyArg_Parse(args, "s", &value)) {
+          PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (string expected)", self->ob_type->tp_name, name);
+          return -1;
+        }
+        me->setProperty(name, string(value));
+        return 0;
+      }
+
+      if (propertyType==typeid(TValue)) {
+        TValue value;
+        if (!convertFromPython(args, value))
+          return -1;
+        me->setProperty(name, value);
+        return 0;
+      }
+
+      if (propertyType==typeid(TExample)) {
+        if (args==Py_None) {
+          me->wr_setProperty(name, POrange());
           return 0;
         }
-
-        if (propertyType==typeid(float)) {
-          float value;
-          if (!PyArg_Parse(args, "f", &value)) {
-            PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (float expected)", self->ob_type->tp_name, name);
+        else {
+          if (PyOrExample_Check(args)) {
+            PyErr_Format(PyExc_TypeError, "invalid parameter type for '%s.%s', (expected 'Example', got '%s')", self->ob_type->tp_name, name, args->ob_type->tp_name);
             return -1;
           }
-          self->ptr->setProperty(name, value);
+          me->wr_setProperty(name, POrange(PyExample_AS_Example(args)));
           return 0;
         }
+      }
 
-        if (propertyType==typeid(string)) {
-          char *value;
-          if (!PyArg_Parse(args, "s", &value)) {
-            PyErr_Format(PyExc_TypeError, "invalid parameter type for %s.%s', (string expected)", self->ob_type->tp_name, name);
-            return -1;
-          }
-          self->ptr->setProperty(name, string(value));
-          return 0;
-        }
+      if (1/*propertyType==typeid(POrange)*/) {
+        const type_info *wrappedType = propertyDescription->classDescription->type;
 
-        if (propertyType==typeid(TValue)) {
-          TValue value;
-          if (!convertFromPython(args, value))
-            return -1;
-          self->ptr->setProperty(name, value);
-          return 0;
-        }
-
-        if (propertyType==typeid(TExample)) {
-          if (args==Py_None) {
-            self->ptr->wr_setProperty(name, POrange());
-            return 0;
-          }
-          else {
-            if (PyOrExample_Check(args)) {
-              PyErr_Format(PyExc_TypeError, "invalid parameter type for '%s.%s', (expected 'Example', got '%s')", self->ob_type->tp_name, name, args->ob_type->tp_name);
-              return -1;
-            }
-            self->ptr->wr_setProperty(name, POrange(PyExample_AS_Example(args)));
-            return 0;
-          }
-        }
-
-        if (1/*propertyType==typeid(POrange)*/) {
-          const type_info *wrappedType = propertyDescription->classDescription->type;
-
-          PyTypeObject *propertyPyType=(PyTypeObject *)FindOrangeType(*wrappedType);
-          if (!propertyPyType) {
-            PyErr_Format(PyExc_SystemError, "Orange class %s, needed for '%s.%s' not exported to Python", TYPENAME(*wrappedType), self->ob_type->tp_name, name);
-            return -1;
-          }
-
-          if (args==Py_None) {
-            self->ptr->wr_setProperty(name, POrange());
-            return 0;
-          }
-
-          // User might have supplied the correct object
-          if (PyObject_TypeCheck(args, propertyPyType)) {
-            self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)args));
-            return 0;
-          }
-
-          // User might have supplied parameters from which we can construct the object
-          if (propertyPyType->tp_new) {
-            PyObject *obj = objectOnTheFly(args, propertyPyType);
-            if (obj) {
-              bool success = true;
-              try {
-                self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
-              }
-              catch (...) {
-                success = false;
-              }
-              Py_DECREF(obj);
-              if (success)
-                return 0;
-            }
-          }
-
-          PyErr_Format(PyExc_TypeError, "invalid parameter type for '%s.%s', (expected '%s', got '%s')", self->ob_type->tp_name, name, propertyPyType->tp_name, args->ob_type->tp_name);
+        PyTypeObject *propertyPyType=(PyTypeObject *)FindOrangeType(*wrappedType);
+        if (!propertyPyType) {
+          PyErr_Format(PyExc_SystemError, "Orange class %s, needed for '%s.%s' not exported to Python", TYPENAME(*wrappedType), self->ob_type->tp_name, name);
           return -1;
         }
 
-        PyErr_Format(PyExc_TypeError, "internal Orange error: unrecognized type '%s.%s'", self->ob_type->tp_name, name);
-        return -1;
-      } catch (exception err)
-      {
-        PyErr_Format(PyExc_TypeError, "error setting '%s.%s'", self->ob_type->tp_name, name);
+        if (args==Py_None) {
+          me->wr_setProperty(name, POrange());
+          return 0;
+        }
+
+        // User might have supplied the correct object
+        if (PyObject_TypeCheck(args, propertyPyType)) {
+          me->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)args));
+          return 0;
+        }
+
+        // User might have supplied parameters from which we can construct the object
+        if (propertyPyType->tp_new) {
+          PyObject *obj = objectOnTheFly(args, propertyPyType);
+          if (obj) {
+            bool success = true;
+            try {
+              me->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
+            }
+            catch (...) {
+              success = false;
+            }
+            Py_DECREF(obj);
+            if (success)
+              return 0;
+          }
+        }
+
+        PyErr_Format(PyExc_TypeError, "invalid parameter type for '%s.%s', (expected '%s', got '%s')", self->ob_type->tp_name, name, propertyPyType->tp_name, args->ob_type->tp_name);
         return -1;
       }
+
+      PyErr_Format(PyExc_TypeError, "internal Orange error: unrecognized type '%s.%s'", self->ob_type->tp_name, name);
+      return -1;
+    } catch (exception err)
+    {
+      PyErr_Format(PyExc_TypeError, "error setting '%s.%s'", self->ob_type->tp_name, name);
+      return -1;
     }
+  PyCATCH_1
+}
 
-    else {
-      /* no property description, but we might have a special set handler
-         The following code is pasted from PyObject_GenericSetAttr.
-         If I'd call it here, PyObject_GenericSetAttr would blatantly store it in the dictionary
-         in case there is no handler. We don't want that. */
-      PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
-     PyObject *f = PYNULL;
-     if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
-       descrsetfunc f = descr->ob_type->tp_descr_set;
-       if (f != NULL && PyDescr_IsData(descr))
-	       return f(descr, (PyObject *)self, args);
-     }
-   }
 
-  PyCATCH_1;
+int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
+// This is a complete setattr, but without translation of obsolete names.
+{ 
+  if (!self)
+    PYERROR(PyExc_SystemError, "NULL Orange object", -1);
+
+  char *name=PyString_AsString(pyname);
+  int res = Orange_setattr1(self, name, args);
+  if (res != 1)
+    return res;
+
+  /* no property description, but we might have a special set handler
+     The following code is pasted from PyObject_GenericSetAttr.
+     If I'd call it here, PyObject_GenericSetAttr would blatantly store it in the dictionary
+     in case there is no handler. We don't want that. */
+  PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
+  PyObject *f = PYNULL;
+  if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
+    descrsetfunc f = descr->ob_type->tp_descr_set;
+    if (f != NULL && PyDescr_IsData(descr))
+      return f(descr, (PyObject *)self, args);
+  }
   
   return 1; // attribute not set (not even attempted to), try something else
 }
@@ -925,7 +860,7 @@ PyObject *Orange_setattr_force(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 
 PyObject *Orange_clone(TPyOrange *self) PYARGS(METH_NOARGS, "() -> a sensibly deep copy of the object")
 {
-  return WrapOrange(POrange(CLONE(TOrange, self->ptr)));
+  return WrapOrange(POrange(CLONE(TOrange, ((TOrange *)self->ptr))));
 }
 
 PyObject *Orange_reference(TPyOrange *self) PYARGS(METH_NOARGS, "() -> reference; Returns unique id for an object")

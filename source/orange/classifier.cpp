@@ -22,7 +22,6 @@
 
 #include "vars.hpp"
 #include <math.h>
-#include "errors.hpp"
 #include "stladdon.hpp"
 #include "random.hpp"
 #include "examplegen.hpp"
@@ -33,7 +32,7 @@
 
 #include "classify.ppp"
 
-DEFINE_TOrangeVector_classDescription(PClassifier, "TClassifierList")
+DEFINE_TOrangeVector_classDescription(PClassifier, "TClassifierList", true, ORANGE_API)
 
 /* ***** TClassifier methods */
 

@@ -27,7 +27,7 @@
 #include "values.hpp"
 #include "examples.hpp"
 
-class TCartesianClassifier : public TClassifierFD {
+class ORANGE_API TCartesianClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

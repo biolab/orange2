@@ -31,7 +31,7 @@
 
 #define PYTHONVAR 7
 
-class TPythonValue : public TSomeValue {
+class ORANGE_API TPythonValue : public TSomeValue {
 public:
   __REGISTER_CLASS
 
@@ -53,7 +53,7 @@ public:
 
 
 
-class TPythonVariable : public TVariable {
+class ORANGE_API TPythonVariable : public TVariable {
 public:
   __REGISTER_CLASS
 
@@ -93,7 +93,7 @@ public:
 };
 
 
-class TPythonValueSpecial : public TOrange {
+class ORANGE_API TPythonValueSpecial : public TOrange {
 public:
   __REGISTER_CLASS
 

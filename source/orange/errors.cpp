@@ -20,8 +20,11 @@
 */
 
 
-#include "garbage.hpp"
 #include "errors.hpp"
+#include "stdio.h"
+
+// We include Python because it sets up everything for va_start
+#include "Python.h"
 
 bool exhaustiveWarnings = false;
 

@@ -23,7 +23,6 @@
 #include <limits>
 #include <list>
 #include <math.h>
-#include "errors.hpp"
 
 #include "random.hpp"
 #include "vars.hpp"

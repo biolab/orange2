@@ -29,7 +29,7 @@ WRAPPER(ExamplesDistance_Relief);
 WRAPPER(Domain);
 
 
-class TMeasureAttribute_relief : public TMeasureAttribute {
+class ORANGE_API TMeasureAttribute_relief : public TMeasureAttribute {
 public:
     __REGISTER_CLASS
 

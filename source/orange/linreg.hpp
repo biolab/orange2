@@ -32,7 +32,7 @@
 WRAPPER(Imputer)
 WRAPPER(ImputerConstructor)
 
-class TLinRegLearner : public TLearner
+class ORANGE_API TLinRegLearner : public TLearner
 {
 public:
   __REGISTER_CLASS
@@ -58,7 +58,7 @@ public:
 };
 
 
-class TLinRegClassifier : public TClassifierFD
+class ORANGE_API TLinRegClassifier : public TClassifierFD
 {
 public:
   __REGISTER_CLASS

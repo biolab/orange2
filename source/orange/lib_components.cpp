@@ -52,6 +52,8 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "externs.px"
 
 
+bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeObject *type=NULL);
+
 /* ************ COST ************ */
 
 #include "cost.hpp"
@@ -794,6 +796,8 @@ bool convertFromPython(PyObject *obj, PContingency &var, bool allowNull, PyTypeO
 }
 
 
+string convertToString(const PDistribution &);
+
 string convertToString(const PContingency &cont)
 { if (!cont->outerVariable)
     raiseError("invalid contingency ('outerVariable' not set)");
@@ -857,7 +861,7 @@ PyObject *Contingency_keys(PyObject *self) PYARGS(0, "() -> [string] | [float]")
         PyObject *nl=PyList_New(cont->outerVariable->noOfValues());
         int i=0;
         PStringList vals=cont->outerVariable.AS(TEnumVariable)->values;
-        PITERATE(TIdList, ii, vals)
+        PITERATE(TStringList, ii, vals)
           PyList_SetItem(nl, i++, PyString_FromString((*ii).c_str()));
         return nl;
       }
@@ -905,7 +909,7 @@ PyObject *Contingency_items(PyObject *self) PYARGS(0, "() -> [(string, Distribut
       else if (cont->outerVariable->varType==TValue::INTVAR) {
         PyObject *nl=PyList_New(cont->outerVariable->noOfValues());
         int i=0;
-        TIdList::const_iterator ii(cont->outerVariable.AS(TEnumVariable)->values->begin());
+        TStringList::const_iterator ii(cont->outerVariable.AS(TEnumVariable)->values->begin());
         PITERATE(TDistributionVector, ci, cont->discrete)
           PyList_SetItem(nl, i++, 
             Py_BuildValue("sN", (*(ii++)).c_str(), WrapOrange(*ci)));
@@ -1006,7 +1010,7 @@ int DomainContingency_getItemIndex(PyObject *self, PyObject *args)
 
     if (PyString_Check(args)) {
       char *s=PyString_AsString(args);
-      PITERATE(vector<PContingencyClass>, ci, cont)
+      PITERATE(TDomainContingency, ci, cont)
         if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable->name==s)
                    : (*ci)->outerVariable && ((*ci)->outerVariable->name==s))
           return ci - cont->begin();
@@ -1015,7 +1019,7 @@ int DomainContingency_getItemIndex(PyObject *self, PyObject *args)
 
     if (PyOrVariable_Check(args)) {
       PVariable var = PyOrange_AsVariable(args);
-      PITERATE(vector<PContingencyClass>, ci, cont)
+      PITERATE(TDomainContingency, ci, cont)
         if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable==var)
                    : (*ci)->outerVariable && ((*ci)->outerVariable==var))
           return ci - cont->begin();
@@ -1106,7 +1110,7 @@ C_CALL(ExamplesDistanceConstructor_DTW, ExamplesDistanceConstructor, "([examples
 
 PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
 { PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PExampleGenerator gen;
@@ -1175,7 +1179,7 @@ PyObject *ExamplesDistance_Normalized_attributeDistances(PyObject *self, PyObjec
 PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example1, example2) -> float")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
     TExample *ex1, *ex2;
     if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.__call__", ptr_Example, &ex1, ptr_Example, &ex2))
       PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);
@@ -1228,7 +1232,8 @@ C_CALL(FindNearestConstructor_BruteForce, FindNearestConstructor, "([examples[, 
 PyObject *FindNearestConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID[, distanceID]]) -> FindNearest")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     int weightID = 0;
     int distanceID = 0;
@@ -1247,7 +1252,8 @@ PyObject *FindNearestConstructor_call(PyObject *self, PyObject *args, PyObject *
 PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example, k) -> ExampleTable")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     float k;
     TExample *example;
     // Both forms are allowed for compatibility with older versions
@@ -1304,7 +1310,7 @@ PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
-C_CALL(Filter_isDefined, Filter, "([examples], [negate=..., domain=..., checked=]) -/-> ExampleTable")
+C_CALL(Filter_isDefined, Filter, "([examples], [negate=..., domain=..., check=]) -/-> ExampleTable")
 C_CALL(Filter_hasClassValue, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_sameValue, Filter, "([examples], [negate=..., domain=..., position=<int>, value=...]) -/-> ExampleTable")
 C_CALL(Filter_values, Filter, "([examples], [negate=..., domain=..., values=<see the manual>) -/-> ExampleTable")
@@ -1368,26 +1374,47 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
       return PYNULL;
     }
 
-    SETATTRIBUTES
+    CAST_TO(TFilter, filter);
 
-    if (PyTuple_Size(args)==1) {
-      PyObject *pyex = PyTuple_GET_ITEM(args, 0);
-      if (PyOrExample_Check(pyex))
-        return PyInt_FromLong(PyOrange_AsFilter(self)->call(PyExample_AS_ExampleReference(pyex)) ? 1 : 0);
+    bool savedNegate = filter->negate;
+    PyObject *res;
+
+    try {
+      if (!((TPyOrange *)self)->call_constructed && keywords) {
+        const int sze = PyDict_Size(keywords);
+        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "negate") : NULL;
+        if ((sze > 1) || !neg)
+          NO_KEYWORDS;
+        filter->negate = (PyObject_IsTrue(neg) != 0);
+      }
+
+      if ((PyTuple_Size(args)==1) && PyOrExample_Check(PyTuple_GET_ITEM(args, 0))) {
+         res = PyInt_FromLong(filter->call(PyExample_AS_ExampleReference(PyTuple_GET_ITEM(args, 0))) ? 1 : 0);
+      }
+      else {
+        PExampleGenerator egen;
+        int references = 0;
+        if (!PyArg_ParseTuple(args, "O&|i:Filter.__call__", &pt_ExampleGenerator, &egen, &references)) {
+          filter->negate = savedNegate;
+          return PYNULL;
+        }
+
+        if (references) {
+          if (!egen.is_derived_from(TExampleTable))
+            PYERROR(PyExc_TypeError, "cannot return references to examples that are not in example table", PYNULL);
+          return applyFilterP(filter, egen);
+        }
+
+        res = applyFilter(PyOrange_AsFilter(self), egen, false, 0);
+      }
+
+      filter->negate = savedNegate;
+      return res;
     }
-
-    PExampleGenerator egen;
-    int references = 0;
-    if (!PyArg_ParseTuple(args, "O&|i:Filter.__call__", &pt_ExampleGenerator, &egen, &references))
-      return PYNULL;
-
-    if (references) {
-      if (!egen.is_derived_from(TExampleTable))
-        PYERROR(PyExc_TypeError, "cannot return references to examples that are not in example table", PYNULL);
-      return applyFilterP(PyOrange_AsFilter(self), egen);
+    catch(...) {
+      filter->negate = savedNegate;
+      throw;
     }
-
-    return applyFilter(PyOrange_AsFilter(self), egen, false, 0);
   PyCATCH
 }
 
@@ -1411,6 +1438,53 @@ PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)
   PyCATCH
 }
 
+
+
+PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds);
+
+int Filter_isDefined_set_check(PyObject *self, PyObject *arg)
+{
+  PyTRY
+    CAST_TO_err(TFilter_isDefined, filter, -1)
+
+    if (arg == Py_None) {
+      filter->check = PAttributedBoolList();
+      return 0;
+    }
+
+
+    PyObject *boollist = objectOnTheFly(arg, (PyTypeObject *)&PyOrAttributedBoolList_Type);
+  
+//    PyObject *boollist = AttributedBoolList_new((PyTypeObject *)&PyOrAttributedBoolList_Type, arg, PYNULL);
+    if (!boollist)
+      return -1;
+
+    PAttributedBoolList cli = PyOrange_AsAttributedBoolList(boollist);
+
+    if (filter->domain) {
+      if (cli->attributes) {
+        TVarList::const_iterator di(filter->domain->variables->begin()), de(filter->domain->variables->end());
+        TVarList::const_iterator fci(cli->attributes->begin()), fce(cli->attributes->end());
+        for(; (di!=de) && (fci!=fce); di++, fci++)
+          if (*di!=*fci) {
+            PyErr_Format(PyExc_AttributeError, "attribute %s in the list does not match the filter's domain", (*fci)->name.c_str());
+            return -1;
+          }
+        if (fci!=fce)
+          PYERROR(PyExc_AttributeError, "the check list has more attributes than the filter's domain", -1);
+      }
+      else {
+        /* we don't want to modify the list if this is a reference
+           to a list from somewhere else */
+        if (!PyOrAttributedBoolList_Check(arg))
+          cli->attributes = filter->domain->variables;
+      }
+    }
+
+    filter->check = cli;
+    return 0;
+  PyCATCH_1
+}
 
 #include "valuelisttemplate.hpp"
 
@@ -1616,14 +1690,14 @@ C_CALL(ImputerConstructor_asValue, ImputerConstructor, "(examples[, weightID]) -
 PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrImputer_Type) {
       PyErr_Format(PyExc_SystemError, "Imputer.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
-
-    if ((PyTuple_Size(args) == 1) && PyOrExample_Check(PyTuple_GET_ITEM(args, 0))) {
+    if ((PyTuple_GET_SIZE(args) == 1) && PyOrExample_Check(PyTuple_GET_ITEM(args, 0))) {
       TExample example = PyExample_AS_ExampleReference(PyTuple_GET_ITEM(args, 0));
       return Example_FromWrappedExample(PExample(PyOrange_AsImputer(self)->call(example)));
     }
@@ -1641,7 +1715,7 @@ PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
 PyObject *ImputerConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     int weightID = 0;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
@@ -1666,52 +1740,72 @@ PYCLASSCONSTANT_INT(MakeRandomIndices, StratifiedIfPossible, -1L)
 PYCLASSCONSTANT_INT(MakeRandomIndices, NotStratified, 0L)
 PYCLASSCONSTANT_INT(MakeRandomIndices, Stratified, 1L)
 
-PYCONSTANT(StratifiedIfPossible, PyInt_FromLong(-1L))
-PYCONSTANT(NotStratified, PyInt_FromLong(0L))
-PYCONSTANT(Stratified, PyInt_FromLong(1L))
+PYCONSTANT_INT(StratifiedIfPossible, -1)
+PYCONSTANT_INT(NotStratified, 0)
+PYCONSTANT_INT(Stratified, 1)
 
 PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
     CAST_TO(TMakeRandomIndices2, mri2);
 
-    int n;
-    float f;
-    PExampleGenerator egen;    
-    PRandomIndices res;
+    float savedP0 = mri2->p0;
 
-    if (PyArg_ParseTuple(args, "i", &n)) {
-      res = (*mri2)(n);
-      goto out;
-    }
+    try {
+      if (!((TPyOrange *)self)->call_constructed && keywords) {
+        const int sze = PyDict_Size(keywords);
+        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p0") : NULL;
+        if ((sze > 1) || !neg)
+          NO_KEYWORDS;
+        if (Orange_setattr1((TPyOrange *)self, "p0", neg) == -1) {
+          mri2->p0 = savedP0;
+          return PYNULL;
+        }
+      }
+
+      int n;
+      float f;
+      PExampleGenerator egen;    
+      PRandomIndices res;
+
+      if (PyArg_ParseTuple(args, "i", &n)) {
+        res = (*mri2)(n);
+        goto out;
+      }
     
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "if", &n, &f)) {
-      res = (*mri2)(n, f);
-      goto out;
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "if", &n, &f)) {
+        res = (*mri2)(n, f);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+        res = (*mri2)(egen);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
+        res = (*mri2)(egen, f);
+        goto out;
+      }
+
+      mri2->p0 = savedP0;
+      PyErr_Clear();
+      PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  out: 
+      mri2->p0 = savedP0;
+      if (!res)
+        PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
+
+      return WrapOrange(res);
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
-      res = (*mri2)(egen);
-      goto out;
+    catch (...) {
+      mri2->p0 = savedP0;
+      throw;
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
-      res = (*mri2)(egen, f);
-      goto out;
-    }
-
-    PyErr_Clear();
-    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
-
-out: 
-    if (!res)
-      PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
-
-    return WrapOrange(res);
   PyCATCH
 }
 
@@ -1719,45 +1813,67 @@ out:
 PyObject *MakeRandomIndicesMultiple_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
     CAST_TO(TMakeRandomIndicesMultiple, mrim)
 
-    int n;
-    float f;
-    PExampleGenerator egen;
-    PRandomIndices res;
+    float savedP0 = mrim->p0;
 
-    if (PyArg_ParseTuple(args, "i", &n)) {
-      res = (*mrim)(n);
-      goto out;
+    try {
+      if (!((TPyOrange *)self)->call_constructed && keywords) {
+        const int sze = PyDict_Size(keywords);
+        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p0") : NULL;
+        if ((sze > 1) || !neg)
+          NO_KEYWORDS;
+        if (Orange_setattr1((TPyOrange *)self, "p0", neg) == -1) {
+          mrim->p0 = savedP0;
+          return PYNULL;
+        }
+      }
+
+      int n;
+      float f;
+      PExampleGenerator egen;
+      PRandomIndices res;
+
+      if (PyArg_ParseTuple(args, "i", &n)) {
+        res = (*mrim)(n);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "if", &n, &f)) {
+        res = (*mrim)(n, f);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+        res = (*mrim)(egen);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
+        res = (*mrim)(egen, f);
+        goto out;
+      }
+
+      mrim->p0 = savedP0;
+      PyErr_Clear();
+      PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  out:
+      mrim->p0 = savedP0;
+
+      if (!res)
+        PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
+
+      return WrapOrange(res);
     }
 
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "if", &n, &f)) {
-      res = (*mrim)(n, f);
-      goto out;
+    catch(...) {
+      mrim->p0 = savedP0;
+      throw;
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
-      res = (*mrim)(egen);
-      goto out;
-    }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
-      res = (*mrim)(egen, f);
-      goto out;
-    }
-
-    PyErr_Clear();
-    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
-
-out:
-    if (!res)
-      PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
-
-    return WrapOrange(res);
   PyCATCH
 }
 
@@ -1767,91 +1883,133 @@ out:
 PyObject *MakeRandomIndicesN_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
     CAST_TO(TMakeRandomIndicesN, mriN)
 
-    int n;
-    PFloatList pyvector;
-    PExampleGenerator egen;
-    PRandomIndices res;
+    PFloatList savedP = mriN->p;
 
-    if (PyArg_ParseTuple(args, "i", &n)) {
-      res = (*mriN)(n);
-      goto out;
+    try {
+      if (!((TPyOrange *)self)->call_constructed && keywords) {
+        const int sze = PyDict_Size(keywords);
+        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "p") : NULL;
+        if ((sze > 1) || !neg)
+          NO_KEYWORDS;
+        if (Orange_setattr1((TPyOrange *)self, "p", neg) == -1) {
+          mriN->p = savedP;
+          return PYNULL;
+        }
+      }
+
+      int n;
+      PFloatList pyvector;
+      PExampleGenerator egen;
+      PRandomIndices res;
+
+      if (PyArg_ParseTuple(args, "i", &n)) {
+        res = (*mriN)(n);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "iO&", &n, cc_FloatList, &pyvector)) {
+        res = (*mriN)(n, pyvector);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+        res = (*mriN)(egen);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&O&", pt_ExampleGenerator, &egen, cc_FloatList, &pyvector)) {
+        res = (*mriN)(egen, pyvector);
+        goto out;
+      }
+
+      mriN->p = savedP;
+      PyErr_Clear();
+      PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  out:
+      mriN->p = savedP;
+
+      if (!res)
+        PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
+
+      return WrapOrange(res);
     }
 
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "iO&", &n, cc_FloatList, &pyvector)) {
-      res = (*mriN)(n, pyvector);
-      goto out;
+    catch(...) {
+      mriN->p = savedP;
+      throw;
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
-      res = (*mriN)(egen);
-      goto out;
-    }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&O&", pt_ExampleGenerator, &egen, cc_FloatList, &pyvector)) {
-      res = (*mriN)(egen, pyvector);
-      goto out;
-    }
-
-    PyErr_Clear();
-    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
-
-out:
-    if (!res)
-      PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
-
-    return WrapOrange(res);
   PyCATCH
-}
+ }
 
 
 
 PyObject *MakeRandomIndicesCV_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
     CAST_TO(TMakeRandomIndicesCV, mriCV)
 
-    int n, f;
-    PExampleGenerator egen;
-    PRandomIndices res;
+    int savedFolds = mriCV->folds;
 
-    if (PyArg_ParseTuple(args, "i", &n)) {
-      res = (*mriCV)(n);
-      goto out;
+    try {
+      if (!((TPyOrange *)self)->call_constructed && keywords) {
+        const int sze = PyDict_Size(keywords);
+        PyObject *neg = sze == 1 ? PyDict_GetItemString(keywords, "folds") : NULL;
+        if ((sze > 1) || !neg)
+          NO_KEYWORDS;
+        if (Orange_setattr1((TPyOrange *)self, "folds", neg) == -1) {
+          mriCV->folds = savedFolds;
+          return PYNULL;
+        }
+      }
+
+      int n, f;
+      PExampleGenerator egen;
+      PRandomIndices res;
+
+      if (PyArg_ParseTuple(args, "i", &n)) {
+        res = (*mriCV)(n);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "ii", &n, &f)) {
+        res = (*mriCV)(n, f);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+        res = (*mriCV)(egen);
+        goto out;
+      }
+
+      PyErr_Clear();
+      if (PyArg_ParseTuple(args, "O&i", pt_ExampleGenerator, &egen, &f)) {
+        res = (*mriCV)(egen, f);
+        goto out;
+      }
+
+      mriCV->folds = savedFolds;
+      PyErr_Clear();
+      PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  out:
+      mriCV->folds = savedFolds;
+      if (!res)
+        PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
+
+      return WrapOrange(res);
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "ii", &n, &f)) {
-      res = (*mriCV)(n, f);
-      goto out;
+    catch(...) {
+      mriCV->folds = savedFolds;
+      throw;
     }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
-      res = (*mriCV)(egen);
-      goto out;
-    }
-
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O&i", pt_ExampleGenerator, &egen, &f)) {
-      res = (*mriCV)(egen, f);
-      goto out;
-    }
-
-    PyErr_Clear();
-    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
-
-out:
-    if (!res)
-      PYERROR(PyExc_TypeError, "cannot construct RandomIndices", PYNULL);
-
-    return WrapOrange(res);
   PyCATCH
 }
 
@@ -1877,9 +2035,11 @@ C_CALL(ConditionalProbabilityEstimatorConstructor_ByRows, ConditionalProbability
 C_CALL(ConditionalProbabilityEstimatorConstructor_loess, ConditionalProbabilityEstimatorConstructor, "([example generator, weight] | [distribution]) -/-> ProbabilityEstimator_FromCurves")
 
 PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([distribution[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
-{ PyTRY
+{ 
+  PyTRY
+    NO_KEYWORDS
+
     CAST_TO(TProbabilityEstimatorConstructor, cest);
-    SETATTRIBUTES
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PDistribution dist, apriori;
@@ -1918,8 +2078,9 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, 
 
 PyObject *ProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Value) -> float  |  () -> Distribution")
 { PyTRY
+    NO_KEYWORDS
+
     CAST_TO(TProbabilityEstimator, cest);
-    SETATTRIBUTES
 
     PyObject *pyobj = PYNULL;
     if (!PyArg_ParseTuple(args, "|O:ProbabilityEstimator.call", &pyobj)) 
@@ -1940,9 +2101,11 @@ PyObject *ProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *ke
 
 
 PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, PyObject *keywords) PYDOC("([contingency[, apriori]] [example generator[, weight]]) -> ProbabilityEstimator")
-{ PyTRY
+{ 
+  PyTRY
+    NO_KEYWORDS
+
     CAST_TO(TConditionalProbabilityEstimatorConstructor, cest);
-    SETATTRIBUTES
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
     PContingency cont, apriori;
@@ -1980,9 +2143,11 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
 
 
 PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(Value, Condition) -> float  |  (Condition) -> Distribution | () -> Contingency")
-{ PyTRY
+{ 
+  PyTRY
+    NO_KEYWORDS
+
     CAST_TO(TConditionalProbabilityEstimator, cest);
-    SETATTRIBUTES
 
     PyObject *pyobj1 = PYNULL, *pyobj2 = PYNULL;
     if (!PyArg_ParseTuple(args, "|OO:ProbabilityEstimator.call", &pyobj1, &pyobj2)) 
@@ -2028,6 +2193,11 @@ C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, example
 
 C_CALL(MeasureAttribute_relief, MeasureAttribute, "(estimate=, m=, k=) | (attr, examples[, apriori] [,weightID]) -/-> float")
 
+/* obsolete: */
+PYCONSTANT(MeasureAttribute_splitGain, (PyObject *)&PyOrMeasureAttribute_gainRatio_Type)
+PYCONSTANT(MeasureAttribute_retis, (PyObject *)&PyOrMeasureAttribute_MSE_Type)
+
+
 PyObject *MeasureNeeds()
 { PyObject *vartypes=PyModule_New("MeasureNeeds");
   PyModule_AddIntConstant(vartypes, "Generator", (int)TMeasureAttribute::Generator);
@@ -2056,13 +2226,15 @@ PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *key
 
 
 PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attr, xmpls[, apr, wght]) | (attr, domcont[, apr]) | (cont, clss-dist [,apr]) -> (float, meas-type)")
-{ PyTRY
+{ 
+  PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrMeasureAttribute_Type) {
       PyErr_Format(PyExc_SystemError, "MeasureAttribute.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
     CAST_TO(TMeasureAttribute, meat)
 
     PyObject *arg1;
@@ -2255,7 +2427,7 @@ C_CALL(ThresholdCA, Orange, "([classifier, examples[, weightID, target value]]) 
 PyObject *ThresholdCA_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(classifier, examples[, weightID, target value]) -> (threshold, optimal CA, list of CAs)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     PClassifier classifier;
     PExampleGenerator egen;
@@ -2592,19 +2764,19 @@ PYCLASSCONSTANT_INT(HierarchicalClustering, Complete, 2)
 PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
 {
   PyTRY
+    NO_KEYWORDS
+
     PSymMatrix symmatrix;
 
     if (!PyArg_ParseTuple(args, "O&:HierarchicalClustering", cc_SymMatrix, &symmatrix))
       return NULL;
-
-    SETATTRIBUTES
 
     PHierarchicalCluster root = SELF_AS(THierarchicalClustering)(symmatrix);
 
     if (symmatrix->myWrapper->orange_dict) {
       PyObject *objects = PyDict_GetItemString(symmatrix->myWrapper->orange_dict, "objects");
       TPyOrange *pymapping = root->mapping->myWrapper;
-      if (objects) {
+      if (objects && (objects != Py_None)) {
         if (!pymapping->orange_dict)
           pymapping->orange_dict = PyOrange_DictProxy_New(pymapping);
         PyDict_SetItemString(pymapping->orange_dict, "objects", objects);
@@ -2643,7 +2815,7 @@ PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
 
     if (cluster->mapping->myWrapper->orange_dict) {
       PyObject *objs = PyDict_GetItemString(cluster->mapping->myWrapper->orange_dict, "objects");
-      if (objs)
+      if (objs && (objs != Py_None))
         return PySequence_GetItem(objs, elindex);
     }
 
@@ -2767,171 +2939,6 @@ PyObject *HierarchicalClusterList_sort(TPyOrange *self, PyObject *args) PYARGS(M
 
 
 
-#include "heatmap.hpp"
-
-PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")
-{
-  PyTRY
-    PExampleTable table;
-    PHeatmapConstructor baseHeatmap;
-    int disregardClass = 0;
-    if (!PyArg_ParseTuple(args, "O&|O&i:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap, &disregardClass))
-      return NULL;
-    return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap, (disregardClass!=0)), type);
-  PyCATCH
-}
-
-
-PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> HeatmapList")
-{
-  PyTRY
-    float squeeze;
-    if (!PyArg_ParseTuple(args, "f:HeatmapConstructor.__call__", &squeeze))
-      return NULL;
-
-    SETATTRIBUTES
-
-    float absLow, absHigh;
-    PHeatmapList hml = SELF_AS(THeatmapConstructor).call(squeeze, absLow, absHigh);
-    return Py_BuildValue("Nff", WrapOrange(hml), absLow, absHigh);
-  PyCATCH
-}
-
-
-PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height, gamma) -> bitmap")
-{ 
-  PyTRY
-    int width, height;
-    float gamma;
-    if (!PyArg_ParseTuple(args, "iif:HeatmapConstructor.getLegend", &width, &height, &gamma))
-      return NULL;
-
-    int size;
-    unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, gamma, size);
-    PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
-    delete bitmap;
-    return res;
-  PyCATCH
-}
-
-BASED_ON(Heatmap, Orange)
-
-PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
-{
-  PyTRY
-    int cellWidth, cellHeight;
-    float absLow, absHigh, gamma;
-    int grid = 0;
-    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma, &grid))
-      return NULL;
-
-    CAST_TO(THeatmap, hm)
-
-    int size;
-    unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
-    delete bitmap;
-    return res;
-  PyCATCH
-}
-
-
-PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
-{
-  PyTRY
-    int width, height;
-    float absLow, absHigh, gamma;
-    int grid = 0;
-    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getAverageBitmap", &width, &height, &absLow, &absHigh, &gamma, &grid))
-      return NULL;
-
-    if (grid && height<3)
-      grid = 0;
-
-    CAST_TO(THeatmap, hm)
-
-    int size;
-    unsigned char *bitmap = hm->averages2string(width, height, absLow, absHigh, gamma, grid!=0, size);
-    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
-    delete bitmap;
-    return res;
-  PyCATCH
-}
-
-
-PyObject *Heatmap_getCellIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row, column) -> float")
-{
-  PyTRY
-    int row, column;
-    if (!PyArg_ParseTuple(args, "ii:Heatmap.getCellIntensity", &row, &column))
-      return NULL;
-
-    const float ci = SELF_AS(THeatmap).getCellIntensity(row, column);
-    if (ci == UNKNOWN_F)
-      RETURN_NONE;
-
-    return PyFloat_FromDouble(ci);
-  PyCATCH
-}
-
-
-PyObject *Heatmap_getRowIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row) -> float")
-{
-  PyTRY
-    int row;
-    if (!PyArg_ParseTuple(args, "i:Heatmap.getRowIntensity", &row))
-      return NULL;
-
-    const float ri = SELF_AS(THeatmap).getRowIntensity(row);
-    if (ri == UNKNOWN_F)
-      RETURN_NONE;
-
-    return PyFloat_FromDouble(ri);
-  PyCATCH
-}
-
-
-PyObject *Heatmap_getPercentileInterval(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(lower_percentile, upper_percentile) -> (min, max)")
-{
-  PyTRY
-    float lowperc, highperc;
-    if (!PyArg_ParseTuple(args, "ff:Heatmap_percentileInterval", &lowperc, &highperc))
-      return PYNULL;
-
-    float minv, maxv;
-    SELF_AS(THeatmap).getPercentileInterval(lowperc, highperc, minv, maxv);
-    return Py_BuildValue("ff", minv, maxv);
-  PyCATCH
-}
-
-
-PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::P_FromArguments(arg); }
-PyObject *HeatmapList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_FromArguments(type, arg); }
-PyObject *HeatmapList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Heatmap>)") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_new(type, arg, kwds); }
-PyObject *HeatmapList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getitem(self, index); }
-int       HeatmapList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setitem(self, index, item); }
-PyObject *HeatmapList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_getslice(self, start, stop); }
-int       HeatmapList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_setslice(self, start, stop, item); }
-int       HeatmapList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_len(self); }
-PyObject *HeatmapList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_richcmp(self, object, op); }
-PyObject *HeatmapList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_concat(self, obj); }
-PyObject *HeatmapList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_repeat(self, times); }
-PyObject *HeatmapList_str(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_str(self); }
-PyObject *HeatmapList_repr(TPyOrange *self) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_str(self); }
-int       HeatmapList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_contains(self, obj); }
-PyObject *HeatmapList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Heatmap) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_append(self, item); }
-PyObject *HeatmapList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> int") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_count(self, obj); }
-PyObject *HeatmapList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> HeatmapList") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_filter(self, args); }
-PyObject *HeatmapList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> int") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_index(self, obj); }
-PyObject *HeatmapList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_insert(self, args); }
-PyObject *HeatmapList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_native(self); }
-PyObject *HeatmapList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Heatmap") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_pop(self, args); }
-PyObject *HeatmapList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Heatmap) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_remove(self, obj); }
-PyObject *HeatmapList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_reverse(self); }
-PyObject *HeatmapList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_sort(self, args); }
-
-
-
 
 #include "distancemap.hpp"
 
@@ -2942,11 +2949,11 @@ C_NAMED(DistanceMapConstructor, Orange, "(distanceMatrix=, order=)")
 PyObject *DistanceMapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> DistanceMap")
 {
   PyTRY
+    NO_KEYWORDS
+
     float squeeze = 1.0;
     if (!PyArg_ParseTuple(args, "|f:DistanceMapConstructor.__call__", &squeeze))
       return NULL;
-
-    SETATTRIBUTES
 
     float absLow, absHigh;
     PDistanceMap dm = SELF_AS(TDistanceMapConstructor).call(squeeze, absLow, absHigh);
@@ -3003,7 +3010,7 @@ PyObject *DistanceMap_getCellIntensity(PyObject *self, PyObject *args, PyObject 
       return NULL;
 
     const float ci = SELF_AS(TDistanceMap).getCellIntensity(row, column);
-    if (ci == UNKNOWN_F)
+    if (ci == ILLEGAL_FLOAT)
       RETURN_NONE;
 
     return PyFloat_FromDouble(ci);
@@ -3395,7 +3402,7 @@ int Graph_getindex(TGraph *graph, PyObject *index)
 
   if (graph->myWrapper->orange_dict) {
     PyObject *objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "objects");
-    if (objs) {
+    if (objs && (objs != Py_None)) {
 
       if (PyDict_Check(objs)) {
         PyObject *pyidx = PyDict_GetItem(objs, index);
@@ -3437,7 +3444,7 @@ PyObject *Graph_nodesToObjects(TGraph *graph, const vector<int> &neighbours)
     PyObject *objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "returnIndices");
     if (!objs || (PyObject_IsTrue(objs) == 0)) {
       objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "objects");
-      if (objs) {
+      if (objs && (objs != Py_None)) {
         PyObject *res = PyList_New(neighbours.size());
 
         if (PyDict_Check(objs)) {
@@ -3775,25 +3782,5 @@ PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
   PyCATCH
 }
 
-
-PGraph triangulate(PExampleGenerator egen, const int &);
-//int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
-
-PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, nEdgeTypes]) -> graph")
-{
-  PyTRY
-    PExampleGenerator egen;
-    int nEdgeTypes = 1;
-    if (!PyArg_ParseTuple(args, "O&|i:triangulate", pt_ExampleGenerator, &egen, &nEdgeTypes))
-      return PYNULL;
-
-    PyObject *res = WrapOrange(triangulate(egen, nEdgeTypes));
-
-    PyObject *objs = PyString_FromString("objects");
-    Orange_setattrLow((TPyOrange *)res, objs, PyTuple_GET_ITEM(args, 0), false);
-    Py_DECREF(objs);
-    return res;
-  PyCATCH
-}
 
 #include "lib_components.px"

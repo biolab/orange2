@@ -85,109 +85,346 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
  #pragma warning (disable : 4786 4114 4018 4267)
 #endif
 
-#include "garbage.hpp"
 #include <vector>
 #include "root.hpp"
 #include "stladdon.hpp"
 
 #ifdef _MSC_VER
-  #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME) \
-    TClassDescription TOrangeVector< _TYPE >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+  #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME, _WRAPPED, _API) \
+    EXPIMP_TEMPLATE template class _API TOrangeVector< _TYPE, _WRAPPED >; \
+    _API TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components }; 
 
-  #define DEFINE__TOrangeVector_classDescription(_TYPE, _NAME) \
-    TClassDescription _TOrangeVector< _TYPE >::st_classDescription = { _NAME, &typeid(_TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+  #ifndef __PLACEMENT_NEW_INLINE
+    #define __PLACEMENT_NEW_INLINE
+    inline void * operator new(size_t, void *_P)	{return (_P); }
+  #endif
+
 #else
-  #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME) \
+  #define DEFINE_TOrangeVector_classDescription(_TYPE, _NAME, _WRAPPED, _API) \
     template<> \
-    TClassDescription TOrangeVector< _TYPE >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
-
-  #define DEFINE__TOrangeVector_classDescription(_TYPE, _NAME) \
-    template<> \
-    TClassDescription _TOrangeVector< _TYPE >::st_classDescription = { _NAME, &typeid(_TOrangeVector< _TYPE >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+    TClassDescription TOrangeVector< _TYPE, _WRAPPED >::st_classDescription = { _NAME, &typeid(TOrangeVector< _TYPE, _WRAPPED >), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
 #endif
 
 
-template<class T>
-class _TOrangeVector : public TOrange
+int ORANGE_API _RoundUpSize(const int &n);
+
+template<class T, bool Wrapped = true>
+class TOrangeVector : public TOrange
 { public:
+    typedef T *iterator;
+    typedef T const *const_iterator;
 
-    typedef typename vector<T>::iterator iterator;
-    typedef typename vector<T>::const_iterator const_iterator;
-    typedef typename vector<T>::reverse_iterator reverse_iterator;
-    typedef typename vector<T>::const_reverse_iterator const_reverse_iterator;
-    typedef typename vector<T>::reference reference;
-    typedef typename vector<T>::const_reference const_reference;
-    typedef typename vector<T>::size_type size_type;
-    typedef typename vector<T>::value_type value_type;
-
-    vector<T> __orvector;
-
-    reference       at(size_type i)  { return (__orvector).at(i); }
-    const_reference at(size_type i) const { return (__orvector).at(i); }
-    reference       back() { return (__orvector).back(); }
-    const_reference back() const { return (__orvector).back(); }
-    iterator        begin() { return (__orvector).begin(); }
-    const_iterator  begin() const { return (__orvector).begin(); }
-    void            clear() { (__orvector).clear(); }
-    bool            empty() const { return (__orvector).empty(); }
-    iterator        end() { return (__orvector).end(); }
-    const_iterator  end() const { return (__orvector).end(); }
-    iterator        erase(iterator it) { return (__orvector).erase(it); }
-    iterator        erase(iterator f, iterator l) { return (__orvector).erase(f, l); }
-    reference       front() { return (__orvector).front(); }
-    const_reference front() const { return (__orvector).front(); }
-
-/*    iterator        insert(iterator i_P, const T & x = T()) { return (__orvector).insert(i_P, x); }
-    void            insert(iterator i_P, const_iterator i_F, const_iterator i_L) { (__orvector).insert(i_P, i_F, i_L); }
-*/
-    void            insert(iterator i_P, const T & x = T()) { (__orvector).insert(i_P, x); }
-    void            insert(iterator i_P, const_iterator i_F, const_iterator i_L) { (__orvector).insert(i_P, i_F, i_L); }
-
-    void            push_back(T const &x) { (__orvector).push_back(x); }
-    reverse_iterator rbegin() { return (__orvector).rbegin(); }
-    const_reverse_iterator rbegin() const { return (__orvector).rbegin(); }
-    reverse_iterator rend() { return (__orvector).rend(); }
-    const_reverse_iterator rend() const { return (__orvector).rend(); }
-    void            reserve(size_type n) { (__orvector).reserve(n); }
-    void            resize(size_type n, T x = T()) { (__orvector).resize(n, x); }
-    size_type       size() const { return (__orvector).size(); }
-                    operator const vector<T> &() const { return __orvector; }
-    reference       operator[](size_type i)  { return (__orvector).operator[](i); }
-    const_reference operator[](size_type i) const { return (__orvector).operator[](i); }
-
-    _TOrangeVector()
-      {}
-
-    _TOrangeVector(const size_type &i_N, const T &i_V = T())
-      : __orvector(i_N, i_V)
-      {}
-
-    _TOrangeVector(const vector<T> &i_X)
-      : __orvector(i_X)
-      {}
-
-    ~_TOrangeVector()
-      {}
+    iterator _First, _Last, _End;
 
     static TClassDescription st_classDescription;
+    virtual TClassDescription const *classDescription() const     { return &st_classDescription; }
+    virtual TOrange *clone() const                                { return mlnew TOrangeVector<T, Wrapped>(*this); }
 
-    virtual TClassDescription const *classDescription() const
-      { return &st_classDescription; }
+    class reverse_iterator {
+    public:
+      iterator position;
 
-    virtual TOrange *clone() const
-      { return mlnew _TOrangeVector<T>(*this); }
+      explicit reverse_iterator(iterator p)  : position(p) {}
+      reverse_iterator(const reverse_iterator &old) : position(old.position) {}
+
+      reverse_iterator &operator ++()
+      { --position;
+        return *this; 
+      }
+
+      reverse_iterator operator ++(int)
+      { reverse_iterator sv = *this;
+        position--;
+        return sv;
+      }
+
+      reverse_iterator &operator --()
+      { ++position;
+        return *this;
+      }
+
+      reverse_iterator operator --(int)
+      { reverse_iterator sv = *this;
+        position++;
+        return sv;
+      }
+
+      T &operator *() const
+      { return position[-1]; }
+
+      T *operator->() const
+      { return (&**this); }
+
+      reverse_iterator operator +(const int &N)
+      { return reverse_iterator(position - N); }
+
+      reverse_iterator operator -(const int &N)
+      { return reverse_iterator(position + N); }
+
+      int operator -(const reverse_iterator &other) const
+      { return other.position - position; }
+
+      reverse_iterator &operator +=(const int &N)
+      { position -= N;
+        return *this;
+      }
+
+      reverse_iterator &operator -=(const int &N)
+      { position += N;
+        return *this;
+      }
+
+      bool operator == (const reverse_iterator &other) const
+      { return position == other.position; }
+
+      bool operator != (const reverse_iterator &other) const
+      { return position != other.position; }
+
+      bool operator < (const reverse_iterator &other) const
+      { return position > other.position; }
+
+      bool operator <= (const reverse_iterator &other) const
+      { return position >= other.position; }
+
+      bool operator > (const reverse_iterator &other) const
+      { return position < other.position; }
+
+      bool operator >= (const reverse_iterator &other) const
+      { return position <= other.position; }
+    };
+
+    inline void _Set(const iterator &p, const T &X) const
+    { new ((void *)p) T(X); }
+
+    TOrangeVector<T, Wrapped>()
+    : _First(NULL), _Last(NULL), _End(NULL)
+    {}
+
+
+    TOrangeVector<T, Wrapped>(const int &N, const T &V = T())
+    : _First(NULL), _Last(NULL), _End(NULL)
+    {
+      _Resize(N);
+      int n = N;
+      for(; n--; _Set(_Last++, V));
+    }
+
+
+    TOrangeVector<T, Wrapped>(const TOrangeVector<T, Wrapped> &old)
+    : _First(NULL), _Last(NULL), _End(NULL)
+    {
+      _Resize(old.size());
+      for(const_iterator r = old._First; r != old._Last; _Set(_Last++, *(r++)));
+    }
+     
+     
+    TOrangeVector<T, Wrapped>(const vector<T> &old)
+    : _First(NULL), _Last(NULL), _End(NULL)
+    {
+      _Resize(old.size());
+      for(typename vector<T>::const_iterator vi(old.begin()), vi_end(old.end()); vi != vi_end; _Set(_Last++, *(vi++)));
+    }
+
+
+    TOrangeVector<T, Wrapped> &operator =(const TOrangeVector<T, Wrapped> old)
+    { 
+      _Destroy(_First, _Last);
+      _Resize(old.size());
+      for(iterator f = old._First; f != old._Last; _Set(_Last++, *(f++)));
+      return *this;
+    }
+
+
+    ~TOrangeVector<T, Wrapped>()
+    { 
+      _Destroy(_First, _Last);
+      free(_First);
+      _First = _Last = _End = NULL;
+    }
+
+
+    operator vector<T>() const
+    {
+      vector<T> conv;
+      conv.resize(size());
+      int i = 0;
+      for(iterator p = _First; p != _Last; conv[i++] = *(p++));
+      return conv;
+    }
+
+
+    virtual int traverse(visitproc visit, void *arg) const
+    { 
+      TRAVERSE(TOrange::traverse);
+      if (Wrapped)
+        for(const_iterator be=begin(), ee=end(); be!=ee; be++)
+          PVISIT(*(const GCPtr<TOrange> *)&*be);
+      return 0;
+    }
+
+    virtual int dropReferences()
+    { DROPREFERENCES(TOrange::dropReferences);
+      clear();
+      return 0;
+    }
+
+    iterator begin()                       { return _First; }
+    const_iterator begin() const           { return _First; }
+    reverse_iterator rbegin()              { return reverse_iterator(end()); }
+    iterator end()                         { return _Last; }
+    const_iterator end() const             { return _Last; }
+    reverse_iterator rend()                { return reverse_iterator(begin()); }
+
+    T &back()                              { return _Last[-1]; }
+    const T &back() const                  { return _Last[-1]; }
+    T &front()                             { return *_First; }
+    const T &front() const                 { return *_First; }
+
+    T &operator[](const int i)             { return _First[i]; }
+    const T &operator[](const int i) const { return _First[i]; }
+    
+    bool empty() const                     { return _First == _Last; }
+    int size() const                       { return _Last - _First; }
+
+    T &at(const int &N)
+    { if (N >= size())
+        raiseError("vector subscript out of range");
+      return _First[N];
+    }
+
+    const T &at(const int &N) const
+    { if (N >= size())
+        raiseError("vector subscript out of range");
+      return _First[N];
+    }
+
+    void clear()
+    { _Destroy(_First, _Last);
+      _First = _End = _Last = NULL;
+    }
+
+    iterator erase(iterator it)
+    { 
+      it->~T();
+      memmove(it, it+1, (_Last - it - 1) * sizeof(T));
+      _Last--;
+      return it;
+    }
+
+    iterator erase(iterator first, iterator last)
+    { 
+      if (first != last) {
+        _Destroy(first, last);
+        if (last != _Last)
+          memmove(first, last, (_Last - last - 1) * sizeof(T));
+        _Last -= last - first;
+      }
+      return first;
+    }
+
+    
+    iterator insert(iterator p, const T &X = T())
+    { 
+      const int ind = p - _First;
+      insert(p, 1, X);
+      return _First + ind;        
+    }
+
+
+    void insert(iterator p, const int &n, const T &X)
+    {
+      if (_End - _Last < n)
+        _Resize(size() + n);
+
+      iterator e = p + n;
+      if (p != _Last)
+        memmove(e, p, (_Last - p - 1) * sizeof(T));
+
+      for(; p != e; _Set(p++, X));
+      _Last += n;
+    }
+
+
+    void insert(iterator p, iterator first, iterator last)
+    {
+      const int n = last - first;
+      if (_End - _Last < n)
+        _Resize(size() + n);
+      
+      iterator e =  p + n;
+      if (p != _Last)
+        memmove(e, p, (_Last - p - 1) * sizeof(T));
+
+      for(; first != last; _Set(p++, *(first++)));
+      _Last += n;
+    }
+
+
+    void push_back(T const &x)
+    {  
+       if (_Last == _End)
+        _Resize(size() + 1);
+      _Set(_Last++, x);
+    }
+
+    void reserve(const int n)
+    { if (n >= _Last - _First)
+        _Resize(n);
+    }
+
+    void resize(const int n, T x = T())
+    { if (n < size()) {
+        _Destroy(_First + n, _Last);
+        _Resize(n);
+        _Last = _First + n;
+      }
+      else {
+        _Resize(n);
+        for(iterator _nLast = _First + n; _Last != _nLast; _Set(_Last++, x));
+      }
+    }
+
+    void _Destroy(const iterator first, const iterator last)
+    { for(iterator p = first; p != last; p++)
+        p->~T(); 
+    }
+
+
+    void _Resize(const int &n)
+    {
+      int sze = _RoundUpSize(n);
+      if (!_First) {
+        _Last = _First = (iterator)malloc(sze * sizeof(T));
+        _End = _First + sze;
+      }
+      else if (_End - _First != sze) {
+        int osize = size();
+        _First = (iterator)realloc(_First, sze * sizeof(T));
+        _Last = _First + osize;
+        _End = _First + sze;
+      }
+    }
 };
 
-#define TBoolList _TOrangeVector<bool>
-#define TIntList _TOrangeVector<int>
-#define TLongList _TOrangeVector<long>
-#define TFloatList _TOrangeVector<float>
-#define TIntFloatList _TOrangeVector<pair<int, float> >
-#define TFloatFloatList _TOrangeVector<pair<float, float> >
-#define TDoubleList _TOrangeVector<double>
-#define TStringList _TOrangeVector<string>
 
-#define VWRAPPER(x) typedef GCPtr< T##x > P##x;
+/*EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<bool, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<int, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<long, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<float, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<int, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<pair<int, float>, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<pair<float, float>, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<double, false>;
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<string, false>;
+*/
+#define TBoolList TOrangeVector<bool, false>
+#define TIntList TOrangeVector<int, false>
+#define TLongList TOrangeVector<long, false>
+#define TFloatList TOrangeVector<float, false>
+#define TIntFloatList TOrangeVector<pair<int, float>, false >
+#define TFloatFloatList TOrangeVector<pair<float, float>, false >
+#define TDoubleList TOrangeVector<double, false>
+#define TStringList TOrangeVector<string, false>
 
 VWRAPPER(BoolList)
 VWRAPPER(IntList)
@@ -201,36 +438,52 @@ VWRAPPER(StringList)
 WRAPPER(Variable)
 
 #include "values.hpp"
+#include "vars.hpp"
 
-template<>
-class _TOrangeVector<TValue> : public TOrange
-{public:
-  VECTOR_INTERFACE(TValue, __orvector);
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4275)
+#endif
 
-  PVariable variable;
+/* This is to fool pyprops
+#define TValueList _TOrangeVector<float>
+*/
 
-  _TOrangeVector(PVariable var = PVariable())
-    : variable(var)
-    {}
+class ORANGE_API TValueList : public TOrangeVector<TValue, false>
+{
+public:
+  __REGISTER_CLASS
+
+  PVariable variable; //P the variable to which the list applies
+
+  TValueList(PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(),
+    variable(var)
+  {}
  
-  _TOrangeVector(const vector<TValue>::size_type &i_N, const TValue &i_V = TValue(), PVariable var = PVariable())
-    : __orvector(i_N, i_V), variable(var)
-    {}
+  TValueList(const int &N, const TValue &V = TValue(), PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(N, V),
+    variable(var)
+  {}
 
-  _TOrangeVector(const vector<TValue> &i_X, PVariable var = PVariable())
-    : __orvector(i_X), variable(var)
-    {}
+  TValueList(const TOrangeVector<TValue, false> &i_X, PVariable var = PVariable())
+  : TOrangeVector<TValue, false>(i_X),
+    variable(var)
+  {}
 
-  _TOrangeVector(const _TOrangeVector<TValue> &other)
-    : __orvector(other.__orvector), variable(other.variable)
-    {}
-
-  static TClassDescription st_classDescription;
-  virtual TClassDescription const *classDescription() const;
-  virtual TOrange *clone() const;
+  TValueList(const TValueList &other)
+  : TOrangeVector<TValue, false>(other),
+    variable(other.variable)
+  {}
 
   int traverse(visitproc visit, void *arg) const
-  { TRAVERSE(TOrange::traverse);
+  { 
+    TRAVERSE(TOrange::traverse);
+
+    for(TValue *p = _First; p != _Last; p++)
+      if (p->svalV)
+        PVISIT(p->svalV);
+
     PVISIT(variable);
     return 0;
   }
@@ -242,97 +495,15 @@ class _TOrangeVector<TValue> : public TOrange
   }
 };
 
-#define TValueList _TOrangeVector<TValue>
-VWRAPPER(ValueList)
 
-
-template<class T>
-class TOrangeVector : public TOrange
-{ public:
-
-    typedef typename vector<T>::iterator iterator;
-    typedef typename vector<T>::const_iterator const_iterator;
-    typedef typename vector<T>::reverse_iterator reverse_iterator;
-    typedef typename vector<T>::const_reverse_iterator const_reverse_iterator;
-    typedef typename vector<T>::reference reference;
-    typedef typename vector<T>::const_reference const_reference;
-    typedef typename vector<T>::size_type size_type;
-    typedef typename vector<T>::value_type value_type;
-
-    vector<T> __orvector;
-
-    reference       at(size_type i)  { return (__orvector).at(i); }
-    const_reference at(size_type i) const { return (__orvector).at(i); }
-    reference       back() { return (__orvector).back(); }
-    const_reference back() const { return (__orvector).back(); }
-    iterator        begin() { return (__orvector).begin(); }
-    const_iterator  begin() const { return (__orvector).begin(); }
-    void            clear() { (__orvector).clear(); }
-    bool            empty() const { return (__orvector).empty(); }
-    iterator        end() { return (__orvector).end(); }
-    const_iterator  end() const { return (__orvector).end(); }
-    iterator        erase(iterator it) { return (__orvector).erase(it); }
-    iterator        erase(iterator f, iterator l) { return (__orvector).erase(f, l); }
-    reference       front() { return (__orvector).front(); }
-    const_reference front() const { return (__orvector).front(); }
-    void            insert(iterator i_P, const T &x = T()) { (__orvector).insert(i_P, x); }
-    void            insert(iterator i_P, const_iterator i_F, const_iterator i_L) { (__orvector).insert(i_P, i_F, i_L); }
-    void            push_back(T const &x) { (__orvector).push_back(x); }
-    reverse_iterator rbegin() { return (__orvector).rbegin(); }
-    const_reverse_iterator rbegin() const { return (__orvector).rbegin(); }
-    reverse_iterator rend() { return (__orvector).rend(); }
-    const_reverse_iterator rend() const { return (__orvector).rend(); }
-    void            reserve(size_type n) { (__orvector).reserve(n); }
-    void            resize(size_type n, T x = T()) { (__orvector).resize(n, x); }
-    size_type       size() const { return (__orvector).size(); }
-                    operator const vector<T> &() const { return __orvector; }
-    reference       operator[](size_type i)  { return (__orvector).operator[](i); }
-    const_reference operator[](size_type i) const { return (__orvector).operator[](i); }
-
-
-    TOrangeVector()
-      {}
- 
-    TOrangeVector(const size_type &i_N, const T &i_V = T())
-      : __orvector(i_N, i_V)
-      {}
-
-    TOrangeVector(const vector<T> &i_X)
-      : __orvector(i_X)
-      {}
-
-    TOrangeVector(const TOrangeVector<T> &other)
-      : TOrange(other),
-        __orvector(other.__orvector)
-      {}
-
-    int traverse(visitproc visit, void *arg) const
-    { TRAVERSE(TOrange::traverse);
-      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
-        PVISIT(*be);
-      return 0;
-    }
-
-    int dropReferences()
-    { DROPREFERENCES(TOrange::dropReferences);
-      clear();
-      return 0;
-    }
-
-    static TClassDescription st_classDescription;
-
-    virtual TClassDescription const *classDescription() const
-      { return &st_classDescription; }
-
-    virtual TOrange *clone() const
-      { return mlnew TOrangeVector<T>(*this); }
-};
+WRAPPER(ValueList)
 
 
 #define TVarList TOrangeVector<PVariable> 
 VWRAPPER(VarList)
 
-class TAttributedFloatList : public _TOrangeVector<float>
+
+class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
 {
 public:
   PVarList attributes;
@@ -344,13 +515,13 @@ public:
   : attributes(vlist)
   {}
 
-  TAttributedFloatList(PVarList vlist, const size_type &i_N, const float &f = 0.0)
-  : _TOrangeVector<float>(i_N, f),
+  TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
+  : TOrangeVector<float, false>(i_N, f),
     attributes(vlist)
   {}
 
   TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
-  : _TOrangeVector<float>(i_X),
+  : TOrangeVector<float,false>(i_X),
     attributes(vlist)
   {}
 
@@ -360,7 +531,7 @@ public:
 };
 
 
-class TAttributedBoolList : public _TOrangeVector<bool>
+class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
 {
 public:
   PVarList attributes;
@@ -372,13 +543,13 @@ public:
   : attributes(vlist)
   {}
 
-  TAttributedBoolList(PVarList vlist, const size_type &i_N, const bool b= false)
-  : _TOrangeVector<bool>(i_N, b),
+  TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
+  : TOrangeVector<bool, false>(i_N, b),
     attributes(vlist)
   {}
 
   TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
-  : _TOrangeVector<bool>(i_X),
+  : TOrangeVector<bool, false>(i_X),
     attributes(vlist)
   {}
 
@@ -387,12 +558,62 @@ public:
   virtual TOrange *clone() const;
 };
 
+#ifdef _MSC_VER
+  #pragma warning(pop)
+#endif
 
 /* This is to fool pyprops.py
 #define TAttributedFloatList _TOrangeVector<float>
 #define TAttributedBoolList _TOrangeVector<bool>
 */
-VWRAPPER(AttributedFloatList)
-VWRAPPER(AttributedBoolList)
+WRAPPER(AttributedFloatList)
+WRAPPER(AttributedBoolList)
+
+
+template class ORANGE_API std::vector<int>;
+template class ORANGE_API std::vector<float>;
+
+/* These are defined as classes, not templates, so that 
+class TIntIntPair {
+public:
+  int first, second;
+  TIntIntPair(const int &f, const int &s)
+  : first(f),
+    second(s)
+  {}
+};
+
+class TIntIntPair {
+public:
+  int first, second;
+  TIntIntPair(const int &f, const int &s)
+  : first(f),
+    second(s)
+  {}
+};
+
+class TIntIntPair {
+public:
+  int first, second;
+  TIntIntPair(const int &f, const int &s)
+  : first(f),
+    second(s)
+  {}
+};
+
+class TIntIntPair {
+public:
+  int first, second;
+  TIntIntPair(const int &f, const int &s)
+  : first(f),
+    second(s)
+  {}
+};
+*/
+
+#ifdef _MSC_VER
+  template class ORANGE_API std::vector<pair<int, int> >;
+  template class ORANGE_API std::vector<int>;
+#endif
 
 #endif

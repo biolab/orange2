@@ -25,7 +25,6 @@
 
 #include <string>
 #include <vector>
-#include "garbage.hpp"
 #include "values.hpp"
 using namespace std;
 
@@ -35,8 +34,13 @@ long getMetaID();
 
 WRAPPER(Variable)
 
+#ifdef _MSC_VER
+  #pragma warning (push)
+  #pragma warning (disable: 4275)
+#endif
+
 // A vector of meta values with id's
-class TMetaValues : public vector<pair<long, TValue> > {
+class ORANGE_API TMetaValues : public vector<pair<long, TValue> > {
 public:
   TValue &operator[](long id);
   const TValue &operator[](long id) const;
@@ -46,8 +50,12 @@ public:
   void removeValueIfExists(const long &id);
 };
 
+#ifdef _MSC_VER
+  #pragma warning (pop)
+#endif
 
-class TMetaDescriptor {
+
+class ORANGE_API TMetaDescriptor {
 public:
   long   id;
   PVariable variable;
@@ -55,10 +63,16 @@ public:
   TMetaDescriptor();
   TMetaDescriptor(const long &ai, const PVariable &avar);
   TMetaDescriptor(const TMetaDescriptor &);
+
+  /* We don't need this, but need to provide it to be able to export the class to a DLL*/
+  bool operator <(const TMetaDescriptor &other) const  { return id < other.id; }
+  bool operator ==(const TMetaDescriptor &other) const  { return id == other.id; }
 };
 
 
-class TMetaVector : public vector<TMetaDescriptor> {
+EXPIMP_TEMPLATE template class ORANGE_API std::vector<TMetaDescriptor>;
+
+class ORANGE_API TMetaVector : public vector<TMetaDescriptor> {
 public:
   TMetaDescriptor *operator[](PVariable);
   TMetaDescriptor const *operator[](PVariable) const;

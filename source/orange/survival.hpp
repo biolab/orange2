@@ -26,7 +26,7 @@
 #include <map>
 #include "classify.hpp"
 
-class TKaplanMeier : public TOrange {
+class ORANGE_API TKaplanMeier : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -46,7 +46,7 @@ public:
 WRAPPER(KaplanMeier);
 
 
-class TClassifierForKMWeight : public TClassifier {
+class ORANGE_API TClassifierForKMWeight : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -66,7 +66,7 @@ public:
 };
 
 
-class TClassifierForLinearWeight : public TClassifier {
+class ORANGE_API TClassifierForLinearWeight : public TClassifier {
 public:
   __REGISTER_CLASS
 

@@ -31,7 +31,7 @@
 WRAPPER(Filter);
 /*  An abstract class, used to select examples.
     It defines an abstract bool operator()(TExample &) which must be redefined in derived classes.  */
-class TFilter : public TOrange {
+class ORANGE_API TFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -50,7 +50,7 @@ VWRAPPER(FilterList)
 
 
 /// Randomly chooses examples with given probability.
-class TFilter_random : public TFilter {
+class ORANGE_API TFilter_random : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -64,7 +64,7 @@ public:
 
 
 /// Selects examples with (or without) special values. The results can be negated by setting the negate flag.
-class TFilter_hasSpecial : public TFilter {
+class ORANGE_API TFilter_hasSpecial : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -74,11 +74,11 @@ public:
 
 
 /// Selects examples with all values defined
-class TFilter_isDefined : public TFilter {
+class ORANGE_API TFilter_isDefined : public TFilter {
 public:
   __REGISTER_CLASS
 
-  PAttributedBoolList check; //P tells which attributes to check; checks all if the list is empty
+  PAttributedBoolList check; //PR tells which attributes to check; checks all if the list is empty
 
   TFilter_isDefined(bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
@@ -88,7 +88,7 @@ public:
 
 
 /// Selects examples with known class value
-class TFilter_hasClassValue : public TFilter {
+class ORANGE_API TFilter_hasClassValue : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -98,7 +98,7 @@ public:
 
 
 /// Selects examples for which the attribute at position 'position' (not) equals 'value'. The result can be negated by setting the negate flas.
-class TFilter_sameValue : public TFilter {
+class ORANGE_API TFilter_sameValue : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -110,7 +110,7 @@ public:
 };
 
 WRAPPER(ValueFilter)
-class TValueFilter : public TOrange {
+class ORANGE_API TValueFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -126,7 +126,7 @@ public:
 
 
 
-class TValueFilter_continuous : public TValueFilter {
+class ORANGE_API TValueFilter_continuous : public TValueFilter {
 public:
   __REGISTER_CLASS
 
@@ -143,7 +143,7 @@ public:
 };
 
 
-class TValueFilter_discrete : public TValueFilter {
+class ORANGE_API TValueFilter_discrete : public TValueFilter {
 public:
   __REGISTER_CLASS
 
@@ -156,7 +156,7 @@ public:
 };
 
 
-class TValueFilter_string : public TValueFilter {
+class ORANGE_API TValueFilter_string : public TValueFilter {
 public:
   __REGISTER_CLASS
 
@@ -171,7 +171,7 @@ public:
 };
 
 
-class TValueFilter_stringList : public TValueFilter {
+class ORANGE_API TValueFilter_stringList : public TValueFilter {
 public:
   __REGISTER_CLASS
 
@@ -189,7 +189,7 @@ VWRAPPER(ValueFilterList)
 
 
 /// With given probability selects examples for which any of the given attribute has some of the given values 
-class TFilter_values : public TFilter {
+class ORANGE_API TFilter_values : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -221,7 +221,7 @@ public:
 
 
 /// Selects examples (not) equal to the given example.
-class TFilter_sameExample : public TFilter {
+class ORANGE_API TFilter_sameExample : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -233,7 +233,7 @@ public:
 
 
 /// Selects examples (not) compatible with the given example.
-class TFilter_compatibleExample : public TFilter {
+class ORANGE_API TFilter_compatibleExample : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -244,7 +244,7 @@ public:
 };
 
 
-class TFilter_conjunction : public TFilter {
+class ORANGE_API TFilter_conjunction : public TFilter {
 public:
   __REGISTER_CLASS
 
@@ -256,7 +256,7 @@ public:
 };
 
 
-class TFilter_disjunction : public TFilter {
+class ORANGE_API TFilter_disjunction : public TFilter {
 public:
   __REGISTER_CLASS
 

@@ -21,7 +21,6 @@
 
 
 #include "values.hpp"
-#include "errors.hpp"
 #include "vars.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"

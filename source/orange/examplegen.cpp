@@ -27,7 +27,7 @@
 
 #include "examplegen.ppp"
 
-DEFINE_TOrangeVector_classDescription(PExampleGenerator, "TExampleGeneratorList")
+DEFINE_TOrangeVector_classDescription(PExampleGenerator, "TExampleGeneratorList", true, ORANGE_API)
 
 
 int generatorVersion=0;

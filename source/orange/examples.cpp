@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <iomanip>
-#include "errors.hpp"
 #include "stladdon.hpp"
 #include "vars.hpp"
 #include "domain.hpp"
@@ -34,7 +33,7 @@
 #include "examples.ppp"
 #include "crc.h"
 
-DEFINE_TOrangeVector_classDescription(PExample, "TExampleList")
+DEFINE_TOrangeVector_classDescription(PExample, "TExampleList", true, ORANGE_API)
 
 TExample::TExample()
 : values(NULL),
@@ -91,27 +90,23 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 }
 
 
-void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
+void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID, vector<bool> &defined)
 {
   int position = var ? domain->getVarNum(var, false) : ILLEGAL_INT;
 
   if (position != ILLEGAL_INT) {
     // Check if this is an ordinary attribute
     if (position >= 0) {
-      TValue &val = values[position];
-      if (val.isSpecial())
-        val = srcval;
-      else if (val!=srcval)
+      if (!mergeTwoValues(values[position], srcval, defined[position]))
         raiseError("ambiguous value of attribute '%s'", var->name.c_str());
+      else
+        defined[position] = true;
     }
     
     else {
       // Is it meta?
       if (hasMeta(position)) {
-        TValue &val = meta[position];
-        if (val.isSpecial())
-          val = srcval;
-        else if (val!=srcval)
+        if (!mergeTwoValues(meta[metaID], srcval, true))
           raiseError("ambiguous value for meta-attribute '%s'", var->name.c_str());
       }
       else
@@ -126,14 +121,11 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
        we shall copy it nevertheless */
     if (metaID && !domain->getMetaVar(metaID, false))
       if (hasMeta(metaID)) {
-        TValue &val = meta[metaID];
-        if (val.isSpecial())
-          val = srcval;
-        else if (val!=srcval)
+        if (!mergeTwoValues(meta[metaID], srcval, true))
           raiseError("ambiguous value for meta-attribute %i", position);
       }
       else
-        setMeta(metaID, srcval);
+        setMeta(metaID  , srcval);
   }
 }
 
@@ -146,6 +138,8 @@ TExample::TExample(PDomain dom, PExampleList elist)
     raiseError("example needs a domain");
 
   const int attrs = domain->variables->size();
+  vector<bool> defined(attrs, false);
+
   TValue *vi = values = mlnew TValue[attrs];
   values_end = values + attrs;
   PITERATE(TVarList, di, dom->variables)
@@ -156,19 +150,19 @@ TExample::TExample(PDomain dom, PExampleList elist)
     TExample::iterator ei((*eli)->begin()), ee((*eli)->end());
     for(; ei!=ee; ei++, vli++) 
       if (!(*ei).isSpecial())
-        insertVal(*ei, *vli);
+        insertVal(*ei, *vli, 0, defined);
 
     set<int> metasNotToCopy;
     ITERATE(TMetaVector, mai, (*eli)->domain->metas) {
       metasNotToCopy.insert((*mai).id);
       if ((*eli)->hasMeta((*mai).id))
-        insertVal((*eli)->getMeta((*mai).id), (*mai).variable, (*mai).id);
+        insertVal((*eli)->getMeta((*mai).id), (*mai).variable, (*mai).id, defined);
     }
 
     set<int>::iterator mend(metasNotToCopy.end());
     ITERATE(TMetaValues, mi, (*eli)->meta)
       if (metasNotToCopy.find((*mi).first)==mend)
-        insertVal((*mi).second, PVariable(), (*mi).first);
+        insertVal((*mi).second, PVariable(), (*mi).first, defined);
   }
 
   ITERATE(TMetaVector, mai, domain->metas)
@@ -321,7 +315,7 @@ bool TExample::compatible(const TExample &other) const
 void TExample::addToCRC(unsigned long &crc) const
 {
   TValue *vli = values;
-  const_PITERATE(TVarList, vi, domain->attributes) {
+  const_PITERATE(TVarList, vi, domain->variables) {
     if ((*vi)->varType == TValue::INTVAR)
       add_CRC((const unsigned char)(vli->isSpecial() ? ((*vi)->noOfValues()) : vli->intV), crc);
     else if (((*vi)->varType == TValue::FLOATVAR) && !vli->isSpecial())

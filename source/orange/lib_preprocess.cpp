@@ -74,7 +74,8 @@ C_CALL ( BiModalDiscretization, Discretization, "() | (attribute, examples[, wei
 PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weight]) -> Variable")
 {
   PyTRY
-    SETATTRIBUTES 
+    NO_KEYWORDS
+
     PyObject *variable;
     PExampleGenerator egen;
     int weightID=0;
@@ -145,9 +146,9 @@ int getTargetClass(PVariable classVar, PyObject *pyval)
 PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(domain | examples, weightID) -> domain")
 { 
   PyTRY
-    SETATTRIBUTES 
+    NO_KEYWORDS
 
-    if (args && (PyTuple_Size(args)>=1) && PyOrDomain_Check(PyTuple_GET_ITEM(args, 0))) {
+    if (args && (PyTuple_GET_SIZE(args)<=2) && PyOrDomain_Check(PyTuple_GET_ITEM(args, 0))) {
       PDomain domain;
       PyObject *pyval = PYNULL;
       if (!PyArg_ParseTuple(args, "O&|O", cc_Domain, &domain, &pyval))
@@ -169,6 +170,7 @@ PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywo
     if (targetClass == -2)
       return PYNULL;
 
+    //printf("%p-%p\n", self, ((TPyOrange *)self)->ptr);
     return WrapOrange(SELF_AS(TDomainContinuizer)(egen, weightID, targetClass));
 
   PyCATCH
@@ -189,7 +191,8 @@ C_CALL3(RemoveUnusedValues, RemoveUnusedValues, Orange, "([attribute, examples[,
 PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples[, weightID][, suspicious]) -/-> Domain")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *suspiciousList=NULL;
     int weight=0;
@@ -210,7 +213,7 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 PyObject *RemoveUnusedValues_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weightId]) -> attribute")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     PExampleGenerator egen;
     PVariable var;
@@ -263,7 +266,8 @@ PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Bayes, TPreprocessor_addCensor
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
 { 
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     int weightID=0;
     PExampleGenerator egen = exampleGenFromArgs(args, weightID);
     if (!egen)
@@ -494,7 +498,8 @@ C_NAMED(SubsetsGenerator_withRestrictions, SubsetsGenerator, "([subGenerator=])"
 PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs, new-name, weightID) -> (Variable, float)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *boundList;
     char *name;
@@ -549,7 +554,8 @@ PyObject *SubsetsGenerator_reset(PyObject *self, PyObject *args) PYARGS(METH_VAR
 
 PyObject *SubsetsGenerator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([var0, var1] | domain |) -> SubsetsGenerator")
 { PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     SubsetsGenerator_reset(self, args);
     Py_INCREF(self);
     return self;
@@ -770,7 +776,8 @@ PyObject *IG_removeEmpty(PyObject *self) PYARGS(0, "() -> None")
 PyObject *IGConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs) -> IG")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *boundList;
     int weight=0;
@@ -790,7 +797,8 @@ PyObject *IGConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 PyObject *ColorIG_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(ig) -> [int]")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PIG graph;
     return PyArg_ParseTuple(args, "O&:ColorIG.__call__", cc_IG, &graph) ? WrapOrange(SELF_AS(TColorIG)(graph)) : PYNULL;
   PyCATCH
@@ -847,7 +855,8 @@ PYCLASSCONSTANT_INT(FeatureByIM, CompletionByBayes, completion_bayes)
 PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example, bound-attrs[, weightID]) -> IM")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID = 0;
@@ -891,7 +900,8 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example, bound-attrs[, weightID]) -> IM")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID=0;
@@ -928,8 +938,10 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
 
 
 PyObject *IMByRowsPreprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(IMByRows) -> None")
-{ PyTRY
-    SETATTRIBUTES
+{ 
+  PyTRY
+    NO_KEYWORDS
+    
     PIMByRows pimbr;
     if (!PyArg_ParseTuple(args, "O&", cc_IMByRows, &pimbr))
       PYERROR(PyExc_TypeError, "IMByRows expected", PYNULL)
@@ -1147,7 +1159,8 @@ PyObject *IMByRows_get_columnExamples(PyObject *self) PYDOC("Values of bound att
 PyObject *ClustersFromIM_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(im) -> IMClustering")
 { 
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PIM im;
     if (!PyArg_ParseTuple(args, "O&:ClustersFromIM.__call__", cc_IM, &im))
       return PYNULL;
@@ -1163,7 +1176,8 @@ PyObject *ClustersFromIM_call(PyObject *self, PyObject *args, PyObject *keywords
 PyObject *AssessIMQuality_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(im) -> float")
 { 
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PIM im;
     if (!PyArg_ParseTuple(args, "O&:AssessIMQuality.__call__", cc_IM, &im))
       return PYNULL;
@@ -1208,7 +1222,8 @@ PYCLASSCONSTANT_INT(FeatureByDistributions, CompletionByBayes, completion_bayes)
 PyObject *ExampleDistConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, bound-attrs[, weightID]) -> ExampleDistVector")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID=0;
@@ -1229,7 +1244,7 @@ PyObject *ExampleDistConstructor_call(PyObject *self, PyObject *args, PyObject *
 
 
 PyObject *convertToPython(const T_ExampleDist &ed)
-{ return Py_BuildValue("NN", Example_FromWrappedExample(ed.example), WrapOrange(ed.distribution)); }
+{ return Py_BuildValue("NN", Example_FromWrappedExample(ed.example), WrapOrange(const_cast<GCPtr<TDistribution> &>(ed.distribution))); }
 
 
 
@@ -1260,7 +1275,8 @@ PyObject *ExampleDistVector_native(PyObject *self) PYARGS(0, "() -> [[[float]]] 
 PyObject *ClustersFromDistributions_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example-dist-vector) -> DistClustering")
 { 
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleDistVector edv;
     if (!PyArg_ParseTuple(args, "O&:ClustersFromDistributions.__call__", cc_ExampleDistVector, &edv))
       return PYNULL;

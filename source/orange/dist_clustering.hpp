@@ -66,7 +66,7 @@ public:
 
 WRAPPER(MeasureAttribute)
 
-class TDistributionAssessor : public TOrange {
+class ORANGE_API TDistributionAssessor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -82,7 +82,7 @@ public:
 WRAPPER(DistributionAssessor)
 
 
-class TStopDistributionClustering : public TOrange {
+class ORANGE_API TStopDistributionClustering : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual bool operator()(const float &baseQuality, const TDistProfitQueue &, const TDistClusterNode *clusters) const =0;
@@ -93,7 +93,7 @@ WRAPPER(StopDistributionClustering);
 
 
 
-class T_ExampleDist {
+class ORANGE_API T_ExampleDist {
 public:
   PExample example;
   PDistribution distribution;
@@ -101,7 +101,7 @@ public:
   T_ExampleDist(PExample anexample=PExample(), PDistribution distribution=PDistribution());
 };
 
-class TExampleDistVector : public TOrange {
+class ORANGE_API TExampleDistVector : public TOrange {
 public:
   __REGISTER_CLASS
   vector<T_ExampleDist> values;
@@ -113,7 +113,7 @@ public:
 WRAPPER(ExampleDistVector)
 
 
-class TExampleDistConstructor : public TOrange {
+class ORANGE_API TExampleDistConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual PExampleDistVector operator()(PExampleGenerator, TVarList &, const int &weightID=0) =0;
@@ -122,7 +122,7 @@ public:
 WRAPPER(ExampleDistConstructor)
 
 
-class TExampleDistBySorting : public TExampleDistConstructor {
+class ORANGE_API TExampleDistBySorting : public TExampleDistConstructor {
 public:
   __REGISTER_CLASS
   virtual PExampleDistVector operator()(PExampleGenerator, TVarList &, const int &weightID=0);
@@ -131,7 +131,7 @@ public:
 
 
 
-class TClustersFromDistributions : public TOrange {
+class ORANGE_API TClustersFromDistributions : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual PExampleClusters operator()(PExampleDistVector)=0;
@@ -140,7 +140,7 @@ public:
 WRAPPER(ClustersFromDistributions);
 
 
-class TClustersFromDistributionsByAssessor : public TClustersFromDistributions {
+class ORANGE_API TClustersFromDistributionsByAssessor : public TClustersFromDistributions {
 public:
   __REGISTER_CLASS
 
@@ -162,7 +162,7 @@ protected:
 
 
 
-class TFeatureByDistributions : public TFeatureInducer {
+class ORANGE_API TFeatureByDistributions : public TFeatureInducer {
 public:
   __REGISTER_CLASS
 
@@ -178,7 +178,7 @@ public:
 
 /* Down there are only different distribution assessors and stop criterions */
 
-class TDistributionAssessor_m : public TDistributionAssessor {
+class ORANGE_API TDistributionAssessor_m : public TDistributionAssessor {
 public:
   __REGISTER_CLASS
 
@@ -199,7 +199,7 @@ private:
 };
 
 
-class TDistributionAssessor_Laplace : public TDistributionAssessor {
+class ORANGE_API TDistributionAssessor_Laplace : public TDistributionAssessor {
 public:
   __REGISTER_CLASS
 
@@ -208,7 +208,7 @@ public:
 };
 
 
-class TDistributionAssessor_Relief : public TDistributionAssessor {
+class ORANGE_API TDistributionAssessor_Relief : public TDistributionAssessor {
 public:
   __REGISTER_CLASS
 
@@ -217,7 +217,7 @@ public:
 };
 
 
-class TDistributionAssessor_Kramer : public TDistributionAssessor {
+class ORANGE_API TDistributionAssessor_Kramer : public TDistributionAssessor {
 public:
   __REGISTER_CLASS
 
@@ -226,7 +226,7 @@ public:
 };
 
 
-class TDistributionAssessor_Measure : public TDistributionAssessor  {
+class ORANGE_API TDistributionAssessor_Measure : public TDistributionAssessor  {
 public:
   __REGISTER_CLASS
 
@@ -238,7 +238,7 @@ public:
 };
 
 
-class TDistributionAssessor_mf : public TDistributionAssessor {
+class ORANGE_API TDistributionAssessor_mf : public TDistributionAssessor {
 public:
   __REGISTER_CLASS
 
@@ -258,7 +258,7 @@ private:
 };
 
 
-class TStopDistributionClustering_noProfit : public TStopDistributionClustering {
+class ORANGE_API TStopDistributionClustering_noProfit : public TStopDistributionClustering {
 public:
   __REGISTER_CLASS
   float minProfitProportion; //P minimal allowable profit proportion
@@ -267,21 +267,21 @@ public:
   virtual bool operator()(const float &, const TDistProfitQueue &, const TDistClusterNode *clusters) const;
 };
 
-class TStopDistributionClustering_noBigChange : public TStopDistributionClustering {
+class ORANGE_API TStopDistributionClustering_noBigChange : public TStopDistributionClustering {
 public:
   __REGISTER_CLASS
   virtual bool operator()(const float &, const TDistProfitQueue &, const TDistClusterNode *clusters) const;
 };
 
 
-class TStopDistributionClustering_binary : public TStopDistributionClustering {
+class ORANGE_API TStopDistributionClustering_binary : public TStopDistributionClustering {
 public:
   __REGISTER_CLASS
   virtual bool operator()(const float &, const TDistProfitQueue &, const TDistClusterNode *clusters) const;
 };
 
 
-class TStopDistributionClustering_n : public TStopDistributionClustering {
+class ORANGE_API TStopDistributionClustering_n : public TStopDistributionClustering {
 public:
   __REGISTER_CLASS
   int n; //P number of clusters

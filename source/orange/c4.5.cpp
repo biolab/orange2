@@ -27,10 +27,11 @@
 #include "table.hpp"
 #include "classify.hpp"
 #include "learn.hpp"
+#include "getarg.hpp"
 
 #include "c4.5.ppp"
 
-DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
+DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList", true, ORANGE_API)
 
 bool c45Loaded = false;
 
@@ -295,7 +296,7 @@ bool TC45Learner::convertDomain(PDomain dom)
 
   ClassName = mlnew String[MaxClass+1];
   String *ClassNamei=ClassName;
-  PITERATE(TIdList, ni, classVar->values) {
+  PITERATE(TStringList, ni, classVar->values) {
     *ClassNamei = mlnew char[(*ni).length()+1];
     strcpy(*(ClassNamei++), (*ni).c_str());
   }
@@ -327,7 +328,7 @@ bool TC45Learner::convertDomain(PDomain dom)
       *AttValNamei = mlnew String[noOfValues+1];
       String *AttValNameii = *(AttValNamei++);
       *(AttValNameii++)=NULL;
-      PITERATE(TIdList, ni, (*vi).AS(TEnumVariable)->values) {
+      PITERATE(TStringList, ni, (*vi).AS(TEnumVariable)->values) {
         *AttValNameii = mlnew char[(*ni).length()+1];
         strcpy(*(AttValNameii++), (*ni).c_str());
       }

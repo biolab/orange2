@@ -23,7 +23,12 @@
 #ifndef __HEATMAP_HPP
 #define __HEATMAP_HPP
 
+#include <vector>
+using namespace std;
+
 #include "root.hpp"
+#include "orvector.hpp"
+#include "orangene_globals.hpp"
 
 WRAPPER(ExampleTable)
 
@@ -31,7 +36,7 @@ WRAPPER(ExampleTable)
 
 void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 
-class THeatmap : public TOrange {
+class ORANGENE_API THeatmap : public TOrange {
 public:
   __REGISTER_CLASS
   float *cells;
@@ -46,8 +51,17 @@ public:
   THeatmap(const int &h, const int &w, PExampleTable ex);
   ~THeatmap();
 
-  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
-  unsigned char *averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
+  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight,
+                                const int &firstRow, const int &nRows,
+                                const float &absLow, const float &absHigh,
+                                const float &gamma, bool grid,
+                                int &size) const;
+
+  unsigned char *averages2string(const int &cellWidth, const int &cellHeight,
+                                 const int &firstRow, const int &nRows,
+                                 const float &absLow, const float &absHigh,
+                                 const float &gamma, bool grid,
+                                 int &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   float getRowIntensity(const int &y) const;
@@ -56,14 +70,14 @@ public:
 };
 
 
-WRAPPER(Heatmap)
+OGWRAPPER(Heatmap)
 
 #define THeatmapList TOrangeVector<PHeatmap> 
-VWRAPPER(HeatmapList)
+OGVWRAPPER(HeatmapList)
 
-WRAPPER(HeatmapConstructor)
+OGWRAPPER(HeatmapConstructor)
 
-class THeatmapConstructor : public TOrange {
+class ORANGENE_API THeatmapConstructor : public TOrange {
 public:
   __REGISTER_CLASS
 

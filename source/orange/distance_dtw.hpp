@@ -27,21 +27,21 @@
 
 using namespace std; 
  
-class TAlignment
+class ORANGE_API TAlignment
 {
 public:
 	int i;
 	int j;
 
     TAlignment();
-	TAlignment(int i, int j);
+    TAlignment(int i, int j);
     TAlignment(const TAlignment &);
 
     bool operator==(const TAlignment &) const;
     bool operator<(const TAlignment &) const;
 };
 
-#define TWarpPath _TOrangeVector<TAlignment>
+#define TWarpPath TOrangeVector<TAlignment, false>
 VWRAPPER(WarpPath)
 
 class TdtwElement;
@@ -50,7 +50,7 @@ typedef vector<TdtwElement*> PdtwVector;
 typedef vector<TdtwVector> TdtwMatrix;
 
 
-class TExamplesDistance_DTW : public TExamplesDistance_Normalized
+class ORANGE_API TExamplesDistance_DTW : public TExamplesDistance_Normalized
 {
 public:
     __REGISTER_CLASS
@@ -74,7 +74,7 @@ public:
 };
 
 
-class TExamplesDistanceConstructor_DTW : public TExamplesDistanceConstructor_Normalized {
+class ORANGE_API TExamplesDistanceConstructor_DTW : public TExamplesDistanceConstructor_Normalized {
 public:
   __REGISTER_CLASS
 

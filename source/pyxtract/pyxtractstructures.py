@@ -7,6 +7,8 @@ class ClassDefinition:
     self.specialmethods={}
     self.constants={}
     self.hidden = 0
+    self.imported = 0
+    self.used = 0
     self.constructor_keywords = []
     self.recognized_attributes = []
     self.__dict__.update(argkw)

@@ -23,11 +23,13 @@
 #ifndef __ROOT_HPP
 #define __ROOT_HPP
 
-#ifdef _MSC_VER
-  #pragma warning (disable : 4786 4114 4018 4267 4244 4702 4710 4290)
-#endif
-
+#include "orange_api.hpp"
 #include "garbage.hpp"
+
+
+#define WRAPPER(x) BASIC_WRAPPER(x, ORANGE_API)
+#define VWRAPPER(x) BASIC_VWRAPPER(x, ORANGE_API)
+
 class TValue;
 
 #include <string>
@@ -100,16 +102,18 @@ bool castableTo(const TClassDescription *objecttype, const TClassDescription *ba
 
 WRAPPER(Orange)
 
-class TOrange {
+class ORANGE_API TOrange : public TWrapped {
 public:
   __REGISTER_CLASS
   typedef void TWarningFunction(bool exhaustive, const char *);
   static TWarningFunction *warningFunction;
 
-  TGCCounter<TOrange> *myWrapper;
+  TOrange()
+  {}
 
-  TOrange();
-  TOrange(const TOrange &orb);
+  TOrange(const TOrange &orb)
+  {}
+  
   virtual ~TOrange();
 
   virtual void afterSet(const char *name);
@@ -136,7 +140,7 @@ public:
   #define checkProperty(name) { if (!name) raiseError("'"#name"' not set"); }
 };
 
-extern TPropertyDescription TOrange_properties[];
-extern size_t const TOrange_components[];
+extern ORANGE_API TPropertyDescription TOrange_properties[];
+extern ORANGE_API size_t const TOrange_components[];
 
 #endif

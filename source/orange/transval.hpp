@@ -33,7 +33,7 @@ WRAPPER(ExampleGenerator);
 /*  Transforms the value to another value. Transforming can be done 'in place' by replacing the old
     value with a new one (function 'transform'). Alternatively, operator () can be used to get
     the transformed value without replacing the original. Transformations can be chained. */
-class TTransformValue : public TOrange {
+class ORANGE_API TTransformValue : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -48,7 +48,7 @@ public:
 };
 
 
-class TMapIntValue : public TTransformValue {
+class ORANGE_API TMapIntValue : public TTransformValue {
 public:
   __REGISTER_CLASS
 
@@ -61,7 +61,7 @@ public:
 };
 
 
-class TDiscrete2Continuous : public TTransformValue {
+class ORANGE_API TDiscrete2Continuous : public TTransformValue {
 public:
   __REGISTER_CLASS
 
@@ -74,7 +74,7 @@ public:
 };
 
 
-class TOrdinal2Continuous : public TTransformValue {
+class ORANGE_API TOrdinal2Continuous : public TTransformValue {
 public:
   __REGISTER_CLASS
 
@@ -85,7 +85,7 @@ public:
 };
 
 
-class TNormalizeContinuous : public TTransformValue {
+class ORANGE_API TNormalizeContinuous : public TTransformValue {
 public:
   __REGISTER_CLASS
 
@@ -100,7 +100,7 @@ class TEnumVariable;
 WRAPPER(Variable)
 
 
-class TDomainContinuizer : public TOrange {
+class ORANGE_API TDomainContinuizer : public TOrange {
 public:
   __REGISTER_CLASS
 

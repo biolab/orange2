@@ -1,0 +1,44 @@
+PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
+PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
+PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
+
+
+DESTDIR = $(PYTHONSITEPKGS)/orange
+DOCDIR = /usr/local/doc/orange
+SCRIPTDIR = /usr/local/bin
+INSTALL = install
+INSTALL_DATA = $(INSTALL) -m 644
+INSTALL_SCRIPT = $(INSTALL)
+INSTALL_SHARED = $(INSTALL) -m 555
+INSTALL_DIR = $(INSTALL) -d -m 755
+
+COMPILEOPTIONS=-fPIC -fpermissive -w -DLINUX -O3 -DNO_NUMERIC
+
+ifeq ($(MODULENAME), ORANGE)
+  LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
+else
+  LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include -lorange
+endif
+
+vpath %.cpp ../include
+vpath %.hpp ../include
+vpath %.px px
+vpath %.ppp ppp
+vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl:/usr/include/gsl
+
+obj/%.o :
+	g++ $(COMPILEOPTIONS) -c $< -o $@
+
+
+export CPATH=ppp:px:../include:../orange:$(PYTHONINCLUDE):/usr/local/include:/usr/include
+
+makefile.deps:
+	python ../pyxtract/makedep.py -n $(MODULENAME)
+	rm -f ppp/stamp
+	rm -f px/stamp
+
+objdir:
+	-@mkdir -p obj > /dev/null
+
+cleantemp:
+	rm -rf obj/* ppp/* px/*

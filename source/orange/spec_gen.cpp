@@ -23,7 +23,6 @@
 #include <limits>
 #include "stladdon.hpp"
 
-#include "errors.hpp"
 #include "random.hpp"
 
 #include "vars.hpp"

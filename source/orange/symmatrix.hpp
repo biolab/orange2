@@ -25,7 +25,7 @@
 
 #include "root.hpp"
 
-class TSymMatrix : public TOrange
+class ORANGE_API TSymMatrix : public TOrange
 {
 public:
   __REGISTER_CLASS

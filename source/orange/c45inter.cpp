@@ -22,7 +22,6 @@
 
 #include <string>
 #include <stdio.h>
-#include "errors.hpp"
 
 #include "values.hpp"
 #include "vars.hpp"
@@ -31,7 +30,7 @@
 
 #include "c45inter.ppp"
 
-bool readC45Atom(TFileExampleIteratorData &fei, TIdList &atoms);
+bool readC45Atom(TFileExampleIteratorData &fei, vector<string> &atoms);
 
 TDomainDepot TC45ExampleGenerator::domainDepot;
 
@@ -53,7 +52,7 @@ TC45ExampleGenerator::TC45ExampleGenerator(const TC45ExampleGenerator &old)
    variables and skipping the attributes with 'skip' flag set ('domain' field is cast to TC45Domain). */
 bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
-  TIdList atoms;
+  vector<string> atoms;
   while(!feof(fei.file) && !readC45Atom(fei, atoms));
 
   if (!atoms.size())
@@ -61,8 +60,8 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
 
   TExample::iterator ei = exam.begin();
   TVarList::iterator vi(domain->variables->begin()), ve(domain->variables->end());
-  TIdList::iterator ai(atoms.begin()), ae(atoms.end());
-  vector<bool>::iterator si(skip->begin());
+  vector<string>::iterator ai(atoms.begin()), ae(atoms.end());
+  TBoolList::iterator si(skip->begin());
   for (; (vi!=ve) && (ai!=ae); ai++)
     if (!*si++)
       (*(vi++))->str2val_add(*ai, *(ei++));
@@ -78,13 +77,13 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
 PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 { TFileExampleIteratorData fei(stem);
   
-  TIdList atoms;
+  vector<string> atoms;
   while(!feof(fei.file) && !readC45Atom(fei, atoms));
   if (!atoms.size())
     ::raiseError("empty or invalid names file");
 
   PStringList classValues = mlnew TStringList;
-  for(TIdList::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
+  for(vector<string>::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
     classValues->push_back(*(ai++)); 
 
   TDomainDepot::TAttributeDescriptions attributeDescriptions;
@@ -96,7 +95,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
     if (atoms.size()<2)
       ::raiseError("invalid .names file");
 
-    TIdList::iterator ai(atoms.begin());
+    vector<string>::iterator ai(atoms.begin());
     string name = *(ai++);
 
     if (*ai=="ignore")
@@ -138,9 +137,7 @@ PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars
 
 bool writeValues(FILE *file, PVariable var, bool justDiscrete=false)
 {
-  TEnumVariable *enumv=NULL;
-  var.dynamic_cast_to(enumv);
- 
+  TEnumVariable *enumv = var.AS(TEnumVariable);
   if (enumv) {
     if (justDiscrete)
       fprintf(file, "discrete 20.\n");
@@ -216,7 +213,7 @@ void c45_writeExamples(FILE *file, PExampleGenerator rg)
     multiple spaces are replaced by a single space. A dot can also be a part of the name; if dot is followed only
     by white-space, it is recognized as an end-of-line sign and is not added to the name. */
 #define MAX_LINE_LENGTH 10240
-bool readC45Atom(TFileExampleIteratorData &fei, TIdList &atoms)
+bool readC45Atom(TFileExampleIteratorData &fei, vector<string> &atoms)
 {
   atoms.clear();
 

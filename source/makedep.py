@@ -7,7 +7,7 @@ filenamedef=re.compile(r".*\..pp$")
 includedef=re.compile(r'\s*#include\s*"(?P<filename>.*(([chp]pp)|(px)))"')
 filestemdef=re.compile(r'(?P<filestem>.*)\.(?P<fileextension>[^.]*)$')
 
-dirs = ["orange", "orange/wml", "statc", "corn", "include"]
+dirs = ["orange", "statc", "corn", "include"]
 
 def findfiles():
   files = {}
@@ -109,10 +109,10 @@ for (file, filedeps) in deplist:
 makedepsfile.write("\n\n")
 
 makedepsfile.write("orange/ppp/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
-makedepsfile.write("\tpython orange/devscripts/pyprops.py orange\n\n")
+makedepsfile.write("\tpython pyxtract/pyprops.py -d orange -n orange\n\n")
 
 makedepsfile.write("orange/px/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
-makedepsfile.write("\tpython orange/devscripts/pyxtract.py orange\n\n")
+makedepsfile.write("\tpython pyxtract/pyxtract.py -m -d orange -n orange lib_kernel.cpp lib_components.cpp lib_preprocess.cpp lib_learner.cpp lib_io.cpp lib_vectors.cpp cls_example.cpp cls_value.cpp cls_orange.cpp cls_misc.cpp functions.cpp orange.cpp\n\n")
 
 for filename in px_files:
   makedepsfile.write("%s: \n\n" % filename)

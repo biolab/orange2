@@ -25,7 +25,7 @@
 #include "linreg.hpp"
 WRAPPER(ExamplesDistanceConstructor)
 
-class TLWRLearner : public TLearner {
+class ORANGE_API TLWRLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -41,7 +41,7 @@ public:
 };
 
 
-class TLWRClassifier : public TClassifierFD {
+class ORANGE_API TLWRClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

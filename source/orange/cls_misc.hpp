@@ -23,13 +23,11 @@
 #ifndef __CLS_MISC_HPP
 #define __CLS_MISC_HPP
 
-#include "module.hpp"
+#include "orange_api.hpp"
 
 class TDomainDepot;
 
-extern TOrangeType PyOrDomainDepot_Type;
-
-class TPyDomainDepot {
+class ORANGE_API TPyDomainDepot {
 public:
   PyObject_HEAD
   TDomainDepot *domainDepot;

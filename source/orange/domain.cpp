@@ -23,12 +23,12 @@
 #include "vars.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
-#include "errors.hpp"
 #include "stladdon.hpp"
 
 #include "domain.ppp"
 
-DEFINE_TOrangeVector_classDescription(PDomain, "TDomainList")
+
+DEFINE_TOrangeVector_classDescription(PDomain, "TDomainList", true, ORANGE_API)
 
 // A counter for version field of domains. It is incremented and copied to version field each time a domain is changed.
 int domainVersion=0;
@@ -68,7 +68,8 @@ TDomain::TDomain(PVariable va, const TVarList &vl)
   version(++domainVersion),
   lastDomain(knownDomains.end()),
   destroyNotifiers()
-{ if (va)
+{ 
+  if (va)
     variables->push_back(va); 
 }
 

@@ -32,7 +32,7 @@ WRAPPER(EFMDataDescription)
 
 class TExampleTable; 
 
-class TClassifierByLookupTable : public TClassifier {
+class ORANGE_API TClassifierByLookupTable : public TClassifier {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -48,7 +48,7 @@ public:
 };
 
 
-class TClassifierByLookupTable1 : public TClassifierByLookupTable {
+class ORANGE_API TClassifierByLookupTable1 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
@@ -73,7 +73,7 @@ private:
 
 WRAPPER(ProbabilityEstimator);
 
-class TClassifierByLookupTable2 : public TClassifierByLookupTable {
+class ORANGE_API TClassifierByLookupTable2 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
@@ -100,7 +100,7 @@ private:
 };
 
 
-class TClassifierByLookupTable3 : public TClassifierByLookupTable {
+class ORANGE_API TClassifierByLookupTable3 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
@@ -131,9 +131,9 @@ private:
 
 
 WRAPPER(DomainContingency);
-WRAPPER(PProbabilityEstimator);
+WRAPPER(ProbabilityEstimator);
 
-class TLookupLearner : public TLearner {
+class ORANGE_API TLookupLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -151,7 +151,7 @@ public:
 WRAPPER(ExampleTable);
 
 
-class TClassifierByExampleTable : public TClassifierFD {
+class ORANGE_API TClassifierByExampleTable : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

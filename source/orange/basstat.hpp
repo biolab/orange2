@@ -24,11 +24,10 @@
 #define __BASSTAT_HPP
 
 #include "root.hpp"
-#include <vector>
 using namespace std;
 
 // Minimal, maximal, average value of attribute, and deviation
-class TBasicAttrStat : public TOrange {
+class ORANGE_API TBasicAttrStat : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -52,8 +51,20 @@ public:
 WRAPPER(BasicAttrStat);
 WRAPPER(ExampleGenerator);
 
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4661)
+#endif
+
+template class ORANGE_API TOrangeVector<PBasicAttrStat>;
+ 
+#ifdef _MSC_VER
+  #pragma warning(pop)
+#endif
+
+
 // Minimal, maximal, average value of attribute, and deviation for all attributes from the generator
-class TDomainBasicAttrStat : public TOrangeVector<PBasicAttrStat> {
+class ORANGE_API TDomainBasicAttrStat : public TOrangeVector<PBasicAttrStat> {
 public:
   __REGISTER_CLASS
 

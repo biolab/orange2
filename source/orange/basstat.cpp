@@ -34,7 +34,7 @@
 
 #include "basstat.ppp"
 
-DEFINE_TOrangeVector_classDescription(PBasicAttrStat, "TBasicAttrStatList")
+DEFINE_TOrangeVector_classDescription(PBasicAttrStat, "TBasicAttrStatList", true, ORANGE_API)
 
 // Initializes min to max_float, max to min_float, avg, dev and n to 0.
 TBasicAttrStat::TBasicAttrStat(PVariable var, const bool &ahold)

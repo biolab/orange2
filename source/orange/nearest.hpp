@@ -24,7 +24,6 @@
 #define __NEAREST_HPP
 
 #include "root.hpp"
-#include "garbage.hpp"
 
 class TExample;
 class TExampleTable;
@@ -34,7 +33,7 @@ WRAPPER(ExampleGenerator);
 WRAPPER(ExamplesDistance);
 WRAPPER(ExamplesDistanceConstructor);
 
-class TFindNearest : public TOrange {
+class ORANGE_API TFindNearest : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -47,7 +46,7 @@ public:
 
 WRAPPER(FindNearest);
 
-class TFindNearest_BruteForce: public TFindNearest {
+class ORANGE_API TFindNearest_BruteForce: public TFindNearest {
 public:
   __REGISTER_CLASS
 
@@ -60,7 +59,7 @@ public:
 };
 
 
-class TFindNearestConstructor : public TOrange {
+class ORANGE_API TFindNearestConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -72,7 +71,7 @@ public:
 };
 
 
-class TFindNearestConstructor_BruteForce : public TFindNearestConstructor {
+class ORANGE_API TFindNearestConstructor_BruteForce : public TFindNearestConstructor {
 public:
   __REGISTER_CLASS
 

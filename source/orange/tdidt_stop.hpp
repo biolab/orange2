@@ -28,7 +28,7 @@
 WRAPPER(ExampleGenerator)
 WRAPPER(DomainContingency)
 
-class TTreeStopCriteria : public TOrange {
+class ORANGE_API TTreeStopCriteria : public TOrange {
 public:
   __REGISTER_CLASS
   virtual bool operator()(PExampleGenerator, const int &weightID = 0, PDomainContingency =PDomainContingency());
@@ -37,7 +37,7 @@ public:
 WRAPPER(TreeStopCriteria);
 
 
-class TTreeStopCriteria_common : public TTreeStopCriteria {
+class ORANGE_API TTreeStopCriteria_common : public TTreeStopCriteria {
 public:
   __REGISTER_CLASS
   float maxMajority; //P a maximal proportion of majority class for division to continue

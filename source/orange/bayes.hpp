@@ -28,9 +28,9 @@
 #include "learn.hpp"
 
 WRAPPER(DomainContingency);
-WRAPPER(PProbabilityEstimator);
+WRAPPER(ProbabilityEstimator);
 
-class TBayesLearner : public TLearner {
+class ORANGE_API TBayesLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -51,7 +51,7 @@ public:
    If classDistribution is given, it is used; if not, estimator is called to get class probabilities.
    Further, conditionalDistributions are used for attributes for which they are defined; for others,
    a corresponding conditionalEstimator is called. */
-class TBayesClassifier : public TClassifierFD {
+class ORANGE_API TBayesClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

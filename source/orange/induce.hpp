@@ -28,7 +28,7 @@ WRAPPER(ExampleGenerator)
 
 /*  An abstract class with a pure virtual operator()(PExampleGenerator) which induces a single
     new feature from the given example set, binding the given attribute set */
-class TFeatureInducer : public TOrange {
+class ORANGE_API TFeatureInducer : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 

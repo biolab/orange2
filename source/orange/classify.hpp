@@ -85,7 +85,7 @@ VWRAPPER(ClassifierList)
    and leave the rest to methods inherited from TClassifier.
 */
 
-class TClassifier : public TOrange {
+class ORANGE_API TClassifier : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -105,7 +105,7 @@ public:
 };
 
 
-class TClassifierFD : public TClassifier {
+class ORANGE_API TClassifierFD : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -119,7 +119,7 @@ public:
 };
 
 
-class TDefaultClassifier : public TClassifier {
+class ORANGE_API TDefaultClassifier : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -138,7 +138,7 @@ public:
 };
 
 
-class TRandomClassifier : public TClassifier {
+class ORANGE_API TRandomClassifier : public TClassifier {
 public:
   __REGISTER_CLASS
 
@@ -160,13 +160,15 @@ WRAPPER(DomainDistributions);
 WRAPPER(ExampleGenerator);
 
 
-class TEFMDataDescription : public TOrange {
+template class ORANGE_API std::vector<float>;
+
+class ORANGE_API TEFMDataDescription : public TOrange {
 public:
   __REGISTER_CLASS
 
   PDomain domain; //PR domain
   PDomainDistributions domainDistributions; // distributions of values for attributes
-  vector<float> averages;
+  std::vector<float> averages;
   vector<float> matchProbabilities; // if you intend to really export this class, you'll need to define 'afterSet' for domain distributions
   int originalWeight, missingWeight;
 
@@ -178,7 +180,7 @@ public:
 };
 
 
-class TExampleForMissing : public TExample {
+class ORANGE_API TExampleForMissing : public TExample {
 public:
   __REGISTER_CLASS
 

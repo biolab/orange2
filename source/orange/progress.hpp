@@ -25,7 +25,7 @@
 
 #include "root.hpp"
 
-class TProgressCallback : public TOrange {
+class ORANGE_API TProgressCallback : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 

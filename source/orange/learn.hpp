@@ -32,7 +32,7 @@ WRAPPER(ExampleGenerator)
 
 /*  A base for classes which can learn to classify examples after presented an appropriate learning set.
     Learning is invoked by calling 'learn' method and can be forgoten by calling 'forget'. */
-class TLearner : public TOrange {
+class ORANGE_API TLearner : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -54,7 +54,7 @@ public:
 };
 
 
-class TLearnerFD : public TLearner {
+class ORANGE_API TLearnerFD : public TLearner {
 public:
   __REGISTER_CLASS
 

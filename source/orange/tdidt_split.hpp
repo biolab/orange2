@@ -39,7 +39,7 @@ WRAPPER(MeasureAttribute)
 WRAPPER(ExampleTable)
 
 
-class TTreeSplitConstructor : public TOrange {
+class ORANGE_API TTreeSplitConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -81,7 +81,7 @@ public:
 WRAPPER(TreeSplitConstructor);
 
 
-class TTreeSplitConstructor_Measure : public TTreeSplitConstructor {
+class ORANGE_API TTreeSplitConstructor_Measure : public TTreeSplitConstructor {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -92,7 +92,7 @@ public:
 };
 
 
-class TTreeSplitConstructor_Combined : public TTreeSplitConstructor {
+class ORANGE_API TTreeSplitConstructor_Combined : public TTreeSplitConstructor {
 public:
   __REGISTER_CLASS
 
@@ -114,7 +114,7 @@ public:
 };
 
 
-class TTreeSplitConstructor_Attribute : public TTreeSplitConstructor_Measure {
+class ORANGE_API TTreeSplitConstructor_Attribute : public TTreeSplitConstructor_Measure {
 public:
   __REGISTER_CLASS
 
@@ -133,7 +133,7 @@ public:
 };
 
 
-class TTreeSplitConstructor_ExhaustiveBinary : public TTreeSplitConstructor_Measure {
+class ORANGE_API TTreeSplitConstructor_ExhaustiveBinary : public TTreeSplitConstructor_Measure {
 public:
   __REGISTER_CLASS
 
@@ -152,7 +152,7 @@ public:
 };
 
 
-class TTreeSplitConstructor_Threshold: public TTreeSplitConstructor_Measure {
+class ORANGE_API TTreeSplitConstructor_Threshold: public TTreeSplitConstructor_Measure {
 public:
   __REGISTER_CLASS
 
@@ -186,7 +186,7 @@ public:
 WRAPPER(TreeNode)
 
 
-class TTreeExampleSplitter : public TOrange {
+class ORANGE_API TTreeExampleSplitter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -198,48 +198,48 @@ protected:
 };
 
 
-class TTreeExampleSplitter_IgnoreUnknowns : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_IgnoreUnknowns : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
 
-class TTreeExampleSplitter_UnknownsToCommon : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsToCommon : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
 
-class TTreeExampleSplitter_UnknownsToAll : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsToAll : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
 
-class TTreeExampleSplitter_UnknownsToRandom : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsToRandom : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
 
-class TTreeExampleSplitter_UnknownsToBranch : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsToBranch : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
 
-class TTreeExampleSplitter_UnknownsAsBranchSizes : public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsAsBranchSizes : public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
-class TTreeExampleSplitter_UnknownsAsSelector: public TTreeExampleSplitter {
+class ORANGE_API TTreeExampleSplitter_UnknownsAsSelector: public TTreeExampleSplitter {
 public:
   __REGISTER_CLASS
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);

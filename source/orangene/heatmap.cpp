@@ -23,20 +23,19 @@
 #include <algorithm>
 #include <queue>
 #include "table.hpp"
-#include "module.hpp"
-#include "errors.hpp"
+//#include "module.hpp"
 #include "cls_orange.hpp"
 #include "cls_example.hpp"
 
-#include "heatmap.ppp"
+#include "ppp/heatmap.ppp"
 
-#include "externs.px"
+#include "px/externs.px"
 
 #ifdef _MSC_VER
   #pragma warning (disable : 4786 4114 4018 4267 4244)
 #endif
 
-DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList")
+DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList", true, ORANGENE_API)
 
 /* Expands the bitmap 
    Each pixel in bitmap 'smmp' is replaced by a square with
@@ -49,7 +48,9 @@ DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList")
    this does not necessarily equal cellWidth * cellHeight * width * height.
 */
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size,
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight,
+                             const int &firstRow, const int &nRows,
+                             int &size,
                              float *intensity, const int &width, const int &height,
                              const float &absLow, const float &absHigh, const float &gamma,
                              bool grid)
@@ -57,7 +58,7 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   const int lineWidth = width * cellWidth;
   const int fill = (4 - lineWidth & 3) & 3;
   const int rowSize = lineWidth + fill;
-  size = rowSize * height * cellHeight;
+  size = rowSize * nRows * cellHeight;
 
   unsigned char *res = new unsigned char[size];
   unsigned char *resi = res;
@@ -65,10 +66,14 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   if (grid && ((cellHeight<3) || (cellWidth < 3)))
     grid = false;
 
+  int line = firstRow;
+  int lline = firstRow + nRows;
+  intensity += firstRow * width;
+
   if (gamma == 1.0) {
     const float colorFact = 249.0/(absHigh - absLow);
 
-    for(int line = 0; line<height; line++) {
+    for(; line<lline; line++) {
       int xpoints;
 
       unsigned char *thisline = resi;
@@ -102,7 +107,7 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
     const float colorBase = (absLow + absHigh) / 2;
     const float colorFact = 2 / (absHigh - absLow);
 
-    for(int line = 0; line<height; line++) {
+    for(; line<lline; line++) {
       unsigned char *thisline = resi;
       int xpoints;
       for(xpoints = width; xpoints--; intensity++) {
@@ -148,28 +153,6 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   return res;
 }
 
-
-void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max)
-{
-  const int nlow = lowperc * ncells;
-  const int nhigh = highperc * ncells;
-
-  priority_queue<float, vector<float>, greater<float> > lower;
-  priority_queue<float, vector<float>, less<float> > upper;
-
-  int i = ncells;
-  for(const float *ci = cells; i--; ci++) {
-    lower.push(*ci);
-    if (lower.size() > nlow)
-      lower.pop();
-    upper.push(*ci);
-    if (upper.size() > nhigh)
-      upper.pop();
-  }
-
-  min = lower.top();
-  max = upper.top();
-}
 
 
 class CompareIndicesWClass {
@@ -234,14 +217,14 @@ THeatmap::~THeatmap()
 }
 
 
-unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
+unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma, grid);
+  return bitmap2string(cellWidth, cellHeight, firstRow, nRows, size, cells, width, height, absLow, absHigh, gamma, grid);
 }
 
-unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
+unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const int &firstRow, const int &nRows, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma, grid);
+  return bitmap2string(cellWidth, cellHeight, firstRow, nRows, size, averages, 1, height, absLow, absHigh, gamma, grid);
 }
 
 
@@ -511,7 +494,8 @@ unsigned char *THeatmapConstructor::getLegend(const int &width, const int &heigh
   float wi1 = width-1;
   for(int wi = 0; wi<width; *(fmpi++) = (wi++)/wi1);
   
-  unsigned char *legend = bitmap2string(1, height, size, fmp, width, 1, 0, 1, gamma, false);
+  unsigned char *legend = bitmap2string(1, height, 0, 1, size, fmp, width, 1, 0, 1, gamma, false);
   delete fmp;
   return legend;
 }
+

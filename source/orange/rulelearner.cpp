@@ -30,7 +30,7 @@
 #include "rulelearner.ppp"
 
 
-DEFINE_TOrangeVector_classDescription(PRule, "TRuleList")
+DEFINE_TOrangeVector_classDescription(PRule, "TRuleList", true, ORANGE_API)
 
 
 TRule::TRule()

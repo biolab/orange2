@@ -23,15 +23,12 @@
 #ifndef __CLS_EXAMPLE_HPP
 #define __CLS_EXAMPLE_HPP
 
-#include "module.hpp"
+#include "orange.hpp"
 #include "examples.hpp"
-
-extern TOrangeType PyOrExample_Type;
-
 
 // Example can be either a wrapped pointer or a wrapped reference.
 // If it is a wrapped reference then a container's wrapper should be passed to lock.
-class TPyExample {
+class ORANGE_API TPyExample {
 public:
   PyObject_HEAD
   PExample example;
@@ -54,9 +51,9 @@ PyObject *convertToPythonNative(const TExample &, int natvt=1, bool tuples=false
 bool convertFromPython(PyObject *args, TExample &, PDomain domain);
 bool convertFromPythonExisting(PyObject *lst, TExample &example);
 
-int cc_Example(PyObject *obj, void *ptr);
-int ccn_Example(PyObject *obj, void *ptr);
-int ptr_Example(PyObject *obj, void *ptr);
-int ptrn_Example(PyObject *obj, void *ptr);
+ORANGE_API int cc_Example(PyObject *obj, void *ptr);
+ORANGE_API int ccn_Example(PyObject *obj, void *ptr);
+ORANGE_API int ptr_Example(PyObject *obj, void *ptr);
+ORANGE_API int ptrn_Example(PyObject *obj, void *ptr);
 
 #endif

@@ -34,7 +34,7 @@ WRAPPER(Example)
 WRAPPER(Learner)
 
 
-class TTransformValue_IsDefined : public TTransformValue
+class ORANGE_API TTransformValue_IsDefined : public TTransformValue
 {
 public:
   __REGISTER_CLASS
@@ -43,7 +43,7 @@ public:
 };
 
 
-class TImputer : public TOrange
+class ORANGE_API TImputer : public TOrange
 {
 public:
   __REGISTER_ABSTRACT_CLASS
@@ -55,7 +55,7 @@ public:
 };
 
 
-class TImputer_defaults : public TImputer
+class ORANGE_API TImputer_defaults : public TImputer
 {
 public:
   __REGISTER_CLASS
@@ -68,7 +68,7 @@ public:
 };
 
 
-class TImputer_asValue : public TImputer
+class ORANGE_API TImputer_asValue : public TImputer
 {
 public:
   __REGISTER_CLASS
@@ -78,7 +78,7 @@ public:
 };
 
 
-class TImputer_model : public TImputer
+class ORANGE_API TImputer_model : public TImputer
 {
 public:
   __REGISTER_CLASS
@@ -88,7 +88,7 @@ public:
 };
 
 
-class TImputerConstructor : public TOrange
+class ORANGE_API TImputerConstructor : public TOrange
 {
 public:
   __REGISTER_ABSTRACT_CLASS
@@ -100,7 +100,7 @@ public:
 };
 
 
-class TImputerConstructor_defaults : public TImputerConstructor
+class ORANGE_API TImputerConstructor_defaults : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS
@@ -109,7 +109,7 @@ public:
   virtual PImputer operator()(PExampleGenerator, const int &);
 };
 
-class TImputerConstructor_average : public TImputerConstructor
+class ORANGE_API TImputerConstructor_average : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS
@@ -117,7 +117,7 @@ public:
 };
 
 
-class TImputerConstructor_minimal : public TImputerConstructor
+class ORANGE_API TImputerConstructor_minimal : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS
@@ -125,7 +125,7 @@ public:
 };
 
 
-class TImputerConstructor_maximal : public TImputerConstructor
+class ORANGE_API TImputerConstructor_maximal : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS
@@ -133,7 +133,7 @@ public:
 };
 
 
-class TImputerConstructor_asValue : public TImputerConstructor
+class ORANGE_API TImputerConstructor_asValue : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS
@@ -144,7 +144,7 @@ public:
 
 
 WRAPPER(Learner)
-class TImputerConstructor_model : public TImputerConstructor
+class ORANGE_API TImputerConstructor_model : public TImputerConstructor
 {
 public:
   __REGISTER_CLASS

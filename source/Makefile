@@ -1,45 +1,18 @@
-PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
-PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
-PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
+# You need to set ORANGE_LIBDIR to some other directory if
+# this is a vfat file-system, which doesn't support symbolic
+# links (not common, but I need it :-)
+ifndef ORANGE_LIBDIR
+  ORANGE_LIBDIR=../..
+endif
 
-DESTDIR = $(ROOT)$(PYTHONSITEPKGS)/orange
-DOCDIR = $(ROOT)/usr/local/doc/orange
-SCRIPTDIR = $(ROOT)/usr/local/bin
-INSTALL = install
-INSTALL_DATA = $(INSTALL) -m 644
-INSTALL_SCRIPT = $(INSTALL)
-INSTALL_SHARED = $(INSTALL) -m 555
-INSTALL_DIR = $(INSTALL) -d -m 755
+MODULES=include orange orangeom orangene
+ACTIONS=all clean cleantemp
+	
+$(ACTIONS):
+	(for MODULE in $(MODULES) ; \
+	   do make $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); done)
 
-COMPILEOPTIONS=-fPIC -fpermissive -w -DLINUX -O3 -DNO_NUMERIC -DNO_GSL
-LINKOPTIONS=-shared -lstdc++
-export CPATH=orange:orange/ppp:orange/px:include:corn:statc:$(PYTHONINCLUDE):/usr/local/include:/usr/include
-
-vpath %.cpp orange:corn:statc:include
-vpath %.hpp orange:corn:statc:include
-vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl:/usr/include/gsl
-vpath %.px orange/px
-
-obj/%.o :
-	g++ $(COMPILEOPTIONS) -c $< -o $@
-
-
-all	: dirs ../orange.so ../corn.so ../statc.so orange.pth
-            
-include makefile.deps
-
-dirs:
-	-@mkdir -p obj > /dev/null
-
-../orange.so: orange/ppp/stamp orange/px/stamp $(ORANGE_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(LINKOPTIONS) -o ../orange.so -lgsl -lgslcblas
-
-../corn.so:	$(CORN_OBJECTS)
-	gcc $(CORN_OBJECTS) $(LINKOPTIONS) -o ../corn.so
-
-../statc.so:	$(STATC_OBJECTS)
-	gcc $(STATC_OBJECTS) $(LINKOPTIONS) -o ../statc.so
-
+	   
 orange.pth:
 	@echo "orange" > orange.pth
 	@echo "orange\\OrangeWidgets" >> orange.pth
@@ -100,5 +73,3 @@ docinstall:
 		$(INSTALL_DATA) $$f $(DOCDIR)/$$f; \
 	done
 
-clean:
-	rm -f obj/* ../*.so orange/ppp/* orange/px/* orange.pth canvas

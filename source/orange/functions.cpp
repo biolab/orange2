@@ -278,25 +278,6 @@ PyObject *__arrayDistance(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(tab
 }
 
 
-#include "graph.hpp"
-int cc_Graph(PyObject *, void *);
-
-PyObject *__xxxx(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(graph, i, f)")
-{
-  int i;
-  float f;
-  PGraph g;
-
-  if (!PyArg_ParseTuple(args, "O&if:numberOfVertices", cc_Graph, &g, &i, &f))
-    return PYNULL;
-
-// tu vmes bo vasa funkcija ... 
-  PGraph newGraph = mlnew TGraphAsMatrix(i, 1, false);
-// recimo, da vrne newGRaph
-
-  return Py_BuildValue("Oi", WrapOrange(newGraph), g->nVertices);
-}
-
 /********** OBSOLETE ***************/
 
 PyObject *setrandseed(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(int seed) -> None")

@@ -21,7 +21,7 @@
 
 
 #include "stladdon.hpp"
-#include "module.hpp"
+#include "orange.hpp"
 #include "cls_misc.hpp"
 #include "stringvars.hpp"
 #include "domain.hpp"
@@ -71,7 +71,6 @@ PyObject *DomainDepot_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
 
 
 bool convertMetasFromPython(PyObject *dict, TMetaVector &metas);
-PyObject *WrapOrange(POrange);
 
 bool decodeDescriptors(PyObject *pynames,
                        TDomainDepot::TAttributeDescriptions &attributeDescriptions,

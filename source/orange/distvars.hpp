@@ -29,8 +29,6 @@
 
 #include <map>
 #include <vector>
-#include "garbage.hpp"
-#include "errors.hpp"
 #include "root.hpp"
 #include "values.hpp"
 #include "stladdon.hpp"
@@ -52,7 +50,7 @@ class TExample;
 #define TDistributionList TOrangeVector<PDistribution> 
 VWRAPPER(DistributionList)
 
-class TDistribution : public TSomeValue {
+class ORANGE_API TDistribution : public TSomeValue {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -157,7 +155,10 @@ public:
     The variances field can be used to give variances of probabilities; DiscDistribution's
     operators do not manipulate it - it is up to you what you store in there and how
     you use it. */
-class TDiscDistribution : public TDistribution {
+
+template class ORANGE_API std::vector<float>;
+
+class ORANGE_API TDiscDistribution : public TDistribution {
 public:
   __REGISTER_CLASS
   VECTOR_INTERFACE(float, distribution)
@@ -217,10 +218,18 @@ public:
     you use it. Each point in the vector corresponds to a point in the map.
     (This is so because you have not implemented - pointers to wrapped maps (ormap.hpp) */
 
-class TContDistribution : public TDistribution {
+class ORANGE_API TContDistribution : public TDistribution {
 public:
   __REGISTER_CLASS
+  #ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable: 4251)
+  #endif
   MAP_INTERFACE_WOUT_OP(float, float, distribution, typedef)
+  #ifdef _MSC_VER
+    #pragma warning(pop)
+  #endif
+
   PFloatList variances; //P variances
   float sum; //PR weighted sum of elements (i.e. N*average)
   float sum2; //PR weighted sum of squares of elements
@@ -261,7 +270,7 @@ public:
 
 
 
-class TGaussianDistribution : public TDistribution {
+class ORANGE_API TGaussianDistribution : public TDistribution {
 public:
   __REGISTER_CLASS
 
@@ -289,8 +298,19 @@ public:
 };
 
 
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable: 4661)
+#endif
+
+template class ORANGE_API TOrangeVector<PDistribution>;
+ 
+#ifdef _MSC_VER
+  #pragma warning(pop)
+#endif
+
 // Distributions of attributes' and classes' values for the examples from the generator
-class TDomainDistributions : public TOrangeVector<PDistribution> {
+class ORANGE_API TDomainDistributions : public TOrangeVector<PDistribution> {
 public:
   __REGISTER_CLASS
 

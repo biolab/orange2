@@ -64,7 +64,7 @@ WRAPPER(ExampleGenerator);
 
 #define ATTRIBUTE_REJECTED numeric_limits<float>::min()
 
-class TMeasureAttribute : public TOrange {
+class ORANGE_API TMeasureAttribute : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -91,7 +91,7 @@ public:
 };
 
 
-class TMeasureAttributeFromProbabilities : public TMeasureAttribute {
+class ORANGE_API TMeasureAttributeFromProbabilities : public TMeasureAttribute {
 public: 
   __REGISTER_ABSTRACT_CLASS
 
@@ -109,7 +109,7 @@ public:
 WRAPPER(MeasureAttribute);
 
 
-class TMeasureAttribute_info : public TMeasureAttributeFromProbabilities {
+class ORANGE_API TMeasureAttribute_info : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
 
@@ -120,7 +120,7 @@ public:
 };
 
 
-class TMeasureAttribute_gainRatio : public TMeasureAttributeFromProbabilities {
+class ORANGE_API TMeasureAttribute_gainRatio : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
 
@@ -130,7 +130,7 @@ public:
 };
 
 
-class TMeasureAttribute_gainRatioA : public TMeasureAttribute_gainRatio {
+class ORANGE_API TMeasureAttribute_gainRatioA : public TMeasureAttribute_gainRatio {
 public:
   __REGISTER_CLASS
 
@@ -138,7 +138,7 @@ public:
 };
 
 
-class TMeasureAttribute_gini : public TMeasureAttributeFromProbabilities {
+class ORANGE_API TMeasureAttribute_gini : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
 
@@ -149,7 +149,7 @@ public:
 };
 
 
-class TMeasureAttribute_relevance : public TMeasureAttributeFromProbabilities {
+class ORANGE_API TMeasureAttribute_relevance : public TMeasureAttributeFromProbabilities {
 public:
   __REGISTER_CLASS
 
@@ -162,7 +162,7 @@ public:
 
 WRAPPER(CostMatrix)
 
-class TMeasureAttribute_cost: public TMeasureAttributeFromProbabilities {
+class ORANGE_API TMeasureAttribute_cost: public TMeasureAttributeFromProbabilities {
 public:
     __REGISTER_CLASS
 
@@ -176,7 +176,7 @@ public:
 };
 
 
-class TMeasureAttribute_MSE : public TMeasureAttribute {
+class ORANGE_API TMeasureAttribute_MSE : public TMeasureAttribute {
 public:
     __REGISTER_CLASS
 

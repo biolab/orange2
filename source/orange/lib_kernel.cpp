@@ -41,7 +41,6 @@ This file includes constructors and specialized methods for classes defined in p
 
 #include "cls_value.hpp"
 #include "cls_example.hpp"
-#include "cls_orange.hpp"
 #include "lib_kernel.hpp"
 #include "vectortemplates.hpp"
 
@@ -49,6 +48,7 @@ This file includes constructors and specialized methods for classes defined in p
 #include "externs.px"
 
 #include "converts.hpp"
+#include "cls_orange.hpp"
 
 WRAPPER(ExampleTable);
 
@@ -68,7 +68,7 @@ PyObject *ProgressCallback_new(PyTypeObject *type, PyObject *args, PyObject *key
 PyObject *ProgressCallback_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(float[, Orange]) -> bool")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrProgressCallback_Type) {
       PyErr_Format(PyExc_SystemError, "ProgressCallback.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
@@ -307,7 +307,7 @@ PyObject *Variable_computeValue(PyObject *self, PyObject *args) PYARGS(METH_O, "
 
 PyObject *Variable_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(value) -> Value")
 { PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     PyObject *object;
     TValue value;
@@ -584,50 +584,76 @@ PyObject *AttributedFloatList_new(PyTypeObject *type, PyObject *args, PyObject *
 PyObject * /*no pyxtract!*/ FloatList_getitem_sq(TPyOrange *self, int index);
 int        /*no pyxtract!*/ FloatList_setitem_sq(TPyOrange *self, int index, PyObject *item);
 
-int AttributeFloatList_getIndex(TPyOrange *self, PyObject *index)
+int AttributedList_getIndex(const int &listsize, PVarList attributes, PyObject *index)
 {
-  if (PyInt_Check(index))
-    return (int)PyInt_AsLong(index);
+  int res;
 
-  CAST_TO_err(TAttributedFloatList, aflist, ILLEGAL_INT)
-  if (!aflist->attributes)
-    PYERROR(PyExc_AttributeError, "variable list not defined, need integer indices", ILLEGAL_INT);
-  if (aflist->attributes->size() != aflist->size())
-    PYERROR(PyExc_AttributeError, "variable list size does not match the size of the list", ILLEGAL_INT);
+  if (!listsize)
+    PYERROR(PyExc_IndexError, "the list is empty", ILLEGAL_INT);
 
-  if (PyOrVariable_Check(index)) {
-    PVariable var = PyOrange_AsVariable(index);
-    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
-    int ind = 0;
-    for(; vi!=ve; vi++, ind++)
-      if (*vi == var)
-        return ind;
-
-    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->name.c_str());
-    return ILLEGAL_INT;
+  if (PyInt_Check(index)) {
+    res = (int)PyInt_AsLong(index);
+    if (res < 0)
+      res += listsize;
   }
+
+  else {
+    if (!attributes)
+      PYERROR(PyExc_AttributeError, "variable list not defined, need integer indices", ILLEGAL_INT);
+
+    if (PyOrVariable_Check(index)) {
+      PVariable var = PyOrange_AsVariable(index);
+      TVarList::const_iterator vi(attributes->begin()), ve(attributes->end());
+      int ind = 0;
+      for(; vi!=ve; vi++, ind++)
+        if (*vi == var) {
+          res = ind;
+          break;
+        }
+
+      if (vi == ve) {
+        PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->name.c_str());
+        return ILLEGAL_INT;
+      }
+    }
     
-  if (PyString_Check(index)) {
-    const char *name = PyString_AsString(index);
-    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
-    int ind = 0;
-    for(; vi!=ve; vi++, ind++)
-      if ((*vi)->name == name)
-        return ind;
+    else if (PyString_Check(index)) {
+      const char *name = PyString_AsString(index);
+      TVarList::const_iterator vi(attributes->begin()), ve(attributes->end());
+      int ind = 0;
+      for(; vi!=ve; vi++, ind++)
+        if ((*vi)->name == name) {
+          res = ind;
+          break;
+        }
 
-    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", name);
+      if (vi == ve) {
+        PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", name);
+        return ILLEGAL_INT;
+      }
+    }
+
+    else {
+      PyErr_Format(PyExc_TypeError, "cannot index the list by '%s'", index->ob_type->tp_name);
+      return ILLEGAL_INT;
+    }
+  }
+
+  if ((res >= listsize) || (res < 0)) {
+    PyErr_Format(PyExc_IndexError, "index %i out of range 0-%i", res, listsize-1);
     return ILLEGAL_INT;
   }
 
-  PyErr_Format(PyExc_TypeError, "cannot index AttributedFloatList by '%s'", index->ob_type->tp_name);
-  return ILLEGAL_INT;
+  return res;
 }
 
 
 PyObject *AttributedFloatList_getitem(TPyOrange *self, PyObject *index)
 {
   PyTRY 
-    const int ind = AttributeFloatList_getIndex(self, index);
+    CAST_TO(TAttributedFloatList, aflist)
+
+    const int ind = AttributedList_getIndex(aflist->size(), aflist->attributes, index);
     if (ind == ILLEGAL_INT)
       return PYNULL;
 
@@ -639,7 +665,9 @@ PyObject *AttributedFloatList_getitem(TPyOrange *self, PyObject *index)
 int AttributedFloatList_setitem(TPyOrange *self, PyObject *index, PyObject *value)
 {
   PyTRY 
-    const int ind = AttributeFloatList_getIndex(self, index);
+    CAST_TO_err(TAttributedFloatList, aflist, -1)
+
+    const int ind = AttributedList_getIndex(aflist->size(), aflist->attributes, index);
     if (ind == ILLEGAL_INT)
       return -1;
 
@@ -651,57 +679,34 @@ int AttributedFloatList_setitem(TPyOrange *self, PyObject *index, PyObject *valu
 
 PyObject *AttributedBoolList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(BoolList, "(attributes, list)")
 {
-  PYERROR(PyExc_AttributeError, "not implemented", PYNULL);
+  PyObject *ob1, *ob2 = NULL;
+  if (!PyArg_UnpackTuple(args, "AttributedBoolList.new", 1, 2, &ob1, &ob2))
+    return PYNULL;
+
+  PyObject *wabl = ListOfUnwrappedMethods<PAttributedBoolList, TAttributedBoolList, bool>::_new(type, ob2 ? ob2 : ob1, keywds);
+
+  if (ob2) {
+    PVarList attributes = PVarList_FromArguments(ob1);
+    if (!attributes)
+      return PYNULL;
+
+    PyOrange_AsAttributedBoolList(wabl)->attributes = attributes;
+  }
+
+  return wabl;
 }
 
 
 PyObject * /*no pyxtract!*/ BoolList_getitem_sq(TPyOrange *self, int index);
 int        /*no pyxtract!*/ BoolList_setitem_sq(TPyOrange *self, int index, PyObject *item);
 
-int AttributeBoolList_getIndex(TPyOrange *self, PyObject *index)
-{
-  if (PyInt_Check(index))
-    return (int)PyInt_AsLong(index);
-
-  CAST_TO_err(TAttributedBoolList, aflist, ILLEGAL_INT)
-  if (!aflist->attributes)
-    PYERROR(PyExc_AttributeError, "variable list not defined, need integer indices", ILLEGAL_INT);
-  if (aflist->attributes->size() != aflist->size())
-    PYERROR(PyExc_AttributeError, "variable list size does not match the size of the list", ILLEGAL_INT);
-
-  if (PyOrVariable_Check(index)) {
-    PVariable var = PyOrange_AsVariable(index);
-    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
-    int ind = 0;
-    for(; vi!=ve; vi++, ind++)
-      if (*vi == var)
-        return ind;
-
-    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->name.c_str());
-    return ILLEGAL_INT;
-  }
-    
-  if (PyString_Check(index)) {
-    const char *name = PyString_AsString(index);
-    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
-    int ind = 0;
-    for(; vi!=ve; vi++, ind++)
-      if ((*vi)->name == name)
-        return ind;
-
-    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", name);
-    return ILLEGAL_INT;
-  }
-
-  PyErr_Format(PyExc_TypeError, "cannot index AttributedBoolList by '%s'", index->ob_type->tp_name);
-  return ILLEGAL_INT;
-}
-
 
 PyObject *AttributedBoolList_getitem(TPyOrange *self, PyObject *index)
 {
   PyTRY 
-    const int ind = AttributeBoolList_getIndex(self, index);
+    CAST_TO(TAttributedBoolList, aflist)
+
+    const int ind = AttributedList_getIndex(aflist->size(), aflist->attributes, index);
     if (ind == ILLEGAL_INT)
       return PYNULL;
 
@@ -713,7 +718,9 @@ PyObject *AttributedBoolList_getitem(TPyOrange *self, PyObject *index)
 int AttributedBoolList_setitem(TPyOrange *self, PyObject *index, PyObject *value)
 {
   PyTRY 
-    const int ind = AttributeBoolList_getIndex(self, index);
+    CAST_TO_err(TAttributedBoolList, aflist, -1)
+
+    const int ind = AttributedList_getIndex(aflist->size(), aflist->attributes, index);
     if (ind == ILLEGAL_INT)
       return -1;
 
@@ -734,7 +741,7 @@ PyObject *Domain_metaid(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | 
     if (PyString_Check(rar))
       desc = domain->metas[string(PyString_AsString(rar))];
     else if (PyOrVariable_Check(rar))
-      desc = domain->metas[PyOrange_AS(TVariable, rar).name];
+      desc = domain->metas[PyOrange_AsVariable(rar)->name];
 
     if (!desc)
       PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
@@ -956,7 +963,7 @@ PyObject *Domain_index(PyObject *self, PyObject *arg) PYARGS(METH_O, "(variable)
 }
 
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "source")
+CONSTRUCTOR_KEYWORDS(Domain, "source")
 
 PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
 { PyTRY
@@ -1075,7 +1082,8 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
 
 PyObject *Domain_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example) -> Example")
 { PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     TExample *ex;
     if (!PyArg_ParseTuple(args, "O&", ptr_Example, &ex))
       PYERROR(PyExc_TypeError, "invalid parameters (Example expected)", PYNULL);
@@ -1238,7 +1246,8 @@ PyObject *RandomGenerator_reset(PyObject *self, PyObject *args) PYARGS(METH_VARA
 
 PyObject *RandomGenerator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("() -> 32-bit random int")
 { PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     if (!PyArg_ParseTuple(args, ""))
       PYERROR(PyExc_TypeError, "no arguments expected", PYNULL);
     return PyInt_FromLong((long)SELF_AS(TRandomGenerator)());
@@ -1748,7 +1757,7 @@ PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYARGS(METH
 #include "numeric_interface.hpp"
 #endif
 
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore);
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC);
 
 
 TExampleTable *readListOfExamples(PyObject *args)
@@ -1954,7 +1963,12 @@ bool hasFlag(PyObject *keywords, char *flag)
   return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
 }
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA")
+
+
+bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
+
+TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC);
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
@@ -1963,7 +1977,11 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     char *filename = NULL;
     if (PyArg_ParseTuple(argstuple, "|s", &filename)) {
       bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
-      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore")), type);
+      char *DK = NULL, *DC = NULL;
+      if (!readUndefinedSpecs(keywords, DK, DC))
+        return PYNULL;
+
+      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC), type);
     }
 
     PyErr_Clear();
@@ -1971,7 +1989,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     PExampleGenerator egen;
     PyObject *args = PYNULL;
     if (PyArg_ParseTuple(argstuple, "O&|O", cc_ExampleTable, &egen, &args))
-      return WrapNewOrange(mlnew TExampleTable(egen, args && (PyObject_IsTrue(args) != 0)), type);
+      return WrapNewOrange(mlnew TExampleTable(egen, !args || (PyObject_IsTrue(args) == 0)), type);
 
     PyErr_Clear();
 
@@ -2076,7 +2094,7 @@ PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Ignore, 0)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
 
-#ifndef NO_GSL
+#if !defined(NO_GSL) && !defined(NO_NUMERIC)
 
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
@@ -2204,7 +2222,6 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
 }
 
 #endif
-
 
 #ifndef NO_NUMERIC
 
@@ -2970,12 +2987,12 @@ PyObject *TransformValue_new(PyTypeObject *type, PyObject *args, PyObject *keywo
 
 PyObject *TransformValue_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(value) -> Value")
 { PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTransformValue_Type) {
       PyErr_Format(PyExc_SystemError, "TransformValue.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
-
-    SETATTRIBUTES
 
     CAST_TO(TTransformValue, tv)
   
@@ -3085,7 +3102,7 @@ PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED
 
     /* We need to override the type (don't want to lie it's Distribution).
        The exception is if another type is prescribed. */
-    return type==(PyTypeObject *)(&PyOrDistribution_Type) ? WrapOrange(dist) : WrapNewOrange(dist, type);
+    return type==(PyTypeObject *)(&PyOrDistribution_Type) ? WrapOrange(PDistribution(dist)) : WrapNewOrange(dist, type);
   PyCATCH
 }
 
@@ -3214,8 +3231,7 @@ int Distribution_setitem(PyObject *self, PyObject *index, PyObject *item)
 
 string convertToString(const PDistribution &distribution)
 { 
-  const TDiscDistribution *disc;
-  distribution.dynamic_cast_to(disc);
+  const TDiscDistribution *disc = distribution.AS(TDiscDistribution);
   if (disc) {
     string res = "<";
     char buf[128];
@@ -3228,8 +3244,7 @@ string convertToString(const PDistribution &distribution)
     return res+">";
   }
 
-  const TContDistribution *cont;
-  distribution.dynamic_cast_to(cont);
+  const TContDistribution *cont = distribution.AS(TContDistribution);
   if (cont) {
     string res = "<";
     char buf[128];
@@ -3392,7 +3407,7 @@ PyObject *DiscDistribution_keys(PyObject *self) PYARGS(0, "() -> [string] | [flo
     PyObject *nl=PyList_New(disc->variable->noOfValues());
     int i=0;
     PStringList vals=disc->variable.AS(TEnumVariable)->values;
-    PITERATE(TIdList, ii, vals)
+    PITERATE(TStringList, ii, vals)
       PyList_SetItem(nl, i++, PyString_FromString((*ii).c_str()));
     return nl;
   PyCATCH
@@ -3412,7 +3427,7 @@ PyObject *DiscDistribution_items(PyObject *self) PYARGS(0, "() -> [(string, floa
     TDiscDistribution::const_iterator ci(disc->begin());
     int i=0;
     PStringList vals=disc->variable.AS(TEnumVariable)->values;
-    PITERATE(TIdList, ii, vals)
+    PITERATE(TStringList, ii, vals)
       PyList_SetItem(nl, i++, Py_BuildValue("sf", (*ii).c_str(), *(ci++)));
     return nl;
   PyCATCH
@@ -3895,7 +3910,7 @@ PyObject *Learner_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  B
 PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrLearner_Type) {
       PyErr_Format(PyExc_SystemError, "Learner.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
@@ -3991,9 +4006,9 @@ PyObject *ClassifierList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> Non
 PyObject *ClassifierList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, &PyOrClassifier_Type>::_sort(self, args); }
 
 
-PYCONSTANT(GetValue, PyInt_FromLong(0))
-PYCONSTANT(GetProbabilities, PyInt_FromLong(1))
-PYCONSTANT(GetBoth, PyInt_FromLong(2))
+PYCONSTANT_INT(GetValue, 0)
+PYCONSTANT_INT(GetProbabilities, 1)
+PYCONSTANT_INT(GetBoth, 2)
 
 PYCLASSCONSTANT_INT(Classifier, GetValue, 0)
 PYCLASSCONSTANT_INT(Classifier, GetProbabilities, 1)
@@ -4010,12 +4025,13 @@ PyObject *Classifier_new(PyTypeObject *type, PyObject *args, PyObject *keywords)
 
 PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example[, format]) -> Value | distribution | (Value, distribution)")
 { PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrClassifier_Type) {
       PyErr_Format(PyExc_SystemError, "Classifier.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
     CAST_TO(TClassifier, classifier);
 
     if (!classifier)
@@ -4083,6 +4099,8 @@ C_NAMED(ClassifierByExampleTable, ClassifierFD, "([examples=])")
 PyObject *LookupLearner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier | (classVar, attributes, examples) -> Classifier")
 { PyTRY
 
+    NO_KEYWORDS
+
     PyObject *pyclassVar;
     PyObject *pyvarList;
     PExampleGenerator egen;
@@ -4127,7 +4145,7 @@ PyObject *ClassifierByLookupTable_boundset(PyObject *self) PYARGS(0, "() -> (var
     SELF_AS(TClassifierByLookupTable).giveBoundSet(vlist);
     PyObject *res = PyTuple_New(vlist.size());
     int i = 0;
-    const_ITERATE(TVarList, vi, vlist)
+    ITERATE(TVarList, vi, vlist)
       PyTuple_SetItem(res, i++, WrapOrange(*vi));
     return res;
   PyCATCH
@@ -4199,7 +4217,7 @@ PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObj
     PyObject *pyvlist = PYNULL;
     PyObject *pydlist = PYNULL;
     if (!PyArg_ParseTuple(args, "O&O&|OO", cc_Variable, &vcl, cc_Variable, &vvl, &pyvlist, &pydlist))
-      PYERROR(PyExc_TypeError, "invalid parameter; two variables and, optionally, ValueList an DistributionList expected", PYNULL);
+      PYERROR(PyExc_TypeError, "invalid parameter; two variables and, optionally, ValueList and DistributionList expected", PYNULL);
 
     TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(vcl, vvl);
     return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;

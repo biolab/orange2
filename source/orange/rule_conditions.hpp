@@ -28,8 +28,6 @@ using namespace std;
 
 #include "examples.hpp"
 
-typedef vector<string> TIdList;
-
 /*~***************************************************************************************
 Some general templates for conditions, conjunctions and disjunctions of them
 *****************************************************************************************/
@@ -110,7 +108,7 @@ public:
 
   int count(PExample example);
   virtual bool operator()(PAssociationRule asr);
-  bool readConditionAtoms(istream &str, TIdList &atoms);
+  bool readConditionAtoms(istream &str, vector<string> &atoms);
 };
 
 
@@ -132,7 +130,7 @@ public:
   void readSets(PDomain domain, istream &istr);
   void readConjunctions(PDomain domain, istream &istr);
 
-  bool readSetAtoms(istream &str, TIdList &atoms);
+  bool readSetAtoms(istream &str, vector<string> &atoms);
 };
 
 

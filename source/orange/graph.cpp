@@ -22,6 +22,8 @@
 
 #include "graph.ppp"
 
+//template ORANGE_API GCPtr<TGraph>::GCPtr<TGraph>(TGraph *);
+
 #define GN_INIT \
   if ((v < 0) || (v >= nVertices)) \
     raiseError("vertex index %i is out of range 0-%i", v, nVertices-1); \

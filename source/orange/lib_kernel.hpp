@@ -29,35 +29,35 @@
 #include "examplegen.hpp"
 #include "table.hpp"
 
-TExampleTable *readListOfExamples(PyObject *args);
-TExampleTable *readListOfExamples(PyObject *args, PDomain, bool filterMetas = false);
-PExampleGenerator exampleGenFromArgs(PyObject *args, int &weightID);
-PExampleGenerator exampleGenFromArgs(PyObject *args);
-PExampleGenerator exampleGenFromParsedArgs(PyObject *args);
-bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, bool allowSingle=true, bool checkForIncludance=true);
-bool varListFromVarList(PyObject *boundList, PVarList varlist, TVarList &boundSet, bool allowSingle = true, bool checkForIncludance = true);
-PVariable varFromArg_byDomain(PyObject *obj, PDomain domain=PDomain(), bool checkForIncludance = false);
-PVariable varFromArg_byVarList(PyObject *obj, PVarList varlist, bool checkForIncludance = false);
-bool convertFromPythonWithVariable(PyObject *obj, string &str);
-bool varNumFromVarDom(PyObject *pyvar, PDomain domain, int &);
+ORANGE_API TExampleTable *readListOfExamples(PyObject *args);
+ORANGE_API TExampleTable *readListOfExamples(PyObject *args, PDomain, bool filterMetas = false);
+ORANGE_API PExampleGenerator exampleGenFromArgs(PyObject *args, int &weightID);
+ORANGE_API PExampleGenerator exampleGenFromArgs(PyObject *args);
+ORANGE_API PExampleGenerator exampleGenFromParsedArgs(PyObject *args);
+ORANGE_API bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, bool allowSingle=true, bool checkForIncludance=true);
+ORANGE_API bool varListFromVarList(PyObject *boundList, PVarList varlist, TVarList &boundSet, bool allowSingle = true, bool checkForIncludance = true);
+ORANGE_API PVariable varFromArg_byDomain(PyObject *obj, PDomain domain=PDomain(), bool checkForIncludance = false);
+ORANGE_API PVariable varFromArg_byVarList(PyObject *obj, PVarList varlist, bool checkForIncludance = false);
+ORANGE_API bool convertFromPythonWithVariable(PyObject *obj, string &str);
+ORANGE_API bool varNumFromVarDom(PyObject *pyvar, PDomain domain, int &);
 
 
-bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
+ORANGE_API bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base);
 
 inline bool exampleGenFromParsedArgs(PyObject *args, PExampleGenerator &gen)
 { gen = exampleGenFromParsedArgs(args);
   return bool(gen);
 }
 
-int pt_ExampleGenerator(PyObject *args, void *egen);
+ORANGE_API int pt_ExampleGenerator(PyObject *args, void *egen);
 
 typedef int (*converter)(PyObject *, void *);
-converter ptd_ExampleGenerator(PDomain domain);
+ORANGE_API converter ptd_ExampleGenerator(PDomain domain);
 
-bool weightFromArg_byDomain(PyObject *pyweight, PDomain domain, int &weightID);
-converter pt_weightByGen(PExampleGenerator &peg);
+ORANGE_API bool weightFromArg_byDomain(PyObject *pyweight, PDomain domain, int &weightID);
+ORANGE_API converter pt_weightByGen(PExampleGenerator &peg);
 
-int pt_DomainContingency(PyObject *args, void *egen);
+ORANGE_API int pt_DomainContingency(PyObject *args, void *egen);
 
 
 #endif

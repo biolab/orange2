@@ -23,8 +23,9 @@
 #include "vars.hpp"
 #include "domain.hpp"
 
-#include "domaindepot.hpp"
 #include "stringvars.hpp"
+
+#include "domaindepot.hpp"
 
 
 extern TOrangeType PyOrVariable_Type;
@@ -172,7 +173,7 @@ TDomainDepot::TAttributeDescription::TAttributeDescription(const string &n, cons
 TDomainDepot::~TDomainDepot()
 {
   ITERATE(list<TDomain *>, di, knownDomains) {
-    // this could be done by some remove_if, but I don't intend to fight
+    // this could be done by some remove_if, but I don't want to fight
     //   all various implementations of STL
     list<TDomain::TDestroyNotification>::iterator src((*di)->destroyNotifiers.begin()), end((*di)->destroyNotifiers.end());
     for(; (src!=end) && ((const TDomainDepot *)((*src).second) != this); src++);

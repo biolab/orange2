@@ -36,7 +36,7 @@ WRAPPER(ExampleGenerator);
 #define PFoldIndices PLongList
 #define PRandomIndices PLongList
 
-class TMakeRandomIndices : public TOrange {
+class ORANGE_API TMakeRandomIndices : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -53,7 +53,7 @@ public:
 WRAPPER(MakeRandomIndices)
 
 // Prepares a vector of 0's and 1's with given distribution.
-class TMakeRandomIndices2 : public TMakeRandomIndices {
+class ORANGE_API TMakeRandomIndices2 : public TMakeRandomIndices {
 public:
   __REGISTER_CLASS
 
@@ -73,7 +73,7 @@ public:
 
 /*  Prepares a vector of indices with given distribution. Similar to TMakeRandomIndices2, this object's constructor
     is given the size of vector and the required distribution of indices. */
-class TMakeRandomIndicesN : public TMakeRandomIndices {
+class ORANGE_API TMakeRandomIndicesN : public TMakeRandomIndices {
 public:
   __REGISTER_CLASS
 
@@ -94,7 +94,7 @@ public:
 
 
 // Indices for cross validation
-class TMakeRandomIndicesCV : public TMakeRandomIndices {
+class ORANGE_API TMakeRandomIndicesCV : public TMakeRandomIndices {
 public:
   __REGISTER_CLASS
 
@@ -112,7 +112,7 @@ public:
 
 
 // Prepares a vector of 0's and 1's with given distribution.
-class TMakeRandomIndicesMultiple : public TMakeRandomIndices {
+class ORANGE_API TMakeRandomIndicesMultiple : public TMakeRandomIndices {
 public:
   __REGISTER_CLASS
 

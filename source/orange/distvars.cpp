@@ -27,7 +27,6 @@
 #include "random.hpp"
 #include "values.hpp"
 #include "vars.hpp"
-#include "errors.hpp"
 #include "stladdon.hpp"
 #include "domain.hpp"
 #include "examplegen.hpp"
@@ -36,7 +35,7 @@
 
 #include "distvars.ppp"
 
-DEFINE_TOrangeVector_classDescription(PDistribution, "TDistributionList")
+DEFINE_TOrangeVector_classDescription(PDistribution, "TDistributionList", true, ORANGE_API)
 
 
 #define CHECKVALTYPE(valType) \

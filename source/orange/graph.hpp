@@ -28,7 +28,7 @@
 
 #define GRAPH__NO_CONNECTION 1e-30f
 
-class TGraph : public TOrange
+class ORANGE_API TGraph : public TOrange
 {
 public:
   __REGISTER_ABSTRACT_CLASS
@@ -60,7 +60,7 @@ public:
 
 WRAPPER(Graph)
 
-class TGraphAsMatrix : public TGraph
+class ORANGE_API TGraphAsMatrix : public TGraph
 {
 public:
   __REGISTER_CLASS
@@ -92,12 +92,12 @@ public:
 
 
 
-class TGraphAsList : public TGraph
+class ORANGE_API TGraphAsList : public TGraph
 {
 public:
   __REGISTER_CLASS
 
-  class TEdge {
+  class ORANGE_API TEdge {
   public:
     TEdge *next;
     int vertex;
@@ -132,12 +132,12 @@ public:
 };
   
 
-class TGraphAsTree : public TGraph
+class ORANGE_API TGraphAsTree : public TGraph
 {
 public:
   __REGISTER_CLASS
 
-  class TEdge {
+  class ORANGE_API TEdge {
   public:
     TEdge *left, *right;
     unsigned int vertex; // 0x7ffffff for number, high bit=set -> node is red

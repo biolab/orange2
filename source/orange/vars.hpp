@@ -23,26 +23,24 @@
 #ifndef __VARS_HPP
 #define __VARS_HPP
 
-#include <vector>
 #include <string>
 #include "orvector.hpp"
 
 using namespace std;
 
-#include "garbage.hpp"
 #include "root.hpp"
 
-class TValue;
-class TExample;
-class TTransformValue;
-class TDistribution;
+class ORANGE_API TValue;
+class ORANGE_API TExample;
+class ORANGE_API TTransformValue;
+class ORANGE_API TDistribution;
 
 WRAPPER(Domain);
 WRAPPER(ExampleGenerator)
 WRAPPER(Classifier);
-WRAPPER(RandomGenerator);
+WRAPPER(RandomGenerator)
 
-#include "getarg.hpp"
+//#include "getarg.hpp"
 #include "stladdon.hpp"
 
 #ifdef _MSC_VER
@@ -53,7 +51,7 @@ WRAPPER(Variable);
 WRAPPER(Classifier)
 
 
-class TVariable : public TOrange {
+class ORANGE_API TVariable : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -104,7 +102,7 @@ VWRAPPER(VarList)
 #define TVarListList TOrangeVector<PVarList> 
 VWRAPPER(VarListList)
 
-class TEnumVariable : public TVariable {
+class ORANGE_API TEnumVariable : public TVariable {
 public:
   __REGISTER_CLASS
 
@@ -132,7 +130,7 @@ public:
 
 
 // A class describing integer variables
-class TIntVariable : public TVariable {
+class ORANGE_API TIntVariable : public TVariable {
 public:
   __REGISTER_CLASS
 
@@ -155,7 +153,7 @@ public:
 
 
 
-class TFloatVariable : public TVariable {
+class ORANGE_API TFloatVariable : public TVariable {
 public:
   __REGISTER_CLASS
 

@@ -67,7 +67,7 @@ TRuleCondCounted::TRuleCondCounted(char as, int ano, char aside)
 
 
 TRuleCondCounted::TRuleCondCounted(PDomain domain, istream &istr, const vector<pair<string, vector<int> > > &sets)
-{ TIdList atoms;
+{ vector<string> atoms;
   if (istr.eof() || !readConditionAtoms(istr, atoms)) return;
 
   side=atoms.front()[0];
@@ -94,7 +94,7 @@ TRuleCondCounted::TRuleCondCounted(PDomain domain, istream &istr, const vector<p
     }
   }
   
-  TIdList::iterator ii(atoms.begin()+1);
+  vector<string>::iterator ii(atoms.begin()+1);
   for( ; ii!=atoms.end(); ii++) {
     string atom=*ii;
     string::iterator ai(atom.begin());
@@ -149,7 +149,7 @@ bool TRuleCondCounted::operator()(PAssociationRule asr)
 }
 
 
-bool TRuleCondCounted::readConditionAtoms(istream &str, TIdList &atoms)
+bool TRuleCondCounted::readConditionAtoms(istream &str, vector<string> &atoms)
 {
   #define MAX_LINE_LENGTH 1024
   char line[MAX_LINE_LENGTH], *curr=line;
@@ -157,7 +157,7 @@ bool TRuleCondCounted::readConditionAtoms(istream &str, TIdList &atoms)
   if (str.gcount()==MAX_LINE_LENGTH-1)
     raiseError("line too long");
 
-  atoms=TIdList();
+  atoms=vector<string>();
 
   for(;*curr && (*curr<=' ');curr++); // skip whitespace
 
@@ -220,10 +220,10 @@ TRuleCondDisjunctions::TRuleCondDisjunctions(PDomain domain, istream &istr)
 
 void TRuleCondDisjunctions::readSets(PDomain domain, istream &istr) {
   while (!istr.eof()) {
-    TIdList atoms;
+    vector<string> atoms;
     if (!readSetAtoms(istr, atoms)) break;
 
-    TIdList::iterator ai(atoms.begin());
+    vector<string>::iterator ai(atoms.begin());
     string name=*ai;
 
     { ITERATE(TSets, si, sets)
@@ -252,13 +252,13 @@ void TRuleCondDisjunctions::readSets(PDomain domain, istream &istr) {
 
 
 #define MAX_LINE_LENGTH 10240
-bool TRuleCondDisjunctions::readSetAtoms(istream &str, TIdList &atoms)
+bool TRuleCondDisjunctions::readSetAtoms(istream &str, vector<string> &atoms)
 {
   char line[MAX_LINE_LENGTH], *curr=line;
   str.getline(line, MAX_LINE_LENGTH);
   if (str.gcount()==MAX_LINE_LENGTH-1) raiseError("line too long while reading conditions file");
 
-  atoms=TIdList();
+  atoms = vector<string>();
 
   for(;*curr && (*curr<=' ');curr++); // skip whitespace
 

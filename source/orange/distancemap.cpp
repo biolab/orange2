@@ -22,8 +22,7 @@
 
 #include <algorithm>
 #include <queue>
-#include "module.hpp"
-#include "errors.hpp"
+#include "orange.hpp"
 #include "symmatrix.hpp"
 
 #include "distancemap.ppp"
@@ -154,7 +153,28 @@ unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int 
 }
 
 
-void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
+void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max)
+{
+  const int nlow = lowperc * ncells;
+  const int nhigh = highperc * ncells;
+
+  priority_queue<float, vector<float>, greater<float> > lower;
+  priority_queue<float, vector<float>, less<float> > upper;
+
+  int i = ncells;
+  for(const float *ci = cells; i--; ci++) {
+    lower.push(*ci);
+    if (lower.size() > nlow)
+      lower.pop();
+    upper.push(*ci);
+    if (upper.size() > nhigh)
+      upper.pop();
+  }
+
+  min = lower.top();
+  max = upper.top();
+}
+
 
 void TDistanceMap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max)
 { ::getPercentileInterval(cells, dim*dim, lowperc, highperc, min, max); }
@@ -178,7 +198,7 @@ TDistanceMapConstructor::TDistanceMapConstructor(PSymMatrix m)
 {}
 
 
-void computeSqueezedIndices(const int &origLines, const int &squeezedLines, vector<int> &indices)
+void computeSqueezedIndices(const int &origLines, const int &squeezedLines, TIntList &indices)
 {
   float k = float(origLines) / squeezedLines;
   for(int i = 0; i <= squeezedLines; i++)
@@ -205,7 +225,7 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
         nLines++;
   
       PIntList psqi = new TIntList();
-      vector<int> &squeezedIndices = psqi->__orvector;
+      TOrangeVector<int, false> &squeezedIndices = psqi.getReference();
       computeSqueezedIndices(distMat.dim, nLines, squeezedIndices);
 
       nLines = squeezedIndices.size() - 1;
@@ -283,7 +303,7 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
         nLines++;
   
       PIntList psqi = new TIntList();
-      vector<int> &squeezedIndices = psqi->__orvector;
+      TOrangeVector<int, false> &squeezedIndices = psqi.getReference();
       computeSqueezedIndices(distMat.dim, nLines, squeezedIndices);
 
       nLines = squeezedIndices.size() - 1;
@@ -336,7 +356,7 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       const int &dim = distMat.dim;
       PDistanceMap dm = mlnew TDistanceMap(dim);
       dm->elementIndices = new TIntList();
-      vector<int> &squeezedIndices = dm->elementIndices->__orvector;
+      TOrangeVector<int, false> &squeezedIndices = dm->elementIndices.getReference();
 
       for(int row = 0; row < dim; row++) {
         squeezedIndices.push_back(row);

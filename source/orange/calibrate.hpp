@@ -29,7 +29,7 @@
 WRAPPER(Classifier)
 WRAPPER(ExampleGenerator)
 
-class TThresholdCA : public TOrange {
+class ORANGE_API TThresholdCA : public TOrange {
 public:
   __REGISTER_CLASS
 

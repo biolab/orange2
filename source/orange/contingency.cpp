@@ -21,7 +21,6 @@
 
 
 #include "stladdon.hpp"
-#include "errors.hpp"
 
 #include "vars.hpp"
 #include "domain.hpp"
@@ -34,7 +33,7 @@
 
 #include "contingency.ppp"
 
-DEFINE_TOrangeVector_classDescription(PContingencyClass, "TContingencyClassList")
+DEFINE_TOrangeVector_classDescription(PContingencyClass, "TContingencyClassList", true, ORANGE_API)
 
 #define NOTSPEC(v) if (v.isSpecial()) throw mlexception("unknown variable value");
 #define NEEDS(ptype) if(varType!=ptype) throw mlexception("invalid variable type");

@@ -26,7 +26,7 @@
 VWRAPPER(VarList);
 VWRAPPER(VarListList);
 
-class TSubsetsGenerator : public TOrange {
+class ORANGE_API TSubsetsGenerator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -40,7 +40,7 @@ public:
 WRAPPER(SubsetsGenerator);
 
 
-class TSubsetsGenerator_constSize : public TSubsetsGenerator {
+class ORANGE_API TSubsetsGenerator_constSize : public TSubsetsGenerator {
 public:
   __REGISTER_CLASS
 
@@ -58,7 +58,7 @@ protected:
 };
 
 
-class TSubsetsGenerator_minMaxSize : public TSubsetsGenerator {
+class ORANGE_API TSubsetsGenerator_minMaxSize : public TSubsetsGenerator {
 public:
   __REGISTER_CLASS
 
@@ -78,7 +78,7 @@ protected:
 };
 
 
-class TSubsetsGenerator_constant : public TSubsetsGenerator {
+class ORANGE_API TSubsetsGenerator_constant : public TSubsetsGenerator {
 public:
   __REGISTER_CLASS
 
@@ -96,7 +96,7 @@ protected:
 };
 
 
-class TSubsetsGenerator_withRestrictions : public TSubsetsGenerator {
+class ORANGE_API TSubsetsGenerator_withRestrictions : public TSubsetsGenerator {
 public:
   __REGISTER_CLASS
 

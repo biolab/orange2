@@ -27,7 +27,7 @@
 
 using namespace std;
 
-class TBasketExampleGenerator : public TFileExampleGenerator {
+class ORANGE_API TBasketExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 

@@ -20,8 +20,7 @@
 */
 
 
-#include "stladdon.hpp"
-#include "module.hpp"
+#include "orange.hpp"
 
 class TMLClassDefinition;
 extern TMLClassDefinition MLDef_Domain;
@@ -446,7 +445,7 @@ PyObject *Example_setmeta(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, 
 
       else {
         TMetaDescriptor *desc=example->domain->metas[
-            PyOrVariable_Check(par1) ? PyOrange_AS(TVariable, par1).name
+            PyOrVariable_Check(par1) ? PyOrange_AsVariable(par1)->name
                                      : string(PyString_AsString(par1))];
         if (!desc)
           PYERROR(PyExc_TypeError, "invalid variable", PYNULL);

@@ -87,7 +87,7 @@ bool operator > (const TAssociationRule &, const TAssociationRule &) { return fa
 PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     int weightID;
     PExampleGenerator egen = exampleGenFromArgs(args, weightID);
@@ -102,7 +102,7 @@ PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject 
 PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     int weightID = 0;
     PExampleGenerator egen =  exampleGenFromArgs(args, weightID);
@@ -353,14 +353,14 @@ PyObject *TreeStopCriteria_new(PyTypeObject *type, PyObject *args, PyObject *key
         PYERROR(PyExc_TypeError, "TreeStopCriteria: invalid arguments - name or callback function expected", PYNULL);
 
       if (!args || !name || name && PyString_Check(name)) {
-          PyObject *self = WrapOrange(mlnew TTreeStopCriteria());
+          PyObject *self = WrapNewOrange(mlnew TTreeStopCriteria(), type);
           if (name)
             PyObject_SetAttrString(self, "name", name);
           return self;
       }
       // (args && name && !PyStringString_Check(name)
 
-      return setCallbackFunction(WrapOrange(mlnew TTreeStopCriteria_Python()), args);
+      return setCallbackFunction(WrapNewOrange(mlnew TTreeStopCriteria_Python(), type), args);
   }
 
   return WrapNewOrange(mlnew TTreeStopCriteria_Python(), type);
@@ -372,7 +372,8 @@ PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *key
 { 
   static TTreeStopCriteria _cbdefaultStop;
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     CAST_TO(TTreeStopCriteria, stop);
     if (!stop)
       PYERROR(PyExc_SystemError, "attribute error", PYNULL);
@@ -396,7 +397,7 @@ PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *key
 
 
 PyObject *TreeStopCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples, [weight, domainContingency]) -> bool")
-{ return TreeStopCriteria_lowcall(self, args, keywords, false); }
+{  return TreeStopCriteria_lowcall(self, args, keywords, false); }
 
 
 PyObject *TreeStopCriteria_Python_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples, [weight, domainContingency, apriorClass, candidates]) -/-> (Classifier, descriptions, sizes, quality)")
@@ -414,13 +415,13 @@ PyObject *TreeSplitConstructor_new(PyTypeObject *type, PyObject *args, PyObject 
 
 PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weight, contingency, apriori class distribution, candidates, nodeClassifier]) -> (Classifier, descriptions, sizes, quality)")
 { PyTRY
+    NO_KEYWORDS
 
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTreeSplitConstructor_Type) {
       PyErr_Format(PyExc_SystemError, "TreeSplitConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
     PExampleGenerator gen;
     int weightID = 0;
     PDomainContingency dcont;
@@ -474,12 +475,13 @@ PyObject *TreeExampleSplitter_new(PyTypeObject *type, PyObject *args, PyObject *
 
 PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(node, examples[, weight]) -/-> (ExampleGeneratorList, list of weight ID's")
 { PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTreeExampleSplitter_Type) {
       PyErr_Format(PyExc_SystemError, "TreeExampleSplitter.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
     PTreeNode node;
     PExampleGenerator gen;
     int weightID = 0;
@@ -518,12 +520,12 @@ PyObject *TreeDescender_new(PyTypeObject *type, PyObject *args, PyObject *keywor
 
 PyObject *TreeDescender_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(node, example) -/-> (node, {distribution | None})")
 { PyTRY
+    NO_KEYWORDS
+
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTreeDescender_Type) {
       PyErr_Format(PyExc_SystemError, "TreeDescender.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
-
-    SETATTRIBUTES
 
     PTreeNode onode;
     TExample *example;
@@ -540,7 +542,8 @@ PyObject *TreeDescender_call(PyObject *self, PyObject *args, PyObject *keywords)
 PyObject *TreePruner_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(tree) -> tree")
 { 
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PyObject *obj;
     PTreeNode node;
     PTreeClassifier classifier;
@@ -711,7 +714,7 @@ PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VAR
 PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     int weight;
     PExampleGenerator egen = exampleGenFromArgs(args, weight);
@@ -812,7 +815,7 @@ C_NAMED(RuleClassifier_firstRule, RuleClassifier, "()")
 PyObject *Rule_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
 
     if (PyTuple_Size(args)==1) {
       PyObject *pyex = PyTuple_GET_ITEM(args, 0);
@@ -842,7 +845,8 @@ PyObject *RuleEvaluator_new(PyTypeObject *type, PyObject *args, PyObject *keywor
 PyObject *RuleEvaluator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PRule rule;
     PExampleGenerator gen;
     int weightID = 0;
@@ -869,7 +873,8 @@ PyObject *RuleValidator_new(PyTypeObject *type, PyObject *args, PyObject *keywor
 PyObject *RuleValidator_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass, apriori) -/-> (quality)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PRule rule;
     PExampleGenerator gen;
     int weightID = 0;
@@ -896,7 +901,8 @@ PyObject *RuleCovererAndRemover_new(PyTypeObject *type, PyObject *args, PyObject
 PyObject *RuleCovererAndRemover_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, newWeight) -/-> (table)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PRule rule;
     PExampleGenerator gen;
     int weightID = 0;
@@ -922,7 +928,8 @@ PyObject *RuleStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObject 
 PyObject *RuleStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rulelist, rule, table, weightID) -/-> (table)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PRuleList ruleList;
     PRule rule;
     PExampleGenerator gen;
@@ -947,7 +954,8 @@ PyObject *RuleDataStoppingCriteria_new(PyTypeObject *type, PyObject *args, PyObj
 PyObject *RuleDataStoppingCriteria_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass) -/-> (table)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     int weightID = 0;
     int targetClass = -1;
@@ -971,7 +979,8 @@ PyObject *RuleFinder_new(PyTypeObject *type, PyObject *args, PyObject *keywords)
 PyObject *RuleFinder_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules) -/-> (rule)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     int weightID = 0;
     int targetClass = -1;
@@ -997,7 +1006,8 @@ PyObject *RuleBeamRefiner_new(PyTypeObject *type, PyObject *args, PyObject *keyw
 PyObject *RuleBeamRefiner_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rule, table, weightID, targetClass) -/-> (rules)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     int weightID = 0;
     int targetClass = -1;
@@ -1022,7 +1032,8 @@ PyObject *RuleBeamInitializer_new(PyTypeObject *type, PyObject *args, PyObject *
 PyObject *RuleBeamInitializer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(table, weightID, targetClass, baseRules, evaluator, prior) -/-> (rules, bestRule)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     PRuleList baseRules;
     PRuleEvaluator evaluator;
@@ -1051,7 +1062,8 @@ PyObject *RuleBeamCandidateSelector_new(PyTypeObject *type, PyObject *args, PyOb
 PyObject *RuleBeamCandidateSelector_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(existingRules, table, weightID) -/-> (candidates, remainingRules)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     PRuleList existingRules;
     int weightID = 0;
@@ -1076,7 +1088,8 @@ PyObject *RuleBeamFilter_new(PyTypeObject *type, PyObject *args, PyObject *keywo
 PyObject *RuleBeamFilter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, table, weightID) -/-> (rules)")
 {
   PyTRY
-    SETATTRIBUTES
+    NO_KEYWORDS
+
     PExampleGenerator gen;
     PRuleList rules;
     int weightID = 0;
@@ -1099,14 +1112,15 @@ PyObject *RuleClassifierConstructor_new(PyTypeObject *type, PyObject *args, PyOb
 
 
 PyObject *RuleClassifierConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(rules, examples[, weight]) -> (RuleClassifier)")
-{ PyTRY
+{ 
+  PyTRY
+    NO_KEYWORDS
 
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrRuleClassifierConstructor_Type) {
       PyErr_Format(PyExc_SystemError, "RuleClassifierConstructor.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
       return PYNULL;
     }
 
-    SETATTRIBUTES
     PExampleGenerator gen;
     int weightID = 0;
     PRuleList rules;

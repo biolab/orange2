@@ -40,7 +40,7 @@ VWRAPPER(DomainList)
 typedef vector<vector<pair<int, int> > > TDomainMultiMapping;
 
 
-class TDomainDepot
+class ORANGE_API TDomainDepot
 {
 /* XXX Domain depot has no wrapped pointers to anything, thus it doesn't own any references.
        If you add any, you should implement DomainDepot_traverse and DomainDepot_clear in 

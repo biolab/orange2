@@ -27,7 +27,7 @@ WRAPPER(Discretization)
 WRAPPER(MeasureAttribute)
 WRAPPER(FeatureInducer)
 
-class TRemoveRedundant : public TOrange {
+class ORANGE_API TRemoveRedundant : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -38,7 +38,7 @@ public:
 };
 
 
-class TRemoveRedundantByInduction : public TRemoveRedundant {
+class ORANGE_API TRemoveRedundantByInduction : public TRemoveRedundant {
 public:
   __REGISTER_CLASS
 
@@ -51,7 +51,7 @@ public:
 };
 
 
-class TRemoveRedundantByQuality : public TRemoveRedundant {
+class ORANGE_API TRemoveRedundantByQuality : public TRemoveRedundant {
 public:
   __REGISTER_CLASS
 
@@ -65,7 +65,7 @@ public:
 };
 
 
-class TRemoveRedundantOneValue : public TRemoveRedundant {
+class ORANGE_API TRemoveRedundantOneValue : public TRemoveRedundant {
 public:
   __REGISTER_CLASS
 
@@ -76,7 +76,7 @@ public:
 };
 
 /*
-class TRemoveNonexistentValues : public TRemoveRedundant {
+class ORANGE_API TRemoveNonexistentValues : public TRemoveRedundant {
 public:
   _ _ R E G I S T E R _ C L A S S 
 
@@ -84,7 +84,7 @@ public:
 };
 */
 
-class TRemoveUnusedValues : public TOrange {
+class ORANGE_API TRemoveUnusedValues : public TOrange {
 public:
   __REGISTER_CLASS
 

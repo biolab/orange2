@@ -40,7 +40,7 @@ const int
 
 
 
-class TExampleIterator;
+class ORANGE_API TExampleIterator;
 
 extern int generatorVersion;
 
@@ -52,7 +52,8 @@ extern int generatorVersion;
     for(TExampleTable::iterator i=table.begin(); ...
     The second form can be inefficient or even cause problems under some compilers, if
     iterator handling methods are not written well. */
-class TExampleGenerator : public TOrange {
+
+class ORANGE_API TExampleGenerator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -61,7 +62,16 @@ public:
 
   typedef TExampleIterator iterator;
 
+  #ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable: 4251)
+  #endif
+
   list<iterator *> myIterators;
+
+  #ifdef _MSC_VER
+    #pragma warning(pop)
+  #endif
 
   TExampleGenerator();
   TExampleGenerator(PDomain dom);

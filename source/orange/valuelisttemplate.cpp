@@ -31,7 +31,7 @@
 #include "valuelisttemplate.hpp"
 
 
-int ccn_Variable(PyObject *, void *);
+int ccn_func_Variable(PyObject *, void *);
 
 PyObject *TValueListMethods::_CreateEmptyList(PyTypeObject *type, PVariable var)
 { return WrapNewOrange(mlnew TValueList(var), type); }
@@ -73,7 +73,7 @@ PyObject *TValueListMethods::_new(PyTypeObject *type, PyObject *args, PyObject *
 
   PyObject *arg;
   PVariable var;
-  if (   PyArg_ParseTuple(args, "O|O&", &arg, ccn_Variable, &var)
+  if (   PyArg_ParseTuple(args, "O|O&", &arg, ccn_func_Variable, &var)
       && PySequence_Check(arg))
     return _FromArguments(type, arg, var);
 

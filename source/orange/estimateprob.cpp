@@ -29,8 +29,8 @@
 #include "random.hpp"
 
 
-DEFINE_TOrangeVector_classDescription(PProbabilityEstimator, "TProbabilityEstimatorList")
-DEFINE_TOrangeVector_classDescription(PConditionalProbabilityEstimator, "TConditionalProbabilityEstimatorList")
+DEFINE_TOrangeVector_classDescription(PProbabilityEstimator, "TProbabilityEstimatorList", true, ORANGE_API)
+DEFINE_TOrangeVector_classDescription(PConditionalProbabilityEstimator, "TConditionalProbabilityEstimatorList", true, ORANGE_API)
 
 TProbabilityEstimator::TProbabilityEstimator(const bool &disc, const bool &cont)
 : supportsDiscrete(disc),
@@ -511,7 +511,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
         from --;
 
     /* Extend the interval; we set from to highedge when it would go beyond lowedge, to indicate that only to can be modified now */
-    while (needpoints>0) {
+    while (needpoints) {
       if ((to == highedge) || ((from != highedge) && (refx - (*from).first < (*to).first - refx))) {
         if (from == lowedge)
           from = highedge;

@@ -37,7 +37,7 @@
 
 WRAPPER(Example)
 
-class TAssociationRule : public TOrange {
+class ORANGE_API TAssociationRule : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -82,6 +82,8 @@ public:
 WRAPPER(AssociationRule)
 
 
+EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PAssociationRule>;
+
 #define TAssociationRules TOrangeVector<PAssociationRule>
 VWRAPPER(AssociationRules)
 
@@ -89,7 +91,7 @@ VWRAPPER(AssociationRules)
 class TItemSetNode;
 class TRuleTreeNode;
 
-class TAssociationRulesInducer : public TOrange {
+class ORANGE_API TAssociationRulesInducer : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -123,7 +125,7 @@ public:
 WRAPPER(AssociationRulesInducer)
 
 
-class TAssociationRulesSparseInducer : public TOrange {
+class ORANGE_API TAssociationRulesSparseInducer : public TOrange {
 public:
   __REGISTER_CLASS
 
@@ -139,10 +141,10 @@ private:
   float nOfExamples;
 };
 
-WRAPPER(AssociationRulesSparseInd)
+WRAPPER(AssociationRulesSparseInducer)
 
 
-class TAssociationLearner : public TLearner {
+class ORANGE_API TAssociationLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
@@ -156,7 +158,7 @@ public:
 };
 
 
-class TAssociationClassifier : public TClassifierFD {
+class ORANGE_API TAssociationClassifier : public TClassifierFD {
 public:
   __REGISTER_CLASS
 

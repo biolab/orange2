@@ -25,7 +25,6 @@
 
 #include <map>
 #include "root.hpp"
-#include "garbage.hpp"
 #include "orvector.hpp"
 
 WRAPPER(ExampleGenerator);
@@ -46,7 +45,7 @@ VWRAPPER(ConditionalProbabilityEstimatorList)
 
 typedef map<float, PDistribution> TDistributionMap;
 
-class TProbabilityEstimator : public TOrange {
+class ORANGE_API TProbabilityEstimator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -64,14 +63,14 @@ public:
 };
 
 
-class TProbabilityEstimatorConstructor : public TOrange {
+class ORANGE_API TProbabilityEstimatorConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
   virtual PProbabilityEstimator operator()(PDistribution frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const = 0;
 };
 
-class TConditionalProbabilityEstimator : public TOrange {
+class ORANGE_API TConditionalProbabilityEstimator : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
@@ -95,7 +94,7 @@ public:
 };
 
 
-class TConditionalProbabilityEstimatorConstructor : public TOrange {
+class ORANGE_API TConditionalProbabilityEstimatorConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
   virtual PConditionalProbabilityEstimator operator()(PContingency frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const = 0;
@@ -109,7 +108,7 @@ public:
    normalized (i.e., they should sum to 1.0). 
    The class is constructed for many estimations, such as estimation
    by relative frequencies, by Laplace and m-estimation. */
-class TProbabilityEstimator_FromDistribution : public TProbabilityEstimator {
+class ORANGE_API TProbabilityEstimator_FromDistribution : public TProbabilityEstimator {
 public:
   __REGISTER_CLASS
 
@@ -122,14 +121,14 @@ public:
 };
 
 
-class TProbabilityEstimatorConstructor_relative : public TProbabilityEstimatorConstructor {
+class ORANGE_API TProbabilityEstimatorConstructor_relative : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
   virtual PProbabilityEstimator operator()(PDistribution frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const;
 };
 
 
-class TProbabilityEstimatorConstructor_Laplace : public TProbabilityEstimatorConstructor {
+class ORANGE_API TProbabilityEstimatorConstructor_Laplace : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
 
@@ -141,7 +140,7 @@ public:
 };
 
 
-class TProbabilityEstimatorConstructor_m : public TProbabilityEstimatorConstructor {
+class ORANGE_API TProbabilityEstimatorConstructor_m : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
 
@@ -153,7 +152,7 @@ public:
 };
 
 
-class TProbabilityEstimatorConstructor_kernel : public TProbabilityEstimatorConstructor {
+class ORANGE_API TProbabilityEstimatorConstructor_kernel : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
 
@@ -167,7 +166,7 @@ public:
 };
 
 
-class TProbabilityEstimatorConstructor_loess : public TProbabilityEstimatorConstructor {
+class ORANGE_API TProbabilityEstimatorConstructor_loess : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
 
@@ -182,7 +181,7 @@ public:
 
 
 
-class TConditionalProbabilityEstimator_FromDistribution : public TConditionalProbabilityEstimator {
+class ORANGE_API TConditionalProbabilityEstimator_FromDistribution : public TConditionalProbabilityEstimator {
 public:
   __REGISTER_CLASS
   
@@ -196,7 +195,7 @@ public:
 };
 
 
-class TConditionalProbabilityEstimator_ByRows : public TConditionalProbabilityEstimator {
+class ORANGE_API TConditionalProbabilityEstimator_ByRows : public TConditionalProbabilityEstimator {
 public:
   __REGISTER_CLASS
   PProbabilityEstimatorList estimatorList; //P A list of probability estimators
@@ -208,7 +207,7 @@ public:
 };
 
 
-class  TConditionalProbabilityEstimatorConstructor_ByRows : public TConditionalProbabilityEstimatorConstructor {
+class ORANGE_API  TConditionalProbabilityEstimatorConstructor_ByRows : public TConditionalProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
   
@@ -219,7 +218,7 @@ public:
 };
 
 
-class TConditionalProbabilityEstimatorConstructor_loess : public TConditionalProbabilityEstimatorConstructor {
+class ORANGE_API TConditionalProbabilityEstimatorConstructor_loess : public TConditionalProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
 

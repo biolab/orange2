@@ -24,7 +24,6 @@
 #include "vars.hpp"
 #include "domain.hpp"
 #include "domaindepot.hpp"
-#include "errors.hpp"
 #include "filter.hpp"
 #include "distvars.hpp"
 #include "stladdon.hpp"
@@ -43,6 +42,9 @@ TExampleTable::TExampleTable(PDomain dom, bool owns)
 { version = ++generatorVersion; }
 
 
+/* Careful: the meaning of 'owns' is the opposite of what we have
+   in Python: if owns==true, then the table doesn't hold only the
+   references to examples (in another table) but has its own examples! */
 TExampleTable::TExampleTable(PExampleGenerator gen, bool owns)
 : TExampleGenerator(gen->domain),
   examples(NULL),
@@ -116,13 +118,8 @@ TExampleTable::TExampleTable(PExampleGeneratorList tables)
     for(; ei!=ee; ei++, dmmi++, vi++) {
       bool notfirst = 0;
       for(vector<pair<int, int> >::const_iterator sdmmi((*dmmi).begin()), sdmme((*dmmi).end()); sdmmi!=sdmme; sdmmi++) {
-        const TValue &value = (*iterators[(*sdmmi).first])[(*sdmmi).second];
-        if (notfirst++) {
-          if (*ei != value)
-            raiseError("mismatching value of attribute '%s' in example #%i", (*vi)->name.c_str(), exno);
-        }
-        else
-          *ei = value;
+        if (!mergeTwoValues(*ei, (*iterators[(*sdmmi).first])[(*sdmmi).second], notfirst++ != 0))
+          raiseError("mismatching value of attribute '%s' in example #%i", (*vi)->name.c_str(), exno);
       }
     }
 
@@ -130,14 +127,7 @@ TExampleTable::TExampleTable(PExampleGeneratorList tables)
     for(vector<TExampleIterator>::iterator ii(iterators.begin()), ie(iterators.end()); ii!=ie; ++*(ii++)) {
       ITERATE(TMetaValues, mvi, (**ii).meta) {
         if (example->hasMeta((*mvi).first)) {
-          TValue &val = (*mvi).second;
-          if (val.isSpecial())
-            continue;
-
-          TValue &vale = example->getMeta((*mvi).first);
-          if (vale.isSpecial())
-            example->setMeta((*mvi).first, (*mvi).second);
-          else if ((val.varType != vale.varType) || (val != vale)) {
+          if (!mergeTwoValues(example->getMeta((*mvi).first), (*mvi).second, true)) {
             PVariable metavar = domain->getMetaVar((*mvi).first, false);
             if (metavar && metavar->name.length())
               raiseError("Meta attribute '%s' has ambiguous values on example #%i", metavar->name.c_str(), exno);
@@ -153,6 +143,7 @@ TExampleTable::TExampleTable(PExampleGeneratorList tables)
 
   version = ++generatorVersion;
 }
+
 
 TExampleTable::~TExampleTable()
 { 

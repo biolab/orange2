@@ -419,7 +419,7 @@ public:
     
     CAST_TO(_ListType, aList);
     string res("<");
-    for(const_iterator bi(aList->begin()), ei(bi), ee(aList->end()); ei!=ee; ei++) {
+    for(iterator bi(aList->begin()), ei(bi), ee(aList->end()); ei!=ee; ei++) {
       if (ei!=bi)
         res += ", ";
 
@@ -556,7 +556,7 @@ public:
       PyObject *newList = PyList_New(aList->size());
 
       int i=0;
-      for(const_iterator li = aList->begin(), le = aList->end(); li!=le; li++)
+      for(iterator li = aList->begin(), le = aList->end(); li!=le; li++)
         PyList_SetItem(newList, i++, WrapOrange(*li));
 
       return newList;
@@ -619,7 +619,7 @@ public:
       }
 
       bool operator()(const _WrappedElement &x, const _WrappedElement &y) const
-      { PyObject *pyx=WrapOrange(x), *pyy=WrapOrange(y);
+      { PyObject *pyx=WrapOrange(const_cast<_WrappedElement &>(x)), *pyy=WrapOrange(const_cast<_WrappedElement &>(y));
         PyObject *cmpres=PyObject_CallFunction(cmpfunc, "OO", pyx, pyy);
         Py_DECREF(pyx);
         Py_DECREF(pyy);

@@ -30,7 +30,7 @@
 
 #define STRINGVAR 6
 
-class TStringValue : public TSomeValue {
+class ORANGE_API TStringValue : public TSomeValue {
 public:
   __REGISTER_CLASS
 
@@ -52,7 +52,7 @@ public:
 
 
 
-class TStringVariable : public TVariable {
+class ORANGE_API TStringVariable : public TVariable {
 public:
   __REGISTER_CLASS
 

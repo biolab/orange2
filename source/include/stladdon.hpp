@@ -42,7 +42,8 @@ typedef vector<string> TIdList;
 
 #define ILLEGAL_INT numeric_limits<int>::min()
 
-#define ILLEGAL_FLOAT numeric_limits<float>::quiet_NaN()
+/* Don't use quite_Nan (fall for that trick twice already!): quite_Nan equals anything */
+#define ILLEGAL_FLOAT 1e-30f
 
 #define ITERATE(tpe, iter, pna)  for(tpe::iterator iter((pna).begin()), iter##_end((pna).end()); \
                                      iter!=iter##_end; iter++)
@@ -227,21 +228,21 @@ size_type       size() const { return (field).size(); } \
 
 #define VECTOR_INTERFACE(type, field) \
 VECTOR_INTERFACE_WOUT_OP(type, field) \
-reference       operator[](vector<type>::size_type i)  { return (field).operator[](i); } \
-const_reference operator[](vector<type>::size_type i) const { return (field).operator[](i); }
+reference       operator[](std::vector<type>::size_type i)  { return (field).operator[](i); } \
+const_reference operator[](std::vector<type>::size_type i) const { return (field).operator[](i); }
 
 
 
 #define PVECTOR_INTERFACE_WOUT_OP(type, field) \
 WRAPPEDVECTOR(type) field; \
-typedef vector<type>::iterator iterator; \
-typedef vector<type>::const_iterator const_iterator; \
-typedef vector<type>::reference reference; \
-typedef vector<type>::reverse_iterator reverse_iterator; \
-typedef vector<type>::const_reverse_iterator const_reverse_iterator; \
-typedef vector<type>::const_reference const_reference; \
-typedef vector<type>::size_type size_type; \
-typedef vector<type>::value_type value_type; \
+typedef std::vector<type>::iterator iterator; \
+typedef std::vector<type>::const_iterator const_iterator; \
+typedef std::vector<type>::reference reference; \
+typedef std::vector<type>::reverse_iterator reverse_iterator; \
+typedef std::vector<type>::const_reverse_iterator const_reverse_iterator; \
+typedef std::vector<type>::const_reference const_reference; \
+typedef std::vector<type>::size_type size_type; \
+typedef std::vector<type>::value_type value_type; \
 \
 reference       at(vector<type>::size_type i)  { return (field)->at(i); } \
 const_reference at(vector<type>::size_type i) const { return (field)->at(i); } \
