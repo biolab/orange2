@@ -272,26 +272,36 @@ class ContingencyTable2:
         self.dof = dof-1 # degrees of freedom is the number of fields with non-zero counts
         return
 
-def get3Int(t,a,b,c):
+def get3Int(t,a,b,c,wid=None):
     ni = len(a.values)
     nj = len(b.values)
     nk = len(c.values)
     M = Numeric.zeros((ni,nj,nk),Numeric.Float)
-    for ex in t:
-        if not (ex[a].isSpecial() or ex[b].isSpecial() or ex[c].isSpecial()):
-            M[int(ex[a]),int(ex[b]),int(ex[c])] += 1
+    if wid == None: # no weighting
+        for ex in t:
+            if not (ex[a].isSpecial() or ex[b].isSpecial() or ex[c].isSpecial()):
+                M[int(ex[a]),int(ex[b]),int(ex[c])] += 1
+    else:
+        for ex in t:
+            if not (ex[a].isSpecial() or ex[b].isSpecial() or ex[c].isSpecial()):
+                M[int(ex[a]),int(ex[b]),int(ex[c])] += ex.getmeta(wid)
     N = [a.name,b.name,c.name]
     V = [[a.values[k] for k in range(ni)],[b.values[k] for k in range(nj)],[c.values[k] for k in range(nk)]]
     c = ContingencyTable3(M,N,V)
     return c
 
-def get2Int(t,a,b):
+def get2Int(t,a,b,wid=None):
     ni = len(a.values)
     nj = len(b.values)
     M = Numeric.zeros((ni,nj),Numeric.Float)
-    for ex in t:
-        if not (ex[a].isSpecial() or ex[b].isSpecial()):
-            M[int(ex[a]),int(ex[b])] += 1
+    if wid == None: # no weighting
+        for ex in t:
+            if not (ex[a].isSpecial() or ex[b].isSpecial()):
+                M[int(ex[a]),int(ex[b])] += 1
+    else:
+        for ex in t:
+            if not (ex[a].isSpecial() or ex[b].isSpecial()):
+                M[int(ex[a]),int(ex[b])] += ex.getmeta(wid)
     N = [a.name,b.name]
     V = [[a.values[k] for k in range(ni)],[b.values[k] for k in range(nj)]]
     c = ContingencyTable2(M,N,V)

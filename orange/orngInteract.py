@@ -115,7 +115,7 @@ class InteractionMatrix:
             t = orange.ExampleTable(exs)
         return t
         
-    def __init__(self, t, save_data=1, interactions_too = 1, dependencies_too=0, prepare=1, pvalues = 0, iterative_scaling=0):
+    def __init__(self, t, save_data=1, interactions_too = 1, dependencies_too=0, prepare=1, pvalues = 0, iterative_scaling=0,weighting=None):
         if prepare:
             t = self._prepare(t)
         if save_data:
@@ -140,7 +140,10 @@ class InteractionMatrix:
         self.ents = {}
         self.corr = {}
         for i in range(NA):
-            atc = orngContingency.get2Int(t,t.domain.attributes[i],t.domain.classVar)
+            if weighting != None:
+                atc = orngContingency.get2Int(t,t.domain.attributes[i],t.domain.classVar,wid=weighting)
+            else:
+                atc = orngContingency.get2Int(t,t.domain.attributes[i],t.domain.classVar)
             gai = atc.InteractionInformation()
             self.gains.append(gai)
             self.corr[(i,-1)] = gai
@@ -158,7 +161,10 @@ class InteractionMatrix:
             line = []
             for j in range(i):
                 if dependencies_too:
-                    c = orngContingency.get2Int(t,t.domain.attributes[j],t.domain.attributes[i])
+                    if weighting != None:
+                        c = orngContingency.get2Int(t,t.domain.attributes[j],t.domain.attributes[i],wid=weighting)
+                    else:
+                        c = orngContingency.get2Int(t,t.domain.attributes[j],t.domain.attributes[i])
                     self.way2[(j,i,)] = c
                     gai = c.InteractionInformation()
                     self.ents[(j,i,)] = orngContingency.Entropy(c.m)
@@ -168,7 +174,10 @@ class InteractionMatrix:
                         self.plist.append((pv,(gai,j,i)))
                         self.plut[(j,i)] = pv
                 if interactions_too:
-                    c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar)
+                    if weighting != None:
+                        c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar,wid=weighting)
+                    else:
+                        c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar)                    
                     self.way3[(j,i,-1)] = c
                     igv = c.InteractionInformation()
                     line.append(igv)

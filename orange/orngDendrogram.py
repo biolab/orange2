@@ -68,7 +68,7 @@ def _bw2(cc):
     return piddle.Color(v,v,v)
 
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0, gains = [], gain_width = 50):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -93,8 +93,15 @@ class DendrogramPlot:
             # compute lineskip
             lineskip = (height - 2.0*margin - tcanvas.fontHeight(normal)) / (len(labels)-1)
         maxlabel = 0.0
-        for s in labels:
-            maxlabel = max(maxlabel,tcanvas.stringWidth(s,font=normal))
+        spacew = tcanvas.stringWidth(" ",font=normal)
+        swids = []
+        for i in xrange(len(labels)):
+            swid = tcanvas.stringWidth(labels[i],font=normal)
+            swids.append(swid + spacew)
+            if len(gains) > 0:
+                assert(len(gains)==len(labels))
+                swid += spacew + gains[i]*gain_width
+            maxlabel = max(maxlabel,swid)
 
         if canvas == None:
             canvas = piddlePIL.PILCanvas(size=(width,height))
@@ -213,6 +220,15 @@ class DendrogramPlot:
                 canvas.drawString(labels[idx], hook+x, y+halfline,font=normal)
             # draw the hook
             canvas.drawLine(x,y,x+hook*0.8,y,attcolors[idx],width=line_width)
+            GSERIF = 1.2*line_width
+            MULT = 1.2*line_width
+            SWIDTH = 1
+            if len(gains) > 0 :
+                # draw the gain line
+                if gain_width*gains[idx] >= 2.0*MULT:
+                    canvas.drawLine(hook+x+swids[idx]+MULT,y,hook+x+swids[idx]+gain_width*gains[idx]-MULT,y,piddle.black,width=MULT) # actual line
+                canvas.drawLine(hook+x+swids[idx],y-GSERIF,hook+x+swids[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif 1
+                canvas.drawLine(hook+x+swids[idx]+gain_width*gains[idx],y-GSERIF,hook+x+swids[idx]+gain_width*gains[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif2
             y += lineskip
 
         for i in range(len(additional_labels)):
@@ -339,8 +355,7 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
-
-def Matrix(self,labels, diss, vlabels=[], margin = 10, hook = 10, block = None, line_size = 2.0, canvas = None):
+def Matrix(self,labels, diss, vlabels=[], sizing = [], margin = 10, hook = 10, block = None, line_size = 2.0, canvas = None):
     # prevent divide-by-zero...
     if len(labels) < 2:
         return canvas
@@ -395,7 +410,11 @@ def Matrix(self,labels, diss, vlabels=[], margin = 10, hook = 10, block = None, 
             colo = _colorize(diss[i][j])
             x = offset+hook+lineskip*(j+1)
             y = offset+hook+lineskip*(i+1)
-            canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
+            if len(sizing) == 0:
+                ss = 1.0
+            else:
+                ss = min(1,sizing[i][j])
+            canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=colo,fillColor=colo)
             
     canvas.flush()
     return canvas
