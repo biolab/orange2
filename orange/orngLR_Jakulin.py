@@ -260,7 +260,7 @@ class BasicLogisticClassifier:
     def __init__(self, classifier, translator):
         self.classifier = classifier
         self.translator = translator
-        self.name = 'Basic Logistic Classifier'        
+        self._name = 'Basic Logistic Classifier'        
 
     def getmargin(self,example):
         tex = self.translator.extransform(example)
@@ -334,7 +334,7 @@ class BasicBayesClassifier:
         self.beta = beta
         self.coeffs = coeffs
         self.translator = translator
-        self.name = 'Basic Bayes Classifier'        
+        self._name = 'Basic Bayes Classifier'        
 
     def getmargin(self,example):
         tex = self.translator.extransform(example)
@@ -488,7 +488,7 @@ class MarginMetaClassifier:
         self.domain = domain
         self.estdomain = estdomain
         self.cv = self.estdomain.classVar(0)
-        self.name = 'MarginMetaClassifier'
+        self._name = 'MarginMetaClassifier'
 
     def __call__(self, example, format = orange.GetValue):
         r = self.classifier.getmargin(example)

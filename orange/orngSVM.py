@@ -35,7 +35,7 @@ import orng2Array
 
 class BasicSVMLearner:
   def __init__(self):
-      self.name = "SVM Learner Wrap"
+      self._name = "SVM Learner Wrap"
       # "SVM type (C_SVC=0, NU_SVC, ONE_CLASS, EPS_SVR, NU_SVR=4)
       # SV-classifier : "ordinary" SVM
       # nu-SV-classifier : nu controls the complexity of the model
@@ -147,7 +147,7 @@ class BasicSVMLearner:
 
 class BasicSVMClassifier:
   def __init__(self, model, translate):
-      self.name = "SVM Classifier Wrap"
+      self._name = "SVM Classifier Wrap"
       self.model = model
       self.cmodel = orngCRS.SVMClassifier(model)
       self.translate = translate

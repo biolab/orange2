@@ -364,7 +364,7 @@ class Visualizer:
              return _parseNB()
         else:
             try:
-                name = classifier.name
+                name = classifier._name
                 if name == 'MarginMetaClassifier':
                     return _parseMargin(classifier,self.findParser(classifier.classifier))
                 if name == 'SVM Classifier Wrap':
