@@ -17,17 +17,17 @@ import OWGUI, orngLR_Jakulin, orngLR
 from OWWidget import *
 from OWNomogramGraph import *
 
-
+aproxZero = 0.0001
 
 def getStartingPoint(d, min):
     if min<0:
-        curr_num = arange(-min+d, step=d)
+        curr_num = Numeric.arange(-min+d, step=d)
         curr_num = curr_num[len(curr_num)-1]
         curr_num = -curr_num
     elif min - d <= 0:
         curr_num = 0
     else:
-        curr_num = arange(min-d, step=d)
+        curr_num = Numeric.arange(min-d, step=d)
         curr_num = curr_num[len(curr_num)-1]
     return curr_num
 
@@ -74,8 +74,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.cl = None
         self.confidence_check = 0
         self.confidence_percent = 95
-        self.notTargetClassIndex = 1
-        self.TargetClassIndex = 0
+#        self.notTargetClassIndex = 1
         self.sort_type = 0
         
         self.loadSettings()
@@ -86,7 +85,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
 
         #inputs
-        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1), ("Target Class Value", int, self.ctarget, 1)]
+        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1)] #, ("Target Class Value", int, self.ctarget, 1)]
 
         # GUI definition
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
@@ -104,6 +103,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                                 tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
                                 callback=self.showNomogram)
 
+        #target combo box
+        self.TargetClassIndex = 0
+        self.target = ""
+        self.targetCombo = OWGUI.comboBox(GeneralTab, self, "target", " Target Class ", tooltip='Select target (prediction) class in the model.', callback = self.setTarget, sendSelectedValue = 1, valueType = str)
+        
         #self.yAxisRadio.setDisabled(True)
         self.probabilityCheck = OWGUI.checkBox(GeneralTab, self, 'probability','Show prediction',  tooltip='', callback = self.setProbability)
         #self.probabilityCheck.setDisabled(True)
@@ -155,6 +159,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.box.addWidget(self.header)
         self.box.addWidget(self.graph)
         self.box.addWidget(self.footer)
+        self.resize(700,500)
         self.repaint()
         self.update()
 
@@ -164,14 +169,24 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     # Input channel: the Bayesian classifier   
     def nbClassifier(self, cl):
-        # thisd subroutine computes standard error of estimated beta /for the time being use it only with discrete data
-        def err(e, priorError, key, data):
+        # thisd subroutine computes standard error of estimated beta. Note that it is used only for discrete data,
+        # continuous data have a different computation.
+        def errOld(e, priorError, key, data):
             inf = 0.0
             sume = e[0]+e[1]
             for d in data:
                 if d[at]==key:
                     inf += (e[0]*e[1]/sume/sume)
-            inf = max(inf, 0.00000001)
+            inf = max(inf, aproxZero)
+            var = max(1/inf - priorError*priorError, 0)
+            return (math.sqrt(var))
+
+        def err(condDist, att, value, targetClass, priorError, data):
+            sumE = sum(condDist)
+            valueE = condDist[targetClass]
+            distAtt = orange.Distribution(att, data)
+            inf = distAtt[value]*(valueE/sumE)*(1-valueE/sumE)
+            inf = max(inf, aproxZero)
             var = max(1/inf - priorError*priorError, 0)
             return (math.sqrt(var))
 
@@ -179,8 +194,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         att = cl.domain.attributes
 
         # calculate prior probability
-        dist1 = max(0.00000001, cl.distribution[classVal[self.notTargetClassIndex]])
-        dist0 = max(0.00000001, cl.distribution[classVal[self.TargetClassIndex]])
+        dist1 = max(aproxZero, 1-cl.distribution[classVal[self.TargetClassIndex]])
+        dist0 = max(aproxZero, cl.distribution[classVal[self.TargetClassIndex]])
         prior = dist0/dist1
         if self.data:
             sumd = dist1+dist0
@@ -200,13 +215,13 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                     a = AttrLine(att[at].name, self.bnomogram)
                 for cd in cl.conditionalDistributions[at].keys():
                     # calculuate thickness
-                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], 0.00000001)
-                    conditional1 = max(cl.conditionalDistributions[at][cd][classVal[self.notTargetClassIndex]], 0.00000001)
+                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], aproxZero)
+                    conditional1 = max(1-cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], aproxZero)
                     beta = math.log(conditional0/conditional1/prior)
                     if self.data:
                         #thickness = int(round(4.*float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))))
                         thickness = float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))
-                        se = err(cl.conditionalDistributions[at][cd], priorError, cd, self.data) # standar error of beta 
+                        se = err(cl.conditionalDistributions[at][cd], att[at], cd, classVal[self.TargetClassIndex], priorError, self.data) # standar error of beta 
                     else:
                         thickness = 0
                         se = 0
@@ -230,8 +245,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 curr_num = getStartingPoint(d, minAtValue)
                 rndFac = getRounding(d)                
 
-                n = sum = 0
-            
                 for i in range(2*numOfPartitions):
                     if curr_num+i*d>=minAtValue and curr_num+i*d<=maxAtValue:
                         # get thickness
@@ -244,11 +257,13 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                         d_filter = filter(lambda x: x>curr_num+i*d-d/2 and x<curr_num+i*d+d/2, cl.conditionalDistributions[at].keys())
                         if len(d_filter)>0:
                             d_filter = d_filter[len(d_filter)/2]
-                            conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], 0.00000001)
-                            conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[self.notTargetClassIndex]], 0.00000001)
+                            conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], aproxZero)
+                            conditional1 = max(1-cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], aproxZero)
                             try:
                                 # compute error of loess in logistic space
                                 standard_error= math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.TargetClassIndex])
+                         #       print "predse", standard_error, math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.notTargetClassIndex])
+                                
                                 # se = sqrt((log(P(c|a)+st_error / 1-P(c|a)-st_error) - log(P(c|a)-st_error / 1-P(c|a)+st_error))^2 + priorError^2)
                                 se = math.sqrt(math.pow(math.log((conditional0+standard_error)/(conditional1-standard_error)/(conditional0-standard_error)*(conditional1+standard_error)),2)+math.pow(priorError,2))
                                 # add value to set of values                                
@@ -266,7 +281,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     # Input channel: the logistic regression classifier    
     def lrClassifier(self, cl):
-        if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+        if self.TargetClassIndex == 0 or self.TargetClassIndex == cl.domain.classVar[0]:
             mult = -1
         else:
             mult = 1
@@ -330,7 +345,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 rndFac = getRounding(d)
 
                 while curr_num<maxAtValue+d:
-                    if abs(mult*curr_num*cl.beta[at])<0.000001:
+                    if abs(mult*curr_num*cl.beta[at])<aproxZero:
                         a.addAttValue(AttValue("0.0", 0))
                     else:
                         a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
@@ -350,7 +365,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         import Numeric
         import orngLinVis
         
-        if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+        if self.TargetClassIndex == 0 or self.TargetClassIndex == cl.domain.classVar[0]:
             mult = -1
         else:
             mult = 1
@@ -415,9 +430,18 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.cl.domain = orange.Domain(self.data.domain.classVar)
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
-       
+
+    def initClassValues(self, classValue):
+        self.targetCombo.clear()
+        for v in classValue:
+            self.targetCombo.insertItem(str(v))
+            
     def classifier(self, cl):
+        if not self.cl or not cl or not self.cl.domain == cl.domain:
+            if cl:
+                self.initClassValues(cl.domain.classVar)
         self.cl = cl
+        # fill values in targetClass combo box
         self.updateNomogram()
         
     # Input channel: data
@@ -443,8 +467,18 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.CILabel.setEnabled(True)
         self.updateNomogram()
 
+    def setTarget(self):
+        # find index
+        for c_i in range(len(self.cl.domain.classVar.values)):
+            if str(self.cl.domain.classVar[c_i]) == self.target:
+                self.TargetClassIndex = c_i
+        self.updateNomogram()
+        
     def ctarget(self, target):
-        self.TargetClassIndex = target
+        if not target:
+            self.TargetClassIndex = 1
+        else:
+            self.TargetClassIndex = target
         if self.TargetClassIndex == 1:
             self.notTargetClassIndex = 0
         else:
@@ -473,11 +507,12 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 else:
                     if not at in self.data.domain:
                         return
+            
         if type(self.cl) == orange.BayesClassifier:
-            if len(self.cl.domain.classVar.values)>2:
-                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
-                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
-            else:
+#            if len(self.cl.domain.classVar.values)>2:
+#                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
+#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+#            else:
                 self.nbClassifier(self.cl)
         elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
             self.svmClassifier(self.cl)
@@ -503,16 +538,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 return -1;
             return 1;
         def compare_to_ordering_in_data(x,y):
-            xi = yi = 0
-            for d in self.data.domain.attributes:
-                if d.name == x.name:
-                    break
-                xi+=1
-            for d in self.data.domain.attributes:
-                if d.name == y.name:
-                    break
-                yi+=1
-            return xi-yi
+            return self.data.domain.attributes.index(self.data.domain[x.name]) - self.data.domain.attributes.index(self.data.domain[y.name])   
+        def compare_to_ordering_in_domain(x,y):
+            return self.cl.domain.attributes.index(self.cl.domain[x.name]) - self.cl.domain.attributes.index(self.cl.domain[y.name])   
         def compate_beta_difference(x,y):
             return -sign(x.maxValue-x.minValue-y.maxValue+y.minValue)
         def compare_beta_positive(x, y):
@@ -522,9 +550,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         if not self.bnomogram:
             return
-        
+
         if self.sort_type == 0 and self.data:
-            self.bnomogram.attributes.sort(compare_to_ordering_in_data)               
+            self.bnomogram.attributes.sort(compare_to_ordering_in_data)
+        elif self.sort_type == 0 and self.cl.domain:
+            self.bnomogram.attributes.sort(compare_to_ordering_in_domain)
         if self.sort_type == 1:
             self.bnomogram.attributes.sort(compate_beta_difference)               
         elif self.sort_type == 2:
@@ -668,7 +698,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         except:
             print "Missing file OWDlgs.py. This file should be in widget directory. Unable to print/save image."
             return
-        print "grem v size dlg v nomogamu"
         sizeDlg = OWDlgs.OWChooseImageSizeDlg(canvas_glued)
         sizeDlg.exec_loop()
 
@@ -714,7 +743,7 @@ if __name__=="__main__":
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
     #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
     ow.classifier(bayes)
-    #ow.cdata(data)
+    ow.cdata(data)
 
     # here you can test setting some stuff
     ow.show()

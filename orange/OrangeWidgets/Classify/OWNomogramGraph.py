@@ -1,13 +1,16 @@
 # Nomogram visualization widget. It is used together with OWNomogram
 
 from OWWidget import *
-from Numeric import *
+#from Numeric import *
+import Numeric
+import math
 from qtcanvas import *
 import time, statc
 
 # constants
 SE_Z = -100
 HISTOGRAM_Z = -200
+aproxZero = 0.0001
 
 def norm_factor(p):
     max = 10.
@@ -167,8 +170,8 @@ class Descriptor(QCanvasRectangle):
                 else:
                     self.valName.setText(nleft.name + ":")
                     self.supportingValName.setText(nright.name + ":")
-                    self.value.setText(str(round(1-prop,2))+"%")
-                    self.supportingValue.setText(str(round(prop,2))+"%")
+                    self.value.setText(str(round(1-prop,4)*100)+"%")
+                    self.supportingValue.setText(str(round(prop,4)*100)+"%")
 
         # set height
         height = 15+ self.valName.boundingRect().height() + self.header.boundingRect().height()
@@ -534,8 +537,8 @@ class AttrLine:
             self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
             
         atLine = AttrLine("marker", canvas)
-        d = 5*(self.maxValue-self.minValue)/(max_mapped-min_mapped)
-        for xc in arange(self.minValue, self.maxValue+d, d):
+        d = 5*(self.maxValue-self.minValue)/max((max_mapped-min_mapped),aproxZero)
+        for xc in Numeric.arange(self.minValue, self.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -675,7 +678,7 @@ class AttrLineCont(AttrLine):
 
         atLine = AttrLine("marker", canvas)
         d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/(max_mapped-min_mapped)
-        for xc in arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+        for xc in Numeric.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
@@ -965,16 +968,16 @@ class BasicNomogramFooter(QCanvas):
             obj.setZ(100)
         
     def convertToPercent(self, atLine):
-        minPercent = exp(atLine.minValue)/(1+exp(atLine.minValue))
-        maxPercent = exp(atLine.maxValue)/(1+exp(atLine.maxValue))
+        minPercent = math.exp(atLine.minValue)/(1+math.exp(atLine.minValue))
+        maxPercent = math.exp(atLine.maxValue)/(1+math.exp(atLine.maxValue))
 
         percentLine = AttrLine(atLine.name, self)
-        percentList = filter(lambda x:x>minPercent and x<maxPercent,arange(0, maxPercent+0.1, 0.05))
+        percentList = filter(lambda x:x>minPercent and x<maxPercent,Numeric.arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1, enable = False))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/(1-p)), markerWidth = 1, enable = False))
             else:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/(1-p)), markerWidth = 1))
         return percentLine  
         
        
@@ -996,7 +999,7 @@ class BasicNomogramFooter(QCanvas):
         minSumBeta += self.nomogram.constant.betaValue
 
         # show only reasonable values
-        k = (maxSum-minSum)/(maxSumBeta-minSumBeta)
+        k = (maxSum-minSum)/max((maxSumBeta-minSumBeta),aproxZero)
         if maxSumBeta>4:
             maxSum = (4 - minSumBeta)*k + minSum
             maxSumBeta = 4
@@ -1046,19 +1049,22 @@ class BasicNomogramFooter(QCanvas):
 
         variance = math.pow(self.nomogram.constant.error,2)
         for at in self.nomogram.attributes:
-            if not isinstance(at, AttrLineCont):
-                (nleft, nright) = getNearestAtt(at.selectedValue[2], at)
-                if nright.betaValue>nleft.betaValue:
-                    prop = (at.selectedValue[2]-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
-                else:
-                    prop = 0
-                if prop == 0:
-                    variance += math.pow(nleft.error, 2)
-                elif prop == 1:
-                    variance += math.pow(nright.error, 2)
-                else:
-                    variance += math.pow(nleft.error, 2)*(1-prop)
-                    variance += math.pow(nright.error, 2)*prop
+#            if not isinstance(at, AttrLineCont):
+            if at.selectedValue[2] == 0.0 and self.parent.alignType == 1:
+                continue
+            (nleft, nright) = getNearestAtt(at.selectedValue[2], at)
+            if nright.betaValue>nleft.betaValue:
+                prop = (at.selectedValue[2]-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
+            else:
+                prop = 0
+            if prop == 0:
+                variance += math.pow(nleft.error, 2)
+            elif prop == 1:
+                variance += math.pow(nright.error, 2)
+            else:
+                variance += math.pow(nleft.error, 2)*(1-prop)
+                variance += math.pow(nright.error, 2)*prop
+
         standard_error = math.sqrt(variance)
 
         ax=self.m.mapBeta(sum, self.footer)
@@ -1226,7 +1232,12 @@ class BasicNomogram(QCanvas):
             for at in self.attributes:
                 if lastAt and self.parent.contType == 1 and isinstance(at, AttrLineCont) and not isinstance(lastAt, AttrLineCont):
                     bottom += 20
-                bottom += at.getHeight(self)
+                if (isinstance(at, AttrLineCont) or isinstance(at, AttrLineOrdered)) and self.parent.contType == 1:   
+                    bottom += at.getHeight(self)
+                else:
+                    bottom += at.getHeight(self)
+                    if self.parent.histogram:
+                        bottom += self.parent.histogram_size                
                 lastAt = at
             return bottom;
         
@@ -1410,10 +1421,13 @@ class OWNomogramGraph(QCanvasView):
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
 def createSetOfVisibleValues(min, max, dif):
-    upper = max-min+2*dif
-    add = round((min-dif)/dif)*dif
-
-    dSum = arange(0, upper, dif)
+    if dif == 0.0 or max == min:
+        return [0.0]
+    upper = max-min+1.8*dif
+#    add = round((min-dif)/dif)*dif
+    add = math.ceil((min-0.9*dif)/dif)*dif
+        
+    dSum = Numeric.arange(0, upper, dif)
     dSum = map(lambda x:x+add, dSum)
     return dSum    
 
@@ -1479,7 +1493,7 @@ class Mapper_Linear_Fixed:
     
     # return proportional beta
     def propBeta(self, betaVal, attrLine):        
-        return (betaVal-self.minGraphBeta)/(self.maxGraphBeta-self.minGraphBeta)
+        return (betaVal-self.minGraphBeta)/max((self.maxGraphBeta-self.minGraphBeta), aproxZero)
 
     # delay / offset that a mapper produces
     # in this case no aligning is uses, that is why delay is always 0
@@ -1498,10 +1512,10 @@ class Mapper_Linear_Fixed:
             conv = int
         else:
             conv = lambda x:x
-
+        
         # set new graph values
 
-        k = (self.maxGraphBeta - self.minGraphBeta)/(self.maxGraphValue - self.minGraphValue)
+        k = (self.maxGraphBeta - self.minGraphBeta)/max((self.maxGraphValue - self.minGraphValue), aproxZero)
 
         self.maxGraphBeta = (dSum[len(dSum)-1]- self.minGraphValue)*k + self.minGraphBeta                  
         self.minGraphBeta = (dSum[0]- self.minGraphValue)*k + self.minGraphBeta                  
@@ -1509,7 +1523,7 @@ class Mapper_Linear_Fixed:
         self.minGraphValue = dSum[0]
         self.maxGraphValue = dSum[len(dSum)-1]
         
-        k = (self.maxGraphBeta-self.minGraphBeta)/(self.maxGraphValue-self.minGraphValue)
+        k = (self.maxGraphBeta-self.minGraphBeta)/max((self.maxGraphValue-self.minGraphValue), aproxZero)
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
@@ -1525,11 +1539,11 @@ class Mapper_Linear_Fixed:
 class Mapper_Linear_Center:
     def __init__(self, minBeta, maxBeta, left, right, maxLinearValue = 100, minLinearValue = -100):
         if minBeta == 0:
-            self.minBeta = 0.00000001
+            self.minBeta = aproxZero
         else:
             self.minBeta = minBeta
         if maxBeta == 0:
-            self.maxBeta = 0.00000001
+            self.maxBeta = aproxZero
         else:
             self.maxBeta = maxBeta
         self.left = left
@@ -1592,19 +1606,19 @@ class Mapper_Linear_Center:
     
     def getMaxValue(self, attr):
         if self.maxGraphBeta==0:
-            return self.maxGraphValue*attr.maxValue/0.00000001             
+            return self.maxGraphValue*attr.maxValue/aproxZero             
         return self.maxGraphValue*attr.maxValue/self.maxGraphBeta
 
     def getMinValue(self, attr):
         if self.minGraphValue == 0:
-            return self.minGraphValue*attr.minValue/0.00000001
+            return self.minGraphValue*attr.minValue/aproxZero
         return self.minGraphValue*attr.minValue/self.minGraphBeta
 
         
     
     # return proportional beta
     def propBeta(self, betaVal, attrLine):        
-        return (betaVal-self.minGraphBeta)/(self.maxGraphBeta-self.minGraphBeta)
+        return (betaVal-self.minGraphBeta)/max((self.maxGraphBeta-self.minGraphBeta), aproxZero)
 
     # delay / offset that a mapper produces
     # in this case no aligning is uses, that is why delay is always 0
@@ -1638,7 +1652,7 @@ class Mapper_Linear_Center:
         self.maxGraphValue = dSum[len(dSum)-1]
 
         # coefficient to convert values into betas
-        k = (self.maxGraphBeta-self.minGraphBeta)/(self.maxGraphValue-self.minGraphValue)
+        k = (self.maxGraphBeta-self.minGraphBeta)/max((self.maxGraphValue-self.minGraphValue), aproxZero)
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
@@ -1665,14 +1679,14 @@ class Mapper_Linear_Left:
         minb = self.right
         maxb = self.left
         for at in attrLine.attValues:
-            k = (at.betaValue-attrLine.minValue)/self.max_difference
+            k = (at.betaValue-attrLine.minValue)/max(self.max_difference, aproxZero)
             beta.append(self.left + k*(self.right-self.left))
             if self.left + k*(self.right-self.left)>maxb:
                 maxb = self.left + k*(self.right-self.left)
             if self.left + k*(self.right-self.left)<minb:
                 minb = self.left + k*(self.right-self.left)
-            k1 = (at.betaValue-error_factor*at.error-attrLine.minValue)/self.max_difference
-            k2 = (at.betaValue+error_factor*at.error-attrLine.minValue)/self.max_difference
+            k1 = (at.betaValue-error_factor*at.error-attrLine.minValue)/max(self.max_difference, aproxZero)
+            k2 = (at.betaValue+error_factor*at.error-attrLine.minValue)/max(self.max_difference, aproxZero)
             b_error.append([self.left + k1*(self.right-self.left), self.left + k2*(self.right-self.left)])
 
         if maxb<minb+5:
@@ -1680,18 +1694,18 @@ class Mapper_Linear_Left:
         return (beta, b_error, minb, maxb)
     
     def mapBeta(self, betaVal, attrLine):
-        k = (betaVal-attrLine.minValue)/self.max_difference
+        k = (betaVal-attrLine.minValue)/max(self.max_difference, aproxZero)
         return self.left+k*(self.right-self.left)        
 
     def propBeta(self, betaVal, attrLine):        
-        return (betaVal-attrLine.minValue)/self.max_difference
+        return (betaVal-attrLine.minValue)/max(self.max_difference, aproxZero)
 
     def getMaxMapperValue(self):
         return self.maxLinearValue        
     def getMinMapperValue(self):
         return 0
     def getMaxValue(self, attr):
-        return self.maxLinearValue*(attr.maxValue-attr.minValue)/self.max_difference
+        return self.maxLinearValue*(attr.maxValue-attr.minValue)/max(self.max_difference, aproxZero)
     def getMinValue(self, attr):
         return 0
 
@@ -1708,7 +1722,7 @@ class Mapper_Linear_Left:
         d = self.maxLinearValue/maxnum
         dif = getDiff(d)
         dSum = []
-        dSum = arange(0, self.maxLinearValue+dif, dif)
+        dSum = Numeric.arange(0, self.maxLinearValue+dif, dif)
         dSum = map(lambda x:x, dSum)
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
