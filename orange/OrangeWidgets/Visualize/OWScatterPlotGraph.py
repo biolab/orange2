@@ -155,15 +155,45 @@ class OWScatterPlotGraph(OWVisGraph):
         if self.showClusters:
             validData = self.getValidList([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)])
             data = self.createProjectionAsExampleTable([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
+            #data = self.rawdata.select([xAttr, yAttr, self.rawdata.domain.classVar.name])
             graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+            
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
             indices = Numeric.compress(validData, Numeric.array(range(len(self.rawdata))))
-            for key in closureDict.keys():
-                if polygonVerticesDict[key] < 6: continue
+            """
+            for key in valueDict.keys():
+                if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
-                    color = classIndices[graph.objects[i].getclass().value]
+                    for v in graph.getNeighbours(i):
+                        if graph[i,v][0] < -1:
+                            color = int(graph.objects[i].getclass())
+                            x = (self.rawdata[indices[i]][xAttr].value + self.rawdata[indices[v]][xAttr].value) / 2.0
+                            y = (self.rawdata[indices[i]][yAttr].value + self.rawdata[indices[v]][yAttr].value) / 2.0
+                            self.addCurve("", classColors[color], classColors[color], 5, QwtCurve.Lines, QwtSymbol.XCross, xData = [x], yData = [y], lineWidth = 0)
+                    for v in graph.getNeighbours(j):
+                        if graph[i,v][0] < -1:
+                            color = int(graph.objects[i].getclass())
+                            x = (self.rawdata[indices[i]][xAttr].value + self.rawdata[indices[v]][xAttr].value) / 2.0
+                            y = (self.rawdata[indices[i]][yAttr].value + self.rawdata[indices[v]][yAttr].value) / 2.0
+                            self.addCurve("", classColors[color], classColors[color], 5, QwtCurve.Lines, QwtSymbol.XCross, xData = [x], yData = [y], lineWidth = 0)
+            """
+
+            
+            for key in valueDict.keys():
+                if not polygonVerticesDict.has_key(key): continue
+                for (i,j) in closureDict[key]:
+                    color = int(graph.objects[i].getclass())
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = graph[i,j][0])
+
+            """
+            self.removeMarkers()
+            for i in range(graph.nVertices):
+                mkey = self.insertMarker(str(i))
+                self.marker(mkey).setXValue(float(self.rawdata[i][xAttr].value))
+                self.marker(mkey).setYValue(float(self.rawdata[i][yAttr].value))
+                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+            """
         elif self.clusterClosure: self.showClusterLines(xAttr, yAttr)        
 
         # ##############################################################
@@ -335,15 +365,7 @@ class OWScatterPlotGraph(OWVisGraph):
                         self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
         
-            """            
-            self.removeMarkers()
-            for i in range(graph.nVertices):
-                mkey = self.insertMarker(str(i))
-                self.marker(mkey).setXValue(float(self.rawdata[i][xAttr].value))
-                self.marker(mkey).setYValue(float(self.rawdata[i][yAttr].value))
-                self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-            """
-                
+               
         # ##############################################################
         # show legend if necessary
         # ##############################################################
@@ -515,7 +537,7 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
     def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        if not domain: domain = orange.Domain([orange.FloatVariable(self.rawdata.domain[attrIndices[0]].name), orange.FloatVariable(self.rawdata.domain[attrIndices[1]].name), self.rawdata.domain.classVar])
         data = self.createProjectionAsNumericArray(attrIndices, validData, classList, jitterSize)
         return orange.ExampleTable(domain, data)
 
@@ -569,7 +591,9 @@ class OWScatterPlotGraph(OWVisGraph):
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         for (val, attr1, attr2) in projections:
             testIndex += 1
-            if self.kNNOptimization.isOptimizationCanceled(): return
+            if self.kNNOptimization.isOptimizationCanceled():
+                self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections)" % (testIndex))
+                return
             
             valid = self.validDataArray[self.attributeNames.index(attr1)] + self.validDataArray[self.attributeNames.index(attr2)] - 1
             table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
@@ -578,14 +602,12 @@ class OWScatterPlotGraph(OWVisGraph):
             if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
             
             accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-            if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
-            else:
-                print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
-
+            self.kNNOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
             addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
             
             self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %d projections)" % (testIndex))
             
 
     def getOptimalClusters(self, projections, addResultFunct):
@@ -597,24 +619,35 @@ class OWScatterPlotGraph(OWVisGraph):
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         for (val, attr1, attr2) in projections:
             testIndex += 1
-            if self.clusterOptimization.isOptimizationCanceled(): return
+            try:
+                if self.clusterOptimization.isOptimizationCanceled():
+                    self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections)" % (testIndex))
+                    return
 
-            data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], domain = domain, jitterSize = jitterSize)
-            graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
+                data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], domain = domain, jitterSize = jitterSize)
+                #data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], jitterSize = jitterSize)
+                graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
-            allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []
-            allClasses = []
-            for key in valueDict.keys():
-                #addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), testIndex)
-                addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), otherDict[key])
-                allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
-                allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
+                allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []
+                allClasses = []
+                for key in valueDict.keys():
+                    #addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), testIndex)
+                    addResultFunct(valueDict[key], closureDict[key], polygonVerticesDict[key], [attr1, attr2], int(graph.objects[polygonVerticesDict[key][0]].getclass()), otherDict[key])
+                    allValue += valueDict[key]; allClosure.append(closureDict[key]); allPolygonVertices.append(polygonVerticesDict[key]); allComponents.append(otherDict[key])
+                    allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
 
-            #addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], -1, testIndex)     # add all the clusters
-            addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], allClasses, allComponents)     # add all the clusters
+                #addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], -1, testIndex)     # add all the clusters
+                addResultFunct(allValue, allClosure, allPolygonVertices, [attr1, attr2], allClasses, allComponents)     # add all the clusters
 
-            print "evaluated projection ", testIndex
-            self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+                #print "evaluated projection %d" % testIndex
+                self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
+                self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+            except:
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
+
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections)" % (testIndex))
+
             
 
 
