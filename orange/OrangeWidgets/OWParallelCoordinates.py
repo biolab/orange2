@@ -487,7 +487,7 @@ class OWParallelCoordinates(OWWidget):
             for item in list:
                 self.shownAttribsLB.insertItem(item)
             for attr in data.domain.attributes:
-                if attr.name not in list:
+                if attr.name not in list and attr.varType == orange.VarTypes.Discrete:
                     self.hiddenAttribsLB.insertItem(attr.name)
         else:
             print "Incorrect value for attribute order"
