@@ -40,12 +40,12 @@ public:
       for(int newi = 2*i+1; newi < msize; newi = 2*(i=newi)+1) {
         if (newi+1<msize) {
           int cmp = at(newi)->compare(*at(newi+1));
-          if ((cmp<0) || (!cmp && randbool()))
+          if (cmp<0)
             newi++;
         }
 
         int cmp = at(newi)->compare(*sank);
-        if ((cmp>0) || (!cmp && randbool()))
+        if (cmp>0)
           (at(i) = at(newi))->queueIndex = i;
         else 
           break;
@@ -61,7 +61,7 @@ public:
       for(int up; down; down=up) {
         up = (down-1)/2;
         int cmp=node->compare(*at(up));
-        if ((cmp>0) || (!cmp && randbool()))
+        if (cmp>0)
           (at(down) = at(up))->queueIndex = down;
         else
           break;

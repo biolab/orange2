@@ -34,6 +34,7 @@ public:
   TCurveType curve;
 
   TKaplanMeier(PExampleGenerator gen, const int &outcomeIndex, const int &eventIndex, const int &timeIndex, const int &weightID=0);
+
   void toFailure();
   void toLog();
   void normalizedCut(const float &maxTime=-1.0);
@@ -44,7 +45,7 @@ public:
 
 WRAPPER(KaplanMeier);
 
-// A classifier which returns a value of attribute denoted by whichVar from the example, possibly transforming it.
+
 class TClassifierForKMWeight : public TClassifier {
 public:
   __REGISTER_CLASS

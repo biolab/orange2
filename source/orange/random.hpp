@@ -42,7 +42,8 @@ public:
     cMersenneTwister mt;
 
     TRandomGenerator(const int &aninitseed=0)
-      : initseed(aninitseed), uses(0),
+      : initseed(aninitseed),
+        uses(0),
         mt(long(aninitseed))
       {}
 
@@ -96,53 +97,36 @@ public:
 };
 
 
-class TStdRandomGenerator : public TRandomGenerator
-{ public:
-    TStdRandomGenerator()
-      { srand(0); }
-    void reset()
-      {}
-};
-
 /* globalRandom is wrapped _globalRandom. Use any of them, they are same... */
-extern TStdRandomGenerator *_globalRandom;
+extern TRandomGenerator *_globalRandom;
 extern PRandomGenerator globalRandom;
 
-#define msrand *_globalRandom.mt.Init
-#define mrand abs(*_globalRandom())
+#define LOCAL_OR_GLOBAL_RANDOM (randomGenerator ? const_cast<TRandomGenerator &>(randomGenerator.getReference()) : *_globalRandom)
 
-// returns true with probability 1/y
-inline int randbool(int y=2)       
-{ return _globalRandom->randbool(y); }
 
-inline int randint()
-{ return _globalRandom->randint(); }
+/* This is to be used when you only need a few random numbers and don't want to
+   initialize the Mersenne twister.
 
-inline int randint(int y)
-{ return _globalRandom->randint(y); }
+   DO NOT USE THIS WHEN YOU NEED 32-BIT RANDOM NUMBERS!
 
-inline int randint(int x, int y)
-{ return _globalRandom->randint(x, y); }
+   The below formula is the same as used in MS VC 6.0 library. */
 
-inline long randlong()
-{ return _globalRandom->randlong(); }
+class TSimpleRandomGenerator {
+public:
+  int seed;
+  
+  TSimpleRandomGenerator(int aseed)
+  : seed(aseed)
+  {}
 
-inline long randlong(long y)
-{ return _globalRandom->randlong(y); }
+  int rand ()
+  { return(((seed = seed * 214013L + 2531011L) >> 16) & 0x7fff); }
 
-inline long randlong(long x, long y)
-{ return _globalRandom->randlong(x, y); }
+  int randbool(int y=2)
+  { return (rand()%y) == 0; }
 
-inline double randdouble(double x, double y)
-{ return _globalRandom->randdouble(x, y); }
-
-inline float randfloat(double x, double y)
-{ return _globalRandom->randfloat(x, y); }
-
-inline double randdouble(double y=1.0)
-{ return _globalRandom->randdouble(y); }
-
-inline float randfloat(double y=1.0)
-{ return _globalRandom->randfloat(y); }
+  int randsemilong()
+  { return rand()<<15 | rand(); }
+};
 
 #endif

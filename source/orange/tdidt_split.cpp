@@ -130,10 +130,14 @@ PClassifier TTreeSplitConstructor_Combined::operator()(
   PClassifier contSplit = continuousSplitConstructor->call(contDescriptions, contSizes, contQuality, contSpent,
                                                                  gen, weightID, dcont, apriorClass, continuous);
 
+  int N = gen ? gen->numberOfExamples() : -1;
+  if (N<0)
+    N = dcont->classes->cases;
+
   if (   discSplit
       && (   !contSplit
           || (discQuality>contQuality)
-          || (discQuality==contQuality) && randbool())) {
+          || (discQuality==contQuality) && (N%2>0))) {
     quality = discQuality;
     descriptions = discDescriptions;
     subsetSizes = discSizes;
@@ -179,6 +183,11 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
     ci = candidates.begin();
   }
 
+  int N = gen ? gen->numberOfExamples() : -1;
+  if (N<0)
+    N = dcont->classes->cases;
+  TSimpleRandomGenerator rgen(N);
+
   int thisAttr = 0, bestAttr = -1, wins = 0;
   quality = 0.0;
 
@@ -204,7 +213,7 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
         float thisMeas = measure->call(thisAttr, dcont, apriorClass);
 
         if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
-            || ((thisMeas==quality) && randbool(++wins))) {
+            || ((thisMeas==quality) && rgen.randbool(++wins))) {
           quality = thisMeas;
           subsetSizes = (*dci)->outerDistribution;
           bestAttr = thisAttr;
@@ -235,7 +244,7 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
           float thisMeas = measure->call(thisAttr, gen, apriorClass, weightID);
 
           if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
-              || ((thisMeas==quality) && randbool(++wins))) {
+              || ((thisMeas==quality) && rgen.randbool(++wins))) {
             quality = thisMeas;
             subsetSizes = PDiscDistribution(*ddi); // not discdist - this would be double wrapping!
             bestAttr = thisAttr;
@@ -339,6 +348,11 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
   if (!cse && noCandidates(candidates))
     return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
 
+  int N = gen ? gen->numberOfExamples() : -1;
+  if (N<0)
+    N = dcont->classes->cases;
+  TSimpleRandomGenerator rgen(N);
+
   vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
 
   PVariable bvar;
@@ -369,7 +383,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
         else {
           float thisMeas = measure->call(thisAttr, dcont, apriorClass);
           if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
-              || ((thisMeas==quality) && randbool(++wins))) {
+              || ((thisMeas==quality) && rgen.randbool(++wins))) {
             bestAttr = thisAttr;
             quality = thisMeas;
             leftExamples = distr.front()->abs;
@@ -413,7 +427,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
           float thisMeas = measure->operator()(newpos, dcont, apriorClass);
           if (   ((!binWins) || (thisMeas>binQuality)) && ((binWins=1) ==1)
-              || (thisMeas==binQuality) && randbool(++binWins)) {
+              || (thisMeas==binQuality) && rgen.randbool(++binWins)) {
             bestSelection = selection; 
             binQuality = thisMeas;
             binLeftExamples = dis0->abs;
@@ -436,7 +450,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
           float thisMeas = measure->operator()(newpos, dcont, apriorClass);
           if (   ((!binWins) || (thisMeas>binQuality)) && ((binWins=1) ==1)
-              || (thisMeas==binQuality) && randbool(++binWins)) {
+              || (thisMeas==binQuality) && rgen.randbool(++binWins)) {
             bestSelection = selection; 
             binQuality = thisMeas;
             binLeftExamples = con0->abs;
@@ -447,7 +461,7 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
 
       if (       binWins
           && (   (!wins || (binQuality>quality)) && ((wins=1)==1)
-              || (binQuality==quality) && randbool(++wins))) {
+              || (binQuality==quality) && rgen.randbool(++wins))) {
         bestAttr = thisAttr;
         quality = binQuality;
         leftExamples = binLeftExamples;
@@ -533,6 +547,11 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
   if (!cse && noCandidates(candidates))
     return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
 
+  int N = gen ? gen->numberOfExamples() : -1;
+  if (N<0)
+    N = dcont->classes->cases;
+  TSimpleRandomGenerator rgen(N);
+
   vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
 
   PVariable bvar;
@@ -580,7 +599,7 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
           float thisMeas = measure->operator()(newpos, dcont, apriorClass);
           if (   ((!binWins) || (thisMeas>binQuality)) && ((binWins=1) ==1)
-              || (thisMeas==binQuality) && randbool(++binWins)) {
+              || (thisMeas==binQuality) && rgen.randbool(++binWins)) {
             binBestThreshold = threshold; 
             binQuality = thisMeas;
             binLeftExamples = dis0->abs;
@@ -609,7 +628,7 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
           
           float thisMeas = measure->operator()(newpos, dcont, apriorClass);
           if (   ((!binWins) || (thisMeas>binQuality)) && ((binWins=1) ==1)
-              || (thisMeas==binQuality) && randbool(++binWins)) {
+              || (thisMeas==binQuality) && rgen.randbool(++binWins)) {
             binBestThreshold = threshold; 
             binQuality = thisMeas;
             binLeftExamples = con0->abs;
@@ -620,7 +639,7 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 
       if (       binWins
           && (   (!wins || (binQuality>quality)) && ((wins=1)==1)
-              || (binQuality==quality) && randbool(++wins))) {
+              || (binQuality==quality) && rgen.randbool(++wins))) {
         bestAttr = thisAttr;
         quality = binQuality;
         leftExamples = binLeftExamples;

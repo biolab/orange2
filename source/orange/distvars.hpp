@@ -45,6 +45,8 @@ WRAPPER(DiscDistribution)
 WRAPPER(ContDistribution)
 WRAPPER(ExampleGenerator);
 
+class TExample;
+
 
 #define TDistributionList TOrangeVector<PDistribution> 
 VWRAPPER(DistributionList)
@@ -85,6 +87,8 @@ public:
   virtual void  addint  (const int &v, const float &w = 1.0);
   virtual void  setint  (const int &v, const float &w);
   virtual int   highestProbIntIndex() const;
+  virtual int   highestProbIntIndex(const long &) const;
+  virtual int   highestProbIntIndex(const TExample &) const;
   virtual int   randomInt() const;
   virtual float p(const int &) const;
   virtual int   noOfElements() const;
@@ -121,6 +125,8 @@ public:
   virtual void   add(const TValue &i, const float &p = 1.0);
   virtual void   set(const TValue &i, const float &p);
   virtual TValue highestProbValue() const;
+  virtual TValue highestProbValue(const long &random) const;
+  virtual TValue highestProbValue(const TExample &random) const;
   virtual TValue randomValue() const;
   virtual float p(const TValue &) const;
 
@@ -177,6 +183,8 @@ public:
 
   virtual void  normalize();
   virtual int   highestProbIntIndex() const;
+  virtual int   highestProbIntIndex(const long &) const;
+  virtual int   highestProbIntIndex(const TExample &) const;
   virtual float highestProb() const;
   virtual int   randomInt() const;
   virtual bool  noDeviation() const;

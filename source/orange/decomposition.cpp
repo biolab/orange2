@@ -661,9 +661,9 @@ public:
   long randoff;
   vector<TCI_w>::iterator exPointer;
 
-  TDistRec(vector<TCI_w>::iterator ep, const float &adist=numeric_limits<float>::max())
+  TDistRec(vector<TCI_w>::iterator ep, const int &roff, const float &adist)
   : dist(adist),
-    randoff(randlong()),
+    randoff(roff),
     exPointer(ep)
   {};
 
@@ -694,6 +694,8 @@ PIMByRows TIMByRowsByRelief::operator()(PExampleGenerator gen, const vector<bool
 
   if (classes==-1)
     raiseError("these is no class or it is not discrete.");
+
+  TRandomGenerator rgen(gen->numberOfExamples());
 
   PDomain boundDomain=mlnew TDomain(PVariable(), aboundSet);
   PDomain freeDomain;
@@ -777,7 +779,7 @@ PIMByRows TIMByRowsByRelief::operator()(PExampleGenerator gen, const vector<bool
     // This is probably not correct - examples with lower weights should have less chance to
     // be chosen. Neither multiplying the line with a low weight does not amortize for this
     // since this same example can be chosen on and on...
-    eNum = myAllExamples ? eNum+1 : randlong(N);
+    eNum = myAllExamples ? eNum+1 : rgen.randlong(N);
 
     TExample &example = freeExamples[eNum];
     int eClass = example.getClass();
@@ -801,7 +803,7 @@ PIMByRows TIMByRowsByRelief::operator()(PExampleGenerator gen, const vector<bool
         // sort the examples by the distance
         set<TDistRec> neighset;
         ITERATE(vector<TCI_w>, epi, classTables[oClass])
-          neighset.insert(TDistRec(epi, useDistance->operator()(example, freeExamples[(*epi).freeIndex])));
+          neighset.insert(TDistRec(epi, rgen.randlong(), useDistance->operator()(example, freeExamples[(*epi).freeIndex])));
 
         float classWeight = adjustedClassIndex ? gN[oClass] / (gNtot-gN[eClass])  :  1.0;
 

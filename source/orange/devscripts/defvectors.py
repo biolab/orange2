@@ -12,6 +12,7 @@ int       $pyname$_len_sq(TPyOrange *self) { return $classname$::_len(self); }
 PyObject *$pyname$_concat(TPyOrange *self, PyObject *obj) { return $classname$::_concat(self, obj); }
 PyObject *$pyname$_repeat(TPyOrange *self, int times) { return $classname$::_repeat(self, times); }
 PyObject *$pyname$_str(TPyOrange *self) { return $classname$::_str(self); }
+PyObject *$pyname$_repr(TPyOrange *self) { return $classname$::_str(self); }
 int       $pyname$_contains(TPyOrange *self, PyObject *obj) { return $classname$::_contains(self, obj); }
 PyObject *$pyname$_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "($pyelement$) -> None") { return $classname$::_append(self, item); }
 PyObject *$pyname$_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "($pyelement$) -> int") { return $classname$::_count(self, obj); }
@@ -39,10 +40,8 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("Distribution", "lib_kernel.cpp"),
    normalList("ExampleGenerator", "lib_kernel.cpp"),
    normalList("Classifier", "lib_kernel.cpp"),
-   ("Preprocess",          "Preprocessor",     "PPreprocess",          "TPreprocess",          "PPreprocessor",        "lib_preprocess.cpp"),
    ("DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
    ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
-   ("Filter_sameValues",   "ValueRange",       "PFilter_sameValues",   "TFilter_sameValues",   "PValueRange",          "lib_components.cpp"),
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
    normalList("DTNode", "lib_learner.cpp")

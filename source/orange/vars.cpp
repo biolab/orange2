@@ -42,9 +42,6 @@ DEFINE_TOrangeVector_classDescription(PVariable, "TVarList")
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList")
 
 TPropertyDescription TValueList_properties[] = {
-  {"name", "name of the object", &typeid(string), NULL, offsetof(TValueList, name), false, false},
-  {"shortDescription", "short description of the object", &typeid(string), NULL, offsetof(TValueList, shortDescription), false, false},
-  {"description", "long description of the object", &typeid(string), NULL, offsetof(TValueList, description), false, false},
   {"variable", "The attribute to which the list applies", &typeid(POrange), &TVariable::st_classDescription, offsetof(TValueList, variable), false, false},
   {NULL}
 };
@@ -205,11 +202,11 @@ bool TEnumVariable::nextValue(TValue &val) const
 
 
 
-TValue TEnumVariable::randomValue(const int &rand)
+TValue TEnumVariable::randomValue(const int &rand) const
 { if (!values->size())
     raiseErrorWho("randomValue", "no values");
 
-  return TValue(int(rand<0 ? randint(values->size()) : rand%values->size()));
+  return TValue(int(rand<=0 ? _globalRandom->randint(values->size()) : rand%values->size()));
 }
 
 
@@ -315,9 +312,9 @@ bool TIntVariable::nextValue(TValue &val) const
 }
 
 
-TValue TIntVariable::randomValue(const int &rand)
+TValue TIntVariable::randomValue(const int &rand) const
 { CHECK_INTERVAL
-  return TValue(rand<0 ? randint(startValue, endValue) : (rand % (endValue-startValue+1) + startValue));
+  return TValue(rand<0 ? _globalRandom->randint(startValue, endValue) : (rand % (endValue-startValue+1) + startValue));
 }
 
 
@@ -396,12 +393,12 @@ bool TFloatVariable::nextValue(TValue &val) const
 }
 
 
-TValue TFloatVariable::randomValue(const int &rand)
+TValue TFloatVariable::randomValue(const int &rand) const
 { if ((stepValue<=0) || (startValue>=endValue))
     raiseError("randomValue: interval not given");
 
   if (rand<0)
-    return TValue(randfloat(startValue, endValue));
+    return TValue(_globalRandom->randfloat(startValue, endValue));
   else
     return TValue(float(double(rand)/double(4294967295.0)*(endValue-startValue)+startValue));
 }

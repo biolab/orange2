@@ -44,18 +44,12 @@ bool castableTo(const TClassDescription *objecttype, const TClassDescription *ba
 
 
 TOrange::TOrange()
-: name(""),
-  shortDescription(""),
-  description(""),
-  myWrapper(NULL)
+: myWrapper(NULL)
 {}
 
 
 TOrange::TOrange(const TOrange &orb) 
-: name(orb.name),
-  shortDescription(orb.shortDescription),
-  description(orb.description), 
-  myWrapper(NULL)
+: myWrapper(NULL)
 {}
 
 
@@ -120,7 +114,7 @@ void TOrange::wr_setProperty(const char *name, const POrange &b)
   if (pd->readOnly)
     raiseError("'%s.%s' is read-only", typeid(*this).name()+7, name);
   if (b && !castableTo(b->classDescription(), pd->classDescription))
-    raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", typeid(*this).name()+7, name, pd->name, b->name.c_str());
+    raiseError("type mismatch, unable to set '%s.%s' (expected %s, got %s).", typeid(*this).name()+7, name, pd->type->name()+7, typeid(b).name()+7);
   *(POrange *)MEMBER(pd->offset) = b;
   afterSet(name);
 }
@@ -148,7 +142,7 @@ int TOrange::dropReferences()
 { for(size_t const *ci = classDescription()->components; *ci; ci++)
     // Strictly speaking, this is wrong -- we assign POrange to a field of type, say, PVariable.
     // However, POrange(NULL) doesn't binary differ from PVariable(NULL)
-    // And even if it were not, the state of the object after dropReference doesn't matter;
+    // And even if it did, the state of the object after dropReference doesn't matter;
     // what matters is getting rid of all members. 
     *(POrange *)MEMBER(*ci) = POrange();
   return 0;

@@ -125,15 +125,17 @@ TClustersFromIMByAssessor::TClustersFromIMByAssessor(PColumnAssessor acola)
 {}
 
 
-void TClustersFromIMByAssessor::computeQualities(TIMClusterNode *clusters, TProfitQueue &profitQueue, float &baseQuality, float &)
+void TClustersFromIMByAssessor::computeQualities(TIMClusterNode *clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 // Computes errors and merge profits
-{ baseQuality=0;
+{ rgen.seed = int(N);
+
+  baseQuality=0;
   for(TIMClusterNode *cl1=clusters; cl1; cl1=cl1->nextNode) {
     cl1->columnQuality_N=columnAssessor->columnQuality(cl1->column);
 	  baseQuality+=cl1->columnQuality_N;
 	  for(TIMClusterNode *cl2=clusters; cl2!=cl1; cl2=cl2->nextNode) {
   	  float profit=columnAssessor->mergeProfit(cl1->column, cl2->column);
-      insertProfitQueueNode(cl2, cl1, profit, profitQueue);
+      insertProfitQueueNode(cl2, cl1, profit, rgen.randsemilong(), profitQueue);
 	  }
   }
 }
@@ -151,13 +153,15 @@ PExampleClusters TClustersFromIMByAssessor::operator()(PIM pim)
   TIMClusterNode *clusters = NULL;
   float baseQuality, N, initialQuality;
 
+  TSimpleRandomGenerator rgen(0); // will be set later, when N is known (in computeQualities)
+
   try {
     TProfitQueue profitQueue;
-    preparePrivateVars(pim, clusters, profitQueue, baseQuality, N);
+    preparePrivateVars(pim, clusters, profitQueue, baseQuality, N, rgen);
     initialQuality = baseQuality;
 
     while(profitQueue.size() && (!stopCriterion || !stopCriterion->operator()(baseQuality, profitQueue, clusters)))
-      mergeBestColumns(clusters, profitQueue, baseQuality, N);
+      mergeBestColumns(clusters, profitQueue, baseQuality, N, rgen);
   }
   catch (...) {
     if (defaultAssessorUsed)
@@ -179,16 +183,19 @@ PExampleClusters TClustersFromIMByAssessor::operator()(PIM pim)
 }
   
 
-void TClustersFromIMByAssessor::preparePrivateVars(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromIMByAssessor::preparePrivateVars(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 { if (pim->varType==TValue::INTVAR)
-    preparePrivateVarsD(pim, clusters, profitQueue, baseQuality, N);
+    preparePrivateVarsD(pim, clusters, profitQueue, baseQuality, N, rgen);
   else
-    preparePrivateVarsF(pim, clusters, profitQueue, baseQuality, N);
+    preparePrivateVarsF(pim, clusters, profitQueue, baseQuality, N, rgen);
 }
 
 
-void TClustersFromIMByAssessor::preparePrivateVarsD(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromIMByAssessor::preparePrivateVarsD(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 {
+  // Random generator is not initialized yet, so you shouldn't use it in this code
+  // (initialization comes in computeQualities since N is known then)
+
   TDiscDistribution classDist;
   clusters = NULL;
 
@@ -207,13 +214,16 @@ void TClustersFromIMByAssessor::preparePrivateVarsD(PIM pim, TIMClusterNode *&cl
 
   N = classDist.abs;
   columnAssessor->setDistribution(classDist);
-  computeQualities(clusters, profitQueue, baseQuality, N);
+  computeQualities(clusters, profitQueue, baseQuality, N, rgen);
   baseQuality /= N;
 }
 
 
-void TClustersFromIMByAssessor::preparePrivateVarsF(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromIMByAssessor::preparePrivateVarsF(PIM pim, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 {
+  // Random generator is not initialized yet, so you shouldn't use it in this code
+  // (initialization comes below, as soon as N is computed)
+
   float sum = 0;
   N = 0;
   clusters = NULL;
@@ -234,14 +244,14 @@ void TClustersFromIMByAssessor::preparePrivateVarsF(PIM pim, TIMClusterNode *&cl
  	}
 
   columnAssessor->setAverage(sum/N);
-  computeQualities(clusters, profitQueue, baseQuality, N);
+  computeQualities(clusters, profitQueue, baseQuality, N, rgen);
   baseQuality /= N;
 }
 
 
 
-TProfitNode *TClustersFromIMByAssessor::insertProfitQueueNode(TIMClusterNode *cl1, TIMClusterNode *cl2, float profit, TProfitQueue &profitQueue)
-{ TProfitNode *newNode = mlnew TProfitNode(cl1, cl2, profit, profitQueue.size());
+TProfitNode *TClustersFromIMByAssessor::insertProfitQueueNode(TIMClusterNode *cl1, TIMClusterNode *cl2, float profit, long randoff, TProfitQueue &profitQueue)
+{ TProfitNode *newNode = mlnew TProfitNode(cl1, cl2, profit, profitQueue.size(), randoff);
   profitQueue.insert(newNode);
   newNode->it1 = mlnew TProfitNodeList(newNode, &cl1->mergeProfits);
   newNode->it2 = mlnew TProfitNodeList(newNode, &cl2->mergeProfits);
@@ -250,7 +260,7 @@ TProfitNode *TClustersFromIMByAssessor::insertProfitQueueNode(TIMClusterNode *cl
 
 
 
-void TClustersFromIMByAssessor::mergeBestColumns(TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromIMByAssessor::mergeBestColumns(TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 {
   TIMClusterNode *cl1 = profitQueue.front()->column1, *cl2 = profitQueue.front()->column2;
   const float &profitN = profitQueue.front()->profit;
@@ -321,18 +331,19 @@ void TClustersFromIMByAssessor::mergeBestColumns(TIMClusterNode *&clusters, TPro
   { for(TIMClusterNode *cn1 = clusters; cn1; cn1 = cn1->nextNode) 
       if (cn1!=cl1) {
         float profit = columnAssessor->mergeProfit(cn1->column, cl1->column);
-        insertProfitQueueNode(cl1, cn1, profit, profitQueue);
+        insertProfitQueueNode(cl1, cn1, profit, rgen.randsemilong(), profitQueue);
 	  }
   }
 }
 
 
 
-TProfitNode::TProfitNode(TIMClusterNode *c1, TIMClusterNode *c2, float prof, int qind)
+TProfitNode::TProfitNode(TIMClusterNode *c1, TIMClusterNode *c2, float prof, int qind, const long &roff)
 : column1(c1),
   column2(c2),
   profit(prof),
-  queueIndex(qind)
+  queueIndex(qind),
+  randoff(roff)
 {}
 
 
@@ -346,6 +357,10 @@ int TProfitNode::compare(const TProfitNode &other) const
 { if (profit<other.profit)
     return -1;
   else if (profit>other.profit)
+    return 1;
+  else if (randoff<other.randoff)
+    return -1;
+  else if (randoff>other.randoff)
     return 1;
   return 0;
 }

@@ -83,6 +83,8 @@ public:
   bool operator == (const TExample &) const;
   int  compare(const TExample &other) const;
   bool compatible(const TExample &other) const;
+
+  int sumValues() const;
 };
 
 

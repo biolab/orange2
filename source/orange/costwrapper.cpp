@@ -67,11 +67,11 @@ TValue TCostWrapperClassifier::operator ()(const TExample &ex)
 
 
 TValue TCostWrapperClassifier::operator ()(PDiscDistribution risks)
-{ float ccost=numeric_limits<float>::max();
+{ float ccost = numeric_limits<float>::max();
   int wins=0, bestPrediction;
   const_ITERATE(TDiscDistribution, ri, risks.getReference())
     if (   (*ri<ccost)  && ((wins=1)==1)
-        || (*ri==ccost) && randbool(++wins)) {
+        || (*ri==ccost) && globalRandom->randbool(++wins)) {
       bestPrediction=ri-risks->begin();
       ccost=*ri;
     }

@@ -24,9 +24,9 @@
 #define __TABLE_HPP
 
 #include "examplegen.hpp"
+#include "random.hpp"
 
 class TFilter;
-
 
 // Example generator which stores examples in STL's vector.
 class TExampleTable : public TExampleGenerator {
@@ -35,6 +35,7 @@ public:
 
   TExample **examples;
   TExample **_Last, **_EndSpace;
+  PRandomGenerator randomGenerator; //P random generator used by randomExample
 
   // Iterates through examples of basevector
   #define baseITERATE(x) ITERATE(vector<TExample>, x, examples)

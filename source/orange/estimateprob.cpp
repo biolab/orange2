@@ -452,6 +452,8 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
   vector<float>::const_iterator pi(xpoints.begin()), pe(xpoints.end());
   float refx = *pi;
 
+  TSimpleRandomGenerator rgen(frequencies->outerDistribution->cases);
+
   if ((needpoints<=0) || (needpoints>=points.size())) {
     needAll = true;
     from = lowedge;
@@ -612,7 +614,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     // Adjust the window
     while (to!=highedge) {
       float dif = (refx - (*from).first) - ((*to).first - refx);
-      if ((dif>0) || (dif==0) && randint(2)) {
+      if ((dif>0) || (dif==0) && rgen.randbool()) {
         to++;
         from++;
       }

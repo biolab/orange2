@@ -74,108 +74,35 @@ For instructions on exporting those vectors to Python, see vectortemplates.hpp.
 */
 
 
-#ifndef __ORVECTOR_HPP
-#define __ORVECTOR_HPP
+#ifndef __ORMAP_HPP
+#define __ORMAP_HPP
 
 #include "garbage.hpp"
-#include <vector>
+#include <map>
 #include "root.hpp"
 #include "stladdon.hpp"
 
-template<class T>
-class _TOrangeMap : public TOrange
+template<class K, class V, bool key_is_orange, bool value_is_orange>
+class TOrangeMap : public TOrange
 { public:
-    MAP_INTERFACE(T, __ormap);
+    MAP_INTERFACE(K, V, __ormap);
 
-    _TOrangeMap()
+    TOrangeMap()
       {}
  
-    _TOrangeVector(const vector<T>::size_type &_N, const T &_V = T())
-      : __orvector(_N, _V)
-      {}
-
-    _TOrangeVector(const vector<T>::_Myt& _X)
-      : __orvector(_X)
-      {}
-};
-
-#define TBoolList _TOrangeVector<bool>
-#define TIntList _TOrangeVector<int>
-#define TLongList _TOrangeVector<long>
-#define TFloatList _TOrangeVector<float>
-#define TFloatFloatList _TOrangeVector<pair<float, float> >
-#define TDoubleList _TOrangeVector<double>
-#define TStringList _TOrangeVector<string>
-
-#define VWRAPPER(x) typedef GCPtr< T##x > P##x;
-
-VWRAPPER(BoolList)
-VWRAPPER(IntList)
-VWRAPPER(LongList)
-VWRAPPER(FloatList)
-VWRAPPER(FloatFloatList)
-VWRAPPER(DoubleList)
-VWRAPPER(StringList)
-
-WRAPPER(Variable)
-
-template<>
-class _TOrangeVector<TValue> : public TOrange
-{public:
-  PVariable variable;
-
-  VECTOR_INTERFACE(T, __orvector);
-
-  _TOrangeVector(PVariable var = PVariable())
-    : variable(var)
-    {}
- 
-  _TOrangeVector(const vector<TValue>::size_type &_N, const TValue &_V = TValue(), PVariable var = PVariable())
-    : __orvector(_N, _V), variable(var)
-    {}
-
-  _TOrangeVector(const vector<TValue>::_Myt& _X, PVariable var = PVariable())
-    : __orvector(_X), variable(var)
-    {}
-
-  int traverse(visitproc visit, void *arg)
-  { TRAVERSE(TOrange::traverse);
-    PVISIT(variable);
-    return 0;
-  }
-
-  int dropReferences()
-  { DROPREFERENCES(TOrange::dropReferences);
-    variable = PVariable();
-    return 0;
-  }
-};
-
-#define TValueList _TOrangeVector<TValue>
-VWRAPPER(ValueList)
-
-
-
-template<class T>
-class TOrangeVector : public TOrange
-{ public:
-    VECTOR_INTERFACE_W_TEMPLATE(T, __orvector); 
-
-    TOrangeVector()
-      {}
- 
-    TOrangeVector(const vector<T>::size_type &_N, const T &_V = T())
-      : __orvector(_N, _V)
-      {}
-
-    TOrangeVector(const vector<T>::_Myt& _X)
-      : __orvector(_X)
+    TOrangeMap(const map<K, V>& _X)
+      : __ormap(_X)
       {}
 
     int traverse(visitproc visit, void *arg)
     { TRAVERSE(TOrange::traverse);
-      for(iterator be=begin(), ee=end(); be!=ee; be++)
-        PVISIT(*be);
+      if (key_is_orange || value_is_orange)
+        for(iterator be=begin(), ee=end(); be!=ee; be++) {
+          if (key_is_orange)
+            PVISIT((*be).first);
+          if (value_is_orange)
+            PVISIT((*be).first);
+        }
       return 0;
     }
 
@@ -185,5 +112,9 @@ class TOrangeVector : public TOrange
       return 0;
     }
 };
+
+
+#define MWRAPPER(x) typedef GCPtr< T##x > P##x;
+
 
 #endif

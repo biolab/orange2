@@ -115,8 +115,8 @@ public:
   PFloatList replaceProbabilities; //P probabilities for replacing attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TMissValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &, PRandomGenerator =PRandomGenerator());
-  TMissValuesGenerator::TMissValuesGenerator(const vector<float> &, PExampleGenerator, PRandomGenerator =PRandomGenerator());
+  TMissValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TMissValuesGenerator::TMissValuesGenerator(const vector<float> &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };
@@ -129,8 +129,8 @@ public:
   PFloatList replaceProbabilities; //P probabilities for replacing attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TNoiseValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &, PRandomGenerator =PRandomGenerator());
-  TNoiseValuesGenerator(const vector<float> &, PExampleGenerator, PRandomGenerator =PRandomGenerator());
+  TNoiseValuesGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TNoiseValuesGenerator(const vector<float> &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };
@@ -143,8 +143,8 @@ public:
   PFloatList deviations; //P deviations for attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TGaussianNoiseGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &, PRandomGenerator =PRandomGenerator());
-  TGaussianNoiseGenerator(const vector<float> &, PExampleGenerator, PRandomGenerator =PRandomGenerator());
+  TGaussianNoiseGenerator(const vector<float> &, PDomain &, TExampleIterator &, TExampleIterator &);
+  TGaussianNoiseGenerator(const vector<float> &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };

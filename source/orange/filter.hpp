@@ -50,6 +50,7 @@ public:
   __REGISTER_CLASS
 
   float prob; //P probability of selecting an example
+  PRandomGenerator randomGenerator; //P random generator
 
   TFilter_random(const float =0.0, bool=false, PDomain =PDomain());
 
@@ -90,64 +91,64 @@ public:
 };
 
 
-class TValueRange : public TOrange {
+class TValueFilter : public TOrange {
 public:
-  float min, max; // would use union but can't since PDiscDistribution has constructors...
-  PDiscDistribution probs;
+  __REGISTER_ABSTRACT_CLASS
 
-  signed char special;
+  int acceptSpecial; //P tells whether a special value (DK, DC...) is accepted (1), rejected (0) or ignored (-1)
 
-  TValueRange(float min=0.0, float max=0.0, signed char =-1);
-  TValueRange(PDiscDistribution, signed char =-1);
+  TValueFilter(const int & = -1);
+  virtual int operator()(const TValue &) const = 0; // Returns 1 for accept, 0 for reject, -1 for ignore
 };
 
-WRAPPER(ValueRange)
+WRAPPER(ValueFilter)
+
+class TValueFilter_continuous : public TValueFilter {
+public:
+  __REGISTER_CLASS
+
+  float min; //P minimal acceptable value
+  float max; //P maximal acceptable value
+  bool outside; //P it true, the filter accepts the values outside the interval, not inside
+
+  TValueFilter_continuous(const float &min=0.0, const float &max=0.0, const bool &neg = false, const int &accs = -1);
+  virtual int operator()(const TValue &) const;
+};
+
+
+class TValueFilter_discrete : public TValueFilter {
+public:
+  __REGISTER_CLASS
+
+  PBoolList acceptableValues; //P acceptable values
+
+  TValueFilter_discrete(PBoolList = PBoolList(), const int &accs = -1);
+  virtual int operator()(const TValue &) const;
+};
+
+
+#define TValueFilterList TOrangeVector<PValueFilter>
+VWRAPPER(ValueFilterList)
 
 
 /// With given probability selects examples for which any of the given attribute has some of the given values 
-class TFilter_sameValues : public TFilter {
+class TFilter_Values : public TFilter {
 public:
   __REGISTER_CLASS
 
-  VECTOR_INTERFACE(PValueRange, values)
+  PValueFilterList values; //P a list of filters
 
-  /*  Discrete value with index i is `matching' if random number from [0,1) is lower than probs[i][j],
-      i is the attribute's index. For continuous attributes, value is `matching' if it is from the
-      specified interval [min, max]; if min>max the attribute's value is required to be outside the
-      interval [min, max]. Special values are matching if special is 1 and not if it is 0; if
-      special is -1, special values are simply ignored. Example if chosen if the test succeds
-      for all the specified values (if doAnd) or for any of them (if !doAnd). 
-      If no values could be verified (all special and ignored, or something like that), the example
-      is chosen if doAnd and not if !doAnd. 
-      Negating is applied to the return value (on the final result, not on each term of con/disjunction).
-      */
+  /*  If doAnd == true, example is chosen if no values are rejected
+      If doAnd == false, example is chosen if at least one value is accepted
+      The above rules apply also when no values could be tested (think how :)
+      
+      negate is applied to whole expression, not to individual terms */
 
-  /* Decides whether it selects examples with all values being appropriate (doAnd==true)
-      or with at least one being appropriate */
   bool doAnd; //P if true, filter computes conjunction, otherwise disjunction
 
-  TFilter_sameValues(bool anAnd=true, bool negate=false, PDomain =PDomain());
-  TFilter_sameValues(const vector<PValueRange> &, bool anAnd, bool=false, PDomain =PDomain());
+  TFilter_Values(bool anAnd=true, bool aneg = false, PDomain =PDomain());
+  TFilter_Values(PValueFilterList, bool anAnd, bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
-
-  int traverse(visitproc visit, void *arg);
-  int dropReferences();
-};
-
-
-WRAPPER(Filter_sameValues)
-
-class TValueFilter : public TFilter_sameValues {
-public:
-  __REGISTER_CLASS
-
-  TValueFilter(bool anAnd, bool aneg=false, PDomain = PDomain());
-  TValueFilter(const TMultiStringParameters &pars, string keyword, PDomain dom, bool anAnd, bool aneg=false);
-  TValueFilter(istream &istr, PDomain dom, bool anAnd, bool aneg=false);
-
-  void decode(const TMultiStringParameters &pars, string keyword);
-  void decode(istream &istr);
-  void decode(const vector<string> &drops);
 };
 
 

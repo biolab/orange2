@@ -36,7 +36,6 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "examples.hpp"
 #include "examplegen.hpp"
 #include "table.hpp"
-#include "preprocess.hpp"
 
 #include "cls_value.hpp"
 #include "cls_example.hpp"
@@ -165,6 +164,7 @@ inline int       DomainBasicAttrStat_len_sq(TPyOrange *self) { return ListOfWrap
 inline PyObject *DomainBasicAttrStat_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_concat(self, obj); }
 inline PyObject *DomainBasicAttrStat_repeat(TPyOrange *self, int times) {     return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_repeat(self, times); }
 inline PyObject *DomainBasicAttrStat_str(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_str(self); }
+inline PyObject *DomainBasicAttrStat_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_str(self); }
 inline int       DomainBasicAttrStat_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_contains(self, obj); }
 inline PyObject *DomainBasicAttrStat_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(BasicAttrStat) -> None") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_append(self, item); }
 inline PyObject *DomainBasicAttrStat_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(BasicAttrStat) -> int") { return ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_count(self, obj); }
@@ -610,6 +610,7 @@ inline int       DomainContingency_len_sq(TPyOrange *self) { return ListOfWrappe
 inline PyObject *DomainContingency_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_concat(self, obj); }
 inline PyObject *DomainContingency_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_repeat(self, times); }
 inline PyObject *DomainContingency_str(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_str(self); }
+inline PyObject *DomainContingency_repr(TPyOrange *self) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_str(self); }
 inline int       DomainContingency_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_contains(self, obj); }
 inline PyObject *DomainContingency_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Contingency) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_append(self, item); }
 inline PyObject *DomainContingency_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Contingency) -> int") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_count(self, obj); }
@@ -905,14 +906,16 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 
 #include "filter.hpp"
 
-BASED_ON(ValueRange, Orange)
+BASED_ON(ValueFilter, Orange)
+C_NAMED(ValueFilter_discrete, ValueFilter, "([acceptableValues=, acceptSpecial=])")
+C_NAMED(ValueFilter_continuous, ValueFilter, "([min=, max=, acceptSpecial=])")
 
 BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_hasClassValue, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_sameValue, Filter, "([examples], [negate=..., domain=..., position=<int>, value=...]) -/-> ExampleTable")
-C_CALL(Filter_sameValues, Filter, "([examples], [negate=..., domain=..., values=<see the manual>) -/-> ExampleTable")
+C_CALL(Filter_Values, Filter, "([examples], [negate=..., domain=..., values=<see the manual>) -/-> ExampleTable")
 C_CALL(Filter_index, Filter, "([examples], [negate=..., indices=<list-of-ints>, value=<int>]) -/-> ExampleTable")
 
 
@@ -956,233 +959,6 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 
 
 
-
-PyObject *ValueRange_new(PyTypeObject *type, PyObject *args, PyObject *keywds)
-/* Accepts - None
-
-           - Value
-           - list of floats                probabilities
-
-           - float, float                  for min and max
-           - string, variable              (symbolic) value
-           - list of strings, variable     (symbolic) values
-
-           keyword special = -1|0|1        -1 = ignore, 0 = reject, 1 = accept
-*/
-{ if (!args || !PyTuple_Size(args))
-    return WrapOrange(PValueRange());
-
-  PValueRange valueRange=mlnew TValueRange();
-  TValueRange &range = valueRange.getReference();
-
-  if (keywds) {
-    PyObject *obj = PyDict_GetItemString(keywds, "acceptspecial");
-    if (obj) {
-      if (!PyInt_Check(obj)) {
-        PyErr_Format(PyExc_TypeError, "'acceptspecial' should be of type 'int', not '%s'", obj->ob_type->tp_name);
-        return PYNULL;
-      }
-      int special = int(PyInt_AsLong(obj));
-      if ((special<-1) || (special>1)) {
-       PyErr_Format(PyExc_TypeError, "'acceptspecial' should be -1, 0 or 1, not '%i'", special);
-       return PYNULL;
-      }
-      range.special = (signed char)special;
-    }
-  }
-
-  if (PyTuple_Size(args)==1) {
-    PyObject *obj=PyTuple_GetItem(args, 0);
-
-    if (PyOrValue_Check(obj)) {
-      PVariable var = PyValue_AS_Variable(obj);
-      range.probs = mlnew TDiscDistribution(var && (var->noOfValues()>0) ? var->noOfValues() : 0);
-      TValue value = PyValue_AS_Value(obj);
-      if (value.isSpecial())
-        range.special = 1;
-      else
-        range.probs->add(value);
-      return WrapOrange(valueRange);
-    }
-      
-    if (PyOrDiscDistribution_Check(obj)) {
-      range.probs = PyOrange_AsDiscDistribution((TPyOrange *)obj);
-      return WrapOrange(valueRange);
-    }
-  }
-
-  else if (PyTuple_Size(args)==2) {
-    if (PyArg_ParseTuple(args, "ff", range.min, range.max))
-      return WrapOrange(valueRange);
-
-    PyObject *obj1 = PyTuple_GetItem(args, 0);
-    PyObject *obj2 = PyTuple_GetItem(args, 1);
-
-    if PyOrVariable_Check(obj2) {
-      PVariable var = PyOrange_AsVariable(obj2);
-      if (var->varType != TValue::INTVAR) {
-        PyErr_Format(PyExc_TypeError, "ValueRange: discrete variable expected ('%s' is not discrete)", var->name.c_str());
-        return PYNULL;
-      }
-      
-      if (PyString_Check(obj1)) {
-        TValue value;
-        var->str2val(PyString_AsString(obj1), value);
-
-        if (value.isSpecial())
-          range.special = 1;
-        else
-          range.probs->add(value);
-        return WrapOrange(valueRange);
-      }
-
-      if (PyList_Check(obj1)) {
-        TValue value;
-        for (int i=0, e=PyList_Size(obj1); i!=e; i++) {
-          PyObject *obj = PyList_GetItem(obj1, i);
-          var->str2val(PyString_AsString(obj), value);
-      
-          if (value.isSpecial())
-            range.special = 1;
-          else
-            range.probs->add(value);
-          return WrapOrange(valueRange);
-        }
-      }
-    }
-  }
-    
-  PYERROR(PyExc_TypeError, "ValueRange: invalid parameters, tried:\n"
-                           " - None                          don't check\n"
-                           " - Value                         accept this value\n"
-                           " - list of floats                probabilities for acceptance of values\n"
-                           " - float, float                  min and max (for continuous)\n"
-                           " - string, variable              (symbolic) value that is accepted\n"
-                           " - list of strings, variable     (symbolic) values that are accepted",
-                           PYNULL);
-}
-
-
-// Modified new
-inline PFilter_sameValues PFilter_sameValues_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::P_FromArguments(arg); }
-inline PyObject *Filter_sameValues_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_FromArguments(type, arg); }
-inline PyObject *Filter_sameValues_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_getitem(self, index); }
-inline int       Filter_sameValues_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_setitem(self, index, item); }
-inline PyObject *Filter_sameValues_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_getslice(self, start, stop); }
-inline int       Filter_sameValues_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_setslice(self, start, stop, item); }
-inline int       Filter_sameValues_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_len(self); }
-inline PyObject *Filter_sameValues_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_concat(self, obj); }
-inline PyObject *Filter_sameValues_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_repeat(self, times); }
-inline PyObject *Filter_sameValues_str(TPyOrange *self) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_str(self); }
-inline int       Filter_sameValues_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_contains(self, obj); }
-inline PyObject *Filter_sameValues_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(ValueRange) -> None") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_append(self, item); }
-inline PyObject *Filter_sameValues_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueRange) -> int") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_count(self, obj); }
-inline PyObject *Filter_sameValues_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> Filter_sameValues") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_filter(self, args); }
-inline PyObject *Filter_sameValues_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueRange) -> int") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_index(self, obj); }
-inline PyObject *Filter_sameValues_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_insert(self, args); }
-inline PyObject *Filter_sameValues_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_native(self); }
-inline PyObject *Filter_sameValues_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> ValueRange") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_pop(self, args); }
-inline PyObject *Filter_sameValues_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(ValueRange) -> None") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_remove(self, obj); }
-inline PyObject *Filter_sameValues_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_reverse(self); }
-inline PyObject *Filter_sameValues_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_sort(self, args); }
-
-
-inline PyObject *Filter_sameValues_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Filter, "(<list of ValueRange>)")
-{ PyObject *self = ListOfWrappedMethods<PFilter_sameValues, TFilter_sameValues, PValueRange, (PyTypeObject *)&PyOrValueRange_Type>::_new(type, arg, kwds);
-  if (self)
-    return self;
-  // Don't forget PyErr_Clear();
-  // XXX Add sth like (domain, [(0.0, 5.3), ("x", "jja", "ds"), (2.718, 3.141) ...])
-  
-  return PYNULL;
-}
-
-
-
-bool setIntValueRange(PyObject *lo, PValueRange range, PVariable var)
-{  TValue wv;
-
-   if (PyString_Check(lo))
-     var->str2val(PyString_AS_STRING(lo), wv);
-   else if (PyOrValue_Check(lo)) {
-     if (PyValue_AS_Variable(lo) && PyValue_AS_Variable(lo)!=var)
-       PYERROR(PyExc_TypeError, "invalid value type", false);
-     if (PyValue_AS_Value(lo).intV>=var->noOfValues())
-       PYERROR(PyExc_TypeError, "value index out of range", false);
-     wv=PyValue_AS_Value(lo);
-   }
-   else PYERROR(PyExc_TypeError, "invalid value type", false);
-              
-   if (wv.isSpecial())
-     range->special=false;
-   else 
-     range->probs->add(wv);
-
-   return true;
-}
-
-int Filter_sameValues_setattr_low(TFilter_sameValues *filter, PyObject *dict)
-{
-   if (!PyDict_Check(dict))
-     PYERROR(PyExc_TypeError, "dictionary expected for setting values of Filter_sameValues", -1);
-
-   if (!filter->domain)
-     PYERROR(PyExc_TypeError, "can't set values without knowing the domain", -1);
-
-   int pos = 0;
-   PyObject *key, *value;
-   vector<PValueRange> newRanges(filter->domain->variables->size(), PValueRange());
-
-   while (PyDict_Next(dict, &pos, &key, &value)) {
-     int valpos;
-     PyTRY
-       if (PyString_Check(key))
-         valpos = filter->domain->getVarNum(string(PyString_AS_STRING(key)));
-       else if (PyOrVariable_Check(key))
-         valpos = filter->domain->getVarNum(PyOrange_AsVariable(key));
-       else
-         PYERROR(PyExc_TypeError, "invalid key type in dictionary", -1);
-     PyCATCH_1;
-
-     PVariable var=filter->domain->variables->at(valpos);
-
-     PValueRange range = newRanges[valpos];
-
-     if (var->varType==TValue::INTVAR) {
-       if (!range) 
-         range  = newRanges[valpos] = PValueRange(mlnew TValueRange(PDiscDistribution(mlnew TDiscDistribution(var))));
-
-       if (PyList_Check(value)) {
-         for(int i=0, nole2=PyList_Size(value); i<nole2; i++)
-           if (!setIntValueRange(PyList_GetItem(value, i), range, var))
-             return -1;
-       }
-       else 
-         if (!setIntValueRange(value, range, var))
-           return -1;
-     }
-     else if (var->varType==TValue::FLOATVAR) {
-       if (!range) 
-         range = newRanges[valpos] = PValueRange(mlnew TValueRange());
-
-       if (!PyArg_ParseTuple(value, "ff", &range->min, &range->max))
-         PYERROR(PyExc_TypeError, "invalid value type", -1);
-     }
-     else
-       PYERROR(PyExc_TypeError, "unsupported value type", -1);
-   }
-
-   filter->values=newRanges;
-   return 0;
-}
-
-
-int Filter_sameValues_set_values(PyObject *obj, PyObject *arg)
-{ PyTRY
-    return Filter_sameValues_setattr_low(const_cast<TFilter_sameValues *>(PyOrange_AsFilter_sameValues(obj).getUnwrappedPtr()), arg);
-  PyCATCH_1
-}
-
 /* ************ RANDOM INDICES ******************** */
 #include "trindex.hpp"
 
@@ -1195,6 +971,10 @@ C_CALL3(MakeRandomIndicesCV, MakeRandomIndicesCV, MakeRandomIndices, "[n | gen [
 PYCLASSCONSTANT_INT(MakeRandomIndices, StratifiedIfPossible, -1L)
 PYCLASSCONSTANT_INT(MakeRandomIndices, NotStratified, 0L)
 PYCLASSCONSTANT_INT(MakeRandomIndices, Stratified, 1L)
+
+PYCONSTANT(StratifiedIfPossible, PyInt_FromLong(-1L))
+PYCONSTANT(NotStratified, PyInt_FromLong(0L))
+PYCONSTANT(Stratified, PyInt_FromLong(1L))
 
 PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keywords)
 {

@@ -56,7 +56,9 @@ public:
   TDistProfitNodeList *it1, *it2;
   int queueIndex;
 
-  TDistProfitNode(TDistClusterNode *c1, TDistClusterNode *c2, const float &prof, const int &qind);
+  long randoff;
+
+  TDistProfitNode(TDistClusterNode *c1, TDistClusterNode *c2, const float &prof, const int &qind, const long &roff);
   virtual ~TDistProfitNode();
   int compare(const TDistProfitNode &) const;
 };
@@ -151,11 +153,11 @@ public:
   virtual PExampleClusters operator()(PExampleDistVector);
 
 protected:
-  virtual void  preparePrivateVars(PExampleDistVector, TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N);
-  virtual void computeQualities(TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N);
-  void  mergeBestColumns(TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N);
+  virtual void  preparePrivateVars(PExampleDistVector, TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N, TSimpleRandomGenerator &);
+  virtual void computeQualities(TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N, TSimpleRandomGenerator &);
+  void  mergeBestColumns(TDistClusterNode *&clusters, TDistProfitQueue &, float &baseQuality, float &N, TSimpleRandomGenerator &);
   
-  TDistProfitNode *insertProfitQueueNode(TDistClusterNode *, TDistClusterNode *, float profit, TDistProfitQueue &);
+  TDistProfitNode *insertProfitQueueNode(TDistClusterNode *, TDistClusterNode *, float profit, long randoffset, TDistProfitQueue &);
 };
 
 

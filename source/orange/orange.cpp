@@ -29,7 +29,6 @@
 #include "errors.hpp"
 #include "values.hpp"
 #include "initialization.px"
-#include "pymap.hpp"
 
 TOrangeType *FindOrangeType(const type_info &tinfo)
 { TOrangeType **orty=orangeClasses;
@@ -70,10 +69,6 @@ bool SetAttr_FromDict(PyObject *self, PyObject *dict)
 
 
 #include "converts.hpp"
-DefineMapType(string, float, "map<string, float>")
-typedef map<float, float> *mapfloatfloat;
-DefineMapTypeU(float, float, mapfloatfloat, "map<float, float>")
-DefineMapType(float, float, "map<float, float>")
 
 void tdidt_cpp_gcUnsafeInitialization();
 void random_cpp_gcUnsafeInitialization();

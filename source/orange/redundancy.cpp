@@ -264,7 +264,7 @@ PDomain TRemoveRedundantByQuality::operator()
               || find(suspicious->begin(), suspicious->end(), *vi)!=suspicious->end()) {
             float thisM = measure->operator ()(attrNo, PExampleGenerator(*newGen), PDistribution(), weightID);
             if (   (!wins || (thisM <bestM)) && ((wins=1)==1)
-                || (thisM==bestM) && randbool(++wins)) {
+                || (thisM==bestM) && _globalRandom->randbool(++wins)) {
               bestAttr = attrNo; 
               bestM = thisM; 
             }

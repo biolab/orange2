@@ -98,19 +98,13 @@ extern size_t const _no_components[];
 
 bool castableTo(const TClassDescription *objecttype, const TClassDescription *basetype);
 
-
 WRAPPER(Orange)
-
 
 class TOrange {
 public:
   __REGISTER_CLASS
   typedef void TWarningFunction(const char *);
   static TWarningFunction *warningFunction;
-
-  string name;             //P name of the object
-  string shortDescription; //P short description of the object
-  string description;      //P long description of the object
 
   TGCCounter<TOrange> *myWrapper;
 
@@ -140,7 +134,6 @@ public:
 
   #define checkProperty(name) if (!name) raiseError("'"#name"' not set");
 };
-
 
 extern TPropertyDescription TOrange_properties[];
 extern size_t const TOrange_components[];

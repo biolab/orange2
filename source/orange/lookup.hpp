@@ -152,7 +152,6 @@ public:
   void afterSet(const string &name);
 
   virtual TValue operator ()(const TExample &);
-  virtual TValue operator ()(PDistribution);
   virtual PDistribution classDistribution(const TExample &);
   virtual void predictionAndDistribution(const TExample &ex, TValue &pred, PDistribution &dist);
   

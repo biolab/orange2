@@ -278,6 +278,6 @@ const_iterator  upper_bound(const type1& i_Kv) const { return (field).upper_boun
 
 #define MAP_INTERFACE(type1, type2, field) \
 MAP_INTERFACE_WOUT_OP(type1, type2, field) \
-_Tref           operator[](const type1& i_Kv) { return (field)[i_Kv]; }
+type2           operator[](const type1& i_Kv) { return (field)[i_Kv]; }
 
 #endif

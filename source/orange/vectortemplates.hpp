@@ -201,7 +201,7 @@ public:
 
   static _WrappedElement _fromPython(PyObject *obj)
   { if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
-      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "None");
+      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "NULL");
       return _WrappedElement();
     }
   
@@ -254,19 +254,6 @@ public:
     }
 
     return _FromArguments(type, args);
-  }
-
-  static int _traverse(TPyOrange *self, visitproc visit, void *arg)
-  { CAST_TO(_ListType, aList);
-    for(const_iterator li = aList->begin(), le = aList->end(); li!=le; li++)
-      PVISIT(*li);
-    return 0;
-  }
-
-  static int _clear(TPyOrange *self)
-  { CAST_TO(_ListType, aList);
-    aList->clear();
-    return 0; 
   }
 
   static PyObject *_getitem(TPyOrange *self, int index)

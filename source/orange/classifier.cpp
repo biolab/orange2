@@ -60,7 +60,7 @@ TValue TClassifier::operator ()(const TExample &exam)
 { if (!computesProbabilities)
     raiseError("invalid setting of 'computesProbabilities'");
 
-  return classDistribution(exam)->highestProbValue();
+  return classDistribution(exam)->highestProbValue(exam);
 }    
 
 
@@ -76,7 +76,7 @@ PDistribution TClassifier::classDistribution(const TExample &exam)
 void TClassifier::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &classDist)
 { if (computesProbabilities) {
     classDist = classDistribution(ex);
-    val = classDist->highestProbValue();
+    val = classDist->highestProbValue(ex);
   }
   else {
     val = operator()(ex);
@@ -272,7 +272,7 @@ TValue TClassifier::operator ()(const TExample &example, PEFMDataDescription dat
       classDist.addint(cv.intV, dataDes->missingWeight ? float(exMissing.meta[dataDes->missingWeight]) : 1.0);
   } while (exMissing.nextExample());
 
-  return classDist.highestProbValue();
+  return classDist.highestProbValue(example);
 }
 
 /*  This method can be called by derived classes when example misses values and missed

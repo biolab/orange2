@@ -23,7 +23,7 @@
 #include "examplegen.hpp"
 #include "learn.hpp"
 #include "classify.hpp"
-#include "preprocess.hpp"
+#include "preprocessors.hpp"
 
 #include "spec_contingency.ppp"
 
@@ -158,10 +158,11 @@ PDomainContingency TComputeDomainContingency_ImputeWithClassifier::operator ()(P
 PDomainContingency TComputeDomainContingency_Preprocessor::operator()(PExampleGenerator egen, const long &weightID)
 { checkProperty(preprocessor);
 
-  PPreprocess pp;
-  pp->addAdapter(preprocessor);
-  long newWeight=weightID;
-  PExampleGenerator newGen=pp->operator()(egen, newWeight, newWeight);
+  
+  int newWeight;
+  PExampleGenerator newGen=preprocessor->call(egen, weightID, newWeight);
+  if (!newWeight)
+    newWeight = weightID;
 
   PDomainContingency domainContingency;
   domainContingency->computeMatrix(newGen, newWeight);

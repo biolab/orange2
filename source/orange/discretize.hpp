@@ -189,6 +189,8 @@ public:
 
 
 
+class TSimpleRandomGenerator;
+
 class TEntropyDiscretization : public TDiscretization {
 public:
   __REGISTER_CLASS
@@ -199,10 +201,10 @@ public:
   typedef map<float, TDiscDistribution> TS;
 
   virtual PVariable operator()(PExampleGenerator, PVariable, const long &weightID = 0);
-  virtual PVariable operator()(const TS &, const TDiscDistribution &, PVariable, const long &weightID = 0) const;
+  virtual PVariable operator()(const TS &, const TDiscDistribution &, PVariable, const long &weightID, TSimpleRandomGenerator &rgen) const;
 
 protected:
-  void divide(const TS::const_iterator &, const TS::const_iterator &, const TDiscDistribution &, float entropy, int k, vector<pair<float, float> > &) const;
+  void divide(const TS::const_iterator &, const TS::const_iterator &, const TDiscDistribution &, float entropy, int k, vector<pair<float, float> > &, TSimpleRandomGenerator &rgen) const;
 };
 
 
@@ -225,9 +227,9 @@ public:
   int defaultInt; //P default number of intervals
   int weight; //P id of attribute with weight
 
-  TDiscretizedDomain(const int aweight=0, const int adInt=4, PDiscretization defaultdisc=PDiscretization());
-  TDiscretizedDomain(PExampleGenerator, const int aweight=0, const int adInt=4, PDiscretization defaultdisc=PDiscretization());
-  TDiscretizedDomain(PExampleGenerator, const vector<int> &discretizeId, const int aweight=0, const int adInt=4, PDiscretization defaultdisc=PDiscretization());
+  TDiscretizedDomain(const int aweight=0, PDiscretization defaultdisc=PDiscretization());
+  TDiscretizedDomain(PExampleGenerator, const int aweight=0, PDiscretization defaultdisc=PDiscretization());
+  TDiscretizedDomain(PExampleGenerator, const vector<int> &discretizeId, const int aweight=0, PDiscretization defaultdisc=PDiscretization());
 
   void learn(PExampleGenerator gen);
   void learn(PExampleGenerator gen, const vector<int> &discretizeId);

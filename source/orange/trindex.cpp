@@ -372,37 +372,6 @@ void sortedRndIndCls(PExampleGenerator gen, vector<long> rands, vector<TRndIndCl
 
 
 
-PRandomIndices RandomIndicesSCVGenFixed(PExampleGenerator gen, int n, vector<long> rands)
-{ if (n<=0)
-    raiseError("invalid number of folds");
-
-  vector<TRndIndCls> ricv;
-  sortedRndIndCls(gen, rands, ricv);
-
-  PRandomIndices indices(mlnew TFoldIndices());
-  indices->resize(ricv.size());
-  int gr=0;
-  ITERATE(vector<TRndIndCls>, ai, ricv) {
-    indices->at((*ai).ind)=gr++;
-    gr=gr%n;
-  }
-
-  return indices;
-};
-
-
-void RandomIntegers(int n, vector<long> &rands)
-{ rands.resize(n);
-  set<long> already;
-  while(n) {
-    long r=randlong();
-    if (lower_bound(already.begin(), already.end(), r)==already.end()) 
-      rands[--n]=r;
-  }
-}
-
-
-
 TMakeRandomIndicesMultiple::TMakeRandomIndicesMultiple(const float &ap0, const int &astratified, const int &arandseed)
 : TMakeRandomIndices(astratified, arandseed),
   p0(ap0)

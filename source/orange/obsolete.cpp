@@ -20,22 +20,8 @@
 */
 
 
-#include "c2py.hpp"
 #include "orange.hpp"
 #include "externs.px"
-#include "errors.hpp"
-#include "values.hpp"
 
 
 PYCONSTANT(MeasureAttribute_splitGain, (PyObject *)&PyOrMeasureAttribute_gainRatio_Type)
-
-PyObject *setrandseed(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(int seed) -> None")
-{ int rs;
-  if (!PyArg_ParseTuple(args, "i", &rs))
-    PYERROR(PyExc_TypeError, "integer parameter expected", PYNULL);
-
-  srand(rs);
-  RETURN_NONE;
-}
-
-

@@ -45,7 +45,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "cls_example.hpp"
 #include "lib_kernel.hpp"
 #include "vectortemplates.hpp"
-#include "pymap.hpp"
+#include "maptemplates.hpp"
 
 #include "converts.hpp"
 
@@ -173,10 +173,7 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 
 /* ************ PREPROCESSORS ************ */
 
-#include "preprocess.hpp"
 #include "preprocessors.hpp"
-
-DEFINE_DESTRUCTOR(TNameProb)
 
 BASED_ON(Preprocessor, Orange)
 
@@ -190,7 +187,6 @@ C_CALL(Preprocessor_class_noise, Preprocessor, "([examples[, weightID]] [classNo
 C_CALL(Preprocessor_class_gaussian_noise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
 C_CALL(Preprocessor_censor_weight, Preprocessor, "([examples[, weightID]] [outComeVar=, eventValue=, timeVar= <string>] [method="km"|"nmr"|"split"] [maxTime=, weightName=]) -/-> ExampleTable")
 C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
-C_CALL(Preprocessor_move_to_table, Preprocessor, "([examples, [, weightID]) -/-> ExampleTable")
 C_CALL(Preprocessor_ignore, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
 C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
 C_CALL(Preprocessor_noise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
@@ -201,99 +197,6 @@ C_CALL(Preprocessor_cost_weight, Preprocessor, "([examples[, weightID]] [equaliz
 C_CALL(Preprocessor_select, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
 C_CALL(Preprocessor_drop, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
 C_CALL(Preprocessor_take, Preprocessor, "([examples[, weightID]] [attributes=<list-of-strings>]) -/-> ExampleTable")
-
-bool convertFromPython(PyObject *args, PPreprocessor &ppre)
-{ if (PyOrOrange_Check(args)) {
-    ppre=PPreprocessor();
-    return true;
-  }
-  else if (PyOrPreprocessor_Check(args)) {
-    ppre = PyOrange_AsPreprocessor(args);
-    return true;
-  }
-
-  return false;
-}
-
-PyObject *Preprocess_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
-{ 
-  PyTRY
-    SETATTRIBUTES
-    long weight;
-    PExampleGenerator egen=exampleGenFromArgs(args, &weight);
-    if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-
-    PyObject *wrappedGen=WrapOrange(POrange(SELF_AS(TPreprocess)(egen, weight, weight)));
-    return weight!=0 ? Py_BuildValue("Ni", wrappedGen, weight) : wrappedGen;
-  PyCATCH
-}
-
-inline PPreprocess PPreprocess_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::P_FromArguments(arg); }
-inline PyObject *Preprocess_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_FromArguments(type, arg); }
-inline PyObject *Preprocess_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Preprocessor>)") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_new(type, arg, kwds); }
-inline PyObject *Preprocess_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_getitem(self, index); }
-inline int       Preprocess_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_setitem(self, index, item); }
-inline PyObject *Preprocess_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_getslice(self, start, stop); }
-inline int       Preprocess_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_setslice(self, start, stop, item); }
-inline int       Preprocess_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_len(self); }
-inline PyObject *Preprocess_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_concat(self, obj); }
-inline PyObject *Preprocess_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_repeat(self, times); }
-inline PyObject *Preprocess_str(TPyOrange *self) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_str(self); }
-inline int       Preprocess_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_contains(self, obj); }
-inline PyObject *Preprocess_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Preprocessor) -> None") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_append(self, item); }
-inline PyObject *Preprocess_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Preprocessor) -> int") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_count(self, obj); }
-inline PyObject *Preprocess_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> Preprocess") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_filter(self, args); }
-inline PyObject *Preprocess_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Preprocessor) -> int") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_index(self, obj); }
-inline PyObject *Preprocess_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_insert(self, args); }
-inline PyObject *Preprocess_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_native(self); }
-inline PyObject *Preprocess_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Preprocessor") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_pop(self, args); }
-inline PyObject *Preprocess_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Preprocessor) -> None") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_remove(self, obj); }
-inline PyObject *Preprocess_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_reverse(self); }
-inline PyObject *Preprocess_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func] -> None") { return ListOfWrappedMethods<PPreprocess, TPreprocess, PPreprocessor, (PyTypeObject *)&PyOrPreprocessor_Type>::_sort(self, args); }
-
-
-
-PyObject *Preprocessor_noise_get_probabilities(PyObject *self) PYDOC("Probability for corrupting a values (one for each attribute)")
-{ PyTRY
-    return (PyObject *)mlnew TPyMap<string, float>(SELF_AS(TPreprocessor_noise).probabilities, convertFromPythonWithVariable);
-  PyCATCH
-}
-
-int Preprocessor_noise_set_probabilities(PyObject *self, PyObject *args)
-{ PyTRY
-    return TPyMap<string, float>::readMap(SELF_AS(TPreprocessor_noise).probabilities, args, convertFromPythonWithVariable) ? 0 : -1;
-  PyCATCH_1
-}
-
-
-
-PyObject *Preprocessor_gaussian_noise_get_deviations(PyObject *self) PYDOC("Deviation for each attribute")
-{ PyTRY
-    return (PyObject *)mlnew TPyMap<string, float>(SELF_AS(TPreprocessor_gaussian_noise).deviations, convertFromPythonWithVariable);
-  PyCATCH
-}
-
-int Preprocessor_gaussian_noise_set_deviations(PyObject *self, PyObject *args)
-{ PyTRY
-    return TPyMap<string, float>::readMap(SELF_AS(TPreprocessor_gaussian_noise).deviations, args, convertFromPythonWithVariable) ? 0 : -1;
-  PyCATCH_1
-}
-
-
-
-PyObject *Preprocessor_missing_get_probabilities(PyObject *self) PYDOC("Probability for removing a value (one for each attribute)")
-{ PyTRY
-    return (PyObject *)mlnew TPyMap<string, float>(SELF_AS(TPreprocessor_missing).probabilities, convertFromPythonWithVariable);
-  PyCATCH
-}
-
-int Preprocessor_missing_set_probabilities(PyObject *self, PyObject *args)
-{ PyTRY
-    return TPyMap<string, float>::readMap(SELF_AS(TPreprocessor_missing).probabilities, args, convertFromPythonWithVariable) ? 0 : -1;
-  PyCATCH_1
-}
-
 
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
@@ -306,13 +209,59 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
       PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
     bool weightGiven=(weightID!=0);
 
-    PExampleGenerator res = SELF_AS(TPreprocessor)(egen, weightID);
+    int newWeight;
+    PExampleGenerator res = SELF_AS(TPreprocessor)(egen, weightID, newWeight);
     PyObject *wrappedGen=WrapOrange(res);
-    return weightGiven ? Py_BuildValue("Ni", wrappedGen, weightID) : wrappedGen;
+    return weightGiven || newWeight ? Py_BuildValue("Ni", wrappedGen, newWeight) : wrappedGen;
   PyCATCH
 }
 
 
+typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
+INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
+
+PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg) { return TMM_VariableFilterMap::P_FromArguments(arg); }
+PyObject *VariableFilterMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFilterMap::_FromArguments(type, arg); }
+PyObject *VariableFilterMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFilterMap::_new(type, arg, kwds); }
+PyObject *VariableFilterMap_str(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
+PyObject *VariableFilterMap_repr(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
+PyObject *VariableFilterMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_getitem(self, key); }
+int       VariableFilterMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFilterMap::_setitem(self, key, value); }
+int       VariableFilterMap_len(TPyOrange *self) { return TMM_VariableFilterMap::_len(self); }
+int       VariableFilterMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_contains(self, key); }
+
+PyObject *VariableFilterMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFilterMap::_has_key(self, key); }
+PyObject *VariableFilterMap_get(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_get(self, args); }
+PyObject *VariableFilterMap_setdefault(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_setdefault(self, args); }
+PyObject *VariableFilterMap_clear(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> None") { return TMM_VariableFilterMap::_clear(self); }
+PyObject *VariableFilterMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> keys") { return TMM_VariableFilterMap::_keys(self); }
+PyObject *VariableFilterMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFilterMap::_values(self); }
+PyObject *VariableFilterMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFilterMap::_items(self); }
+PyObject *VariableFilterMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFilterMap::_update(self, args); }
+
+
+
+typedef MapMethods<PVariableFloatMap, TVariableFloatMap, PVariable, float> TMM_VariableFloatMap;
+INITIALIZE_MAPMETHODS(TMM_VariableFloatMap, &PyOrVariable_Type, NULL, _orangeValueFromPython<PVariable>, _nonOrangeValueFromPython<float>, _orangeValueToPython<PVariable>, _nonOrangeValueToPython<float>);
+
+PVariableFloatMap PVariableFloatMap_FromArguments(PyObject *arg) { return TMM_VariableFloatMap::P_FromArguments(arg); }
+PyObject *VariableFloatMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFloatMap::_FromArguments(type, arg); }
+PyObject *VariableFloatMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFloatMap::_new(type, arg, kwds); }
+PyObject *VariableFloatMap_str(TPyOrange *self) { return TMM_VariableFloatMap::_str(self); }
+PyObject *VariableFloatMap_repr(TPyOrange *self) { return TMM_VariableFloatMap::_str(self); }
+PyObject *VariableFloatMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFloatMap::_getitem(self, key); }
+int       VariableFloatMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFloatMap::_setitem(self, key, value); }
+int       VariableFloatMap_len(TPyOrange *self) { return TMM_VariableFloatMap::_len(self); }
+int       VariableFloatMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFloatMap::_contains(self, key); }
+
+PyObject *VariableFloatMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFloatMap::_has_key(self, key); }
+PyObject *VariableFloatMap_get(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFloatMap::_get(self, args); }
+PyObject *VariableFloatMap_setdefault(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFloatMap::_setdefault(self, args); }
+PyObject *VariableFloatMap_clear(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> None") { return TMM_VariableFloatMap::_clear(self); }
+PyObject *VariableFloatMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> keys") { return TMM_VariableFloatMap::_keys(self); }
+PyObject *VariableFloatMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFloatMap::_values(self); }
+PyObject *VariableFloatMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFloatMap::_items(self); }
+PyObject *VariableFloatMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFloatMap::_update(self, args); }
 
 
 /* ************ INDUCE ************ */

@@ -224,7 +224,9 @@ public:
   TProfitNodeList *it1, *it2;
   int queueIndex;
 
-  TProfitNode(TIMClusterNode *c1, TIMClusterNode *c2, float prof, int qind);
+  long randoff;
+
+  TProfitNode(TIMClusterNode *c1, TIMClusterNode *c2, float prof, int qind, const long &roff);
   ~TProfitNode();
 
   int compare(const TProfitNode &other) const;
@@ -268,15 +270,15 @@ public:
   virtual PExampleClusters operator()(PIM im);
 
 protected:
-  virtual void  preparePrivateVars(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N);
-  virtual void  preparePrivateVarsD(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N);
-  virtual void  preparePrivateVarsF(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N);
+  virtual void  preparePrivateVars(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &);
+  virtual void  preparePrivateVarsD(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &);
+  virtual void  preparePrivateVarsF(PIM im, TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &);
 
-  virtual void computeQualities(TIMClusterNode *clusters, TProfitQueue &profitQueue, float &baseQuality, float &N);
+  virtual void computeQualities(TIMClusterNode *clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &);
 
-  void  mergeBestColumns(TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N);
+  void  mergeBestColumns(TIMClusterNode *&clusters, TProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &);
 
-  TProfitNode *insertProfitQueueNode(TIMClusterNode *, TIMClusterNode *, float profit, TProfitQueue &);
+  TProfitNode *insertProfitQueueNode(TIMClusterNode *, TIMClusterNode *, float profit, long randoff, TProfitQueue &);
 };
 
 WRAPPER(ClustersFromIMByAssessor);

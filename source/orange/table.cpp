@@ -341,7 +341,7 @@ bool TExampleTable::remove(TExampleIterator &it)
 bool TExampleTable::randomExample(TExample &ex)
 { if (!size())
     return 0;
-  ex = operator[](randint(size()));
+  ex = operator[](LOCAL_OR_GLOBAL_RANDOM.randint(size()));
   return true;
 }
 

@@ -466,6 +466,7 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
   TS S;
   TDiscDistribution all;
 
+  int nex = 0;
   PEITERATE(ei, gen) {
     TValue &val = (*ei)[varPos];
     if (!val.isSpecial()) {
@@ -476,13 +477,15 @@ PVariable TEntropyDiscretization::operator()(PExampleGenerator gen, PVariable va
 	      all.addint(int(eclass), weight);
       }
     }
+    nex++;
   }
 
-  return operator()(S, all, var, weightID);
+  TSimpleRandomGenerator rgen(nex);
+  return operator()(S, all, var, weightID, rgen);
 }
 
 
-PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistribution &all, PVariable var, const long &) const
+PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistribution &all, PVariable var, const long &, TSimpleRandomGenerator &rgen) const
 {
   int k=0;
   const_ITERATE(TDiscDistribution, ci, all)
@@ -494,7 +497,7 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
 
 
   vector<pair<float, float> > points;
-  divide(S.begin(), S.end(), all, float(getEntropy(all)), k, points);
+  divide(S.begin(), S.end(), all, float(getEntropy(all)), k, points, rgen);
 
   if ((maxNumberOfIntervals>0) && (int(points.size())+1>maxNumberOfIntervals)) {
     random_sort(points.begin(), points.end(), predOn2nd<pair<float, float>, less<float> >(), predOn2nd<pair<float, float>, equal_to<float> >());
@@ -519,7 +522,8 @@ PVariable TEntropyDiscretization::operator()(const TS &S, const TDiscDistributio
 void TEntropyDiscretization::divide(
   const TS::const_iterator &first, const TS::const_iterator &last,
 	const TDiscDistribution &distr, float entropy, int k,
-  vector<pair<float, float> > &points) const
+  vector<pair<float, float> > &points,
+  TSimpleRandomGenerator &rgen) const
 {
   TDiscDistribution S1dist, S2dist = distr, bestS1, bestS2;
   float bestE = -1.0;
@@ -536,7 +540,7 @@ void TEntropyDiscretization::divide(
 	  float entro2 = S2dist.abs*float(getEntropy(S2dist))/N;
 	  float E = entro1+entro2;
     if (   (!wins || (E<bestE)) && ((wins=1)==1)
-        || (E==bestE) && randbool(++wins)) {
+        || (E==bestE) && rgen.randbool(++wins)) {
       bestS1 = S1dist;
       bestS2 = S2dist;
       bestE = E;
@@ -568,12 +572,12 @@ void TEntropyDiscretization::divide(
 //  cout << cutoff << ", info gain=" << gain << ", MDL=" << MDL << endl;
   if (gain>MDL) {
     if ((k1>1) && (first!=bestT))
-      divide(first, bestT, bestS1, entropy1, k1, points);
+      divide(first, bestT, bestS1, entropy1, k1, points, rgen);
 
     points.push_back(pair<float, float>(cutoff, gain-MDL));
 
     if ((k2>1) && (bestT!=last))
-      divide(bestT, last, bestS2, entropy2, k2, points);
+      divide(bestT, last, bestS2, entropy2, k2, points, rgen);
   }
 }
 
@@ -750,27 +754,24 @@ PDomain TDomainDiscretization::operator()(PExampleGenerator gen, const long &wei
   
 
 
-TDiscretizedDomain::TDiscretizedDomain(const int aweight, const int adefnum, PDiscretization defDisc)
+TDiscretizedDomain::TDiscretizedDomain(const int aweight, PDiscretization defDisc)
 : TDomain(),
   defaultDiscretization(defDisc),
-  defaultInt(adefnum),
   weight(aweight)
 {}
 
 
-TDiscretizedDomain::TDiscretizedDomain(PExampleGenerator gen, const int aweight, const int adefnum, PDiscretization defDisc)
+TDiscretizedDomain::TDiscretizedDomain(PExampleGenerator gen, const int aweight, PDiscretization defDisc)
 : TDomain(),
   defaultDiscretization(defDisc),
-  defaultInt(adefnum),
   weight(aweight)
 { metas = gen->domain->metas;
   learn(gen);
 }
 
-TDiscretizedDomain::TDiscretizedDomain(PExampleGenerator gen, const vector<int> &discretizeId, const int aweight, const int adefnum, PDiscretization defDisc)
+TDiscretizedDomain::TDiscretizedDomain(PExampleGenerator gen, const vector<int> &discretizeId, const int aweight, PDiscretization defDisc)
 : TDomain(),
   defaultDiscretization(defDisc),
-  defaultInt(adefnum),
   weight(aweight)
 { metas = gen->domain->metas;
   learn(gen, discretizeId);
@@ -814,20 +815,3 @@ void TDiscretizedDomain::learn(PExampleGenerator gen, const vector<int> &discret
     attributes->erase(attributes->end()-1);
   }
 };
-
-
-
-
-int findNoOfIntervals(const TMultiStringParameters &spar, const int defaultInt)
-{ int theNumber=0;
-  TMultiStringParameters::const_iterator ii=spar.find("intervals");
-  if (ii!=spar.end()) theNumber=atoi((*ii).second.c_str());
-  return theNumber ? theNumber : defaultInt;
-}
-
-string findBoundaries(const TMultiStringParameters &spar)
-{ TMultiStringParameters::const_iterator ii=spar.find("points");
-  if (ii==spar.end())
-    raiseError("fixed discretization requires '-points' option.");
-  return (*ii).second;
-}

@@ -252,21 +252,25 @@ public:
 
   bool operator ==(const T *p2) const
   { return    (!counter && !p2) 
-           || (counter && (counter->ptr==p2));
+           || ( counter && (counter->ptr==p2));
   }
 
 
   bool operator !=(const GCPtr<T> &p2) const
-  { return    (!counter && p2.counter)
-           || (counter && !p2.counter)
-           || (counter->ptr!=p2.counter->ptr);
+  { return    (!counter &&  p2.counter)
+           || ( counter && !p2.counter)
+           || ( counter &&  p2.counter && (counter->ptr!=p2.counter->ptr));
   }
 
 
   bool operator !=(const T *p2) const
-  { return    (!counter && !p2)
-           || (counter && (counter->ptr!=p2));
+  { return    (!counter && p2)
+           || ( counter && (counter->ptr!=p2));
   }
+
+  bool operator < (const GCPtr<T> &ps) const
+  { return    (!counter && ps.counter)
+           || (int(counter->ptr) < int(ps.counter->ptr)); }
 
 
   operator bool() const

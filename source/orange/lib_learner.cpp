@@ -36,7 +36,6 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "domain.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
-#include "preprocess.hpp"
 #include "nearest.hpp"
 #include "estimateprob.hpp"
 #include "induce.hpp"
@@ -278,6 +277,7 @@ int       AssociationRules_len_sq(TPyOrange *self) { return ListOfWrappedMethods
 PyObject *AssociationRules_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_concat(self, obj); }
 PyObject *AssociationRules_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_repeat(self, times); }
 PyObject *AssociationRules_str(TPyOrange *self) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_str(self); }
+PyObject *AssociationRules_repr(TPyOrange *self) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_str(self); }
 int       AssociationRules_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_contains(self, obj); }
 PyObject *AssociationRules_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(AssociationRule) -> None") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_append(self, item); }
 PyObject *AssociationRules_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(AssociationRule) -> int") { return ListOfWrappedMethods<PAssociationRules, TAssociationRules, PAssociationRule, (PyTypeObject *)&PyOrAssociationRule_Type>::_count(self, obj); }
@@ -598,6 +598,7 @@ int       TreeNodeList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PTr
 PyObject *TreeNodeList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_concat(self, obj); }
 PyObject *TreeNodeList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_repeat(self, times); }
 PyObject *TreeNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_str(self); }
+PyObject *TreeNodeList_repr(TPyOrange *self) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_str(self); }
 int       TreeNodeList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_contains(self, obj); }
 PyObject *TreeNodeList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(TreeNode) -> None") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_append(self, item); }
 PyObject *TreeNodeList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(TreeNode) -> int") { return ListOfWrappedMethods<PTreeNodeList, TTreeNodeList, PTreeNode, (PyTypeObject *)&PyOrTreeNode_Type>::_count(self, obj); }

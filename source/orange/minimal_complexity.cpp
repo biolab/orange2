@@ -312,17 +312,24 @@ PExampleSets TColoredIG::exampleSets(const float &) const
 class T__LessConnected {
 public:
   PIG graph;
-  T__LessConnected(PIG gr) : graph(gr) {};
+  PRandomGenerator rgen;
+
+  T__LessConnected(PIG gr, PRandomGenerator argen)
+  : graph(gr),
+    rgen(argen)
+  {}
 
   bool operator()(const int &n1, const int &n2) const
   { float ab1 = graph->nodes[n1].incompatibility.abs,
           ab2 = graph->nodes[n2].incompatibility.abs;
-    return (ab1<ab2) || ((ab1==ab2) && randbool()); }
+    return (ab1<ab2) || ((ab1==ab2) && const_cast<PRandomGenerator &>(rgen)->randbool()); }
 };
 
 
 PColoredIG TColorIG_MCF::operator()(PIG graph)
 { 
+  PRandomGenerator rgen = mlnew TRandomGenerator(graph->nodes.size());
+
   graph->removeEmpty();
   PColoredIG colored(mlnew TColoredIG(graph));
 
@@ -336,7 +343,7 @@ PColoredIG TColorIG_MCF::operator()(PIG graph)
      to the number of its edges
   */
   typedef priority_queue<int, vector<int>, T__LessConnected> cpq;
-  T__LessConnected lcg(graph);
+  T__LessConnected lcg(graph, rgen);
   cpq orderedNodes = cpq(lcg);
   for(int ni = 0, nr = graph->nodes.size(); ni<nr; ni++)
     orderedNodes.push(ni);

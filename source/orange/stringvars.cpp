@@ -99,18 +99,8 @@ bool TStringVariable::nextValue(TValue &) const
 }
 
 
-TValue TStringVariable::randomValue(const int &rand)
-{ char rs[9];
-  if (rand<0)
-    for(int rp = 8; rp--; rs[rp] = randint('A', 'Z'));
-  else {
-    int r2 = rand;
-    for(int rp = 8; rp--; rs[rp] = 'A'+r2 & (0xf), r2 = r2>>4);
-  }
-
-  rs[8] = 0;
-  return TValue(mlnew TStringValue(rs));
-}
+TValue TStringVariable::randomValue(const int &rand) const
+{ return TValue(mlnew TStringValue("")); }
 
 
 int TStringVariable::noOfValues() const

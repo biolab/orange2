@@ -45,9 +45,9 @@ public:
   long randoff;
   TExample &example;
 
-  TNNRec(TExample &anexample, const float &adist = numeric_limits<float>::max())
+  TNNRec(TExample &anexample, const int &roff, const float &adist)
   : dist(adist),
-    randoff(randlong()),
+    randoff(roff),
     example(anexample)
   {};
 
@@ -78,11 +78,13 @@ PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const f
 { checkProperty(examples);
   checkProperty(distance);
 
+  TRandomGenerator rgen(e.sumValues());
+
   set<TNNRec> NN;
   PEITERATE(ei, examples) {
     const float dist = distance->operator()(e, *ei);
     if (includeSame || (dist>0.0))
-      NN.insert(TNNRec(*ei, dist));
+      NN.insert(TNNRec(*ei, rgen.randlong(), dist));
   }
 
   PDomain dom = e.domain;

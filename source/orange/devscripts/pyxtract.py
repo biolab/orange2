@@ -117,7 +117,6 @@ if 1: ### Definitions of regular expressions (hidden due to boringness)
   getdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_(?P<method>get)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   setdef=re.compile(r'int\s*(?P<typename>\w*)_(?P<method>set)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   methoddef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)_(?P<methodname>\w*)\s*\([^)]*\)\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
-  builtinpropertiesdef=re.compile(r'\s*__property(_wr)?\s*\(\s*"(?P<pname>]\w*)"[^&]*&\s*(?P<tname>\w*)')
 
   funcdef=re.compile(r'PYFUNCTION\((?P<pyname>\w*)\s*,\s*(?P<cname>\w*)\s*,\s*(?P<argkw>[^,]*)\s*(,\s*"(?P<doc>[^"]*)"\))?[\s;]*$')
   funcdef2=re.compile(r'(?P<defpart>PyObject\s*\*(?P<pyname>\w*)\s*\([^)]*\))\s*;?\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
@@ -173,15 +172,25 @@ def detectAttrs(line, classdefs):
     
   
 def detectMethods(line, classdefs):
-  found=specialmethoddef.search(line)
-  if found:
-    typename, methodname = found.group("typename", "methodname")
-    addClassDef(classdefs, typename, parsedFile)
-    classdefs[typename].specialmethods[methodname]=1
+  # The below if is to avoid methods, like, for instance, map's clear to be recognized
+  # also as a special method. Special methods never include PYARGS...
+  if line.find("PYARGS")<0:
+    found=specialmethoddef.search(line)
+    if found:
+      typename, methodname = found.group("typename", "methodname")
+      addClassDef(classdefs, typename, parsedFile)
+      classdefs[typename].specialmethods[methodname]=1
     
   found=methoddef.search(line)
   if found:
     typename, methodname, argkw, doc = found.group("typename", "methodname", "argkw", "doc")
+
+    if not classdefs.has_key(typename) and "_" in typename:
+      com = typename.split("_")
+      if len(com)==2 and classdefs.has_key(com[0]):
+        typename = com[0]
+        methodname = com[1] + "_" + methodname
+      
     addClassDef(classdefs, typename, parsedFile)
     classdefs[typename].methods[methodname]=MethodDefinition(argkw=argkw, arguments=doc)
     return 1
@@ -309,7 +318,6 @@ def parseFiles():
 
     infile.close()
 
-  iterateHpps(classdefs)
   classdefsEffects(classdefs)
 
 
@@ -340,28 +348,6 @@ def classdefsEffects(classdefs):
       print "Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename
       del classdefs[typename]
 
-
-
-def detectBuiltInProperties(line, classdefs):
-  found=builtinpropertiesdef.search(line)
-  if found:
-    propname, typename = found.group("pname", "tname")
-    typename=typename[1:]
-    if not classdefs.has_key(typename):
-      printV2("%s: definition of property %s ignored (class not exported)", (typename, propname))
-    else:
-      printV2("%s: definition of property %s", (typename, propname))
-      classdefs[typename].properties[propname]=AttributeDefinition(builtin=1)
-
-
-def iterateHpps(classdefs):
-  cpd=0
-  for filename in os.listdir("."):
-    if filename[-4:]==".hpp":
-      ff=open(filename, "rt")
-      for line in ff:
-        detectBuiltInProperties(line, classdefs)
-      ff.close()
 
 def readAliases():
   f=open("devscripts/aliases.txt", "rt")
@@ -531,7 +517,7 @@ def writeAppendix(filename, targetname, classdefs, aliases):
             innulls=outfile.write((innulls and '\n' or '') + ('  %-50s /* tp_doc */\n' % ('"'+findConstructorDoc(classdefs, type)+'",')))
 
           elif smethod[1]=="FLAGS":
-            fl = "Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE"
+            fl = "Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_RICHCOMPARE"
             for cond, flag in [(fields.specialmethods.has_key("traverse"), "Py_TPFLAGS_HAVE_GC")
                               ]:
               if cond:

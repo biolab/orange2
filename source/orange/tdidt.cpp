@@ -335,7 +335,7 @@ TValue TTreeClassifier::operator()(const TExample &exam)
     return node->nodeClassifier ? node->nodeClassifier->call(refexam) : classVar->DK();
   else {
     PDistribution decision = vote(node, refexam, branchWeights);
-    return decision ? decision->highestProbValue() : classVar->DK();
+    return decision ? decision->highestProbValue(exam) : classVar->DK();
   }
 }
 
@@ -396,7 +396,7 @@ void TTreeClassifier::predictionAndDistribution(const TExample &exam, TValue &va
   }
   else {
     distr = vote(node, refexam, splitDecision);
-    val = distr->highestProbValue();
+    val = distr->highestProbValue(exam);
   }
 }
 
@@ -432,7 +432,7 @@ PTreeNode TTreeDescender_UnknownToBranch::operator()(PTreeNode node, const TExam
 }
 
 
-int randomNonNull(const PTreeNodeList &branches)
+int randomNonNull(const PTreeNodeList &branches, const int &roff)
 { int nonull = 0;
   TTreeNodeList::const_iterator ni(branches->begin()), ne(branches->end());
   for (; ni!=ne; ni++)
@@ -442,7 +442,7 @@ int randomNonNull(const PTreeNodeList &branches)
   if (!nonull)
     return -1;
 
-  for(ni = branches->begin(), nonull = randint(nonull) +1; nonull; )
+  for(ni = branches->begin(), nonull = roff % (nonull+1); nonull; )
     if (*(ni++))
       nonull--;
 
@@ -454,14 +454,12 @@ PTreeNode TTreeDescender_UnknownToCommonBranch::operator()(PTreeNode node, const
 { while (node->branchSelector && node->branches) {
     TValue val = node->branchSelector->call(ex);
     int ind = val.isSpecial() ? -1 : val.intV;
-    if ((ind<0) || (ind>=int(node->branches->size()))) {
-      if (node->branchSizes)
-        ind = node->branchSizes->highestProbIntIndex();
-      else
-        ind = -1;
-    }
+
+    if ((ind<0) || (ind>=int(node->branches->size())))
+      ind = node->branchSizes ? node->branchSizes->highestProbIntIndex(ex) : -1;
+
     if ((ind<0) || !node->branches->at(ind)) {
-      ind = randomNonNull(node->branches);
+      ind = randomNonNull(node->branches, ex.sumValues());
       if (ind<0)
         break;
     }
@@ -480,13 +478,13 @@ PTreeNode TTreeDescender_UnknownToCommonSelector::operator()(PTreeNode node, con
     int ind;
     if (val.isSpecial()) {
       TDiscDistribution *valdistr = val.svalV.AS(TDiscDistribution);
-      ind = valdistr ? valdistr->highestProbIntIndex() : -1;
+      ind = valdistr ? valdistr->highestProbIntIndex(ex) : -1;
     }
     else
       ind = val.intV<int(node->branches->size()) ? val.intV : -1;
 
     if ((ind<0) || !node->branches->at(ind)) {
-      ind = randomNonNull(node->branches);
+      ind = randomNonNull(node->branches, ex.sumValues());
       if (ind<0)
         break;
     }

@@ -57,6 +57,7 @@ class TVariable : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
+  string name; //P variable's name
   int  varType; //P variable type
   bool ordered; //P variable values are ordered
   bool distributed; //P variable values are distributions
@@ -82,7 +83,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const =0;
   virtual bool   nextValue(TValue &val) const =0;
-  virtual TValue randomValue(const int &rand=-1) =0;
+  virtual TValue randomValue(const int &rand=-1) const =0;
 
   // Returns the number of different values, -1 if it cannot be done (for example, if variable is continuous)
   virtual int  noOfValues() const =0;
@@ -97,8 +98,6 @@ VWRAPPER(VarList)
 
 #define TVarListList TOrangeVector<PVarList> 
 VWRAPPER(VarListList)
-
-//WRAPPERNML(IdList);
 
 class TEnumVariable : public TVariable {
 public:
@@ -116,7 +115,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1);
+  virtual TValue randomValue(const int &rand=-1) const;
 
   virtual int  noOfValues() const;
 
@@ -140,7 +139,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1);
+  virtual TValue randomValue(const int &rand=-1) const;
 
   virtual int noOfValues() const;
 
@@ -164,7 +163,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1);
+  virtual TValue randomValue(const int &rand=-1) const;
 
   virtual int  noOfValues() const;
  

@@ -122,6 +122,12 @@ NOT_IMPLEMENTED("randomInt()")
 int TDistribution::highestProbIntIndex() const
 NOT_IMPLEMENTED("highestProbIntIndex()")
 
+int TDistribution::highestProbIntIndex(const long &) const
+NOT_IMPLEMENTED("highestProbIntIndex(int)")
+
+int TDistribution::highestProbIntIndex(const TExample &) const
+NOT_IMPLEMENTED("highestProbIntIndex(TExample)")
+
 float TDistribution::p(const int &) const
 NOT_IMPLEMENTED("p(int)")
 
@@ -235,6 +241,26 @@ void TDistribution::set(const TValue &val, const float &p)
 TValue TDistribution::highestProbValue() const 
 { if (supportsDiscrete)
     return TValue(highestProbIntIndex());
+  else if (supportsContinuous)
+    return TValue(highestProbFloatIndex());
+  else
+    return TValue();
+}
+
+
+TValue TDistribution::highestProbValue(const long &random) const 
+{ if (supportsDiscrete)
+    return TValue(highestProbIntIndex(random));
+  else if (supportsContinuous)
+    return TValue(highestProbFloatIndex());
+  else
+    return TValue();
+}
+
+
+TValue TDistribution::highestProbValue(const TExample &exam) const 
+{ if (supportsDiscrete)
+    return TValue(highestProbIntIndex(exam));
   else if (supportsContinuous)
     return TValue(highestProbFloatIndex());
   else
@@ -583,13 +609,85 @@ void TDiscDistribution::normalize()
 
 int TDiscDistribution::highestProbIntIndex() const
 {
-  int wins=0, best=0;
-  for(int i=0; i<int(size()); i++)
-    if (   (wins==0) && ((wins=1)==1)
-        || (operator[](i) >operator[](best)) && ((wins=1)==1)
-        || (operator[](i)==operator[](best)) && randbool(++wins))
+  if (!size())
+    return 0;
+
+  int wins = 1;
+  int best = 0;
+  float bestP = operator[](0);
+  for(int i = 1, e = int(size()); --e; i++)
+    if (operator[](i) > bestP) {
+      best = i;
+      bestP = operator[](i);
+      wins = 1;
+    }
+    else if ((operator[](i)==bestP) && _globalRandom->randbool(++wins))
       best=i;
+
   return best;
+}
+
+
+int TDiscDistribution::highestProbIntIndex(const long &random) const
+{
+  if (!size())
+    return 0;
+
+  int wins = 1;
+  int best = 0;
+  float bestP = operator[](0);
+  int i, e;
+
+  for(i = 1, e = int(size()); --e; i++)
+    if (operator[](i) > bestP) {
+      best = i;
+      bestP = operator[](i);
+      wins = 1;
+    }
+    else if (operator[](i)==bestP)
+      wins++;
+
+  if (wins==1)
+    return best;
+
+  for(wins = 1 + random % wins; wins; i++);
+    if (operator[](i)==bestP)
+      wins--;
+
+  return i-1;
+}
+
+
+int TDiscDistribution::highestProbIntIndex(const TExample &exam) const
+{
+  if (!size())
+    return 0;
+
+  int wins = 1;
+  int best = 0;
+  float bestP = operator[](0);
+  int i, e;
+
+  for(i = 1, e = int(size()); --e; i++)
+    if (operator[](i) > bestP) {
+      best = i;
+      bestP = operator[](i);
+      wins = 1;
+    }
+    else if (operator[](i)==bestP)
+      wins++;
+
+  if (wins==1)
+    return best;
+
+  int sumex = exam.sumValues();
+  wins = 1 + (sumex ? sumex : _globalRandom->randlong()) % wins;
+    
+  while (wins)
+    if (operator[](i++)==bestP)
+      wins--;
+
+  return i-1;
 }
 
 
@@ -615,7 +713,7 @@ bool TDiscDistribution::noDeviation() const
   
 
 int TDiscDistribution::randomInt() const
-{ float ri=randfloat(abs);
+{ float ri = _globalRandom->randfloat(abs);
   const_iterator di(begin());
   while (ri > *di)
     ri -= *(di++);
@@ -775,7 +873,7 @@ float TContDistribution::highestProbFloatIndex() const
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
-        || ((*i).second == (*best).second) && randbool(++wins))
+        || ((*i).second == (*best).second) && globalRandom->randbool(++wins))
       best = i;
   return (*best).first;
 }
@@ -788,7 +886,7 @@ float TContDistribution::highestProb() const
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
-        || ((*i).second == (*best).second) && randbool(++wins))
+        || ((*i).second == (*best).second) && globalRandom->randbool(++wins))
       best = i;
 
   if (wins)
@@ -855,7 +953,7 @@ void TContDistribution::normalize()
 
 
 float TContDistribution::randomFloat() const
-{ float ri=randfloat(abs);
+{ float ri = _globalRandom->randfloat(abs);
   const_iterator di(begin());
   while (ri > (*di).first)
     ri -= (*(di++)).first;

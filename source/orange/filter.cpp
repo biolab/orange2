@@ -35,6 +35,8 @@
 #include "filter.ppp"
 
 
+DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList")
+
 // Sets the negate field (default is false)
 TFilter::TFilter(bool anegate, PDomain dom) 
   : negate(anegate), domain(dom)
@@ -50,7 +52,7 @@ TFilter_random::TFilter_random(const float ap, bool aneg, PDomain dom)
 
 // Chooses an example (returns true) if rand()<maxrand; example is ignored
 bool TFilter_random::operator()(const TExample &)
-  { return (randfloat()<prob)!=negate; }
+  { return (LOCAL_OR_GLOBAL_RANDOM.randfloat()<prob)!=negate; }
 
 
 
@@ -97,192 +99,77 @@ bool TFilter_sameValue::operator()(const TExample &example)
 }
 
 
-TValueRange::TValueRange(PDiscDistribution dist, signed char spec)
-: probs(dist),
-  special(spec)
+TValueFilter::TValueFilter(const int &accs)
+: acceptSpecial(accs)
 {}
 
 
-TValueRange::TValueRange(float ai, float aa, signed char spec)
-: min(ai),
-  max(aa),
-  special(spec)
+TValueFilter_continuous::TValueFilter_continuous(const float &amin, const float &amax, const bool &outs, const int &accs)
+: TValueFilter(accs),
+  min(amin),
+  max(amax),
+  outside(outs)
 {}
 
 
-TFilter_sameValues::TFilter_sameValues(bool anAnd, bool aneg, PDomain dom)
+int TValueFilter_continuous::operator()(const TValue &val) const
+{ if (val.isSpecial())
+    return acceptSpecial;
+
+  return ((val.floatV>=min) && (val.floatV<=max)) != outside ? 1 : 0;
+}
+
+
+TValueFilter_discrete::TValueFilter_discrete(PBoolList bl, const int &accs)
+: TValueFilter(accs),
+  acceptableValues(bl)
+{}
+
+
+int TValueFilter_discrete::operator()(const TValue &val) const
+{ if (val.isSpecial())
+    return acceptSpecial;
+
+  return ((val.intV<acceptableValues->size()) && acceptableValues->operator[](val.intV)) ? 1 : 0;
+}
+
+
+TFilter_Values::TFilter_Values(bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  values(dom ? dom->variables->size() : 0, PValueRange()),
+  values(dom ? PValueFilterList(mlnew TValueFilterList(dom->variables->size(), PValueFilter())) : PValueFilterList()),
   doAnd(anAnd)
 {}
 
 
-TFilter_sameValues::TFilter_sameValues(const vector<PValueRange> &ap, bool anAnd, bool aneg, PDomain dom)
+TFilter_Values::TFilter_Values(PValueFilterList v, bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  values(ap),
+  values(v),
   doAnd(anAnd)
 {}
 
 
-bool TFilter_sameValues::operator()(const TExample &exam)
-{ TExample example(domain, exam);
+bool TFilter_Values::operator()(const TExample &exam)
+{ checkProperty(domain);
+  checkProperty(values);
+  if (values->size() > domain->variables->size())
+    raiseError("invalid size of 'values'");
+
+  TExample example(domain, exam);
   TExample::const_iterator ei(example.begin());
-  for(iterator fi(begin()), fe(end());
-      fi!=fe;
-      ei++, fi++)
+
+  for(vector<PValueFilter>::const_iterator fi(values->begin()), fe(values->end()); fi!=fe; fi++, ei++)
     if (*fi) {
-      if ((*ei).isSpecial())
-        switch ((*fi)->special) {
-          case  0: if (doAnd)
-                     return negate;
-                   break;
-          case  1: if (!doAnd)
-                     return !negate;
-                   break;
-          default: continue;
-        }
-      else 
-  
-        if ((*ei).varType==TValue::INTVAR) {
-          if ((*ei).intV<int((*fi)->probs->size())) {
-            float p = (*fi)->probs->at(int(*ei));
-            if ((p>=1.0) || (randfloat()<p)) {
-              if (!doAnd) 
-                return !negate; // if this one is OK and one already suffices, return OK
-            } 
-            else {
-              if (doAnd)        // if this one is not OK, but everyone must be, return not Ok
-                return negate; 
-            } 
-          }
-          else 
-            if (doAnd)          // this one is out of scope, has prob of zero and fails
-              return negate;
-        }
-        else if ((*ei).varType==TValue::FLOATVAR) {
-          // if min<max is true and value is in interval OR not true and not in interval ...
-          if (   ( ((*fi)->min<=(*fi)->max) && ((*fi)->min<=(*ei).floatV) && ((*ei).floatV<=(*fi)->max) ) 
-              || ( ((*fi)->min >(*fi)->max) && (((*ei).floatV>(*fi)->min) || ((*ei).floatV< (*fi)->max)) ) ) {
-            if (!doAnd)
-              return !negate;
-          }
-          else {
-            if (doAnd)
-              return negate; 
-          }
-        }
+      const int r = (*fi)->call(*ei);
+      if ((r==0) && doAnd)
+        return negate;
+      if ((r==1) && !doAnd)
+        return !negate; // if this one is OK, we should return true if negate=false and vice versa
     }
 
   // If we've come this far; if doAnd==true, all were OK; doAnd==false, none were OK
   return doAnd!=negate;
 }
 
-
-int TFilter_sameValues::traverse(visitproc visit, void *arg)
-{ TRAVERSE(TFilter::traverse);
-  this_ITERATE(vri)
-    PVISIT(*vri);
-  return 0;
-}
-
-int TFilter_sameValues::dropReferences()
-{ DROPREFERENCES(TFilter::dropReferences);
-  clear();
-  return 0;
-}
-
-
-TValueFilter::TValueFilter(bool anAnd, bool aneg, PDomain dom)
- : TFilter_sameValues(anAnd, aneg, dom)
- {}
-
-
-TValueFilter::TValueFilter(const TMultiStringParameters &pars, string keyword, PDomain dom, bool anAnd, bool aneg)
- : TFilter_sameValues(anAnd, aneg, dom)
-{ decode(pars, keyword); }
-
-
-TValueFilter::TValueFilter(istream &istr, PDomain dom, bool anAnd, bool aneg)
- : TFilter_sameValues(anAnd, aneg, dom)
-{ decode(istr); }
-
-
-void TValueFilter::decode(const TMultiStringParameters &pars, string keyword)
-{ vector<string> drops;
-  const_ITERATE(TMultiStringParameters, pi, pars)
-    if ((*pi).first==keyword) drops.push_back((*pi).second);
-    else
-      if ((*pi).first==keyword+'f') {
-        ifstream outstr ((*pi).second.c_str());
-        decode(outstr);
-      }
-  decode(drops);
-}
-
-
-#define MAX_LINE_LENGTH 1024
-
-void TValueFilter::decode(istream &istr)
-{ vector<string> drops;
-  while (!istr.eof()) {
-    char line[MAX_LINE_LENGTH];
-    istr.getline(line, MAX_LINE_LENGTH);
-    if (istr.gcount()==MAX_LINE_LENGTH-1)
-      raiseError("parameter line too long");
-    if (istr.gcount())
-      drops.push_back(line);
-  }
-  decode(drops);
-}
-#undef MAX_LINE_LENGTH
-
-
-void TValueFilter::decode(const vector<string> &drops)
-{ const_ITERATE(vector<string>, pi, drops) {
-    // decode name=value string
-    string::const_iterator si=(*pi).begin(), eos=(*pi).end();
-    while ((si!=eos) && (*si!='=')) si++;
-    string name((*pi).begin(), si);
-    while ((si!=eos) && (*(++si)==' '));
-
-    // get the attribute number
-    int varnum = domain->getVarNum(name);
-
-    PVariable var=domain->variables->at(varnum);
-    PValueRange range = values[varnum];
-    if (!range) 
-      range = values[varnum] = mlnew TValueRange();
-
-    // if no value is given, unknown will be dropped
-    if (si==eos) {
-      range->special=false;
-      continue;
-    }
-    
-    if (var->varType==TValue::INTVAR)
-      while (si!=eos) {
-        string::const_iterator bov=si;
-        while ((si!=eos) && (*si!=',')) si++;
-        string value(bov, si);
-        while ((si!=eos) && (*(++si)==' '));
-
-        TValue wv;
-        var->str2val(value, wv);
-        if (wv.isSpecial())
-          range->special=false;
-        else 
-          range->probs->add(wv);
-      }
-    else if (var->varType==TValue::FLOATVAR) {
-      string::const_iterator bov=(*pi).begin();
-      while ((si!=eos) && (*si!='-')) si++;
-      range->min=atof(string(bov, si).c_str());
-      range->max=atof(string(si, eos).c_str());
-    }
-    else 
-      raiseError("attribute '%s' is of invalid type for this filter", name.c_str());
-  }
-}
 
 
 /// Constructor; sets the example

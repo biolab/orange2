@@ -357,9 +357,9 @@ void TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval
     for(int correct=0; correct<dsize; correct++)
       thisCost += dval[correct]*cost->getCost(predicted, correct);
 
-    thisCost/=dval.abs;
+    thisCost /= dval.abs;
     if (   (thisCost<ccost) && ((wins=1)==1)
-        || (thisCost==ccost) && randbool(++wins)) {
+        || (thisCost==ccost) && _globalRandom->randbool(++wins)) {
       bestPrediction = predicted;
       ccost = thisCost; 
     }
@@ -407,8 +407,10 @@ public:
   long randoff;
   TExample *example;
 
-  TDistRec(TExample *anex, float adist=numeric_limits<float>::max())
-    : dist(adist), randoff(randlong()), example(anex)
+  TDistRec(TExample *anex, const int &roff, float adist)
+    : dist(adist),
+      randoff(roff),
+      example(anex)
     {};
 
   bool operator <(const TDistRec &other) const
@@ -434,6 +436,8 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
 
     vector<TExampleTable *> tables;
     TExamplePointerTable *examples = NULL;
+
+    TRandomGenerator rgen(gen->numberOfExamples());
 
     try {
       PExamplesDistance wdistance = TExamplesDistanceConstructor_Relief()(gen);
@@ -474,7 +478,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
 
         for(float referenceExamples=0, refWeight; referenceExamples<m; referenceExamples+=refWeight) {
           // choose a random example
-          long eNum=randlong(N);
+          long eNum = rgen.randlong(N);
           int eClass=0;
           for(; eNum>=gN[eClass]; eNum-=gN[eClass++]);
           TExample &example = *tables[eClass]->examples[eNum];
@@ -487,7 +491,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
               // sort the examples by the distance
               set<TDistRec> neighset;
               EITERATE(ei, *tables[oClass])
-                neighset.insert(TDistRec(&*ei, distance(example, *ei)));
+                neighset.insert(TDistRec(&*ei, rgen.randlong(), distance(example, *ei)));
 
               float classWeight= (oClass==eClass) ? -1.0 : float(gN[oClass]) / float(N-gN[eClass]);
 
@@ -550,7 +554,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
 
           for(float referenceExamples=0, refWeight; referenceExamples<m; referenceExamples+=refWeight) {
             // choose a random example
-            long eNum=randlong(examples->numberOfExamples());
+            long eNum = rgen.randlong(examples->numberOfExamples());
             TExample &refExample = *examples->examples[eNum];
             refWeight=WEIGHT(refExample);
             float refClass=refExample.getClass().floatV;
@@ -559,7 +563,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
             // sort the examples by the distance
             set<TDistRec> neighset;
             EITERATE(ei, *examples)
-              neighset.insert(TDistRec(&*ei, distance(refExample, *ei)));
+              neighset.insert(TDistRec(&*ei, rgen.randlong(), distance(refExample, *ei)));
 
             set<TDistRec>::iterator ni(neighset.begin()), ne(neighset.end());
             while(((*ni).dist<=0) && (ni!=ne)) ni++;

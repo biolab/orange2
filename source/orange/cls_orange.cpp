@@ -291,7 +291,6 @@ PyObject *PyOrange_translateObsolete(PyObject *self, PyObject *pyname)
 }    
 
 
-
 PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname)
 // This is a complete getattr, but without translation of obsolete names.
 { PyTRY
@@ -357,6 +356,9 @@ PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname)
       return (PyObject *)WrapOrange(mlobj);
     } catch (exception err)
     {};
+ 
+    if (!strcmp(name, "name") || !strcmp(name, "shortDescription") || !strcmp(name, "description"))
+      return PyString_FromString("");
 
     PyErr_Format(PyExc_AttributeError, "'%s' has no attribute '%s'", self->ob_type->tp_name, name);
     return PYNULL;
@@ -516,10 +518,12 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
   PyCATCH_1;
   // this reports only errors that occur when setting built-in properties
 
-  char sbuf[255];
-  sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
-  if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
-    return -1;
+  if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description")) {
+    char sbuf[255];
+    sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
+    if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
+      return -1;
+  }
 
   return PyObject_GenericSetAttr((PyObject *)self, pyname, args);
 }
@@ -568,10 +572,11 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
       PyObject *translation=PyOrange_translateObsolete((PyObject *)self, name);
       if (translation) {
         PyErr_Clear();
-        res=Orange_getattr1(self, translation);
+        res = Orange_getattr1(self, translation);
         Py_DECREF(translation);
       }
     }
+
     return res;
   PyCATCH
 }
@@ -650,15 +655,42 @@ PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
 }
   
 
+char const *getName(TPyOrange *self)
+{ static char *namebuf = NULL;
+
+  if (namebuf)
+    delete namebuf;
+    
+  PyObject *pystr = PyString_FromString("name");
+  PyObject *pyname = Orange_getattr(self, pystr);
+  Py_DECREF(pystr);
+
+  if (!PyString_Check(pyname)) {
+    pystr = PyObject_Repr(pyname);
+    Py_DECREF(pyname);
+    pyname = pystr;
+  }
+
+  const int sze = PyString_Size(pyname);
+  if (sze) {
+    namebuf = mlnew char[PyString_Size(pyname)+1];
+    strcpy(namebuf, PyString_AsString(pyname));
+    Py_DECREF(pyname);
+  }
+
+  return namebuf;
+}
+
+
 PyObject *Orange_repr(TPyOrange *self)
 { PyTRY
     PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "repr", "str");
     if (result)
       return result;
 
-    return self->ptr->name.size()
-      ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, self->ptr->name.c_str())
-      : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
+    const char const *name = getName(self);
+    return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
+                : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
   PyCATCH
 }
 
@@ -669,9 +701,9 @@ PyObject *Orange_str(TPyOrange *self)
     if (result)
       return result;
 
-    return self->ptr->name.size()
-      ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, self->ptr->name.c_str())
-      : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
+    const char const *name = getName(self);
+    return name ? PyString_FromFormat("%s '%s'", self->ob_type->tp_name, name)
+                : PyString_FromFormat("<%s instance at %p>", self->ob_type->tp_name, self->ptr);
   PyCATCH
 }
 
@@ -802,10 +834,8 @@ PyObject *Orange_write(PyObject *self, PyObject *args, PyObject *kwd) PYARGS(MET
 bool convertFromPythonWithML(PyObject *obj, string &str, const TOrangeType &base)
 { if (PyString_Check(obj))
     str=PyString_AsString(obj);
-  else if (PyObject_TypeCheck(obj, (PyTypeObject *)const_cast<TOrangeType *>(&base))) {
-    TOrange *nmlo=PyOrange_AS_Orange((TPyOrange *)obj).AS(TOrange);
-    str=nmlo ? nmlo->name : string("<noname>");
-  }
+  else if (PyObject_TypeCheck(obj, (PyTypeObject *)const_cast<TOrangeType *>(&base)))
+    str = string(getName((TPyOrange *)obj));
   else
     PYERROR(PyExc_TypeError, "invalid argument type", false);
 

@@ -30,7 +30,7 @@
 #include "domain.hpp"
 #include "filter.hpp"
 #include "distvars.hpp"
-#include "preprocess.hpp"
+#include "preprocessors.hpp"
 
 
 #include "stat.hpp"
@@ -199,12 +199,12 @@ void TChangeExampleGenerator::increaseIterator(TExampleIterator &i)
 
 
 
-TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast, PRandomGenerator rgen)
- : TChangeExampleGenerator(dom, afirst, alast), replaceProbabilities(mlnew TFloatList(rp)), randomGenerator(rgen)
+TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+ : TChangeExampleGenerator(dom, afirst, alast), replaceProbabilities(mlnew TFloatList(rp))
  {}
 
-TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PExampleGenerator gen, PRandomGenerator rgen)
- : TChangeExampleGenerator(gen), replaceProbabilities(mlnew TFloatList(rp)), randomGenerator(rgen)
+TMissValuesGenerator::TMissValuesGenerator(const vector<float> &rp, PExampleGenerator gen)
+ : TChangeExampleGenerator(gen), replaceProbabilities(mlnew TFloatList(rp))
  {}
 
 
@@ -213,11 +213,11 @@ TExampleIterator TMissValuesGenerator::changeExample(const TExampleIterator &it)
     TExample::iterator ei(it.example->begin());
     const_PITERATE(TFloatList, pi, replaceProbabilities) {
       if (*pi<0) {
-        if ((randomGenerator ? randomGenerator->randfloat() : randfloat()) < -*pi)
+        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() < -*pi)
           (*ei).setDC();
       }
       else if (*pi>0) {
-        if ((randomGenerator ? randomGenerator->randfloat() : randfloat()) <  *pi)
+        if (LOCAL_OR_GLOBAL_RANDOM.randfloat() <  *pi)
           (*ei).setDK();
       }
       ei++;
@@ -227,16 +227,19 @@ TExampleIterator TMissValuesGenerator::changeExample(const TExampleIterator &it)
 }
 
 
-TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast, PRandomGenerator rgen)
- : TChangeExampleGenerator(dom, afirst, alast), replaceProbabilities(mlnew TFloatList(rp)), randomGenerator(rgen)
+TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+: TChangeExampleGenerator(dom, afirst, alast),
+  replaceProbabilities(mlnew TFloatList(rp))
  { TVarList::const_iterator vi(domain->variables->begin()); 
    PITERATE(TFloatList, pi, replaceProbabilities)
      if ((*vi)->noOfValues()<2)
        *pi=0;
  }
 
-TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PExampleGenerator gen, PRandomGenerator rgen)
- : TChangeExampleGenerator(gen), replaceProbabilities(mlnew TFloatList(rp)), randomGenerator(rgen) {}
+TNoiseValuesGenerator::TNoiseValuesGenerator(const vector<float> &rp, PExampleGenerator gen)
+: TChangeExampleGenerator(gen),
+  replaceProbabilities(mlnew TFloatList(rp))
+{}
 
 
 TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it)
@@ -244,8 +247,8 @@ TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it
     TExample::iterator ei(it.example->begin());
     TVarList::iterator vi(domain->variables->begin());
     PITERATE(TFloatList, pi, replaceProbabilities) {
-      if ((*pi>0) && ((randomGenerator ? randomGenerator->randfloat() : randfloat()) < *pi))
-        if (((*ei)=(*vi)->randomValue(randomGenerator ? randomGenerator->randint() : randint())).isDC())
+      if ((*pi>0) && (LOCAL_OR_GLOBAL_RANDOM.randfloat() < *pi))
+        if ( ( (*ei) = (*vi)->randomValue(LOCAL_OR_GLOBAL_RANDOM.randint()) ).isDC())
           raiseError("attribute '%s' cannot give randomValues.", (*vi)->name.c_str());
       ei++;
       vi++;
@@ -255,19 +258,23 @@ TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it
 }
 
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast, PRandomGenerator rgen)
- : TChangeExampleGenerator(dom, afirst, alast), deviations(mlnew TFloatList(rp)), randomGenerator(rgen)
- {}
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+: TChangeExampleGenerator(dom, afirst, alast),
+  deviations(mlnew TFloatList(rp))
+{}
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PExampleGenerator gen, PRandomGenerator rgen)
- : TChangeExampleGenerator(gen), deviations(mlnew TFloatList(rp)), randomGenerator(rgen) {}
+
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<float> &rp, PExampleGenerator gen)
+: TChangeExampleGenerator(gen),
+  deviations(mlnew TFloatList(rp))
+{}
 
 
 class genrandfloat_11 {
 public:
   PRandomGenerator rgen;
   genrandfloat_11(PRandomGenerator agen=PRandomGenerator()) : rgen(agen) {}
-  double operator()(const double &x, const double &y) { return rgen ? rgen->randfloat(x, y) : randfloat(x, y); }
+  double operator()(const double &x, const double &y) { return rgen->randfloat(x, y); }
 };
 
 TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &it)
@@ -276,7 +283,7 @@ TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &
     TVarList::iterator vi(domain->variables->begin());
     PITERATE(TFloatList, pi, deviations) {
       if ((*pi>0.0) && !(*ei).isSpecial() && ((*vi)->varType==TValue::FLOATVAR))
-        *ei = TValue(gasdev(float(*ei), *pi, genrandfloat_11(randomGenerator)));
+        *ei = TValue(gasdev(float(*ei), *pi, genrandfloat_11(randomGenerator ? randomGenerator : globalRandom)));
       ei++;
       vi++;
     }

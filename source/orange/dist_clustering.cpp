@@ -49,11 +49,12 @@ TDistClusterNode::~TDistClusterNode()
 
 
 
-TDistProfitNode::TDistProfitNode(TDistClusterNode *c1, TDistClusterNode *c2, const float &prof, const int &qind)
+TDistProfitNode::TDistProfitNode(TDistClusterNode *c1, TDistClusterNode *c2, const float &prof, const int &qind, const long &roff)
 : cluster1(c1),
   cluster2(c2),
   profit(prof),
-  queueIndex(qind)
+  queueIndex(qind),
+  randoff(roff)
 {}
 
 
@@ -67,6 +68,10 @@ int TDistProfitNode::compare(const TDistProfitNode &other) const
 { if (profit<other.profit)
     return -1;
   else if (profit>other.profit)
+    return 1;
+  else if (randoff<other.randoff)
+    return -1;
+  else if (randoff>other.randoff)
     return 1;
   return 0;
 }
@@ -143,7 +148,7 @@ TClustersFromDistributionsByAssessor::TClustersFromDistributionsByAssessor(float
 
 
 
-void TClustersFromDistributionsByAssessor::computeQualities(TDistClusterNode *&clusters, TDistProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromDistributionsByAssessor::computeQualities(TDistClusterNode *&clusters, TDistProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 // Computes errors and merge profits
 { profitQueue = TDistProfitQueue();
   baseQuality = 0.0;
@@ -152,7 +157,7 @@ void TClustersFromDistributionsByAssessor::computeQualities(TDistClusterNode *&c
 	  baseQuality += cl1->distributionQuality_N;
 	  for(TDistClusterNode *cl2 = clusters; cl2!=cl1; cl2=cl2->nextNode) {
   	  float profit = distributionAssessor->mergeProfit(*cl1, *cl2);
-      insertProfitQueueNode(cl2, cl1, profit, profitQueue);
+      insertProfitQueueNode(cl2, cl1, profit, rgen.randsemilong(), profitQueue);
 	  }
   }
 }
@@ -172,12 +177,18 @@ PExampleClusters TClustersFromDistributionsByAssessor::operator()(PExampleDistVe
   float N;
   TDistClusterNode *clusters = NULL;
 
+  int nex = 0;
+  ITERATE(vector<T_ExampleDist>, edvi, edv->values)
+    nex += (*edvi).distribution->cases;
+
+  TSimpleRandomGenerator rgen(nex);
+
   try {
     TDistProfitQueue profitQueue;
-    preparePrivateVars(edv, clusters, profitQueue, baseQuality, N);
+    preparePrivateVars(edv, clusters, profitQueue, baseQuality, N, rgen);
 
     while(profitQueue.size() && (!stopCriterion || !stopCriterion->operator()(baseQuality, profitQueue, clusters)))
-      mergeBestColumns(clusters, profitQueue, baseQuality, N);
+      mergeBestColumns(clusters, profitQueue, baseQuality, N, rgen);
 
     for(TDistClusterNode *cli = clusters; cli; cli = cli->nextNode)
       group.push_back(cli->cluster);
@@ -200,7 +211,7 @@ PExampleClusters TClustersFromDistributionsByAssessor::operator()(PExampleDistVe
   
 
 
-void TClustersFromDistributionsByAssessor::preparePrivateVars(PExampleDistVector values, TDistClusterNode *&clusters, TDistProfitQueue &priorityQueue, float &baseQuality, float &N)
+void TClustersFromDistributionsByAssessor::preparePrivateVars(PExampleDistVector values, TDistClusterNode *&clusters, TDistProfitQueue &priorityQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 {
 
   vector<T_ExampleDist>::iterator cli(values->values.begin()), cle(values->values.end());
@@ -224,15 +235,15 @@ void TClustersFromDistributionsByAssessor::preparePrivateVars(PExampleDistVector
   else
     distributionAssessor->setAverage(CAST_TO_CONTDISTRIBUTION(classDist).average());
 
-  computeQualities(clusters, priorityQueue, baseQuality, N);
+  computeQualities(clusters, priorityQueue, baseQuality, N, rgen);
   baseQuality /= N;
 }
 
 
 
 
-TDistProfitNode *TClustersFromDistributionsByAssessor::insertProfitQueueNode(TDistClusterNode *cl1, TDistClusterNode *cl2, float profit, TDistProfitQueue &profitQueue)
-{ TDistProfitNode *newNode = mlnew TDistProfitNode(cl1, cl2, profit, profitQueue.size());
+TDistProfitNode *TClustersFromDistributionsByAssessor::insertProfitQueueNode(TDistClusterNode *cl1, TDistClusterNode *cl2, float profit, long roff, TDistProfitQueue &profitQueue)
+{ TDistProfitNode *newNode = mlnew TDistProfitNode(cl1, cl2, profit, profitQueue.size(), roff);
   profitQueue.insert(newNode);
   newNode->it1 = mlnew TDistProfitNodeList(newNode, &cl1->mergeProfits);
   newNode->it2 = mlnew TDistProfitNodeList(newNode, &cl2->mergeProfits);
@@ -242,7 +253,7 @@ TDistProfitNode *TClustersFromDistributionsByAssessor::insertProfitQueueNode(TDi
 
 
 
-void TClustersFromDistributionsByAssessor::mergeBestColumns(TDistClusterNode *&clusters, TDistProfitQueue &profitQueue, float &baseQuality, float &N)
+void TClustersFromDistributionsByAssessor::mergeBestColumns(TDistClusterNode *&clusters, TDistProfitQueue &profitQueue, float &baseQuality, float &N, TSimpleRandomGenerator &rgen)
 {
   TDistClusterNode *cl1 = profitQueue.front()->cluster1, *cl2 = profitQueue.front()->cluster2;
   const float &profitN = profitQueue.front()->profit;
@@ -277,7 +288,7 @@ void TClustersFromDistributionsByAssessor::mergeBestColumns(TDistClusterNode *&c
   // update the column error and the profits
   { for(TDistClusterNode *cn1 = clusters; cn1; cn1 = cn1->nextNode) 
       if (cn1!=cl1)
-        insertProfitQueueNode(cl1, cn1, distributionAssessor->mergeProfit(*cn1, *cl1), profitQueue);
+        insertProfitQueueNode(cl1, cn1, distributionAssessor->mergeProfit(*cn1, *cl1), rgen.randsemilong(), profitQueue);
   }
 
   delete cl2;

@@ -169,12 +169,11 @@ void TClassifierByLookupTable::replaceDKs(TDiscDistribution &valDistribution)
     }
 
     sum.normalize();
-    TValue majority = classes->highestProbValue();
     vector<TValue>::iterator vi(lookupTable->begin());
     PITERATE(vector<PDistribution>, dvi, distributions)
       if ((*vi).isSpecial()) {
         *dvi = mlnew TDiscDistribution(sum);
-        *(vi++) = majority;
+        *(vi++) = classes->highestProbValue(); // this does not need to be the same for each call!
       }
       else
         vi++;
@@ -192,10 +191,9 @@ void TClassifierByLookupTable::replaceDKs(TDiscDistribution &valDistribution)
           classes->addint((*vi).intV, 1.0);
     }
 
-    TValue majority = classes->highestProbValue();
     PITERATE(vector<TValue>, vi, lookupTable)
       if ((*vi).isSpecial())
-        (*vi) = majority;
+        (*vi) = classes->highestProbValue(); // this does not need to be the same for each call!
   }
 }
 
@@ -260,7 +258,7 @@ TValue TClassifierByLookupTable2::operator()(const TExample &ex)
   if (index<0)
     return TClassifier::operator()(conv, dataDescription);
   else if (index>=int(lookupTable->size()))
-    return dataDescription->domainDistributions->back()->highestProbValue();
+    return dataDescription->domainDistributions->back()->highestProbValue(ex);
   else 
     return lookupTable->operator[](index);
 }
@@ -293,11 +291,11 @@ void TClassifierByLookupTable2::predictionAndDistribution(const TExample &ex, TV
   int index=getIndex(ex, &conv);
   if (index<0) {
     dist = TClassifier::classDistribution(conv, dataDescription);
-    value = dist->highestProbValue();
+    value = dist->highestProbValue(ex);
   }
   else if (index>=int(distributions->size())) {
     dist = CLONE(TDistribution, dataDescription->domainDistributions->back());
-    value = dist->highestProbValue();
+    value = dist->highestProbValue(ex);
   }
   else {
     dist = CLONE(TDistribution, distributions->operator[](index));
@@ -309,15 +307,12 @@ void TClassifierByLookupTable2::predictionAndDistribution(const TExample &ex, TV
 void TClassifierByLookupTable2::replaceDKs(PExampleGenerator examples, bool useBayes)
 {
   PClassifier bayes;
-  TValue majority;
   PDistribution classDist;
 
   if (useBayes)
     bayes = TBayesLearner()(examples);
-  else {
+  else
     classDist =  getClassDistribution(examples /*, weightID */);
-    majority = classDist->highestProbValue();
-  }
 
   vector<TValue>::iterator vi(lookupTable->begin());
   vector<PDistribution>::iterator di(distributions->begin());
@@ -334,7 +329,7 @@ void TClassifierByLookupTable2::replaceDKs(PExampleGenerator examples, bool useB
             *di = bayes->classDistribution(example);
         }
         else {
-          *vi = majority;
+          *vi = classDist->highestProbValue(example);
           if (distr) 
             *di = CLONE(TDistribution, classDist);
         }
@@ -415,7 +410,7 @@ TValue TClassifierByLookupTable3::operator()(const TExample &ex)
   if (index<0)
     return TClassifier::operator()(conv, dataDescription);
   else if (index>=int(lookupTable->size()))
-    return dataDescription->domainDistributions->back()->highestProbValue();
+    return dataDescription->domainDistributions->back()->highestProbValue(ex);
   else 
     return lookupTable->operator[](index);
 }
@@ -448,11 +443,11 @@ void TClassifierByLookupTable3::predictionAndDistribution(const TExample &ex, TV
   int index=getIndex(ex, &conv);
   if (index<0) {
     dist = TClassifier::classDistribution(conv, dataDescription);
-    value = dist->highestProbValue();
+    value = dist->highestProbValue(ex);
   }
   else if (index>=int(distributions->size())) {
     dist = CLONE(TDistribution, dataDescription->domainDistributions->back());
-    value = dist->highestProbValue();
+    value = dist->highestProbValue(ex);
   }
   else {
     dist = CLONE(TDistribution, distributions->operator[](index));
@@ -464,15 +459,12 @@ void TClassifierByLookupTable3::predictionAndDistribution(const TExample &ex, TV
 void TClassifierByLookupTable3::replaceDKs(PExampleGenerator examples, bool useBayes)
 {
   PClassifier bayes;
-  TValue majority;
   PDistribution classDist;
 
   if (useBayes)
     bayes = TBayesLearner()(examples);
-  else {
+  else
     classDist = getClassDistribution(examples /*, weight */);
-    majority = classDist->highestProbValue();
-  }
 
   vector<TValue>::iterator vi(lookupTable->begin());
   vector<PDistribution>::iterator di(distributions->begin());
@@ -490,7 +482,7 @@ void TClassifierByLookupTable3::replaceDKs(PExampleGenerator examples, bool useB
             if (distr) *di=bayes->classDistribution(example);
           }
           else {
-            *vi=majority;
+            *vi = classDist->highestProbValue(example);
             if (distr) 
               *di = CLONE(TDistribution, classDist);
           }
@@ -552,7 +544,7 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
 
     TExample ex = *bi;
     if (tcv.noDeviation()) {
-      ex.setClass(tcv.highestProbValue());
+      ex.setClass(tcv.highestProbValue(ex));
       ex.getClass().svalV = classDist;
     }
     else
@@ -587,18 +579,13 @@ TClassifierByExampleTable::TClassifierByExampleTable(PExampleGenerator gen, PCla
 TValue TClassifierByExampleTable::operator()(const TExample &exam)
 { PDistribution probs = classDistributionLow(exam);
   if (probs)
-    return operator()(probs);
+    return probs->highestProbValue(exam);
 
   if (classifierForUnknown)
     return classifierForUnknown->operator()(exam);
 
   return domain->classVar->DK();
 }
-
-
-TValue TClassifierByExampleTable::operator()(PDistribution probs)
-{ return probs->highestProbValue(); }
-
 
 
 PDistribution TClassifierByExampleTable::classDistributionLow(const TExample &exam)
@@ -656,7 +643,7 @@ PDistribution TClassifierByExampleTable::classDistribution(const  TExample &exam
 void TClassifierByExampleTable::predictionAndDistribution(const TExample &ex, TValue &pred, PDistribution &dist)
 { PDistribution dval = classDistributionLow(ex);
   if (dval) {
-    pred = operator()(dval);
+    pred = dval->highestProbValue(ex);
     dist = CLONE(TDistribution, dval);
     dist->normalize();
   }
@@ -739,7 +726,7 @@ TValue TClassifierFromGenerator::operator ()(const TExample &exam)
       classDist.add((*ri).getClass(), WEIGHT(*ri));
     
   if (classDist.abs)
-    return classDist.highestProbValue();
+    return classDist.highestProbValue(exam);
   else
     return classifierForUnknown ? classifierForUnknown->operator()(exam) : classVar->DK();
 }

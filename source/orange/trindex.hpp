@@ -135,9 +135,5 @@ public:
 };
 
 
-// Indices for stratified cross validation with random numbers from a table
-PRandomIndices RandomIndicesSCVGenFixed(PExampleGenerator, int f, vector<long> rands);
-void RandomIntegers(int n, vector<long> &rands);
-
 #endif
 
