@@ -5,7 +5,7 @@
 #
 
 import sys
-import ConfigParser, os, os.path
+import os, os.path
 import orange
 from string import *
 import cPickle
@@ -13,28 +13,6 @@ from OWTools import *
 from OWAbout import *
 from orngSignalManager import *
 import time
-
-
-class ExampleTable(orange.ExampleTable):
-    pass
-
-class ExampleTableWithClass(ExampleTable):
-    pass
-
-class SignalWrapper:
-    def __init__(self, widget, method):
-        self.widget = widget
-        self.method = method
-
-    def __call__(self, *k):
-        signalManager.signalProcessingInProgress += 1
-        try:
-            apply(self.method, k)
-        finally:
-            signalManager.signalProcessingInProgress -= 1
-            if not signalManager.signalProcessingInProgress:
-                signalManager.processNewSignals(self.widget)
-
 
 class OWBaseWidget(QDialog):
     def __init__(
@@ -137,17 +115,13 @@ class OWBaseWidget(QDialog):
             self.__setattr__(key, settings[key])
         #self.__dict__.update(settings)
 
+    # Get all settings
+    # returns map with all settings
     def getSettings(self):
-        """
-        Get all settings
-        returns map with all settings
-        """
         return dict([(x, getattr(self, x, None)) for x in settingsList])
-   
+
+    # Loads settings from the widget's .ini file 
     def loadSettings(self, file = None):
-        """
-        Loads settings from the widget's .ini file
-        """
         if hasattr(self, "settingsList"):
             if file==None:
                 if os.path.exists(self.widgetDir + "widgetSettings/" + self.title + ".ini"):
@@ -183,19 +157,15 @@ class OWBaseWidget(QDialog):
             else:
                 cPickle.dump(settings, file)
 
+    # Loads settings from string str which is compatible with cPickle
     def loadSettingsStr(self, str):
-        """
-        Loads settings from string str which is compatible with cPickle
-        """
         if str == None: return
         if hasattr(self, "settingsList"):
             settings = cPickle.loads(str)
             self.setSettings(settings)
 
+    # return settings in string format compatible with cPickle
     def saveSettingsStr(self):
-        """
-        return settings in string format compatible with cPickle
-        """
         str = ""
         if hasattr(self, "settingsList"):
             settings = dict([(name, getattr(self, name)) for name in self.settingsList])
@@ -205,29 +175,22 @@ class OWBaseWidget(QDialog):
     # this function is only intended for derived classes to send appropriate signals when all settings are loaded
     def activateLoadedSettings(self):
         pass
-        
-    def addInput(self,signalName, dataType, handler, onlySingleConnection=TRUE):
-        self.inputs.append((signalName, dataType, handler, onlySingleConnection))
-            
-    def addOutput(self, signalName, dataType):
-        self.outputs.append((signalName, dataType))
+
+    # reimplemented in other widgets        
+    def setOptions(self):
+        pass
 
     # does widget have a signal with name in inputs
     def hasInputName(self, name):
-        if hasattr(self, "inputs"):
-            for (n, type, handler, single) in self.inputs:
-                if name == n: return 1
+        for input in self.inputs:
+            if name == input[0]: return 1
         return 0
 
     # does widget have a signal with name in outputs
     def hasOutputName(self, name):
-        if hasattr(self, "outputs"):
-            for (n, type) in self.outputs:
-                if name == n: return 1
+        for output in self.outputs:
+            if name == output[0]: return 1
         return 0
-
-    def setOptions(self):
-        pass
 
     # ########################################################################
     def connect(self, control, signal, method):
@@ -242,25 +205,17 @@ class OWBaseWidget(QDialog):
         wrapper = self.connections[(control, signal)]
         QDialog.disconnect(control, signal, wrapper)
 
-    
-    def findSignalTypeFrom(self, signalName):
-        for (signal, dataType) in self.outputs:
-            if signal == signalName: return dataType
-        return dataType 
-
-    def findSignalTypeTo(self, signalName):
-        for (signal, dataType, handler, onlySingleConnection) in self.inputs:
-            if signalName == signal: return dataType
-        return None
-
+  
     def signalIsOnlySingleConnection(self, signalName):
-        for (signal, dataType, handler, onlySingleConnection) in self.inputs:
-            if signal == signalName: return onlySingleConnection
+        for i in self.inputs:
+            input = InputSignal(*i)
+            if input.name == signalName: return input.single
 
     def addInputConnection(self, widgetFrom, signalName):
         handler = None
-        for (signal, dataType, h, onlySingle) in self.inputs:
-            if signalName == signal: handler = h
+        for i in self.inputs:
+            input = InputSignal(*i)
+            if signalName == input.name: handler = input.handler
             
         existing = []
         if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
@@ -281,8 +236,9 @@ class OWBaseWidget(QDialog):
     def removeExistingSingleLink(self, signal):
         #(type, handler, single) = self.inputs[signal]
         #if not single: return []
-        for (signalName, dataType, handler, onlySingle) in self.inputs:
-            if signalName == signal and not onlySingle: return None
+        for i in self.inputs:
+            input = InputSignal(*i)
+            if input.name == signal and not input.single: return None
             
         for signalName in self.linksIn.keys():
             if signalName == signal:
