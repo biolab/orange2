@@ -3,6 +3,7 @@
 #
 # the base for scatterplot
 
+
 from OWVisGraph import *
 import time
 from orngCI import FeatureByCartesianProduct
