@@ -411,8 +411,8 @@ class OWSieveDiagram(OWWidget):
             r = g = max(r, 55)  #
         elif pearson < 0:
             intPearson = ceil(pearson)
-            rect.setPen(QPen(QColor(255,0,0), 1, Qt.DashLine))
             pen = QPen(QColor(255,0,0))
+            rect.setPen(pen)
             r = 255
             b = g = 255 + intPearson*20
             b = g = max(b, 55)

@@ -251,6 +251,7 @@ class OWInteractionGraph(OWWidget):
 
         self.interactionList = []
         entropy = self.interactionMatrix.entropy
+        if entropy == 0.0: return
 
         ################################
         # create a sorted list of total information
