@@ -266,18 +266,16 @@ class OWBaseWidget(QDialog):
         for key in self.linksIn.keys():
             for i in range(len(self.linksIn[key])):
                 (dirty, widgetFrom, handler, signalData, idValue) = self.linksIn[key][i]
-                if handler != None and dirty:
-                    #print "processing ", self.name()," , handler = ", str(handler)[13:30]
-                    self.linksIn[key][i] = (0, widgetFrom, handler, signalData, idValue) # clear the dirty flag
-                    if self.signalIsOnlySingleConnection(key):
-                        handler(signalData)
-                    else:
-                        # if one widget sends signal using send("signal name", value, id), where id != None.
-                        # this is used in cases where one widget sends more signals of same "signal name"
-                        if idValue != None:     
-                            handler(signalData, (widgetFrom, idValue))
-                        else:                   
-                            handler(signalData, widgetFrom)
+                if not (handler and dirty): continue
+                    
+                self.linksIn[key][i] = (0, widgetFrom, handler, signalData, idValue) # clear the dirty flag
+                if self.signalIsOnlySingleConnection(key):
+                    handler(signalData)
+                else:
+                    # if one widget sends signal using send("signal name", value, id), where id != None.
+                    # this is used in cases where one widget sends more signals of same "signal name"
+                    if idValue: handler(signalData, (widgetFrom, idValue))
+                    else:       handler(signalData, widgetFrom)
 
         self.needProcessing = 0
 
@@ -286,7 +284,7 @@ class OWBaseWidget(QDialog):
         if not self.linksIn.has_key(signalName): return
         for i in range(len(self.linksIn[signalName])):
             (dirty, widget, handler, oldValue, idValue) = self.linksIn[signalName][i]
-            if widget == widgetFrom:
+            if widget == widgetFrom and idValue == id:
                 self.linksIn[signalName][i] = (1, widget, handler, value, id)
         self.needProcessing = 1
 
