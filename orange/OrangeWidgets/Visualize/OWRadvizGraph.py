@@ -187,12 +187,19 @@ class OWRadvizGraph(OWVisGraph):
             graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
+            for key in valueDict.keys():
+                if not polygonVerticesDict.has_key(key): continue
+                for (i,j) in closureDict[key]:
+                    color = classIndices[graph.objects[i].getclass().value]
+                    self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
+
+            """
             for key in closureDict.keys():
-                if polygonVerticesDict[key] < 6: continue
                 for (i,j) in closureDict[key]:
                     color = classIndices[graph.objects[i].getclass().value]
                     #self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = graph[i,j][0])
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
+            """
         elif self.clusterClosure: self.showClusterLines(indices, validData)        
 
         # ##############################################################
@@ -541,9 +548,12 @@ class OWRadvizGraph(OWVisGraph):
         selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
         
         if not classList:
-            classIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0)  # remove data with missing values and convert floats back to ints
-            else:                                                                classList = Numeric.compress(validData, self.noJitteringScaledData[classIndex])  # for continuous attribute just add the values
+            #classIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0)  # remove data with missing values and convert floats back to ints
+            #else:                                                                classList = Numeric.compress(validData, self.noJitteringScaledData[classIndex])  # for continuous attribute just add the values
+            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+            classList = Numeric.compress(validData, classList)
+            
         if not sum_i: sum_i = self._getSum_i(selectedData)
         if not XAnchors or not YAnchors:
             XAnchors = self.createXAnchors(len(attrIndices))
@@ -791,7 +801,9 @@ class OWRadvizGraph(OWVisGraph):
                     tryIndex += 1
                     
                     validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    #classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+                    classList = Numeric.compress(validData, classList)
                         
                     selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
                     sum_i = self._getSum_i(selectedData)
