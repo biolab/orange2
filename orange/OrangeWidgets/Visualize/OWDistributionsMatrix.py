@@ -275,8 +275,6 @@ if __name__ == "__main__":
     a = QApplication(sys.argv)
     owd = OWDistributionsMatrix()
     a.setMainWidget(owd)
-    #data = orange.ExampleTable("E:\Development\Python23\Lib\site-packages\Orange\Datasets/iris.tab")
-    #owd.cdata(data)
     owd.show()
     a.exec_loop()
     owd.saveSettings()
