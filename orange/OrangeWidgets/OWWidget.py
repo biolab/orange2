@@ -15,7 +15,7 @@ class OWWidget(QWidget):
     def __init__(
     self,
     parent=None,
-    title="O&range Widget",
+    title="Qt Orange Widget",
     description="This a general Orange Widget\n from which all the other Orange Widgets are derived.",
     wantSettings=FALSE,
     wantGraph=FALSE,
@@ -37,6 +37,11 @@ class OWWidget(QWidget):
         logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.title=title.replace("&","")
+
+        # if we want the widget to show the title then the title must start with "Qt"
+        if self.title[:2].upper != "QT":
+            self.title = "Qt " + self.title
+            
         QWidget.__init__(self,parent)
         #list of all active connections to this widget
         self.connections=[]
