@@ -6,7 +6,6 @@
 <priority>500</priority>
 """
 
-#
 # OWDataTable.py
 #
 # wishes:
@@ -21,13 +20,13 @@ from OWWidget import *
 ##############################################################################
 
 class colorItem(QTableItem):
-         def __init__(self, table, editType, text):
-                 QTableItem.__init__(self, table, editType, text)
+    def __init__(self, table, editType, text):
+        QTableItem.__init__(self, table, editType, text)
 
-         def paint(self, painter, colorgroup, rect, selected):
-                 g = QColorGroup(colorgroup)
-                 g.setColor(QColorGroup.Base, Qt.lightGray)
-                 QTableItem.paint(self, painter, g, rect, selected)
+    def paint(self, painter, colorgroup, rect, selected):
+        g = QColorGroup(colorgroup)
+        g.setColor(QColorGroup.Base, Qt.lightGray)
+        QTableItem.paint(self, painter, g, rect, selected)
 
 ##############################################################################
 
@@ -47,15 +46,10 @@ class OWDataTable(OWWidget):
         self.addInput("data")
         
         # GUI
-        # set the table widget
         self.layout=QVBoxLayout(self.mainArea)
-        #add your components here
         self.table=QTable(self.mainArea)
         self.table.setSelectionMode(QTable.NoSelection)
         self.layout.add(self.table)
-        
-        #self.table.resize(self.mainArea.size())
-        #self.resize(100,100)
 
     def cdata(self,dataset):
         self.data(dataset)
@@ -73,7 +67,7 @@ class OWDataTable(OWWidget):
             self.table.setNumCols(len(self.dataset.domain.attributes))
         self.table.setNumRows(len(self.dataset))
 
-        # set the header (attaribute names)
+        # set the header (attribute names)
         self.header=self.table.horizontalHeader()
         for i in range(len(self.dataset.domain.attributes)):
             self.header.setLabel(i, self.dataset.domain.attributes[i].name)
@@ -98,8 +92,6 @@ class OWDataTable(OWWidget):
         # manage sorting (not correct, does not handle real values)
         self.connect(self.header,SIGNAL("clicked(int)"),self.sort)
         self.sortby = 0
-        #self.resize(100,100)
-
         #self.table.setColumnMovingEnabled(1)
                 
     def sort(self, col):
@@ -116,14 +108,13 @@ class OWDataTable(OWWidget):
 # Make sure that a sample data set (adult_sample.tab) is in the directory
 
 if __name__=="__main__":
-    a=QApplication(sys.argv)
-    ow=OWDataTable()
+    a = QApplication(sys.argv)
+    ow = OWDataTable()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('adult_sample')
-#    dataset = orange.ExampleTable('outcome')
+#    dataset = orange.ExampleTable('adult_sample')
+    dataset = orange.ExampleTable('outcome')
     od = OrangeData(dataset)
     ow.data(od)
-
     ow.show()
     a.exec_loop()

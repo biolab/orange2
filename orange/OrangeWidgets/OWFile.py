@@ -16,14 +16,14 @@ from OWWidget import *
 from OData import *
 
 class OWFile(OWWidget):
-    settingsList=["RecentFiles","selectedFileName"]
+    settingsList=["recentFiles","selectedFileName"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,parent,"&File Widget",
         "The File Widget is an Orange Widget\nused for selecting and opening data files.",
         FALSE)
         "Constructor"        
         #set default settings
-        self.RecentFiles=[]
+        self.recentFiles=[]
         self.selectedFileName = "None"
         #get settings from the ini file, if they exist
         self.loadSettings()
@@ -41,25 +41,21 @@ class OWFile(OWWidget):
         vb.addWidget(rfbox,0,0)
         vb.addWidget(fbox,0,1)
         x=QWidget(self.mainArea)
-#        y=QWidget(self.mainArea)
         vb.addWidget(x,1,0)
         vb.addWidget(x,0,2)
         vb.setRowStretch(1,10)
         vb.setColStretch(2,10)
         self.adjustSize()
-#        self.setFixedSize(self.size())
         
         #check if files actually exist
-        self.RecentFiles=filter(os.path.exists,self.RecentFiles)
-                
-        #fill the file list
+        self.recentFiles=filter(os.path.exists,self.recentFiles)
         self.setFilelist()
         
         #
         self.filecombo.setCurrentItem(0)
         #this makes no difference, because when the file widget is created there are no connection yet
-        if self.RecentFiles!=[]:
-            self.openFile(self.RecentFiles[0])
+        if self.recentFiles!=[]:
+            self.openFile(self.recentFiles[0])
         
         #connecting GUI to code
         self.connect(browse,SIGNAL('clicked()'),self.browseFile)        
@@ -67,10 +63,10 @@ class OWFile(OWWidget):
     
     def browseFile(self):
         "Display a FileDialog and select a file"
-        if self.RecentFiles==[]:
+        if self.recentFiles==[]:
             startfile="."
         else:
-            startfile=self.RecentFiles[0]
+            startfile=self.recentFiles[0]
         filename=QFileDialog.getOpenFileName(startfile,
         'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
         None,'Open Orange Data File')
@@ -108,16 +104,16 @@ class OWFile(OWWidget):
         Add a file to the start of the file list. 
         If it exists, move it to the start of the list
         """
-        if fn in self.RecentFiles:
-            self.RecentFiles.remove(fn)
-        self.RecentFiles.insert(0,fn)
+        if fn in self.recentFiles:
+            self.recentFiles.remove(fn)
+        self.recentFiles.insert(0,fn)
         self.setFilelist()       
 
     def setFilelist(self):
         "Set the GUI filelist"
         self.filecombo.clear()
-        if self.RecentFiles!=[]:
-            for file in self.RecentFiles:
+        if self.recentFiles!=[]:
+            for file in self.recentFiles:
                 (dir,filename)=os.path.split(file)
                 #leave out the path
                 self.filecombo.insertItem(filename)
@@ -127,14 +123,17 @@ class OWFile(OWWidget):
             
     def selectFile(self,n):
         "Slot that is called when a file is selected from the combo box"
-        if self.RecentFiles:
-            self.openFile(self.RecentFiles[n])
+        if self.recentFiles:
+            self.openFile(self.recentFiles[n])
         else:
             self.openFile("(none)")
         
     def activateLoadedSettings(self):
         if self.selectedFileName != "":
-            self.openFile(self.selectedFileName)
+            if os.path.exists(self.selectedFileName):
+                self.openFile(self.selectedFileName)
+            else:
+                self.selectedFileName = ""
         
 if __name__ == "__main__":
     a=QApplication(sys.argv)

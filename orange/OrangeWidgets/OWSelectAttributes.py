@@ -82,7 +82,6 @@ class OWSelectAttributes(OWWidget):
 
     def refreshOutput(self):
         if self.refreshOutputBlocked: return
-        print 'RFR'
         # delivers output signals
         domain = self.data.domain
         atts = [self.data.domain[x] for x in self.attsSel]
