@@ -395,14 +395,14 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, fl
       hm->exampleIndices->push_back(exampleIndex);
       for(xpoint = nColumns, si = spec, ri = fmi; xpoint--; ri++, si++) {
         if (*si) {
-          *fmi = *fmi / *si;
-          if (*fmi < abslow)
-            abslow = *fmi;
-          if (*fmi > abshigh)
-            abshigh = *fmi;
+          *ri = *ri / *si;
+          if (*ri < abslow)
+            abslow = *ri;
+          if (*ri > abshigh)
+            abshigh = *ri;
         }
         else
-          *fmi = UNKNOWN_F;
+          *ri = UNKNOWN_F;
       }
 
       *ami = nDefinedAverages ? *ami/nDefinedAverages : UNKNOWN_F;
