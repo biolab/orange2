@@ -32,7 +32,7 @@ int TSymMatrix::getindex(const int &i, const int &j, bool raiseExceptions) const
   if (i>j) {
     if ((i>=dim) || (j<0))
       raiseError("index out of range");
-    if ((matrixType == UPPER) || (matrixType == UPPER_FILLED))
+    if ((matrixType == Upper) || (matrixType == UpperFilled))
       if (raiseExceptions)
         raiseError("index out of range for upper triangular matrix");
       else
@@ -42,7 +42,7 @@ int TSymMatrix::getindex(const int &i, const int &j, bool raiseExceptions) const
 
   if ((j>=dim) || (i<0))
     raiseError("index out of range");
-  if ((matrixType == LOWER) || (matrixType == LOWER_FILLED))
+  if ((matrixType == Lower) || (matrixType == LowerFilled))
     if (raiseExceptions)
       raiseError("index out of range for lower triangular matrix");
     else

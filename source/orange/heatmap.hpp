@@ -29,7 +29,7 @@ WRAPPER(ExampleTable)
 
 #define UNKNOWN_F -1e30f
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *bmp, const int &wdth, const int &height, const float &absLow, const float &absHigh, const float &gamma);
+void getPercentileInterval(float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 
 class THeatmap : public TOrange {
 public:
@@ -46,13 +46,13 @@ public:
   THeatmap(const int &h, const int &w, PExampleTable ex);
   ~THeatmap();
 
-  unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
-  unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
+  unsigned char *heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
+  unsigned char *averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   float getRowIntensity(const int &y) const;
 
-  void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max);
+  void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max) const;
 };
 
 

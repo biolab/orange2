@@ -30,7 +30,7 @@ class TSymMatrix : public TOrange
 public:
   __REGISTER_CLASS
 
-  enum { LOWER, UPPER, SYMMETRIC, LOWER_FILLED, UPPER_FILLED };
+  enum { Lower, Upper, Symmetric, LowerFilled, UpperFilled };
 
   int dim; //PR matrix dimension
   int matrixType; //P 0 lower, 1 upper, 2 symmetric, 3 lower_filled, 4 upper_filled
@@ -39,7 +39,7 @@ public:
 
   TSymMatrix(const int &adim, const float &init = 0)
   : dim(adim),
-    matrixType(SYMMETRIC),
+    matrixType(Symmetric),
     elements(mlnew float[((adim+1)*(adim+2))>>1])
   { for(float *pi = elements, *pe = elements+(((adim+1)*(adim+2))>>1); pi!=pe; *(pi++) = init); }
 

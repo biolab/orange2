@@ -38,122 +38,6 @@
 
 DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList")
 
-class CompareIndicesWClass {
-public:
-  const vector<float> &centers;
-  const vector<int> &classes;
-
-  CompareIndicesWClass(const vector<float> &acen, const vector<int> &acl)
-  : centers(acen),
-    classes(acl)
-  {};
-
-  bool operator() (const int &i1, const int &i2)
-  { return    (classes[i1]<classes[i2])
-           || ((classes[i1] == classes[i2]) && (centers[i1] < centers[i2])); }
-};
-
-
-class CompareIndicesClass {
-public:
-  const vector<int> &classes;
-
-  CompareIndicesClass(const vector<int> &acl)
-  : classes(acl)
-  {};
-
-  bool operator() (const int &i1, const int &i2)
-  { return classes[i1]<classes[i2]; }
-};
-
-
-class CompareIndices {
-public:
-  const vector<float> &centers;
-
-  CompareIndices(const vector<float> &acen)
-  : centers(acen)
-  {};
-
-  bool operator() (const int &i1, const int &i2)
-  { return centers[i1] < centers[i2]; }
-};
-
-
-WRAPPER(ExampleTable);
-
-#define UNKNOWN_F -1e30f
-
-THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
-: cells(new float [h*w]),
-  averages(new float [h]),
-  height(h),
-  width(w),
-  examples(ex),
-  exampleIndices(new TIntList())
-{}
-
-
-THeatmap::~THeatmap()
-{
-  delete cells;
-  delete averages;
-}
-
-
-unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
-{
-  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma);
-}
-
-unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
-{
-  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma);
-}
-
-
-void THeatmap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max)
-{
-  int ncells = height * width;
-  const int nlow = lowperc * ncells;
-  const int nhigh = highperc * ncells;
-
-  priority_queue<float, vector<float>, greater<float> > lower;
-  priority_queue<float, vector<float>, less<float> > upper;
-
-  for(float *ci = cells; ncells--; ci++) {
-    lower.push(*ci);
-    if (lower.size() > nlow)
-      lower.pop();
-    upper.push(*ci);
-    if (upper.size() > nhigh)
-      upper.pop();
-  }
-
-  min = lower.top();
-  max = upper.top();
-}
-
-float THeatmap::getCellIntensity(const int &y, const int &x) const
-{ 
-  if ((y<0) || (y>=height))
-    raiseError("row index out of range");
-  if ((x<0) || (y>=height))
-    raiseError("column index out of range");
-
-  return cells[y*width+x];
-}
-
-
-float THeatmap::getRowIntensity(const int &y) const
-{ 
-  if ((y<0) || (y>=height))
-    raiseError("row index out of range");
-
-  return averages[y];
-}
-
-
 /* Expands the bitmap 
    Each pixel in bitmap 'smmp' is replaced by a square with
      given 'cellWidth' and 'cellHeight'
@@ -242,6 +126,127 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
 
   return res;
 }
+
+
+void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max)
+{
+  const int nlow = lowperc * ncells;
+  const int nhigh = highperc * ncells;
+
+  priority_queue<float, vector<float>, greater<float> > lower;
+  priority_queue<float, vector<float>, less<float> > upper;
+
+  int i = ncells;
+  for(const float *ci = cells; i--; ci++) {
+    lower.push(*ci);
+    if (lower.size() > nlow)
+      lower.pop();
+    upper.push(*ci);
+    if (upper.size() > nhigh)
+      upper.pop();
+  }
+
+  min = lower.top();
+  max = upper.top();
+}
+
+
+class CompareIndicesWClass {
+public:
+  const vector<float> &centers;
+  const vector<int> &classes;
+
+  CompareIndicesWClass(const vector<float> &acen, const vector<int> &acl)
+  : centers(acen),
+    classes(acl)
+  {};
+
+  bool operator() (const int &i1, const int &i2)
+  { return    (classes[i1]<classes[i2])
+           || ((classes[i1] == classes[i2]) && (centers[i1] < centers[i2])); }
+};
+
+
+class CompareIndicesClass {
+public:
+  const vector<int> &classes;
+
+  CompareIndicesClass(const vector<int> &acl)
+  : classes(acl)
+  {};
+
+  bool operator() (const int &i1, const int &i2)
+  { return classes[i1]<classes[i2]; }
+};
+
+
+class CompareIndices {
+public:
+  const vector<float> &centers;
+
+  CompareIndices(const vector<float> &acen)
+  : centers(acen)
+  {};
+
+  bool operator() (const int &i1, const int &i2)
+  { return centers[i1] < centers[i2]; }
+};
+
+
+WRAPPER(ExampleTable);
+
+#define UNKNOWN_F -1e30f
+
+THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
+: cells(new float [h*w]),
+  averages(new float [h]),
+  height(h),
+  width(w),
+  examples(ex),
+  exampleIndices(new TIntList())
+{}
+
+
+THeatmap::~THeatmap()
+{
+  delete cells;
+  delete averages;
+}
+
+
+unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+{
+  return bitmap2string(cellWidth, cellHeight, size, cells, width, height, absLow, absHigh, gamma);
+}
+
+unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+{
+  return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma);
+}
+
+
+float THeatmap::getCellIntensity(const int &y, const int &x) const
+{ 
+  if ((y<0) || (y>=height))
+    raiseError("row index out of range");
+  if ((x<0) || (y>=height))
+    raiseError("column index out of range");
+
+  return cells[y*width+x];
+}
+
+
+float THeatmap::getRowIntensity(const int &y) const
+{ 
+  if ((y<0) || (y>=height))
+    raiseError("row index out of range");
+
+  return averages[y];
+}
+
+
+void THeatmap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max) const
+{ ::getPercentileInterval(cells, width*height, lowperc, highperc, min, max); }
 
 
 THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructor baseHeatmap, bool noSorting, bool disregardClass)

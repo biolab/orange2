@@ -2092,13 +2092,13 @@ PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
     int j;
     PyObject *row;    
     switch (matrix->matrixType) {
-      case TSymMatrix::LOWER:
+      case TSymMatrix::Lower:
         row = PyTuple_New(i+1);
         for(j = 0; j<=i; j++)
           PyTuple_SetItem(row, j, PyFloat_FromDouble((double)matrix->getitem(i, j)));
         return row;
 
-      case TSymMatrix::UPPER:
+      case TSymMatrix::Upper:
         row = PyTuple_New(matrix->dim - i);
         for(j = i; j<dim; j++)
           PyTuple_SetItem(row, j-i, PyFloat_FromDouble((double)matrix->getitem(i, j)));
@@ -2136,10 +2136,10 @@ PyObject *SymMatrix_getitem(PyObject *self, PyObject *args)
 
       const int i = PyInt_AsLong(PyTuple_GET_ITEM(args, 0));
       const int j = PyInt_AsLong(PyTuple_GET_ITEM(args, 1));
-      if ((j>i) && (matrix->matrixType == TSymMatrix::LOWER))
+      if ((j>i) && (matrix->matrixType == TSymMatrix::Lower))
         PYERROR(PyExc_IndexError, "index out of range for lower triangular matrix", PYNULL);
 
-      if ((j<i) && (matrix->matrixType == TSymMatrix::UPPER))
+      if ((j<i) && (matrix->matrixType == TSymMatrix::Upper))
         PYERROR(PyExc_IndexError, "index out of range for upper triangular matrix", PYNULL);
 
       return PyFloat_FromDouble(matrix->getitem(i, j));
@@ -2212,7 +2212,7 @@ PyObject *SymMatrix_str(PyObject *self)
     }
 
     const int plac = 4 + (matmax==0 ? 1 : int(ceil(log10((double)matmax))));
-    const int elements = (matrix->matrixType == TSymMatrix::LOWER) ? (dim*(dim+1))>>1 : dim * dim;
+    const int elements = (matrix->matrixType == TSymMatrix::Lower) ? (dim*(dim+1))>>1 : dim * dim;
     char *smatr = new char[3 * dim + (plac+2) * elements];
     char *sptr = smatr;
     *(sptr++) = '(';
@@ -2221,12 +2221,12 @@ PyObject *SymMatrix_str(PyObject *self)
     int i, j;
     for(i = 0; i<dim; i++) {
       switch (mattype) {
-        case TSymMatrix::LOWER:
+        case TSymMatrix::Lower:
           for(j = 0; j<i; j++, sptr += (plac+2))
             sprintf(sptr, "%*.3f, ", plac, matrix->getitem(i, j));
           break;
 
-        case TSymMatrix::UPPER:
+        case TSymMatrix::Upper:
           for(j = i * (plac+2); j--; *(sptr++) = ' ');
           for(j = i; j < dim-1; j++, sptr += (plac+2))
             sprintf(sptr, "%*.3f, ", plac, matrix->getitem(i, j));
