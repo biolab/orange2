@@ -66,5 +66,3 @@ if __name__=="__main__":
     a.setMainWidget(w)
     w.show()
     a.exec_loop()
-
-

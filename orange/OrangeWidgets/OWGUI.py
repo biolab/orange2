@@ -20,7 +20,8 @@ def widgetBox(widget, box=None, orientation='vertical'):
 			b = QHGroupBox(widget)
 		else:
 			b = QVGroupBox(widget)
-		b.setTitle(box)
+		if type(box) == str: # if you pass 1 for box, there will be a box, but no text
+			b.setTitle(box)
 	else:
 		if orientation == 'horizontal':
 			b = QHBox(widget)
@@ -138,6 +139,27 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
 		master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
 #		self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
 	return bg
+
+
+def radioButton(widget, master, value, label, box = None, tooltip = None, callback = None):
+	if box:
+		bg = QHButtonGroup(box, widget)
+	else:
+		bg = widget
+
+	if type(label) == str:
+		w = QRadioButton(label, bg)
+	else:
+		w = QRadioButton("X")
+		w.setPixmap(label)
+	w.setOn(getattr(master, value))
+	if tooltip:
+		QToolTip.add(w, tooltip)
+	master.connect(w, SIGNAL("stateChanged(int)"), ValueCallback(master, value))
+	master.controledAttributes.append((value, CallFront_checkBox(w)))
+	if callback:
+		master.connect(w, SIGNAL("stateChanged(int)"), FunctionCallback(master, callback))
+	return w
 
 def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.1, callback=None, labelFormat="%d", ticks=0):
 	if box:

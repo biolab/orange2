@@ -1,8 +1,8 @@
 """
-<name>Interactive Tree Induction</name>
-<description>Interactive Tree Induction</description>
+<name>Interactive Tree Builder</name>
+<description>Interactive Tree Builder</description>
 <category>Classification</category>
-<icon>icons/Outcome.png</icon>
+<icon>icons/Unknown.png</icon>
 <priority>20</priority>
 """
 from OWWidget import *
@@ -10,6 +10,7 @@ from OData import *
 from OWFile import *
 from OWIRankOptions import *
 from OWClassificationTreeViewer import *
+import OWGUI
 import sys
 
 #global Atribut
@@ -23,15 +24,15 @@ class var:
 
 class TL:
 
-    def divide(self,node,attr,cutoff):
+    def divide(self, node, attr, cutoff):
         pos = [a.name for a in node.examples.domain].index(attr)
 
-        node.branchSelector=orange.ClassifierFromVarFD(position=pos, domain=node.examples.domain, classVar=node.examples.domain[pos])
-        dist=orange.DomainDistributions(node.examples)
+        node.branchSelector = orange.ClassifierFromVarFD(position=pos, domain=node.examples.domain, classVar=node.examples.domain[pos])
+        dist = orange.DomainDistributions(node.examples)
 
         if cutoff<>None:
             node.branchSelector.transformer = orange.ThresholdDiscretizer(threshold = cutoff)
-            values = ["<%5.3f" % cutoff, ">=%5.3f" % cutoff] #TO SEM POPRAVU je bilo narobe oznaceno
+            values = ["<%5.3f" % cutoff, ">=%5.3f" % cutoff]
             cutvar = orange.EnumVariable(node.examples.domain[pos].name, values = values)
             cutvar.getValueFrom = node.branchSelector
             node.branchSelector.classVar = cutvar
@@ -69,6 +70,8 @@ class TL:
         classifier.tree = self.divide(data)
         classifier.domain = data.domain
         classifier.descender = orange.TreeDescender_UnknownMergeAsSelector()
+        classifier.FD = orange.ClassifierFromVarFD()
+        classifier.dist=orange.DomainDistributions()
         return classifier
 
 #--------------novo
@@ -76,60 +79,30 @@ class TL:
 class OWITree(OWClassificationTreeViewer):
     def __init__(self,parent = None):
         OWClassificationTreeViewer.__init__(self, parent,
-                          'I&nteracitve Tree build Widget')
+                          'I&nteractive Tree Builder')
 
 
         #set default settings
         self.Precision=3
         self.ReliefK=11
         self.ReliefN=20
-        self.DiscretizationMethod="equal-frequency intervals"
-        self.DisplayReliefF=1
-        self.DisplayInfoGain=1
-        self.DisplayGainRatio=1
-        self.DisplayGini=1
-        self.displayAttributeVals=1
+        self.discretizationMethod = 0
+        self.attrMeasure = 0
+
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Tree Learner", orange.TreeLearner, self.learner, 1)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Learner", orange.Learner), ("Classifier", orange.TreeClassifier)]
+
+        self.settingsList.append(["ReliefK", "ReliefN", "discretizationMethod", "attrMeasure"])
+        self.loadSettings()
 
         self.data = None
 
-        self.options=OWIRankOptions()
-        self.activateLoadedSettings()
-        
-        self.aBox =  QVGroupBox(self.controlArea)
-        self.aBox.setTitle ('Interaction')
+        box = OWGUI.widgetBox(self.space, 1)
+        self.btnPrune = OWGUI.button(box, self, "Prune", callback = self.BtnPruneClicked)
+        self.btnBuild = OWGUI.button(box, self, "Build", callback = self.BtnBuildClicked)
 
-        self.BtnPrune = QPushButton(self.aBox,'BtnPrune')
-        self.BtnPrune.setText("&Prune")
-
-        self.BtnBuild = QPushButton(self.aBox,'BtnBuild')
-        self.BtnBuild.setText("&Auto Build")
-
-        self.settingsButton = QPushButton(self.aBox,'settingsButton')
-        self.settingsButton.setText("&Rank Settings")
-
-        self.table=QTable(self.mainArea)
-        self.table.setMaximumHeight(150)
-        self.table.setSelectionMode(QTable.NoSelection) #hell, if i set this, swapRows() doesn't work - weird. and if i do not set this, the users can edit the fields
-        self.layout.add(self.table)
-        self.table.setNumCols(8)
-        self.table.setNumRows(0)
-        self.est_names = ["ReliefF", "InfoGain", "GainRatio", "Gini"]
-        self.topheader=self.table.horizontalHeader()
-        self.topheader.setLabel(0,"Attribute")
-        self.table.adjustColumn(0)
-        self.topheader.setLabel(1,"C/D")
-        self.table.adjustColumn(1)
-        self.topheader.setLabel(2,"Attribute values")
-        self.table.adjustColumn(2)
-        self.topheader.setLabel(3,"#")
-        self.table.adjustColumn(3)
-        self.connect(self.topheader,SIGNAL("pressed(int)"),self.sort)
-        self.sortby=-1
-        for i in range(4):
-            self.topheader.setLabel(4+i,self.est_names[i])  
-            self.table.adjustColumn(i)     
-
-        self.msg = QMessageBox()
+        self.bxMeasure = OWGUI.widgetBox(self.space, "Attributes")
+        self.fillBxMeasure()
 
         self.var = var
         self.tree = None
@@ -138,39 +111,29 @@ class OWITree(OWClassificationTreeViewer):
         self.tree = None
         self.iattrib = None
 
-        #inputs & outputs
-
-        self.addInput("cdata")
-        self.addInput("learner")
-        
-        #self.addOutput("learner")
-        #self.addOutput("ctree")
-        self.addOutput("cdata")
-        self.addOutput("data")
-
-        #connect settingsbutton to show options
-        self.connect(self.settingsButton,SIGNAL("clicked()"),self.options.show),
-
         #connect GUI controls of options in options dialog to settings
-        self.connect(self.options.displayReliefF,SIGNAL("stateChanged(int)"),self.displayReliefF) 
-        self.connect(self.options.displayInfoGain,SIGNAL("stateChanged(int)"),self.displayInfoGain) 
-        self.connect(self.options.displayGainRatio,SIGNAL("stateChanged(int)"),self.displayGainRatio) 
-        self.connect(self.options.displayGini,SIGNAL("stateChanged(int)"),self.displayGini) 
-        self.connect(self.options.displayAttribVals,SIGNAL("stateChanged(int)"),self.displayAttribVals) 
-        self.connect(self.options.kSlider,SIGNAL("valueChanged(int)"),self.setK)
-        self.connect(self.options.nSlider,SIGNAL("valueChanged(int)"),self.setN)
-        self.connect(self.options.discretization,SIGNAL("activated(int)"),self.setDM)
-        self.connect(self.options.precisionSlider,SIGNAL("valueChanged(int)"),self.setPrecision)
 
-        self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"),self.showAttr)
-        self.connect(self.table, SIGNAL("doubleClicked(int,int,int,const QPoint&)"), self.tableDoubleClick)
-        self.connect(self.BtnPrune, SIGNAL("clicked()"),self.BtnPruneClicked)
-        self.connect(self.BtnBuild, SIGNAL("clicked()"),self.BtnBuildClicked)
+#        self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"),self.showAttr)
+#        self.connect(self.table, SIGNAL("doubleClicked(int,int,int,const QPoint&)"), self.tableDoubleClick)
+
+    def fillBxMeasure(self):
+        self.cmbMeasure = OWGUI.comboBox(self.bxMeasure, self, "attrMeasure", None, ["Information Gain", "Gain Ration", "Gini Index", "ReliefF"], "Measure for ranking the attributes", self.measureChanged, 0)
+        if self.attrMeasure == 3:
+            self.sldReliefN = OWGUI.qwtHSlider(self.bxMeasure, self, "ReliefN", None, "Reference points ", None, minValue = 20, maxValue = 1000, step = 10, precision = 1, callback = self.measureChanged)
+            self.sldReliefK = OWGUI.qwtHSlider(self.bxMeasure, self, "ReliefK", None, "Neighbours ", None, minValue = 1, maxValue = 50, step = 1, precision = 1, callback = self.measureChanged)
+        else:
+            OWGUI.radioButton(self.bxMeasure, self, "discretizationMethod", "Quartile discretization", box = 0, callback = self.measureChanged)
+            OWGUI.radioButton(self.bxMeasure, self, "discretizationMethod", "Fayyad-Irani discretization", box = 0, callback = self.measureChanged)
+
+
+#            self.cmbDiscretization = OWGUI.comboBox(self.bxMeasure, self, "discretizationMethod", None, ["Quartiles", "Fayyad-Irani"], "Discretization method", self.measureChanged, 0)
 
     def tableDoubleClick(self, row, col, neki, point):
         self.CmbAttribClick(self.table.text(row, 0))
         self.v.setFocus()
         
+    def measureChanged(self, value):
+        pass
 
     def activateLoadedSettings(self):
         self.options.precisionSlider.setValue(self.Precision)
@@ -276,6 +239,10 @@ class OWITree(OWClassificationTreeViewer):
         self.data = self.var.wnode.examples
         self.recalculate()
 
+    def chooseAttribute(self,attrib):
+        self.var.cut=None
+        self.var.attr=str(attrib)
+
     def btnApplyClicked(self):
         var = self.tree.tree.examples.domain[self.var.attr]
         
@@ -296,6 +263,7 @@ class OWITree(OWClassificationTreeViewer):
 
             self.setTreeView()
             self.send("ctree", self.tree)
+            self.send("classifier", self.tree)
 
 
 
@@ -303,6 +271,20 @@ class OWITree(OWClassificationTreeViewer):
         self.var.wnode.branches = []
         self.setTreeView()
         self.send("ctree", self.tree)
+        self.send("classifier", self.tree)
+
+    def BtnBuildClicked(self):
+        if self.var.wnode==self.tree.tree:
+            if self.var.learner<>None:
+                tren=self.var.learner(self.var.wnode.examples)
+            else:
+                tren=orange.TreeLearner(self.var.wnode.examples,storeExamples=1)
+            self.tree.tree=tren.tree
+        else:
+            self.Find(self.tree.tree,self.var.wnode)
+        self.setTreeView()
+        self.send("ctree", self.tree)
+        self.send("classifier", self.tree)
 
     def Find(self,item,xx):
         if (item):
@@ -321,18 +303,16 @@ class OWITree(OWClassificationTreeViewer):
 
 
     def CmbAttribClick(self, text):
-        self.var.cut=None
-        self.var.attr=str(attrib)
-        if self.var.wnode==self.tree.tree:
-            if self.var.learner<>None:
-                tren=self.var.learner(self.var.wnode.examples)
+        self.chooseAttribute(text)
+        if self.v.selectedItem()==None: 
+            if self.tree.tree.examples.domain[str(text)].varType==orange.VarTypes.Continuous:
+                pass
             else:
-                tren=orange.TreeLearner(self.var.wnode.examples,storeExamples=1)
-            self.tree.tree=tren.tree
-        else:
-            self.Find(self.tree.tree,self.var.wnode)
-        self.setTreeView()
-        self.send("ctree", self.tree)
+                if self.nodeClassDict[self.v.selectedItem()].examples.domain[str(text)].varType==orange.VarTypes.Continuous:  
+                    pass
+ #       self.data = self.nodeClassDict[self.v.selectedItem()].examples        
+#        self.recalculate()
+        self.btnApplyClicked()        
 
     def cdata(self, data):
         if self.tree == None:
@@ -357,7 +337,7 @@ class OWITree(OWClassificationTreeViewer):
         self.var=var
         self.var.attr=""
         self.var.wnode=self.tree.tree
-        self.data = data.data
+        self.data = data
         self.recalculate()
         self.setTreeView()
 
@@ -369,7 +349,7 @@ class OWITree(OWClassificationTreeViewer):
         self.tree.split.measure = orange.MeasureAttribute_gainRatio()
         self.tree.exampleSplitter = orange.TreeExampleSplitter_IgnoreUnknowns()
         self.tree.nodeLearner = orange.MajorityLearner()
-        self.tree.tree=self.tree.new(data.data)
+        self.tree.tree=self.tree.new(data)
 
     def check(self,cnode,dat,x):
         name=cnode.branchSelector.classVar.name
@@ -408,137 +388,8 @@ class OWITree(OWClassificationTreeViewer):
 
 
     def recalculate(self):
-        if self.data==None:
-            
-            return
-        self.table.setNumRows(len(self.data.domain.attributes))
-        
-        ###############################################################
-        # construct a data set with only continuous attributes that
-        # are discretized
-        
-        # there will be three types of discretization that user
-        # can choose
-        
-        disMet=self.DiscretizationMethod
-        # equal-frequency intervals
-        if disMet==self.options.discretizationStrings[0]:
-            discretizer = orange.EquiNDiscretization(numberOfIntervals=5)
-        #entropy-based discretization
-        elif disMet==self.options.discretizationStrings[1]:
-            discretizer = orange.EntropyDiscretization()
-        # equal-width intervals
-        elif disMet==self.options.discretizationStrings[2]:
-            discretizer = orange.EquiDistDiscretization(numberOfIntervals=5)      
-        
-        at = []
-        for i in self.data.domain.attributes:
-            if i.varType == 2: # a continuous variable?
-                d=discretizer(i, self.data)
-                at.append(d)
-        at.append(self.data.domain.classVar)
-        
-        # construct a new, discretized, data set
-        disc_data = self.data.select(orange.Domain(at))
-        
-        ###############################################################
-        # estimate the relevancy of parameters
-        # print them out together with attribute names,
-        # attribute type and cardinality
-        
-        # notice that Relief is the only measure that can estimate
-        # relevancy for both discrete and continuous variables
-        # for other measure, we have to use the discretized data set
-        # to estimate the relevancy of continuous attributes
-        
-        # for Relief
-        # number of reference examples (m)
-        # number of closest neighbors that are observed (k)
-        
-        relieff = orange.MeasureAttribute_relief(k=self.ReliefK, m=self.ReliefN)
-        entr = orange.MeasureAttribute_info()
-        gainr = orange.MeasureAttribute_gainRatio()
-        gini = orange.MeasureAttribute_gini()
-        
-        prec="%%.%df" % self.Precision
-        prec1="%%.%df" % 2
-        
-        estimators = (relieff, entr, gainr, gini)
-        handle_cont = (1,0,0,0) # does estimator handle cont values?
-        
-        fmt='%-20s '+'%20s '*len(self.est_names)
-        fm=' '*13+'%7.4f'
-#        print fmt % tuple(['Attribute']+self.est_names)
-        cont = 0
-        j=-1
-        for i in self.data.domain.attributes:
-            j+=1
-            cell=QTableItem(self.table,QTableItem.Never,i.name)
-            cell.setText(i.name)
-            self.table.setItem(j,0,cell)
-#            self.table.setText(j,0,i.name)
-            cell=QTableItem(self.table,QTableItem.Never,('D','C')[i.varType==2])
-            cell.setText(('D','C')[i.varType==2])
-            self.table.setItem(j,1,cell)
-#            self.table.setText(j,1,('D','C')[i.varType==2])
-            if i.varType == 1:
-                avals = ""
-                for ii in i:
-                    avals = avals + str(ii) + ","
-                avals
-            else:
-                bas = orange.DomainBasicAttrStat(self.data)
-                avals = ""
-                for bb in bas:
-                    if bb and bb.variable.name == i.name:
-                        avals = str(prec1 % bb.min) + " - " + str(prec1 % bb.max)
-            
-            cell=QTableItem(self.table,QTableItem.Never,avals)
-            cell.setText(avals)
-            self.table.setItem(j,2,cell)
-            #self.table.setText(j,2, avals)
-            if i.varType==1:
-#                print '%2d' % (len(i.values)),
-                cell=QTableItem(self.table,QTableItem.Never,prec % (len(i.values)))
-                cell.setText(prec % (len(i.values)))
-                self.table.setItem(j,3,cell)
-                #self.table.setText(j,3,prec % (len(i.values)))
-                k=-1
-                for e in estimators:
-                    k+=1
-                    cell=QTableItem(self.table,QTableItem.Never,prec % (e(i,self.data)))
-                    cell.setText(prec % (e(i,self.data)))
-                    self.table.setItem(j,4+k,cell)
-                    #self.table.setText(j,4+k,prec % (e(i,self.data)))
-#                    print fm % e(i,data)[0],
-            else:
-                v = disc_data.domain.attributes[cont]
-#                print '%2d' % (len(v.values)),
-                cell=QTableItem(self.table,QTableItem.Never,prec % (len(v.values)))
-                cell.setText(prec % (len(v.values)))
-                self.table.setItem(j,3,cell)
-                #self.table.setText(j,3,prec % (len(v.values)))
-                k=-1
-                for ii in range(len(estimators)):
-                    k+=1
-                    e = estimators[ii]
-                    if handle_cont[ii]:
-                        cell=QTableItem(self.table,QTableItem.Never,prec % (e(i,self.data)))
-                        cell.setText(prec % (e(i,self.data)))
-                        self.table.setItem(j,4+k,cell)
-#                        self.table.setText(j,4+k,prec % (e(i,self.data)))
-#                        print fm % e(i,data)[0],
-                    else:
-                        cell=QTableItem(self.table,QTableItem.Never,prec % (e(v,disc_data)))
-                        cell.setText(prec % (e(v,disc_data)))
-                        self.table.setItem(j,4+k,cell)
-#                        self.table.setText(j,4+k,prec % (e(v,disc_data)))
-#                        print fm % e(v,disc_data)[0],
-                cont = cont + 1
-#            print
-        self.table.adjustColumn(0)
-        for k in range(3,2+len(estimators)):
-            self.table.adjustColumn(k)
+        if self.data:
+            pass
 
     def swapRows(self,i,j):
         for k in range (0, self.table.numCols()):
@@ -550,6 +401,10 @@ class OWITree(OWClassificationTreeViewer):
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owi=OWITree()
+
+    d = orange.ExampleTable('crush')
+    owi.cdata(d)
+
     a.setMainWidget(owi)
     owi.show()
     a.exec_loop()
