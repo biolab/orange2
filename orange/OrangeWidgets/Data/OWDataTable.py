@@ -61,7 +61,6 @@ class OWDataTable(OWWidget):
             ml.sort(lambda x,y: cmp(y[0], x[0]))
             metas = [x[1] for x in ml]
             cols += len(metas)
-##        print 'atts', len(self.data.domain.attributes), 'meta', len(self.data.domain.getmetas()), 'cols', cols
         self.table.setNumCols(cols)
         self.table.setNumRows(len(self.data))
 
@@ -93,7 +92,6 @@ class OWDataTable(OWWidget):
         for (j,m) in enumerate(metas):
             self.progressBarSet(70+j*30/mlen)
             for i in range(instances):
-                print str(self.data[i][m])
                 OWGUI.tableItem(self.table, i, j+col, str(self.data[i][m]), background=QColor(220,220,220))
 
         # adjust the width of the table
