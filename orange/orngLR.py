@@ -144,8 +144,8 @@ class LogRegLearnerClass:
 
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
-        for i in imputer(examples)(examples):
-            print i
+##        for i in imputer(examples)(examples):
+##            print i
             
         if self.fitter:
             learner.fitter = self.fitter
@@ -155,6 +155,8 @@ class LogRegLearnerClass:
         else:
             lr = learner(examples, weight)
         while isinstance(lr, orange.Variable):
+            if isinstance(lr.getValueFrom, orange.ClassifierFromVar) and isinstance(lr.getValueFrom.transformer, orange.Discrete2Continuous):
+                lr = lr.getValueFrom.variable
             attributes = examples.domain.attributes[:]
             attributes.remove(lr)
             examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
