@@ -65,8 +65,11 @@ class OWSurveyPlotGraph(OWVisGraph):
         classNameIndex = -1
         if self.rawdata.domain.classVar:
             classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
-            classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
-            colors = ColorPaletteBrewer(len(classValDict))
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+                classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
+                colors = ColorPaletteBrewer(len(classValDict))
+            else:
+                colors = ColorPaletteHSV()
         
         y = 0
         self.yDataIndices = []
@@ -75,8 +78,10 @@ class OWSurveyPlotGraph(OWVisGraph):
             if validData[i] == 0: continue
             
             curve = subBarQwtPlotCurve(self)
-            newColor = QColor(0,0,0)
-            if classNameIndex != -1: newColor = colors[classValDict[self.rawdata[i].getclass().value]]
+            
+            if classNameIndex == -1: newColor = QColor(0,0,0)
+            elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: newColor = colors[classValDict[self.rawdata[i].getclass().value]]
+            else: newColor = colors[self.noJitteringScaledData[classNameIndex][i]]
                 
             curve.color = newColor
             curve.penColor = newColor

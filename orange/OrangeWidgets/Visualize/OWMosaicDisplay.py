@@ -354,8 +354,10 @@ class OWMosaicDisplay(OWWidget):
         
         if not data: return rect
 
-        originalDist = orange.Distribution(data.domain.classVar.name, self.data)
-        dist = orange.Distribution(data.domain.classVar.name, data)
+        if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
+            originalDist = orange.Distribution(data.domain.classVar.name, self.data)
+            dist = orange.Distribution(data.domain.classVar.name, data)
+            self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist)
 
         if self.showDistribution:
             total = 0
@@ -384,14 +386,11 @@ class OWMosaicDisplay(OWWidget):
                         r.setPoints(x0+1, y0+total, x1-1, y0+total)
                     r.setZ(10); r.show()
                     self.rects.append(r)
-        else:
-            pass
-            
-        self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist)
 
     #################################################
     # add tooltips
     def addTooltip(self, x, y, w, h, condition, apriori, actual):
+        print "actual = ", actual, type(actual)
         examples = sum(list(actual))
         apriori = [val*100.0/float(sum(apriori)) for val in apriori]
         actual = [val*100.0/float(sum(actual)) for val in actual]

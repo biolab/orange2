@@ -252,7 +252,7 @@ class OWParallelGraph(OWVisGraph):
                         data.append([(mean-dev, mean, mean+dev)])
                     elif self.showStatistics == MEDIAN:
                         sorted = Numeric.sort(array)
-                        data.append([(sorted[int(len(a)/4.0)], sorted[int(len(a)/2.0)], sorted[int(len(a)*0.75)])])
+                        data.append([(sorted[int(len(sorted)/4.0)], sorted[int(len(sorted)/2.0)], sorted[int(len(sorted)*0.75)])])
                 else:
                     curr = []
                     classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
