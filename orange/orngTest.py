@@ -232,7 +232,13 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
             raise SystemError, "cannot preprocess testing examples"
 
     nIterations = max(indices)+1
-    testResults = ExperimentResults(nIterations, [l.name for l in learners], examples.domain.classVar.values.native(), weight!=0, examples.domain.classVar.baseValue)
+    if examples.domain.classVar.varType == orange.VarTypes.Discrete:
+        values = list(examples.domain.classVar.values)
+        basevalue = examples.domain.classVar.baseValue
+    else:
+        basevalue = values = None
+        
+    testResults = ExperimentResults(nIterations, [l.name for l in learners], values, weight!=0, basevalue)
     testResults.results = [TestedExample(indices[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
