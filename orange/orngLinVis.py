@@ -376,7 +376,7 @@ class Visualizer:
             except:
                 raise "Unrecognized classifier: %s"%classifier
     
-    def __init__(self, examples, classifier, dimensions = 2, buckets = 3, getpies = 0):
+    def __init__(self, examples, classifier, dimensions = 2, buckets = 3, getpies = 0, getexamples = 1):
         # error detection        
         if len(examples.domain.classVar.values) != 2:
             raise "The domain does not have a binary class. Binary class is required."
@@ -403,11 +403,12 @@ class Visualizer:
         n *= ilength
         beta *= ilength
         self.probfunc = lambda x:probfunc(x*length)
-        
-        # project the example matrix on the separating hyperplane, removing the displacement
-        h_dist = Numeric.dot(m,n)
-        h_proj = m - Numeric.dot(Numeric.reshape(h_dist,(len(examples),1)),Numeric.reshape(n,(1,len(coeffs))))
-        h_dist -= beta # correct distance
+
+        if getexamples or getpies or dimensions > 1:
+            # project the example matrix on the separating hyperplane, removing the displacement
+            h_dist = Numeric.dot(m,n)
+            h_proj = m - Numeric.dot(Numeric.reshape(h_dist,(len(examples),1)),Numeric.reshape(n,(1,len(coeffs))))
+            h_dist -= beta # correct distance
 
         # perform classification for all examples
         if getpies:
@@ -426,48 +427,51 @@ class Visualizer:
                 # evidence for label 1
                 evidence1 *= p1/max(Numeric.sum(evidence1),1e-6)
                 self.pies.append((evidence0,evidence1,projj))
-                
+
         basis_dist = Numeric.dot(basis,n)
         basis_proj = basis - Numeric.dot(Numeric.reshape(basis_dist,(len(coeffs),1)),Numeric.reshape(n,(1,len(coeffs))))
         basis_dist -= beta
 
-        # perform standardization of attributes; the pa
-        for i in xrange(len(coeffs)):
-            # standardize the examples and return parameters
-            (h_proj[:,i],transf) = orngDimRed.VarianceScaling(h_proj[:,i])
-            # now transform the basis and the examples with the same parameters, so that nothing changes
-            (basis_proj[:,i],transf) = orngDimRed.VarianceScaling(basis_proj[:,i],transf)
-            #(m[:,i],transf) = orngDimRed.VarianceScaling(m[:,i],transf)
-
-        # obtain the second dimension using PCA
-        pca = orngDimRed.PCA(h_proj,dimensions-1)
-        # now transform the basis using the same matrix (need N)
-        # U' = U*D*V
-        # N' * V^-1 * D^-1 = N
-        # N = N' * (D*V)^-1
-        DV = Numeric.dot(Numeric.identity(len(coeffs),Numeric.Float)*Numeric.clip(pca.variance,1e-6,1e6),pca.factors)
-        nbasis = Numeric.dot(basis_proj,LinearAlgebra.inverse(DV))
+        # coordinates of the basis vectors in the visualization
+        self.basis_c = [[basis_dist[i]] for i in range(len(coeffs))]
 
         self.coeff_names = coeff_names
         self.coeffs = coeffs
         self.beta = beta
 
-        # coordinates of examples in the visualization
-        self.example_c = [[h_dist[i],pca.loading[i][0]] for i in range(len(examples))]
-        # coordinates of the basis vectors in the visualization
-        self.basis_c = [[basis_dist[i],nbasis[i][0]] for i in range(len(coeffs))]
+        if getexamples:
+            # coordinates of examples in the visualization
+            self.example_c = [[h_dist[i]] for i in range(len(examples))]
+
+        if dimensions > 1:
+            # perform standardization of attributes; the pa
+            for i in xrange(len(coeffs)):
+                # standardize the examples and return parameters
+                (h_proj[:,i],transf) = orngDimRed.VarianceScaling(h_proj[:,i])
+                # now transform the basis and the examples with the same parameters, so that nothing changes
+                (basis_proj[:,i],transf) = orngDimRed.VarianceScaling(basis_proj[:,i],transf)
+                #(m[:,i],transf) = orngDimRed.VarianceScaling(m[:,i],transf)
+
+            # obtain the second dimension using PCA
+            pca = orngDimRed.PCA(h_proj,dimensions-1)
+            # now transform the basis using the same matrix (need N)
+            # U' = U*D*V
+            # N' * V^-1 * D^-1 = N
+            # N = N' * (D*V)^-1
+            DV = Numeric.dot(Numeric.identity(len(coeffs),Numeric.Float)*Numeric.clip(pca.variance,1e-6,1e6),pca.factors)
+            nbasis = Numeric.dot(basis_proj,LinearAlgebra.inverse(DV))
         
-        for j in range(2,dimensions):
-            for i in range(len(examples)):
-                self.example_c[i].append(pca.loading[i][j-1])
-            for i in range(len(coeffs)):
-                self.basis_c[i].append(nbasis[i][j-1])            
+            for j in range(dimensions-1):
+                for i in range(len(coeffs)):
+                    self.basis_c[i].append(nbasis[i][j])            
+            if getexamples:
+                for j in range(dimensions-1):
+                    for i in range(len(examples)):
+                        self.example_c[i].append(pca.loading[i][j])
 
 
 if __name__== "__main__":
     import orngLR_Jakulin, orngSVM, orngMultiClass
-    #t = orange.ExampleTable('x_cmc.tab') # discrete
-    t = orange.ExampleTable('c_cmc.tab') # continuous
 
     def printmodel(t,c,printexamples=1):
         m = Visualizer(t,c,buckets=3,getpies=1)
@@ -529,6 +533,9 @@ if __name__== "__main__":
         print "beta:",-m.beta
 
 
+    t = orange.ExampleTable('x_cmc.tab') # discrete
+    #t = orange.ExampleTable('c_cmc.tab') # continuous
+    
     print "NAIVE BAYES"
     print "==========="
     bl = orange.BayesLearner()
@@ -544,13 +551,12 @@ if __name__== "__main__":
     c = orngLR_Jakulin.BasicLogisticLearner()(t)
     printmodel(t,c,printexamples=0)
 
-    def deactivated():
-        print "\n\nLINEAR SVM"
-        print     "=========="
-        l = orngSVM.BasicSVMLearner()
-        l.kernel = 0 # linear SVM
-        c = l(t)
-        printmodel(t,c,printexamples=0)
+    print "\n\nLINEAR SVM"
+    print     "=========="
+    l = orngSVM.BasicSVMLearner()
+    l.kernel = 0 # linear SVM
+    c = l(t)
+    printmodel(t,c,printexamples=0)
 
     print "\n\nMARGIN SVM"
     print     "=========="
