@@ -16,7 +16,15 @@ if not os.path.exists(updateIcon):
 
 if not os.path.exists(foldersIcon):
     foldersIcon = defaultIcon
-   
+
+def splitDirs(path):
+    dirs, filename = os.path.split(path)
+    listOfDirs = []
+    while dirs != "":
+        dirs, dir = os.path.split(dirs)
+        listOfDirs.insert(0, dir)
+    return listOfDirs
+    
 
 class foldersDlg(QDialog):
     def __init__(self, caption, *args):
@@ -149,6 +157,11 @@ class updateOrangeDlg(QMainWindow):
                 if fnd:
                     fname, version, md = fnd.group("fname", "version", "md5")
                     versions[fname] = ([int(x) for x in version.split(".")], md)
+                    
+                    # add widget category if not already in updateGroups
+                    dirs = splitDirs(fname)
+                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups:
+                        updateGroups.append(dirs[1])
 
         return versions, updateGroups, dontUpdateGroups
 
@@ -170,14 +183,20 @@ class updateOrangeDlg(QMainWindow):
                 if fnd:
                     fname, version, location = fnd.group("fname", "version", "location")                
                     versions[fname] = ([int(x) for x in version.split(".")], location)
+
+                    # add widget category if not already in updateGroups
+                    dirs = splitDirs(fname)
+                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups:
+                        updateGroups.append(dirs[1])
+                        
         return versions, updateGroups, dontUpdateGroups
 
     def writeVersionFile(self):
         vf = open(self.downfile, "wt")
         itms = self.downstuff.items()
         itms.sort(lambda x,y:cmp(x[0], y[0]))
-        for g in self.updateGroups:
-            vf.write("+%s\n" % g)
+        #for g in self.updateGroups:
+        #    vf.write("+%s\n" % g)
         for g in self.dontUpdateGroups:
             vf.write("-%s\n" % g)
         for fname, (version, md) in itms:
@@ -211,15 +230,15 @@ class updateOrangeDlg(QMainWindow):
         itms = upstuff.items()
         itms.sort(lambda x,y:cmp(x[0], y[0]))
 
-        self.addText("Searching for new folders")
-        for category in upUpdateGroups + upDontUpdateGroups:
+        self.addText("Searching for new widget categories...")
+        for category in upUpdateGroups: #+ upDontUpdateGroups:
             if category not in self.updateGroups + self.dontUpdateGroups:
                 self.newGroups.append(category)
                 self.addText("New category found: <b>%s</b>" % (category))
 
         # show dialog with new groups
         if self.newGroups != []:
-            dlg = foldersDlg("New folders have been found. \nPlease check the folders, that you would like to update:\n", None, "", 1)
+            dlg = foldersDlg("New folders have been found. \nPlease check the categories, that you would like to update:\n", None, "", 1)
             for group in self.newGroups: dlg.addCategory(group)
             dlg.finishedAdding(cancel = 0)
 
@@ -231,7 +250,7 @@ class updateOrangeDlg(QMainWindow):
                     self.dontUpdateGroups.append(dlg.folders[i])
             self.newGroups = []
         else:
-            self.addText("No new folders were found.")
+            self.addText("No new categories were found.")
 
         # update new files
         updatedFiles = 0; newFiles = 0
@@ -239,18 +258,18 @@ class updateOrangeDlg(QMainWindow):
         self.statusBar.message("Updating files")
         for fname, (version, location) in itms:
             qApp.processEvents()
-            cat = self.findFileCategory(fname)
+            
+            # check if it is a widget directory that we don't want to update
+            dirs = splitDirs(fname)
+            if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] in self.dontUpdateGroups: continue
+
             if self.downstuff.has_key(fname):
                 # there is a newer version
-                if self.downstuff[fname][0] < upstuff[fname][0] and cat in self.updateGroups:
+                if self.downstuff[fname][0] < upstuff[fname][0]:
                     updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "updating")
             else:
-                if cat in self.updateGroups:
-                    self.updatefile(fname, location, version, "")
-                    newFiles += 1
-                #else: 
-                #    self.addText("Ignoring %s. Category %s is in the ignore list" % (fname, cat))
-                
+                self.updatefile(fname, location, version, "")
+                newFiles += 1
 
         self.writeVersionFile()
         self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles))
@@ -261,16 +280,6 @@ class updateOrangeDlg(QMainWindow):
         
         self.statusBar.message("Finished...")
         
-    def findFileCategory(self, fileName):
-        doc = self.re_documentation.match(fileName)
-        if doc:
-            return "Orange Documentation"
-        
-        fnd = self.re_widget.match(fileName)
-        if fnd: return fnd.group("category")
-
-        return "Orange Root"
-
     # #####################################################
     # download a file with filename fname from the internet
     def download(self, fname):
