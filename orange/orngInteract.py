@@ -22,6 +22,8 @@
 #       separated the 'prepare' function
 #   - 2003/09/18:
 #       added support for cluster coloring
+#   - 2003/09/18:
+#       cleaned up backwards-incompatible changes (grrr) (color changes, discData)
 
 import orange, orngCI
 import warnings, math, string
@@ -105,9 +107,10 @@ class InteractionMatrix:
             t = orange.ExampleTable(exs)
         return t
         
-    def __init__(self, t):
+    def __init__(self, t, save_data=1):
         t = self._prepare(t)
-        self.discData = t   # save the discretized data
+        if save_data:
+            self.discData = t   # save the discretized data
         ### PREPARE INDIVIDUAL ATTRIBUTES ###
 
         # Get the class entropy
@@ -156,7 +159,7 @@ class InteractionMatrix:
             self.attlist.append((self.gains[i],i))
         self.attlist.sort()
 
-    def exportGraph(self, f, absolute_int=10, positive_int = 0, negative_int = 0, best_attributes = 0, print_bits = 1, black_white = 0, significant_digits = 2, postscript = 1, pretty_names = 1, url = 0):
+    def exportGraph(self, f, absolute_int=10, positive_int = 0, negative_int = 0, best_attributes = 0, print_bits = 1, black_white = 0, significant_digits = 2, postscript = 1, pretty_names = 1, url = 0, widget_coloring=1):
         NA = len(self.names)
 
         ### SELECTION OF INTERACTIONS AND ATTRIBUTES ###
@@ -244,12 +247,16 @@ class InteractionMatrix:
                     dir = 'none'
             else:            
                 if ig > 0:
-                    #color = '"0.0 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
-                    color = "green"
+                    if widget_coloring:
+                        color = "green"
+                    else:
+                        color = '"0.0 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
                     dir = "both"
                 else:
-                    #color = '"0.5 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
-                    color = "red"
+                    if widget_coloring:
+                        color = "red"
+                    else:
+                        color = '"0.5 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
                     dir = 'none'
             if not url:
                 f.write("\t%d -> %d [dir=%s,%scolor=%s,label=\"%s%%\",weight=%d];\n"%(i,j,dir,style,color,mc,(perc/30+1)))
