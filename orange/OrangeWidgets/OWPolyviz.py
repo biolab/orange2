@@ -18,6 +18,7 @@ from OData import *
 import OWVisAttrSelection
 from OWVisTools import *
 
+
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
@@ -29,8 +30,8 @@ class OWPolyviz(OWWidget):
     attributeOrdering  = ["Original", "Optimized class separation"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
-    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40']
-    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ]
+    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
+    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", TRUE, TRUE)
@@ -82,8 +83,8 @@ class OWPolyviz(OWWidget):
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
-        self.selClass = QVGroupBox(self.controlArea)
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea)
+        self.selClass = QVGroupBox(self.space)
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.space)
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
@@ -117,6 +118,11 @@ class OWPolyviz(OWWidget):
 
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+
+        self.progressGroup = QVGroupBox(self.space)
+        self.progressGroup.setTitle("Optimization progress")
+        self.progressBar = QProgressBar(100, self.progressGroup, "progress bar")
+        self.progressBar.setCenterIndicator(1)        
 
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
@@ -228,14 +234,25 @@ class OWPolyviz(OWWidget):
     def optimizeSeparation(self):
         if self.data != None:
             if len(self.getShownAttributeList()) > 7:
-                res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
 
             self.graph.scaleDataNoJittering()
-            if self.tryReverse.isChecked() == 1:
-                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), None, str(self.classCombo.currentText()), self.kNeighbours)
+
+            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
+            if self.tryReverse.isChecked() == 1: reverseList = None
+            else: reverseList = self.attributeReverse
+            
+            if text == "ALL":
+                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList, str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
             else:
-                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours)
+                select = int(text)
+                total = len(self.getShownAttributeList())
+                combin = combinations(select, total)
+                self.progressBar.setTotalSteps(combin)
+                self.progressBar.setProgress(0)
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, str(self.classCombo.currentText()), self.kNeighbours, select, int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
+               
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
@@ -262,11 +279,21 @@ class OWPolyviz(OWWidget):
             if text == "ALL": maxLen = len(self.getShownAttributeList())
             else:             maxLen = int(text)
 
+            # compute the number of possible subsets so that when computing we can give a feedback on the progress
+            allVisible = len(self.getShownAttributeList())
+            table = []; total = 0
+            for i in range(2,maxLen+1):
+                possible = fact(allVisible) / (fact(i) * fact(allVisible-i))
+                table.append(possible)
+                total += possible
+
+            self.graph.possibleSubsetsTable = table
+            self.graph.totalPossibleSubsets = total
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             if self.tryReverse.isChecked() == 1:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], None, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, progressBar = self.progressBar)
             else:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen)
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, progressBar = self.progressBar)
             
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
@@ -278,7 +305,7 @@ class OWPolyviz(OWWidget):
             self.optimizationDlg.updateNewResults()
     
     def interestingProjectionsAddItem(self, accuracy, tableLen, attrList, reverse):
-        strList = "(%.2f, %d) - [" %(accuracy, tableLen)
+        strList = "["
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
                 strList += attrList[i] + "-, "
@@ -287,6 +314,10 @@ class OWPolyviz(OWWidget):
         strList = strList[:-2] + "]"
         self.optimizationDlg.insertItem(accuracy, tableLen, attrList, strList)
 
+    #update status on progress bar - gets called by OWPolyvizGraph
+    def updateProgress(self, current, total):
+        self.progressBar.setTotalSteps(total)
+        self.progressBar.setProgress(current)
 
     # ####################################
     # show selected interesting projection

@@ -225,7 +225,7 @@ class OWScatterPlotGraph(OWVisGraph):
         # -----------------------------------------------------------
         # -----------------------------------------------------------
         
-    def getOptimalSeparation(self, attrCount, className, kNeighbours):
+    def getOptimalSeparation(self, attrCount, className, kNeighbours, updateProgress = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return None
@@ -251,9 +251,14 @@ class OWScatterPlotGraph(OWVisGraph):
         classValNum = len(classValues)
         t = time.time()
 
+        
+
         for x in range(attrCount):
             for y in range(x+1, attrCount):
                 testIndex += 1
+                if updateProgress != None:
+                    updateProgress(testIndex, totalTestCount)
+                
                 tempValue = 0
                 table = orange.ExampleTable(domain)
 

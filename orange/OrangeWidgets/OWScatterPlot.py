@@ -26,8 +26,8 @@ class OWScatterPlot(OWWidget):
     spreadType=["none","uniform","triangle","beta"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
-    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40']
-    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ]
+    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
+    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
 
     def __init__(self,parent=None):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
@@ -83,18 +83,15 @@ class OWScatterPlot(OWWidget):
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
         
         #add controls to self.controlArea widget
-        self.attrSelGroup = QVGroupBox(self.controlArea)
-        self.attrSelGroup.setTitle("Shown attributes")
-
-        self.attrXGroup = QVButtonGroup("X axis attribute", self.attrSelGroup)
+        self.attrXGroup = QVButtonGroup("X axis attribute", self.controlArea)
         self.attrX = QComboBox(self.attrXGroup)
         self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrYGroup = QVButtonGroup("Y axis attribute", self.attrSelGroup)
+        self.attrYGroup = QVButtonGroup("Y axis attribute", self.controlArea)
         self.attrY = QComboBox(self.attrYGroup)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrColorGroup = QVButtonGroup("Coloring attribute", self.attrSelGroup)
+        self.attrColorGroup = QVButtonGroup("Coloring attribute", self.controlArea)
         self.attrColorCB = QCheckBox('Enable coloring by', self.attrColorGroup)
         self.attrColorLegendCB = QCheckBox('Show color legend', self.attrColorGroup)
         self.attrColor = QComboBox(self.attrColorGroup)
@@ -102,13 +99,13 @@ class OWScatterPlot(OWWidget):
         self.connect(self.attrColorLegendCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColor, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrShapeGroup = QVButtonGroup("Shaping attribute", self.attrSelGroup)
+        self.attrShapeGroup = QVButtonGroup("Shaping attribute", self.controlArea)
         self.attrShapeCB = QCheckBox('Enable shaping by', self.attrShapeGroup)
         self.attrShape = QComboBox(self.attrShapeGroup)
         self.connect(self.attrShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
-        self.attrSizeGroup = QVButtonGroup("Sizing attribute", self.attrSelGroup)
+        self.attrSizeGroup = QVButtonGroup("Sizing attribute", self.controlArea)
         self.attrSizeShapeCB = QCheckBox('Enable sizing by', self.attrSizeGroup)
         self.attrSizeShape = QComboBox(self.attrSizeGroup)
         self.connect(self.attrSizeShapeCB, SIGNAL("clicked()"), self.updateGraph)
@@ -123,6 +120,13 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.kValue = self.kNeighbours
         self.optimizationDlg.optimizeAllSubsetSeparationButton.setEnabled(0)
         self.optimizationDlg.maxLenCombo.setEnabled(0)
+        self.optimizationDlg.exactlyLenCombo.setEnabled(0)
+        self.optimizationDlg.optimizeSeparationButton.setText("Optimize separation")
+
+        self.progressGroup = QVGroupBox(self.controlArea)
+        self.progressGroup.setTitle("Optimization progress")
+        self.progressBar = QProgressBar(self.progressGroup, "progress bar", QFrame.Raised)
+        self.progressBar.setCenterIndicator(1)
 
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.show)
         self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
@@ -134,7 +138,7 @@ class OWScatterPlot(OWWidget):
         self.box.addWidget(self.statusBar)
 
         self.activateLoadedSettings()
-        self.resize(900, 700)        
+        self.resize(900, 700)
 
     # #########################
     # OPTIONS
@@ -266,7 +270,7 @@ class OWScatterPlot(OWWidget):
     def optimizeSeparation(self):
         if self.data != None:
             self.graph.scaleDataNoJittering()
-            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours)
+            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours, self.updateProgress)
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
@@ -279,6 +283,10 @@ class OWScatterPlot(OWWidget):
             self.optimizationDlg.updateNewResults()
             self.optimizationDlg.interestingList.setCurrentItem(0)
 
+    #update status on progress bar - gets called by OWScatterplotGraph
+    def updateProgress(self, current, total):
+        self.progressBar.setTotalSteps(total)
+        self.progressBar.setProgress(current)
 
     def showSelectedAttributes(self):
         if self.optimizationDlg.interestingList.count() == 0: return

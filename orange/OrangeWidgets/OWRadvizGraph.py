@@ -36,8 +36,16 @@ def getPermutationList(elements, tempPerm, currList):
         currList[str(tempPerm)] = copy(tempPerm)
     
 
-
-
+def fact(i):
+        ret = 1
+        while i > 1:
+            ret = ret*i
+            i -= 1
+        return ret
+    
+# return number of combinations where we select "select" from "total"
+def combinations(select, total):
+    return fact(total)/ (fact(total-select)*fact(select))
 
 
 ###########################################################################################
@@ -47,6 +55,9 @@ class OWRadvizGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
+        self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
+        self.triedPossibilities = 0 # how many possibilities did we already try
+        self.startTime = time.time()
 
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
@@ -223,7 +234,7 @@ class OWRadvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, className, kNeighbours, printTime = 1):
+    def getOptimalSeparation(self, attrList, className, kNeighbours, printTime = 1, progressBar = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return attrList
@@ -253,7 +264,7 @@ class OWRadvizGraph(OWVisGraph):
         indPermutations = {}
         getPermutationList(indices, [], indPermutations)
 
-        print "Total permutations: ", str(len(indPermutations.values()))
+        print "Total permutations: ", len(indPermutations.values())
 
         fullList = []
         permutationIndex = 0 # current permutation index
@@ -290,15 +301,22 @@ class OWRadvizGraph(OWVisGraph):
         domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
 
         t = time.time()
+
+        if progressBar:
+            progressBar.setTotalSteps(len(indPermutations.values()))
+            progressBar.setProgress(0)
         
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
             permutationIndex += 1
-            curveData = []
-            tempPermValue = 0
-
-            table = orange.ExampleTable(domain)
+            
+            if progressBar != None:
+                progressBar.setProgress(progressBar.progress()+1)
            
+            tempPermValue = 0
+            table = orange.ExampleTable(domain)
+
+                     
             for i in range(dataSize):
                 if validData[i] == 0: continue
                 
@@ -348,9 +366,10 @@ class OWRadvizGraph(OWVisGraph):
                 
                 index = classValues.index(table[i].getclass().value)
                 tempPermValue += float(prob[index])/float(sum)
+            
             """
 
-            # to bo delalo, ko bo popravljen orangov kNNLearner
+            # use knn on every example and compute its accuracy
             classValues = list(self.rawdata.domain[className].values)
             knn = orange.kNNLearner(table, k=kNeighbours)
             for j in range(len(table)):
@@ -368,32 +387,61 @@ class OWRadvizGraph(OWVisGraph):
 
         if printTime:
             secs = time.time() - t
-            print "------------------------------"
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
         return fullList
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours, numOfAttr, maxResultsLen):
+    
+
+    def getOptimalSubsetSeparation(self, attrList, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
+        full = []
+        
+        totalPossibilities = 0
+        for i in range(numOfAttr, 2, -1):
+            totalPossibilities += combinations(i, len(attrList))
+
+        if progressBar:
+            progressBar.setTotalSteps(totalPossibilities)
+            progressBar.setProgress(0)
+                
+        for i in range(numOfAttr, 2, -1):
+            full1 = self.getOptimalExactSeparation(attrList, [], className, kNeighbours, i, maxResultsLen, progressBar)
+            full = full + full1
+            while len(full) > maxResultsLen:
+                el = min(full)
+                full.remove(el)
+            
+        return full
+
+    def getOptimalExactSeparation(self, attrList, subsetList, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
         if attrList == [] or numOfAttr == 0:
-            if len(subsetList) < 2: return []
-            print "table of possibilities to try: ", self.possibleSubsetsTable
-            self.possibleSubsetsTable[len(subsetList)-2] -= 1
-            print subsetList,
-            return self.getOptimalSeparation(subsetList, className, kNeighbours, printTime = 0)
-        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours, numOfAttr, maxResultsLen)
+            if len(subsetList) < 3 or numOfAttr != 0: return []
+            if progressBar: progressBar.setProgress(progressBar.progress()+1)
+            print subsetList
+            if self.totalPossibilities > 0 and self.triedPossibilities > 0:
+                secs = int(time.time() - self.startTime)
+                totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
+                restSecs = totalExpectedSecs - secs
+                print secs, totalExpectedSecs, restSecs
+                print "Used time: %d:%d:%d, Remaining time: %d:%d:%d (total experiments: %d, rest: %d" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
+            self.triedPossibilities += 1
+            return self.getOptimalSeparation(subsetList, className, kNeighbours)
+
+        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, className, kNeighbours, numOfAttr, maxResultsLen, progressBar)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, className, kNeighbours, numOfAttr-1, maxResultsLen)
+        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, className, kNeighbours, numOfAttr-1, maxResultsLen, progressBar)
 
         # find max values in booth lists
         full = full1 + full2
         shortList = []
         for i in range(min(maxResultsLen, len(full))):
-            (accuracy, tableLen, list) = max(full)
-            shortList.append((accuracy, tableLen, list))
-            full.remove((accuracy, tableLen, list))
-            
+            item = max(full)
+            shortList.append(item)
+            full.remove(item)
+
         return shortList
+            
 
 
 if __name__== "__main__":

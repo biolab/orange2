@@ -37,6 +37,16 @@ def getPermutationList(elements, tempPerm, currList, checkReverse):
                 if str(temp) in currList: return
         currList[str(tempPerm)] = copy(tempPerm)
 
+def fact(i):
+        ret = 1
+        while i > 1:
+            ret = ret*i
+            i -= 1
+        return ret
+    
+# return number of combinations where we select "select" from "total"
+def combinations(select, total):
+    return fact(total)/ (fact(total-select)*fact(select))
 
     
 
@@ -319,7 +329,7 @@ class OWPolyvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, attrReverseDict, className, kNeighbours, printTime = 1):
+    def getOptimalSeparation(self, attrList, attrReverseDict, className, kNeighbours, printTime = 1, progressBar = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering. A discrete class must be selected."
             return attrList
@@ -393,12 +403,19 @@ class OWPolyvizGraph(OWVisGraph):
 
         t = time.time()
 
+        if progressBar:
+            progressBar.setTotalSteps(len(indPermutations.values())*len(attrReverse))
+            progressBar.setProgress(0)
+
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
             for attrOrder in attrReverse:
                 permutationIndex += 1
-                tempPermValue = 0
 
+                if progressBar != None:
+                    progressBar.setProgress(progressBar.progress()+1)
+
+                tempPermValue = 0
                 table = orange.ExampleTable(domain)
 
                 # calculate projections
@@ -469,15 +486,40 @@ class OWPolyvizGraph(OWVisGraph):
 
         return fullList
                 
+    def getOptimalSubsetSeparation(self, attrList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
+        full = []
+        
+        totalPossibilities = 0
+        for i in range(numOfAttr, 2, -1):
+            totalPossibilities += combinations(i, len(attrList))
 
-    def getOptimalSubsetSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, maxLen, maxResultsLen):
-        if attrList == [] or maxLen == 0:
-            if len(subsetList) < 3: return []
+        if progressBar:
+            progressBar.setTotalSteps(totalPossibilities)
+            progressBar.setProgress(0)
+                
+        for i in range(numOfAttr, 2, -1):
+            full1 = self.getOptimalExactSeparation(attrList, [], attrReverseDict, className, kNeighbours, i, maxResultsLen, progressBar)
+            full = full + full1
+            while len(full) > maxResultsLen:
+                el = min(full)
+                full.remove(el)
+            
+        return full
+
+    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
+        if attrList == [] or numOfAttr == 0:
+            if len(subsetList) < 3 or numOfAttr != 0: return []
+            if progressBar:
+                progressBar.setProgress(progressBar.progress()+1)
+                print progressBar.progress()
+            
+            print subsetList
             return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
-        full1 = self.getOptimalSubsetSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, maxLen, maxResultsLen)
+
+        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalSubsetSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, maxLen-1, maxResultsLen)
+        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, numOfAttr-1, maxResultsLen, progressBar)
 
         # find max values in booth lists
         full = full1 + full2

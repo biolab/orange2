@@ -17,7 +17,7 @@ from OWRadvizGraph import *
 from OData import *
 import OWVisAttrSelection
 from OWVisTools import *
-
+import time
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -29,8 +29,8 @@ class OWRadviz(OWWidget):
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
-    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40']
-    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ]
+    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
+    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", TRUE, TRUE)
@@ -80,8 +80,8 @@ class OWRadviz(OWWidget):
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
-        self.selClass = QVGroupBox(self.controlArea)
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea)
+        self.selClass = QVGroupBox(self.space)
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.space)
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
@@ -116,6 +116,11 @@ class OWRadviz(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
+        self.progressGroup = QVGroupBox(self.space)
+        self.progressGroup.setTitle("Optimization progress")
+        self.progressBar = QProgressBar(100, self.progressGroup, "progress bar")
+        self.progressBar.setCenterIndicator(1)
+            
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
@@ -207,7 +212,21 @@ class OWRadviz(OWWidget):
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
             self.graph.scaleDataNoJittering()
-            fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
+            
+            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
+            if text == "ALL":
+                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
+            else:
+                select = int(text)
+                total = len(self.getShownAttributeList())
+                combin = combinations(select, total)
+                self.progressBar.setTotalSteps(combin)
+                self.progressBar.setProgress(0)
+                self.graph.totalPossibilities = combin
+                self.graph.triedPossibilities = 0
+                self.graph.startTime = time.time()
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, int(text), int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
+                
             if len(fullList) == 0: return
 
             # fill the "interesting visualizations" list box
@@ -221,14 +240,7 @@ class OWRadviz(OWWidget):
             self.optimizationDlg.interestingList.setCurrentItem(0)
             #self.updateGraph()
 
-
-    def fact(self, i):
-        ret = 1
-        while i > 1:
-            ret = ret*i
-            i -= 1
-        return ret
-
+   
     # #############################################
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
@@ -245,14 +257,16 @@ class OWRadviz(OWWidget):
 
             # compute the number of possible subsets so that when computing we can give a feedback on the progress
             allVisible = len(self.getShownAttributeList())
-            table = []
+            table = []; total = 0
             for i in range(2,maxLen+1):
-                possible = self.fact(allVisible) / (self.fact(i) * self.fact(allVisible-i))
+                possible = fact(allVisible) / (fact(i) * fact(allVisible-i))
                 table.append(possible)
+                total += possible
 
             self.graph.possibleSubsetsTable = table
+            self.graph.totalPossibleSubsets = total
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
-            fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen)
+            fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, self.progressBar)
             if len(fullList) == 0: return
             
             # fill the "interesting visualizations" list box
@@ -265,6 +279,7 @@ class OWRadviz(OWWidget):
             self.optimizationDlg.updateNewResults()
             self.optimizationDlg.interestingList.setCurrentItem(0)
             #self.updateGraph()
+
 
     # ####################################
     # show selected interesting projection
