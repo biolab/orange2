@@ -3,3 +3,4 @@
 return 42
 
 test
+test2
