@@ -2,7 +2,7 @@
 <name>Parallel coordinates</name>
 <description>Shows data using parallel coordianates visualization method</description>
 <category>Visualization</category>
-<icon>pics\ParallelCoordinates.png</icon>
+<icon>icons\ParallelCoordinates.png</icon>
 """
 # ParallelCoordinates.py
 #
@@ -66,6 +66,9 @@ class OWParallelCoordinates(OWWidget):
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classAttributeChange)
         self.connect(self.attributesLB, SIGNAL("selectionChanged()"), self.attributeSelectionChange)
+
+        self.graph.setCoordinateAxes(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
+        self.repaint()
     
     def setCanvasColor(self, c):
         self.GraphCanvasColor = str(c.name())
@@ -98,7 +101,7 @@ class OWParallelCoordinates(OWWidget):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
         self.graph.setCoordinateAxes(attributes)
-        #self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
+        self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
 
@@ -131,7 +134,7 @@ class OWParallelCoordinates(OWWidget):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
 
-        #self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
+        self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
 

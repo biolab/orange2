@@ -34,7 +34,7 @@ class OWParallelGraph(QwtPlot):
         self.scaledData = []
         self.scaledDataAttributes = []
 
-        self.enableAxis(QwtPlot.yLeft, 0)
+        self.enableAxis(QwtPlot.yLeft, 1)
         self.enableAxis(QwtPlot.xBottom, 1)
         self.setAutoReplot(FALSE)
         self.setAutoLegend(FALSE)
@@ -53,6 +53,8 @@ class OWParallelGraph(QwtPlot):
         self.setAxisTitleFont(QwtPlot.xTop, newFont)
         self.setAxisTitleFont(QwtPlot.yLeft, newFont)
         self.setAxisTitleFont(QwtPlot.yRight, newFont)
+        #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+        #self.setAxisScale(QwtPlot.yRight, 0, 1, 1)
 
         newFont = QFont('Helvetica', 9)
         self.setAxisFont(QwtPlot.xBottom, newFont)
@@ -75,6 +77,11 @@ class OWParallelGraph(QwtPlot):
         self.showYRaxisTitle = FALSE
         self.YRaxisTitle = None
 
+    def setCanvasColor(self, c):
+        self.setCanvasBackground(c)
+        self.repaint()
+
+
     def saveToFile(self):
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
         fileName = str(qfileName)
@@ -94,9 +101,7 @@ class OWParallelGraph(QwtPlot):
         self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
-       
         self.updateToolTips()
-
 
     def updateToolTips(self):
         "Updates the tool tips"
@@ -104,32 +109,12 @@ class OWParallelGraph(QwtPlot):
 #        self.dynamicToolTip.addToolTip(self.yLeft, self.tipLeft)
 #        self.dynamicToolTip.addToolTip(self.xBottom, self.tipBottom)
 
-    def setRightTip(self,explain):
-        "Sets the tooltip for the right y axis"
-        self.tipRight = explain
-        self.updateToolTips()
-
-    def setLeftTip(self,explain):
-        "Sets the tooltip for the left y axis"
-        self.tipLeft = explain
-        self.updateToolTips()
-
-    def setBottomTip(self,explain):
-        "Sets the tooltip for the left x axis"
-        self.tipBottom = explain
-        self.updateToolTips()
-
     def resizeEvent(self, event):
         "Makes sure that the plot resizes"
         self.updateToolTips()
         self.updateLayout()
 
     def paintEvent(self, qpe):
-        """
-        Paints the graph. 
-        Called whenever repaint is needed by the system
-        or user explicitly calls repaint()
-        """
         QwtPlot.paintEvent(self, qpe) #let the ancestor do its job
         self.replot()
  
@@ -151,22 +136,6 @@ class OWParallelGraph(QwtPlot):
         self.updateLayout()
         self.repaint()
 
-    def setShowXaxisTitle(self, b):
-        self.showXaxisTitle = b
-        if (self.showXaxisTitle <> 0):
-            self.setAxisTitle(QwtPlot.xBottom, self.XaxisTitle)
-        else:
-            self.setAxisTitle(QwtPlot.xBottom, None)
-        self.updateLayout()
-        self.repaint()
-
-    def setGridColor(self, c):
-        self.setGridPen(QPen(c))
-        self.repaint()
-
-    def setCanvasColor(self, c):
-        self.setCanvasBackground(c)
-        self.repaint()
 
     def setData(self, data):
         self.rawdata = data
@@ -219,17 +188,15 @@ class OWParallelGraph(QwtPlot):
         if len(labels) == 0:
             return
 
-        for label in labels:        
-            newCurveKey = self.insertCurve(label)
+        for i in range(len(labels)):
+            newCurveKey = self.insertCurve(labels[i])
             self.setCurveStyle(newCurveKey, QwtCurve.Lines)
             self.setCurveSymbol(newCurveKey, symbol)
+            self.setCurveData(newCurveKey, [i,i], [0,1])
             self.axesKeys.append(newCurveKey)
 
-        for i in range(len(labels)):
-            self.setCurveData(self.axesKeys[i], [i,i], [0,1])
-
-        #self.updateLayout()      
-        self.updateToolTips()
+        self.updateLayout()      
+        #self.updateToolTips()
 
     def updateDataCurves(self, labels, className):
         self.curveKeys = []
@@ -267,8 +234,8 @@ if __name__== "__main__":
     a = QApplication(sys.argv)        
     c = OWParallelGraph()
     c.setCoordinateAxes(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
-    c.setMainTitle("Graph Title")
-    c.setShowMainTitle(1)
+    #c.setMainTitle("Graph Title")
+    #c.setShowMainTitle(1)
         
     a.setMainWidget(c)
     c.show()
