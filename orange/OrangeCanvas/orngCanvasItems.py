@@ -270,6 +270,7 @@ class CanvasWidget(QCanvasRectangle):
 
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, mousePos):
+        if self.widget.inList == []: return FALSE
         LBox = QRect(self.x(), self.y()+18,8,16)
         if LBox.contains(mousePos):
             return TRUE
@@ -278,6 +279,7 @@ class CanvasWidget(QCanvasRectangle):
 
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, mousePos):
+        if self.widget.outList == []: return FALSE
         RBox = QRect(self.x() + 60, self.y()+18,8,16)
         if RBox.contains(mousePos):
             return TRUE
