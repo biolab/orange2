@@ -223,7 +223,7 @@ class OWSmartVisualization(OWWidget):
 
         self.updateGraph()
     
-    def updateGraph(self):
+    def updateGraph(self, *args):
         for i in range(len(self.graphs)):
             (attr1, attr2, className, title) = self.graphParameters[i]
             self.graphs[i].updateData(attr1, attr2, className)

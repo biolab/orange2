@@ -18,14 +18,13 @@ class OWSurveyPlotGraph(OWVisGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, className, statusBar = None):
+    def updateData(self, labels, statusBar = None):
         self.removeCurves()
         self.statusBar = statusBar
         self.tips.removeAll()
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
-        if className != "(One color)": classNameIndex = self.attributeNames.index(className)
-        else:                          classNameIndex = -1
+        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         self.length = len(labels)
         indices = []
         xs = []
@@ -65,7 +64,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
-            if classNameIndex != -1: newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
+            newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
                 
             curve.color = newColor
             curve.penColor = newColor
@@ -87,14 +86,13 @@ class OWSurveyPlotGraph(OWVisGraph):
             self.setCurveStyle(ckey, QwtCurve.UserCurve)
             self.setCurveData(ckey, xData, yData)
 
-        if self.enabledLegend and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            varName = self.rawdata.domain[className].name
-            varValues = self.getVariableValuesSorted(self.rawdata, className)
+        if self.enabledLegend and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            varValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             for ind in range(len(varValues)):
                 newColor = QColor()
                 if len(varValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[ind]*360, 255, 255)
                 else:                                         newColor.setHsv((ind*360)/float(len(valLen), 255, 255))
-                self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
+                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
 
             
             

@@ -21,7 +21,7 @@ import OWVisAttrSelection
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous", "exampleTracking", "showLegend"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "exampleTracking", "showLegend"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
 
@@ -38,7 +38,6 @@ class OWSurveyPlot(OWWidget):
         self.GraphCanvasColor = str(Qt.white.name())
         self.data = None
         self.globalValueScaling = 0
-        self.showContinuous = 0
         self.exampleTracking = 1
         self.showLegend = 1
 
@@ -54,13 +53,6 @@ class OWSurveyPlot(OWWidget):
         self.graph = OWSurveyPlotGraph(self.mainArea)
         self.box.addWidget(self.graph)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-
-        self.selClass = QVGroupBox(self.controlArea)
-        self.selClass.setTitle("Class attribute")
-        self.classCombo = QComboBox(self.selClass)
-        self.showContinuousCB = QCheckBox('show continuous', self.selClass)
-        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
-        self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -128,7 +120,6 @@ class OWSurveyPlot(OWWidget):
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         self.options.showLegend.setChecked(self.showLegend)
         self.options.exampleTracking.setChecked(self.exampleTracking)
-        self.showContinuousCB.setChecked(self.showContinuous)
 
         self.graph.updateSettings(enabledLegend = self.showLegend)        
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
@@ -240,35 +231,6 @@ class OWSurveyPlot(OWWidget):
         self.secondaryAttr.setCurrentItem(len(self.data.domain)>1)
     
 
-    # set combo box values with attributes that can be used for coloring the data
-    def setClassCombo(self):
-        exText = str(self.classCombo.currentText())
-        self.showContinuous = self.showContinuousCB.isOn()
-        self.classCombo.clear()
-        
-        if self.data == None:
-            return
-
-        # add possible class attributes
-        self.classCombo.insertItem('(One color)')
-        for i in range(len(self.data.domain)):
-            attr = self.data.domain[i]
-            if attr.varType == orange.VarTypes.Discrete or self.showContinuous:
-                self.classCombo.insertItem(attr.name)
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == exText:
-                self.classCombo.setCurrentItem(i)
-                return
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
-                self.classCombo.setCurrentItem(i)
-                return
-        self.classCombo.insertItem(self.data.domain.classVar.name)
-        self.classCombo.setCurrentItem(self.classCombo.count()-1)
-
-
     def sortData2(self, primaryAttr, secondaryAttr, data):
         newData = orange.ExampleTable(data.domain)
 
@@ -292,14 +254,14 @@ class OWSurveyPlot(OWWidget):
         data.sort(primaryAttr)
         return data
         
-    def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)
+    def updateGraph(self, *args):
+        self.graph.updateData(self.getShownAttributeList(), self.statusBar)
         #self.graph.replot()
         self.graph.update()
         self.repaint()
 
     # set combo box values with attributes that can be used for coloring the data
-    def sortingClick(self):
+    def sortingClick(self, *args):
         primaryOn = self.primarySortCB.isOn()
         secondaryOn = self.secondarySortCB.isOn()
 
@@ -348,7 +310,6 @@ class OWSurveyPlot(OWWidget):
     def cdata(self, data):
         #self.data = orange.Preprocessor_dropMissing(data)
         self.data = data
-        self.setClassCombo()
         self.setSortCombo()
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
@@ -369,15 +330,9 @@ class OWSurveyPlot(OWWidget):
 
         if self.data == None: return
 
-        if self.data.domain.classVar.name not in list:
-            self.shownAttribsLB.insertItem(self.data.domain.classVar.name)
-            
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
-
-        for attr in self.data.domain.attributes:
-            if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
+        for attr in self.data.domain:
+            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
+            else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
     #################################################

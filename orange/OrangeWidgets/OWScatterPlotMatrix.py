@@ -142,7 +142,7 @@ class OWScatterPlotMatrix(OWWidget):
         graph.setGridColor(self.options.gSetGridColor)
         graph.setCanvasColor(self.options.gSetCanvasColor)
         graph.setPointWidth(self.pointWidth)
-        graph.setShowFilledSymbols(self.showFilledSymbols)
+        graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
         graph.setShowMainTitle(self.showTitle)
         graph.setMainTitle(title)
         graph.setPointWidth(self.pointWidth)

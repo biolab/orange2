@@ -185,7 +185,7 @@ class OWSieveMultigram(OWWidget):
         
     #################################################
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         self.maxLineWidth = int(str(self.options.lineCombo.currentText()))
         self.pearsonMaxRes = int(str(self.options.pearsonMaxResCombo.currentText()))
         self.pearsonMinRes = float(str(self.options.minResidualEdit.text()))

@@ -50,6 +50,7 @@ class OWSieveDiagram(OWWidget):
         
         #GUI
         #add controls to self.controlArea widget
+        self.controlArea.setMinimumWidth(220)
         self.attrSelGroup = QVGroupBox(self.controlArea)
         self.attrSelGroup.setTitle("Shown attributes")
 
@@ -59,7 +60,7 @@ class OWSieveDiagram(OWWidget):
         self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateData)
 
         self.hbox2 = QHBox(self.attrSelGroup, "y")
-        self.attrYCaption = QLabel( "X attribute: ", self.hbox2)
+        self.attrYCaption = QLabel( "Y attribute: ", self.hbox2)
         self.attrY = QComboBox(self.hbox2)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateData)
 

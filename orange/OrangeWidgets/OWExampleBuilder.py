@@ -119,7 +119,7 @@ class OWExampleBuilder(OWWidget):
             if validExample:
                 self.data.append(example)
 
-        self.send("cdata", self.data)
+        self.send("Classified Examples", self.data)
         
     def save(self):
         qname = QFileDialog.getSaveFileName( os.getcwd() + "/" + "data.tab", "Tabulated data (*.tab)", self, "", "Save Data Table")

@@ -230,15 +230,14 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
 
     def setLineTracking(self, b):
-        print self.lineTracking, b
         self.lineTracking = b
         self.graph.updateSettings(lineTracking = b)
 
-    def setGlobalValueScaling(self):
-        self.globalValueScaling = self.options.globalValueScaling.isChecked()
+    def setGlobalValueScaling(self, b):
+        self.globalValueScaling = b
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
-        if self.globalValueScaling == 1:
+        if self.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
