@@ -250,6 +250,7 @@ class SchemaDoc(QMainWindow):
             while self.getWidgetByCaption(caption + " (" + str(i) + ")"): i+=1
             caption = caption + " (" + str(i) + ")"
         newwidget.updateText(caption)
+        newwidget.instance.setCaption("Qt " + caption)
 
         self.signalManager.addWidget(newwidget.instance)
         newwidget.show()
@@ -501,6 +502,7 @@ class SchemaDoc(QMainWindow):
         #format string with file content
         t = "    "  # instead of tab
         imports = "import sys, os, cPickle\nfrom orngSignalManager import *\n"
+        captions = "# set widget captions\n" +t+t
         instancesT = "# create widget instances\n" +t+t
         instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
@@ -527,6 +529,7 @@ class SchemaDoc(QMainWindow):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
+                captions  += "self.ow%s.setCaption('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
@@ -668,7 +671,7 @@ ow.saveSettings()
         if asTabs:
             whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t+ captions + "\n"+t+t+ progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")

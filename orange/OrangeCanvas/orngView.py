@@ -57,6 +57,8 @@ class SchemaView(QCanvasView):
     def openActiveWidget(self):
         if self.tempWidget.instance != None:
             self.tempWidget.instance.reshow()
+            if self.tempWidget.instance.isMinimized():  # if widget is minimized, show its normal size
+                self.tempWidget.instance.showNormal()
 
     # popMenuAction - user selected to rename active widget            
     def renameActiveWidget(self):
