@@ -16,9 +16,9 @@
 
 <hr>
 
-<H2>LogisticClassifier</H2>
+<H2>LogRegClassifier</H2>
 
-<P><CODE>LogisticClassifier</CODE> stores estimated values of regression coefficients and their significances, and uses them to predict classes and class probabilities using the equations described above.</P>
+<P><CODE>LogRegClassifier</CODE> stores estimated values of regression coefficients and their significances, and uses them to predict classes and class probabilities using the equations described above.</P>
 
 <P class=section>Attributes</P>
 <DL class=attributes>
@@ -39,10 +39,10 @@
 </DD>
 
 <DT>fitStatus</DT>
-<DD>Tells how the model fitting ended - either regularly  (<CODE>LogisticFitter.OK</CODE>), or it was interrupted due to one of beta coefficients escaping towards infinity (<CODE>LogisticFitter.Infinity</CODE>) or since the values didn't converge (<CODE>LogisticFitter.Divergence</CODE>). The value tells about the classifier's "reliability"; the classifier itself is useful in either case.</DD>
+<DD>Tells how the model fitting ended - either regularly  (<CODE>LogRegFitter.OK</CODE>), or it was interrupted due to one of beta coefficients escaping towards infinity (<CODE>LogRegFitter.Infinity</CODE>) or since the values didn't converge (<CODE>LogRegFitter.Divergence</CODE>). The value tells about the classifier's "reliability"; the classifier itself is useful in either case.</DD>
 </DL>
 
-<H2>LogisticLearner</H2>
+<H2>LogRegLearner</H2>
 
 <P>Logistic learner fits the beta coefficients and computes the related statistics by calling the specified <CODE>fitter</CODE>.</P>
 
@@ -67,16 +67,16 @@ else:
 </XMP>
 </DL>
 
-<P>As all learners, <CODE>LogisticLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
+<P>As all learners, <CODE>LogRegLearner</CODE> naturally provides the usual call operator, whom you pass examples (and weights, if you have them) and which returns a classifier or throws an exception if it can't. Use <CODE>fitModel</CODE> in the code that will iteratively remove problem attributes until it gets a classifier; in fact, that's exactly what <a href="../orngLR.htm"><CODE>orngLR</CODE></A> does.</DD>
 </DL>
       
 <H2><A name=fitters></A>Logistic Regression Fitters</H2>
 
-<P>Fitters are objects that LogisticLearner uses to fit the model.</P>
+<P>Fitters are objects that LogRegLearner uses to fit the model.</P>
 
-<H3>LogisticFitter</H3>
+<H3>LogRegFitter</H3>
 
-<P><CODE>LogisticFitter</CODE> is the abstract base class for logistic fitters. It defines the form of call operator and the constants denoting its (un)success:</P>
+<P><CODE>LogRegFitter</CODE> is the abstract base class for logistic fitters. It defines the form of call operator and the constants denoting its (un)success:</P>
 
 <P class=section>Constants</P>
 <DL class=attributes>
@@ -122,9 +122,9 @@ else:
 </XMP>
 </DL>
 
-<H3>LogisticFitterMinimization</H3>
+<H3>LogRegFitter_Cholesky</H3>
 
-<P><CODE>LogisticFitterMinimization</CODE> is the sole fitter available at the moment. It is a C++ translation of <A href="http://users.bigpond.net.au/amiller/">Alan Miller's logistic regression code</A>. It uses Newton-Raphson algorithm to iteratively minimize least squares error computed from learning examples.</P>
+<P><CODE>LogRegFitter_Cholesky</CODE> is the sole fitter available at the moment. It is a C++ translation of <A href="http://users.bigpond.net.au/amiller/">Alan Miller's logistic regression code</A>. It uses Newton-Raphson algorithm to iteratively minimize least squares error computed from learning examples.</P>
 
 <hr>
 
@@ -137,7 +137,7 @@ attributes and a dichotome class, we show only a very basic example. More detail
 
 <xmp class="code">
 >>> data = orange.ExampleTable("ionosphere")
->>> logistic = orange.LogisticLearner(data)
+>>> logistic = orange.LogRegLearner(data)
 >>>
 >>> for ex in data[:5]:
 ...    print ex.getclass(), logistic(ex)
