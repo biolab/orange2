@@ -33,9 +33,11 @@ class SchemaDoc(QMainWindow):
         self.widgets = []
         self.signalManager = SignalManager()
 
-        self.path = os.getcwd()
-        self.filename = str(self.caption())
-        self.filenameValid = FALSE
+        self.documentpath = os.getcwd()
+        self.documentname = str(self.caption())
+        self.applicationpath = os.getcwd()
+        self.applicationname = str(self.caption())
+        self.documentnameValid = FALSE
  
 
     def createView(self):
@@ -285,22 +287,22 @@ class SchemaDoc(QMainWindow):
     # SAVING, LOADING, ....
     # ###########################################
     def saveDocument(self):
-        if not self.filenameValid:
+        if not self.documentnameValid:
             self.saveDocumentAs()
         else:
             self.save()
 
     def saveDocumentAs(self):
-        qname = QFileDialog.getSaveFileName( self.path + "/" + self.filename, "Orange Widget Scripts (*.ows)", self, "", "Save File")
+        qname = QFileDialog.getSaveFileName( self.documentpath + "/" + self.documentname, "Orange Widget Scripts (*.ows)", self, "", "Save File")
         if qname.isEmpty():
             return
         name = str(qname)
         if name[-4] != ".":
             name = name + ".ows"
-        self.path = os.path.dirname(name)
-        self.filename = os.path.basename(name)
-        self.setCaption(self.filename)
-        self.filenameValid = TRUE
+        self.documentpath = os.path.dirname(name)
+        self.documentname = os.path.basename(name)
+        self.setCaption(self.documentname)
+        self.documentnameValid = TRUE
         self.save()        
 
     # save the file            
@@ -336,14 +338,14 @@ class SchemaDoc(QMainWindow):
             lines.appendChild(temp)
 
         xmlText = doc.toprettyxml()
-        file = open(self.path + "/" + self.filename, "wt")
+        file = open(self.documentpath + "/" + self.documentname, "wt")
         file.write(xmlText)
         file.flush()
         file.close()
         doc.unlink()
 
-        self.saveWidgetSettings(self.path + "/" + self.filename[:-3] + "sav")
-        self.canvasDlg.addToRecentMenu(self.path + "/" + self.filename)        
+        self.saveWidgetSettings(self.documentpath + "/" + self.documentname[:-3] + "sav")
+        self.canvasDlg.addToRecentMenu(self.documentpath + "/" + self.documentname)        
 
     def saveWidgetSettings(self, filename):
         list = {}
@@ -422,31 +424,33 @@ class SchemaDoc(QMainWindow):
         self.canvas.update()
         self.hasChanged = FALSE
         self.canvasDlg.enableSave(FALSE)
-        self.path = os.path.dirname(filename)
-        self.filename = os.path.basename(filename)
-        self.setCaption(self.filename)
-        self.filenameValid = TRUE
+        self.documentpath = os.path.dirname(filename)
+        self.documentname = os.path.basename(filename)
+        self.setCaption(self.documentname)
+        self.documentnameValid = TRUE
 
-        self.loadWidgetSettings(self.path + "/" + self.filename[:-3] + "sav")
+        self.loadWidgetSettings(self.documentpath + "/" + self.documentname[:-3] + "sav")
 
     # ###########################################
     # save document as application
     # ###########################################
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
-        appName = self.filename
-        if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
-            appName = appName + ".py"
-        elif len(appName) > 4 and appName[-4] == '.':
-            appName = appName[:-4] + ".py"
+        appName = self.applicationname
+        if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".": appName = appName + ".py"
+        elif len(appName) > 4 and appName[-4] == '.': appName = appName[:-4] + ".py"
         appName = appName.replace(" ", "")
-        qname = QFileDialog.getSaveFileName( self.path + "/" + appName, "Orange Scripts (*.py)", self, "", "Save File as Application")
-        if qname.isEmpty():
-            return
+
+        qname = QFileDialog.getSaveFileName( self.applicationpath + "/" + self.applicationname , "Orange Scripts (*.py)", self, "", "Save File as Application")
+        if qname.isEmpty(): return
+        
         appName = str(qname)
         if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
             appName = appName + ".py"
+
+        self.applicationname = appName
         (dir, fileName) = os.path.split(appName)
+        self.applicationpath = dir
         fileName = fileName[:-3]
 
         #format string with file content
