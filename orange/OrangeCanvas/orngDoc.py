@@ -21,13 +21,14 @@ FALSE = 0
 class SchemaDoc(QMainWindow):
     def __init__(self, canvasDlg, *args):
         apply(QMainWindow.__init__,(self,) + args)
+        self.canvasDlg = canvasDlg
+        self.canSave = 0
         self.resize(700,500)
         self.showNormal()
-        self.canvasDlg = canvasDlg
         self.setCaption("Schema " + str(orngResources.iDocIndex))
         orngResources.iDocIndex = orngResources.iDocIndex + 1
-        self.hasChanged = FALSE
-        self.canvasDlg.enableSave(FALSE)
+        
+        self.enableSave(FALSE)
         self.setIcon(QPixmap(orngResources.file_new))
         self.lines = []
         self.widgets = []
@@ -42,11 +43,12 @@ class SchemaDoc(QMainWindow):
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.setCentralWidget(self.canvasView)
         self.canvasView.show()
+        
 
     # we are about to close document
     # ask user if he is sure
     def closeEvent(self,ce):
-        if not self.hasChanged:
+        if not self.canSave:
             ce.accept()
             self.clear()
             return
@@ -61,6 +63,12 @@ class SchemaDoc(QMainWindow):
         else:
             ce.ignore()
 
+    def enableSave(self, enable):
+        self.canSave = enable
+        self.canvasDlg.enableSave(enable)
+
+    def focusInEvent(self, ev):
+        self.canvasDlg.enableSave(self.canSave)
 
     # add line connecting widgets outWidget and inWidget
     # if necessary ask which signals to connect
@@ -125,8 +133,7 @@ class SchemaDoc(QMainWindow):
         line.show()
         line.setEnabled(enabled)
 
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
         
         return line
         """
@@ -172,8 +179,7 @@ class SchemaDoc(QMainWindow):
         line.inWidget.updateTooltip()
         line.setSignals(signals + connected)
 
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
 
         return line
 
@@ -190,8 +196,7 @@ class SchemaDoc(QMainWindow):
         self.lines.remove(line)
         line.remove()
         #line.repaintLine(self)
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)        
+        self.enableSave(TRUE)        
 
     # remove line, connecting two widgets
     def removeLine(self, widgetFrom, widgetTo):
@@ -209,8 +214,7 @@ class SchemaDoc(QMainWindow):
         if not otherSignals:
             self.removeLine(widgetFrom, widgetTo)
 
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
 
     def addWidget(self, widget):
         newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
@@ -239,8 +243,7 @@ class SchemaDoc(QMainWindow):
         newwidget.show()
         newwidget.updateTooltip()
         self.widgets.append(newwidget)
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
         self.canvas.update()    
         return newwidget
 
@@ -255,8 +258,7 @@ class SchemaDoc(QMainWindow):
         self.widgets.remove(widget)
         widget.remove()
 
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
 
     def clear(self):
         while self.widgets != []:
@@ -269,8 +271,7 @@ class SchemaDoc(QMainWindow):
             line.setEnabled(1)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
 
     def disableAllLines(self):
         for line in self.lines:
@@ -278,8 +279,7 @@ class SchemaDoc(QMainWindow):
             line.setEnabled(0)
             #line.repaintLine(self.canvasView)
         self.canvas.update()
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
+        self.enableSave(TRUE)
 
     # return the widget instance that has caption "widgetName"
     def getWidgetByCaption(self, widgetName):
@@ -326,8 +326,7 @@ class SchemaDoc(QMainWindow):
 
     # save the file            
     def save(self):
-        self.hasChanged = FALSE
-        self.canvasDlg.enableSave(FALSE)
+        self.enableSave(FALSE)
 
         # create xml document
         doc = Document()
@@ -442,8 +441,7 @@ class SchemaDoc(QMainWindow):
             #tempLine.repaintLine(self.canvasView)
 
         self.canvas.update()
-        self.hasChanged = FALSE
-        self.canvasDlg.enableSave(FALSE)
+        self.enableSave(FALSE)
         self.documentpath = os.path.dirname(filename)
         self.documentname = os.path.basename(filename)
         self.setCaption(self.documentname)

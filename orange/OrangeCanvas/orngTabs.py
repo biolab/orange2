@@ -5,7 +5,7 @@
 from qt import *
 import os.path
 from string import strip
-import orngDoc
+import orngDoc, orngOutput
 from xml.dom.minidom import Document, parse
 
 TRUE  = 1
@@ -61,6 +61,8 @@ class WidgetButton(QToolButton):
 		win = self.canvasDlg.workspace.activeWindow()
 		if (win != None and isinstance(win, orngDoc.SchemaDoc)):
 			win.addWidget(self)
+		elif (isinstance(win, orngOutput.OutputWindow)):
+			QMessageBox.information(self,'Qrange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
 
 class WidgetTab(QWidget):
 	def __init__(self, *args):

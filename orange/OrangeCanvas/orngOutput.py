@@ -39,6 +39,9 @@ class OutputWindow(QMainWindow):
 		self.resize(700,500)
 		self.showNormal()
 
+	def focusInEvent(self, ev):
+		self.canvasDlg.enableSave(1)
+
 	def catchException(self, catch):
 		if catch: sys.excepthook = self.exceptionHandler
 		else:     sys.excepthook = self.defaultExceptionHandler

@@ -114,7 +114,7 @@ class OrangeCanvasDlg(QMainWindow):
 			
 		# if registry still doesn't exist then something is very wrong...
 		if not os.path.exists(self.registryFileName):
-			QMessageBox.error( None, "Orange Canvas", "Unable to create widget registry. Exiting...", QMessageBox.Ok + QMessageBox.Default )
+			QMessageBox.critical( None, "Orange Canvas", "Unable to create widget registry. Exiting...", QMessageBox.Ok, QMessageBox.Cancel)
 			self.quit()
 
 		if self.settings.has_key("WidgetTabs"):
@@ -265,6 +265,8 @@ class OrangeCanvasDlg(QMainWindow):
 		win = self.workspace.activeWindow()
 		if isinstance(win, orngDoc.SchemaDoc):
 			win.saveDocument()
+		elif isinstance(win, orngOutput.OutputWindow):
+			self.menuItemSaveOutputWindow()
 
 	def menuItemSaveAs(self):
 		win = self.workspace.activeWindow()
@@ -399,12 +401,15 @@ class OrangeCanvasDlg(QMainWindow):
 		self.statusBar.message("")
 
 	def menuItemSaveOutputWindow(self):
-		qname = QFileDialog.getSaveFileName( self.canvasDir + "/Output.txt", "Text (*.txt)", self, "", "Save Output To File")
+		qname = QFileDialog.getSaveFileName( self.canvasDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
 		if qname.isEmpty(): return
 		name = str(qname)
 
+		text = str(self.output.textOutput.text())
+		text = text.replace("</nobr>", "</nobr><br>")
+
 		file = open(name, "wt")
-		file.write(str(self.output.textOutput.text()))
+		file.write(text)
 		file.flush()
 		file.close()
 
@@ -626,6 +631,8 @@ class WidgetWorkspace(QWorkspace):
 				item.parentWidget().move((k+1)*self.off,(k+1)*self.off)
 				item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
 
+	def windowActivated(self, window):
+		print "activated ", window
 
 
 app = QApplication(sys.argv) 
