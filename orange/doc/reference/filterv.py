@@ -5,6 +5,8 @@ import orange
 
 data = orange.ExampleTable("lenses")
 
+############ THIS IS WHAT YOU CAN DO WITH DISCRETE ATTRIBUTES
+
 print "\nYoung or presbyopic with astigmatism"
 fya = orange.Filter_values(domain = data.domain)
 fya["age"] = "young"

@@ -64,7 +64,7 @@
 <P>The classifier can treat continuous and discrete attributes, and can even distinguish between ordinal and nominal attributes. See information on <a href="ExamplesDistance.htm">distance measuring</a> for details.</P>
 
 
-<p>We will test the learner on 'iris' dataset (note that the script's output depends upon the Python's random number generator and will not always be the same.</p>
+<p>We will test the learner on 'iris' dataset. We shall split it onto train (80%) and test (20%) sets, learn on training examples and test on five randomly selected test examples.</p>
 
 <p class="header">part of <a href="knnlearner.py">knnlearner.py</a>
 (uses <a href="iris.tab">iris.tab</a>)</p>
@@ -72,19 +72,23 @@
 >>> import orange, orngTest, orngStat
 >>> data = orange.ExampleTable("iris")
 >>>
->>> knn = orange.kNNLearner(data, k=10)
+>>> rndind = orange.MakeRandomIndices2(data, p0=0.8)
+>>> train = data.select(rndind, 0)
+>>> test = data.select(rndind, 1)
+>>>
+>>> knn = orange.kNNLearner(train, k=10)
 >>> for i in range(5):
-...     example = data.randomexample()
+...     example = test.randomexample()
 ...     print example.getclass(), knn(example)
 ...
-ris-versicolor Iris-versicolor
-Iris-virginica Iris-virginica
+Iris-setosa Iris-setosa
 Iris-versicolor Iris-versicolor
-Iris-virginica Iris-virginica
+Iris-versicolor Iris-versicolor
+Iris-setosa Iris-setosa
 Iris-setosa Iris-setosa
 </xmp>
 
-<P>The secret of kNN's success is that examples in iris dataset appear in three well separated clusters. The classifier's accuraccy will remain perfect even at very large or small number of neighbours.</p>
+<P>The secret of kNN's success is that the examples in iris dataset appear in three well separated clusters. The classifier's accuraccy will remain excellent even with very large or small number of neighbours.</p>
 
 <p>As many experiments have shown, a selection of examples distance measure does not have a greater and predictable effect on the performance of kNN classifiers. So there is not much point in changing the default. If you decide to do so, you need to set the <code>distanceConstructor</code> to an instance of one of the classes for <a href="ExamplesDistance.htm">distance measuring</a>.</p>
 
@@ -92,15 +96,15 @@ Iris-setosa Iris-setosa
 >>> knn = orange.kNNLearner()
 >>> knn.k = 10
 >>> knn.distanceConstructor = orange.ExamplesDistanceConstructor_Hamiltonian()
->>> knn = knn(data)
+>>> knn = knn(train)
 >>> for i in range(5):
-...     example = data.randomexample()
+...     example = test.randomexample()
 ...     print example.getclass(), knn(example)
 ...
-ris-versicolor Iris-versicolor
-Iris-virginica Iris-virginica
+Iris-virginica Iris-versicolor
+Iris-setosa Iris-setosa
 Iris-versicolor Iris-versicolor
-Iris-virginica Iris-virginica
+Iris-setosa Iris-setosa
 Iris-setosa Iris-setosa
 </xmp>
 
