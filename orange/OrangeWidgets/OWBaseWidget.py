@@ -270,6 +270,8 @@ class OWBaseWidget(QDialog):
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
         #if self.stackHeight > 0: return  # if this widet is already processing something return
+
+        if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
         
         # we define only a way to handle signals that have defined a handler function
         for key in self.linksIn.keys():
@@ -289,6 +291,7 @@ class OWBaseWidget(QDialog):
 
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
+        if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
         self.needProcessing = 0
 
     # set new data from widget widgetFrom for a signal with name signalName
