@@ -106,9 +106,10 @@ install:	all
 dist:
 	cd .. ; \
         sh ../dedos ; \
-	tar -czf orange07.tgz source doc modules copying building \
-		--exclude *.ncb --exclude *.plg --exclude *.ppp --exclude *.px --exclude *.bak --exclude *.opt --exclude stamp --exclude cvs --exclude *.so --exclude *.pyd --exclude *.dll \
-                --exclude OrangeCanvas --exclude GUIApplications --exclude OrangeWidgets --exclude external/*.c --exclude external/*.i ; \
+	tar -czf orange09.tgz source doc modules copying building \
+		--exclude *.ncb --exclude *.plg --exclude *.ppp --exclude *.px --exclude *.bak --exclude *.opt --exclude stamp --exclude cvs --exclude *.so --exclude *.pyc --exclude *.pyd --exclude *.dll \
+		--exclude CVS --exclude outputs \
+		--exclude OrangeCanvas --exclude GUIApplications --exclude OrangeWidgets --exclude external/*.c --exclude external/*.i ; \
 	cd source
 
 
