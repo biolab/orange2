@@ -361,7 +361,7 @@ class OWBaseWidget(QDialog):
     def printEvent(self, type, text):
         if not self.eventHandler: return
         if text == None:
-            self.eventHandler(text)
+            self.eventHandler("")
         else:                
             self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
 
