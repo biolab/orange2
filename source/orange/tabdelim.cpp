@@ -554,7 +554,7 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
     return false;
 
   string atom;
-  while (*curr)
+  while (*curr) {
     switch(*curr) {
       case '\r':
       case '\n':
@@ -573,10 +573,10 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms)
 
       default:
         if ((*curr>=' ') || (*curr<0))
-          atom += *curr++;
-        else
-          curr++;
+          atom += *curr;
     };
+    curr++;
+  }
 
   if (atom.length() || atoms.size())
     atoms.push_back(atom);
