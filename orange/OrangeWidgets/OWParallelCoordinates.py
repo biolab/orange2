@@ -402,8 +402,8 @@ class OWParallelCoordinates(OWWidget):
         if self.data == None: return
 
         for attr in self.data.domain:
-            if attr.name in list: self.shownAttribsLB.insertItem(attr)
-            else:                 self.hiddenAttribsLB.insertItem(attr)
+            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
+            else:                 self.hiddenAttribsLB.insertItem(attr.name)
                 
         self.updateGraph()
     #################################################

@@ -39,7 +39,7 @@ class OWMosaicDisplay(OWWidget):
         self.lines = []
         self.tooltips = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("view", tuple)]
     
         #load settings
@@ -154,7 +154,7 @@ class OWMosaicDisplay(OWWidget):
     ######################################################################
     ## DATA signal
     # receive new data and update all fields
-    def data(self, data):
+    def cdata(self, data):
         self.data = orange.Preprocessor_dropMissing(data)
         self.initCombos(self.data)
         self.updateData()
@@ -162,7 +162,7 @@ class OWMosaicDisplay(OWWidget):
 
     ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
-    def updateData(self):
+    def updateData(self, *args):
         if self.data == None : return
 
         self.showLines = self.showLinesCB.isOn()
