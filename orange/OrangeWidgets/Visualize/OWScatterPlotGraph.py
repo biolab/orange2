@@ -151,7 +151,7 @@ class OWScatterPlotGraph(OWVisGraph):
         
         if self.showClusters:
             validData = self.getValidList([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)])
-            data = self.createProjectionAsExampleTable(xAttr, yAttr, validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
+            data = self.createProjectionAsExampleTable([self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)], validData = validData, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
             graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
@@ -269,8 +269,8 @@ class OWScatterPlotGraph(OWVisGraph):
             else:
                 if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
-                xVals = []; yVals = []
 
+                shownSubsetCount = 0
                 for i in range(len(self.rawdata)):
                     if self.rawdata[i][xAttr].isSpecial() == 1: continue
                     if self.rawdata[i][yAttr].isSpecial() == 1: continue
@@ -297,11 +297,39 @@ class OWScatterPlotGraph(OWVisGraph):
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
                     if self.subsetData:  self.showFilledSymbols = selected
+                    shownSubsetCount += selected
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
                         
                     # we add a tooltip for this point
                     self.addTip(x, y, toolTipList, i)
+
+                # if we have a data subset that contains examples that don't exist in the original dataset we show them here
+                if self.subsetData != None and len(self.subsetData) != shownSubsetCount:
+                    self.showFilledSymbols = 1
+                    classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
+                    for i in range(len(self.subsetData)):
+                        if self.subsetData[i] in self.rawdata: continue
+                        if self.subsetData[i][xAttr].isSpecial() or self.subsetData[i][yAttr].isSpecial() : continue
+                        if colorIndex != -1 and self.subsetData[i][colorIndex].isSpecial() : continue
+                        if shapeIndex != -1 and self.subsetData[i][shapeIndex].isSpecial() : continue
+                        if sizeShapeIndex != -1 and self.subsetData[i][sizeShapeIndex].isSpecial() : continue
+                        
+                        if discreteX == 1: x = attrXIndices[self.subsetData[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                        else:              x = self.subsetData[i][xAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+
+                        if discreteY == 1: y = attrYIndices[self.subsetData[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                        else:              y = self.subsetData[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+
+                        newColor = QColor(0,0,0)
+                        if colorIndex != -1: newColor.setHsv(classColors.getHue(int(classIndices[self.subsetData[i][colorIndex].value])), 255, 255)
+                                
+                        Symbol = self.curveSymbols[0]
+                        if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
+
+                        size = self.pointWidth
+                        if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
+                        self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
         
             """            
@@ -457,11 +485,7 @@ class OWScatterPlotGraph(OWVisGraph):
         return (xArray, yArray)
 
 
-    # ##############################################################
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, xAttr, yAttr, validData = None, classList = None, domain = None, jitterSize = 0.0):
-        attrIndices = [self.attributeNames.index(xAttr), self.attributeNames.index(yAttr)]
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
         if not validData: validData = self.getValidList(attrIndices)
 
         if not classList:
@@ -476,6 +500,14 @@ class OWScatterPlotGraph(OWVisGraph):
             yArray += (RandomArray.random(len(yArray))-0.5)*jitterSize
         data = Numeric.compress(validData, Numeric.array((xArray, yArray, classList)))
         data = Numeric.transpose(data)
+        return data
+
+
+    # ##############################################################
+    # create the projection of attribute indices given in attrIndices and create an example table with it. 
+    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, domain = None, jitterSize = 0.0):
+        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, jitterSize)
         return orange.ExampleTable(domain, data)
 
 
@@ -558,7 +590,7 @@ class OWScatterPlotGraph(OWVisGraph):
             testIndex += 1
             if self.clusterOptimization.isOptimizationCanceled(): return
 
-            data = self.createProjectionAsExampleTable(attr1, attr2, domain = domain, jitterSize = jitterSize)
+            data = self.createProjectionAsExampleTable([self.attributeNames.index(attr1), self.attributeNames.index(attr2)], domain = domain, jitterSize = jitterSize)
             graph, valueDict, closureDict, polygonVerticesDict, otherDict = self.clusterOptimization.evaluateClusters(data)
 
             allValue = 0.0; allClosure = []; allPolygonVertices = []; allComponents = []

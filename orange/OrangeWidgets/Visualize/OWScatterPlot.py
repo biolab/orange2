@@ -106,7 +106,7 @@ class OWScatterPlot(OWWidget):
         self.graph.kNNOptimization = self.optimizationDlg
 
         # cluster dialog
-        self.clusterDlg = ClusterOptimization(None, self.graph)
+        self.clusterDlg = ClusterOptimization(self, self.graph)
         self.clusterDlg.parentName = "ScatterPlot"
         self.clusterDlg.label1.hide()
         self.clusterDlg.optimizationTypeCombo.hide()
@@ -337,51 +337,29 @@ class OWScatterPlot(OWWidget):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
         (accuracy, other_results, tableLen, list, tryIndex, strList) = val
-
-        attrNames = [attr.name for attr in self.data.domain]
-        for item in list:
-            if not item in attrNames:
-                print "invalid settings"
-                return
-
-        self.attrX = list[0]
-        self.attrY = list[1]
-        self.attrColor = self.data.domain.classVar.name
-
+        kNNValues = None
         if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
             kNNValues = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable(self.attrX, self.attrY))
             if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNValues = [1.0 - val for val in kNNValues]
-            self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = kNNValues)
-        else:
-            self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = None, clusterClosure = None)
-        self.graph.repaint()        
+            clusterClosure = self.graph.clusterClosure
+        else: clusterClosure = None
+
+        self.showAttributes(list, kNNValues, clusterClosure)
         
 
     def showSelectedCluster(self):
         self.graph.removeAllSelections()
         val = self.clusterDlg.getSelectedCluster()
         if not val: return
-        (value, closure, vertices, list, classValue, tryIndex, strList) = val
+        (value, closure, vertices, attrList, classValue, tryIndex, strList) = val
 
-        attrNames = [attr.name for attr in self.data.domain]
-        for item in list:
-            if not item in attrNames:
-                print "invalid settings"
-                return
-
-        self.attrX = list[0]
-        self.attrY = list[1]
-        self.attrColor = self.data.domain.classVar.name
-        
         if self.clusterDlg.clusterStabilityButton.isOn():
             validData = self.graph.getValidList([self.graph.attributeNames.index(self.attrX), self.graph.attributeNames.index(self.attrY)])
-            shortPointStability = Numeric.compress(validData, self.clusterDlg.pointStability)
-            self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = shortPointStability, clusterClosure = closure)
-        else:
-            self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = None, clusterClosure = closure)
-        
-        self.graph.repaint()
+            insideColors = Numeric.compress(validData, self.clusterDlg.pointStability)
+        else: insideColors = None
 
+        self.showAttributes(attrList, insideColors, clusterClosure = closure)
+        
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
                 print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
@@ -389,6 +367,18 @@ class OWScatterPlot(OWWidget):
             print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
         print "---------------------------"
         
+    def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
+        attrNames = [attr.name for attr in self.data.domain]
+        for item in attrList:
+            if not item in attrNames:
+                print "invalid settings"
+                return
+
+        self.attrX = attrList[0]; self.attrY = attrList[1]
+        self.attrColor = self.data.domain.classVar.name
+
+        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = insideColors, clusterClosure = clusterClosure)
+        self.graph.repaint()        
 
         
     # #############################
@@ -476,7 +466,9 @@ class OWScatterPlot(OWWidget):
 
     def subsetdata(self, data):
         self.graph.subsetData = data
+        qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
         self.updateGraph()
+        self.clusterDlg.setSubsetData(data)
        
     
     # receive information about which attributes we want to show on x and y axis
@@ -558,6 +550,27 @@ class OWScatterPlot(OWWidget):
         if newColor.isValid():
             self.graphGridColor = str(newColor.name())
             self.graph.setGridColor(newColor)
+
+    def removeGraphProperties(self):
+        attrs = ["pointWidth", "showLegend", "showClusters", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "showAxisScale", "autoSendSelection"]
+        self.oldSettings = dict([(attr, getattr(self, attr)) for attr in attrs])
+
+        self.pointWidth = 4
+        self.showLegend = 0
+        self.showClusters = 0
+        self.showXAxisTitle = 0
+        self.showYAxisTitle = 0
+        self.showVerticalGridlines = 0
+        self.showHorizontalGridlines = 0
+        self.showAxisScale = 0
+        self.autoSendSelection = 0
+        #self.setAxisScale()
+        #self.updateValues()
+
+    def restoreGraphProperties(self):
+        if hasattr(self, "oldSettings"):
+            for key in self.oldSettings:
+                self.__setattr__(key, self.oldSettings[key])
 
 
 #test widget appearance
