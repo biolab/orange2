@@ -22,7 +22,7 @@ import OWToolbars
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "showDistributions", "autoSendSelection"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "showDistributions", "autoSendSelection", "optimizedDrawing"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -41,6 +41,7 @@ class OWScatterPlot(OWWidget):
         self.showHorizontalGridlines = 0
         self.showLegend = 1
         self.showDistributions = 0
+        self.optimizedDrawing = 1 
         
         self.jitterContinuous = 0
         self.jitterSize = 5
@@ -70,34 +71,32 @@ class OWScatterPlot(OWWidget):
 
         #x attribute
         self.attrX = ""
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X axis attribute ", callback = self.removeSelectionsAndUpdateGraph, sendString = 1)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X axis attribute ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # y attribute
         self.attrY = ""
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y axis attribute ", callback = self.removeSelectionsAndUpdateGraph, sendString = 1)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y axis attribute ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
 
         # coloring
         self.showColorLegend = 0
         self.attrColor = ""
         box = OWGUI.widgetBox(self.GeneralTab, " Color attribute")
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
-        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendString=1)
+        self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # shaping
         self.attrShape = ""
-        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape attribute ", callback = self.updateGraph, sendString=1)
+        self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
                 
         # sizing
         self.attrSize = ""
-        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size attribute ", callback = self.updateGraph, sendString=1)
+        self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
         self.optimizationDlg = kNNOptimization(None)
         self.optimizationDlg.parentName = "ScatterPlot"
-        self.optimizationDlg.optimizeAllSubsetSeparationButton.setEnabled(0)
-        self.optimizationDlg.maxLenCombo.setEnabled(0)
-        self.optimizationDlg.exactlyLenCombo.setEnabled(0)
-        self.optimizationDlg.optimizeSeparationButton.setText("Optimize separation")
+        self.optimizationDlg.optimizationTypeCombo.setEnabled(0)
+        self.optimizationDlg.attributeCountCombo.setEnabled(0)
         self.graph.kNNOptimization = self.optimizationDlg
         
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "VizRank optimization dialog", callback = self.optimizationDlg.reshow)
@@ -108,22 +107,20 @@ class OWScatterPlot(OWWidget):
 
         # ####################################
         #K-NN OPTIMIZATION functionality
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
-        self.optimizationDlg.saveProjectionButton.setEnabled(0)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
         self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)
 
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
-        self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         
-        self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
 
         # ####################################
         # SETTINGS TAB
 
-        # #####
         # point width
         OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point Width', minValue=1, maxValue=20, step=1, callback=self.setPointWidth, ticks=1)
 
@@ -133,10 +130,8 @@ class OWScatterPlot(OWWidget):
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box2)
         self.jitterSizeCombo = OWGUI.comboBox(box2, self, "jitterSize", callback = self.setJitterSize, items = self.jitterSizeList)
-        OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.setJitterCont)
+        OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.setJitterCont, tooltip = "Does jittering apply also on continuous attributes?")
         
-
-        # ####
         # general graph settings
         box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
         OWGUI.checkBox(box, self, 'showXAxisTitle', 'X axis title', callback = self.updateGraph)
@@ -144,14 +139,17 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
         OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
         OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setFilledSymbols)
+        OWGUI.checkBox(box, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
 
-        OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection)
+        OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = "Data selection", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         
         self.gSetGridColorB = QPushButton("Grid Color", self.SettingsTab)
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
+        self.connect(self.gSetGridColorB, SIGNAL("clicked()"), self.setGraphGridColor)
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
         
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
@@ -164,86 +162,21 @@ class OWScatterPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        """
-        #self.SettingsTab.jitteringButtons.setButton(self.spreadType.index(self.jitteringType))
-        self.SettingsTab.gSetXaxisCB.setChecked(self.showXAxisTitle)
-        self.SettingsTab.gSetYaxisCB.setChecked(self.showYAxisTitle)
-        self.SettingsTab.gSetVgridCB.setChecked(self.showVerticalGridlines)
-        self.SettingsTab.gSetHgridCB.setChecked(self.showHorizontalGridlines)
-        self.SettingsTab.gSetLegendCB.setChecked(self.showLegend)
-        self.SettingsTab.gShowFilledSymbolsCB.setChecked(self.showFilledSymbols)
-        self.SettingsTab.showDistributionsCB.setChecked(self.showDistributions)
-        self.SettingsTab.jitterContinuous.setChecked(self.jitterContinuous)
-        self.SettingsTab.autoSendSelection.setChecked(self.autoSendSelection)
-        self.setAutoSendSelection() # update send button state
-        
-        self.SettingsTab.jitterSize.clear()
-        for i in range(len(self.jitterSizeList)):
-            self.SettingsTab.jitterSize.insertItem(self.jitterSizeList[i])
-        self.SettingsTab.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
-
-        self.SettingsTab.widthSlider.setValue(self.pointWidth)
-        self.SettingsTab.widthLCD.display(self.pointWidth)
-        """
-
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.graph.enableGridXB(self.showVerticalGridlines)
         self.graph.enableGridYL(self.showHorizontalGridlines)
+
         self.graph.updateSettings(enabledLegend = self.showLegend)
-        
         self.graph.updateSettings(showDistributions = self.showDistributions)
         self.graph.updateSettings(jitterContinuous = self.jitterContinuous)
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
         
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
-
-
-    def setVerticalGridlines(self):
-        self.graph.enableGridXB(self.showVerticalGridlines)
-
-    def setHorizontalGridlines(self):
-        self.graph.enableGridYL(self.showHorizontalGridlines)
-
-    def setJitterCont(self):
-        self.graph.updateSettings(jitterContinuous = self.jitterContinuous)
-        self.updateGraph()
-
-    def setJitterSize(self):
-        self.graph.setJitterSize(self.jitterSizeNums[self.jitterSize])
-        self.updateGraph()
-
-    def setFilledSymbols(self):
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        self.updateGraph()
-
-    def setPointWidth(self):
-        self.graph.setPointWidth(self.pointWidth)
-        self.updateGraph()
-
-    def setShowLegend(self):
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.updateGraph()
-
-    def setAutoSendSelection(self):
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-            
-
-    # send signals with selected and unselected examples as two datasets
-    def sendSelections(self):
-        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.attrX, self.attrY)
-        self.send("Selected Examples",selected)
-        self.send("Unselected Examples",unselected)
-        self.send("Example Distribution", merged)
-
-
+        
 
     # #######################################################################################################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -275,71 +208,49 @@ class OWScatterPlot(OWWidget):
         self.repaint()
 
     # reevaluate projections in result list with different k values
-    def testCurrentProjections(self):
-        kListStr = "3,5,10,15,20,30,50,70,100,150,200"
-        (Qstring,ok) = QInputDialog.getText("K values", "K values to test (separated with comma)", kListStr)
-        if not ok: return
-        ks = str(Qstring)
-        kListStr = ks.split(",")
-        kList = []
-        for k in kListStr: kList.append(int(k))
+    def reevaluateProjections(self):
+        results = list(self.optimizationDlg.getShownResults())
+        self.optimizationDlg.clearResults()
 
-        results = []
-        count = self.optimizationDlg.interestingList.count()
         self.progressBarInit()
         self.optimizationDlg.disableControls()
-        oldKValue = self.optimizationDlg.kValue
-        for i in range(count):
-            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
-            sumAcc = 0.0
-            print "Experiment %2.d - %s" % (i+1, str(list))
-            for k in kList:
-                self.optimizationDlg.kValue = k
-                sumAcc += self.graph.getProjectionQuality(list[0], list[1], self.data.domain.classVar.name)
-            results.append((sumAcc/float(len(kList)), tableLen, list))
-            self.progressBarSet(100*i/float(count))
 
-        self.optimizationDlg.kValue = oldKValue
-        self.optimizationDlg.clear()
-        while results != []:
-            (accuracy, tableLen, list) = max(results)
-            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-            results.remove((accuracy, tableLen, list))
+        # create a dataset with scaled data
+        fullData = orange.ExampleTable(self.data.domain)
+        for i in range(len(self.data)):
+            fullData.append([self.graph.noJitteringScaledData[ind][i] for ind in range(len(self.data.domain.attributes))] + [self.data[i][self.data.domain.classVar.name]])
 
-        self.optimizationDlg.updateNewResults()
-        #self.optimizationDlg.save("temp.proj")
-        self.optimizationDlg.interestingList.setCurrentItem(0)
+        
+        testIndex = 0
+        for (acc, tableLen, [xattr, yattr], strList) in results:
+            testIndex += 1
+            self.progressBarSet(100.0*testIndex/float(len(results)))
+            
+            table = fullData.select([xattr,yattr, self.data.domain.classVar.name])
+            table = orange.Preprocessor_dropMissing(table)
+            if len(table) < self.optimizationDlg.minExamples: continue
+
+            accuracy = self.optimizationDlg.kNNComputeAccuracy(table)
+            self.optimizationDlg.addResult(self.data, accuracy, len(table), [xattr, yattr])
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
-
+        self.optimizationDlg.finishedAddingResults()
+        
 
     # ####################################
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
-        if self.data != None:
-            self.progressBarInit()
-            self.optimizationDlg.disableControls()
-        
-            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
-            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name)
-            if fullList == []: return
+        if self.data == None: return
+        self.progressBarInit()
+        self.optimizationDlg.disableControls()
+    
+        self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
+        fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.optimizationDlg.addResult)
 
-            # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
-
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
-            else: funct = min
-            while fullList != []:
-                (accuracy, tableLen, list) = funct(fullList)
-                self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-                fullList.remove((accuracy, tableLen, list))
-                
-            self.optimizationDlg.updateNewResults()
-            self.optimizationDlg.interestingList.setCurrentItem(0)
-
-            self.progressBarFinished()
-            self.optimizationDlg.enableControls()
+        self.progressBarFinished()
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
 
     #update status on progress bar - gets called by OWScatterplotGraph
     def updateProgress(self, current, total):
@@ -347,14 +258,11 @@ class OWScatterPlot(OWWidget):
         self.progressBar.setProgress(current)
 
     def showSelectedAttributes(self):
-        if self.optimizationDlg.interestingList.count() == 0: return
-        index = self.optimizationDlg.interestingList.currentItem()
-        (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFiltered[index]
+        val = self.optimizationDlg.getSelectedProjection()
+        if not val: return
+        (accuracy, tableLen, list, strList) = val
 
-        attrNames = []
-        for attr in self.data.domain:
-            attrNames.append(attr.name)
-        
+        attrNames = [attr.name for attr in self.data.domain]
         for item in list:
             if not item in attrNames:
                 print "invalid settings"
@@ -362,10 +270,6 @@ class OWScatterPlot(OWWidget):
 
         self.attrX = list[0]
         self.attrY = list[1]
-        if len(list)>2: self.attrShape = list[2]
-        else: self.attrShape = "(One shape)"
-        if len(list)>3: self.attrSize = list[3]
-        else: self.attrSize = "(One size)"
         self.attrColor = self.data.domain.classVar.name
         
         self.updateGraph()
@@ -420,13 +324,24 @@ class OWScatterPlot(OWWidget):
 
     def updateGraph(self, *args):
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.statusBar)
-        self.graph.update()
+        #self.graph.update()
         #self.graph.replot()
 
-    ####### CDATA ################################
+    # send signals with selected and unselected examples as two datasets
+    def sendSelections(self):
+        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.attrX, self.attrY)
+        self.send("Selected Examples",selected)
+        self.send("Unselected Examples",unselected)
+        self.send("Example Distribution", merged)
+
+
+    # #######################################
+    # SCATTERPLOT SIGNALS
+    # #######################################
+
     # receive new data and update all fields
     def cdata(self, data):
-        self.optimizationDlg.clear()
+        self.optimizationDlg.clearResults()
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
@@ -437,9 +352,7 @@ class OWScatterPlot(OWWidget):
         
         self.updateGraph()
        
-    #################################################
-
-    ####### VIEW ################################
+    
     # receive information about which attributes we want to show on x and y axis
     def attributeSelection(self, list):
         if not self.data or len(list) < 2: return
@@ -447,7 +360,61 @@ class OWScatterPlot(OWWidget):
         self.attrX = list[0]
         self.attrY = list[1]
         self.updateGraph()       
-    #################################################
+    # ################################################
+
+
+    # #######################################
+    # SCATTERPLOT SETTINGS
+    # #######################################
+    def setVerticalGridlines(self):
+        self.graph.enableGridXB(self.showVerticalGridlines)
+
+    def setHorizontalGridlines(self):
+        self.graph.enableGridYL(self.showHorizontalGridlines)
+
+    def setJitterCont(self):
+        self.graph.updateSettings(jitterContinuous = self.jitterContinuous)
+        self.updateGraph()
+
+    def setJitterSize(self):
+        self.graph.setJitterSize(self.jitterSizeNums[self.jitterSize])
+        self.updateGraph()
+
+    def setFilledSymbols(self):
+        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
+        self.updateGraph()
+
+    def setPointWidth(self):
+        self.graph.setPointWidth(self.pointWidth)
+        self.updateGraph()
+
+    def setShowLegend(self):
+        self.graph.updateSettings(enabledLegend = self.showLegend)
+        self.updateGraph()
+
+    def setAutoSendSelection(self):
+        if self.autoSendSelection:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
+            self.sendSelections()
+        else:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
+
+    def setOptmizedDrawing(self):
+        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
+        self.updateGraph() 
+            
+    def setGraphCanvasColor(self):
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
+        if newColor.isValid():
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
+
+    def setGraphGridColor(self):
+        newColor = QColorDialog.getColor(QColor(self.graphGridColor))
+        if newColor.isValid():
+            self.graphGridColor = str(newColor.name())
+            self.graph.setGridColor(newColor)
+
 
 
 

@@ -68,6 +68,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.kNNOptimization = None
         self.polyvizWidget = polyvizWidget
         self.useDifferentSymbols = 1
+        self.optimizeForPrinting = 1
 
         self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
@@ -165,6 +166,8 @@ class OWPolyvizGraph(OWVisGraph):
             index = self.attributeNames.index(label)
             indices.append(index)
 
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+
         # ##########
         # create anchor for every attribute
         for i in range(length):
@@ -190,7 +193,6 @@ class OWPolyvizGraph(OWVisGraph):
             classIsDiscrete = 1
             classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
             valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
             for i in range(len(labels)):
                 tempX = []; tempY = []
                 for j in range(len(classValueIndices)):
@@ -241,6 +243,9 @@ class OWPolyvizGraph(OWVisGraph):
 
         sum = self.calculateAttrValuesSum(self.scaledData, len(self.rawdata), indices, self.validData)
 
+
+        if self.optimizeForPrinting: symbolList = self.curveSymbolsPrinting
+        else: symbolList = self.curveSymbols
         
         # ##########
         #  create data curves
@@ -275,15 +280,15 @@ class OWPolyvizGraph(OWVisGraph):
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
-                lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
             else:
-                if classIsDiscrete and self.useDifferentSymbols and valLen < len(self.curveSymbols) : symbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
-                else: symbol = self.curveSymbols[0]
+                if classIsDiscrete and self.useDifferentSymbols and valLen < len(symbolList) : symbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
+                else: symbol = symbolList[0]
                 contData.append([x_i, y_i, self.coloringScaledData[classNameIndex][i] * 360, symbol]) # store data for drawing
-                lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
@@ -356,10 +361,10 @@ class OWPolyvizGraph(OWVisGraph):
         elif classIsDiscrete and self.optimizedDrawing:        
             # create data curves for dots
             for i in range(valLen):
-                newColor = QColor()
-                newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                if self.useDifferentSymbols and valLen < len(self.curveSymbols): curveSymbol = self.curveSymbols[i]
-                else: curveSymbol = self.curveSymbols[0]
+                newColor = QColor(0,0,0)
+                if not self.optimizeForPrinting: newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
+                if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[i]
+                else: curveSymbol = symbolList[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = curveData[i][0], yData = curveData[i][1])
                 for j in range(len(labels)):
                     self.addCurve("lines" + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[j][i], yData = polyvizLineCoordsY[j][i])
@@ -368,7 +373,7 @@ class OWPolyvizGraph(OWVisGraph):
         else:                                       
             for i in range(len(contData)):
                 newColor = QColor();  newColor.setHsv(contData[i][2], 255, 255)
-                if classIsDiscrete and self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                if classIsDiscrete and self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(symbolList): curveSymbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = contData[i][3], xData = [contData[i][0]], yData = [contData[i][1]])
 
         
@@ -391,12 +396,13 @@ class OWPolyvizGraph(OWVisGraph):
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
                 classVariableValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 for index in range(len(classVariableValues)):
-                    newColor = QColor()
-                    if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
-                    else:                                                   newColor.setHsv((index*360)/len(classVariableValues), 255, 255)
+                    newColor = QColor(0,0,0)
+                    if not self.optimizeForPrinting:
+                        if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
+                        else:                                                   newColor.setHsv((index*360)/len(classVariableValues), 255, 255)
                     y = 1.0 - index * 0.05
-                    if self.useDifferentSymbols and valLen < len(self.curveSymbols): curveSymbol = self.curveSymbols[index]
-                    else: curveSymbol = self.curveSymbols[0]
+                    if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[index]
+                    else: curveSymbol = symbolList[0]
                     self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData= [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
 
@@ -572,12 +578,39 @@ class OWPolyvizGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
+
+
+    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, numOfAttr, addResultFunct = None):
+        if attrList == [] or numOfAttr == 0:
+            if len(subsetList) < 3 or numOfAttr != 0: return []
+            print subsetList
+            return self.getOptimalSeparation(subsetList, attrReverseDict, printFullOutput = 0, addResultFunct = addResultFunct)
+
+        #full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr, addResultFunct)
+        self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr, addResultFunct)
+        subsetList2 = list(subsetList)
+        subsetList2.insert(0, attrList[0])
+        #full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1, addResultFunct)
+        self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1, addResultFunct)
+
+        # find max values in booth lists
+        #full = full1 + full2
+        #shortList = []
+        #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+        #else: funct = min
+        #for i in range(min(self.kNNOptimization.resultListLen, len(full))):
+        #    item = funct(full)
+        #    shortList.append(item)
+        #    full.remove(item)
+        #return shortList
+
+
     
 
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, attrReverseDict, printFullOutput = 1):
+    def getOptimalSeparation(self, attrList, attrReverseDict, printFullOutput = 1, addResultFunct = None):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
@@ -694,6 +727,8 @@ class OWPolyvizGraph(OWVisGraph):
                 
                 # save the permutation
                 fullList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder))
+                if addResultFunct and not self.kNNOptimization.onlyOnePerSubset:
+                    addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
 
                 self.triedPossibilities += 1
                 if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
@@ -705,78 +740,13 @@ class OWPolyvizGraph(OWVisGraph):
 
         if self.kNNOptimization.onlyOnePerSubset:
             # return only the best attribute placements
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE:
-                return [max(fullList)]
-            else:
-                return [min(fullList)]
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+            else: funct = min
+            (acc, lenTable, attrList, attrOrder) = funct(fullList)
+            if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList, attrOrder)
+            return [(acc, lenTable, attrList, attrOrder)]
         else:
             return fullList
-
-                
-    def getOptimalSubsetSeparation(self, attrList, attrReverseDict, numOfAttr):
-        full = []
-        self.startTime = time.time()
-        if attrReverseDict != None:
-            for i in range(numOfAttr, 2, -1):
-                self.totalPossibilities += combinations(i, len(attrList))*fact(i-1)
-        else:
-            for i in range(numOfAttr, 2, -1):
-                self.totalPossibilities += combinations(i, len(attrList))*fact(i-1)*math.pow(2,i)/2
-
-        print self.totalPossibilities
-        print attrReverseDict
-
-        for i in range(numOfAttr, 2, -1):
-            full1 = self.getOptimalExactSeparation(attrList, [], attrReverseDict, i)
-            full = full + full1
-
-        return full
-
-    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, numOfAttr):
-        if attrList == [] or numOfAttr == 0:
-            if len(subsetList) < 3 or numOfAttr != 0: return []
-            print subsetList
-            if self.totalPossibilities > 0 and self.triedPossibilities > 0:
-                secs = int(time.time() - self.startTime)
-                totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
-                restSecs = totalExpectedSecs - secs
-                print "Used time: %d:%02d:%02d, Expected remaining time: %d:%02d:%02d (total experiments: %d, rest: %d)" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
-
-            return self.getOptimalSeparation(subsetList, attrReverseDict, printFullOutput = 0)
-
-        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr)
-        subsetList2 = copy(subsetList)
-        subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1)
-
-        # find max values in booth lists
-        full = full1 + full2
-        shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-        else: funct = min
-        for i in range(min(self.kNNOptimization.resultListLen, len(full))):
-            item = funct(full)
-            shortList.append(item)
-            full.remove(item)
-
-        return shortList
-
-    # for a given list of attribute subsets, compute the most interesting projections
-    def getOptimalListSeparation(self, attrSubsetList, reverse):
-        currList = []
-        # find function, that will delete the worst performances from merged lists currList and retList
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = min
-        else: funct = max
-        
-        for (acc, attrList) in attrSubsetList:
-            retList = self.getOptimalSeparation(attrList, reverse, printFullOutput = 0)
-            currList += retList
-            while (len(currList) > self.kNNOptimization.resultListLen):
-                item = funct(currList)
-                currList.remove(item)   # remove the projection with the worst accuracy
-
-        return currList
-
     
 if __name__== "__main__":
     #Draw a simple graph

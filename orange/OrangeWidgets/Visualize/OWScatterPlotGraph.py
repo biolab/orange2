@@ -60,6 +60,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.toolRects = []
         self.tooltipData = []
         self.showManualAxisScale = 0
+        self.optimizedDrawing = 1
         self.scatterWidget = scatterWidget
         self.kNNOptimization = None
 
@@ -215,6 +216,39 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = shortData[j][1].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     key = self.addCurve(str(j), newColor, dataColor, self.pointWidth, xData = [x], yData = [y])
+
+            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1:
+                # create a small number of curves which will make drawing much faster
+                if colorIndex != -1:
+                    classIndices = self.getVariableValueIndices(self.rawdata, colorAttr)
+                    classCount = len(classIndices)
+                else: classCount = 1
+                pos = [[ [] , [], [] ] for i in range(classCount)]
+                for i in range(len(self.rawdata)):
+                    if self.rawdata[i][xAttr].isSpecial() == 1: continue
+                    if self.rawdata[i][yAttr].isSpecial() == 1: continue
+                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
+
+                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                    else:              x = self.rawdata[i][xAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+
+                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                    else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+
+                    pos[classIndices[self.rawdata[i].getclass().value]][0].append(x)
+                    pos[classIndices[self.rawdata[i].getclass().value]][1].append(y)
+                    pos[classIndices[self.rawdata[i].getclass().value]][2].append(i)
+
+                    # we add a tooltip for this point
+                    r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
+                    text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
+                    self.tips.addToolTip(r, text)
+
+                for i in range(classCount):
+                    newColor = QColor(0,0,0)
+                    if classCount < len(self.colorHueValues) and colorIndex != -1: newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
+                    elif colorIndex != -1        :                                 newColor.setHsv((i*360)/valLen, 255, 255)
+                    key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = self.curveSymbols[0], xData = pos[i][0], yData = pos[i][1])
 
             else:
                 for i in range(len(self.rawdata)):
@@ -377,7 +411,7 @@ class OWScatterPlotGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
         
-    def getOptimalSeparation(self, attrCount, className):
+    def getOptimalSeparation(self, attrCount, className, addResultFunct = None):
         # define lenghts and variables
         dataSize = len(self.rawdata)
         attrCount = len(self.rawdata.domain.attributes)
@@ -412,6 +446,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
                 # save the permutation
                 fullList.append((accuracy, len(table), [self.attributeNames[x], self.attributeNames[y]]))
+                if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[x], self.attributeNames[y]])
 
         print "------------------------------"
         secs = time.time() - t

@@ -15,7 +15,7 @@ from random import betavariate
 from OWPolyvizGraph import *
 import OWVisAttrSelection
 from OWkNNOptimization import *
-import time
+import time, math
 import OWToolbars
 
 ###########################################################################################
@@ -23,10 +23,11 @@ import OWToolbars
 ###########################################################################################
 class OWPolyviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes"]
-    jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
-    jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
-    scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "optimizeForPrinting"]
+    jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
+    jitterSizeList = [str(x) for x in jitterSizeNums]
+    scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
+    scaleFactorList = [str(x) for x in scaleFactorNums]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", FALSE, TRUE)
@@ -37,9 +38,6 @@ class OWPolyviz(OWWidget):
         #set default settings
         self.pointWidth = 5
         self.lineLength = 2
-        self.attrDiscOrder = "None"
-        self.attrContOrder = "None"
-        #self.jitteringType = "uniform"
         self.scaleFactor = 1.0
         self.enhancedTooltips = 1
         self.globalValueScaling = 0
@@ -48,9 +46,11 @@ class OWPolyviz(OWWidget):
         self.showLegend = 1
         self.showFilledSymbols = 1
         self.optimizedDrawing = 1
-        self.useDifferentSymbols = 1
+        self.useDifferentSymbols = 0
+        self.optimizeForPrinting = 0
         self.autoSendSelection = 0
         self.sendShownAttributes = 1
+        self.rotateAttributes = 0
         self.graphCanvasColor = str(Qt.white.name())
         
         self.data = None
@@ -61,7 +61,7 @@ class OWPolyviz(OWWidget):
         # add a settings dialog and initialize its values
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = GroupPolyvizOptions(self, "Settings")
+        self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
@@ -73,15 +73,12 @@ class OWPolyviz(OWWidget):
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         self.graph.updateSettings(statusBar = self.statusBar)
-        
         self.statusBar.message("")
 
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
-        self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown attributes ")
+        self.hbox2 = OWGUI.widgetBox(self.GeneralTab, "", orientation = "horizontal")
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden attributes ")
         self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.GeneralTab)
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
@@ -91,7 +88,7 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
         self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
-        self.tryReverse = QCheckBox("Try reversing attr. values (exponential time)", self.attrOrderingButtons)
+        OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
 
         self.optimizationDlg = kNNOptimization(None)
         self.optimizationDlg.parentName = "Polyviz"
@@ -100,20 +97,48 @@ class OWPolyviz(OWWidget):
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
-        self.hbox2  = QHBox(self.shownAttribsGroup)
-        self.buttonUPAttr = QPushButton("Attr UP", self.hbox2)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox2)
+        self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
+        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
+        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
 
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+        self.attrAddButton = QPushButton("Add attr.", self.hbox2)
+        self.attrRemoveButton = QPushButton("Remove attr.", self.hbox2)
+
+        # ####################################
+        # SETTINGS TAB
+        # #####
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box='Line length', minValue=1, maxValue=5, step=1, callback=self.setLineLength, ticks=1)
+
+        box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
+        OWGUI.comboBoxWithCaption(box, self, "jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.setScaleFactor, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+
+        box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        OWGUI.checkBox(box2, self, 'enhancedTooltips', 'Use enhanced tooltips', callback = self.setUseEnhancedTooltips)
+        OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
+        OWGUI.checkBox(box2, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling, tooltip = "Scale values of all attributes based on min and max value of all attributes. Usually unchecked.")
+        OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.setDifferentSymbols, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setShowFilledSymbols)
+        OWGUI.checkBox(box2, self, 'optimizeForPrinting', 'Optimize for printing', callback = self.setOptmizeForPrinting, tooltip = "use symbols that will be printer-friendly")
+
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        OWGUI.checkBox(box3, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(box3, self, 'sendShownAttributes', 'Send only shown attributes')
+
+        # ####
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+
 
         # ####################################
         #K-NN OPTIMIZATION functionality
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
-        self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
-        self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
+        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
@@ -128,25 +153,6 @@ class OWPolyviz(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        # ####################################
-        # SETTINGS functionality
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        self.connect(self.SettingsTab.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
-        self.connect(self.SettingsTab.scaleCombo, SIGNAL("activated(int)"), self.setScaleFactor)
-        self.connect(self.SettingsTab.lengthSlider, SIGNAL("valueChanged(int)"), self.setLineLength)
-        self.connect(self.SettingsTab.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
-        #self.connect(self.SettingsTab.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
-        self.connect(self.SettingsTab.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
-        self.connect(self.SettingsTab.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)        
-        self.connect(self.SettingsTab.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
-        self.connect(self.SettingsTab.showLegend, SIGNAL("clicked()"), self.setShowLegend)
-        self.connect(self.SettingsTab.differentSymbols, SIGNAL("clicked()"), self.setDifferentSymbols)
-        self.connect(self.SettingsTab.optimizedDrawing, SIGNAL("clicked()"), self.setOptmizedDrawing)
-        self.connect(self.SettingsTab, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
-        self.connect(self.SettingsTab.autoSendSelection, SIGNAL("clicked()"), self.setAutoSendSelection)
-        self.connect(self.SettingsTab.sendShownAttributes, SIGNAL("clicked()"), self.setSendShownAttributes)
-        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
-                
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
 
@@ -157,42 +163,15 @@ class OWPolyviz(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        #self.SettingsTab.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
-        #self.SettingsTab.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
-        #self.SettingsTab.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
-        self.SettingsTab.widthSlider.setValue(self.pointWidth)
-        self.SettingsTab.lengthSlider.setValue(self.lineLength)
-        self.SettingsTab.widthLCD.display(self.pointWidth)
-        self.SettingsTab.lengthLCD.display(self.lineLength)
-        self.SettingsTab.useEnhancedTooltips.setChecked(self.enhancedTooltips)
-        self.SettingsTab.globalValueScaling.setChecked(self.globalValueScaling)
-        self.SettingsTab.showFilledSymbols.setChecked(self.showFilledSymbols)
-        self.SettingsTab.showLegend.setChecked(self.showLegend)
-        self.SettingsTab.differentSymbols.setChecked(self.useDifferentSymbols)
-        self.SettingsTab.optimizedDrawing.setChecked(self.optimizedDrawing)
-        self.SettingsTab.autoSendSelection.setChecked(self.autoSendSelection)
-        self.SettingsTab.sendShownAttributes.setChecked(self.sendShownAttributes)
-        self.setAutoSendSelection() # update send button state
-        
-        self.SettingsTab.jitterSize.clear()
-        for i in range(len(self.jitterSizeList)):
-            self.SettingsTab.jitterSize.insertItem(self.jitterSizeList[i])
-        self.SettingsTab.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
-
-        self.SettingsTab.scaleCombo.clear()
-        for i in range(len(self.scaleFactorList)):
-            self.SettingsTab.scaleCombo.insertItem(self.scaleFactorList[i])
-        self.SettingsTab.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
-        
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        #self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setScaleFactor(self.scaleFactor)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.useDifferentSymbols = self.useDifferentSymbols
+        self.graph.optimizeForPrinting = self.optimizeForPrinting
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -223,144 +202,121 @@ class OWPolyviz(OWWidget):
     # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
     def showKNNCorect(self):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 1)
-        self.repaint()
+        #self.repaint()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 0)
-        self.repaint()
+        #self.repaint()
         
     # reevaluate projections in result list with different k values
-    def testCurrentProjections(self):
-        kListStr = "3,5,10,15,20,30,50,70,100,150,200"
-        (Qstring,ok) = QInputDialog.getText("K values", "K values to test (separated with comma)", kListStr)
-        if not ok: return
-        ks = str(Qstring)
-        kListStr = ks.split(",")
-        kList = []
-        for k in kListStr: kList.append(int(k))
-        results = []
+    def reevaluateProjections(self):
+        results = list(self.optimizationDlg.getShownResults())
+        self.optimizationDlg.clearResults()
 
-        count = self.optimizationDlg.interestingList.count()
         self.progressBarInit()
         self.optimizationDlg.disableControls()
-        oldKValue = self.optimizationDlg.kValue
-        for i in range(count):
-            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
-            sumAcc = 0.0
-            print "Experiment %2.d - %s" % (i+1, str(list))
-            for k in kList:
-                self.optimizationDlg.kValue = k
-                sumAcc += self.graph.getProjectionQuality(list)
-            results.append((sumAcc/float(len(kList)), tableLen, list))
-            self.progressBarSet(100*i/float(count))
 
-        self.optimizationDlg.kValue = oldKValue
-        self.optimizationDlg.clear()
-        while results != []:
-            (accuracy, tableLen, list) = max(results)
-            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-            results.remove((accuracy, tableLen, list))
+        testIndex = 0
+        for (acc, tableLen, attrList, strList) in results:
+            testIndex += 1
+            self.progressBarSet(100.0*testIndex/float(len(results)))
 
-        self.optimizationDlg.updateNewResults()
-        #self.optimizationDlg.save("temp.proj")
-        self.optimizationDlg.interestingList.setCurrentItem(0)
+            reverseDict = self.buildOrientationDictFromString(attrList, strList)
+            accuracy = self.graph.getProjectionQuality(attrList, reverseDict)
+            self.optimizationDlg.addResult(self.data, accuracy, tableLen, attrList, strList)
 
-        self.progressBarFinished()
+        self.optimizationDlg.finishedAddingResults()
         self.optimizationDlg.enableControls()
+        self.optimizationDlg.resultList.setCurrentItem(0)
+        self.progressBarFinished()
+
+    def startOptimization(self):
+        print self.optimizationDlg.getOptimizationType()
+        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
+            self.optimizeSeparation()
+        else:
+            self.optimizeAllSubsetSeparation()
+            
 
     # ####################################
     # find optimal class separation for shown attributes
     # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
     def optimizeSeparation(self, numberOfAttrs = None):
         if self.data == None: return
-        
-        self.progressBarInit()
-        self.graph.totalPossibilities = 0
-        self.graph.triedPossibilities = 0
-        self.optimizationDlg.disableControls()
 
+        if self.rotateAttributes: reverseList = None
+        else: reverseList = self.attributeReverse
+        
         if not numberOfAttrs:
-            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
+            text = str(self.optimizationDlg.attributeCountCombo.currentText())
             if text == "ALL": number = len(self.getShownAttributeList())
             else:             number = int(text)
-        else:                 number = numberOfAttrs
         
-        if self.tryReverse.isChecked() == 1: reverseList = None
-        else: reverseList = self.attributeReverse
-
-        total = len(self.getShownAttributeList())
-        startTime = time.time()
-        if not self.optimizationDlg.useHeuristics or number < 4:    # use exhaustive search if number of attrs = 3
-            combin = combinations(number, total) * fact(number-1)
+            self.optimizationDlg.clearResults()
+            total = len(self.getShownAttributeList())
+            if total < number: return
+            if not self.rotateAttributes: combin = combinations(number, total) * fact(number-1)
+            else: combin = combinations(number, total) * fact(number-1) * math.pow(2, number)/2
             self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time())
-            fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, number)
-        else:
-            self.optimizationDlg.currentSubset = 0
-            self.optimizationDlg.totalSubsets = combinations(number, total)
-            print "Total number of feature subsets with %d attributes is %d" % (number, self.optimizationDlg.totalSubsets)
-            interestingSubsets = self.optimizationDlg.kNNGetInterestingSubsets(number, self.getShownAttributeList(), self.optimizationDlg.bestSubsets, self.data)
-            self.graph.totalPossibilities = len(interestingSubsets) * fact(number-1)
-            self.graph.triedPossibilities = 0
-            self.graph.startTime = time.time()
-            fullList = self.graph.getOptimalListSeparation(interestingSubsets, reverseList)
-
-        self.progressBarFinished()
-        self.optimizationDlg.enableControls()
         
+            if self.graph.totalPossibilities > 20000:
+                res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?','Yes','No', QString.null,0,1)
+                if res == 0: return []
+            
+            self.progressBarInit()
+            self.optimizationDlg.disableControls()
+            startTime = time.time()
+            
+        else:                 number = numberOfAttrs
+
+        self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, number, self.addInterestingProjection)
+
         if not numberOfAttrs:
+            self.progressBarFinished()
+            self.optimizationDlg.enableControls()
+            self.optimizationDlg.finishedAddingResults()
+        
             secs = time.time() - startTime
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
-            self.optimizationDlg.clear()
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
-            else: funct = min
-            # fill the "interesting visualizations" list box
-            while fullList != []:
-                (accuracy, tableLen, list, reverse) = funct(fullList)
-                fullList.remove((accuracy, tableLen, list, reverse))
-                self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
 
-            self.optimizationDlg.updateNewResults()
-            self.showSelectedAttributes()
-        else:
-            return fullList
-        
 
     # #############################################
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data == None: return
-
-        #if len(self.getShownAttributeList()) > 7:
-        #    res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
-        #    if res != 0: return
-        
-        text = str(self.optimizationDlg.maxLenCombo.currentText())
+   
+        text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(self.getShownAttributeList())
         else:             maxLen = int(text)
+        total = len(self.getShownAttributeList())
 
-        fullList = []
+        # compute the number of possible projections
+        proj = 0
+        for i in range(3, maxLen+1):
+            if not self.rotateAttributes: proj += combinations(i, total) * fact(i-1)
+            else: proj += combinations(i, total) * fact(i-1) * math.pow(2, i)/2
+
+        self.graph.triedPossibilities = 0
+        self.graph.totalPossibilities = proj
+
         startTime = time.time()
+        self.graph.startTime = time.time()
+        self.progressBarInit()
+        self.optimizationDlg.clearResults()
+        self.optimizationDlg.disableControls()
+
         for val in range(3, maxLen+1):
-            fullList += self.optimizeSeparation(val)
+            self.optimizeSeparation(val)
 
-        self.optimizationDlg.clear()
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
-        else: funct = min
-        # fill the "interesting visualizations" list box
-        while fullList != []:
-            (accuracy, tableLen, list, reverse) = funct(fullList)
-            fullList.remove((accuracy, tableLen, list, reverse))
-            self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
-
-        self.optimizationDlg.updateNewResults()
-        self.showSelectedAttributes()
-
+        self.progressBarFinished()
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
         secs = time.time() - startTime
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
-       
+
     
-    def interestingProjectionsAddItem(self, accuracy, tableLen, attrList, reverse):
+    def addInterestingProjection(self, data, accuracy, tableLen, attrList, reverse):
         strList = "["
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
@@ -368,12 +324,9 @@ class OWPolyviz(OWWidget):
             else:
                 strList += attrList[i] + "+, "
         strList = strList[:-2] + "]"
-        self.optimizationDlg.insertItem(accuracy, tableLen, attrList, strList)
+        self.optimizationDlg.addResult(data, accuracy, tableLen, attrList, strList)
         
 
-    # #########################
-    # POLYVIZ EVENTS
-    # #########################
     def reverseSelectedAttribute(self, item):
         text = str(item.text())
         name = text[:-2]
@@ -388,62 +341,14 @@ class OWPolyviz(OWWidget):
                 self.updateGraph()
                 return
         
-
-    def setScaleFactor(self, n):
-        self.scaleFactor = float(self.scaleFactorList[n])
-        self.graph.setScaleFactor(self.scaleFactor)
-        self.updateGraph()
-
-    def setUseEnhancedTooltips(self):
-        self.enhancedTooltips = self.SettingsTab.useEnhancedTooltips.isChecked()
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        self.updateGraph()
-
-    def setShowFilledSymbols(self):
-        self.showFilledSymbols = not self.showFilledSymbols
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        self.updateGraph()
-
-    def setDifferentSymbols(self):
-        self.useDifferentSymbols = self.SettingsTab.differentSymbols.isChecked()
-        self.graph.useDifferentSymbols = self.useDifferentSymbols
-        self.updateGraph()
-
-    def setPointWidth(self, n):
-        self.pointWidth = n
-        self.graph.setPointWidth(n)
-        self.updateGraph()
-
-    def setLineLength(self, n):
-        self.lineLength = n
-        self.graph.setLineLength(n)
-        self.SettingsTab.lengthLCD.display(self.lineLength)
-        self.updateGraph()
-
-    """
-    # jittering options
-    def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.graph.setJitteringOption(self.spreadType[n])
-        self.graph.setData(self.data)
-        self.updateGraph()
-    """
-
-    # jittering options
-    def setJitteringSize(self, n):
-        self.jitterSize = self.jitterSizeNums[n]
-        self.graph.setJitterSize(self.jitterSize)
-        self.graph.setData(self.data)
-        self.updateGraph()
-
-    
+  
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
-        if self.optimizationDlg.interestingList.count() == 0: return
-        index = self.optimizationDlg.interestingList.currentItem()
-        (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFiltered[index]
-
+        val = self.optimizationDlg.getSelectedProjection()
+        if not val: return
+        (accuracy, tableLen, list, strList) = val
+        
         # check if all attributes in list really exist in domain        
         attrNames = []
         for attr in self.data.domain:
@@ -457,49 +362,29 @@ class OWPolyviz(OWWidget):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        # save attribute names into a list
-        attrNames =[]
-        for i in range(len(self.data.domain)): attrNames.append(self.data.domain[i].name)
-
-        for attr in list:
-            if strList.find(attr + "+,") >=0 or strList.find(attr + "+]") >=0:
-                self.shownAttribsLB.insertItem(attr + " +")
-                self.attributeReverse[attr] = 0
+        reverseDict = self.buildOrientationDictFromString(list, strList)
+        for attr in attrNames:
+            if reverseDict.has_key(attr):
+                if reverseDict[attr]: self.shownAttribsLB.insertItem(attr + " -")
+                else: self.shownAttribsLB.insertItem(attr + " +")
+                self.attributeReverse[attr] = reverseDict[attr]
             else:
-                self.shownAttribsLB.insertItem(attr + " -")
-                self.attributeReverse[attr] = 1
-
-        for i in range(len(self.data.domain)):
-            attr = self.data.domain[i]
-            if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name + " +")
-                self.attributeReverse[attr.name] = 0
-
-        self.updateGraph()
+                self.hiddenAttribsLB.insertItem(attr + " +")
+                self.attributeReverse[attr] = 0
         
-    def setCanvasColor(self, c):
-        self.graphCanvasColor = c
-        self.graph.setCanvasColor(c)
-
-    def setGlobalValueScaling(self):
-        self.globalValueScaling = self.SettingsTab.globalValueScaling.isChecked()
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setData(self.data)
         self.updateGraph()
 
-    def setAutoSendSelection(self):
-        self.autoSendSelection = self.SettingsTab.autoSendSelection.isChecked()
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
+    def buildOrientationDictFromString(self, attrList, strList):
+        ret = {}
+        for attr in attrList:
+            if strList.find(attr + "+,") >=0 or strList.find(attr + "+]") >=0:
+                ret[attr] = 0
+            else:
+                ret[attr] = 1
+        return ret
 
-    def setSendShownAttributes(self):
-        self.sendShownAttributes = self.SettingsTab.sendShownAttributes.isChecked()
-            
     # send signals with selected and unselected examples as two datasets
-    def sendSelections(self):
+    def sendSelections(self):   
         if not self.data: return
         (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList(), self.attributeReverse)
         if not self.sendShownAttributes:
@@ -574,19 +459,8 @@ class OWPolyviz(OWWidget):
 
     def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse)
-        self.graph.update()
-        self.repaint()
-
-    def setShowLegend(self):
-        self.showLegend = self.SettingsTab.showLegend.isChecked()
-        self.graph.updateSettings(showLegend = self.showLegend)
-        self.updateGraph()
-
-    def setOptmizedDrawing(self):
-        self.optimizedDrawing = self.SettingsTab.optimizedDrawing.isChecked()
-        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
-        self.updateGraph()
-
+        #self.graph.update()
+        #self.repaint()
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
@@ -618,13 +492,14 @@ class OWPolyviz(OWWidget):
         for i in range(self.shownAttribsLB.count()):
             list.append(str(self.shownAttribsLB.text(i))[:-2])
         return list
+
     ##############################################
     
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.optimizationDlg.clear()
+        self.optimizationDlg.clearResults()
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
@@ -633,7 +508,6 @@ class OWPolyviz(OWWidget):
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same
             self.setShownAttributeList(self.data)
         self.updateGraph()
-    #################################################
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
@@ -648,81 +522,71 @@ class OWPolyviz(OWWidget):
             else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
-    #################################################
 
-class GroupPolyvizOptions(QVGroupBox):
-    def __init__(self,parent=None,name=None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
 
-        # ####
-        # point width
-        widthBox = QHGroupBox("Point Width", self)
-        QToolTip.add(widthBox, "The width of points")
-        self.widthSlider = QSlider(2, 19, 1, 3, QSlider.Horizontal, widthBox)
-        self.widthSlider.setTickmarks(QSlider.Below)
-        self.widthLCD = QLCDNumber(2, widthBox)
+    # #########################
+    # POLYVIZ EVENTS
+    # #########################
+    def setPointWidth(self):
+        self.graph.setPointWidth(self.pointWidth)
+        self.updateGraph()
 
-        # ####
-        # scale point position
-        self.positionBox = QHGroupBox("Point scaling", self)
-        self.scaleBox= QHBox(self.positionBox, "scale")
-        self.scaleLabel = QLabel("Scale point position by: ", self.scaleBox)
-        self.scaleCombo = QComboBox(self.scaleBox)
+    def setLineLength(self):
+        self.graph.setLineLength(self.lineLength)
+        self.updateGraph()
 
-        # ####
-        # line length
-        lengthBox = QHGroupBox("Line Length", self)
-        QToolTip.add(widthBox, "The length of the line")
-        self.lengthSlider = QSlider(1, 5, 1, 2, QSlider.Horizontal, lengthBox)
-        self.lengthSlider.setTickmarks(QSlider.Below)
-        self.lengthLCD = QLCDNumber(1, lengthBox)
+    def setJitteringSize(self):
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
 
-        """
-        # ####
-        # jittering
-        self.spreadButtons = QVButtonGroup("Jittering type", self)
-        QToolTip.add(self.spreadButtons, "Selected the type of jittering for discrete variables")
-        self.spreadButtons.setExclusive(TRUE)
-        self.spreadNone = QRadioButton('none', self.spreadButtons)
-        self.spreadUniform = QRadioButton('uniform', self.spreadButtons)
-        self.spreadTriangle = QRadioButton('triangle', self.spreadButtons)
-        self.spreadBeta = QRadioButton('beta', self.spreadButtons)
-        """
+    def setScaleFactor(self):
+        self.graph.setScaleFactor(self.scaleFactor)
+        self.updateGraph()
 
-        # #####
-        # jittering size
-        self.jitteringOptionsBG = QVButtonGroup("Jittering options for discrete attribute", self)
-        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
-        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
-        self.jitterLabel = QLabel('Jittering size (%)', self.hbox)
-        self.jitterSize = QComboBox(self.hbox)
+    def setUseEnhancedTooltips(self):
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
+        self.updateGraph()
 
-        # #####
-        # general graph settings
-        self.graphSettingsBG = QVButtonGroup("General graph settings", self)
-        self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.graphSettingsBG)
-        self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
-        self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
-        self.showLegend = QCheckBox('Show legend', self.graphSettingsBG)
-        self.optimizedDrawing = QCheckBox('Optimize drawing (biased)', self.graphSettingsBG)
-        self.differentSymbols = QCheckBox("Use different symbols", self.graphSettingsBG)
+    def setShowFilledSymbols(self):
+        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
+        self.updateGraph()
 
-        self.sendingSelectionsBG = QVButtonGroup("Sending selections", self)
-        self.autoSendSelection = QCheckBox("Auto send selected data", self.sendingSelectionsBG)
-        self.sendShownAttributes = QCheckBox("Send only shown attributes", self.sendingSelectionsBG)
-        
-        
-        # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+    def setDifferentSymbols(self):
+        self.graph.useDifferentSymbols = self.useDifferentSymbols
+        self.updateGraph()
+
+    def setShowLegend(self):
+        self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
+
+    def setOptmizedDrawing(self):
+        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
+        self.updateGraph()
+
+    def setOptmizeForPrinting(self):
+        self.graph.updateSettings(optimizeForPrinting = self.optimizeForPrinting)
+        self.updateGraph()
+
+
+    def setGlobalValueScaling(self):
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        self.updateGraph()
+
+    def setAutoSendSelection(self):
+        if self.autoSendSelection:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
+            self.sendSelections()
+        else:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
 
     def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
         if newColor.isValid():
-            self.parent.graphCanvasColor = str(newColor.name())
-            self.parent.graph.setCanvasColor(QColor(newColor))
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
+
 
 #test widget appearance
 if __name__=="__main__":

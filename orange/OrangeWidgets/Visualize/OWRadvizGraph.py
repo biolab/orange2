@@ -76,11 +76,14 @@ class OWRadvizGraph(OWVisGraph):
         self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
+        self.kNNOptimization = None
+        self.radvizWidget = radvizWidget
+
         self.showLegend = 1
         self.useDifferentSymbols = 1
         self.enhancedTooltips = 0
-        self.kNNOptimization = None
-        self.radvizWidget = radvizWidget
+        self.scaleFactor = 1.0
+        
         self.optimizeForPrinting = 1        # show class value using different simple empty symbols using black color
 
     def setEnhancedTooltips(self, enhanced):
@@ -492,11 +495,39 @@ class OWRadvizGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
+
+    # try all posibilities with exactly numOfAttr attributes
+    def getOptimalExactSeparation(self, attrList, subsetList, numOfAttr, addResultFunct = None):
+        if attrList == [] or numOfAttr == 0:
+            if len(subsetList) < 3 or numOfAttr != 0: return []
+            print subsetList
+            return self.getOptimalSeparation(subsetList, printFullOutput = 0, addResultFunct = addResultFunct)
+
+        #full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, numOfAttr)
+        self.getOptimalExactSeparation(attrList[1:], subsetList, numOfAttr, addResultFunct)
+        subsetList2 = copy(subsetList)
+        subsetList2.insert(0, attrList[0])
+        #full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, numOfAttr-1)
+        self.getOptimalExactSeparation(attrList[1:], subsetList2, numOfAttr-1, addResultFunct)
+
+        # find max values in booth lists
+        #full = full1 + full2
+        #shortList = []
+        #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+        #else: funct = min
+        #for i in range(min(self.kNNOptimization.resultListLen, len(full))):
+        #    item = funct(full)
+        #    shortList.append(item)
+        #    full.remove(item)
+
+        #return shortList
+
+
     
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, printFullOutput = 1):
+    def getOptimalSeparation(self, attrList, printFullOutput = 1, addResultFunct = None):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
@@ -536,7 +567,7 @@ class OWRadvizGraph(OWVisGraph):
             print "Not enough examples in example table. Ignoring permutation..."
             print "------------------------------"
             self.triedPossibilities += 1
-            if self.radvizWidget: self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+            self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
             return []
 
         # store all sums
@@ -567,7 +598,6 @@ class OWRadvizGraph(OWVisGraph):
         for permutation in indPermutations.values():
             permutationIndex += 1
 
-            #if progressBar != None: progressBar.setProgress(progressBar.progress()+1)           
             tempPermValue = 0
             table = orange.ExampleTable(domain)
                      
@@ -592,85 +622,28 @@ class OWRadvizGraph(OWVisGraph):
             
             # save the permutation
             fullList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation]))
+            if addResultFunct and not self.kNNOptimization.onlyOnePerSubset:
+                addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation])
 
             self.triedPossibilities += 1
-            if self.radvizWidget: self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+            self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
 
         if printFullOutput:
             secs = time.time() - t
-            print "Used time: %d min, %d sec" %(secs/60, secs%60)
-            print "------------------------------"
+            print "Used time: %d min, %d sec\n------------------------------" %(secs/60, secs%60)
 
         if self.kNNOptimization.onlyOnePerSubset:
             # return only the best attribute placements
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE:
-                return [max(fullList)]
-            else:
-                return [min(fullList)]
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+            else: funct = min
+            (acc, lenTable, attrList) = funct(fullList)
+            if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList)
+            return [(acc, lenTable, attrList)]
         else:
             return fullList
 
     
-    # try all possibilities with numOfAttr attributes or less
-    # attrList = list of attributes to choose from
-    def getOptimalSubsetSeparation(self, attrList, numOfAttr):
-        full = []
-        self.startTime = time.time()
-        for i in range(numOfAttr, 2, -1):
-            self.totalPossibilities += combinations(i, len(attrList))*(fact(i-1)/2)
-
-        for i in range(numOfAttr, 2, -1):
-            full1 = self.getOptimalExactSeparation(attrList, [], i)
-            full = full + full1
-            
-        return full
-
-    # try all posibilities with exactly numOfAttr attributes
-    def getOptimalExactSeparation(self, attrList, subsetList, numOfAttr):
-        if attrList == [] or numOfAttr == 0:
-            if len(subsetList) < 3 or numOfAttr != 0: return []
-            print subsetList
-            if self.totalPossibilities > 0 and self.triedPossibilities > 0:
-                secs = int(time.time() - self.startTime)
-                totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
-                restSecs = totalExpectedSecs - secs
-                #print "Used time: %d:%02d:%02d, Expected remaining time: %d:%02d:%02d (total experiments: %d, rest: %d)" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
-            
-            return self.getOptimalSeparation(subsetList, printFullOutput = 0)
-
-        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, numOfAttr)
-        subsetList2 = copy(subsetList)
-        subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, numOfAttr-1)
-
-        # find max values in booth lists
-        full = full1 + full2
-        shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-        else: funct = min
-        for i in range(min(self.kNNOptimization.resultListLen, len(full))):
-            item = funct(full)
-            shortList.append(item)
-            full.remove(item)
-
-        return shortList
-
-    # for a given list of attribute subsets, compute the most interesting projections
-    def getOptimalListSeparation(self, attrSubsetList):
-        currList = []
-        # find function, that will delete the worst performances from merged lists currList and retList
-        # WARNING: funct is here defined to find the WORST projection in a given list. Don't just copy and paste this 2 lines!!!
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = min
-        else: funct = max
-        
-        for (acc, attrList) in attrSubsetList:
-            retList = self.getOptimalSeparation(attrList, printFullOutput = 0)
-            currList += retList
-            while (len(currList) > self.kNNOptimization.resultListLen):
-                item = funct(currList)
-                currList.remove(item)   # remove the projection with the worst accuracy
-
-        return currList
+   
 
 if __name__== "__main__":
     #Draw a simple graph

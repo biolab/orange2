@@ -24,48 +24,17 @@ import OWGUI
 ###########################################################################################
 class OWRadviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "optimizeForPrinting"]
-    jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
-    jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
-    scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
+    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "optimizeForPrinting"]
+    jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
+    jitterSizeList = [str(x) for x in jitterSizeNums]
+    scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
+    scaleFactorList = [str(x) for x in scaleFactorNums]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
- 
-        #set default settings
-        self.pointWidth = 4
-        self.attrDiscOrder = "None"
-        self.attrContOrder = "None"
-        #self.jitteringType = "uniform"
-        self.attrOrdering = "Original"
-        self.enhancedTooltips = 1
-        self.globalValueScaling = 0
-        self.jitterSize = 1
-        self.scaleFactor = 1.0
-        self.showLegend = 1
-        self.showFilledSymbols = 1
-        self.optimizedDrawing = 1
-        self.optimizeForPrinting = 0
-        self.useDifferentSymbols = 1
-        self.autoSendSelection = 0
-        self.sendShownAttributes = 1
-        self.graphCanvasColor = str(Qt.white.name())
-        self.data = None
-        self.callbackDeposit = []
-
-        #load settings
-        self.loadSettings()
-
-        # add a settings dialog and initialize its values
-        self.tabs = QTabWidget(self.space, 'tabWidget')
-        self.GeneralTab = QVGroupBox(self)
-        #self.GeneralTab.setFrameShape(QFrame.NoFrame)
-        self.SettingsTab = GroupRadvizOptions(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #GUI
         #add a graph widget
@@ -75,9 +44,36 @@ class OWRadviz(OWWidget):
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         self.graph.updateSettings(statusBar = self.statusBar)
-
         self.statusBar.message("")
+        self.optimizationDlg = kNNOptimization(None)
 
+        self.pointWidth = 4
+        self.enhancedTooltips = 1
+        self.globalValueScaling = 0
+        self.jitterSize = 1
+        self.scaleFactor = 1.0
+        self.showLegend = 1
+        self.showFilledSymbols = 1
+        self.optimizedDrawing = 1
+        self.useDifferentSymbols = 0
+        self.optimizeForPrinting = 0
+        self.autoSendSelection = 0
+        self.sendShownAttributes = 1
+        self.graphCanvasColor = str(Qt.white.name())
+        self.data = None 
+
+        #load settings
+        self.loadSettings()
+
+        # add a settings dialog and initialize its values
+        self.tabs = QTabWidget(self.space, 'tabWidget')
+        self.GeneralTab = QVGroupBox(self)
+        #self.GeneralTab.setFrameShape(QFrame.NoFrame)
+        self.SettingsTab = QVGroupBox(self)
+        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.SettingsTab, "Settings")
+
+        
         #add controls to self.controlArea widget
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
         self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
@@ -92,11 +88,8 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
-        self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
-        self.optimizationDlg = kNNOptimization(None)
-        self.optimizationDlg.parentName = "Radviz"
-        self.graph.kNNOptimization = self.optimizationDlg
-
+        self.optimizationDlgButton = OWGUI.button(self.attrOrderingButtons, self, "VizRank optimization dialog", callback = self.optimizationDlg.reshow)
+        
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
                                
@@ -107,20 +100,39 @@ class OWRadviz(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
-        #self.showGnuplotButton = QPushButton("Show with Gnuplot", self.space)
-        #self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
-        #self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
-        #self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
-        #self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
+        # ####################################
+        # SETTINGS TAB
+        # #####
+        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point Width', minValue=1, maxValue=15, step=1, callback=self.setPointWidth, ticks=1)
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "jitterSize", 'Jittering size (% of size)  ', box = " Jittering options ", callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.setScaleFactor, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+
+        box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        OWGUI.checkBox(box2, self, 'enhancedTooltips', 'Use enhanced tooltips', callback = self.setUseEnhancedTooltips)
+        OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
+        OWGUI.checkBox(box2, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling)
+        OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.setDifferentSymbols, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setShowFilledSymbols)
+        OWGUI.checkBox(box2, self, 'optimizeForPrinting', 'Optimize for printing', callback = self.setOptmizeForPrinting, tooltip = "use symbols that will be printer-friendly")
+
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        OWGUI.checkBox(box3, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(box3, self, 'sendShownAttributes', 'Send only shown attributes')
+
+        # ####
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+
 
         # ####################################
         #K-NN OPTIMIZATION functionality
-        self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
-        self.connect(self.optimizationDlg.interestingList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+        self.optimizationDlg.parentName = "Radviz"
+        self.graph.kNNOptimization = self.optimizationDlg
         
-        self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
-        self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
+        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.startOptimization)
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
 
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
@@ -134,25 +146,6 @@ class OWRadviz(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        # ####################################
-        # SETTINGS functionality
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        self.connect(self.SettingsTab.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
-        self.connect(self.SettingsTab.scaleCombo, SIGNAL("activated(int)"), self.setScaleFactor)
-        #self.connect(self.SettingsTab.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
-        self.connect(self.SettingsTab.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
-        self.connect(self.SettingsTab.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
-        self.connect(self.SettingsTab.useEnhancedTooltips, SIGNAL("clicked()"), self.setUseEnhancedTooltips)
-        self.connect(self.SettingsTab.showFilledSymbols, SIGNAL("clicked()"), self.setShowFilledSymbols)
-        self.connect(self.SettingsTab.showLegend, SIGNAL("clicked()"), self.setShowLegend)
-        self.connect(self.SettingsTab.differentSymbols, SIGNAL("clicked()"), self.setDifferentSymbols)
-        self.connect(self.SettingsTab.optimizedDrawing, SIGNAL("clicked()"), self.setOptmizedDrawing)
-        self.connect(self.SettingsTab.optimizeForPrinting, SIGNAL("clicked()"), self.setOptmizeForPrinting)
-        self.connect(self.SettingsTab.autoSendSelection, SIGNAL("clicked()"), self.setAutoSendSelection)
-        self.connect(self.SettingsTab.sendShownAttributes, SIGNAL("clicked()"), self.setSendShownAttributes)
-        self.connect(self.SettingsTab, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
-        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
-
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
 
@@ -162,35 +155,8 @@ class OWRadviz(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        #self.SettingsTab.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
-        self.SettingsTab.widthSlider.setValue(self.pointWidth)
-        self.SettingsTab.widthLCD.display(self.pointWidth)
-        self.SettingsTab.globalValueScaling.setChecked(self.globalValueScaling)
-        self.SettingsTab.useEnhancedTooltips.setChecked(self.enhancedTooltips)
-        self.SettingsTab.showFilledSymbols.setChecked(self.showFilledSymbols)
-        self.SettingsTab.showLegend.setChecked(self.showLegend)
-        self.SettingsTab.differentSymbols.setChecked(self.useDifferentSymbols)
-        self.SettingsTab.optimizedDrawing.setChecked(self.optimizedDrawing)
-        self.SettingsTab.optimizeForPrinting.setChecked(self.optimizeForPrinting)
-        self.SettingsTab.autoSendSelection.setChecked(self.autoSendSelection)
-        self.SettingsTab.sendShownAttributes.setChecked(self.sendShownAttributes)
-        self.setAutoSendSelection() # update send button state
-
-        # set items in jitter size combo
-        self.SettingsTab.jitterSize.clear()
-        for i in range(len(self.jitterSizeList)):
-            self.SettingsTab.jitterSize.insertItem(self.jitterSizeList[i])
-        self.SettingsTab.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
-
-        self.SettingsTab.scaleCombo.clear()
-        for i in range(len(self.scaleFactorList)):
-            self.SettingsTab.scaleCombo.insertItem(self.scaleFactorList[i])
-        self.SettingsTab.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
-
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
         self.graph.enhancedTooltips = self.enhancedTooltips
-        #self.graph.setEnhancedTooltips(self.enhancedTooltips)        
-        #self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
@@ -227,104 +193,80 @@ class OWRadviz(OWWidget):
     # show quality of knn model by coloring accurate predictions with darker color and bad predictions with light color        
     def showKNNCorect(self):
         self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
-        self.graph.update()
-        self.repaint()
+        #self.graph.update()
+        #self.repaint()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
         self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 0)
-        self.graph.update()
-        self.repaint()
+        #self.graph.update()
+        #self.repaint()
 
     # reevaluate projections in result list with different k values
-    def testCurrentProjections(self):
-        kListStr = "3,5,10,15,20,30,50,70,100,150,200"
-        (Qstring,ok) = QInputDialog.getText("K values", "K values to test (separated with comma)", kListStr)
-        if not ok: return
-        ks = str(Qstring)
-        kListStr = ks.split(",")
-        kList = []
-        for k in kListStr: kList.append(int(k))
-        
-        results = []
-        count = self.optimizationDlg.interestingList.count()
+    def reevaluateProjections(self):
+        results = list(self.optimizationDlg.getShownResults())
+        self.optimizationDlg.clearResults()
+
         self.progressBarInit()
         self.optimizationDlg.disableControls()
-        oldKValue = self.optimizationDlg.kValue
-        for i in range(count):
-            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
-            sumAcc = 0.0
-            print "Experiment %2.d - %s" % (i+1, str(list))
-            for k in kList:
-                self.optimizationDlg.kValue = k
-                sumAcc += self.graph.getProjectionQuality(list)
-            results.append((sumAcc/float(len(kList)), tableLen, list))
-            self.progressBarSet(100*i/float(count))
 
-        self.optimizationDlg.kValue = oldKValue
-        self.optimizationDlg.clear()
-        while results != []:
-            (accuracy, tableLen, list) = max(results)
-            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-            results.remove((accuracy, tableLen, list))
+        testIndex = 0
+        for (acc, tableLen, attrList, strList) in results:
+            testIndex += 1
+            self.progressBarSet(100.0*testIndex/float(len(results)))
 
-        self.optimizationDlg.updateNewResults()
+            accuracy = self.graph.getProjectionQuality(attrList)            
+            self.optimizationDlg.addResult(self.data, accuracy, tableLen, attrList, strList)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
+        
 
+    def startOptimization(self):
+        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
+            self.optimizeSeparation()
+        else:
+            self.optimizeAllSubsetSeparation()
+            
+            
     # ####################################
     # find optimal class separation for shown attributes
     # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
     def optimizeSeparation(self, numberOfAttrs = None):
         if self.data == None: return
 
-        self.progressBarInit()
-        self.graph.totalPossibilities = 0
-        self.graph.triedPossibilities = 0
-        self.optimizationDlg.disableControls()
-
         if not numberOfAttrs:
-            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
+            text = str(self.optimizationDlg.attributeCountCombo.currentText())
             if text == "ALL": number = len(self.getShownAttributeList())
             else:             number = int(text)
-        else:                 number = numberOfAttrs
-            
-        total = len(self.getShownAttributeList())
-        startTime = time.time()
-        if not self.optimizationDlg.useHeuristics or number < 5:    # use exhaustive search if number of attrs = 3 or 4
+
+            self.optimizationDlg.clearResults()
+            total = len(self.getShownAttributeList())
+            if total < number: return
             self.graph.totalPossibilities = combinations(number, total)*fact(number-1)/2
             self.graph.triedPossibilities = 0
-            self.graph.startTime = time.time()
-            fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], number)
-        else:
-            self.optimizationDlg.currentSubset = 0
-            self.optimizationDlg.totalSubsets = combinations(number, total)
-            print "Total number of feature subsets with %d attributes is %d" % (number, self.optimizationDlg.totalSubsets)
-            interestingSubsets = self.optimizationDlg.kNNGetInterestingSubsets(number, self.getShownAttributeList(), self.optimizationDlg.bestSubsets, self.data)
-            self.graph.totalPossibilities = len(interestingSubsets) * fact(number-1)/2
-            self.graph.triedPossibilities = 0
-            self.graph.startTime = time.time()
-            fullList = self.graph.getOptimalListSeparation(interestingSubsets)
-
-
-        self.progressBarFinished()
-        self.optimizationDlg.enableControls()
         
+            if self.graph.totalPossibilities > 20000:
+                res = QMessageBox.information(self,'Radviz','There are %d possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?','Yes','No', QString.null,0,1)
+                if res == 0: return []
+            
+            self.progressBarInit()
+            self.optimizationDlg.disableControls()
+
+            startTime = time.time()
+            self.graph.startTime = time.time()
+        else:                 number = numberOfAttrs
+
+        self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], number, self.optimizationDlg.addResult)
+
         if not numberOfAttrs:
+            self.progressBarFinished()
+            self.optimizationDlg.enableControls()
+            self.optimizationDlg.finishedAddingResults()
+        
             secs = time.time() - startTime
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
-            self.optimizationDlg.clear()
-            # fill the "interesting visualizations" list box
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
-            else: funct = min
-            while fullList != []:
-                (accuracy, tableLen, list) = funct(fullList)
-                self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-                fullList.remove((accuracy, tableLen, list))
-            self.optimizationDlg.updateNewResults()
-        else:
-            return fullList
 
    
     # #############################################
@@ -332,136 +274,33 @@ class OWRadviz(OWWidget):
     def optimizeAllSubsetSeparation(self):
         if self.data == None: return
         
-        """
-        if len(self.getShownAttributeList()) > 7:
-            res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
-            if res != 0: return
-        """
-        
-        text = str(self.optimizationDlg.maxLenCombo.currentText())
+        text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(self.getShownAttributeList())
         else:             maxLen = int(text)
+        total = len(self.getShownAttributeList()) 
 
+        # compute the number of possible projections
+        proj = 0
+        for i in range(3, maxLen+1):
+            proj += combinations(i, total)*fact(i-1)/2
+        self.graph.triedPossibilities = 0
+        self.graph.totalPossibilities = proj
+       
         startTime = time.time()
-        fullList = []
+        self.graph.startTime = time.time()
+        self.progressBarInit()
+        self.optimizationDlg.clearResults()
+        self.optimizationDlg.disableControls()
+
         for val in range(3, maxLen+1):
-            fullList += self.optimizeSeparation(val)
+            self.optimizeSeparation(val)
 
-        self.optimizationDlg.clear()
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
-        else: funct = min
-        while fullList != []:
-            (accuracy, tableLen, list) = funct(fullList)
-            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-            fullList.remove((accuracy, tableLen, list))
-        self.optimizationDlg.updateNewResults()
-
+        self.progressBarFinished()
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
         secs = time.time() - startTime
         print "Used time: %d min, %d sec" %(secs/60, secs%60)
             
-
-    # #########################
-    # RADVIZ EVENTS
-    # #########################
-                
-    def setScaleFactor(self, n):
-        self.scaleFactor = float(self.scaleFactorList[n])
-        self.graph.setScaleFactor(self.scaleFactor)
-        self.updateGraph()
-
-    def setPointWidth(self, n):
-        self.pointWidth = n
-        self.graph.setPointWidth(n)
-        self.updateGraph()
-
-    """        
-    # jittering options
-    def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.graph.setJitteringOption(self.spreadType[n])
-        self.graph.setData(self.data)
-        self.updateGraph()
-    """
-    
-    def setUseEnhancedTooltips(self):
-        self.enhancedTooltips = self.SettingsTab.useEnhancedTooltips.isChecked()
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        self.updateGraph()
-
-    def setDifferentSymbols(self):
-        self.useDifferentSymbols = self.SettingsTab.differentSymbols.isChecked()
-        self.graph.useDifferentSymbols = self.useDifferentSymbols
-        self.updateGraph()
-
-    # jittering options
-    def setJitteringSize(self, n):
-        self.jitterSize = self.jitterSizeNums[n]
-        self.graph.setJitterSize(self.jitterSize)
-        self.graph.setData(self.data)
-        self.updateGraph()
-
-    def setShowFilledSymbols(self):
-        self.showFilledSymbols = self.SettingsTab.showFilledSymbols.isChecked()
-        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
-        self.updateGraph()
-
-    def setOptmizeForPrinting(self):
-        self.optimizeForPrinting = self.SettingsTab.optimizeForPrinting.isChecked()
-        self.graph.updateSettings(optimizeForPrinting = self.optimizeForPrinting)
-        self.updateGraph()
-
-        
-    # ####################################
-    # show selected interesting projection
-    def showSelectedAttributes(self):
-        if self.optimizationDlg.interestingList.count() == 0: return
-        index = self.optimizationDlg.interestingList.currentItem()
-        (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFiltered[index]
-
-        attrNames = []
-        for attr in self.data.domain:
-            attrNames.append(attr.name)
-        
-        for item in list:
-            if not item in attrNames:
-                print "invalid settings"
-                return
-        
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-        for attr in list: self.shownAttribsLB.insertItem(attr)
-        for attr in self.data.domain:
-            if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
-        self.updateGraph()
-
-       
-    def setCanvasColor(self, c):
-        self.graphCanvasColor = c
-        self.graph.setCanvasColor(c)
-
-    def setGlobalValueScaling(self):
-        self.globalValueScaling = self.SettingsTab.globalValueScaling.isChecked()
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setData(self.data)
-
-        # this is not optimal, because we do the rescaling twice (TO DO)
-        if self.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-            
-        self.updateGraph()
-
-
-    def setAutoSendSelection(self):
-        self.autoSendSelection = self.SettingsTab.autoSendSelection.isChecked()
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-
-    def setSendShownAttributes(self):
-        self.sendShownAttributes = self.SettingsTab.sendShownAttributes.isChecked()
-
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -483,6 +322,28 @@ class OWRadviz(OWWidget):
             else:           self.send("Example Distribution", None)
             
 
+    # ####################################
+    # show selected interesting projection
+    def showSelectedAttributes(self):
+        val = self.optimizationDlg.getSelectedProjection()
+        if not val: return
+        (accuracy, tableLen, list, strList) = val
+        
+        attrNames = []
+        for attr in self.data.domain:
+            attrNames.append(attr.name)
+        
+        for item in list:
+            if not item in attrNames:
+                print "invalid settings"
+                return
+        
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+        for attr in list: self.shownAttribsLB.insertItem(attr)
+        for attr in self.data.domain:
+            if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
+        self.updateGraph()
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -542,54 +403,34 @@ class OWRadviz(OWWidget):
         self.graph.update()
         self.repaint()
 
-    def setShowLegend(self):
-        self.showLegend = self.SettingsTab.showLegend.isChecked()
-        self.graph.updateSettings(showLegend = self.showLegend)
-        self.updateGraph()
-
-    def setOptmizedDrawing(self):
-        self.optimizedDrawing = self.SettingsTab.optimizedDrawing.isChecked()
-        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
-        self.updateGraph()
-
-    # ###### SHOWN ATTRIBUTE LIST ##############
-    # set attribute list
-    def setShownAttributeList(self, data):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
-        if data == None: return
-
-        self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
-        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder)
-        for attr in shown:
-            if attr == data.domain.classVar.name: continue
-            self.shownAttribsLB.insertItem(attr)
-        for attr in hidden:
-            if attr == data.domain.classVar.name: continue
-            self.hiddenAttribsLB.insertItem(attr)
-        
-    def getShownAttributeList (self):
+    def getShownAttributeList(self):
         list = []
         for i in range(self.shownAttribsLB.count()):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
-    # #############################################
-    
+
+
+    # #########################
+    # RADVIZ SIGNALS
+    # #########################    
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.optimizationDlg.clear()
+        self.optimizationDlg.clearResults()
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same                
-            self.setShownAttributeList(self.data)
+            self.shownAttribsLB.clear()
+            self.hiddenAttribsLB.clear()
+            if data:
+                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(attr.name)
+                if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
+                
         self.updateGraph()
-    # ################################################
 
 
     # ###### SELECTION signal ################################
@@ -607,74 +448,67 @@ class OWRadviz(OWWidget):
         self.updateGraph()
     # ################################################
 
-class GroupRadvizOptions(QVGroupBox):
-    def __init__(self,parent=None,name=None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
+    # #########################
+    # RADVIZ EVENTS
+    # #########################
+    def setJitteringSize(self):
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
+                
+    def setScaleFactor(self):
+        self.graph.setScaleFactor(self.scaleFactor)
+        self.updateGraph()
 
-        # ####
-        # point width
-        widthBox = QHGroupBox("Point Width", self)
-        QToolTip.add(widthBox, "The width of points")
-        self.widthSlider = QSlider(2, 19, 1, 5, QSlider.Horizontal, widthBox)
-        self.widthSlider.setTickmarks(QSlider.Below)
-        self.widthLCD = QLCDNumber(2, widthBox)
+    def setPointWidth(self):
+        self.graph.setPointWidth(self.pointWidth)
+        self.updateGraph()
 
-        # ####
-        # scale point position
-        self.positionBox = QHGroupBox("Point scaling", self)
-        self.scaleBox= QHBox(self.positionBox, "scale")
-        self.scaleLabel = QLabel("Scale point position by: ", self.scaleBox)
-        self.scaleCombo = QComboBox(self.scaleBox)
+    def setUseEnhancedTooltips(self):
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
+        self.updateGraph()
+
+    def setDifferentSymbols(self):
+        self.graph.useDifferentSymbols = self.useDifferentSymbols
+        self.updateGraph()
+
+    def setShowFilledSymbols(self):
+        self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
+        self.updateGraph()
+
+    def setOptmizeForPrinting(self):
+        self.graph.updateSettings(optimizeForPrinting = self.optimizeForPrinting)
+        self.updateGraph()
+        
+    def setGlobalValueScaling(self):
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        self.updateGraph()
+
+    def setShowLegend(self):
+        self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
+
+    def setOptmizedDrawing(self):
+        self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
+        self.updateGraph()
+
+    def setAutoSendSelection(self):
+        if self.autoSendSelection:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
+            self.sendSelections()
+        else:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
         
 
-        # ####
-        # jittering
-        """
-        self.spreadButtons = QVButtonGroup("Jittering type", self)
-        QToolTip.add(self.spreadButtons, "Selected the type of jittering for discrete variables")
-        self.spreadButtons.setExclusive(TRUE)
-        self.spreadNone = QRadioButton('none', self.spreadButtons)
-        self.spreadUniform = QRadioButton('uniform', self.spreadButtons)
-        self.spreadTriangle = QRadioButton('triangle', self.spreadButtons)
-        self.spreadBeta = QRadioButton('beta', self.spreadButtons)
-        """
-
-        # #####
-        # jittering size
-        self.jitteringOptionsBG = QVButtonGroup("Jittering options for discrete attribute", self)
-        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
-        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
-        self.jitterLabel = QLabel('Jittering size (%)', self.hbox)
-        self.jitterSize = QComboBox(self.hbox)
-
-        # #####
-        # general settings
-        self.graphSettingsBG = QVButtonGroup("General graph settings", self)
-        self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.graphSettingsBG)
-        self.showLegend = QCheckBox('Show legend', self.graphSettingsBG)
-        self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
-        self.optimizedDrawing = QCheckBox('Optimize drawing (biased)', self.graphSettingsBG)
-        self.differentSymbols = QCheckBox("Use different symbols", self.graphSettingsBG)
-        self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
-        self.optimizeForPrinting = QCheckBox('Optimize for printing', self.graphSettingsBG)
-
-        self.sendingSelectionsBG = QVButtonGroup("Sending selections", self)
-        self.autoSendSelection = QCheckBox("Auto send selected data", self.sendingSelectionsBG)
-        self.sendShownAttributes = QCheckBox("Send only shown attributes", self.sendingSelectionsBG)
-
-        # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
-
     def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
         if newColor.isValid():
-            self.parent.graphCanvasColor = str(newColor.name())
-            self.parent.graph.setCanvasColor(QColor(newColor))
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
 
 
+    
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
