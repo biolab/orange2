@@ -73,6 +73,8 @@ python makeapplication.py --resource=orange build
 
 ## create image file and copy the compiled application into it
 rm tmp.dmg
+# just in case, if already mounted
+hdiutil unmount /Volumes/Orange
 hdiutil create -size 64m -type UDIF -fs HFS+ -volname Orange tmp.dmg
 hdiutil mount tmp.dmg
 cp -R build/Orange.app /Volumes/Orange
