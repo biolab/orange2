@@ -222,7 +222,7 @@ class OWScatterPlot(OWWidget):
 
         
         testIndex = 0
-        for (acc, tableLen, [xattr, yattr], strList) in results:
+        for (acc, tableLen, other, [xattr, yattr], strList) in results:
             if self.optimizationDlg.isOptimizationCanceled(): continue
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
@@ -232,7 +232,7 @@ class OWScatterPlot(OWWidget):
             if len(table) < self.optimizationDlg.minExamples: continue
 
             accuracy, other_results = self.optimizationDlg.kNNComputeAccuracy(table)
-            self.optimizationDlg.addResult(self.data, accuracy, other_results, len(table), [xattr, yattr])
+            self.optimizationDlg.addResult(accuracy, other_results, len(table), [xattr, yattr])
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()

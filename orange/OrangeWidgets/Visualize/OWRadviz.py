@@ -218,12 +218,12 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.disableControls()
 
         testIndex = 0
-        for (acc, tableLen, attrList, strList) in results:
+        for (acc, tableLen, other, attrList, strList) in results:
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
 
             accuracy, other_results = self.graph.getProjectionQuality(attrList)            
-            self.optimizationDlg.addResult(self.data, accuracy, other_results, tableLen, attrList, strList)
+            self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, strList)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
