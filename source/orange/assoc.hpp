@@ -17,6 +17,8 @@
 
     Authors: Janez Demsar, Blaz Zupan, 1996--2002
     Contact: janez.demsar@fri.uni-lj.si
+
+    Classes for association rules from sparse data were written by Matjaz Jursic.
 */
 
 
@@ -32,104 +34,6 @@
 #include "examples.hpp"
 #include "classify.hpp"
 #include "learn.hpp"
-
-class TItemSetNode;
-class TExample;
-
-class TExWei {
-public:
-  int example;
-  float weight;
-
-  TExWei(const int &ex, const float wei=1)
-  : example(ex),
-    weight(wei)
-  {}
-
-  bool operator == (const TExWei &ew2) const
-  { return example==ew2.example; }
-
-  bool operator <  (const TExWei &ew2) const
-  { return example <ew2.example; }
-};
-
-
-class Tleb {
-public:
-  int label;
-  TItemSetNode *branch;
-  float support;
-  vector<TExWei> examples;
-
-  Tleb(int al, TItemSetNode  *ab=NULL)
-  : label(al),
-    branch(ab),
-    support(0.0)
-  {}
-
-  Tleb(int al, const vector<TExWei> &ane, TItemSetNode  *ab=NULL)
-  : label(al),
-    branch(ab),
-    examples(ane)
-  { sumSupport(); }
-
-  Tleb(int al, const vector<TExWei> &ane, float asupp, TItemSetNode  *ab=NULL)
-  : label(al),
-    branch(ab),
-    support(asupp),
-    examples(ane)
-  {}
-
-  ~Tleb();
-
-  void sumSupport();
-};
-
-
-class TItemSetNode {
-public:
-  int attrIndex;
-  TItemSetNode *unknown;
-  vector<Tleb> values;
-
-  TItemSetNode(PVariable var, int anattri);
-
-  TItemSetNode(int anattri)
-  : attrIndex(anattri), 
-    unknown(NULL) 
-  {}
-
-  virtual ~TItemSetNode()
-  { mldelete unknown; }
-};
-
-
-
-class TItemSetTree {
-public:
-  TItemSetNode *root;
-  int largestK;
-
-  TItemSetTree(TItemSetNode *aroot=NULL, int alK=0)
-  : root(aroot), 
-    largestK(alK)
-  {}
-
-  virtual ~TItemSetTree()
-  { mldelete root; 
-    root=NULL; 
-    largestK=0; 
-  }
-
-
-  void addExample(const TExample &example, const vector<TExWei> &intersection, const float &support);
-  void addExample(const TExample &example, const vector<TExWei> &intersection);
-  void addExample(const TExample &example)
-  { addExample(example, vector<TExWei>()); }
-
-  float findSupport(const TExample &example);
-};
-
 
 WRAPPER(Example)
 
@@ -155,16 +59,8 @@ public:
   TAssociationRule();
 
   TAssociationRule(PExample al, PExample ar,
-                   const float &asup, const float &acon, const float &acov,
-                   const float &astr, const float &alif, const float &alev,
-                   const float &napl=-1, const float &napr=-1, const float &napb=-1, const float &nexa=-1,
-                   const int &anleft=-1, const int &anright=-1);
-
-  TAssociationRule(PExample al, PExample ar,
                    const float &napLeft, const float &napRight, const float &napBoth, const float &nExamples,
                    int anleft=-1, int anright=-1);
-
-  void correctSpecials();
 
   virtual bool operator ==(const TAssociationRule &other) const
   { return (left->operator==(other.left.getReference())) && (right->operator==(other.right.getReference())); }
@@ -187,56 +83,71 @@ WRAPPER(AssociationRule)
 #define TAssociationRules TOrangeVector<PAssociationRule>
 VWRAPPER(AssociationRules)
 
+
+class TItemSetNode;
+class TRuleTreeNode;
+
 class TAssociationRulesInducer : public TOrange {
 public:
   __REGISTER_CLASS
 
-  int weightID; //P id of meta attribute with weight
-  int maxItemSets; //P maximal number of itemsets (increase, if needed)
+  int maxItemSets; //P maximal number of itemsets (increase if you want)
 
-  float conf; //P required confidence
-  float supp; //P required support
+  float confidence; //P(+conf) required confidence
+  float support; //P(+supp) required support
   bool classificationRules; //P if true, rules will have the class and only the class attribute on the right-hand side
 
-private:
-  TItemSetTree tree;
-  float nOfExamples;
 public:
 
-  TAssociationRulesInducer(float asupp=0.1, float aconf=0.5, int awei=0);
-  PAssociationRules operator()(PExampleGenerator);
+  TAssociationRulesInducer(float asupp=0.1, float aconf=0.5);
+  PAssociationRules operator()(PExampleGenerator, const int &weightID = 0);
 
-  int  buildTree1(PExampleGenerator gen);
+  void buildTrees(PExampleGenerator, const int &weightID, TItemSetNode *&, int &depth, int &nOfExamples, TDiscDistribution &);
+  int  buildTree1(PExampleGenerator, const int &weightID, TItemSetNode *&, float &suppN, int &nOfExamples, TDiscDistribution &);
+  int  buildNext1(TItemSetNode *, int k, const float suppN);
+  int  makePairs (TItemSetNode *, const float suppN);
 
-  int  buildNext1(TItemSetNode *tempNode, TExample &example, int k);
-  int  makePairs (TItemSetNode *tempNode, TExample &example);
+  PAssociationRules generateClassificationRules(PDomain, TItemSetNode *tree, const int nOfExamples, const TDiscDistribution &);
+  void generateClassificationRules1(PDomain, TItemSetNode *root, TItemSetNode *node, TExample &left, const int nLeft, const float nAppliesLeft, PAssociationRules, const int nOfExamples, const TDiscDistribution &);
 
-  void buildTrees(PExampleGenerator gen);
-
-  PAssociationRules generateRules(PDomain dom);
-  void generateRules1(TExample &ex, TItemSetNode *root, int k, int oldk, PAssociationRules rules);
-  TItemSetNode *buildTree1FromExample(TExample &ex, TItemSetNode *root1, int &itemSets);
-  int generateNext1(TItemSetTree &ruleTree, TItemSetNode *tempNode,
-                TExample &example, int k, TExample &wholeEx, const float &support,
-                PAssociationRules rules);
-  int generatePairs(TItemSetTree &ruleTree, TItemSetNode *tempNode,
-                TExample &example, TExample &wholeEx, const float &support,
-                PAssociationRules rules);
-  void find1Rules(TExample &example, const float &support, int oldk, PAssociationRules rules);
+  PAssociationRules generateRules(PDomain, TItemSetNode *, const int depth, const int nOfExamples);
+  void generateRules1(TExample &, TItemSetNode *root, TItemSetNode *node, int k, int oldk, PAssociationRules, const int nOfExamples);
+  void find1Rules(TExample &, TItemSetNode *, const float &support, int oldk, PAssociationRules, const int nOfExamples);
+  TRuleTreeNode *buildTree1FromExample(TExample &, TItemSetNode *);
+  int generateNext1(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, int k, TExample &whole, const float &support, PAssociationRules, const int nOfExamples);
+  int generatePairs(TRuleTreeNode *ruleTree, TRuleTreeNode *node, TItemSetNode *itemsetsTree, TExample &right, TExample &whole, const float &support, PAssociationRules, const int nOfExamples);
 };
 
 WRAPPER(AssociationRulesInducer)
 
+
+class TAssociationRulesSparseInducer : public TOrange {
+public:
+  __REGISTER_CLASS
+
+  int maxItemSets; //P maximal number of itemsets (increase if you want)
+
+  float confidence; //P(+conf) required confidence
+  float support; //P(+supp) required support
+
+  TAssociationRulesSparseInducer(float asupp=0.1, float aconf=0, int awei=0);
+  PAssociationRules operator()(PExampleGenerator, const int &weightID);
+
+private:
+  float nOfExamples;
+};
+
+WRAPPER(AssociationRulesSparseInd)
 
 
 class TAssociationLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
-  float conf; //P required confidence
-  float supp; //P required support
+  float confidence; //P(+conf) required confidence
+  float support; //P(+supp) required support
   int voteWeight; //P vote weight (s=support, c=confidence, p=product)
-  int maxItemSets; //P maximal number of itemsets (increase, if needed)
+  int maxItemSets; //P maximal number of itemsets (increase if you want)
  
   TAssociationLearner();
   virtual PClassifier operator()(PExampleGenerator gen, const int & = 0);

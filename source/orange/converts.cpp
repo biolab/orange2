@@ -134,8 +134,10 @@ string convertToString(const string &str)
 
 bool PyNumber_ToFloat(PyObject *o, float &res)
 { PyObject *number=PyNumber_Float(o);
-  if (!number)
+  if (!number) {
+    PyErr_Clear();
     return false;
+  }
   res = (float)PyFloat_AsDouble(number);
   Py_DECREF(number);
   return true;

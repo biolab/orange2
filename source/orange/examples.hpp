@@ -37,9 +37,9 @@ public:
   TMetaValues meta;
 
   TExample();
-  TExample(PDomain dom);
-  TExample(PDomain dom, const TExample &orig);
-  TExample(const TExample &orig);
+  TExample(PDomain dom, bool initMetas = true);
+  TExample(PDomain dom, const TExample &orig, bool copyMetas = true);
+  TExample(const TExample &orig, bool copyMetas = true);
   virtual ~TExample();
 
   int traverse(visitproc visit, void *arg) const;
@@ -85,6 +85,9 @@ public:
 
   TValue getMeta(const int &i) const
   { return meta[i]; }
+
+  bool hasMeta(const int &i) const
+  { return meta.exists(i); }
 
   void setMeta(const int &i, const TValue &val)
   { meta.setValue(i, val); }

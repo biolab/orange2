@@ -40,7 +40,7 @@ TExample::TExample()
 {}
 
 
-TExample::TExample(PDomain dom)
+TExample::TExample(PDomain dom, bool initMetas)
 : domain(dom),
   values(NULL),
   values_end(NULL)
@@ -53,14 +53,15 @@ TExample::TExample(PDomain dom)
   PITERATE(TVarList, di, dom->variables)
     *(vi++) = (*di)->DK();
 
-  ITERATE(TMetaVector, mi, dom->metas)
-    setMeta((*mi).id, (*mi).variable->DC());
+  if (initMetas)
+    ITERATE(TMetaVector, mi, dom->metas)
+      setMeta((*mi).id, (*mi).variable->DC());
 }
 
 
-TExample::TExample(const TExample &orig)
+TExample::TExample(const TExample &orig, bool copyMetas)
 : domain(orig.domain),
-  meta(orig.meta)
+  meta(copyMetas ? orig.meta : TMetaValues())
 { if (domain) {
     const int attrs = domain->variables->size();
     TValue *vi = values = mlnew TValue[attrs];
@@ -71,9 +72,9 @@ TExample::TExample(const TExample &orig)
 }
 
 
-TExample::TExample(PDomain dom, const TExample &orig)
+TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 : domain(dom),
-  meta(orig.meta)
+  meta(copyMetas ? orig.meta : TMetaValues())
 { if (!dom)
     raiseError("example needs domain");
 

@@ -77,21 +77,39 @@ C_NAMED(CostWrapperClassifier, Classifier, "([classifier=, costs=])")
 #include "assoc.hpp"
 C_CALL(AssociationLearner, Learner, "([examples] [, weight=, conf=, supp=, voteWeight=]) -/-> Classifier")
 C_NAMED(AssociationClassifier, ClassifierFD, "([rules=, voteWeight=])")
-C_CALL3(AssociationRulesInducer, AssociationRulesInducer, Orange, "([examples] [, weightID=, conf=, supp=]) -/-> [AssociationRule]")
+C_CALL3(AssociationRulesInducer, AssociationRulesInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
+C_CALL3(AssociationRulesSparseInducer, AssociationRulesSparseInducer, Orange, "([examples[, weightID]], confidence=, support=]) -/-> AssociationRules")
 
 
 bool operator < (const TAssociationRule &, const TAssociationRule &) { return false; }
 bool operator > (const TAssociationRule &, const TAssociationRule &) { return false; }
 
-PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples) -> [AssociationRule]")
+PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
 {
   PyTRY
     SETATTRIBUTES
-    PExampleGenerator egen=exampleGenFromArgs(args);
-    if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
 
-    return WrapOrange(SELF_AS(TAssociationRulesInducer)(egen));
+    PExampleGenerator egen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "O&|i:AssociationRulesInducer.call", pt_ExampleGenerator, &egen, &weightID))
+      return PYNULL;
+
+    return WrapOrange(SELF_AS(TAssociationRulesInducer)(egen, weightID));
+  PyCATCH
+}
+
+
+PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> AssociationRules")
+{
+  PyTRY
+    SETATTRIBUTES
+
+    PExampleGenerator egen;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "O&|i:AssociationRulesInducer.call", pt_ExampleGenerator, &egen, &weightID))
+      return PYNULL;
+
+    return WrapOrange(SELF_AS(TAssociationRulesSparseInducer)(egen, weightID));
   PyCATCH
 }
 
@@ -176,17 +194,27 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
 
 
 string side2string(PExample ex)
-{ string res = "";
-  string val;
+{ string res;
 
-  TVarList::const_iterator vi(ex->domain->variables->begin());
-  for(TExample::const_iterator ei(ex->begin()), ee(ex->end()); ei!=ee; ei++, vi++)
-    if (!(*ei).isSpecial()) {
+  if (ex->domain->variables->empty())
+    ITERATE(TMetaValues, mi, ex->meta) {
       if (res.length())
         res += " ";
-      (*vi)->val2str(*ei, val);
-      res += (*vi)->name + "=" + val;
+      res += ex->domain->getMetaVar((*mi).first)->name;
     }
+
+  else {
+    string val;
+
+    TVarList::const_iterator vi(ex->domain->variables->begin());
+    for(TExample::const_iterator ei(ex->begin()), ee(ex->end()); ei!=ee; ei++, vi++)
+      if (!(*ei).isSpecial()) {
+        if (res.length())
+          res += " ";
+        (*vi)->val2str(*ei, val);
+        res += (*vi)->name + "=" + val;
+      }
+  }
 
   return res;
 }

@@ -128,6 +128,14 @@ SOURCE=.\orange\assoc.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\assoc_sparse.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\basket.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\basstat.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -1252,6 +1260,10 @@ SOURCE=.\orange\assistant.hpp
 # Begin Source File
 
 SOURCE=.\orange\assoc.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\basket.hpp
 # End Source File
 # Begin Source File
 

@@ -36,6 +36,11 @@ long getMetaID()
 { return --metaID; }
 
 
+TMetaDescriptor::TMetaDescriptor()
+: id(ILLEGAL_INT)
+{}
+
+
 TMetaDescriptor::TMetaDescriptor(const long &ai, const PVariable &avar)
 : id(ai),
   variable(avar)

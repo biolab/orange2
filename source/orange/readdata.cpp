@@ -40,6 +40,7 @@
 #include "c45inter.hpp"
 #include "retisinter.hpp"
 #include "assistant.hpp"
+#include "basket.hpp"
 
 #include <string.h>
 
@@ -57,7 +58,7 @@ bool fileExists(const string &s) {
 }
 
 
-typedef enum {UNKNOWN, TXT, CSV, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
+typedef enum {UNKNOWN, TXT, CSV, BASKET, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
 WRAPPER(ExampleTable);
 
@@ -94,6 +95,11 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
     if (!strcmp(ext, ".tab")) {
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
+      return mlnew TExampleTable(gen);
+    }
+
+    if (!strcmp(ext, ".basket")) {
+      PExampleGenerator gen = mlnew TBasketExampleGenerator(filename, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
@@ -169,6 +175,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
               
   CHECKFF(".txt", TXT);
   CHECKFF(".csv", CSV);
+  CHECKFF(".basket", BASKET);
   CHECKFF(".tab", TAB);
   CHECKFF(".names", C45);
   CHECKFF(".rdo", RETIS);
@@ -221,6 +228,11 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
     case TAB: {
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
+      return mlnew TExampleTable(gen);
+    }
+
+    case BASKET: {
+      PExampleGenerator gen = mlnew TBasketExampleGenerator(sfilename+".basket", knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 

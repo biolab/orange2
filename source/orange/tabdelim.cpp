@@ -625,8 +625,6 @@ string trim(const string &s)
     are separated by \t or ',' if csv=true. Lines end with \n or \r. Lines which begin with | are ignored. */
 bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces, bool csv)
 {
-  #define MAXLINELEN 34000
-
   atoms.clear();
 
   if (!fei.file)

@@ -51,6 +51,7 @@ BASED_ON(FileExampleGenerator, ExampleGenerator)
 #include "c45inter.hpp"
 #include "retisinter.hpp"
 #include "assistant.hpp"
+#include "basket.hpp"
 
 
 bool divDot(const string &name, string &before, string &after)
@@ -61,6 +62,7 @@ bool divDot(const string &name, string &before, string &after)
   before=string(bi, ei); after=string(ei++, name.end());
   return true;
 }
+
 
 PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
@@ -75,6 +77,30 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
     return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, false, false, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
+
+
+PyObject *BasketExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain])")
+{ PyTRY
+    char *fileName;
+    if (!PyArg_ParseTuple(args, "s", &fileName))
+      PYERROR(PyExc_TypeError, "BasketExampleGenerator expects a string argument", PYNULL)
+
+    string name(fileName), b, a;
+    if (!divDot(name, b, a))
+      name+=".basket";
+
+    return WrapNewOrange(mlnew TBasketExampleGenerator(name, knownDomain(keywords), false, false), type);
+  PyCATCH
+}
+
+
+PyObject *BasketExampleGenerator_clearCache(PyObject *, PyObject *) PYARGS(METH_O, "() -> None")
+{ PyTRY
+    TBasketExampleGenerator::clearCache();
+    RETURN_NONE;
+  PyCATCH
+}
+
 
 PyObject *RetisExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY
@@ -92,6 +118,7 @@ PyObject *RetisExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject
     return WrapNewOrange(mlnew TRetisExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
+
 
 PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(FileExampleGenerator, "(examples[, use=domain|varlist])")
 { PyTRY

@@ -45,6 +45,9 @@ typedef vector<string> TIdList;
 #define ITERATE(tpe, iter, pna)  for(tpe::iterator iter((pna).begin()), iter##_end((pna).end()); \
                                      iter!=iter##_end; iter++)
 
+#define RITERATE(tpe, iter, pna)  for(tpe::reverse_iterator iter((pna).rbegin()), iter##_end((pna).rend()); \
+                                     iter!=iter##_end; iter++)
+
 #define PITERATE(tpe, iter, pna)  for(tpe::iterator iter((pna)->begin()), iter##_end((pna)->end()); \
                                      iter!=iter##_end; iter++)
 

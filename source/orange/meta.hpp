@@ -52,6 +52,7 @@ public:
   long   id;
   PVariable variable;
 
+  TMetaDescriptor();
   TMetaDescriptor(const long &ai, const PVariable &avar);
 };
 
