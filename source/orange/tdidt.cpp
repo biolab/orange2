@@ -54,27 +54,23 @@ DEFINE_TOrangeVector_classDescription(PTreeNode, "TTreeNodeList")
    of module initialization.
 */
 
-TMeasureAttribute_gainRatio defaultDiscreteMeasure;
 PTreeSplitConstructor defaultDiscreteTreeSplitConstructor;
-
-TMeasureAttribute_retis defaultContinuousMeasure;
 PTreeSplitConstructor defaultContinuousTreeSplitConstructor;
-
 PTreeStopCriteria defaultStop;
 
-TTreeExampleSplitter_UnknownsAsSelector defaultSplitter;
-
 void tdidt_cpp_gcUnsafeInitialization()
-{ 
+{ PMeasureAttribute defaultDiscreteMeasure = mlnew TMeasureAttribute_gainRatio;
+  PMeasureAttribute defaultContinuousMeasure = mlnew TMeasureAttribute_retis;
+
   defaultDiscreteTreeSplitConstructor 
     = mlnew TTreeSplitConstructor_Combined(
-         mlnew TTreeSplitConstructor_Attribute(PMeasureAttribute(defaultDiscreteMeasure), 0.0, 2.0),
-         mlnew TTreeSplitConstructor_Threshold(PMeasureAttribute(defaultDiscreteMeasure), 0.0, 5.0));
+         mlnew TTreeSplitConstructor_Attribute(defaultDiscreteMeasure, 0.0, 2.0),
+         mlnew TTreeSplitConstructor_Threshold(defaultDiscreteMeasure, 0.0, 5.0));
 
   defaultContinuousTreeSplitConstructor 
     = mlnew TTreeSplitConstructor_Combined(
-         mlnew TTreeSplitConstructor_Attribute(PMeasureAttribute(defaultContinuousMeasure), 0.0, 2.0),
-         mlnew TTreeSplitConstructor_Threshold(PMeasureAttribute(defaultContinuousMeasure), 0.0, 5.0));
+         mlnew TTreeSplitConstructor_Attribute(defaultContinuousMeasure, 0.0, 2.0),
+         mlnew TTreeSplitConstructor_Threshold(defaultContinuousMeasure, 0.0, 5.0));
 
   defaultStop = mlnew TTreeStopCriteria_common();
 }
@@ -137,7 +133,7 @@ PClassifier TTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 
   bool tempSplitter = !exampleSplitter;
   if (tempSplitter)
-    exampleSplitter = PTreeExampleSplitter(defaultSplitter);
+    exampleSplitter = mlnew TTreeExampleSplitter_UnknownsAsSelector;
 
   try {
     PExampleGenerator examples;

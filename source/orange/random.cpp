@@ -27,8 +27,10 @@
 
 #include "random.ppp"
 
-TStdRandomGenerator _globalRandom;
+TStdRandomGenerator *_globalRandom;
 PRandomGenerator globalRandom;
 
 void random_cpp_gcUnsafeInitialization() 
-{ globalRandom = PRandomGenerator(_globalRandom); }
+{ _globalRandom = mlnew TStdRandomGenerator();
+  globalRandom = PRandomGenerator(_globalRandom);
+}

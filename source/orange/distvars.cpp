@@ -922,7 +922,7 @@ float TGaussianDistribution::highestProb() const
 
 
 float TGaussianDistribution::randomFloat() const
-{ return (float)gasdev((double)mean, (double)sigma, _globalRandom); }
+{ return (float)gasdev((double)mean, (double)sigma, *_globalRandom); }
 
 
 float TGaussianDistribution::p(const float &x) const

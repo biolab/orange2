@@ -547,10 +547,11 @@ void Orange_dealloc(TPyOrange *self)
   else
     printf("deallocating something at %p wrapped as '%s'\n", self->ptr, ((PyObject *)self)->ob_type->tp_name);
 */
-  PyObject_GC_UnTrack((PyObject *)self);
 
-  if (!self->is_reference)
+  if (!self->is_reference) {
+    PyObject_GC_UnTrack((PyObject *)self);
     mldelete self->ptr;
+  }
 
   Py_XDECREF(self->orange_dict);
   self->ob_type->tp_free((PyObject *)self);

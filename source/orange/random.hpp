@@ -105,44 +105,44 @@ class TStdRandomGenerator : public TRandomGenerator
 };
 
 /* globalRandom is wrapped _globalRandom. Use any of them, they are same... */
-extern TStdRandomGenerator _globalRandom;
+extern TStdRandomGenerator *_globalRandom;
 extern PRandomGenerator globalRandom;
 
-#define msrand _globalRandom.mt.Init
-#define mrand abs(_globalRandom())
+#define msrand *_globalRandom.mt.Init
+#define mrand abs(*_globalRandom())
 
 // returns true with probability 1/y
 inline int randbool(int y=2)       
-{ return _globalRandom.randbool(y); }
+{ return _globalRandom->randbool(y); }
 
 inline int randint()
-{ return _globalRandom.randint(); }
+{ return _globalRandom->randint(); }
 
 inline int randint(int y)
-{ return _globalRandom.randint(y); }
+{ return _globalRandom->randint(y); }
 
 inline int randint(int x, int y)
-{ return _globalRandom.randint(x, y); }
+{ return _globalRandom->randint(x, y); }
 
 inline long randlong()
-{ return _globalRandom.randlong(); }
+{ return _globalRandom->randlong(); }
 
 inline long randlong(long y)
-{ return _globalRandom.randlong(y); }
+{ return _globalRandom->randlong(y); }
 
 inline long randlong(long x, long y)
-{ return _globalRandom.randlong(x, y); }
+{ return _globalRandom->randlong(x, y); }
 
 inline double randdouble(double x, double y)
-{ return _globalRandom.randdouble(x, y); }
+{ return _globalRandom->randdouble(x, y); }
 
 inline float randfloat(double x, double y)
-{ return _globalRandom.randfloat(x, y); }
+{ return _globalRandom->randfloat(x, y); }
 
 inline double randdouble(double y=1.0)
-{ return _globalRandom.randdouble(y); }
+{ return _globalRandom->randdouble(y); }
 
 inline float randfloat(double y=1.0)
-{ return _globalRandom.randfloat(y); }
+{ return _globalRandom->randfloat(y); }
 
 #endif
