@@ -7,6 +7,7 @@ import time, statc
 
 # constants
 SE_Z = -100
+HISTOGRAM_Z = -200
 
 def norm_factor(p):
     max = 10.
@@ -201,7 +202,7 @@ class Descriptor(QCanvasRectangle):
         self.supportingValue.setY(y+10+self.header.boundingRect().height()+self.valName.boundingRect().height())
 
         #return false if position is at zero and alignment is centered
-        if points == 0 and self.canvas.parent.alignType == 1:
+        if round(points,3) == 0.0 and self.canvas.parent.alignType == 1:
             return False
         return True
         
@@ -247,37 +248,39 @@ class AttValueMarker(QCanvasEllipse):
         #self.canvas = canvas
         self.setZ(z)
         self.setBrush(QBrush(Qt.blue))
-        self.borderCircle = QCanvasEllipse(15,15,canvas)
-        self.borderCircle.setBrush(QBrush(Qt.red))
-        self.borderCircle.setZ(z-1)
+        #self.borderCircle = QCanvasEllipse(15,15,canvas)
+        #self.borderCircle.setBrush(QBrush(Qt.red))
+        #self.borderCircle.setZ(z-1)
         self.descriptor = Descriptor(canvas, attribute, z+1)
 
     def setPos(self, x, y):
         self.setX(x)
         self.setY(y)
-        self.borderCircle.setX(x)
-        self.borderCircle.setY(y)
+        #self.borderCircle.setX(x)
+        #self.borderCircle.setY(y)
         if not self.descriptor.drawAll(x,y):
-            brush = QBrush(Qt.blue)
-            brush.setStyle(Qt.Dense4Pattern)
+            brush = QBrush(self.brush().color(), Qt.Dense4Pattern)
+            #brush.setStyle()
             self.setBrush(brush)
         else:
-            self.setBrush(QBrush(Qt.blue))
+            self.setBrush(QBrush(self.brush().color()))
 
     def showSelected(self):
-        self.borderCircle.show()
+        #self.borderCircle.show()
+        self.setBrush(QBrush(QColor(253,151,51), self.brush().style()))
         if self.canvas().parent.bubble:
             self.descriptor.showAll()
         
     def hideSelected(self):
-        self.borderCircle.hide()
+        #self.borderCircle.hide()
+        self.setBrush(QBrush(Qt.blue, self.brush().style()))
         self.descriptor.hideAll()
 
 
 
     
 class AttValue:
-    def __init__(self, name, betaValue, error=0, showErr=False, over=True, lineWidth = 0):
+    def __init__(self, name, betaValue, error=0, showErr=False, over=True, lineWidth = 0, markerWidth = 2):
         self.name = name
         self.betaValue = betaValue
         self.error = error
@@ -286,6 +289,7 @@ class AttValue:
         self.hideAtValue = False
         self.over = over
         self.lineWidth = lineWidth
+        self.markerWidth = markerWidth
         self.attCreation = True # flag shows that vanvas object have to be created first
 
     def destroy(self):
@@ -296,8 +300,12 @@ class AttValue:
         self.text = QCanvasText(self.name, canvas)
         self.text.setTextFlags(Qt.AlignCenter)
         self.labelMarker = QCanvasLine(canvas)
+        self.labelMarker.setPen(QPen(Qt.black, self.markerWidth))
+        self.histogram = QCanvasLine(canvas)
+        self.histogram.setZ(HISTOGRAM_Z)
+        self.histogram.setPen(QPen(QColor(140,140,140),7))
         self.errorLine = QCanvasLine(canvas)
-        self.errorLine.setPen(QPen(Qt.blue))
+        self.errorLine.setPen(QPen(QColor(25,25,255),1))
         self.errorLine.setZ(SE_Z)
         self.attCreation = False
 
@@ -308,29 +316,35 @@ class AttValue:
             
     def paint(self, canvas, rect, mapper):
         def errorCollision(line,z=SE_Z):
-            col = line.collisions(True)
-            for obj in col:
-                if obj.z() == z:
-                    return True
+            col = filter(lambda x:x.z()==z,line.collisions(True))
+            if len(col)>0:
+                return True
             return False
 
         if self.attCreation:
             self.setCreation(canvas)
         self.text.setX(self.x)
         if self.enable:
-            lineLength = canvas.fontSize/3
+            lineLength = canvas.fontSize/2
+            canvasLength = 0
             if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
-                lineLength = 2+self.lineWidth*canvas.parent.histogram_size
+                canvasLength = 2+self.lineWidth*canvas.parent.histogram_size
             if self.over:
-                self.text.setY(rect.bottom()-canvas.fontSize)
+                self.text.setY(rect.bottom()-4*canvas.fontSize/3)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+lineLength)
+                self.histogram.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvasLength)
             else:
-                self.text.setY(rect.bottom()+canvas.fontSize)
+                self.text.setY(rect.bottom()+4*canvas.fontSize/3)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-lineLength)
+                self.histogram.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-canvasLength)
             if not self.hideAtValue:
                 self.text.show()
             else:
                 self.text.hide()
+            if canvas.parent.histogram:
+                self.histogram.show()
+            else:
+                self.histogram.hide()
         # if value is disabled, draw just a symbolic line        
         else:
             self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/4)
@@ -338,12 +352,12 @@ class AttValue:
 
         # show confidence interval
         if self.showErr:
-            self.low_errorX = max(self.low_errorX, mapper.left - 20)
-            self.high_errorX = min(self.high_errorX, mapper.right + 20)
-            if self.low_errorX == mapper.left - 20 and self.high_errorX == mapper.right + 20:
-                self.errorLine.setPen(QPen(Qt.blue,1,Qt.DotLine))
+            self.low_errorX = max(self.low_errorX, 0)
+            self.high_errorX = min(self.high_errorX, canvas.size().width())
+            if self.low_errorX == 0 and self.high_errorX == canvas.size().width():
+                self.errorLine.setPen(QPen(self.errorLine.pen().color(),self.errorLine.pen().width(),Qt.DotLine))
             else:
-                self.errorLine.setPen(QPen(Qt.blue))
+                self.errorLine.setPen(QPen(self.errorLine.pen().color(), self.errorLine.pen().width()))
             
             if self.over:
                 add = 2
@@ -369,10 +383,10 @@ class AttValue:
         else:
             self.errorLine.hide()
 
-        if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
-            self.labelMarker.setPen(QPen(Qt.black, 4))
-        else:
-            self.labelMarker.setPen(QPen(Qt.black, 1))
+ #       if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
+  #          self.labelMarker.setPen(QPen(Qt.black, 4))
+   #     else:
+    #        self.labelMarker.setPen(QPen(Qt.black, 1))
         self.labelMarker.show()        
 
     def toString(self):
@@ -429,7 +443,7 @@ class AttrLine:
         percentLine = AttrLine(self.name, canvas)
         percentList = filter(lambda x:x>minPercent and x<1,arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
-            percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p))))
+            percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
         return percentLine
 
     def updateValueXY(self, x, y):
@@ -548,6 +562,13 @@ class AttrLine:
         else:
             # draw attributes
             val = self.attValues
+
+            # hide old confidence intervals, so they wont interact with new ones
+            if canvas.parent.confidence_check:
+                for v in val:
+                    if not v.attCreation:
+                        v.errorLine.hide()
+
             for i in range(len(val)):
                 # check attribute name that will not cover another name
                 val[i].x = atValues_mapped[i]
@@ -565,12 +586,12 @@ class AttrLine:
                 #find suitable value position
                 for j in range(i):
                     #if val[j].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
-                    if val[j].over and val[j].enable and val[j].text.collidesWith(val[i].text):
+                    if val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
                         val[i].over = False
                 if not val[i].over:
                     val[i].paint(canvas, rect, mapper)
                     for j in range(i):
-                        if not val[j].over and val[j].enable and val[j].text.collidesWith(val[i].text):
+                        if not val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
                             val[i].hideAtValue = True
                     if val[i].hideAtValue:
                         val[i].paint(canvas, rect, mapper)
@@ -982,6 +1003,7 @@ class BasicNomogram(QCanvas):
             self.zeroLine.hide()
         curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         disc = False
+
         for at in self.attributes:
             if at.continuous and self.parent.contType == 1:
                 if disc:
@@ -1275,9 +1297,9 @@ class Mapper_Linear_Fixed:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
             if at != len(dSum)-1:
-                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k, markerWidth = 1)
                 val.enable = False
                 headerLine.addAttValue(val)
                 
@@ -1407,9 +1429,9 @@ class Mapper_Linear_Center:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
             if at != len(dSum)-1:
-                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+" ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+" ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k, markerWidth = 1)
                 val.enable = False
                 headerLine.addAttValue(val)
                 
@@ -1480,10 +1502,10 @@ class Mapper_Linear_Left:
 
         headerLine = AttrLine("", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", dSum[at]*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", dSum[at]*k, markerWidth = 1))
             # in the middle add disable values, just to see cross lines
             if at != len(dSum)-1:
-                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", (dSum[at]+dSum[at+1])*k/2)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", (dSum[at]+dSum[at+1])*k/2, markerWidth = 1)
                 val.enable = False
                 headerLine.addAttValue(val)
                 

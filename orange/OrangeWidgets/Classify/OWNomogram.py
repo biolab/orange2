@@ -502,7 +502,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("titanic")
+    data = orange.ExampleTable("d:\\data\\titanic.tab")
     bayes = orange.BayesLearner(data)
     #logistic = orngLR.LogRegLearner(data)
     ow.classifier(bayes)
