@@ -64,6 +64,7 @@ class OWParallelGraph(OWVisGraph):
 
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(attributes))
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+        blackColor = QColor(0, 0, 0)
         
         if len(self.scaledData) == 0 or len(attributes) == 0:
             return
@@ -85,7 +86,8 @@ class OWParallelGraph(OWVisGraph):
         self.setAxisMaxMajor(QwtPlot.xBottom, len(attributes)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
-        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        if self.rawdata.domain.classVar:
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         
         length = len(attributes)
         indices = []
@@ -96,8 +98,8 @@ class OWParallelGraph(OWVisGraph):
 
         xs = range(length)
         dataSize = len(self.scaledData[0])
-        continuousClass = (self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
-        if not continuousClass:
+        continuousClass = (self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
+        if not continuousClass and self.rawdata.domain.classVar:
             colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
             if self.lineTracking:
@@ -111,7 +113,7 @@ class OWParallelGraph(OWVisGraph):
         lastIndex = indices[-1]
         dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
         
-        if self.hidePureExamples == 1 and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if self.hidePureExamples == 1 and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
@@ -172,7 +174,9 @@ class OWParallelGraph(OWVisGraph):
                     newColor = self.colorNonTargetValue
                     curves[0].append(curve)
             else:
-                if continuousClass:
+                if self.rawdata.domain.classVar == None:
+                    newColor = blackColor
+                elif continuousClass:
                     newColor = colorPalette[self.noJitteringScaledData[classNameIndex][i]]
                 else:
                     newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
@@ -196,7 +200,7 @@ class OWParallelGraph(OWVisGraph):
 
         #############################################
         # do we want to show distributions with discrete attributes
-        if self.showDistributions and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if self.showDistributions and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             self.showDistributionValues(targetValue, validData, indices, dataStop, colorPalette)
             
         curve = subBarQwtPlotCurve(self)
@@ -254,7 +258,7 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
         # show the legend
-        if self.enabledLegend == 1 and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if self.enabledLegend == 1 and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             for ind in range(len(varValues)):
                 self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colorPalette[ind], colorPalette[ind], self.pointWidth, enableLegend = 1)
@@ -408,7 +412,7 @@ class OWParallelGraph(OWVisGraph):
             (key, foo1, x, y, foo2) = self.closestCurve(e.pos().x(), e.pos().y())
             dist = abs(x-self.invTransform(QwtPlot.xBottom, e.x())) + abs(y-self.invTransform(QwtPlot.yLeft, e.y()))
 
-            if self.lineTracking:
+            if self.lineTracking and self.rawdata.domain.classVar:
                 if (dist >= 0.1 or key != self.lastSelectedKey) and self.lastSelectedKey in self.dataKeys:
                     ind = self.dataKeys.index(self.lastSelectedKey)
                     colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values), 150)
