@@ -44,6 +44,14 @@ bool castableTo(const TClassDescription *objecttype, const TClassDescription *ba
 }
 
 
+TClassDescription::TClassDescription(const char *aname, const type_info *atype, const TClassDescription *abase, TPropertyDescription const *aproperties, size_t const *acomponents)
+: name(aname),
+  type(atype),
+  base(abase),
+  properties(aproperties),
+  components(acomponents)
+{}
+
 
 TOrange::TOrange()
 : myWrapper(NULL)

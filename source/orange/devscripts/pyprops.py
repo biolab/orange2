@@ -189,11 +189,11 @@ def writeFile(hppfile):
         off.write('0};\n')
 
         if classdef.parent:
-            off.write(('TClassDescription %s::st_classDescription = { "%s", &typeid(%s), &%s::st_classDescription, %s_properties, %s_components };\n' +
+            off.write(('TClassDescription %s::st_classDescription("%s", &typeid(%s), &%s::st_classDescription, %s_properties, %s_components);\n' +
                        'TClassDescription const *%s::classDescription() const { return &%s::st_classDescription; }\n'
                       ) % (tuple([classname]*3) + (classdef.parent, ) + tuple([classname]*4)))
         else:
-            off.write(('TClassDescription %s::st_classDescription = { "%s", &typeid(%s), NULL, %s_properties, %s_components };\n' +
+            off.write(('TClassDescription %s::st_classDescription("%s", &typeid(%s), NULL, %s_properties, %s_components );\n' +
                        'TClassDescription const *%s::classDescription() const { return &%s::st_classDescription; }\n'
                       ) % tuple([classname]*7))
         if not classdef.abstract:
