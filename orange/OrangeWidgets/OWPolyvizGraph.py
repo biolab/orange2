@@ -60,6 +60,10 @@ class OWPolyvizGraph(OWVisGraph):
         self.localScaledData = []
         self.attrLocalValues = {}
         self.lineLength = 2*0.05
+        self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
+        self.triedPossibilities = 0 # how many possibilities did we already try
+        self.startTime = time.time()
+        self.minExamples = 0
 
     def setLineLength(self, len):
         self.lineLength = len*0.05
@@ -394,6 +398,10 @@ class OWPolyvizGraph(OWVisGraph):
         for i in range(dataSize):
             if validData[i] == 1: count+=1
         print "Nr. of examples: ", str(count)
+        if count < self.minExamples:
+            print "not enough examples in example table. Ignoring permutation."
+            print "------------------------------"
+            return []
 
         # create anchor for every attribute
         anchors = self.createAnchors(attrListLength)
@@ -480,9 +488,9 @@ class OWPolyvizGraph(OWVisGraph):
                 fullList.append((tempPermValue*100.0/float(len(table)), len(table), tempList, attrOrder))
 
         if printTime:
-            print "------------------------------"
             secs = time.time() - t
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
+            print "------------------------------"
 
         return fullList
                 
@@ -511,9 +519,14 @@ class OWPolyvizGraph(OWVisGraph):
             if len(subsetList) < 3 or numOfAttr != 0: return []
             if progressBar:
                 progressBar.setProgress(progressBar.progress()+1)
-                print progressBar.progress()
-            
+           
             print subsetList
+            if self.totalPossibilities > 0 and self.triedPossibilities > 0:
+                secs = int(time.time() - self.startTime)
+                totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
+                restSecs = totalExpectedSecs - secs
+                print "Used time: %d:%d:%d, Remaining time: %d:%d:%d (total experiments: %d, rest: %d" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
+            self.triedPossibilities += 1
             return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
 
         full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar)

@@ -225,6 +225,7 @@ class OWRadviz(OWWidget):
                 self.graph.totalPossibilities = combin
                 self.graph.triedPossibilities = 0
                 self.graph.startTime = time.time()
+                self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
                 fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, int(text), int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
                 
             if len(fullList) == 0: return
@@ -238,7 +239,6 @@ class OWRadviz(OWWidget):
                 
             self.optimizationDlg.updateNewResults()
             self.optimizationDlg.interestingList.setCurrentItem(0)
-            #self.updateGraph()
 
    
     # #############################################
@@ -265,6 +265,7 @@ class OWRadviz(OWWidget):
 
             self.graph.possibleSubsetsTable = table
             self.graph.totalPossibleSubsets = total
+            self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, self.progressBar)
             if len(fullList) == 0: return
@@ -278,7 +279,6 @@ class OWRadviz(OWWidget):
                 
             self.optimizationDlg.updateNewResults()
             self.optimizationDlg.interestingList.setCurrentItem(0)
-            #self.updateGraph()
 
 
     # ####################################

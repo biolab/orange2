@@ -67,6 +67,10 @@ class OptimizationDialog(OWBaseWidget):
         for item in self.resultsListLenList:
             self.resultListCombo.insertItem(item)
         self.resultListCombo.setCurrentItem(self.resultsListLenNums.index(self.resultListLen))
+        self.hbox5 = QHBox(self.optimizeButtonBox)
+        self.minTableLenLabel = QLabel('Minimum examples:', self.hbox5)
+        self.minTableLenEdit = QLineEdit(self.hbox5)
+        self.minTableLenEdit.setText('0')
 
         self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
         self.numberOfAttrBox.setTitle("Number of attributes")

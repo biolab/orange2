@@ -58,6 +58,7 @@ class OWRadvizGraph(OWVisGraph):
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
         self.triedPossibilities = 0 # how many possibilities did we already try
         self.startTime = time.time()
+        self.minExamples = 0
 
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
@@ -281,6 +282,10 @@ class OWRadvizGraph(OWVisGraph):
         for i in range(dataSize):
             if validData[i] == 1: count+=1
         print "Nr. of examples: ", str(count)
+        if count < self.minExamples:
+            print "not enough examples in example table. Ignoring permutation."
+            print "------------------------------"
+            return []
 
         # store all sums
         sum_i=[]
@@ -388,6 +393,7 @@ class OWRadvizGraph(OWVisGraph):
         if printTime:
             secs = time.time() - t
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
+            print "------------------------------"
 
         return fullList
 
@@ -422,7 +428,6 @@ class OWRadvizGraph(OWVisGraph):
                 secs = int(time.time() - self.startTime)
                 totalExpectedSecs = int(float(self.totalPossibilities*secs)/float(self.triedPossibilities))
                 restSecs = totalExpectedSecs - secs
-                print secs, totalExpectedSecs, restSecs
                 print "Used time: %d:%d:%d, Remaining time: %d:%d:%d (total experiments: %d, rest: %d" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
             self.triedPossibilities += 1
             return self.getOptimalSeparation(subsetList, className, kNeighbours)

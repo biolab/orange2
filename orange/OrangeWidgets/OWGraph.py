@@ -234,7 +234,7 @@ class OWGraph(QwtPlot):
         else:
             buffer = QPixmap(size)
         painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background
+        painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
         self.printPlot(painter, buffer.rect())
         painter.end()
         buffer.save(fileName, ext)

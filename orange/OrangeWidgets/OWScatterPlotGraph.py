@@ -11,10 +11,11 @@ import time
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
 class OWScatterPlotGraph(OWVisGraph):
-    def __init__(self, parent = None, name = None):
+    def __init__(self, parent = None, name = None, app = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
 
+        self.application = app
         self.jitterContinuous = 0
         self.enabledLegend = 0
         self.showFilledSymbols = 1
@@ -263,6 +264,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 table = orange.ExampleTable(domain)
 
                 for i in range(dataSize):
+                    self.application.processEvents(5000)
                     xValue = self.noJitteringScaledData[x][i]
                     yValue = self.noJitteringScaledData[y][i]
                     if xValue == '?' or yValue == '?': continue

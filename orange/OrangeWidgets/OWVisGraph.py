@@ -346,14 +346,13 @@ class OWVisGraph(OWGraph):
         self.onMouseMoved(e)
         self.event(e)
 
-    # onMousePressed()
-
     def onMouseReleased(self, e):
         if Qt.LeftButton == e.button():
             xmin = min(self.xpos, e.pos().x())
             xmax = max(self.xpos, e.pos().x())
             ymin = min(self.ypos, e.pos().y())
-            ymax = max(self.ypos, e.pos().y())
+            ymax = ymin + ((xmax-xmin)*self.height())/self.width()  # compute the last value so that the picture remains its w/h ratio
+            #ymax = max(self.ypos, e.pos().y())
             self.setOutlineStyle(Qwt.Cross)
             xmin = self.invTransform(QwtPlot.xBottom, xmin)
             xmax = self.invTransform(QwtPlot.xBottom, xmax)

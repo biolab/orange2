@@ -29,9 +29,10 @@ class OWScatterPlot(OWWidget):
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
 
-    def __init__(self,parent=None):
+    def __init__(self, app = None, parent=None):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
-        apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)) 
+        apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE))
+        self.application = app
 
         #set default settings
         self.pointWidth = 7
@@ -59,7 +60,7 @@ class OWScatterPlot(OWWidget):
         #GUI
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWScatterPlotGraph(self.mainArea)
+        self.graph = OWScatterPlotGraph(self.mainArea, app = self.application)
         self.box.addWidget(self.graph)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 

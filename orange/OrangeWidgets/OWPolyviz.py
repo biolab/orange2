@@ -251,6 +251,10 @@ class OWPolyviz(OWWidget):
                 combin = combinations(select, total)
                 self.progressBar.setTotalSteps(combin)
                 self.progressBar.setProgress(0)
+                self.graph.totalPossibilities = combin
+                self.graph.triedPossibilities = 0
+                self.graph.startTime = time.time()
+                self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
                 fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, str(self.classCombo.currentText()), self.kNeighbours, select, int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
                
             if fullList == []: return
@@ -289,6 +293,7 @@ class OWPolyviz(OWWidget):
 
             self.graph.possibleSubsetsTable = table
             self.graph.totalPossibleSubsets = total
+            self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             if self.tryReverse.isChecked() == 1:
                 fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, progressBar = self.progressBar)
