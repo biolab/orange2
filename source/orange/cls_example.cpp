@@ -617,58 +617,97 @@ int Example_setitem(TPyExample *pex, PyObject *vara, PyObject *vala)
 
 
 
-PyObject *toValue(const TValue &val, PVariable var, int natvt)
+inline PyObject *toValue(const TValue &val, PVariable var, int natvt, PyObject *forDK, PyObject *forDC, PyObject *forSpecial)
 { switch (natvt) {
-    case -1: return (val.varType==TValue::INTVAR)
-               ? PyInt_FromLong(long(val.intV))
-               : PyFloat_FromDouble(double(val.floatV));
-    case  0: return convertToPythonNative(val, var);
-    default: return Value_FromVariableValue(var, val);
+    case -1:
+      return (val.varType==TValue::INTVAR)
+            ? PyInt_FromLong(long(val.intV))
+            : PyFloat_FromDouble(double(val.floatV));
+
+    case  0:
+      if (val.isSpecial()) {
+        PyObject *res;
+        if (val.isDC())
+          res = forDC;
+        else if (val.isDK())
+          res = forDK;
+        else
+          res = forSpecial;
+        Py_INCREF(res);
+        return res;
+      }   
+      else
+        return convertToPythonNative(val, var);
+
+    default:
+      return Value_FromVariableValue(var, val);
   }
 }
 
-PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples)
+PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples, PyObject *forDK, PyObject *forDC, PyObject *forSpecial)
 {
+  if (forDK)
+    Py_INCREF(forDK);
+  else
+    forDK = PyString_FromString("?");
+
+  if (forDC)
+    Py_INCREF(forDC);
+  else
+    forDC = PyString_FromString("~");
+
+  if (forSpecial)
+    Py_INCREF(forSpecial);
+  else
+    forSpecial = PyString_FromString(".");
+
   PyObject *list=PyList_New(0);
   TExample::const_iterator ei=example.begin();
   const_PITERATE(TVarList, vi, example.domain->attributes)
-    PyList_Append(list, toValue(*(ei++), *vi, natvt));
+    PyList_Append(list, toValue(*(ei++), *vi, natvt, forDK, forDC, forSpecial));
+
+  PyObject *res;
 
   if (example.domain->classVar) {
-    PyObject *pyclass = toValue(example.getClass(), example.domain->classVar, natvt);
+    PyObject *pyclass = toValue(example.getClass(), example.domain->classVar, natvt, forDK, forDC, forSpecial);
     if (tuples)
-      return Py_BuildValue("NN", list, pyclass);
+      res = Py_BuildValue("NN", list, pyclass);
     else {
       PyList_Append(list, pyclass);
-      return list;
+      res = list;
     }
   }
     
   else {
     if (tuples)
-      return Py_BuildValue("NO", list, Py_None);
+      res = Py_BuildValue("NO", list, Py_None);
     else
-      return list;
+      res = list;
   }
+
+  Py_DECREF(forDK);
+  Py_DECREF(forDC);
+  Py_DECREF(forSpecial);
+
+  return res;
 }
 
 
-PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity])  -> list; Converts an example to a list")
+PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=, substituteDC=, substituteDK=, substituteOther=])  -> list; Converts an example to a list")
 { PyTRY
     int natvt=1;
     if (args && !PyArg_ParseTuple(args, "|i", &natvt))
       PYERROR(PyExc_TypeError, "invalid arguments (no arguments or an integer expected)", PYNULL);
 
-    bool tuples=false;
-    if (NOT_EMPTY(keyws))
-      if ((PyDict_Size(keyws)==1)) {
-         PyObject *pytuples = PyDict_GetItemString(keyws, "tuple");
-         tuples = pytuples && (PyInt_AsLong(pytuples)!=0);
-       }
-      else 
-        PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+    bool tuples = false;
+    PyObject *pytuples = PyDict_GetItemString(keyws, "tuple");
+    tuples = pytuples && (PyObject_IsTrue(pytuples) != 0);
 
-    return convertToPythonNative(PyExample_AS_ExampleReference(pex), natvt, tuples);
+    PyObject *forDC = PyDict_GetItemString(keyws, "substituteDC");
+    PyObject *forDK = PyDict_GetItemString(keyws, "substituteDK");
+    PyObject *forSpecial = PyDict_GetItemString(keyws, "substituteOther");
+
+    return convertToPythonNative(PyExample_AS_ExampleReference(pex), natvt, tuples, forDK, forDC, forSpecial);
   PyCATCH
 }
 

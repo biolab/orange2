@@ -50,7 +50,7 @@ PyObject *Example_FromExample(PyTypeObject *type, PExample example, POrange lock
 #define PyExample_AS_ExampleReference(op) (((TPyExample *)(op))->example.getReference())
 
 
-PyObject *convertToPythonNative(const TExample &, int natvt=1, bool tuples=false);
+PyObject *convertToPythonNative(const TExample &, int natvt=1, bool tuples=false, PyObject *forDK = NULL, PyObject *forDC = NULL, PyObject *forSpecial = NULL);
 bool convertFromPython(PyObject *args, TExample &, PDomain domain);
 bool convertFromPythonExisting(PyObject *lst, TExample &example);
 

@@ -1177,23 +1177,19 @@ PExampleGenerator exampleGenFromArgs(PyObject *args)
 }
 
 
-PyObject *ExampleGenerator_native(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=]) -> examples")
+PyObject *ExampleGenerator_native(PyObject *self, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=]) -> examples")
 { PyTRY
     bool tuples = false;
-    if (keywords) {
-      PyObject *pytuples=PyDict_GetItemString(keywords, "tuple");
-      if (pytuples) {
-        tuples = PyObject_IsTrue(pytuples)!=0;
+    PyObject *forDC = NULL;
+    PyObject *forDK = NULL;
+    PyObject *forSpecial = NULL;
+    if (keyws) {
+      PyObject *pytuples = PyDict_GetItemString(keyws, "tuple");
+      tuples = pytuples && (PyObject_IsTrue(pytuples) != 0);
 
-        // We don't want to modify the original keywords dictionary
-        // (God knows what it is - this might be called by apply(ExampleGenerator, args, dict)).
-        keywords = PyDict_Copy(keywords);
-        PyDict_DelItemString(keywords, "tuple");
-        SETATTRIBUTES 
-        Py_DECREF(keywords);
-      }
-      else
-        SETATTRIBUTES
+      forDC = PyDict_GetItemString(keyws, "substituteDC");
+      forDK = PyDict_GetItemString(keyws, "substituteDK");
+      forSpecial = PyDict_GetItemString(keyws, "substituteOther");
     }
 
     int natvt=2;
@@ -1204,7 +1200,7 @@ PyObject *ExampleGenerator_native(PyObject *self, PyObject *args, PyObject *keyw
     PyObject *list=PyList_New(0);
     EITERATE(ei, *eg)
       if (natvt<=1) {
-        PyObject *obj=convertToPythonNative(*ei, natvt, tuples);
+        PyObject *obj=convertToPythonNative(*ei, natvt, tuples, forDK, forDC, forSpecial);
         PyList_Append(list, obj);
         Py_DECREF(obj);
       }
