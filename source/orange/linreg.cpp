@@ -20,12 +20,15 @@ sigh..MS.. -_-
 #endif
 
 namespace nrutil {
+
 float pythag(float a, float b);
+void svdcmp(float **a, int m, int n, float w[], float **v);
+void svbksb(float **u, float w[], float **v, int m, int n, float b[], float x[]);
 
 #include "nrutil.h"
-#include "svbksb.cpp"
+/*#include "svbksb.cpp"
 #include "svdcmp.cpp"
-#include "pythag.cpp"
+#include "pythag.cpp"*/
 }
 
 
