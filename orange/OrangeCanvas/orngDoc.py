@@ -21,7 +21,7 @@ class SchemaDoc(QMainWindow):
         apply(QMainWindow.__init__,(self,) + args)
         self.resize(400,300)
         self.showNormal()
-        self.setCaption("Schema " + str(orngResources.iDocIndex))
+        self.setCaption("Schema" + str(orngResources.iDocIndex))
         orngResources.iDocIndex = orngResources.iDocIndex + 1
         self.hasChanged = FALSE
         self.setIcon(QPixmap(orngResources.file_new))
@@ -287,6 +287,9 @@ class SchemaDoc(QMainWindow):
         appName = self.filename
         if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
             appName = appName + ".py"
+        elif len(appName) > 4 and appName[-4] == '.':
+            appName = appName[:-4] + ".py"
+        appName = appName.replace(" ", "")
         qname = QFileDialog.getSaveFileName( self.path + "/" + appName, "Orange Scripts (*.py)", self, "", "Save File as Application")
         if qname.isEmpty():
             return
@@ -304,6 +307,8 @@ class SchemaDoc(QMainWindow):
         for widget in self.widgets:
             name = widget.caption
             name = name.replace(" ", "_")
+            name = name.replace("(", "")
+            name = name.replace(")", "")
             imports = imports + "from " + widget.widget.fileName + " import *\n"
             instances = instances + "self.ow" + name + " = " + widget.widget.fileName + "(self.tabs)\n"+t+t
             tabs = tabs + "self.tabs.insertTab (self.ow" + name + ",\"" + widget.caption + "\")\n"+t+t
@@ -311,6 +316,8 @@ class SchemaDoc(QMainWindow):
             for line in widget.inLines:
                 name2 = line.outWidget.caption
                 name2 = name2.replace(" ", "_")
+                name2 = name2.replace("(", "")
+                name2 = name2.replace(")", "")
                 for signal in line.signals:
                     links = links + "self.ow" + name + ".link(self.ow" + name2 + ", \"" + signal + "\")\n"+t+t
 
