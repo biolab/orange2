@@ -97,7 +97,7 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
-        self.optimizationDlg = kNNOptimization(None, self.graph)
+        self.optimizationDlg = kNNOptimization(self, self.graph)
         self.optimizationDlg.parentName = "ScatterPlot"
         self.optimizationDlg.label1.hide()
         self.optimizationDlg.optimizationTypeCombo.hide()
@@ -184,6 +184,7 @@ class OWScatterPlot(OWWidget):
     def activateLoadedSettings(self):
         self.graph.pointWidth = self.pointWidth
         self.graph.jitterSize = self.jitterSize
+        self.graph.showAxisScale = self.showAxisScale
         self.setAxisScale()
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
@@ -468,6 +469,7 @@ class OWScatterPlot(OWWidget):
         self.graph.subsetData = data
         qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
         self.updateGraph()
+        self.optimizationDlg.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
        
     
@@ -485,6 +487,7 @@ class OWScatterPlot(OWWidget):
     # #######################################
 
     def setAxisScale(self):
+        self.graph.showAxisScale = self.showAxisScale
         if not self.showAxisScale:
             self.graph.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
             self.graph.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -551,7 +554,7 @@ class OWScatterPlot(OWWidget):
             self.graphGridColor = str(newColor.name())
             self.graph.setGridColor(newColor)
 
-    def removeGraphProperties(self):
+    def setMinimalGraphProperties(self):
         attrs = ["pointWidth", "showLegend", "showClusters", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "showAxisScale", "autoSendSelection"]
         self.oldSettings = dict([(attr, getattr(self, attr)) for attr in attrs])
 
@@ -562,8 +565,8 @@ class OWScatterPlot(OWWidget):
         self.showYAxisTitle = 0
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
-        self.showAxisScale = 0
         self.autoSendSelection = 0
+        self.showAxisScale = 0
         #self.setAxisScale()
         #self.updateValues()
 

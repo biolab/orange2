@@ -61,6 +61,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.tooltipKind = 1
         self.scatterWidget = scatterWidget
         self.optimizeForPrinting = 0
+        self.showAxisScale = 1
         self.kNNOptimization = None
         self.clusterOptimization = None
         self.subsetData = None
@@ -106,18 +107,19 @@ class OWScatterPlotGraph(OWVisGraph):
         MIN_SHAPE_SIZE = 6
         MAX_SHAPE_DIFF = self.pointWidth
 
-        if self.rawdata.domain[xAttr].varType != orange.VarTypes.Continuous:
-            self.setXlabels(getVariableValuesSorted(self.rawdata, xAttr))
-            if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
-            else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)
-        else: self.setXlabels(None)
-            
+        if self.showAxisScale:
+            if self.rawdata.domain[xAttr].varType != orange.VarTypes.Continuous:
+                self.setXlabels(getVariableValuesSorted(self.rawdata, xAttr))
+                if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
+                else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)
+            else: self.setXlabels(None)
+                
 
-        if self.rawdata.domain[yAttr].varType != orange.VarTypes.Continuous:
-            self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttr))
-            if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
-            else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
-        else: self.setYLlabels(None)
+            if self.rawdata.domain[yAttr].varType != orange.VarTypes.Continuous:
+                self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttr))
+                if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
+                else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
+            else: self.setYLlabels(None)
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
@@ -485,6 +487,12 @@ class OWScatterPlotGraph(OWVisGraph):
                            
         return (xArray, yArray)
 
+
+    # for attributes in attrIndices and values of these attributes in values compute point positions
+    # function is called from OWClusterOptimization.py
+    # this function has more sense in radviz and polyviz methods
+    def getProjectedPointPosition(self, attrIndices, values):
+        return values
 
     def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, jitterSize = 0.0):
         if not validData: validData = self.getValidList(attrIndices)
