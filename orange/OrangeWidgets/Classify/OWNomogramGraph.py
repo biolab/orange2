@@ -403,16 +403,12 @@ class AttrLine:
         self.initialize(canvas)
 
     def addAttValue(self, attValue):
-#        if not self.name == "marker" and not self.name == "Total Points" and not self.name == "Points" and not self.name == "":
-#            print self.name, len(self.attValues), self.attValues, attValue.betaValue, attValue.name
         if len(self.attValues)==0:
             self.minValue = attValue.betaValue
             self.maxValue = attValue.betaValue
         else:
             self.minValue = min(self.minValue, attValue.betaValue)
             self.maxValue = max(self.maxValue, attValue.betaValue)
-#        if not self.name == "marker" and not self.name == "Total Points" and not self.name == "Points" and not self.name == "":
-#            print "minMax", self.minValue, self.maxValue
         self.attValues.append(attValue)
 
     def getHeight(self, canvas):      
@@ -931,19 +927,15 @@ class BasicNomogramFooter(QCanvas):
         # get min and maximum sum, min and maximum beta
         # min beta <--> min sum! , same for maximum
         maxSum = minSum = maxSumBeta = minSumBeta = 0
-        print "minBeta, maxBeta"
-        print minSumBeta, maxSumBeta        
         for at in self.nomogram.attributes:
             maxSum += mapper.getMaxValue(at)
             minSum += mapper.getMinValue(at)
             maxSumBeta += at.maxValue
             minSumBeta += at.minValue
-            print minSumBeta, maxSumBeta, at.maxValue, at.minValue        
 
         # add constant to betas!
         maxSumBeta += self.nomogram.constant.betaValue
         minSumBeta += self.nomogram.constant.betaValue
-        print minSumBeta, maxSumBeta, self.nomogram.constant.betaValue         
 
         # show only reasonable values
         k = (maxSum-minSum)/(maxSumBeta-minSumBeta)
@@ -959,8 +951,6 @@ class BasicNomogramFooter(QCanvas):
         if maxSumBeta<-3:
             maxSum = (-3 - minSumBeta)*k + minSum
             maxSumBeta = -3
-
-        print "minSum, maxSum", minSum, maxSum, minSumBeta, maxSumBeta        
 
         # draw continous line with values from min and max sum (still have values!)
         self.m = Mapper_Linear_Fixed(minSumBeta, maxSumBeta, rect.left(), rect.right(), maxLinearValue = maxSum, minLinearValue = minSum)

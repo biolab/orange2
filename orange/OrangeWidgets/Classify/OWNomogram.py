@@ -263,8 +263,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         else:
             mult = 1
 
-        print cl.beta
-        print mult*cl.beta[0]        
         self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
         a = None
 
@@ -279,19 +277,16 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if at.getValueFrom and at.visited==0:
                 name = at.getValueFrom.variable.name
                 var = at.getValueFrom.variable
-                print var.ordered
                 if var.ordered:
                     a = AttrLineOrdered(name, self.bnomogram)
                 else:
                     a = AttrLine(name, self.bnomogram)
-                print a.name
                 listOfExcludedValues = []
                 for val in var.values:
                     foundValue = False
                     for same in cl.continuizedDomain.attributes:
                         if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
                             same.setattr("visited",1)
-                            print mult*cl.beta[same]
                             a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
                             foundValue = True
                     if not foundValue:
@@ -601,7 +596,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("d:\\delo\\data\\stage")
+    data = orange.ExampleTable("titanic")
 
     discretizer = orange.EntropyDiscretization()
     catData = orange.Preprocessor_discretize(data, method=discretizer)
@@ -617,14 +612,14 @@ if __name__=="__main__":
     newData = catData.select(attrlist)
     for at in newData.domain.attributes:
         at.ordered = True
-    
-    #bayes = orange.BayesLearner(newData)
+
+    bayes = orange.BayesLearner(data)
     #l = orngSVM.BasicSVMLearner()
     #l.kernel = 0 # linear SVM
     #l.for_nomogram = 1
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
-    ow.classifier(logistic)
+    #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(bayes)
     ow.cdata(data)
 
     # here you can test setting some stuff
