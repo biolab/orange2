@@ -243,7 +243,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
     return allResults
 
    
-def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **argkw):
+def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], callback=None, **argkw):
     
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 0)
@@ -305,7 +305,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
                     (learnset, testset) = pp[1](learnset, testset)
 
             if not learnset:
-                raise SystemError, "no learn examples after preprocessing"
+                raise SystemError, "no training examples after preprocessing"
 
             if not testset:
                 raise SystemError, "no test examples after preprocessing"
@@ -327,6 +327,8 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
                         if not cache or not testResults.loaded[cl]:
                             cr = classifiers[cl](ex, orange.GetBoth)
                             testResults.results[i].setResult(cl, cr[0], cr[1])
+            if callback:
+                callback()
         if cache:
             testResults.saveToFiles(learners, fnstr)
         
