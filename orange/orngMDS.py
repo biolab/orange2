@@ -238,6 +238,59 @@ class MDS:
         self.X = matrixmultiply(R,self.X)/(self.n+0.0)
         self.freshD = 0
 
+    def SMACOFstepSlow(self):
+        # compute the R (n*n) matrix
+        self.getDistance()
+        R = resize(array([0.0]),(self.n,self.n))
+        sumv = array([0.0]*self.n)
+        for i in xrange(self.n):
+            for j in xrange(self.n):
+                if i != j:
+                    if self.dist[i][j] > 1e-6:
+                        s = 1.0/self.dist[i][j]
+                    else:
+                        s = 0.0
+                    t = self.O[i][j]*s
+                    t = 1+(t-1)*0.1
+                    R[i][j] = -t
+                    sumv[i] += t
+                    
+        for i in range(self.n):
+            R[i][i] = sumv[i]
+        # compute the iteration step
+        self.X = matrixmultiply(R,self.X)/(self.n+0.0)
+        self.freshD = 0
+
+    def SMACOFstepLocal(self):
+        # compute the R (n*n) matrix
+        self.getDistance()
+        R = resize(array([0.0]),(self.n,self.n))
+        sumv = array([0.0]*self.n)
+        
+        near = array([1e10]*self.n)
+        for i in xrange(self.n):
+            for j in xrange(self.n):
+                if i!=j:
+                    near[i]=min(near[i],self.O[i][j])
+
+        for i in xrange(self.n):
+            for j in xrange(self.n):
+                if i != j:
+                    if self.dist[i][j] > 1e-6:
+                        s = 1.0/self.dist[i][j]
+                    else:
+                        s = 0.0
+                    t = self.O[i][j]*s
+                    t = 1+(t-1)*((near[i]+near[j])/(self.O[i][j]*2.0))
+                    R[i][j] = -t
+                    sumv[i] += t
+                    
+        for i in range(self.n):
+            R[i][i] = sumv[i]
+        # compute the iteration step
+        self.X = matrixmultiply(R,self.X)/(self.n+0.0)
+        self.freshD = 0
+
 
 # Weighted MDS
 class WMDS(MDS):

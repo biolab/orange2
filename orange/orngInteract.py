@@ -28,7 +28,6 @@
 import orange, orngCI
 import warnings, math, string
 
-
 def _nicefloat(f,sig):
     # pretty-float formatter
     i = int(f)
@@ -43,6 +42,68 @@ def _nicefloat(f,sig):
         s += '%d'%abs(i) + ('%f'%fp)[1:2+n]
         
     return s
+
+class _Item:
+    def __init__(self):
+        self.t = 0
+        self.d = {}
+
+    def add(self,values):
+        self.t += 1
+        if self.d.has_key(values):
+            self.d[values] += 1
+        else:
+            self.d[values] = 1
+        
+    def entropy(self):
+        e = 0.0
+        if self.t == 0:
+            return 0.0
+        n = float(self.t)
+        for i in self.d.values():
+            p = i/n
+            e -= p*math.log(p)/math.log(2)
+        return e
+        
+
+class _StatsGatherer:
+    def __init__(self,set):
+        self.ones = []
+        self.twos = []
+        self.n = len(set)
+        self.names = set
+        # attributes
+        for i in range(self.n):
+            self.ones.append(_Item())
+            for j in range(i):
+                self.twos.append(_Item())
+                    
+    def add(self,v):
+        c1 = 0
+        c2 = 0
+        # attributes
+        for i in range(self.n):
+            self.ones[c1].add((v[i]))
+            c1 += 1
+            for j in range(i):
+                self.twos[c2].add((v[i],v[j]))
+                c2 += 1
+
+    def prin(self):
+        # get entropies
+        ent = {}
+        c1 = 0
+        c2 = 0
+        # attributes
+        for i in range(self.n):
+            ent[(i)]=self.ones[c1].entropy()
+            c1 += 1
+            for j in range(i):
+                ent[(i,j)]=self.twos[c2].entropy()
+                ent[(j,i)]=ent[(i,j)] # commutativity
+                c2 += 1
+        return ent
+
 
 class InteractionMatrix:
     def _prepare(self, t):
@@ -107,10 +168,11 @@ class InteractionMatrix:
             t = orange.ExampleTable(exs)
         return t
         
-    def __init__(self, t, save_data=1):
+    def __init__(self, t, save_data=1, dependencies_too=0):
         t = self._prepare(t)
         if save_data:
             self.discData = t   # save the discretized data
+
         ### PREPARE INDIVIDUAL ATTRIBUTES ###
 
         # Get the class entropy
@@ -131,6 +193,13 @@ class InteractionMatrix:
             # fix the name
             st = '%s'%t.domain.attributes[i].name # copy
             self.names.append(st)
+
+        if dependencies_too:
+            stats = _StatsGatherer(self.names+[t.domain.classVar.name])
+            for ex in t:
+                # convert attribute values into numbers
+                stats.add([int(ex[i]) for i in range(NA+1)])
+            self.ents = stats.prin() # entropy look-up
 
         ### COMPUTE INTERACTION GAINS ###
 
@@ -233,7 +302,10 @@ class InteractionMatrix:
         for (ig,i,j) in ints:
             perc = int(abs(ig)*100.0/max(max_igain,self.attlist[-1][0])+0.5)
 
-            mc = _nicefloat(100.0*ig/self.entropy,significant_digits)            
+            if self.entropy > 1e-6:
+                mc = _nicefloat(100.0*ig/self.entropy,significant_digits)
+            else:
+                mc = _nicefloat(0.0,significant_digits)                
             if postscript:
                 style = "style=\"setlinewidth(%d)\","%(abs(perc)/30+1)
             else:
@@ -265,7 +337,7 @@ class InteractionMatrix:
 
         f.write("}\n")
         
-    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1, color_coding = 0, color_gains = 0):
+    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1, color_coding = 0, color_gains = 0, jaccard=0):
         NA = len(self.names)
 
         ### BEAUTIFY THE LABELS ###
@@ -280,23 +352,69 @@ class InteractionMatrix:
                 t = string.replace(t,"M_","")
             r = self.gains[i]
             if print_bits:
-                t = "%s (%s%%)"%(t,_nicefloat(r*100.0/self.entropy,significant_digits))
+                if self.entropy > 1e-6:
+                    t = "%s (%s%%)"%(t,_nicefloat(r*100.0/self.entropy,significant_digits))
+                else:
+                    t = "%s (0%%)"%(t)
             if show_gains: # a bar indicating the feature importance
-                t += ' '+'*'*int(8.0*r/maxgain+0.5)
+                if maxgain > 1e-6:
+                    t += ' '+'*'*int(8.0*r/maxgain+0.5)
             labels.append(t)
 
         ### CREATE THE DISSIMILARITY MATRIX ###
-
-        maxx = self.abslist[-1][0]
+        
+        if jaccard:
+            # create the lookup of 3-entropies
+            ent3 = {}
+            maxx = 1e-6
+            for i in range(1,NA):
+                for j in range(i):
+                    e = self.ents[(i,j)]+self.ents[(j,NA)]+self.ents[(i,NA)]
+                    e -= self.ents[(i)]+self.ents[(j)]+self.ents[(NA)]
+                    e -= self.ig[i-1][j]
+                    ent3[(i,j)] = e
+                    if e > 1e-6:
+                        e = abs(self.ig[i-1][j])/e
+                    else:
+                        e = 0.0
+                    maxx = max(maxx,e)
+            # check the information gains...
+            if color_gains:
+                for i in range(NA):
+                    e = self.gains[i]
+                    if self.ents[(i,NA)] > 1e-6:
+                        e /= self.ents[(i,NA)]
+                    else:
+                        e = 0.0
+                    ent3[(i)] = e 
+                    maxx = max(maxx,e)
+        else:
+            maxx = self.abslist[-1][0]
+            if color_gains:
+                maxx = max(maxx,self.attlist[-1][0])
         if color_gains:
-            maxx = max(maxx,self.gains[-1])
-            cgains = [0.5*(1-i/maxx) for i in self.gains]
+            if maxx > 1e-6:
+                cgains = [0.5*(1-i/maxx) for i in self.gains]
+            else:
+                cgains = [0.0 for i in self.gains]                
         diss = []        
-        for line in self.ig:
+        for i in range(1,NA):
             newl = []
-            for d in line:
+            for j in range(i):
+                d = self.ig[i-1][j]
+                if jaccard:
+                    if ent3[(i,j)] > 1e-6:
+                        d /= ent3[(i,j)]
+                    else:
+                        d = 0.0
                 if color_coding:
-                    t = 0.5*(1-d/maxx)
+                    if maxx > 1e-6:
+                        if maxx > 1e-6:
+                            t = 0.5*(1-d/maxx)
+                        else:
+                            t = 0.0
+                    else:
+                        t = 0
                 else:
                     # transform the IG into a distance
                     ad = abs(d)

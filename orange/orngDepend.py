@@ -22,68 +22,8 @@
 import orange, orngCI
 from orngInteract import *
 from orngInteract import _nicefloat
-import math
-
-class _Item:
-    def __init__(self):
-        self.t = 0
-        self.d = {}
-
-    def add(self,values):
-        self.t += 1
-        if self.d.has_key(values):
-            self.d[values] += 1
-        else:
-            self.d[values] = 1
-        
-    def entropy(self):
-        e = 0.0
-        if self.t == 0:
-            return 0.0
-        n = float(self.t)
-        for i in self.d.values():
-            p = i/n
-            e -= p*math.log(p)/math.log(2)
-        return e
-        
-
-class _StatsGatherer:
-    def __init__(self,set):
-        self.ones = []
-        self.twos = []
-        self.n = len(set)
-        self.names = set
-        # attributes
-        for i in range(self.n):
-            self.ones.append(_Item())
-            for j in range(i):
-                self.twos.append(_Item())
-                    
-    def add(self,v):
-        c1 = 0
-        c2 = 0
-        # attributes
-        for i in range(self.n):
-            self.ones[c1].add((v[i]))
-            c1 += 1
-            for j in range(i):
-                self.twos[c2].add((v[i],v[j]))
-                c2 += 1
-
-    def prin(self):
-        # get entropies
-        ent = {}
-        c1 = 0
-        c2 = 0
-        # attributes
-        for i in range(self.n):
-            ent[(i)]=self.ones[c1].entropy()
-            c1 += 1
-            for j in range(i):
-                ent[(i,j)]=self.twos[c2].entropy()
-                ent[(j,i)]=ent[(i,j)] # commutativity
-                c2 += 1
-        return ent
+from orngInteract import _Item,_StatsGatherer
+import math,copy
 
 class DependenceMatrix(InteractionMatrix):
     def __init__(self, t, include_class=1, interactions_too = 1):
@@ -131,7 +71,7 @@ class DependenceMatrix(InteractionMatrix):
                 t = '%s+%s'%(self.names[i],self.names[j])
                 print "%30s\t%2.4f\t%2.4f\t%2.4f\t%2.4f\t%2.4f"%(t,self.igain[(i,j)],self.corr[(i,j)],self.igain[(i,j)]+self.corr[(i,j)],self.gains[i],self.gains[j])
 
-    def exportGraph(self, f, n_int=1, print_bits = 1, black_white = 0, significant_digits = 2, pretty_names = 1, postscript=1, spanning_tree = 1, TAN=1):
+    def exportGraph(self, f, n_int=1, print_bits = 1, black_white = 0, significant_digits = 2, pretty_names = 1, postscript=1, spanning_tree = 1, TAN=1, source=-1, labelled=1):
         NA = len(self.names)
 
         ### SELECTION OF INTERACTIONS AND ATTRIBUTES ###
@@ -199,6 +139,10 @@ class DependenceMatrix(InteractionMatrix):
             shap = 'box'
 
         for n in range(NA):
+            if source != -1 and not type(source)==type(1):
+                # find the name
+                if string.upper(self.names[n])==string.upper(source):
+                    source = n
             t = '%s'%self.names[n]
             if pretty_names:
                 t = string.replace(t,"ED_","")
@@ -210,24 +154,49 @@ class DependenceMatrix(InteractionMatrix):
             if print_bits:
                 t = "{%s|%s}"%(t,_nicefloat(self.ents[(n)],significant_digits))
             f.write("\tnode [ shape=%s, label = \"%s\"] %d;\n"%(shap,t,n))
-            
+
+        if source != -1:
+            # redirect all links
+            age = [-1]*NA
+            age[source] = 0
+            phase = 1
+            remn = NA-1
+            premn = -1
+            while remn > 0 and premn != remn:
+                premn = remn
+                for (v,(i,j),e) in links:
+                    if age[i] >= 0 and age[i] < phase and age[j] < 0:
+                        age[j] = phase
+                        remn -= 1
+                    if age[j] >= 0 and age[j] < phase and age[i] < 0:
+                        age[i] = phase
+                        remn -= 1
+                phase += 1
+
         ### EDGE DRAWING ###
         for (v,(i,j),e) in links:
             if v > 0:
                 c = v/e
                 perc = int(100*v/maxlink + 0.5)
 
-                mc = _nicefloat(100.0*c,significant_digits)
                 style = ''
                 if postscript:
                     style += "style=\"setlinewidth(%d)\","%(abs(perc)/30+1)
                 if not black_white:
                     l = 0.3+0.7*perc/100.0
                     style += 'color="0.5 %f %f",'%(l,1-l) # adjust saturation
-                f.write("\t%d -> %d [%slabel=\"%s%%\",weight=%d];\n"%(j,i,style,mc,(perc/30+1)))
+                if labelled:
+                    style += 'label=\"%s%%\",'%_nicefloat(100.0*c,significant_digits)
+                if source == -1:
+                    f.write("\t%d -> %d [%sweight=%d];\n"%(j,i,style,(perc/30+1)))
+                else:
+                    if age[i] > age[j]:
+                        f.write("\t%d -> %d [%sweight=%d];\n"%(j,i,style,(perc/30+1)))
+                    else:
+                        f.write("\t%d -> %d [%sweight=%d];\n"%(i,j,style,(perc/30+1)))
         f.write("}\n")
 
-    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, normalization = 1):
+    def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, normalization = 1, color_coding = 0, verbose=0):
         NA = len(self.names)
 
         ### BEAUTIFY THE LABELS ###
@@ -243,22 +212,36 @@ class DependenceMatrix(InteractionMatrix):
 
         ### CREATE THE DISSIMILARITY MATRIX ###
 
+        if color_coding:
+            maxx = -1
+            for x in range(1,NA):
+                for y in range(x):
+                    t = self.corr[(x,y)]
+                    if normalization:
+                        t /= self.ents[(x)]+self.ents[(y)]-t
+                    maxx = max(maxx,t)
+            if verbose:
+                if normalization:
+                    print 'maximum intersection is %3d percent.'%(maxx*100.0)
+                else:
+                    print 'maximum intersection is %f bits.'%maxx
         diss = []        
         for x in range(1,NA):
             newl = []
             for y in range(x):
                 t = self.corr[(x,y)]
                 if normalization:
-                    t /= self.ents[(x)]+self.ents[(y)]
-                if t*truncation > 1:
-                    t = 1.0 / t
+                    t /= self.ents[(x)]+self.ents[(y)]-t
+                if color_coding:
+                    t = 0.5*(1-t/maxx)
                 else:
-                    t = truncation
+                    if t*truncation > 1:
+                        t = 1.0 / t
+                    else:
+                        t = truncation
                 newl.append(t)
             diss.append(newl)
         return (diss, labels)
-
-
 
 if __name__== "__main__":
     import orange

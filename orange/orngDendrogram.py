@@ -32,16 +32,27 @@ import Tkinter, ImageTk
 import piddle, piddlePIL, math
 
 
-def _colorize(cc):
+def _colorize0(cc):
+    #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
+    #redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))    
     bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
     redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
     cblu = bluefunc(cc)
     cred = redfunc(cc)
     cgre =  1 - pow(redfunc(cc+0.1),2) - bluefunc(cc-0.15)
+    #cgre =  1 - pow(redfunc(cc+0.2),2) - bluefunc(cc-0.3)
+    return piddle.Color(cred,cgre,cblu)
+
+def _colorize1(cc):
+    bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
+    redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
+    cred = bluefunc(cc)
+    cgre = redfunc(cc)
+    cblu =  1 - pow(redfunc(cc+0.1),2) - bluefunc(cc-0.15)
     return piddle.Color(cred,cgre,cblu)
 
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -63,6 +74,11 @@ class DendrogramPlot:
         maxlabel = 0.0
         for s in labels:
             maxlabel = max(maxlabel,tcanvas.stringWidth(s))
+
+        if color_mode:
+            _colorize = _colorize1 # gregor
+        else:
+            _colorize = _colorize0 # aleks
 
         if canvas == None:
             canvas = piddlePIL.PILCanvas(size=(width,height))
@@ -135,7 +151,7 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
-    def matrix(self,labels, diss, margin = 10, hook = 10, block = None, line_size = 2.0, att_colors = [], canvas = None):
+    def matrix(self,labels, diss, margin = 10, hook = 10, block = None, line_size = 2.0, att_colors = [], canvas = None,color_mode=0):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -158,6 +174,12 @@ class DendrogramPlot:
 
         if canvas == None:
             canvas = piddlePIL.PILCanvas(size=(width,height))
+
+
+        if color_mode:
+            _colorize = _colorize1 # gregor
+        else:
+            _colorize = _colorize0 # aleks
 
         ### DRAWING ###
                 
@@ -184,7 +206,7 @@ class DendrogramPlot:
             if len(att_colors) > 0:
                 # render the gain
                 x = offset+hook+lineskip*(i+1)
-                colo = _colorize(att_colors[i])
+                colo = _colorize(att_colors[idx])
                 canvas.drawRect(x-block,x-block,x+block,x+block,edgeColor=colo,fillColor=colo)
                 
         canvas.flush()
