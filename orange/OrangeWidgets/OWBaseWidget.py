@@ -137,7 +137,12 @@ class OWBaseWidget(QDialog):
         """
         if hasattr(self, "settingsList"):
             if file==None:
-                file = self.widgetDir + self.title + ".ini"
+                if os.path.exists(self.widgetDir + "widgetSettings/" + self.title + ".ini"):
+                    file = self.widgetDir + "widgetSettings/" + self.title + ".ini"
+                elif os.path.exists(self.widgetDir + self.title + ".ini"):
+                    file = self.widgetDir + self.title + ".ini"
+                else:
+                    return
             if type(file) == str:
                 if os.path.exists(file):
                     file = open(file, "r")
@@ -155,7 +160,9 @@ class OWBaseWidget(QDialog):
         if hasattr(self, "settingsList"):
             settings = dict([(name, getattr(self, name)) for name in self.settingsList])
             if file==None:
-                file = self.widgetDir + self.title + ".ini"                
+                if not os.path.exists(self.widgetDir + "widgetSettings/"):
+                    os.mkdir(self.widgetDir + "widgetSettings")
+                file = self.widgetDir + "widgetSettings/" + self.title + ".ini"
             if type(file) == str:
                 file = open(file, "w")
                 cPickle.dump(settings, file)
