@@ -83,7 +83,7 @@ def buildLists(rhter, fname):
         
 buildList(basedir, "orange\\", "", "((.*[.]pyd?)|(ensemble.c)|(COPYING))\Z", "base", 0)
 buildList(basedir, "orange\\OrangeWidgets\\", "OrangeWidgets\\", ".*[.]((py)|(png))\\Z", "widgets")
-buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(png))\\Z", "canvas")
+buildList(basedir, "orange\\OrangeCanvas\\", "OrangeCanvas\\", ".*[.]((py)|(pyw)|(png))\\Z", "canvas")
 
 buildLists([(basedir, "genomics\\", "OrangeWidgets\\Genomics\\", ".*[.]py\\Z", 0),
             (basedir, "genomics\\GO\\", "OrangeWidgets\\Genomics\\GO\\", "", 0),
