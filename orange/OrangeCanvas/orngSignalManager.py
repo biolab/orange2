@@ -35,13 +35,17 @@ class SignalWrapper:
         self.method = method
 
     def __call__(self, *k):
-        signalManager.signalProcessingInProgress += 1
+        manager = self.widget.signalManager
+        if not manager:
+            manager = signalManager
+
+        manager.signalProcessingInProgress += 1
         try:
             apply(self.method, k)
         finally:
-            signalManager.signalProcessingInProgress -= 1
-            if not signalManager.signalProcessingInProgress:
-                signalManager.processNewSignals(self.widget)
+            manager.signalProcessingInProgress -= 1
+            if not manager.signalProcessingInProgress:
+                manager.processNewSignals(self.widget)
 
 
 
@@ -50,6 +54,53 @@ class SignalManager:
     links = {}      # dicionary. keys: widgetFrom, values: (widgetTo1, signalNameFrom1, signalNameTo1, enabled1), (widgetTo2, signalNameFrom2, signalNameTo2, enabled2)
     freezing = 0            # do we want to process new signal immediately
     signalProcessingInProgress = 0 # this is set to 1 when manager is propagating new signal values
+
+    def __init__(self, debugMode = 0, debugFileName = "signalManagerOutput.txt"):
+        self.debugFile = None
+        if debugMode:
+            self.debugFile = open(debugFileName, "wt")
+            sys.excepthook = self.exceptionHandler
+
+    # ----------------------------------------------------------
+    # ----------------------------------------------------------
+    # DEBUGGING FUNCTION
+
+    def __del__(self):
+        if self.debugFile:
+            self.debugFile.close()
+
+    def addEvent(self, strValue, object = None):
+        if self.debugFile:
+            self.debugFile.write(strValue)
+            if object:
+                if type(object) == orange.ExampleTable:
+                    self.debugFile.write("\n\ttoken type = ExampleTable. len = " + str(len(object)) + "\n\tdomain = " + str(object.domain))
+            self.debugFile.write("\n")
+
+    def exceptionHandler(self, type, value, tracebackInfo):
+        self.debugFile.write("Unhandled exception of type %s\n" % ( str(type)))
+        self.debugFile.write("Traceback:\n")
+
+        import traceback, os
+        list = traceback.extract_tb(tracebackInfo, 10)
+        space = "\t"
+        totalSpace = space
+        for i in range(len(list)):
+            (file, line, funct, code) = list[i]
+            if code == None: continue
+            (dir, filename) = os.path.split(file)
+            self.debugFile.write(totalSpace + "File: " + filename + " in line %4d\n" %(line))
+            self.debugFile.write(totalSpace + "Function name: %s\n" % (funct))
+            if i == len(list)-1: self.debugFile.write(totalSpace + "Code: " + code + "\n")
+            else:
+                self.debugFile.write(totalSpace + "Code: " + code + "\n")
+                totalSpace += space
+            
+        self.debugFile.write(totalSpace + "Exception type: " + str(type) + "\n")
+        self.debugFile.write(totalSpace + "Exception value: " + str(value)+ "\n")
+        
+    # ----------------------------------------------------------
+    # ----------------------------------------------------------
 
     # freeze/unfreeze signal processing. If freeze=1 no signal will be processed until freeze is set back to 0
     def setFreeze(self, freeze, startWidget = None):
@@ -60,13 +111,17 @@ class SignalManager:
 
     # add widget to list
     def addWidget(self, widget):
+        self.addEvent("added widget " + widget.title)
+            
         if widget not in self.widgets:
             #self.widgets.insert(0, widget)
             self.widgets.append(widget)
 
     # remove widget from list
     def removeWidget(self, widget):
+        self.addEvent("remove widget " + widget.title)
         self.widgets.remove(widget)
+        
 
     # send list of widgets, that send their signal to widget's signalName
     def getLinkWidgetsIn(self, widget, signalName):
@@ -91,6 +146,8 @@ class SignalManager:
         return not self.existsPath(widgetTo, widgetFrom)        
 
     def addLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo, enabled):
+        self.addEvent("add link from " + widgetFrom.title + " to " + widgetTo.title)
+        
         if not self.canConnect(widgetFrom, widgetTo): return 0
         # check if signal names still exist
         found = 0
@@ -148,6 +205,8 @@ class SignalManager:
         return 0
     
     def removeLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo):
+        self.addEvent("remove link from " + widgetFrom.title + " to " + widgetTo.title)
+        
         # no need to update topology, just remove the link
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
@@ -182,6 +241,7 @@ class SignalManager:
     def send(self, widgetFrom, signalNameFrom, value, id):
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
+        self.addEvent("send data from " + widgetFrom.title + ". Signal = " + signalNameFrom, value)
 
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
@@ -201,6 +261,8 @@ class SignalManager:
 
 
     def processNewSignals(self, firstWidget):
+        self.addEvent("process new signals from " + firstWidget.title)
+        
         if self.signalProcessingInProgress: return
         if firstWidget not in self.widgets: return # we may have windows that are not widgets
 
