@@ -399,7 +399,15 @@ class kNNOptimization(OWBaseWidget):
         
         return returnTable
 
-    
+    def disableControls(self):
+        self.optimizeButtonBox.setEnabled(0)
+        self.manageResultsBox.setEnabled(0)
+        self.evaluateBox.setEnabled(0)
+
+    def enableControls(self):    
+        self.optimizeButtonBox.setEnabled(1)
+        self.manageResultsBox.setEnabled(1)
+        self.evaluateBox.setEnabled(1)
 
 #test widget appearance
 if __name__=="__main__":
