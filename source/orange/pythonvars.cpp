@@ -269,10 +269,10 @@ void TPythonVariable::str2val(const string &valname, TValue &valu)
   if (str2special(valname, valu))
     return;
 
-  if (!isOverloaded("str2val"))
-    raiseError("cannot intepret string representations for values of type '%s'", MYSELF->ob_type->tp_name);
-
-  valu = toValue(PyObject_CallMethod(MYSELF, "str2val", "s", valname.c_str()));
+  if (isOverloaded("str2val"))
+    valu = toValue(PyObject_CallMethod(MYSELF, "str2val", "s", valname.c_str()));
+  else
+    valu = toValue(PyString_FromString(valname.c_str()));
 }
 
     

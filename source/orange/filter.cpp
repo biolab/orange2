@@ -87,7 +87,7 @@ bool TFilter_hasSpecial::operator()(const TExample &exam)
 
 TFilter_isDefined::TFilter_isDefined(bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  check(mlnew TBoolList(dom ? dom->variables->size(): 0))
+  check(mlnew TAttributedBoolList(dom ? dom->variables : PVarList(), dom ? dom->variables->size(): 0, true))
 {}
 
 
@@ -108,6 +108,16 @@ bool TFilter_isDefined::operator()(const TExample &exam)
         return negate;
     return !negate;
   }
+}
+
+
+
+void TFilter_isDefined::afterSet(const char *name)
+{
+  if (!strcmp(name, "domain") && domain && (!check || !check->size()) && (domain->variables != check->attributes))
+    check = mlnew TAttributedBoolList(domain->variables, domain->variables->size(), true);
+
+  TFilter::afterSet(name);
 }
 
 

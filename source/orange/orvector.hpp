@@ -334,8 +334,8 @@ public:
   : attributes(vlist)
   {}
 
-  TAttributedFloatList(PVarList vlist, const size_type &i_N, const float & = 0.0)
-  : _TOrangeVector<float>(i_N, 0.0),
+  TAttributedFloatList(PVarList vlist, const size_type &i_N, const float &f = 0.0)
+  : _TOrangeVector<float>(i_N, f),
     attributes(vlist)
   {}
 
@@ -349,9 +349,40 @@ public:
   virtual TOrange *clone() const;
 };
 
+
+class TAttributedBoolList : public _TOrangeVector<bool>
+{
+public:
+  PVarList attributes;
+
+  TAttributedBoolList()
+  {}
+
+  TAttributedBoolList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  TAttributedBoolList(PVarList vlist, const size_type &i_N, const bool b= false)
+  : _TOrangeVector<bool>(i_N, b),
+    attributes(vlist)
+  {}
+
+  TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
+  : _TOrangeVector<bool>(i_X),
+    attributes(vlist)
+  {}
+
+  static TClassDescription st_classDescription;
+  virtual TClassDescription const *classDescription() const;
+  virtual TOrange *clone() const;
+};
+
+
 /* This is to fool pyprops.py
 #define TAttributedFloatList _TOrangeVector<float>
+#define TAttributedBoolList _TOrangeVector<bool>
 */
 VWRAPPER(AttributedFloatList)
+VWRAPPER(AttributedBoolList)
 
 #endif

@@ -55,6 +55,17 @@ TClassDescription const *TAttributedFloatList::classDescription() const { return
 TOrange *TAttributedFloatList::clone() const { return mlnew TAttributedFloatList(*this); }
 
 
+TPropertyDescription TAttributedBoolList_properties[] = {
+  {"attributes", "The list of attributes that corresponds to elements of the list", &typeid(POrange), &TVarList::st_classDescription, offsetof(TAttributedBoolList, attributes), false, false},
+  {NULL}
+};
+
+size_t const TAttributedBoolList_components[] = { 0};
+TClassDescription TAttributedBoolList::st_classDescription = { "TAttributedBoolList", &typeid(TAttributedBoolList), &TOrange::st_classDescription, TAttributedBoolList_properties, TAttributedBoolList_components };
+TClassDescription const *TAttributedBoolList::classDescription() const { return &TAttributedBoolList::st_classDescription; }
+TOrange *TAttributedBoolList::clone() const { return mlnew TAttributedBoolList(*this); }
+
+
 
 TPropertyDescription TValueList_properties[] = {
   {"variable", "The attribute to which the list applies", &typeid(POrange), &TVariable::st_classDescription, offsetof(TValueList, variable), false, false},

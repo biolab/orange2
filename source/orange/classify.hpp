@@ -114,7 +114,7 @@ public:
   TClassifierFD(PDomain, const bool &cp =false);
   TClassifierFD(const TClassifierFD &old);
 
-  void afterSet(const string &name);
+  void afterSet(const char *name);
 };
 
 

@@ -124,7 +124,7 @@ public:
   virtual void convert(TExample &dest, const TExample &src, bool filterMetas = false);
   virtual void domainHasChanged();
 
-  void afterSet(const string &name);
+  void afterSet(const char *name);
 
   PVariable hasDiscreteAttributes(bool checkClass = true) const;
   PVariable hasContinuousAttributes(bool checkClass = true) const;

@@ -156,7 +156,7 @@ public:
   TClassifierByExampleTable(PDomain dom = PDomain());
   TClassifierByExampleTable(PExampleGenerator, PClassifier = PClassifier());
 
-  void afterSet(const string &name);
+  void afterSet(const char *name);
 
   virtual TValue operator ()(const TExample &);
   virtual PDistribution classDistribution(const TExample &);

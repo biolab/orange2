@@ -75,10 +75,12 @@ class TFilter_isDefined : public TFilter {
 public:
   __REGISTER_CLASS
 
-  PBoolList check; //P tells which attributes to check; checks all if the list is empty
+  PAttributedBoolList check; //P tells which attributes to check; checks all if the list is empty
 
   TFilter_isDefined(bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
+
+  void afterSet(const char *name);
 };
 
 

@@ -122,14 +122,17 @@ void TDomain::domainHasChanged()
 }
 
 
-void TDomain::afterSet(const string &name)
-{ if (name=="classVar") {
+void TDomain::afterSet(const char *name)
+{ 
+  if (!strcmp(name, "classVar")) {
     if (attributes->size()==variables->size())
       variables->push_back(classVar);
     else
       variables->back() = classVar;
     domainHasChanged();
   }
+
+  TOrange::afterSet(name);
 }
 
 

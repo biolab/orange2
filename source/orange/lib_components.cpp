@@ -1413,7 +1413,6 @@ PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)
 }
 
 
-
 #include "valuelisttemplate.hpp"
 
 

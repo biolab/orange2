@@ -33,7 +33,7 @@ public:
 
   virtual TValue operator ()(const TExample &);
 
-  virtual void afterSet(const string &name);
+  virtual void afterSet(const char *name);
   void domainHasChanged();
 
 protected:

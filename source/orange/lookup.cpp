@@ -668,13 +668,16 @@ void TClassifierByExampleTable::predictionAndDistribution(const TExample &exam, 
 }
 
 
-void TClassifierByExampleTable::afterSet(const string &name)
-{ if (name=="sortedExamples") {
+void TClassifierByExampleTable::afterSet(const char *name)
+{
+  if (!strcmp(name, "sortedExamples")) {
     domain = sortedExamples->domain; 
     classVar = sortedExamples->domain->classVar;
     domainWithoutClass = CLONE(TDomain, domain);
     domainWithoutClass->removeClass();
   }
+
+  TClassifierFD::afterSet(name);
 }
 
 

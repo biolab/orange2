@@ -40,9 +40,11 @@ TValue TCartesianClassifier::operator ()(const TExample &ex)
   return res;
 }
 
-void TCartesianClassifier::afterSet(const string &name)
-{ if (name=="domain")
+void TCartesianClassifier::afterSet(const char *name)
+{ if (!strcmp(name, "domain"))
     domainHasChanged(); 
+
+  TClassifierFD::afterSet(name);
 }
 
 void TCartesianClassifier::domainHasChanged()
