@@ -42,7 +42,7 @@ class OWScatterPlotMatrix(OWWidget):
         OWWidget.__init__(self, parent, "Scatterplot matrix", 'Show all possible projections of the data', FALSE, TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
-        self.outputs = [("View", tuple)] 
+        self.outputs = [("Attribute selection", list)] 
 
 
         #set default settings
@@ -357,12 +357,12 @@ class OWScatterPlotMatrix(OWWidget):
         fullBuffer.save(fileName, ext)
 
 
-    # we catch mouse release event so that we can send the "view" signal
+    # we catch mouse release event so that we can send the "Attribute selection" signal
     def onMouseReleased(self, e):
         for i in range(len(self.graphs)):
             if self.graphs[i].blankClick == 1:
                 (attr1, attr2, className, string) = self.graphParameters[i]
-                self.send("View", (attr1, attr2))
+                self.send("Attribute selection", [attr1, attr2])
                 self.graphs[i].blankClick = 0
 
     ####### CDATA ################################
@@ -388,7 +388,6 @@ class OWScatterPlotMatrix(OWWidget):
         for attr in self.data.domain.attributes:
             self.shownAttribsLB.insertItem(attr.name)
 
-        self.send("View", (data.domain.attributes[0].name, data.domain.attributes[0].name))
         #self.createGraphs()
 
     #################################################

@@ -602,7 +602,7 @@ class OWPolyviz(OWWidget):
         if self.attributeReverse[data.domain.classVar.name] == 0:   self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
         else:                                                       self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " -")
 
-        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder)
         for attr in shown:
             if attr == data.domain.classVar.name: continue
             if self.attributeReverse[attr] == 0:    self.shownAttribsLB.insertItem(attr + " +")

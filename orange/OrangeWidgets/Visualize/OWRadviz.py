@@ -24,7 +24,7 @@ import OWGUI
 ###########################################################################################
 class OWRadviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "optimizeForPrinting"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
@@ -48,6 +48,7 @@ class OWRadviz(OWWidget):
         self.showLegend = 1
         self.showFilledSymbols = 1
         self.optimizedDrawing = 1
+        self.optimizeForPrinting = 0
         self.useDifferentSymbols = 1
         self.autoSendSelection = 0
         self.sendShownAttributes = 1
@@ -146,6 +147,7 @@ class OWRadviz(OWWidget):
         self.connect(self.SettingsTab.showLegend, SIGNAL("clicked()"), self.setShowLegend)
         self.connect(self.SettingsTab.differentSymbols, SIGNAL("clicked()"), self.setDifferentSymbols)
         self.connect(self.SettingsTab.optimizedDrawing, SIGNAL("clicked()"), self.setOptmizedDrawing)
+        self.connect(self.SettingsTab.optimizeForPrinting, SIGNAL("clicked()"), self.setOptmizeForPrinting)
         self.connect(self.SettingsTab.autoSendSelection, SIGNAL("clicked()"), self.setAutoSendSelection)
         self.connect(self.SettingsTab.sendShownAttributes, SIGNAL("clicked()"), self.setSendShownAttributes)
         self.connect(self.SettingsTab, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -169,6 +171,7 @@ class OWRadviz(OWWidget):
         self.SettingsTab.showLegend.setChecked(self.showLegend)
         self.SettingsTab.differentSymbols.setChecked(self.useDifferentSymbols)
         self.SettingsTab.optimizedDrawing.setChecked(self.optimizedDrawing)
+        self.SettingsTab.optimizeForPrinting.setChecked(self.optimizeForPrinting)
         self.SettingsTab.autoSendSelection.setChecked(self.autoSendSelection)
         self.SettingsTab.sendShownAttributes.setChecked(self.sendShownAttributes)
         self.setAutoSendSelection() # update send button state
@@ -185,7 +188,8 @@ class OWRadviz(OWWidget):
         self.SettingsTab.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
 
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)        
+        self.graph.enhancedTooltips = self.enhancedTooltips
+        #self.graph.setEnhancedTooltips(self.enhancedTooltips)        
         #self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
@@ -193,6 +197,7 @@ class OWRadviz(OWWidget):
         self.graph.setScaleFactor(self.scaleFactor)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.useDifferentSymbols = self.useDifferentSymbols
+        self.graph.optimizeForPrinting = self.optimizeForPrinting
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -396,11 +401,16 @@ class OWRadviz(OWWidget):
         self.updateGraph()
 
     def setShowFilledSymbols(self):
-        self.showFilledSymbols = not self.showFilledSymbols
+        self.showFilledSymbols = self.SettingsTab.showFilledSymbols.isChecked()
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
         self.updateGraph()
 
+    def setOptmizeForPrinting(self):
+        self.optimizeForPrinting = self.SettingsTab.optimizeForPrinting.isChecked()
+        self.graph.updateSettings(optimizeForPrinting = self.optimizeForPrinting)
+        self.updateGraph()
 
+        
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
@@ -551,7 +561,7 @@ class OWRadviz(OWWidget):
         if data == None: return
 
         self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
-        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder)
         for attr in shown:
             if attr == data.domain.classVar.name: continue
             self.shownAttribsLB.insertItem(attr)
@@ -642,11 +652,12 @@ class GroupRadvizOptions(QVGroupBox):
         # general settings
         self.graphSettingsBG = QVButtonGroup("General graph settings", self)
         self.useEnhancedTooltips = QCheckBox("Use enhanced tooltips", self.graphSettingsBG)
-        self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
-        self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
         self.showLegend = QCheckBox('Show legend', self.graphSettingsBG)
+        self.globalValueScaling  = QCheckBox("Use global value scaling", self.graphSettingsBG)
         self.optimizedDrawing = QCheckBox('Optimize drawing (biased)', self.graphSettingsBG)
         self.differentSymbols = QCheckBox("Use different symbols", self.graphSettingsBG)
+        self.showFilledSymbols   = QCheckBox('Show filled symbols', self.graphSettingsBG)
+        self.optimizeForPrinting = QCheckBox('Optimize for printing', self.graphSettingsBG)
 
         self.sendingSelectionsBG = QVButtonGroup("Sending selections", self)
         self.autoSendSelection = QCheckBox("Auto send selected data", self.sendingSelectionsBG)

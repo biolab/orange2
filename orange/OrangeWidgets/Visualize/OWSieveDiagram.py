@@ -26,7 +26,7 @@ class OWSieveDiagram(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1), ("View", tuple, self.view, 1)]
+        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = []
 
         #set default settings
@@ -237,15 +237,14 @@ class OWSieveDiagram(OWWidget):
         self.updateData()
 
     ######################################################################
-    ## VIEW signal
-    def view(self, (attr1, attr2)):
-        if self.data == None:
-            return
+    ## Attribute selection signal
+    def attributeSelection(self, list):
+        if not self.data or len(list) < 2: return
 
         ind1 = -1; ind2 = -1; classInd = 0
         for i in range(self.attrX.count()):
-            if str(self.attrX.text(i)) == attr1: ind1 = i
-            if str(self.attrX.text(i)) == attr2: ind2 = i
+            if str(self.attrX.text(i)) == list[0]: ind1 = i
+            if str(self.attrX.text(i)) == list[1]: ind2 = i
 
         if ind1 == ind2 == -1:
             print "no valid attributes found"

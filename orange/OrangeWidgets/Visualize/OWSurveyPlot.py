@@ -275,7 +275,7 @@ class OWSurveyPlot(OWWidget):
         self.hiddenAttribsLB.clear()
         if data == None: return
         
-        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder)
         if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
             self.shownAttribsLB.insertItem(data.domain.classVar.name)
         for attr in shown:
