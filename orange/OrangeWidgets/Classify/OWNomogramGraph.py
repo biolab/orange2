@@ -5,6 +5,9 @@ from Numeric import *
 from qtcanvas import *
 import time, statc
 
+# constants
+SE_Z = -100
+
 def norm_factor(p):
     max = 10.
     min = -10.
@@ -280,6 +283,7 @@ class AttValue:
         self.error = error
         self.showErr = showErr
         self.enable = True
+        self.hideAtValue = False
         self.over = over
         self.lineWidth = lineWidth
         self.attCreation = True # flag shows that vanvas object have to be created first
@@ -294,7 +298,7 @@ class AttValue:
         self.labelMarker = QCanvasLine(canvas)
         self.errorLine = QCanvasLine(canvas)
         self.errorLine.setPen(QPen(Qt.blue))
-        self.errorLine.setZ(10)
+        self.errorLine.setZ(SE_Z)
         self.attCreation = False
 
     def hide(self):
@@ -303,7 +307,7 @@ class AttValue:
         self.errorLine.hide()
             
     def paint(self, canvas, rect, mapper):
-        def errorCollision(line,z=10):
+        def errorCollision(line,z=SE_Z):
             col = line.collisions(True)
             for obj in col:
                 if obj.z() == z:
@@ -318,12 +322,15 @@ class AttValue:
             if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
                 lineLength = 2+self.lineWidth*canvas.parent.histogram_size
             if self.over:
-                self.text.setY(rect.bottom()-4*canvas.fontSize/3)
+                self.text.setY(rect.bottom()-canvas.fontSize)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+lineLength)
             else:
-                self.text.setY(rect.bottom()+4*canvas.fontSize/3)
+                self.text.setY(rect.bottom()+canvas.fontSize)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-lineLength)
-            self.text.show()
+            if not self.hideAtValue:
+                self.text.show()
+            else:
+                self.text.hide()
         # if value is disabled, draw just a symbolic line        
         else:
             self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/4)
@@ -420,9 +427,9 @@ class AttrLine:
         maxPercent = exp(self.maxValue)/(1+exp(self.maxValue))
 
         percentLine = AttrLine(self.name, canvas)
-        percentList = filter(lambda x:x>minPercent and x<1,arange(0, maxPercent+0.1, 0.1))
+        percentList = filter(lambda x:x>minPercent and x<1,arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
-            percentLine.addAttValue(AttValue(str(p), log(p/(1-p))))
+            percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p))))
         return percentLine
 
     def updateValueXY(self, x, y):
@@ -551,7 +558,8 @@ class AttrLine:
                     val[i].showErr = True
                 else:
                     val[i].showErr = False
-                
+
+                val[i].hideAtValue = False                
                 val[i].paint(canvas, rect, mapper)
 
                 #find suitable value position
@@ -563,8 +571,8 @@ class AttrLine:
                     val[i].paint(canvas, rect, mapper)
                     for j in range(i):
                         if not val[j].over and val[j].enable and val[j].text.collidesWith(val[i].text):
-                            val[i].enable = False
-                    if not val[i].enable:
+                            val[i].hideAtValue = True
+                    if val[i].hideAtValue:
                         val[i].paint(canvas, rect, mapper)
                     
                 self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
@@ -968,7 +976,10 @@ class BasicNomogram(QCanvas):
 
     def paint(self, rect, mapper):
         self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()+10)
-        self.zeroLine.show()
+        if self.parent.showBaseLine:
+            self.zeroLine.show()
+        else:
+            self.zeroLine.hide()
         curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         disc = False
         for at in self.attributes:
@@ -1058,6 +1069,12 @@ class BasicNomogram(QCanvas):
             self.showAllMarkers()
         self.update()
 
+    def showBaseLine(self, show):
+        if show:
+            self.zeroLine.show()
+        else:
+            self.zeroLine.hide()
+        self.update()
 
     def getNumOfAtt(self):
         return len(self.attributes)
@@ -1258,9 +1275,9 @@ class Mapper_Linear_Fixed:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(str(dSum[at]), self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
             if at != len(dSum)-1:
-                val = AttValue(str((dSum[at]+dSum[at+1])/2), self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
                 val.enable = False
                 headerLine.addAttValue(val)
                 
@@ -1390,9 +1407,9 @@ class Mapper_Linear_Center:
 
         headerLine = AttrLine("Points", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(str(dSum[at]), self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k))
             if at != len(dSum)-1:
-                val = AttValue(str((dSum[at]+dSum[at+1])/2), self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+" ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k)
                 val.enable = False
                 headerLine.addAttValue(val)
                 
@@ -1463,10 +1480,10 @@ class Mapper_Linear_Left:
 
         headerLine = AttrLine("", canvas)
         for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(str(dSum[at]), dSum[at]*k))
+            headerLine.addAttValue(AttValue(" "+str(dSum[at])+" ", dSum[at]*k))
             # in the middle add disable values, just to see cross lines
             if at != len(dSum)-1:
-                val = AttValue(str((dSum[at]+dSum[at+1])/2), (dSum[at]+dSum[at+1])*k/2)
+                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", (dSum[at]+dSum[at+1])*k/2)
                 val.enable = False
                 headerLine.addAttValue(val)
                 

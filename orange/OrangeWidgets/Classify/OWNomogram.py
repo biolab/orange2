@@ -24,7 +24,6 @@ from OWNomogramGraph import *
 #import OW_NomogramGraph_Martin
 #reload(OW_NomogramGraph_Martin)
 
-
 def getStartingPoint(d, min):
     if min<0:
         curr_num = arange(-min+d)
@@ -66,6 +65,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.contType = 0
         self.yAxis = 0
         self.probability = 0
+        self.showBaseLine = 1
         self.table = 0
         self.verticalSpacing = 40
         self.verticalSpacingContinuous = 100
@@ -140,6 +140,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.CICheck.setChecked(False)
         self.CICheck.setDisabled(True)
         self.CILabel.setDisabled(True)
+        self.showBaseLine = OWGUI.checkBox(NomogramStyleTab, self, 'showBaseLine', 'Show Base Line (at 0-point)', callback = self.setBaseLine)
         
         self.tabs.insertTab(NomogramStyleTab, "Settings")
         
@@ -254,12 +255,15 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     # Input channel: the logistic regression classifier    
     def lrClassifier(self, cl):
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', -cl.beta[0], cl.beta_se[0]))
+        self.bnomogram = BasicNomogram(self, AttValue('Constant', -cl.beta[0], error = 0))
         at = cl.domain.attributes
         at_num = 1
         curr_att = ""
         a = None
 
+        # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
+        aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
+        
         for i in range(len(at)):
             if at[i].getValueFrom:
                 name = at[i].getValueFrom.variable.name
@@ -277,12 +281,14 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 if var.varType == orange.VarTypes.Discrete:
                     for v in range(len(var.values)):
                         val = 0
+                        se = aprox_prior_error
                         name = var.values[v]
                         for j in range(len(var.values)):
                             if i+j<len(at) and at[i+j].getValueFrom and at[i+j].getValueFrom.variable==var and at[i+j].getValueFrom.lookupTable[v].value==1.0:
                                 val = -cl.beta[i+j+1]
+                                se = cl.beta_se[i+j+1]
                                 break
-                        a.addAttValue(AttValue(name,val))
+                        a.addAttValue(AttValue(name,val, error = se))
                 if var.varType == orange.VarTypes.Continuous:
                     if self.data:
                         bas = orange.DomainBasicAttrStat(self.data)
@@ -432,6 +438,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.bnomogram.showAllMarkers()
         elif self.bnomogram:
             self.bnomogram.hideAllMarkers()
+
+    def setBaseLine(self):
+        if self.bnomogram:
+            self.bnomogram.showBaseLine(self.showBaseLine)
 
     def saveToFileCanvas(self):
         sizeW = self.graph.canvas().pright
