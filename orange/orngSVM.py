@@ -174,7 +174,10 @@ class BasicSVMClassifier(orange.Classifier):
               coef = csv[0][0]
               for (j,v) in csv[1:]:
                   xcoeffs[j-1] += coef*v
-          self.coefficient = 1.0/math.sqrt(reduce(lambda x,y:x+y*y,xcoeffs))
+          sum = 0.0
+          for x in xcoeffs:
+              sum += x*x
+          self.coefficient = 1.0/math.sqrt(sum)
           #if model["label"][0] == 0:
           #    self.coefficient *= -1.0
           self.xcoeffs = [x*self.coefficient for x in xcoeffs]
