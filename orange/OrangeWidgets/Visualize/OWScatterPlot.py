@@ -31,7 +31,7 @@ class OWScatterPlot(OWWidget):
         OWWidget.__init__(self, parent, "ScatterPlot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Visual learner", orange.Learner)]
 
         #set default settings
         self.pointWidth = 5
@@ -176,6 +176,7 @@ class OWScatterPlot(OWWidget):
         
         self.activateLoadedSettings()
         self.resize(900, 700)
+        self.send("Visual learner", clusterLearner(self.clusterDlg, self))
 
 
     # #########################
@@ -360,7 +361,7 @@ class OWScatterPlot(OWWidget):
         else: insideColors = None
 
         self.showAttributes(attrList, insideColors, clusterClosure = closure)
-        
+
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
                 print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
@@ -458,6 +459,7 @@ class OWScatterPlot(OWWidget):
         self.graph.setData(self.data)
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         self.clusterDlg.setData(data)
+        self.graph.insideColors = None; self.graph.clusterClosure = None
        
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()

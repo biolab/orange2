@@ -27,21 +27,13 @@ def getVariableValuesSorted(data, index):
     i = 0
     # do all attribute values containt integers?
     try:
-        while i < len(values):
-            temp = int(values[i])
-            intValues.append(temp)
-            i += 1
-    except: pass
+        intValues = [int(val) for val in values]
+    except:
+        return values
 
     # if all values were intergers, we first sort them ascendently
-    if i == len(values):
-        intValues.sort()
-        values = intValues
-    out = []
-    for i in range(len(values)):
-        out.append(str(values[i]))
-
-    return out
+    intValues.sort()
+    return [str(val) for val in intValues]
 
 # ####################################################################
 # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
@@ -52,11 +44,7 @@ def getVariableValueIndices(data, index):
         return {}
 
     values = getVariableValuesSorted(data, index)
-
-    dict = {}
-    for i in range(len(values)):
-        dict[values[i]] = i
-    return dict
+    return dict([(values[i], i) for i in range(len(values))])
 
 
 class MyQToolTip(QToolTip):

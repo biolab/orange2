@@ -642,11 +642,11 @@ class OWRadvizGraph(OWVisGraph):
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            
-                    #for permutation in indPermutations.values():
-                    print "Evaluating %d projection(s)...." % (len(permIndices.keys()))
                     for ind in permIndices.values():
                         permutation = [attrs[val] for val in ind]
-                        if self.kNNOptimization.isOptimizationCanceled(): return
+                        if self.kNNOptimization.isOptimizationCanceled():
+                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections)" % (self.triedPossibilities))
+                            return
                         permutationIndex += 1
 
                         table = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
@@ -668,6 +668,7 @@ class OWRadvizGraph(OWVisGraph):
                             if self.kNNOptimization.isOptimizationCanceled(): return
                             
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                    self.kNNOptimization.setStatusBarText("Evaluated %d projections..." % (self.triedPossibilities))
 
                     if self.kNNOptimization.onlyOnePerSubset:
                         # return only the best attribute placements
@@ -675,7 +676,7 @@ class OWRadvizGraph(OWVisGraph):
                         addResultFunct(acc, other_results, lenTable, attrList, tryIndex)
                         if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "Best permutation accuracy: %2.2f%%" % (acc)
                         else:                                                           print "Best permutation MSE: %2.2f" % (acc) 
-
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %d projections)" % (self.triedPossibilities))
 
     def optimizeGivenProjection(self, projection, accuracy, attributes, addResultFunct):
         dataSize = len(self.rawdata)
@@ -737,19 +738,19 @@ class OWRadvizGraph(OWVisGraph):
                     (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
                     if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
                         addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
-                        print "Found a better projection with accuracy: %2.2f%%" % (acc)
+                        self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                         optimizedProjection = 1
                         listOfCanditates.append((acc, attrList))
                             
                     elif min(acc, accuracy)/max(acc, accuracy) > 0.99:
                         addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
                     else:
-                        print "Evaluated %d projections. All are worse. Best accuracy was: %2.2f%%" % (len(projections), acc)
+                        self.kNNOptimization.setStatusBarText("Evaluated %d projections. All are worse. Best accuracy was: %2.2f%%" % (len(projections), acc))
 
                 # select the best new projection and say this is now our new projection to optimize    
                 if len(listOfCanditates) > 0:
                     (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
-                    print "-------------------------\nIncreased accuracy to %2.2f%%\n-------------------------" % (accuracy)
+                    self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
 
     def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
@@ -806,12 +807,12 @@ class OWRadvizGraph(OWVisGraph):
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            
-                    #for permutation in indPermutations.values():
-                    print "Evaluating %d projection(s)...." % (len(permIndices.keys()))
                     for ind in permIndices.values():
                         permutation = [attrs[val] for val in ind]
                         permutationAttributes = [self.attributeNames[i] for i in permutation]                        
-                        if self.clusterOptimization.isOptimizationCanceled(): return
+                        if self.clusterOptimization.isOptimizationCanceled():
+                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %d projections)" % (testIndex))
+                            return
                         permutationIndex += 1
 
                         data = self.createProjectionAsExampleTable(permutation, validData, classList, sum_i, XAnchors, YAnchors, domain)
@@ -838,6 +839,7 @@ class OWRadvizGraph(OWVisGraph):
                             if self.clusterOptimization.isOptimizationCanceled(): return
                             
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                    self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (self.triedPossibilities))
 
                     if self.clusterOptimization.onlyOnePerSubset:
                         (value, valueDict, closureDict, polygonVerticesDict, otherDict) = max(tempList)
@@ -848,7 +850,7 @@ class OWRadvizGraph(OWVisGraph):
                             allClasses.append(int(graph.objects[polygonVerticesDict[key][0]].getclass()))
 
                         addResultFunct(allValue, allClosure, allPolygonVertices, permutationAttributes, allClasses, allComponents)     # add all the clusters
-                            
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections)" % (self.triedPossibilities))
 
 if __name__== "__main__":
     #Draw a simple graph
