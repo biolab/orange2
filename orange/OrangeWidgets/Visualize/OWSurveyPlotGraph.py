@@ -37,7 +37,7 @@ class OWSurveyPlotGraph(OWVisGraph):
         #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
 
 
-        if len(self.scaledData) == 0 or len(labels) == 0:
+        if not self.noJitteringScaledData or len(self.noJitteringScaledData) == 0 or len(labels) == 0:
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             return
@@ -50,7 +50,7 @@ class OWSurveyPlotGraph(OWVisGraph):
         validData = [1] * len(self.rawdata)
         for i in range(len(self.rawdata)):
             for j in range(self.length):
-                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+                if self.noJitteringScaledData[indices[j]][i] == "?": validData[i] = 0
         totalValid = 0
         for val in validData: totalValid += val
 
@@ -88,7 +88,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             curve.penColor = newColor
             xData = []; yData = []
             for j in range(self.length):
-                width = self.scaledData[indices[j]][i] * 0.45
+                width = self.noJitteringScaledData[indices[j]][i] * 0.45
                 xData += [j-width, j+width]
                 yData += [pos, pos+1]
 
