@@ -283,11 +283,7 @@ class OWRadviz(OWWidget):
         self.graph.triedPossibilities = 0
     
         if self.graph.totalPossibilities > 20000:
-            proj = str(self.graph.totalPossibilities)
-            l = len(proj)
-            for i in range(len(proj)-2, 0, -1):
-                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            self.warning("There are %s possible radviz projections with this set of attributes"% (proj))
+            self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
         
         self.optimizationDlg.disableControls()
         
@@ -349,16 +345,10 @@ class OWRadviz(OWWidget):
     # ################################################################################################
     # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
     def optimizeGivenProjectionClick(self):
-        results = list(self.optimizationDlg.getShownResults())
-        if len(results) == 0:
-            self.error("To optimize a projection you first have to evaluate some projections and select one")
-            return
-        (acc, other, tableLen, attrList, tryIndex, strList) = results[self.optimizationDlg.resultList.currentItem()]
-
         self.optimizationDlg.disableControls()
-
-        self.graph.optimizeGivenProjection(attrList, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
-
+        acc = self.graph.getProjectionQuality(self.getShownAttributeList())[0]
+        # try to find a better separation than the one that is currently shown
+        self.graph.optimizeGivenProjection(self.getShownAttributeList(), acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
 
