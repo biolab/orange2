@@ -604,13 +604,21 @@ PyObject *convertToPythonNative(const TExample &example, int natvt, bool tuples)
   const_PITERATE(TVarList, vi, example.domain->attributes)
     PyList_Append(list, toValue(*(ei++), *vi, natvt));
 
-  PyObject *pyclass=toValue(example.getClass(), example.domain->classVar, natvt);
-
-  if (tuples)
-    return Py_BuildValue("NN", list, pyclass);
+  if (example.domain->classVar) {
+    PyObject *pyclass = toValue(example.getClass(), example.domain->classVar, natvt);
+    if (tuples)
+      return Py_BuildValue("NN", list, pyclass);
+    else {
+      PyList_Append(list, pyclass);
+      return list;
+    }
+  }
+    
   else {
-    PyList_Append(list, pyclass);
-    return list;
+    if (tuples)
+      return Py_BuildValue("NO", list, Py_None);
+    else
+      return list;
   }
 }
 
