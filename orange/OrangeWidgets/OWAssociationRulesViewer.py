@@ -1,9 +1,9 @@
 """
 <name>Association Rules Viewer</name>
 <description>Association rules viewer</description>
-<category>Classification</category>
-<icon>icons/Categorize.png</icon>
-<priority>1100</priority>
+<category>Associations</category>
+<icon>icons/Unknown.png</icon>
+<priority>300</priority>
 """
 
 from OData import *

@@ -60,7 +60,7 @@ preprocessors to filter/change the data.
         
         self.data = None                    # input data set
         self.preprocessor = None            # no preprocessing as default
-        # self.setLearner()                   # this just sets the learner, no data
+        self.setLearner()                   # this just sets the learner, no data
                                             # has come to the input yet
         
         # GUI
@@ -108,7 +108,7 @@ preprocessors to filter/change the data.
 
         self.mBox = QVGroupBox(self.controlArea)
 
-        # post-prunning        
+        # post-prunning
         self.mBox.setTitle('Post-Prunning')
         checkOnly(self.mBox, self, 'Recursively merge leaves with same majority class', 'postMaj')
         self.postMPrunningBox, self.postMPrunningPBox = \
@@ -117,7 +117,7 @@ preprocessors to filter/change the data.
         QWidget(self.controlArea).setFixedSize(0, 16)
 
         # apply button
-        self.applyBtn = QPushButton("&Apply", self.controlArea)
+        self.applyBtn = QPushButton("&Apply Changes", self.controlArea)
         self.connect(self.applyBtn, SIGNAL("clicked()"), self.setLearner)
 
         self.resize(100,550)

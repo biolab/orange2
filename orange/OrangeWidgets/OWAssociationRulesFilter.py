@@ -1,9 +1,9 @@
 """
 <name>Association Rules Filter</name>
 <description>Association rules filter</description>
-<category>Classification</category>
-<icon>icons/Categorize.png</icon>
-<priority>1100</priority>
+<category>Associations</category>
+<icon>icons/Unknown.png</icon>
+<priority>200</priority>
 """
 
 

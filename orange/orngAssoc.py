@@ -25,7 +25,7 @@ class AssociationRules(orange.AssociationRules):
         return AssociationRules(self)
 
     def __side2string(side):
-        rs=""
+        rs=''
         for i in side:
             if not i.isSpecial():
                 if len(rs):

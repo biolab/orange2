@@ -1,9 +1,9 @@
 """
 <name>Association Rules Print</name>
 <description>Association rules print</description>
-<category>Classification</category>
-<icon>icons/Categorize.png</icon>
-<priority>1100</priority>
+<category>Associations</category>
+<icon>icons/Unknown.png</icon>
+<priority>400</priority>
 """
 
 from OData import *

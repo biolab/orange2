@@ -3,7 +3,7 @@
 <description>Association rules inducer</description>
 <category>Associations</category>
 <icon>icons/Unknown.png</icon>
-<priority>1100</priority>
+<priority>100</priority>
 """
 
 import orange
