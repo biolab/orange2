@@ -8,6 +8,7 @@ import sys
 import math
 import orange
 import os.path
+from qtcanvas import *
 from OWTools import *
 
 # ####################################################################
@@ -33,6 +34,114 @@ def addToList(list, val, ind, maxLen):
     if len(list) < maxLen:
         list.insert(len(list), (val, ind))
 
+
+class SelectionCurve(QwtPlotCurve):
+    def __init__(self, parent, name = ""):
+        QwtPlotCurve.__init__(self, parent, name)
+        self.pointArrayValid = 0
+        self.setStyle(QwtCurve.Lines)
+        self.setPen(QPen(QColor(128,128,128), 1, Qt.DotLine))
+        self.canvas = QCanvas(2000, 2000)   # we need canvas for QCanvasLine
+
+        
+    def addPoint(self, xPoint, yPoint):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
+        xVals.append(xPoint)
+        yVals.append(yPoint)
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    def replaceLastPoint(self, xPoint, yPoint):
+        xVals = []
+        yVals = []
+        for i in range(self.dataSize()-1):
+            xVals.append(self.x(i))
+            yVals.append(self.y(i))
+        xVals.append(xPoint)
+        yVals.append(yPoint)
+        self.setData(xVals, yVals)
+        self.pointArrayValid = 0        # invalidate the point array
+
+    # is point defined at x,y inside a rectangle defined with this curve
+    def isInside(self, x, y):       
+        xMap = self.parentPlot().canvasMap(self.xAxis());
+        yMap = self.parentPlot().canvasMap(self.yAxis());
+
+        if not self.pointArrayValid:
+            self.pointArray = QPointArray(self.dataSize() + 1)
+            for i in range(self.dataSize()):
+                self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
+            self.pointArray.setPoint(self.dataSize(), self.pointArray[0])
+            self.pointArrayValid = 1
+
+        return QRegion(self.pointArray).contains(xMap.transform(x), yMap.transform(y));
+
+    # test if the line going from before last and last point intersect any lines before
+    # if yes, then add the intersection point and remove the outer points
+    def closed(self):
+        if self.dataSize() < 4: return 0
+        """
+        x1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(self.dataSize()-2))
+        x2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(self.dataSize()-1))
+        y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(self.dataSize()-2))
+        y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(self.dataSize()-1))
+        """
+        x1 = self.x(self.dataSize()-2)
+        x2 = self.x(self.dataSize()-1)
+        y1 = self.y(self.dataSize()-2)
+        y2 = self.y(self.dataSize()-1)
+        for i in range(self.dataSize()-4, -1, -1):
+            """
+            X1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i))
+            X2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i+1))
+            Y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i))
+            Y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(i+1))
+            """
+            X1 = self.x(i)
+            X2 = self.x(i+1)
+            Y1 = self.y(i)
+            Y2 = self.y(i+1)
+            print x1, x2, y1, y2, X1, X2, Y1, Y2
+            (intersect, xi, yi) = self.lineIntersection(x1, y1, x2, y2, X1, Y1, X2, Y2)
+            if intersect:
+                print "intersected"
+                xData = [xi]; yData = [yi]
+                for j in range(i, self.dataSize()): xData.append(self.x(j)); yData.append(self.y(j))
+                self.setData(xData, yData)
+                return 1
+        return 0
+
+    def lineIntersection(self, x1, y1, x2, y2, X1, Y1, X2, Y2):
+        if x2-x1 != 0: m1 = (y2-y1)/(x2-x1)
+        else:          m1 = 1e+12
+        
+        if X2-X1 != 0: m2 = (Y2-Y1)/(X2-X1)
+        else:          m2 = 1e+12;  
+
+        b1 = -1
+        b2 = -1
+        c1 = (y1-m1*x1)
+        c2 = (Y1-m2*X1)
+
+        det_inv = 1/(m1*b2 - m2*b1)
+
+        xi=((b1*c2 - b2*c1)*det_inv)
+        yi=((m2*c1 - m1*c2)*det_inv)
+
+        if xi > min(x1, x2) and xi < max(x1,x2) and xi > min(X1, X2) and xi < max(X1, Y2) and yi > min(y1,y2) and yi < max(y1, y2) and yi > min(Y1, Y2) and yi < max(Y1, Y2):
+            return (1, xi, yi)
+        else:
+            return (0, x1, y1)
+
+
+
+ZOOMING = 1
+SELECT_POLYGON = 2
+SELECT_RECTANGLE = 3
 
 class OWVisGraph(OWGraph):
     def __init__(self, parent = None, name = None):
@@ -62,6 +171,10 @@ class OWVisGraph(OWGraph):
         self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
+
+        self.state = SELECT_POLYGON
+        self.tempSelectionCurve = None
+        self.selectionCurveList = []
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -407,23 +520,37 @@ class OWVisGraph(OWGraph):
     def onMousePressed(self, e):
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
-        if Qt.LeftButton == e.button():
-            # Python semantics: self.pos = e.pos() does not work; force a copy
-            self.xpos = e.pos().x()
-            self.ypos = e.pos().y()
-            self.enableOutline(1)
+        if e.button() == Qt.LeftButton and self.state == ZOOMING:
+            self.xpos = e.pos().x(); self.ypos = e.pos().y() # save one edge of rectangle
+            self.enableOutline(1)                            # enable drawing a rectangle when the mouse is moved
             self.setOutlinePen(QPen(Qt.black))
-            self.setOutlineStyle(Qwt.Rect)
-            self.zooming = 1
+            self.setOutlineStyle(Qwt.Rect)      # draw a rectangle
             if self.zoomStack == []:
-                self.zoomState = (
-                    self.axisScale(QwtPlot.xBottom).lBound(),
-                    self.axisScale(QwtPlot.xBottom).hBound(),
-                    self.axisScale(QwtPlot.yLeft).lBound(),
-                    self.axisScale(QwtPlot.yLeft).hBound(),
-                    )
-        elif Qt.RightButton == e.button():
-            self.zooming = 0
+                self.zoomState = ( self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(),
+                                   self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
+
+        # ####
+        # SELECT RECTANGLE
+        elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
+            self.xpos = e.x(); self.ypos = e.y()
+            self.tempSelectionCurve = SelectionCurve(self)
+            self.index = self.insertCurve(self.tempSelectionCurve)
+
+        # ####
+        # SELECT POLYGON
+        elif e.button() == Qt.LeftButton and self.state == SELECT_POLYGON:
+            x = self.invTransform(QwtPlot.xBottom, e.x())
+            y = self.invTransform(QwtPlot.yLeft, e.y())
+            if self.tempSelectionCurve == None:
+                self.tempSelectionCurve = SelectionCurve(self)
+                self.insertCurve(self.tempSelectionCurve)
+                self.tempSelectionCurve.addPoint(x, y)
+            self.tempSelectionCurve.addPoint(x,y)
+            if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
+                self.selectionCurveList.append(self.tempSelectionCurve)
+                self.tempSelectionCurve = None
+                
+
         # fake a mouse move to show the cursor position
         self.onMouseMoved(e)
         self.event(e)
@@ -431,55 +558,69 @@ class OWVisGraph(OWGraph):
     def onMouseReleased(self, e):
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
-        if Qt.LeftButton == e.button():
+        if e.button() == Qt.LeftButton and self.state == ZOOMING:
             if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
             xmin = min(self.xpos, e.pos().x())
             xmax = max(self.xpos, e.pos().x())
             ymin = min(self.ypos, e.pos().y())
             ymax = ymin + ((xmax-xmin)*self.height())/self.width()  # compute the last value so that the picture remains its w/h ratio
-            #ymax = max(self.ypos, e.pos().y())
             self.setOutlineStyle(Qwt.Cross)
             xmin = self.invTransform(QwtPlot.xBottom, xmin)
             xmax = self.invTransform(QwtPlot.xBottom, xmax)
             ymin = self.invTransform(QwtPlot.yLeft, ymin)
             ymax = self.invTransform(QwtPlot.yLeft, ymax)
-            if xmin == xmax or ymin == ymax:
-                return
+            if xmin == xmax or ymin == ymax: return
             self.blankClick = 0
             self.zoomStack.append(self.zoomState)
             self.zoomState = (xmin, xmax, ymin, ymax)
             self.enableOutline(0)
-        elif Qt.RightButton == e.button():
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            
+        elif Qt.RightButton == e.button() and self.state == ZOOMING:
             if len(self.zoomStack):
                 xmin, xmax, ymin, ymax = self.zoomStack.pop()
+                self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+                self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
             else:
                 self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
                 return
+            
+        # ####
+        # SELECT RECTANGLE
+        elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
+            if self.tempSelectionCurve:
+                self.selectionCurveList.append(self.tempSelectionCurve)
+                self.tempSelectionCurve = None
 
-        self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-        self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+       
         self.replot()
         self.event(e)
 
+
+    # only needed to show the message in statusbar
     def onMouseMoved(self, e):
-        x = e.x()
-        y = e.y()
-        """
-        found = 0
-        p = QPoint(x,y)
-        for i in range(len(self.tips.rects)):
-            if self.tips.rects[i].contains(p):
-                found = 1
-                if self.statusBar != None:
-                    self.statusBar.message(self.tips.texts[i])
-                    return
-        if found == 0 and self.statusBar != None:
-            self.statusBar.message("")
-        """
-        fx = self.invTransform(QwtPlot.xBottom, x)
-        fy = self.invTransform(QwtPlot.yLeft, y)
+        x = e.x(); y = e.y()
+
+        xTransf = self.invTransform(QwtPlot.xBottom, x)
+        yTransf = self.invTransform(QwtPlot.yLeft, y)
         if self.statusBar != None:
-            text = self.tips.maybeTip(fx,fy)
+            text = self.tips.maybeTip(xTransf, yTransf)
             self.statusBar.message(text)
-        #print "fx = " + str(fx) + " ; fy = " + str(fy) + " ; text = " + text
+
+        if self.state == SELECT_RECTANGLE and self.tempSelectionCurve != None:
+            xposTransf = self.invTransform(QwtPlot.xBottom, self.xpos)
+            yposTransf = self.invTransform(QwtPlot.yLeft, self.ypos)
+            xTransf = self.invTransform(QwtPlot.xBottom, e.x())
+            yTransf = self.invTransform(QwtPlot.yLeft, e.y())
+            xData = [xposTransf, xposTransf, xTransf, xTransf, xposTransf]
+            yData = [yposTransf, yTransf, yTransf, yposTransf, yposTransf]
+            self.tempSelectionCurve.setData(xData, yData)
+
+        elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
+            x = self.invTransform(QwtPlot.xBottom, e.x())
+            y = self.invTransform(QwtPlot.yLeft, e.y())
+            self.tempSelectionCurve.replaceLastPoint(x,y)
+
+        self.replot()            
         self.event(e)
