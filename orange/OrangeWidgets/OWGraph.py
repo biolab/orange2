@@ -27,7 +27,7 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        QwtPlot.__init__(self, parent, name)
+        QwtPlot.__init__(self, 10007, parent, name)
         self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
         self.setAutoReplot(FALSE)
