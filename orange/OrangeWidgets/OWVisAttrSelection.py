@@ -101,8 +101,8 @@ class MeasureFisherDiscriminant:
 					statI = self.stats[self.stats.keys()[i]]
 					statJ = self.stats[self.stats.keys()[j]]
 					for attribute in range(len(data.domain.attributes)):
-						sumDev = statI[attribute].dev + statJ[attribute].dev
-						val = abs(statI[attribute].avg - statJ[attribute].avg)/(statI[attribute].dev + statJ[attribute].dev)
+						val = abs(statI[attribute].avg - statJ[attribute].avg) * (statI[attribute].n + statJ[attribute].n)/(statI[attribute].n * statI[attribute].dev + statJ[attribute].n * statJ[attribute].dev)
+						#val = abs(statI[attribute].avg - statJ[attribute].avg)/(statI[attribute].dev + statJ[attribute].dev)
 						arr[attribute] += val
 
 			# normalize values in arr so that the largest value will be 1 and others will be proportionally smaller
@@ -137,29 +137,27 @@ def evaluateAttributes(data, contMeasure, discMeasure):
 ##############################################
 def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = None):
 	if data.domain.classVar.varType != orange.VarTypes.Discrete:
-		return ([attr.name for attr in data.domain.attributes], [])
+		return ([attr.name for attr in data.domain.attributes], [], 0)
 
-	shown = []; hidden = []	# initialize outputs
+	shown = [data.domain.classVar.name]; hidden = []; maxIndex = 0	# initialize outputs
 
 	# # both are RELIEF
 	if attrContOrder == "ReliefF" and attrDiscOrder == "ReliefF":
-		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-		for item in newAttrs:
-			if float(item[1]) > 0.1:   shown.append(item[0])
-			else:					   hidden.append(item[0])
-		return (shown, hidden)
+		attrVals = orngFSS.attMeasure(data, orange.MeasureAttribute_relief())
+		s,h = getTopAttrs(attrVals, 0.95)
+		return (shown + s, hidden + h, 0)
 
 	# # both are NONE
 	elif attrContOrder == "None" and attrDiscOrder == "None":
 		for item in data.domain.attributes:	shown.append(item.name)
-		return (shown, hidden)
+		return (shown, hidden, 0)
 
 	# # both are VizRank
 	elif attrContOrder == "VizRank" and attrDiscOrder == "VizRank":
 		if projections:	return optimizeOrderVizRank(data, [attr.name for attr in data.domain.attributes], projections)
 		else:
 			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
-			return ([attr.name for attr in data.domain.attributes], [])
+			return ([attr.name for attr in data.domain.attributes], [], 0)
 
 	# disc and cont attribute list
 	discAttrs = []; contAttrs = []
@@ -171,30 +169,25 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = No
 	###############################
 	# sort continuous attributes
 	if attrContOrder == "None":
-		shown = contAttrs
-	elif attrContOrder == "ReliefF":
-		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief())
-		for (attr, val) in newAttrs:
-			if attr in contAttrs:
-				if val > 0.1: shown.append(attr)
-				else: hidden.append(attr)
+		shown += contAttrs
+	elif attrContOrder == "ReliefF" or attrContOrder == "Fisher discriminant":
+		if attrContOrder == "ReliefF":   measure = orange.MeasureAttribute_relief()
+		else:							   measure = MeasureFisherDiscriminant()
+
+		dataNew = data.select(contAttrs + [data.domain.classVar])
+		attrVals = orngFSS.attMeasure(dataNew, measure)
+		s,h = getTopAttrs(attrVals, 0.95)
+		shown += s
+		hidden += h
 
 	elif attrContOrder == "Correlation":
-		(shown, hidden) = optimizeOrderCorrelation(data, contAttrs)	# get the list of continuous attributes sorted by using correlation
-	elif attrContOrder == "Fisher discriminant" and data.domain.classVar:
-		contData = data.select(contAttrs + [data.domain.classVar.name])
-		vals = orngFSS.attMeasure(contData, MeasureFisherDiscriminant())
-		sum = 0.0
-		for (att, val) in vals: sum += val
-		tempSum = 0
-		for (att, val) in vals:
-			if tempSum/sum < 0.9: shown.append(att)
-			else: hidden.append(att)
-			tempSum += val
-		return (shown, hidden)
+		(s, h, maxIndex) = optimizeOrderCorrelation(data, contAttrs)	# get the list of continuous attributes sorted by using correlation
+		shown += s; hidden += h
+
 	elif attrContOrder == "VizRank":
 		if projections:
-			(shown, hidden) = optimizeOrderVizRank(data, contAttrs, projections)
+			(s, h, maxIndex) = optimizeOrderVizRank(data, contAttrs, projections)
+			shown += s; hidden += h
 		else:
 			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
 			shown = contAttrs
@@ -205,21 +198,15 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = No
 	# sort discrete attributes
 	if attrDiscOrder == "None":
 		shown += discAttrs
-	elif attrDiscOrder == "ReliefF":
-		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief())
-		for (attr, val) in newAttrs:
-			if attr in discAttrs:
-				if val > 0.1: shown.append(attr)
-				else: hidden.append(attr)
-
-	elif attrDiscOrder == "GainRatio" or attrDiscOrder == "Gini":
+	elif attrDiscOrder == "GainRatio" or attrDiscOrder == "Gini" or attrDiscOrder == "ReliefF":
 		if attrDiscOrder == "GainRatio":   measure = orange.MeasureAttribute_gainRatio()
-		else:							   measure = orange.MeasureAttribute_gini()
+		elif attrDiscOrder == "Gini":	   measure = orange.MeasureAttribute_gini()
+		else:							   measure = orange.MeasureAttribute_relief()
 
-		dataNew = data.select(discAttrs)
-		newAttrs = orngFSS.attMeasure(dataNew, measure)
-		for item in newAttrs:
-				shown.append(item[0])
+		dataNew = data.select(discAttrs + [data.domain.classVar])
+		attrVals = orngFSS.attMeasure(dataNew, measure)
+		s,h = getTopAttrs(attrVals, 0.95)
+		shown += s; hidden += h
 
 	elif attrDiscOrder == "Oblivious decision graphs":
 			shown.append(data.domain.classVar.name)
@@ -229,9 +216,10 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = No
 			for attr in data.domain.attributes:
 				if attr.name not in shown and attr.varType == orange.VarTypes.Discrete:
 					hidden.append(attr.name)
-	elif attrContOrder == "VizRank":
+
+	elif attrDiscOrder == "VizRank":
 		if projections:
-			(s, h) = optimizeOrderVizRank(data, discAttrs, projections)
+			(s, h, ind) = optimizeOrderVizRank(data, discAttrs, projections)
 			shown += s;  hidden += h
 		else:
 			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
@@ -239,22 +227,18 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = No
 	else:
 		print "Unknown value for attribute order: ", attrDiscOrder
 
-	#################################
-	# if class attribute hasn't been added yet, we add it
-	if data.domain.classVar.name not in shown + hidden:
-		shown.append(data.domain.classVar.name)
-	return (shown, hidden)
+	return (shown, hidden, maxIndex)
 
 # create such a list of attributes, that attributes with interesting scatterplots lie together
 def optimizeOrderVizRank(data, attrs, projections):
 	list = []
 	for (val, [a1, a2]) in projections:
 		if a1 in attrs and a2 in attrs: list.append([val, a1, a2])
-	shown = orderAttributes(data, list)
+	shown, maxIndex = orderAttributes(data, list)
 	hidden = []
 	for attr in attrs:
 		if attr not in shown: hidden.append(attr)
-	return (shown, hidden)
+	return (shown, hidden, maxIndex)
 
 # create such a list of attributes, that attributes with high correlation lie together
 def optimizeOrderCorrelation(data, contAttrs):
@@ -276,12 +260,12 @@ def optimizeOrderCorrelation(data, contAttrs):
 	correlations.reverse()
 	mergedCorrs = []
 	i = 0
-	while correlations[i][0] > minCorrelation: i+=1
-	shown = orderAttributes(data, correlations[:i])
+	while i < len(correlations) and correlations[i][0] > minCorrelation: i+=1
+	shown, maxIndex = orderAttributes(data, correlations[:i])
 	hidden = []
 	for attr in contAttrs:
 		if attr not in shown: hidden.append(attr)
-	return (shown, hidden)
+	return (shown, hidden, maxIndex)
 
 
 def orderAttributes(data, items):
@@ -324,8 +308,24 @@ def orderAttributes(data, items):
 	for gr in retGroups:
 		attrs += gr
 
-	return attrs
+	if len(items) > 0:
+		return attrs, attrs.index(items[0][1])
+	else:
+		return attrs, 0
 
+
+def getTopAttrs(results, maxSum = 0.95, onlyPositive = 1):
+	s = []; h = []
+	sum = 0
+	for (attr, val) in results:
+		if not onlyPositive or val > 0: sum += val
+	tempSum = 0	
+	for (attr, val) in results:
+		if tempSum < maxSum*sum: s.append(attr)
+		else: h.append(attr)
+		tempSum += val
+	return (s, h)
+		
 
 def fixedMidPos(array, val):
 	for arr in array:
