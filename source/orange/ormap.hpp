@@ -23,12 +23,18 @@
 /* _ClassName should be TOrangeMap_, TOrangeMap_K, TOrangeMap_V or TOrangeMap_KV.
    K and V stand for key and value, and should be present if the key (value) is
    an Orange object. */
-#define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME) \
-  TClassDescription _ClassName<_Key,_Value>::st_classDescription = { _NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
-
-
 #ifndef __ORMAP_HPP
 #define __ORMAP_HPP
+
+
+#ifdef _MSC_VER
+  #define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME) \
+    TClassDescription _ClassName<_Key,_Value>::st_classDescription = { _NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+#else
+  #define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME) \
+    template <> TClassDescription _ClassName<_Key,_Value>::st_classDescription = { _NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+#endif
+
 
 #include "garbage.hpp"
 #include <map>
@@ -70,7 +76,7 @@ class TOrangeMap_K : public TOrangeMap<K, V>
 { public:
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
+      for(typename TOrangeMap<K, V>::const_iterator be=begin(), ee=end(); be!=ee; be++)
         PVISIT((*be).first);
       return 0;
     }
@@ -87,8 +93,8 @@ class TOrangeMap_V : public TOrangeMap<K, V>
 { public:
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);
-      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
-        if (value_is_orange)
+      for(typename TOrangeMap<K,V>::const_iterator be=begin(), ee=end(); be!=ee; be++)
+        if (this->value_is_orange)
           PVISIT((*be).second);
       return 0;
     }

@@ -779,6 +779,8 @@ T chisquare2d(const vector<vector<T> > &cont,
 template<class T>
 T anova_rel(const vector<vector<T> > &cont, int &df_bt, int &df_err, T &prob)
 { 
+  DEFINE_TYPENAME
+  
   int k = cont.size();
   int n = cont[0].size();
   if ((n<2) || (k<2))
@@ -787,14 +789,14 @@ T anova_rel(const vector<vector<T> > &cont, int &df_bt, int &df_err, T &prob)
   int N = k*n;
   T G = T(0.0), SS_wt = T(0.0), SS_total = T(0.0), SS_bt = T(0.0), SS_bs = T(0.0), SS_err;
   vector<T> Ps(n, T(0.0));
-  vector<T>::iterator Psi, Pse(Ps.end());
-  for(vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti!=conte; conti++) {
+  iterator Psi, Pse(Ps.end());
+  for(typename vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti!=conte; conti++) {
     if ((*conti).size() != n)
       throw StatException("anova_rel: number of subject is not the same in all groups");
 
     T t = T(0.0), tt = T(0.0);
     Psi = Ps.begin();
-    for(vector<T>::const_iterator contii((*conti).begin()), contie((*conti).end()); contii!=contie; contii++, Psi++) {
+    for(typename vector<T>::const_iterator contii((*conti).begin()), contie((*conti).end()); contii!=contie; contii++, Psi++) {
       t += (*contii);
       *Psi += (*contii);
       tt += (*contii) * (*contii);
@@ -833,6 +835,8 @@ T anova_rel(const vector<vector<T> > &cont, int &df_bt, int &df_err, T &prob)
 template<class T>
 T friedmanf(const vector<vector<T> > &cont, double &chi2, int &dfnum, int &dfden, double &prob)
 {
+  DEFINE_TYPENAME
+  
   int k = cont.size();
   int N = cont[0].size();
   if ((N<2) || (k<2))
@@ -843,19 +847,19 @@ T friedmanf(const vector<vector<T> > &cont, double &chi2, int &dfnum, int &dfden
   for(line = 0; line < N; line++)
     transposed.push_back(vector<T>());
 
-  vector<vector<T> >::iterator trani;
-  const vector<vector<T> >::iterator tranb(transposed.begin()), trane(transposed.end());
-  for(vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti != conte; conti++) {
+  typename vector<vector<T> >::iterator trani;
+  const typename vector<vector<T> >::iterator tranb(transposed.begin()), trane(transposed.end());
+  for(typename vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti != conte; conti++) {
     if ((*conti).size() != N)
       throw StatException("friedmanf: number of subject is not the same in all groups");
 
     trani = tranb;
-    for(vector<T>::const_iterator contii((*conti).begin()); trani!=trane; trani++, contii++)
+    for(const_iterator contii((*conti).begin()); trani!=trane; trani++, contii++)
       (*trani).push_back(*contii);
   }
 
   vector<double> R(k, 0.0), tranks;
-  vector<double>::iterator Ri, Rb(R.begin()), Re(R.end()), tri;
+  typename vector<double>::iterator Ri, Rb(R.begin()), Re(R.end()), tri;
   for(trani = tranb; trani != trane; trani++) {
     rankdata(*trani, tranks);
     for(Ri = Rb, tri = tranks.begin(); Ri != Re; Ri++, tri++)

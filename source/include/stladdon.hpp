@@ -275,14 +275,26 @@ reference       operator[](vector<type>::size_type i)  { return (field)->operato
 const_reference operator[](vector<type>::size_type i) const { return (field)->operator[](i); } 
 
 
+#ifdef _MSC_VER
+  #define MAP_INTERFACE_TYPES(type1,type2,field) \
+  map<type1, type2> field; \
+  typedef map<type1, type2>::iterator iterator; \
+  typedef map<type1, type2>::const_iterator const_iterator; \
+  typedef pair<const type1, type2> value_type; \
+  typedef map<type1, type2>::size_type size_type; \
+  typedef pair<iterator, bool> _Pairib;
+#else
+  #define MAP_INTERFACE_TYPES(type1,type2,field) \
+  map<type1, type2> field; \
+  typedef typename map<type1, type2>::iterator iterator; \
+  typedef typename map<type1, type2>::const_iterator const_iterator; \
+  typedef pair<const type1, type2> value_type; \
+  typedef typename map<type1, type2>::size_type size_type; \
+  typedef pair<iterator, bool> _Pairib;
+#endif
+
 #define MAP_INTERFACE_WOUT_OP(type1, type2, field) \
-map<type1, type2> field; \
-typedef map<type1, type2>::iterator iterator; \
-typedef map<type1, type2>::const_iterator const_iterator; \
-typedef pair<const type1, type2> value_type; \
-typedef map<type1, type2>::iterator iterator; \
-typedef map<type1, type2>::size_type size_type; \
-typedef pair<iterator, bool> _Pairib; \
+MAP_INTERFACE_TYPES(type1,type2,field) \
 \
 iterator        begin() { return (field).begin(); } \
 const_iterator  begin() const { return (field).begin(); } \

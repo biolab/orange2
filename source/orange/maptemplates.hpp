@@ -61,13 +61,23 @@ static PyObject *_nonOrangeValueToPython(const T &val)
 { return convertToPython(val); }
 
 
-#define INITIALIZE_MAPMETHODS(NAME, KEYTYPE, VALUETYPE, KFP, VFP, KTP, VTP) \
-TOrangeType *NAME::PyKeyType = KEYTYPE; \
-TOrangeType *NAME::PyValueType = VALUETYPE; \
-NAME::TKeyFromPython NAME::convertKeyFromPython = KFP; \
-NAME::TValueFromPython NAME::convertValueFromPython = VFP; \
-NAME::TKeyToPython NAME::convertKeyToPython = KTP; \
-NAME::TValueToPython NAME::convertValueToPython = VTP;
+#ifdef _MSC_VER
+  #define INITIALIZE_MAPMETHODS(NAME, KEYTYPE, VALUETYPE, KFP, VFP, KTP, VTP) \
+  TOrangeType *NAME::PyKeyType = KEYTYPE; \
+  TOrangeType *NAME::PyValueType = VALUETYPE; \
+  NAME::TKeyFromPython NAME::convertKeyFromPython = KFP; \
+  NAME::TValueFromPython NAME::convertValueFromPython = VFP; \
+  NAME::TKeyToPython NAME::convertKeyToPython = KTP; \
+  NAME::TValueToPython NAME::convertValueToPython = VTP;
+#else
+  #define INITIALIZE_MAPMETHODS(NAME, KEYTYPE, VALUETYPE, KFP, VFP, KTP, VTP) \
+  template <> TOrangeType *NAME::PyKeyType = KEYTYPE; \
+  template <> TOrangeType *NAME::PyValueType = VALUETYPE; \
+  template <> NAME::TKeyFromPython NAME::convertKeyFromPython = KFP; \
+  template <> NAME::TValueFromPython NAME::convertValueFromPython = VFP; \
+  template <> NAME::TKeyToPython NAME::convertKeyToPython = KTP; \
+  template <> NAME::TValueToPython NAME::convertValueToPython = VTP;
+#endif
 
 template<class _WrappedMapType, class _MapType, class _Key, class _Value>
 class MapMethods {
@@ -356,14 +366,14 @@ public:
     
     PyObject *res = PyList_New(aMap->size());
     int i = 0;
-    const_PITERATE(mytype, ii, aMap) {
+    for(const_iterator ii(aMap->begin()), ie(aMap->end()); ii!=ie; ii++, i++) {
       PyObject *item = convertKeyToPython((*ii).first);
       if (!item) {
         Py_DECREF(res);
         return PYNULL;
       }
 
-      PyList_SetItem(res, i++, item);
+      PyList_SetItem(res, i, item);
     }
 
     return res;    
@@ -375,14 +385,14 @@ public:
     
     PyObject *res = PyList_New(aMap->size());
     int i = 0;
-    const_PITERATE(mytype, ii, aMap) {
+    for(const_iterator ii(aMap->begin()), ie(aMap->end()); ii!=ie; ii++, i++) {
       PyObject *item = convertValueToPython((*ii).second);
       if (!item) {
         Py_DECREF(res);
         return PYNULL;
       }
 
-      PyList_SetItem(res, i++, item);
+      PyList_SetItem(res, i, item);
     }
 
     return res;    
@@ -394,7 +404,7 @@ public:
     
     PyObject *res = PyList_New(aMap->size());
     int i = 0;
-    const_PITERATE(mytype, ii, aMap) {
+    for(const_iterator ii(aMap->begin()), ie(aMap->end()); ii!=ie; ii++, i++) {
       PyObject *key = convertKeyToPython((*ii).first);
       PyObject *value = key ? convertValueToPython((*ii).second) : NULL;
       if (!value) {
@@ -402,7 +412,7 @@ public:
         return PYNULL;
       }
 
-      PyList_SetItem(res, i++, Py_BuildValue("OO", key, value));
+      PyList_SetItem(res, i, Py_BuildValue("OO", key, value));
     }
 
     return res;    

@@ -27,10 +27,22 @@ PyObject *$pyname$_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { 
 PyObject *$pyname$_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return $classname$::_sort(self, args); }
 """
 
+wdefinition = "\nextern PyTypeObject PyOr$pyelement$_Type_inh;\n" + definition
+
+udefinition = """
+bool convertFromPython(PyObject *, $elementname$ &);
+PyObject *convertToPython(const $elementname$ &);
+#define $listname$ _TOrangeVector<$elementname$>
+typedef GCPtr< $listname$ > $wrappedlistname$;
+""" \
++ definition
+
+
 outf = open("lib_vectors_auto.txt", "wt")
 
 def normalList(name, goesto):
   return tuple([x % name for x in ("%sList", "%s", "P%sList", "T%sList", "P%s")] + [goesto])
+
 
 #  list name in Python,    element name in Py, wrapped list name in C, list name in C,         list element name in C, interface file
 for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
@@ -51,24 +63,17 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
    normalList("TreeNode", "lib_learner.cpp"),
-   normalList("C45TreeNode", "lib_learner.cpp")
+   normalList("C45TreeNode", "lib_learner.cpp"),
+   normalList("Rule", "lib_learner.cpp")
    ]:
   outf.write("**** This goes to '%s' ****\n" % goesto)
-  outf.write(definition.replace("$pyname$", pyname)
-                       .replace("$classname$", "ListOfWrappedMethods<%s, %s, %s, (PyTypeObject *)&PyOr%s_Type>" % (wrappedlistname, listname, elementname, pyelementname))
+  outf.write(wdefinition.replace("$pyname$", pyname)
+                        .replace("$classname$", "ListOfWrappedMethods<%s, %s, %s, &PyOr%s_Type_inh>" % (wrappedlistname, listname, elementname, pyelementname))
                        .replace("$pyelement$", pyelementname)
                        .replace("$wrappedlistname$", wrappedlistname)
              +"\n\n"
             )
 
-
-definition = """
-bool convertFromPython(PyObject *, $elementname$ &);
-PyObject *convertToPython(const $elementname$ &);
-#define $listname$ _TOrangeVector<$elementname$>
-typedef GCPtr< $listname$ > $wrappedlistname$;
-""" \
-+ definition
 
 
 coutf = open("lib_vectors.cpp", "wt")
@@ -96,7 +101,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
     outfile=outf
   else:
     outfile=coutf
-  outfile.write(definition.replace("$pyname$", pyname)
+  outfile.write(udefinition.replace("$pyname$", pyname)
                        .replace("$classname$", "ListOfUnwrappedMethods<%s, %s, %s>" % (wrappedlistname, listname, elementname))
                        .replace("$pyelement$", pyelementname)
                        .replace("$wrappedlistname$", wrappedlistname)

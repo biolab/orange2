@@ -54,6 +54,7 @@ char *demangle(const type_info &type)
 
 
 void floatfloat_mapdestructor(void *x) { mldelete (map<float, float> *) x; }
+template<>
 TGCCounterNML<map<float, float> >::TDestructor GCPtrNML<map<float, float> >::destructor = floatfloat_mapdestructor;
 
 typedef TGCCounterNML<int> TPyNotOrange;
