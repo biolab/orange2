@@ -144,13 +144,13 @@ class OWSieveMultigramGraph(OWVisGraph):
         if abs(pearson) < self.pearsonMinRes: return # we don't want to draw white lines
         
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
-            intPearson = min(floor(pearson), self.pearsonMaxRes)
+            intPearson = min(math.floor(pearson), self.pearsonMaxRes)
             b = 255
             r = g = 255 - intPearson*200.0/float(self.pearsonMaxRes)
             r = g = max(r, 55)  #
             penWidth = int(float(intPearson*self.maxLineWidth)/float(self.pearsonMaxRes))
         elif pearson < 0:
-            intPearson = max(ceil(pearson), -self.pearsonMaxRes)
+            intPearson = max(math.ceil(pearson), -self.pearsonMaxRes)
             r = 255
             b = g = 255 + intPearson*200.0/float(self.pearsonMaxRes)
             b = g = max(b, 55)

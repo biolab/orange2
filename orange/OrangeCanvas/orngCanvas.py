@@ -426,13 +426,11 @@ class OrangeCanvasDlg(QMainWindow):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
             win.enableAllLines()
-        return
         
     def menuItemDisableAll(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
             win.disableAllLines()
-        return
 
     def menuItemClearWidgets(self):
         win = self.workspace.activeWindow()

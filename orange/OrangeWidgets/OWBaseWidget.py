@@ -14,6 +14,15 @@ from OWAbout import *
 from orngSignalManager import *
 import time
 
+##################
+# this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
+class ExampleTable(orange.ExampleTable):
+    pass
+
+class ExampleTableWithClass(ExampleTable):
+    pass
+
+
 class OWBaseWidget(QDialog):
     def __init__(
     self,

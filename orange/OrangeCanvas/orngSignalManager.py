@@ -20,13 +20,6 @@ class OutputSignal:
         self.type = type
         self.minor = int(minor)
 
-##################
-# this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
-class ExampleTable(orange.ExampleTable):
-    pass
-
-class ExampleTableWithClass(ExampleTable):
-    pass
 
 # class that allows to process only one signal at a time
 class SignalWrapper:
