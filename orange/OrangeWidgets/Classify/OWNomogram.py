@@ -262,14 +262,16 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             mult = -1
         else:
             mult = 1
-        
+
+        print cl.beta
+        print mult*cl.beta[0]        
         self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
         a = None
 
         # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
         aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
-
+        
         for at in cl.continuizedDomain.attributes:
             at.setattr("visited",0)
             
@@ -277,16 +279,19 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if at.getValueFrom and at.visited==0:
                 name = at.getValueFrom.variable.name
                 var = at.getValueFrom.variable
+                print var.ordered
                 if var.ordered:
                     a = AttrLineOrdered(name, self.bnomogram)
                 else:
                     a = AttrLine(name, self.bnomogram)
+                print a.name
                 listOfExcludedValues = []
                 for val in var.values:
                     foundValue = False
                     for same in cl.continuizedDomain.attributes:
                         if same.visited==0 and same.getValueFrom and same.getValueFrom.variable == var and same.getValueFrom.variable.values[same.getValueFrom.transformer.value]==val:
                             same.setattr("visited",1)
+                            print mult*cl.beta[same]
                             a.addAttValue(AttValue(val, mult*cl.beta[same], error = cl.beta_se[same]))
                             foundValue = True
                     if not foundValue:
@@ -345,7 +350,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             mult = 1
 
         visualizer = orngLinVis.Visualizer(self.data, cl, buckets=1, dimensions=1)
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*visualizer.beta, 0))
+        beta_from_cl = self.cl.estimator.classifier.classifier.beta[0] - self.cl.estimator.translator.trans[0].disp*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
+        beta_from_cl = mult*beta_from_cl
+        self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/visualizer.probfunc(0.0))-1), 0))
 
         # get maximum and minimum values in visualizer.m        
         maxMap = reduce(Numeric.maximum, visualizer.m)
@@ -353,6 +360,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         coeff = 0 #
         at_num = 1
+        correction = self.cl.coeff*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
         for c in visualizer.coeff_names:
             if type(c[1])==str:
                 for i in range(len(c)):
@@ -363,7 +371,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                             a = AttrLine(c[i], self.bnomogram)                            
                         at_num = at_num + 1
                     else:
-                        a.addAttValue(AttValue(c[i], mult*visualizer.coeffs[coeff]))
+                        if self.data:
+                            thickness = float(len(self.data.filter({self.data.domain[c[0]].name:str(c[i])})))/float(len(self.data))
+                        a.addAttValue(AttValue(c[i], correction*mult*visualizer.coeffs[coeff], lineWidth=thickness))
                         coeff = coeff + 1
             else:
                 a = AttrLineCont(c[0], self.bnomogram)
@@ -388,7 +398,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 rndFac = getRounding(d)
                 
                 while curr_num<maxNew+d:
-                    a.addAttValue(AttValue(str(curr_num), mult*(curr_num-minNew)*beta-minMap[coeff]*visualizer.coeffs[coeff]))
+                    a.addAttValue(AttValue(str(curr_num), correction*(mult*(curr_num-minNew)*beta-minMap[coeff]*visualizer.coeffs[coeff])))
                     curr_num += d
 
                 at_num = at_num + 1
@@ -591,7 +601,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("titanic")
+    data = orange.ExampleTable("d:\\delo\\data\\stage")
 
     discretizer = orange.EntropyDiscretization()
     catData = orange.Preprocessor_discretize(data, method=discretizer)
@@ -608,12 +618,13 @@ if __name__=="__main__":
     for at in newData.domain.attributes:
         at.ordered = True
     
-    bayes = orange.BayesLearner(newData)
+    #bayes = orange.BayesLearner(newData)
     #l = orngSVM.BasicSVMLearner()
     #l.kernel = 0 # linear SVM
+    #l.for_nomogram = 1
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-    #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
-    ow.classifier(titanic)
+    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(logistic)
     ow.cdata(data)
 
     # here you can test setting some stuff

@@ -18,7 +18,7 @@ def printOUT(classifier):
     
     # get the longest attribute name
     longest=0
-    for at in classifier.domain.attributes:
+    for at in classifier.continuizedDomain.attributes:
         if len(at.name)>longest:
             longest=len(at.name);
 
@@ -29,8 +29,8 @@ def printOUT(classifier):
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
-    for i in range(len(classifier.domain.attributes)):
-        print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
+    for i in range(len(classifier.continuizedDomain.attributes)):
+        print formatstr % (classifier.continuizedDomain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
         
 
 
@@ -434,8 +434,8 @@ class StepWiseFSS_class:
 
     # get LL for Majority Learner 
     tempDomain = orange.Domain(attr,examples.domain.classVar)
+    #tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
     tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
-    #tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
 
     ll_Old = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
     length_Old = float(len(tempData))
@@ -444,7 +444,7 @@ class StepWiseFSS_class:
     while not stop:
         # LOOP until all variables are added or no further deletion nor addition of attribute is possible
         worstAt = None
-        
+        print tempData.domain
         # if there are more than 1 attribute then perform backward elimination
         if len(attr) >= 2:
             minG = 1000
@@ -504,6 +504,7 @@ class StepWiseFSS_class:
             # domain, calculate P for LL improvement.
 #            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
             tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
+            print tempData.domain
             ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
 
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood

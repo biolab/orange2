@@ -403,9 +403,17 @@ class AttrLine:
         self.initialize(canvas)
 
     def addAttValue(self, attValue):
+#        if not self.name == "marker" and not self.name == "Total Points" and not self.name == "Points" and not self.name == "":
+#            print self.name, len(self.attValues), self.attValues, attValue.betaValue, attValue.name
+        if len(self.attValues)==0:
+            self.minValue = attValue.betaValue
+            self.maxValue = attValue.betaValue
+        else:
+            self.minValue = min(self.minValue, attValue.betaValue)
+            self.maxValue = max(self.maxValue, attValue.betaValue)
+#        if not self.name == "marker" and not self.name == "Total Points" and not self.name == "Points" and not self.name == "":
+#            print "minMax", self.minValue, self.maxValue
         self.attValues.append(attValue)
-        self.minValue = min(self.minValue, attValue.betaValue)
-        self.maxValue = max(self.maxValue, attValue.betaValue)
 
     def getHeight(self, canvas):      
         return canvas.parent.verticalSpacing
@@ -492,6 +500,7 @@ class AttrLine:
                 val[i].showErr = False
 
             val[i].hideAtValue = False                
+            val[i].over = True
             val[i].paint(canvas, rect, mapper)
 
             #find suitable value position
@@ -506,7 +515,6 @@ class AttrLine:
                         val[i].hideAtValue = True
                 if val[i].hideAtValue:
                     val[i].paint(canvas, rect, mapper)
-                
             self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
             
         atLine = AttrLine("marker", canvas)
@@ -521,7 +529,8 @@ class AttrLine:
                 self.selectValues.append([xVal, rect.bottom(), atLine.attValues[mar].betaValue])
 
         self.updateValue()
-        self.line.show()
+        if max_mapped - min_mapped > 5.0:
+            self.line.show()
         self.label.show()
 
     # some supplementary methods for 2d presentation
@@ -820,7 +829,7 @@ class AttrLineOrdered(AttrLine):
             if canvas.parent.histogram:
                 a.setPen(QPen(Qt.black, 1+self.attValues[i].lineWidth*canvas.parent.histogram_size))
             else:
-                a.setPen(QPen(Qt.black, 1))
+                a.setPen(QPen(Qt.black, 2))
             a.setPoints(atValues_mapped[i], self.getVerticalCoordinates(rect, self.attValues[i])-canvas.parent.diff_between_ordinal/2, atValues_mapped[i], self.getVerticalCoordinates(rect, self.attValues[i])+canvas.parent.diff_between_ordinal/2)
             self.selectValues.append([atValues_mapped[i],self.getVerticalCoordinates(rect, self.attValues[i]), self.attValues[i].betaValue])
             if i < len(atValues_mapped)-1:
@@ -922,15 +931,19 @@ class BasicNomogramFooter(QCanvas):
         # get min and maximum sum, min and maximum beta
         # min beta <--> min sum! , same for maximum
         maxSum = minSum = maxSumBeta = minSumBeta = 0
+        print "minBeta, maxBeta"
+        print minSumBeta, maxSumBeta        
         for at in self.nomogram.attributes:
             maxSum += mapper.getMaxValue(at)
             minSum += mapper.getMinValue(at)
             maxSumBeta += at.maxValue
             minSumBeta += at.minValue
+            print minSumBeta, maxSumBeta, at.maxValue, at.minValue        
 
         # add constant to betas!
         maxSumBeta += self.nomogram.constant.betaValue
         minSumBeta += self.nomogram.constant.betaValue
+        print minSumBeta, maxSumBeta, self.nomogram.constant.betaValue         
 
         # show only reasonable values
         k = (maxSum-minSum)/(maxSumBeta-minSumBeta)
@@ -946,6 +959,8 @@ class BasicNomogramFooter(QCanvas):
         if maxSumBeta<-3:
             maxSum = (-3 - minSumBeta)*k + minSum
             maxSumBeta = -3
+
+        print "minSum, maxSum", minSum, maxSum, minSumBeta, maxSumBeta        
 
         # draw continous line with values from min and max sum (still have values!)
         self.m = Mapper_Linear_Fixed(minSumBeta, maxSumBeta, rect.left(), rect.right(), maxLinearValue = maxSum, minLinearValue = minSum)
@@ -964,7 +979,7 @@ class BasicNomogramFooter(QCanvas):
         self.footerPercent = self.convertToPercent(self.footer)
 
         # create a mapper for footer, BZ CHANGE TO CONSIDER THE TARGET
-        self.footerPercent.name = "P(%s)" % self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex]
+        self.footerPercent.name = "P(%s=\"%s\")" % (self.parent.cl.domain.classVar.name,self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex])
         self.footerPercent.paint(self, QRect(rect.left(), rect.top()+height, rect.width(), 2*height), self.m)                         
 
         self.resize(self.nomogram.pright, rect.height()+30)
@@ -1124,16 +1139,16 @@ class BasicNomogram(QCanvas):
         self.footerCanvas.update()
 
     def paint(self, rect, mapper):
-        self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()-self.parent.verticalSpacing/2 + 5)
+        self.zeroLine.setPoints(mapper.mapBeta(0, self.header.headerAttrLine), rect.top(), mapper.mapBeta(0, self.header.headerAttrLine), rect.bottom()-self.parent.verticalSpacing/2 + 25)
         if self.parent.showBaseLine:
             self.zeroLine.show()
         else:
             self.zeroLine.hide()
         curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         disc = False
-
+ 
         for at in self.attributes:
-            if (isinstance(at, AttrLineCont) or isinstance(at, AttrLineOrdered)) and self.parent.contType == 1:
+            if (isinstance(at, AttrLineCont) or isinstance(at, AttrLineOrdered)) and self.parent.contType == 1:   
                 if disc:
                     curr_rect = QRect(rect.left(), curr_rect.bottom()+20, rect.width(), at.getHeight(self))
                     disc=False

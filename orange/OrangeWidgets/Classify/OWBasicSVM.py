@@ -163,6 +163,7 @@ preprocessors to filter/change the data.
         pageIndex = self.KernelTabs.currentPageIndex()
         if pageIndex == 0:  # linear
             self.learner.kernel = 0
+            self.learner.for_nomogram = 1
 
         elif pageIndex == 1:    # polynomial
             self.learner.kernel = 1
