@@ -22,6 +22,11 @@ class ExampleTable(orange.ExampleTable):
 class ExampleTableWithClass(ExampleTable):
     pass
 
+class AttributeList(list):
+    pass
+
+class ExampleList(list):
+    pass
 
 class OWBaseWidget(QDialog):
     def __init__(
@@ -78,12 +83,7 @@ class OWBaseWidget(QDialog):
         self.eventHandler = None
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
-
     
-        #the map with settings
-        if not hasattr(self, 'settingsList'):
-            self.__class__.settingsList = []
-
         #the title
         self.setCaption(self.captionTitle)
         
