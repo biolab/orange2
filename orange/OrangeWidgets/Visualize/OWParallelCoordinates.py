@@ -31,7 +31,7 @@ class OWParallelCoordinates(OWWidget):
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE, icon = "ParallelCoordinates.png")
         self.resize(700,700)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Selection", list, self.selection)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Example selection", list)]
     
         #set default settings
@@ -56,7 +56,8 @@ class OWParallelCoordinates(OWWidget):
         self.projections = None
         self.correlationDict = {}
         self.middleLabels = "Correlations"
-        self.selectionList = None
+        self.exampleSelectionList = None
+        self.attributeSelectionList = None
         self.toolbarSelection = 0
 
         self.setSliderIndex = -1
@@ -180,40 +181,7 @@ class OWParallelCoordinates(OWWidget):
 
     def targetValueChanged(self):
         self.updateGraph()
-        if self.selectionList: self.sendSelections()
-
-    # send signals with selected and unselected examples as two datasets
-    def sendSelections(self):
-        if not self.data:
-            self.send("Selected Examples", None)
-            self.send("Unselected Examples", None)
-            self.send("Example Distribution", None)
-            return
-
-        targetVal = str(self.targetValueCombo.currentText())
-        if targetVal == "(None)": targetVal = None
-        else: targetVal = self.data.domain.classVar.values.index(targetVal)
-        (selected, unselected, merged, indices) = self.graph.getSelectionsAsExampleTables(len(self.data), targetVal)
-        if not self.sendShownAttributes:
-            self.send("Selected Examples", selected)
-            self.send("Unselected Examples", unselected)
-            self.send("Example Distribution", merged)
-            self.send("Example selection", indices)
-        else:
-            attrs = self.getShownAttributeList()
-            if self.data.domain.classVar: attrs += [self.data.domain.classVar.name]
-            if selected:    self.send("Selected Examples", selected.select(attrs))
-            else:           self.send("Selected Examples", None)
-            if unselected:  self.send("Unselected Examples", unselected.select(attrs))
-            else:           self.send("Unselected Examples", None)
-            if merged:
-                attrs += [merged.domain.classVar.name]
-                self.send("Example Distribution", merged.select(attrs))
-            else:           self.send("Example Distribution", None)
-
-    def sendAttributeSelection(self, attrs):
-        self.send("Attribute selection", attrs)
-
+        if self.exampleSelectionList: self.sendSelections()
 
     # ####################
     # LIST BOX FUNCTIONS
@@ -328,16 +296,22 @@ class OWParallelCoordinates(OWWidget):
         return labels
                 
 
-
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
-    def setShownAttributeList(self, data):
+    def setShownAttributeList(self, data, shownAttributes = None):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
         if data == None: return
-        
-        shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder, self.projections)
+
+        # we already have the list of attributes to show
+        if shownAttributes != None:
+            shown = shownAttributes;  hidden = []; maxIndex = 0
+            for attr in data.domain:
+                if attr.name not in shown: hidden.append(attr.name)
+        # we select shown attributes using attribute selection
+        else:
+            shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder, self.projections)
         self.setSliderIndex = maxIndex
         if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
             self.shownAttribsLB.insertItem(data.domain.classVar.name)
@@ -398,14 +372,12 @@ class OWParallelCoordinates(OWWidget):
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
 
-        if self.selectionList and data and len(data) == len(self.selectionList):
-            self.graph.setData(data.select(self.selectionList))
+        if self.exampleSelectionList and data and len(data) == len(self.exampleSelectionList):
+            self.graph.setData(data.select(self.exampleSelectionList))
             self.warning(None)
         else:
-            if self.selectionList and data:
-                self.warning("Full data set is shown. Table with selected indices is not of the same size as the data set")
-            else:
-                self.warning(None)
+            if self.exampleSelectionList and data: self.warning("Table with selected indices is not of the same size as the data set. Full data set is shown.")
+            else:                                  self.warning(None)
             self.graph.setData(self.data)
             
         self.optimizationDlg.setData(data)
@@ -423,18 +395,63 @@ class OWParallelCoordinates(OWWidget):
                     self.targetValueCombo.insertItem(val)
                 self.targetValueCombo.setCurrentItem(0)
             
-            self.setShownAttributeList(self.data)
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
+            self.attributeSelectionList = None
 
         self.updateGraph()
         self.sendSelections()
-    #################################################
+    # ################################################
 
     
     # ###### SELECTION ################################
     # receive a list of attributes we wish to show
-    def selection(self, selectionList):
-        self.selectionList = selectionList
+    def exampleSelection(self, exampleSelectionList):
+        self.exampleSelectionList = exampleSelectionList
         self.cdata(self.data)
+
+    def attributeSelection(self, attributeSelectionList):
+        if self.data and attributeSelectionList:
+            domain = [attr.name for attr in self.data.domain]
+            for attr in attributeSelectionList:
+                if attr not in domain:  # this attribute list belongs to a new dataset that has not come yet
+                    self.attributeSelectionList = attributeSelectionList
+                    return
+            self.setShownAttributeList(self.data, attributeSelectionList)
+            self.updateGraph()
+            self.sendSelections()
+
+
+    # send signals with selected and unselected examples as two datasets
+    def sendSelections(self):
+        if not self.data:
+            self.send("Selected Examples", None)
+            self.send("Unselected Examples", None)
+            self.send("Example Distribution", None)
+            return
+
+        targetVal = str(self.targetValueCombo.currentText())
+        if targetVal == "(None)": targetVal = None
+        else: targetVal = self.data.domain.classVar.values.index(targetVal)
+        (selected, unselected, merged, indices) = self.graph.getSelectionsAsExampleTables(len(self.data), targetVal)
+        if not self.sendShownAttributes:
+            self.send("Selected Examples", selected)
+            self.send("Unselected Examples", unselected)
+            self.send("Example Distribution", merged)
+            self.send("Example selection", indices)
+        else:
+            attrs = self.getShownAttributeList()
+            if self.data.domain.classVar: attrs += [self.data.domain.classVar.name]
+            if selected:    self.send("Selected Examples", selected.select(attrs))
+            else:           self.send("Selected Examples", None)
+            if unselected:  self.send("Unselected Examples", unselected.select(attrs))
+            else:           self.send("Unselected Examples", None)
+            if merged:
+                attrs += [merged.domain.classVar.name]
+                self.send("Example Distribution", merged.select(attrs))
+            else:           self.send("Example Distribution", None)
+
+    def sendAttributeSelection(self, attrs):
+        self.send("Attribute selection", attrs)
 
         
     #################################################
@@ -460,8 +477,8 @@ class OWParallelCoordinates(OWWidget):
     def setGlobalValueScaling(self):
         self.isResizing = 0
         self.graph.globalValueScaling = self.globalValueScaling
-        if not self.selectionList: self.graph.setData(self.data)
-        else: self.graph.setData(self.data.select(self.selectionList))
+        if not self.exampleSelectionList: self.graph.setData(self.data)
+        else: self.graph.setData(self.data.select(self.exampleSelectionList))
         if self.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())        # we need to call this so that attributes are really rescaled in respect to the CURRENTLY SHOWN ATTRIBUTES
         self.updateGraph()
