@@ -7,49 +7,17 @@ import sys
 import math
 import orange
 import os.path
+from OWGraph import *
+from OWDistributions import *
 from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
 
-class subBarQwtPlotCurve(QwtPlotCurve):
-    def __init__(self, parent = None, text = None):
-        QwtPlotCurve.__init__(self, parent, text)
-        self.color = Qt.black
-
-    def draw(self, p, xMap, yMap, f, t):
-        p.setBackgroundMode(Qt.OpaqueMode)
-        p.setBackgroundColor(self.color)
-        p.setBrush(self.color)
-        p.setPen(Qt.black)
-        if t < 0: t = self.dataSize() - 1
-        if divmod(f, 2)[1] != 0: f -= 1
-        if divmod(t, 2)[1] == 0:  t += 1
-        for i in range(f, t+1, 2):
-            px1 = xMap.transform(self.x(i))
-            py1 = yMap.transform(self.y(i))
-            px2 = xMap.transform(self.x(i+1))
-            py2 = yMap.transform(self.y(i+1))
-            p.drawRect(px1, py1, (px2 - px1), (py2 - py1))
-
-class DiscreteAxisScaleDraw(QwtScaleDraw):
-    def __init__(self, labels):
-        apply(QwtScaleDraw.__init__, (self,))
-        self.labels = labels
-
-    def label(self, value):
-        index = int(round(value))
-        if (index >= len(self.labels)):
-            return ''
-        if (index < 0):
-            return ''
-        return QString(str(self.labels[index]))
-
-class OWParallelGraph(QwtPlot):
+class OWParallelGraph(OWGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        QwtPlot.__init__(self, 10007, parent, name)
-        self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
+        OWGraph.__init__(self, parent, name)
 
         self.scaledData = []
         self.scaledDataAttributes = []
@@ -57,97 +25,20 @@ class OWParallelGraph(QwtPlot):
         self.showDistributions = 0
         self.GraphCanvasColor = str(Qt.white.name())
 
-        self.enableAxis(QwtPlot.yLeft, 1)
-        self.enableAxis(QwtPlot.xBottom, 1)
-        self.setAutoReplot(FALSE)
-        self.setAutoLegend(FALSE)
-        self.setAxisAutoScale(QwtPlot.xBottom)
-        self.setAxisAutoScale(QwtPlot.xTop)
-        self.setAxisAutoScale(QwtPlot.yLeft)
-        self.setAxisAutoScale(QwtPlot.yRight)
-        self.setCanvasColor(QColor(Qt.white))
-        self.repaint()
-
-        newFont = QFont('Helvetica', 10, QFont.Bold)
-        self.setTitleFont(newFont)
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
-        self.setAxisTitleFont(QwtPlot.xBottom, newFont)
-        self.setAxisTitleFont(QwtPlot.xTop, newFont)
-        self.setAxisTitleFont(QwtPlot.yLeft, newFont)
-        self.setAxisTitleFont(QwtPlot.yRight, newFont)
-        #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
-        #self.setAxisScale(QwtPlot.yRight, 0, 1, 1)
 
-        newFont = QFont('Helvetica', 9)
-        self.setAxisFont(QwtPlot.xBottom, newFont)
-        self.setAxisFont(QwtPlot.xTop, newFont)
-        self.setAxisFont(QwtPlot.yLeft, newFont)
-        self.setAxisFont(QwtPlot.yRight, newFont)
-        self.setLegendFont(newFont)
-
-        self.tipLeft = None
-        self.tipRight = None
-        self.tipBottom = None
-        self.dynamicToolTip = DynamicToolTip(self)
-
-        self.showMainTitle = FALSE
-        self.mainTitle = None
-        self.showXaxisTitle = FALSE
-        self.XaxisTitle = None
-        self.showYLaxisTitle = FALSE
-        self.YLaxisTitle = None
-        self.showYRaxisTitle = FALSE
-        self.YRaxisTitle = None
-        
         self.noneSymbol = QwtSymbol()
         self.noneSymbol.setStyle(QwtSymbol.None)        
         self.curveIndex = 0
 
-    def setCanvasColor(self, c):
-        self.GraphCanvasColor = c
-        self.setCanvasBackground(c)
-        self.repaint()
-
     def setShowDistributions(self, showDistributions):
         self.showDistributions = showDistributions
-
 
     def setJitteringOption(self, jitteringType):
         self.jitteringType = jitteringType
 
 
-    def saveToFile(self):
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
-        fileName = str(qfileName)
-        (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        ext = ext.upper()
-
-        buffer = QPixmap(self.size()) # any size can do, now using the window size
-        painter = QPainter(buffer)
-        painter.fillRect(buffer.rect(), QBrush(self.palette().active().background())) # make background same color as the widget's background
-        self.printPlot(painter, buffer.rect())
-        painter.end()
-        buffer.save(fileName, ext)
-    
-    def setXlabels(self, labels):
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
-        self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
-        self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
-        #self.updateToolTips()
-
-
-    def resizeEvent(self, event):
-        "Makes sure that the plot resizes"
-        #self.updateToolTips()
-        self.updateLayout()
-
-    def paintEvent(self, qpe):
-        QwtPlot.paintEvent(self, qpe) #let the ancestor do its job
-        self.replot()
- 
     #
     # scale data at index index to the interval 0 - 1
     #
@@ -364,8 +255,6 @@ if __name__== "__main__":
     a = QApplication(sys.argv)        
     c = OWParallelGraph()
     c.setCoordinateAxes(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
-    #c.setMainTitle("Graph Title")
-    #c.setShowMainTitle(1)
         
     a.setMainWidget(c)
     c.show()
