@@ -192,6 +192,16 @@ class OWBaseWidget(QDialog):
             if name == output[0]: return 1
         return 0
 
+    def getInputType(self, signalName):
+        for input in self.inputs:
+            if input[0] == signalName: return input[1]
+        return None
+
+    def getOutputType(self, signalName):
+        for output in self.outputs:
+            if output[0] == signalName: return output[1]
+        return None
+
     # ########################################################################
     def connect(self, control, signal, method):
         wrapper = SignalWrapper(self, method)
