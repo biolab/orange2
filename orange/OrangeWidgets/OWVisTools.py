@@ -88,11 +88,13 @@ class OptimizationDialog(OWBaseWidget):
         self.removeSelectedButton = QPushButton("Remove selected projections", self.manageResultsBox)
         self.saveButton = QPushButton("Save", self.manageResultsBox)
         self.loadButton = QPushButton("Load", self.manageResultsBox)
+        self.clearButton = QPushButton("Clear results", self.manageResultsBox)
         self.closeButton = QPushButton("Close", self.manageResultsBox)
         self.connect(self.filterButton, SIGNAL("clicked()"), self.filter)
         self.connect(self.removeSelectedButton, SIGNAL("clicked()"), self.removeSelected)
         self.connect(self.saveButton, SIGNAL("clicked()"), self.save)
         self.connect(self.loadButton, SIGNAL("clicked()"), self.load)
+        self.connect(self.clearButton, SIGNAL("clicked()"), self.clear)
         self.connect(self.closeButton, SIGNAL("clicked()"), self.hide)
 
         #self.optimizeButtonBox.setMinimumSize(180,150)
@@ -122,6 +124,13 @@ class OptimizationDialog(OWBaseWidget):
             strList = list[0]
             for item in list[1:]:
                 strList = strList + ", " + item
+
+        for i in range(len(self.optimizedListFull)):
+            (acc, iC, list2, strList2) = self.optimizedListFull[i]
+            if acc < accuracy:
+                self.optimizedListFull.insert(i, (accuracy, tableLen, list, strList))
+                return
+        
         self.optimizedListFull.append((accuracy, tableLen, list, strList))
 
     def updateNewResults(self):

@@ -239,7 +239,7 @@ class OWPolyviz(OWWidget):
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
+            #self.optimizationDlg.clear()
             for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
                 (accuracy, tableLen, list, reverse) = max(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))
@@ -269,7 +269,7 @@ class OWPolyviz(OWWidget):
                 fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), [], self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen)
             
             # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
+            #self.optimizationDlg.clear()
             for i in range(min(len(fullList), maxResultsLen)):
                 (accuracy, tableLen, list, reverse) = max(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))

@@ -211,7 +211,7 @@ class OWRadviz(OWWidget):
             if len(fullList) == 0: return
 
             # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
+            #self.optimizationDlg.clear()
             for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
                 (accuracy, tableLen, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, tableLen, list)  
@@ -256,7 +256,7 @@ class OWRadviz(OWWidget):
             if len(fullList) == 0: return
             
             # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
+            #self.optimizationDlg.clear()
             for i in range(min(len(fullList), maxResultsLen)):
                 (accuracy, itemCount, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, itemCount, list)
@@ -417,7 +417,7 @@ class OWRadviz(OWWidget):
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.optimizationDlg.interestingList.clear()
+        self.optimizationDlg.clear()
         #self.data = orange.Preprocessor_dropMissing(data.data)
         self.data = data.data
         self.graph.setData(self.data)

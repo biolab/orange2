@@ -270,7 +270,7 @@ class OWScatterPlot(OWWidget):
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
-            self.optimizationDlg.clear()
+            #self.optimizationDlg.clear()
             for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
                 (accuracy, tableLen, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, tableLen, list)  

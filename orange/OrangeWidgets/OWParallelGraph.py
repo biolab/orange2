@@ -64,7 +64,8 @@ class OWParallelGraph(OWVisGraph):
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setTickLength(1, 1, 0)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
 
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)

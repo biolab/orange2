@@ -62,12 +62,14 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setTickLength(1, 1, 0)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setTickLength(1, 1, 0)
-        
-        self.setAxisScale(QwtPlot.xBottom, -1.2, 1.2, 1)
-        self.setAxisScale(QwtPlot.yLeft, -1.1, 1.1, 1)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
+                
+        self.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
+        self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
         length = len(labels)
         indices = []
@@ -107,7 +109,7 @@ class OWRadvizGraph(OWVisGraph):
         # draw dots at anchors
         newCurveKey = self.insertCurve("dots")
         newColor = QColor()
-        newColor.setRgb(0, 0, 0)
+        newColor.setRgb(140, 140, 140)
         self.setCurveStyle(newCurveKey, QwtCurve.NoCurve)
         self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(10, 10)))
         self.setCurveData(newCurveKey, anchors[0]+[anchors[0][0]], anchors[1]+[anchors[1][0]]) 
@@ -119,6 +121,7 @@ class OWRadvizGraph(OWVisGraph):
             self.marker(mkey).setXValue(anchors[0][i]*1.1)
             self.marker(mkey).setYValue(anchors[1][i]*1.04)
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
 
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles

@@ -111,12 +111,14 @@ class OWPolyvizGraph(OWVisGraph):
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-        scaleDraw.setTickLength(1, 1, 0)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-        scaleDraw.setTickLength(1, 1, 0)
+        scaleDraw.setOptions(0) 
+        scaleDraw.setTickLength(0, 0, 0)
         
-        self.setAxisScale(QwtPlot.xBottom, -1.15, 1.15, 1)
-        self.setAxisScale(QwtPlot.yLeft, -1.15, 1.15, 1)
+        self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
+        self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
         length = len(labels)
         indices = []
