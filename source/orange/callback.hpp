@@ -69,7 +69,7 @@ public:
 class TLogRegFitter_Python : public TLogRegFitter {
 public:
   __REGISTER_CLASS
-  virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
+  virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &);
 };
 
 

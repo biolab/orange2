@@ -149,7 +149,7 @@ PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)
 
 #include "vectortemplates.hpp"
 #include "converts.hpp"
-PFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute)
+PAttributedFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PAttributedFloatList &beta_se, float &likelihood, int &status, PVariable &attribute)
 {
   if (!eg)
     raiseError("invalid example generator");
@@ -164,8 +164,8 @@ PFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, const int &wei
     if (PyTuple_Size(res) != 4)
       raiseError("invalid result from __call__");
 
-    PFloatList beta = ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 1));
-    beta_se = ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 2));
+    PFloatList beta = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 1));
+    beta_se = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 2));
     Py_DECREF(res);
     if (!beta || !beta_se || !PyNumber_ToFloat(PyTuple_GET_ITEM(res, 3), likelihood))
       throw pyexception();
@@ -178,8 +178,8 @@ PFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, const int &wei
       raiseError("invalid result from __call__");
 
     attribute = PyOrange_AsVariable(PyTuple_GET_ITEM(res, 1));
-    beta_se = PFloatList();
-    return PFloatList();
+    beta_se = PAttributedFloatList();
+    return PAttributedFloatList();
   }
 }
 

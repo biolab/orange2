@@ -721,7 +721,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
 
     CAST_TO(TLogRegFitter, fitter)
 
-    PFloatList beta, beta_se;
+    PAttributedFloatList beta, beta_se;
     float likelihood;
     int error;
     PVariable attribute;

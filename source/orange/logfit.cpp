@@ -32,7 +32,7 @@ const char *TLogRegFitter_Cholesky::errors[] =
 	{"LogRegFitter: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
 	               "LogRegFitter: n[i]<0",
 				   "LogRegFitter: r[i]<0",
-				   "LogRegFitter: r[i]>n[i]",
+				   "LogRegFitter: r[i]>n[i]: Class has more that 2 values, please use only dichotomous class!",
 				   "LogRegFitter: constant variable",
 				   "LogRegFitter: singularity",
 				   "LogRegFitter: infinity in beta",
@@ -52,7 +52,7 @@ double *ones(int n) {
 }
 
 
-PFloatList TLogRegFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
+PAttributedFloatList TLogRegFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PAttributedFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
 	// get all needed/necessarily attributes and set
    // check for class variable	
   if (!gen->domain->classVar)
@@ -125,11 +125,20 @@ PFloatList TLogRegFitter_Cholesky::operator ()(PExampleGenerator gen, const int 
 		raiseError(errors[O.error-1]);
 	}
 
-	// tranfsorm *beta into a PFloatList
-	PFloatList beta=mlnew TFloatList;
-	beta_se=mlnew TFloatList;
+  // create a new domain where class attributes is positioned at the beginning of 
+  // the list. I am doing because beta coefficients start with beta0, representing
+  // the intercept which is best colligated to class attribute. 
+  PVarList enum_attributes = mlnew TVarList(); 
+  enum_attributes->push_back(gen->domain->classVar);
+  PITERATE(TVarList, vl, gen->domain->attributes) 
+    enum_attributes->push_back(*vl);
 
-	//TODO: obstaja konstruktor, ki pretvori iz navadnega arraya?
+
+	// tranfsorm *beta into a PFloatList
+	PAttributedFloatList beta=mlnew TAttributedFloatList(enum_attributes);
+  beta_se=mlnew TAttributedFloatList(enum_attributes);
+
+  //TODO: obstaja konstruktor, ki pretvori iz navadnega arraya?
 	for (i=0; i<input.k+1; i++) {
 		beta->push_back(O.beta[i]);
 		beta_se->push_back(O.se_beta[i]);
@@ -182,7 +191,7 @@ double **TLogRegFitter::generateDoubleXMatrix(PExampleGenerator gen, long &numEx
 	return matrix;
 }
 
-double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &weight) {
+double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &weightID) {
 	// initialize vector
 	double *Y = new double[gen->numberOfExamples()+1];
     try {
@@ -191,8 +200,9 @@ double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &w
 	    int n=0;
 	    PEITERATE(ei, gen) {
 		    // copy class value
-		    if (weight!=0) {
-			    Y[n+1]=((float)((*ei).getClass().intV)) * (*ei)[weight].floatV;
+		    if (weightID!=0) {
+          float weightVal = WEIGHT(*ei);
+			    Y[n+1]=((float)((*ei).getClass().intV)) * weightVal;
 		    }
 		    else
 			    Y[n+1]=(*ei).getClass().intV;
@@ -207,7 +217,7 @@ double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &w
 }
 
 
-double *TLogRegFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weight) {
+double *TLogRegFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weightID) {
 	// initialize vector
 	double *T = new double[gen->numberOfExamples()+1];
     try {
@@ -216,8 +226,8 @@ double *TLogRegFitter::generateDoubleTrialsVector(PExampleGenerator gen, const i
 	    int n=0;
 	    PEITERATE(ei, gen) {
 		    // copy class value
-		    if (weight!=0) {
-			    T[n+1]=(*ei)[weight].floatV;
+		    if (weightID!=0) {
+			    T[n+1]=WEIGHT(*ei);
 		    }
 		    else
 			    T[n+1]=1.;

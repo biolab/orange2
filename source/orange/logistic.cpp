@@ -30,21 +30,21 @@ TLogRegLearner::TLogRegLearner()
 
 // TODO: najdi pametno mesto za naslednji dve funkciji
 // compute waldZ statistic from beta and beta_se
-PFloatList TLogRegLearner::computeWaldZ(PFloatList &beta, PFloatList &beta_se) 
+PAttributedFloatList TLogRegLearner::computeWaldZ(PAttributedFloatList &beta, PAttributedFloatList &beta_se) 
 {
-	PFloatList waldZ=PFloatList(mlnew TFloatList);
-	TFloatList::const_iterator b(beta->begin()), be(beta->end());
-	TFloatList::const_iterator s(beta_se->begin()), se(beta_se->end());
+	PAttributedFloatList waldZ=PAttributedFloatList(mlnew TAttributedFloatList(beta->attributes));
+	TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
+	TAttributedFloatList::const_iterator s(beta_se->begin()), se(beta_se->end());
 	for (; (b!=be) && (s!=se); b++, s++) 
 		waldZ->push_back((*b)/(*s));
 	return waldZ;
 }
 
 // compute P from waldZ statistic
-PFloatList TLogRegLearner::computeP(PFloatList &waldZ) 
+PAttributedFloatList TLogRegLearner::computeP(PAttributedFloatList &waldZ) 
 {
-	PFloatList Pstat=PFloatList(mlnew TFloatList);
-	TFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
+	PAttributedFloatList Pstat=PAttributedFloatList(mlnew TAttributedFloatList(waldZ->attributes));
+	TAttributedFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
 	for (; (z!=ze); z++) {
 		double zt = (*z)*(*z);
 		if(zt>1000) {
@@ -127,7 +127,7 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
   float prob1;
   try {
 	  // multiply example with beta
-	  TFloatList::const_iterator b(beta->begin()), be(beta->end());
+	  TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
 	  TExample::const_iterator ei(example->begin()), ee(example->end());
 	  TVarList::const_iterator vi(example->domain->attributes->begin());
 

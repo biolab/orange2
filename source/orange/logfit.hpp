@@ -40,7 +40,7 @@ public:
 
 	// main function call, fits LR, returns coefficients and their 
 	// corres. standard errors
-	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &)=0;
+	virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &)=0;
 
 	// transforms orange PExampleGenerator attributes in a classic C double 2D array
 	// returns number of examples and number of attributes as well
@@ -104,7 +104,7 @@ public:
 	TLogRegFitter_Cholesky(bool showErrors);
 
 	// Public main function, use it for fitting LR
-	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
+	virtual PAttributedFloatList operator()(PExampleGenerator, const int &, PAttributedFloatList &, float &, int &, PVariable &);
 
 
 private:
