@@ -24,7 +24,7 @@ import orngCI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,
         parent,
@@ -41,6 +41,7 @@ class OWSurveyPlot(OWWidget):
         self.attrContOrder = "RelieF"
         self.GraphCanvasColor = str(Qt.white.name())
         self.data = None
+        self.globalValueScaling = 0
 
         #load settings
         self.loadSettings()
@@ -67,6 +68,7 @@ class OWSurveyPlot(OWWidget):
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
+        self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -127,8 +129,10 @@ class OWSurveyPlot(OWWidget):
         self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
+        self.options.globalValueScaling.setChecked(self.globalValueScaling)
         
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
@@ -144,6 +148,11 @@ class OWSurveyPlot(OWWidget):
             self.setShownAttributeList(self.data)
         self.updateGraph()
 
+    def setGlobalValueScaling(self):
+        self.globalValueScaling = self.options.globalValueScaling.isChecked()
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        self.updateGraph()
         
     def setCanvasColor(self, c):
         self.GraphCanvasColor = c

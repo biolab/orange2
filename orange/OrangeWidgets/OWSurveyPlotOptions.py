@@ -11,7 +11,13 @@ class OWSurveyPlotOptions(OWOptions):
     def __init__(self,parent=None,name=None):
         OWOptions.__init__(self, "Parallel Coordinate Options", "OrangeWidgetsIcon.png", parent, name)
 
-        self.gSetCanvasColor = QColor(Qt.white) 
+        self.gSetCanvasColor = QColor(Qt.white)
+
+        #####
+        # attribute value scaling
+        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
+        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
+        
 
         #####        
         # continuous attribute ordering

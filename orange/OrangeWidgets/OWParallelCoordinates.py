@@ -179,7 +179,7 @@ def getCorrelationList(data):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues", "hidePureExamples"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF","Correlation"]
@@ -204,6 +204,7 @@ class OWParallelCoordinates(OWWidget):
         self.data = None
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
+        self.globalValueScaling = 0
 
         #load settings
         self.loadSettings()
@@ -228,6 +229,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.options.hidePureExamples, SIGNAL("clicked()"), self.updateSettings)
+        self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
 
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
@@ -286,11 +288,13 @@ class OWParallelCoordinates(OWWidget):
         self.options.showDistributions.setChecked(self.showDistributions)
         self.options.showAttrValues.setChecked(self.showAttrValues)
         self.options.hidePureExamples.setChecked(self.hidePureExamples)
+        self.options.globalValueScaling.setChecked(self.globalValueScaling)
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
         self.graph.setShowAttrValues(self.showAttrValues)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
 
     # jittering options
     def setSpreadType(self, n):
@@ -312,6 +316,11 @@ class OWParallelCoordinates(OWWidget):
 
         self.updateGraph()
 
+    def setGlobalValueScaling(self):
+        self.globalValueScaling = self.options.globalValueScaling.isChecked()
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        self.updateGraph()
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):

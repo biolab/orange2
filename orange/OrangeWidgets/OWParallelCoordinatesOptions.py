@@ -24,9 +24,16 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.spreadBeta = QRadioButton('beta', self.spreadButtons)
 
         #####
-        self.showDistributions = QCheckBox("Show distributions", self.top)
-        self.showAttrValues = QCheckBox("Show attribute values", self.top)
-        self.hidePureExamples = QCheckBox("Hide pure examples", self.top)
+        self.visualSettings = QVButtonGroup("Visual settings", self.top)
+        self.showDistributions = QCheckBox("Show distributions", self.visualSettings)
+        self.showAttrValues = QCheckBox("Show attribute values", self.visualSettings)
+        self.hidePureExamples = QCheckBox("Hide pure examples", self.visualSettings)
+
+        #####
+        # attribute value scaling
+        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
+        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
+        
 
         #####        
         # continuous attribute ordering
