@@ -100,10 +100,10 @@ class MeasureFisherDiscriminant:
 				for j in range(i+1, len(self.stats.keys())):
 					statI = self.stats[self.stats.keys()[i]]
 					statJ = self.stats[self.stats.keys()[j]]
-					for attr in range(len(data.domain.attributes)):
-						sumDev = statI[attr].dev + statJ[attr].dev
-						val = abs(statI[attr].avg - statJ[attr].avg)/(statI[attr].dev/sumDev + statJ[attr].dev/sumDev)
-						arr[attr] += val
+					for attribute in range(len(data.domain.attributes)):
+						sumDev = statI[attribute].dev + statJ[attribute].dev
+						val = abs(statI[attribute].avg - statJ[attribute].avg)/(statI[attribute].dev + statJ[attribute].dev)
+						arr[attribute] += val
 
 			# normalize values in arr so that the largest value will be 1 and others will be proportionally smaller
 			largest = max(arr)
@@ -115,257 +115,108 @@ class MeasureFisherDiscriminant:
 		return self.attrInfo[data.domain[attr].name]
 
 
-# old version of fisher discriminant implemented as a function
-def fisherDiscriminant(rawdata, data, indices, classIndex):
-	matrixDict = {}
-	if classIndex in indices: indices.remove(classIndex)
-
-	for i in range(len(rawdata)):
-		valid = 1
-		for index in indices:
-			if data[index][i] == "?": valid = 0
-		if not valid: continue
-
-		example = []
-		for index in indices: example.append(data[index][i])
-		if not matrixDict.has_key(rawdata[i].getclass().value): matrixDict[rawdata[i].getclass().value] = []
-		matrixDict[rawdata[i].getclass().value].append(example)
-
-
-
-	means = {}
-	normArrays ={}
-	scatters = {}
-	suma = array([0.0]*len(indices))
-	for key in matrixDict.keys():
-		#f = open("E:\\temp\\data\\" + key + ".txt", "wt")
-		#f.write(str(array(matrixDict[key]).tolist()))
-		#f.close()
-		arr = array(matrixDict[key])
-		means[key] = sum(arr)/ float(len(matrixDict[key]))
-		normArrays[key] = arr - means[key]
-		scatters[key] = matrixmultiply(transpose(normArrays[key]), normArrays[key])
-		for val in normArrays[key]:
-			suma = suma + val*transpose(val)
-		
-	meanDiff = means[matrixDict.keys()[0]] - means[matrixDict.keys()[1]]
-	res = abs(meanDiff)/suma
-	res = res/sum(res)
-	ret = [[matrixDict.keys()[0], matrixDict.keys()[1], res.tolist()]]
-	return ret	
-
+# used by kNN optimization to evaluate attributes
+def evaluateAttributes(data, contMeasure, discMeasure):
+	attrs = []
+	for attr in data.domain.attributes:
+		if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:   attrs.append((0.1, attr.name))
+		elif contMeasure == None and attr.varType == orange.VarTypes.Continuous: attrs.append((0.1, attr.name))
+		elif attr.varType == orange.VarTypes.Continuous: attrs.append((contMeasure(attr.name, data), attr.name))
+		else: 											 attrs.append((discMeasure(attr.name, data), attr.name))
+	return attrs
 		
 
-	ret = []
-	for i in range(len(matrixDict.keys())):
-		for j in range(i+1, len(matrixDict.keys())):
-			key1 = matrixDict.keys()[i]
-			key2 = matrixDict.keys()[j]
-			try:
-				sc =  scatters[key1] + scatters[key2]
-				m = transpose(means[key1] - means[key2])
-				w = matrixmultiply(inverse(sc), m)
-				suma=0.0
-				for val in w: suma += float(abs(val))
-				w = w / suma
-				ret.append([key1, key2, w.tolist()])
-			except:
-				print "singularity at ", key1, " and ", key2
-	return ret
 	
+# ##############################################################################################
+# ##############################################################################################
 
-
-###########################################################################################
-##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING CORRELATION
-###########################################################################################
-
-def insertToSortedList(array, val, names):
-	for i in range(len(array)):
-		if val > array[i][0]:
-			array.insert(i, [val, names])
-			return
-	array.append([val, names])
-
-# does value exist in array? return index in array if yes and -1 if no
-def member(array, value):
-	for i in range(len(array)):
-		for j in range(len(array[i])):
-			if array[i][j]==value:
-				return i
-	return -1
-		
-
-# insert two attributes to the array in such a way, that it will preserve the existing ordering of the attributes
-def insertToCorrList(array, attr1, attr2):
-	index1 = member(array, attr1)
-	index2 = member(array, attr2)
-	if index1 == -1 and index2 == -1:
-		array.append([attr1, attr2])
-	elif (index1 != -1 and index2 == -1) or (index1 == -1 and index2 != -1):
-		if index1 == -1:
-			index = index2
-			newVal = attr1
-			existingVal = attr2
-		else:
-			index = index1
-			newVal = attr2
-			existingVal = attr1
-			
-		# we insert attr2 into existing set at index index1
-		pos = array[index].index(existingVal)
-		if pos < len(array[index])/2:   array[index].insert(0, newVal)
-		else:						   array[index].append(newVal)
-	else:
-		# we merge the two lists in one
-		if index1 == index2: return
-		array[index1].extend(array[index2])
-		array.remove(array[index2])
-	
-
-# create such a list of attributes, that attributes with high correlation lie together
-def getCorrelationList(data):
-	# create ordinary list of data values	
-	dataList = []
-	dataNames = []
-	for index in range(len(data.domain)):
-		if data.domain[index].varType != orange.VarTypes.Continuous: continue
-		temp = []
-		for i in range(len(data)):
-			temp.append(data[i][index])
-		dataList.append(temp)
-		dataNames.append(data.domain[index].name)
-
-	# compute the correlations between attributes
-	correlations = []
-	for i in range(len(dataNames)):
-		for j in range(i+1, len(dataNames)):
-			val, prob = statc.pearsonr(dataList[i], dataList[j])
-			insertToSortedList(correlations, abs(val), [i,j])
-			#print "correlation between %s and %s is %f" % (dataNames[i], dataNames[j], val)
-
-	i=0
-	mergedCorrs = []
-	while i < len(correlations) and correlations[i][0] > 0.1:
-		insertToCorrList(mergedCorrs, correlations[i][1][0], correlations[i][1][1])
-		i+=1
-
-	hiddenList = []
-	for i in range(len(correlations)):
-		if member(mergedCorrs, correlations[i][1][0]) == -1 and dataNames[correlations[i][1][0]] not in hiddenList:
-			hiddenList.append(dataNames[correlations[i][1][0]])
-		if member(mergedCorrs, correlations[i][1][1]) == -1 and dataNames[correlations[i][1][1]] not in hiddenList:
-			hiddenList.append(dataNames[correlations[i][1][1]])
-
-	shownList = []
-	for i in range(len(mergedCorrs)):
-		for j in range(len(mergedCorrs[i])):
-			shownList.append(dataNames[mergedCorrs[i][j]])
-
-	if len(dataNames) == 1: shownList += dataNames
-	return (shownList, hiddenList)
 
 
 ##############################################
 # SELECT ATTRIBUTES ##########################
 ##############################################
-def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
+def selectAttributes(data, graph, attrContOrder, attrDiscOrder, projections = None):
+	if data.domain.classVar.varType != orange.VarTypes.Discrete:
+		return ([attr.name for attr in data.domain.attributes], [])
+
 	shown = []; hidden = []	# initialize outputs
 
-	## both are RELIEF
+	# # both are RELIEF
 	if attrContOrder == "ReliefF" and attrDiscOrder == "ReliefF":
 		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
 		for item in newAttrs:
-			if float(item[1]) > 0.01:   shown.append(item[0])
+			if float(item[1]) > 0.1:   shown.append(item[0])
 			else:					   hidden.append(item[0])
 		return (shown, hidden)
 
-	## both are NONE
+	# # both are NONE
 	elif attrContOrder == "None" and attrDiscOrder == "None":
 		for item in data.domain.attributes:	shown.append(item.name)
 		return (shown, hidden)
 
+	# # both are VizRank
+	elif attrContOrder == "VizRank" and attrDiscOrder == "VizRank":
+		if projections:	return optimizeOrderVizRank(data, [attr.name for attr in data.domain.attributes], projections)
+		else:
+			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
+			return ([attr.name for attr in data.domain.attributes], [])
+
+	# disc and cont attribute list
+	discAttrs = []; contAttrs = []
+	for attr in data.domain.attributes:
+		if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
+		elif attr.varType == orange.VarTypes.Discrete: discAttrs.append(attr.name)
+		
+
 	###############################
 	# sort continuous attributes
 	if attrContOrder == "None":
-		for item in data.domain:
-			if item.varType == orange.VarTypes.Continuous: shown.append(item.name)
+		shown = contAttrs
 	elif attrContOrder == "ReliefF":
-		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-		for item in newAttrs:
-			if data.domain[item[0]].varType != orange.VarTypes.Continuous: continue
-			if float(item[1]) > 0.01:   shown.append(item[0])
-			else:					   hidden.append(item[0])
+		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief())
+		for (attr, val) in newAttrs:
+			if attr in contAttrs:
+				if val > 0.1: shown.append(attr)
+				else: hidden.append(attr)
+
 	elif attrContOrder == "Correlation":
-		(shown, hidden) = getCorrelationList(data)	# get the list of continuous attributes sorted by using correlation
+		(shown, hidden) = optimizeOrderCorrelation(data, contAttrs)	# get the list of continuous attributes sorted by using correlation
 	elif attrContOrder == "Fisher discriminant" and data.domain.classVar:
-		indices = []; names = []
-		for i in range(len(data.domain)):
-			if data.domain[i].varType != orange.VarTypes.Continuous: continue
-
-			# if graph didn't yet scale the data then show all continuous attributes
-			if graph.noJitteringScaledData == []: shown.append(data.domain[i].name)
-			else:
-				indices.append(i);
-				names.append(data.domain[i].name)
-		classIndex = list(data.domain).index(data.domain.classVar)
-		if classIndex in indices: indices.remove(classIndex)
-		
-		if indices != []:
-			attrs = fisherDiscriminant(data, graph.noJitteringScaledData, indices, classIndex)
-			tempW = [0] * len(indices)
-			#f = open("E:\\temp.txt", "wt")
-			#for name in names: f.write(name + "\t")
-			#f.write("\n")
-			for (key1, key2, w) in attrs:
-				for i in range(len(w)):
-					#f.write("%.3f\t" % w[i])
-					tempW[i] += abs(w[i])
-				#f.write("\n")
-			#f.close()
-
-			# normalize tempW
-			sumW = float(sum(tempW))
-			for i in range(len(tempW)):
-				tempW[i] = tempW[i] / sumW
-
-			suma = 0
-			print tempW
-			while suma < 0.9:
-				index = tempW.index(max(tempW))
-				print names[index], tempW[index]
-				suma += tempW[index]
-				shown.append(names[index])
-				names.remove(names[index])
-				tempW.remove(tempW[index])
-
-			for name in names: hidden.append(name)
+		contData = data.select(contAttrs + [data.domain.classVar.name])
+		vals = orngFSS.attMeasure(contData, MeasureFisherDiscriminant())
+		sum = 0.0
+		for (att, val) in vals: sum += val
+		tempSum = 0
+		for (att, val) in vals:
+			if tempSum/sum < 0.9: shown.append(att)
+			else: hidden.append(att)
+			tempSum += val
+		return (shown, hidden)
+	elif attrContOrder == "VizRank":
+		if projections:
+			(shown, hidden) = optimizeOrderVizRank(data, contAttrs, projections)
+		else:
+			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
+			shown = contAttrs
 	else:
-		print "Incorrect value for attribute order"
+		print "Unknown value for attribute order: ", attrContOrder
 
-	################################
+	# ###############################
 	# sort discrete attributes
 	if attrDiscOrder == "None":
-		for item in data.domain.attributes:
-			if item.varType == orange.VarTypes.Discrete: shown.append(item.name)
+		shown += discAttrs
 	elif attrDiscOrder == "ReliefF":
-		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
-		for item in newAttrs:
-			if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
-			if item[0] == data.domain.classVar.name: continue
-			if float(item[1]) > 0.01:   shown.append(item[0])
-			else:					   hidden.append(item[0])
+		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief())
+		for (attr, val) in newAttrs:
+			if attr in discAttrs:
+				if val > 0.1: shown.append(attr)
+				else: hidden.append(attr)
+
 	elif attrDiscOrder == "GainRatio" or attrDiscOrder == "Gini":
 		if attrDiscOrder == "GainRatio":   measure = orange.MeasureAttribute_gainRatio()
-		else:								   measure = orange.MeasureAttribute_gini()
-		if data.domain.classVar.varType != orange.VarTypes.Discrete:
-			measure = orange.MeasureAttribute_relief(k=20, m=50)
+		else:							   measure = orange.MeasureAttribute_gini()
 
-		# create new table with only discrete attributes
-		attrs = []
-		for attr in data.domain.attributes:
-			if attr.varType == orange.VarTypes.Discrete: attrs.append(attr)
-		attrs.append(data.domain.classVar)
-		dataNew = data.select(attrs)
+		dataNew = data.select(discAttrs)
 		newAttrs = orngFSS.attMeasure(dataNew, measure)
 		for item in newAttrs:
 				shown.append(item[0])
@@ -378,24 +229,112 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 			for attr in data.domain.attributes:
 				if attr.name not in shown and attr.varType == orange.VarTypes.Discrete:
 					hidden.append(attr.name)
+	elif attrContOrder == "VizRank":
+		if projections:
+			(s, h) = optimizeOrderVizRank(data, discAttrs, projections)
+			shown += s;  hidden += h
+		else:
+			print "VizRank projections have not been loaded. unable to use this heuristics. showing all attributes"
+			shown += discAttrs
 	else:
-		print "Incorrect value for attribute order"
+		print "Unknown value for attribute order: ", attrDiscOrder
 
 	#################################
 	# if class attribute hasn't been added yet, we add it
-	if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
+	if data.domain.classVar.name not in shown + hidden:
 		shown.append(data.domain.classVar.name)
+	return (shown, hidden)
 
+# create such a list of attributes, that attributes with interesting scatterplots lie together
+def optimizeOrderVizRank(data, attrs, projections):
+	list = []
+	for (val, [a1, a2]) in projections:
+		if a1 in attrs and a2 in attrs: list.append([val, a1, a2])
+	shown = orderAttributes(data, list)
+	hidden = []
+	for attr in attrs:
+		if attr not in shown: hidden.append(attr)
+	return (shown, hidden)
 
+# create such a list of attributes, that attributes with high correlation lie together
+def optimizeOrderCorrelation(data, contAttrs):
+	# create ordinary list of data values
+	minCorrelation = 0.3
+	
+	# compute the correlations between attributes
+	correlations = []
+	for i in range(len(contAttrs)):
+		for j in range(i+1, len(contAttrs)):
+			table = data.select([contAttrs[i], contAttrs[j]])
+			table = orange.Preprocessor_dropMissing(table)
+			attr1 = [table[k][contAttrs[i]].value for k in range(len(table))]
+			attr2 = [table[k][contAttrs[j]].value for k in range(len(table))]
+			val, prob = statc.pearsonr(attr1, attr2)
+			correlations.append([abs(val), contAttrs[i], contAttrs[j]])
+
+	correlations.sort()
+	correlations.reverse()
+	mergedCorrs = []
+	i = 0
+	while correlations[i][0] > minCorrelation: i+=1
+	shown = orderAttributes(data, correlations[:i])
+	hidden = []
+	for attr in contAttrs:
+		if attr not in shown: hidden.append(attr)
 	return (shown, hidden)
 
 
-def evaluateAttributes(data, contMeasure, discMeasure):
-	attrs = []
-	for attr in data.domain.attributes:
-		if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:   attrs.append((0.1, attr.name))
-		elif contMeasure == None and attr.varType == orange.VarTypes.Continuous: attrs.append((0.1, attr.name))
-		elif attr.varType == orange.VarTypes.Continuous: attrs.append((contMeasure(attr.name, data), attr.name))
-		else: 											 attrs.append((discMeasure(attr.name, data), attr.name))
-	return attrs
+def orderAttributes(data, items):
+	retGroups = []
+	if len(items) > 0:
+		retGroups.append([items[0][1], items[0][2]])
+		items = items[1:]
 		
+	for [val, a1, a2] in items:
+		if fixedMidPos(retGroups, a1) or fixedMidPos(retGroups, a2) or fixedEndPos(retGroups, a1, a2): continue
+		for i in range(len(retGroups)):
+			group = retGroups[i]
+			if   a1 == group[0] : group = [a2] + group
+			elif a2 == group[0]: group  = [a1] + group
+			elif a1 == group[-1]: group = group + [a2]
+			elif a2 == group[-1]: group = group + [a1]
+			retGroups[i] = group
+
+		# merge groups if they are mergable
+		for i in range(len(retGroups)):
+			j = i+1
+			while j < len(retGroups):
+				if retGroups[i][0] == retGroups[j][0]:
+					retGroups[j].reverse()
+					group = retGroups[j] + retGroups[i][1:]
+				elif retGroups[i][-1] == retGroups[j][-1]:
+					retGroups[j].reverse()
+					group = retGroups[i] + retGroups[i][1:]
+				elif retGroups[i][0] == retGroups[j][-1]:
+					group = retGroups[j] + retGroups[i][1:]
+				elif retGroups[i][-1] == retGroups[j][0]:
+					group = retGroups[i] + retGroups[j][1:]
+				else:
+					j+=1
+					continue
+				retGroups.remove(retGroups[j])
+				retGroups[i] = group
+
+	attrs = []
+	for gr in retGroups:
+		attrs += gr
+
+	return attrs
+
+
+def fixedMidPos(array, val):
+	for arr in array:
+		if val in arr[1:-1]: return 1
+	return 0
+
+def fixedEndPos(array, a1, a2):
+	for arr in array:
+		if (arr[0] == a1 and arr[-1] == a2) or (arr[0] == a2 and arr[-1] == a1): return 1
+	return 0
+
+
