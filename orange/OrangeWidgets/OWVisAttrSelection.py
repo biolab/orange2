@@ -116,13 +116,16 @@ class MeasureFisherDiscriminant:
                 self.stats[val] = bas
 
             for i in range(len(self.stats.keys())):
+                statI = self.stats[self.stats.keys()[i]]
+                if len(statI) == 0: continue
                 for j in range(i+1, len(self.stats.keys())):
-                    statI = self.stats[self.stats.keys()[i]]
                     statJ = self.stats[self.stats.keys()[j]]
+                    if len(statJ) == 0: continue
                     for attribute in range(len(data.domain.attributes)):
                         if data.domain.attributes[attribute].varType != orange.VarTypes.Continuous: continue
-                        val = abs(statI[attribute].avg - statJ[attribute].avg) * (statI[attribute].n + statJ[attribute].n)/(statI[attribute].n * statI[attribute].dev + statJ[attribute].n * statJ[attribute].dev)
-                        #val = abs(statI[attribute].avg - statJ[attribute].avg)/(statI[attribute].dev + statJ[attribute].dev)
+                        bottom = (statI[attribute].n * statI[attribute].dev + statJ[attribute].n * statJ[attribute].dev)
+                        if bottom == 0.0: bottom = 0.001
+                        val = abs(statI[attribute].avg - statJ[attribute].avg) * (statI[attribute].n + statJ[attribute].n)/bottom
                         arr[attribute] += val
 
             # normalize values in arr so that the largest value will be 1 and others will be proportionally smaller
