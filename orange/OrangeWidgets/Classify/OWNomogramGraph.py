@@ -449,7 +449,6 @@ class AttrLine:
         percentLine = AttrLine(self.name, canvas)
         percentList = filter(lambda x:x>minPercent and x<maxPercent,arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
-            #print p, int(10*p),10*p, int(10*p) != 10*p, not p == percentList[0], not p==percentList[len(percentList)-1]
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
                 percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1, enable = False))
             else:
@@ -842,7 +841,7 @@ class BasicNomogramFooter(QCanvas):
         self.footerPercent = self.footer.convertToPercent(self)
 
         # create a mapper for footer, BZ CHANGE TO CONSIDER THE TARGET
-        self.footerPercent.name = "P(%s)" % self.parent.cl.domain.classVar.values[0]
+        self.footerPercent.name = "P(%s)" % self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex]
         self.footerPercent.paint(self, QRect(rect.left(), rect.top()+height, rect.width(), 2*height), self.m)                         
 
         self.resize(self.nomogram.pright, rect.height()+30)
@@ -1202,6 +1201,15 @@ class OWNomogramGraph(QCanvasView):
 # MAPPERS            
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
+def createSetOfVisibleValues(min, max, dif):
+    upper = max-min+2*dif
+    add = round((min-dif)/dif)*dif
+
+    dSum = arange(0, upper, dif)
+    dSum = map(lambda x:x+add, dSum)
+    return dSum    
+
+
 class Mapper_Linear_Fixed:
     def __init__(self, minBeta, maxBeta, left, right, maxLinearValue = 100, minLinearValue = -100):
         self.minBeta = minBeta
@@ -1272,25 +1280,8 @@ class Mapper_Linear_Fixed:
             maxnum=1
         d = (self.maxValue - self.minValue)/maxnum
         dif = getDiff(d)
-        dUpper = []
-        dLower = []
-        if self.maxValue>0 and self.minValue>0:
-            dLower = arange(0, self.minValue+dif, dif)
-            dLower = map(lambda x:-x, dLower)
-            low = dLower[len(dLower)-1]
-            dUpper = arange(low, self.maxValue+dif, dif)
-            dUpper = map(lambda x:x, dUpper)
-            dLower = []
-        else:
-            if self.maxValue>0:
-                dUpper = arange(0, self.maxValue+dif, dif)
-                dUpper = map(lambda x:x, dUpper)
-            if self.minValue<0:
-                dLower = arange(0, -self.minValue+dif, dif)
-                dLower = map(lambda x:-x, dLower)
-        dSum = unique(dLower+dUpper)
-        dSum.sort()
-        dSum = filter(lambda x:x>self.minValue-dif, dSum)
+
+        dSum = createSetOfVisibleValues(self.minValue, self.maxValue, dif);
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
         else:
@@ -1412,22 +1403,15 @@ class Mapper_Linear_Center:
         if maxnum<1:
             maxnum=1
         d = (self.maxValue - self.minValue)/maxnum
-        
+
         dif = getDiff(d)
-        dUpper = []
-        dLower = []
-        if self.maxValue>0:
-            dUpper = arange(0, self.maxValue+dif, dif)
-            dUpper = map(lambda x:x, dUpper)
-        if self.minValue<0:
-            dLower = arange(0, -self.minValue+dif, dif)
-            dLower = map(lambda x:-x, dLower)
-        dSum = unique(dLower+dUpper)
-        dSum.sort()
+        dSum = createSetOfVisibleValues(self.minValue, self.maxValue, dif);
+
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
         else:
             conv = lambda x:x
+
             
         # set new graph values
         if self.minGraphValue == 0:

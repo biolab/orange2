@@ -12,14 +12,13 @@
 # obtained with Naive Bayes or logistic regression classifier
 #
 
-import Numeric
+import math
 import orange
-import orngLR
 import OWGUI
-import orngLinVis
-import orngSVM
 from OWWidget import *
-from OWNomogramGraph import * 
+from OWNomogramGraph import *
+
+
 
 def getStartingPoint(d, min):
     if min<0:
@@ -75,7 +74,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.cl = None
         self.confidence_check = 0
         self.confidence_percent = 95
-        
+        self.notTargetClassIndex = 1
+        self.TargetClassIndex = 0
+
         self.loadSettings()
 
         self.pointsName = ["Points","Log OR"]
@@ -84,7 +85,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
 
         #inputs
-        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1), ("Target Class Value", int, self.ctarget, 1)]
 
         # GUI definition
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
@@ -137,7 +138,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.CICheck.setChecked(False)
         self.CICheck.setDisabled(True)
         self.CILabel.setDisabled(True)
-        self.showBaseLine = OWGUI.checkBox(NomogramStyleTab, self, 'showBaseLine', 'Show Base Line (at 0-point)', callback = self.setBaseLine)
+        self.showBaseLineCB = OWGUI.checkBox(NomogramStyleTab, self, 'showBaseLine', 'Show Base Line (at 0-point)', callback = self.setBaseLine)
         
         self.tabs.insertTab(NomogramStyleTab, "Settings")
         
@@ -172,22 +173,22 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 if d[at]==key:
                     inf += (e[0]*e[1]/sume/sume)
             inf = max(inf, 0.00000001)
-            var = 1/inf - priorError*priorError
+            var = max(1/inf - priorError*priorError, 0)
             return (math.sqrt(var))
 
         classVal = cl.domain.classVar
         att = cl.domain.attributes
 
         # calculate prior probability
-        dist1 = max(0.00000001, cl.distribution[classVal[1]])
-        dist0 = max(0.00000001, cl.distribution[classVal[0]])
+        dist1 = max(0.00000001, cl.distribution[classVal[self.notTargetClassIndex]])
+        dist0 = max(0.00000001, cl.distribution[classVal[self.TargetClassIndex]])
         prior = dist0/dist1
         if self.data:
             sumd = dist1+dist0
             priorError = math.sqrt(1/((dist1*dist0/sumd/sumd)*len(self.data)))
         else:
             priorError = 0
-        self.bnomogram = BasicNomogram(self, AttValue("Constant", Numeric.log(prior), error = priorError))
+        self.bnomogram = BasicNomogram(self, AttValue("Constant", math.log(prior), error = priorError))
 
         if self.data:
             stat = orange.DomainBasicAttrStat(self.data)
@@ -197,9 +198,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if att[at].varType == orange.VarTypes.Discrete:
                 for cd in cl.conditionalDistributions[at].keys():
                     # calculuate thickness
-                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[0]], 0.00000001)
-                    conditional1 = max(cl.conditionalDistributions[at][cd][classVal[1]], 0.00000001)
-                    beta = Numeric.log(conditional0/conditional1/prior)
+                    conditional0 = max(cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], 0.00000001)
+                    conditional1 = max(cl.conditionalDistributions[at][cd][classVal[self.notTargetClassIndex]], 0.00000001)
+                    beta = math.log(conditional0/conditional1/prior)
                     if self.data:
                         #thickness = int(round(4.*float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))))
                         thickness = float(len(self.data.filter({att[at].name:str(cd)})))/float(len(self.data))
@@ -240,9 +241,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                         d_filter = filter(lambda x: x>curr_num+i*d-d/2 and x<curr_num+i*d+d/2, cl.conditionalDistributions[at].keys())
                         if len(d_filter)>0:
                             d_filter = d_filter[len(d_filter)/2]
-                            conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[0]], 0.00000001)
-                            conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[1]], 0.00000001)
-                            a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), Numeric.log(conditional0/conditional1/prior),lineWidth=thickness))
+                            conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], 0.00000001)
+                            conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[self.notTargetClassIndex]], 0.00000001)
+                            a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), math.log(conditional0/conditional1/prior),lineWidth=thickness))
                         
                 a.continuous = True
             self.bnomogram.addAttribute(a)        
@@ -252,74 +253,91 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     # Input channel: the logistic regression classifier    
     def lrClassifier(self, cl):
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', -cl.beta[0], error = 0))
-        at = cl.domain.attributes
-        at_num = 1
-        curr_att = ""
+        if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+            mult = -1
+        else:
+            mult = 1
+        
+        self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
         a = None
 
+        # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
-        aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
-        
-        for i in range(len(at)):
-            if at[i].getValueFrom:
-                name = at[i].getValueFrom.variable.name
-                var = at[i].getValueFrom.variable
-            else:
-                name = at[i].name
-                var = at[i]
-            if name != curr_att:
-                curr_att = name
+        aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
+
+        for at in cl.domain.attributes:
+            at.setattr("visited",0)
+            
+        for at in cl.domain.attributes:
+            if at.getValueFrom and at.visited==0:
+                name = at.getValueFrom.variable.name
+                var = at.getValueFrom.variable
                 a = AttrLine(name, self.bnomogram)
-                at_num = at_num+1
-
-                # get all values in variable and get thos that are fitted
-                # if both lists are the same size its ok, else missing attributes have value 0
-                if var.varType == orange.VarTypes.Discrete:
-                    for v in range(len(var.values)):
-                        val = 0
-                        se = aprox_prior_error
-                        name = var.values[v]
-                        for j in range(len(var.values)):
-                            if i+j<len(at) and at[i+j].getValueFrom and at[i+j].getValueFrom.variable==var and at[i+j].getValueFrom.lookupTable[v].value==1.0:
-                                val = -cl.beta[i+j+1]
-                                se = cl.beta_se[i+j+1]
-                                break
-                        a.addAttValue(AttValue(name,val, error = se))
-                if var.varType == orange.VarTypes.Continuous:
-                    if self.data:
-                        bas = orange.DomainBasicAttrStat(self.data)
-                        maxAtValue = bas[var].max
-                        minAtValue = bas[var].min
-                    else:
-                        maxAtValue = 1.
-                        minAtValue = -1.
-                    numOfPartitions = 50. 
-                    d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
-
-                    # get curr_num = starting point for continuous att. sampling
-                    curr_num = getStartingPoint(d, minAtValue) 
-                    rndFac = getRounding(d)
-
-                    while curr_num<maxAtValue+d:
-                        if abs(-curr_num*cl.beta[i+1])<0.000001:
-                            a.addAttValue(AttValue("0.0", 0))
-                        else:
-                            a.addAttValue(AttValue(str(curr_num), -curr_num*cl.beta[i+1]))
-                        curr_num += d
-                    a.continuous = True
-                    
+                listOfExcludedValues = []
+                for val in var.values:
+                    foundValue = False
+                    for same in cl.domain.attributes:
+                        if same.visited==0 and same.getValueFrom and same.originValue==val:
+                            same.setattr("visited", 1)
+                            a.addAttValue(AttValue(same.originValue, mult*cl.beta[same], error = cl.beta_se[same]))
+                            foundValue = True
+                    if not foundValue:
+                        listOfExcludedValues.append(val)
+                if len(listOfExcludedValues) == 1:
+                    a.addAttValue(AttValue(listOfExcludedValues[0], 0, error = aprox_prior_error))
+                elif len(listOfExcludedValues) == 2:
+                    a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
+                elif len(listOfExcludedValues) > 2:
+                    a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
                 self.bnomogram.addAttribute(a)    
+                    
+                
+            elif at.visited==0:
+                name = at.name
+                var = at
+                a = AttrLine(name, self.bnomogram)
+                if self.data:
+                    bas = orange.DomainBasicAttrStat(self.data)
+                    maxAtValue = bas[var].max
+                    minAtValue = bas[var].min
+                else:
+                    maxAtValue = 1.
+                    minAtValue = -1.
+                numOfPartitions = 50. 
+                d = getDiff((maxAtValue-minAtValue)/numOfPartitions)
 
-        #bnomogram.printOUT()                                                
+                # get curr_num = starting point for continuous att. sampling
+                curr_num = getStartingPoint(d, minAtValue) 
+                rndFac = getRounding(d)
+
+                while curr_num<maxAtValue+d:
+                    if abs(mult*curr_num*cl.beta[at])<0.000001:
+                        a.addAttValue(AttValue("0.0", 0))
+                    else:
+                        a.addAttValue(AttValue(str(curr_num), mult*curr_num*cl.beta[at]))
+                    curr_num += d
+                a.continuous = True
+                at.setattr("visited", 1)
+                self.bnomogram.addAttribute(a)
+
+
+
         self.alignRadio.setDisabled(True)
         self.alignType = 0
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
 
     def svmClassifier(self, cl):
+        import Numeric
+        import orngLinVis
+        
+        if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+            mult = -1
+        else:
+            mult = 1
+
         visualizer = orngLinVis.Visualizer(self.data, cl, buckets=1, dimensions=1)
-        self.bnomogram = BasicNomogram(self, AttValue('Constant', visualizer.beta, 0))
+        self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*visualizer.beta, 0))
 
         # get maximum and minimum values in visualizer.m        
         maxMap = reduce(Numeric.maximum, visualizer.m)
@@ -334,7 +352,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                         a = AttrLine(c[i], self.bnomogram)
                         at_num = at_num + 1
                     else:
-                        a.addAttValue(AttValue(c[i], -visualizer.coeffs[coeff]))
+                        a.addAttValue(AttValue(c[i], mult*visualizer.coeffs[coeff]))
                         coeff = coeff + 1
             else:
                 a = AttrLine(c[0], self.bnomogram)
@@ -359,7 +377,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 rndFac = getRounding(d)
                 
                 while curr_num<maxNew+d:
-                    a.addAttValue(AttValue(str(curr_num), -(curr_num-minNew)*beta-minMap[coeff]*visualizer.coeffs[coeff]))
+                    a.addAttValue(AttValue(str(curr_num), mult*(curr_num-minNew)*beta-minMap[coeff]*visualizer.coeffs[coeff]))
                     curr_num += d
 
                 at_num = at_num + 1
@@ -375,10 +393,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
        
-    # Input channel: the target outcome (optional)    
-    def target(self, data):
-        self.graph.setTarget(data)
-
     def classifier(self, cl):
         self.cl = cl
         self.updateNomogram()
@@ -386,6 +400,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
     # Input channel: data
     def cdata(self, data):
         # call appropriate classifier
+        if data and data.domain and not data.domain.classVar:
+            QMessageBox("OWNomogram:", " This domain has no class attribute!", QMessageBox.Warning,
+                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+            return
+        
         self.data = data
         if not data:
             self.histogramCheck.setChecked(False)
@@ -400,9 +419,23 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.CICheck.setEnabled(True)
             self.CILabel.setEnabled(True)
         self.updateNomogram()
-        
+
+    def ctarget(self, target):
+        self.TargetClassIndex = target
+        if self.TargetClassIndex == 1:
+            self.notTargetClassIndex = 0
+        else:
+            self.notTargetClassIndex = 1
+        if self.cl and self.cl.domain and self.TargetClassIndex == self.cl.domain.classVar[1]:
+            self.notTargetClassIndex = self.cl.domain.classVar[0]
+        elif self.cl and self.cl.domain:
+            self.notTargetClassIndex = self.cl.domain.classVar[1]
+        self.updateNomogram()
+            
 
     def updateNomogram(self):
+        import orngSVM
+
         def setNone():
             self.footer.setCanvas(None)
             self.header.setCanvas(None)
@@ -422,7 +455,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 self.svmClassifier(self.cl)
         elif type(self.cl) == orange.BayesClassifier:
             if len(self.cl.domain.classVar.values)>2:
-                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class", QMessageBox.Warning,
+                QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
                             QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
             else:
                 self.nbClassifier(self.cl)
@@ -505,13 +538,15 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
 # test widget appearance
 if __name__=="__main__":
+    import orngLR
+    
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
     data = orange.ExampleTable("titanic")
     bayes = orange.BayesLearner(data)
-    #logistic = orngLR.LogRegLearner(data)
-    ow.classifier(bayes)
+    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(logistic)
     ow.cdata(data)
 
     # here you can test setting some stuff

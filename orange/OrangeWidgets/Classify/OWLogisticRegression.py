@@ -59,6 +59,7 @@ preprocessors to filter/change the data.
         self.data = None
         self.preprocessor = None
 
+
         self.loadSettings()
 
 
@@ -153,8 +154,9 @@ preprocessors to filter/change the data.
             self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing)
             if self.stepwiseLR:
                 self.learner.stepwiseLR = 1
-                self.learner.addCrit = float(str(self.addCrit))
-                self.learner.removeCrit = float(str(self.removeCrit))
+                self.learner.addCrit = float(self.addCrit)
+                self.learner.removeCrit = float(self.removeCrit)
+                self.learner.numAttr = float(self.numAttr)
 
         self.learner.name = self.name
         self.send("Learner", self.learner)        
@@ -217,13 +219,13 @@ preprocessors to filter/change the data.
         self.refreshControls()
 
     def setAddCrit(self, value):
-        self.addCrit = value
+        self.addCrit = str(value)
         
     def setRemoveCrit(self, value):
-        self.removeCrit = value
+        self.removeCrit = str(value)
 
     def setNumAttr(self, value):
-        self.numAttr = float(value)
+        self.numAttr = str(value)
 
         
     # ostanejo se razne nastavitve posameznih vrednosti v nastavitvah, ki pa jih je s

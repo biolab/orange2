@@ -145,6 +145,7 @@ class OWNaiveBayes(OWWidget):
             return
         
         self.learner = orange.BayesLearner()
+        self.learner.name = self.name
         # set the probability estimation!!!
         if 1:
             self.m_estimator.m = self.m
@@ -161,11 +162,16 @@ class OWNaiveBayes(OWWidget):
                 setattr(self.learner, attr, cons)
                 if hasattr(cons, "m"):
                     setattr(cons, "m", self.m)
-                    self.learner.name = self.name
                     
         self.send("Learner", self.learner)
         if self.data <> None:
-            self.classifier = self.learner(self.data)
+            try:
+                self.classifier = self.learner(self.data)
+            except orange.KernelException, (errValue):
+                self.classifier = None
+                QMessageBox("Naive Bayes error:", str(errValue), QMessageBox.Warning,
+                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                return            
             self.classifier.name = self.name
 
             self.send("Classifier", self.classifier)
