@@ -1,0 +1,48 @@
+<html> <HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Graphs</h1>
+
+<P>Orange offers a data structure for representing directed and undirected graphs with various types of weighted connections.</P>
+
+<P>Basic graphs have only one type of edges. Each edge can have   an associated number, representing a strength of the edge - with whatever underlying physical interpretation. Orange's graphs are more general and two vertices can be connected by edges of various types. One use for this would be in genetics, where one gene can excite or inhibit another - or both simultaneously, which is why we can't simply assign negative numbers to the edges. The number of edge types is unlimited, but needs to be set in advance.</P>
+
+<P>Before constructing a graph, you will also need to decide for the underlying data structure. The differences for smaller graphs (<EM>e.g.</EM> with less than 100 nodes) should be insignificant, while for the larger, the decision should be based upon the expected number of edges ("density" of the graph) and the operations you plan to execute. Graphs with large number of edges (<EM>eg.</EM>&gt;<EM>n</EM><SUP>2</SUP>/4, where <EM>n</EM> is the number of vertices) should be represented with adjacency matrices (class <CODE>GraphAsMatrix</CODE>), graphs with small number of edges with adjacency lists (<CODE>GraphAsList</CODE>) and those in between with adjacency trees (<CODE>GraphAsTrees</CODE>).  Regarding the speed, matrices are generally the fastest, while some operations, such as finding all edges leading from certain node, will sometimes be faster with lists or trees.</P>
+
+<P>One thing that is not supported at the moment are multiple edges of the same type between two vertices.</P>
+
+
+<H2>Basic Operations on Graphs</H2>
+
+<H3>Construction</H3>
+
+<P>When constructing a graph, you will need to decide about the data structure for representation of edges, and call the corresponding constructor. All constructors take the same arguments: the number of vertices (needs to be given in advance, you cannot add additional vertices later), a flag telling whether the graph is directed or not, and the number of edge types. The default number of edge types is 1 (a normal graph), while the other two arguments are mandatory.</P>
+
+<P>You can choose between three constructors, all derived from a single ancestor <CODE>Graph</CODE>:
+<DL>
+<DT><CODE>GraphAsMatrix</CODE></DT>
+<DD>Edges are stored in a matrix with either <EM>n</EM><SUP>2</SUP> or <EM>n</EM>(<EM>n</EM>+1)/2 elements, depending upon whether the graph is directed or not. (In C++, it is stored as <CODE>float *</CODE> pointing to an array of length <CODE>n*n*nEdgeTypes</CODE> or <CODE>(n*(n+1))/2*nEdgeTypes</CODE> elements, where <CODE>nEdgeTypes</CODE> is the number of edge types.) This representation is suitable for smaller graphs and for dense large graphs. For graph with only one edge type, this representation is more economical than representation with lists or trees when the number of edges is larger than <EM>n</EM><SUP>2</SUP>/4.</P>
+
+<P>Inserting, deleting and checking the edges is fast; listing the neighbours of a certain node is fast unless the graph is sparse, in which case a graph represented with a list or a tree would be faster.</P>
+</DD>
+
+<DT><CODE>GraphAsList</CODE></DT>
+<DD>Edges are stored in an ordered lists of neighbours, one list for each node. In C++, for each neighbour, the connection is stored in a structure with the vertex number (<CODE>int</CODE>), a pointer to the next structure, and an array of floats, one for each integer. With 16-byte alignment, this would take 16 bytes for graphs with one or two edge types on the usual 32-bit platforms.</P>
+
+<P>For undirected graphs, each edge is stored only once, in the list of the edge with the smaller index.</P>
+
+<P>This structure is convenient for graphs with a very small number of edges. For them, inserting and removing edges is relatively fast; getting all edges leading from a vertex is fast, while getting edges leading to a vertex or getting all neighbours (in directed or undirected graph) is slow.</P>
+</DD>
+
+
+<DT><CODE>GraphAsTree</CODE></DT>
+<DD>This structure is similar to <CODE>GraphAsTree</CODE> except that the edges are stored in trees instead of lists. This should be a structure of choice for all graph between really sparse and those having one quarter of possible edges. As expected, queries are fast, while insertion and removal of edges is somewhat slower (though still faster than for <CODE>GraphAsList</CODE> unless the number of edges is really small).</P>
+
+<P>Internally, nodes of the tree contain the vertex number, two pointers and a list of floats. With one edge type, this should be 16 bytes on 32-bit platforms.</P>
+</DD>
+</DL>
+
+
+</BODY></HTML>
