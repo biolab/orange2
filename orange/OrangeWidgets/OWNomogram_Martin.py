@@ -45,6 +45,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.alignType = 0
+        self.contType = 0
         self.yAxis = 0
         self.probability = 1
         self.table = 0
@@ -72,6 +73,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.yAxisRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'yAxis', ['100', 'beta coeff', 'odds ratio'], 'yAxis',
                                 tooltips=['values are normalized on 0-100 point scale','beta = regression coefficients','OR (odds ration) = exp(beta). This kind of nomogram shows actual attribute contribution and not log-linear one.'],
                                 callback=self.setYAxis)
+        self.ContRadio = OWGUI.radioButtonsInBox(GeneralTab, self, 'Continuous', ['1D', '2D'], 'contType',
+                                tooltips=['Continuous attribute are presented on a single scale', 'Two dimensional space is used to present continuous attributes in nomogram.'],
+                                callback=self.setContType)
 
         self.yAxisRadio.setDisabled(True)
         self.probabilityCheck = OWGUI.checkOnly(GeneralTab, self, 'Show probability', 'probability', tooltip='Show probability scale at the bottom of nomogram graph?')
@@ -109,8 +113,37 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         bnomogram = BasicNomogram(AttValue("Constant", Numeric.log(prior)))
         for at in range(len(att)):
             a = AttrLine(att[at].name, at+1)
-            for val in att[at].values:
-                a.addAttValue(AttValue(val, Numeric.log(cl.conditionalDistributions[at][val][classVal[0]]/cl.conditionalDistributions[at][val][classVal[1]]/prior)))
+            if att[at].varType == orange.VarTypes.Discrete:
+                for cd in cl.conditionalDistributions[at].keys():
+                    a.addAttValue(AttValue(str(cd), Numeric.log(cl.conditionalDistributions[at][cd][classVal[0]]/cl.conditionalDistributions[at][cd][classVal[1]]/prior)))
+            else:
+                d = cl.conditionalDistributions[at].keys()[len(cl.conditionalDistributions[at].keys())-1]-cl.conditionalDistributions[at].keys()[0]
+                d = getDiff(d/50)
+                if cl.conditionalDistributions[at].keys()[0]<0:
+                    curr_num = arange(-cl.conditionalDistributions[at].keys()[0]+d)
+                    curr_num = curr_num[len(curr_num)-1]
+                    curr_num = -curr_num
+                elif cl.conditionalDistributions[at].keys()[0] == 0:
+                    curr_num = 0
+                else:
+                    print d, cl.conditionalDistributions[at].keys()
+                    curr_num = arange(cl.conditionalDistributions[at].keys()[0]-d)
+                    print curr_num
+                    curr_num = curr_num[len(curr_num)-1]
+                                    
+                rndFac = math.floor(math.log10(d));
+                if rndFac<-2:
+                    rndFac = -rndFac
+                else:
+                    rndFac = 2
+                for cd in cl.conditionalDistributions[at].keys():
+                    if cd>=curr_num:
+                        print curr_num, round, 
+                        a.addAttValue(AttValue(str(round(curr_num,rndFac)), Numeric.log(cl.conditionalDistributions[at][cd][classVal[0]]/cl.conditionalDistributions[at][cd][classVal[1]]/prior)))
+                        curr_num = curr_num + d
+                    
+                if att[at].varType == orange.VarTypes.Continuous:
+                    a.continuous = True
             bnomogram.addAttribute(a)        
             
         bnomogram.printOUT()
@@ -160,6 +193,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
     def setAlignType(self):
         self.graph.setAlignType(self.alignType)
+
+    def setContType(self):
+        self.graph.setContType(self.contType)
 
     def setYAxis(self):
         self.graph.setYAxis(self.yAxis)

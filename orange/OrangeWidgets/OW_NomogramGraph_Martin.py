@@ -14,59 +14,16 @@ def unique(lst):
         d[item] = None
     return d.keys()
 
-# TODO: this is somehow still clumsy implemented 
+# returns difference between continuous label values
 def getDiff(d):
-    if d>50:
-        dif = 100
-    elif d>10:
-        dif = 50
-    elif d>5:
-        dif = 10
-    elif d>1:
-        dif = 5
-    elif d>0.5:
-        dif = 1
-    elif d>0.1:
-        dif = 0.5
-    elif d>0.05:
-        dif = 0.1
+    if d==0:
+        return 0
+
+    if str(d)[0]>'4':
+        return math.pow(10,math.floor(math.log10(d))+1)
     else:
-        dif = 0.05
-    return dif
-
-
-
-
-# create an AttrLine object from a continuous variable
-# set minBeta, maxBeta, ... , minValue = k*minBeta, maxValue = k*maxBeta
-# when using ordinary continuous variables, k is 1.
-def contAttValues(minBeta, maxBeta, minValue, maxValue, fontSize, rectWidth):
-    maxnum = rectWidth/(3*fontSize)
-    if maxnum<2:
-        maxnum=2
-    
-    d = (maxValue - minValue)/maxnum
-    
-    dif = getDiff(d)
-    dUpper = []
-    dLower = []    
-    if maxValue>0:
-        dUpper = arange(0, maxValue, dif)
-        dUpper = map(lambda x:x, dUpper)
-    if minValue<0:
-        dLower = arange(0, -minValue, dif)
-        dLower = map(lambda x:-x, dLower)
-    
-    dSum = unique(dLower+dUpper)
-    dSum.sort()
-    dSum.append(maxValue)
-    dSum.insert(minValue,0)
-    retAttr = AttrLine("", 0)
-    k = (maxBeta-minBeta)/(maxValue-minValue)
-    for i in range(len(dSum)):
-        retAttr.addAttValue(AttValue(str(dSum[i]), k*(dSum[i]-minValue)))
-    return retAttr
-    
+        return 5*math.pow(10,math.floor(math.log10(d)))
+        
 
 #-----------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------
@@ -91,6 +48,8 @@ class AttValue:
         self.coordinatesSet = False # True if coordinates for this value are set already --> uses in paint function
         self.showErr = showErr
         self.over = over
+    def __item__(self, i):
+        return self.betaValue
 
     def disable(self):
         self.enable = False
@@ -145,11 +104,12 @@ class AttValue:
 #   * attValues - set of values
 #   * minValue, maxValue - minValues and maxValues of attribute
 class AttrLine:
-    def __init__(self, name, TDposition):
+    def __init__(self, name, TDposition, continuous = False):
         self.name = name
         self.TDposition = TDposition
         self.attValues = []
         self.minValue = self.maxValue = 0
+        self.continuous = continuous
 
     def addAttValue(self, attValue):
         self.attValues.append(attValue)
@@ -203,19 +163,112 @@ class AttrLine:
         # draw attribute line
         painter.drawLine(min_mapped, rect.bottom(), max_mapped, rect.bottom())
 
-        # draw attributes
-        val = self.attValues
-        for i in range(len(val)):
-            # check attribute name that will not cover another name
-            for j in range(i):
-                if val[j].over and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*painter.font().pixelSize()/4+len(val[i].name)*painter.font().pixelSize()/4):
-                    print "m", atValues_mapped[j], atValues_mapped[i], val[i].name, val[j].name
-                    val[i].over = False
-                    
-            val[i].setCoordinates(atValues_mapped[i], atErrors_mapped[i])
-            val[i].paint(painter, rect, mapper)
-        for i in range(len(val)):
-            val[i].over = True
+        # continuous attributes are handled differently
+        if self.continuous:
+            cAtt = self.shrinkSize(painter.font().pixelSize(), max_mapped - min_mapped)
+            atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(cAtt) # return mapped values, errors, min, max --> mapper(self)
+            val = cAtt.attValues
+            for i in range(len(val)):
+                # check attribute name that will not cover another name
+                for j in range(i):
+                    if val[j].over==val[i].over and val[j].enabled() and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*painter.font().pixelSize()/4+len(val[i].name)*painter.font().pixelSize()/4):
+                        val[i].disable()
+                        
+                val[i].setCoordinates(atValues_mapped[i], atErrors_mapped[i])
+                val[i].paint(painter, rect, mapper)
+            
+        else:
+            # draw attributes
+            val = self.attValues
+            for i in range(len(val)):
+                # check attribute name that will not cover another name
+                for j in range(i):
+                    if val[j].over and val[j].enabled() and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*painter.font().pixelSize()/4+len(val[i].name)*painter.font().pixelSize()/4):
+                        #print "m", atValues_mapped[j], atValues_mapped[i], val[i].name, val[j].name
+                        val[i].over = False
+                        
+                val[i].setCoordinates(atValues_mapped[i], atErrors_mapped[i])
+                val[i].paint(painter, rect, mapper)
+            for i in range(len(val)):
+                val[i].over = True
+
+
+# in this method is implemented a 2-dimensional continuous attribute representation. It is useful, when att. 
+# distribution is not monotone
+    def paintContinuous(self, painter, rect, mapper):
+        # rect and att. values initialization
+        verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())                        
+
+        atNames = AttrLine(self.name, 0)
+        for at in self.attValues:
+            atNames.addAttValue(AttValue(at.name, float(at.name)))
+
+        verticalMapper = Mapper_Linear_Fixed(atNames.getMinValue(), atNames.getMaxValue(), verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = atNames.getMaxValue(), minLinearValue = atNames.getMinValue())
+        atValues_mapped_vertical, atErrors_mapped_vertical, min_mapped_vertical, max_mapped_vertical = verticalMapper(atNames) # return mapped values, errors, min, max --> mapper(self)
+
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
+        # draw box
+        sortVal = atValues_mapped[:]
+        sortVal.sort()
+        painter.setPen(Qt.DotLine)
+        painter.drawRect(sortVal[0], rect.top()+rect.height()/8, sortVal[len(sortVal)-1]-sortVal[0], rect.height()*7/8)
+        painter.setPen(Qt.SolidLine)
+
+        # show att. name
+        painter.save()
+        font = QFont("Arial", painter.font().pointSize())
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(sortVal[0], rect.top()+rect.height()/8, sortVal[len(sortVal)-1]-sortVal[0], painter.font().pixelSize()*2, Qt.AlignCenter, self.name)
+        painter.restore()
+        
+        # put labels on it
+        label = verticalMapper.getHeaderLine(painter, verticalRect) 
+        mapped_labels, error, min_lab, max_lab = verticalMapper(label) # return mapped values, errors, min, max --> mapper(self)        
+        for at in range(len(label.attValues)):
+            # draw value
+            if label.attValues[at].enabled():
+                painter.drawText(0, mapped_labels[at]-painter.font().pixelSize()/2, sortVal[0]-3, painter.font().pixelSize(), Qt.AlignRight, label.attValues[at].name)
+                painter.drawLine(sortVal[0]-2, mapped_labels[at], sortVal[0]+2, mapped_labels[at])
+            # if value is disabled, draw just a simbolic line        
+            else:
+                painter.drawLine(sortVal[0]-1, mapped_labels[at], sortVal[0]+1, mapped_labels[at])
+
+        # draw lines
+        for i in range(len(atValues_mapped)-1):
+            painter.drawLine(atValues_mapped[i], atValues_mapped_vertical[i], atValues_mapped[i+1], atValues_mapped_vertical[i+1])
+
+    # create an AttrLine object from a continuous variable (to many values for a efficient presentation)
+    def shrinkSize(self, fontSize, width):
+        def sign(val1, val2):
+            if val1>val2:
+                return True
+            else:
+                return False
+            
+        maxnum = width/(3*fontSize)
+        if maxnum<2:
+            maxnum=2
+
+        step = len(self.attValues)/maxnum
+        step = math.floor(step)
+        if step<=1:
+            return self
+
+        curr_over = True        
+        retAttr = AttrLine(self.name, self.TDposition)
+        for at in range(len(self.attValues)):
+            if len(retAttr.attValues)>1:
+                sign_before = sign(retAttr.attValues[len(retAttr.attValues)-1].betaValue, retAttr.attValues[len(retAttr.attValues)-2].betaValue)
+            if at%step == 0:
+                retAttr.addAttValue(self.attValues[at])
+            if len(retAttr.attValues)>2:
+                sign_after = sign(retAttr.attValues[len(retAttr.attValues)-1].betaValue, retAttr.attValues[len(retAttr.attValues)-2].betaValue)
+                if sign_after != sign_before:
+                    retAttr.attValues[len(retAttr.attValues)-1].over = not curr_over
+                    curr_over = not curr_over
+            
+        return retAttr
 
     # string representation of attribute
     def toString(self):
@@ -244,14 +297,18 @@ class BasicNomogram:
         headerAttrLine.setName("")
         headerAttrLine.paint(painter, rect, mapper)
 
-    def paint(self, painter, rect, mapper):
-        height = rect.height()/self.getNumOfAtt()
+    def paint(self, parent, painter, rect, mapper):
         painter.setPen(Qt.DotLine)
         painter.drawLine(mapper.mapBeta(0), rect.top(), mapper.mapBeta(0), rect.bottom()+10)
         painter.setPen(Qt.SolidLine)
+        curr_rect = QRect(rect.left(), rect.top(), rect.width(), 0)
         for at in self.attributes:
-            curr_rect = QRect(rect.left(), rect.top()+(at.getTDPosition()-1)*height, rect.width(), height)
-            at.paint(painter, curr_rect, mapper)
+            if at.continuous and parent.continuous == 1:
+                curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), parent.verticalSpacingContinuous)
+                at.paintContinuous(painter, curr_rect, mapper)
+            else:
+                curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), parent.verticalSpacing)
+                at.paint(painter, curr_rect, mapper)
             
     def paintFooter(self, painter, rect, alignType, yAxis, mapper):
         # set height for each scale        
@@ -280,10 +337,9 @@ class BasicNomogram:
             minSumBeta = -3
 
         # draw continous line with values from min and max sum (still have values!)
-        #footer = contAttValues(minSumBeta, maxSumBeta, minSum, maxSum, painter.font().pixelSize(), rect.width())
         m = Mapper_Linear_Fixed(minSumBeta, maxSumBeta, rect.left(), rect.right(), maxLinearValue = maxSum, minLinearValue = minSum)
         footer = m.getHeaderLine(painter, QRect(rect.left(), rect.top(), rect.width(), height))
-        print footer.toString()
+        #print footer.toString()
         footer.setName("sum")
         footer.paint(painter, QRect(rect.left(), rect.top(), rect.width(), height), m)
 
@@ -321,10 +377,12 @@ class OWNomogramGraph(QScrollView):
         self.yAxis = 0 # 0 - normalize to 0-100, 1 - beta coeff, 2 - odds ration
         self.showErrors = 0
         self.verticalSpacing = 40
+        self.verticalSpacingContinuous = 100
         self.fontSize = 9
         self.lineWidth = 1
         self.showPercentage = 1
         self.showTable = 0
+        self.continuous = 1 # 0 - 1d presentation, 1 - 2d presentation
 
         self.wl = 0 #width of space for the left y axis labels
         psize=self.size()
@@ -344,7 +402,13 @@ class OWNomogramGraph(QScrollView):
             return
         self.setSizes(psize)
         if self.bnomogram!=None:
-            self.resizeContents(psize.width()-30, self.verticalSpacing*(self.bnomogram.getNumOfAtt()+5))            
+            hgt =  5*self.verticalSpacing
+            for at in self.bnomogram.attributes:
+                if self.continuous == 1 and at.continuous:
+                    hgt += self.verticalSpacingContinuous
+                else:
+                    hgt += self.verticalSpacing
+            self.resizeContents(psize.width()-30, hgt)            
 
     def setSizes(self,psize):
         "Sets internal variables for window borders and graph sizes used in drawing"
@@ -352,11 +416,15 @@ class OWNomogramGraph(QScrollView):
         self.pleft=0
         self.pright=psize.width()
         self.ptop = 0
-        # TODO: vrne mi error brez vnaprejšnjega prevertjanja a::::::)DDDfdffd
         if self.bnomogram == None:
             self.pbottom = 100
         else:
-            self.pbottom = self.verticalSpacing*(self.bnomogram.getNumOfAtt()+5)
+            self.pbottom =  5*self.verticalSpacing
+            for at in self.bnomogram.attributes:
+                if self.continuous == 1 and at.continuous:
+                    self.pbottom += self.verticalSpacingContinuous
+                else:
+                    self.pbottom += self.verticalSpacing
 
         #graph sizes
         self.gleft=self.pleft+(self.pright-self.pleft)/10
@@ -370,6 +438,7 @@ class OWNomogramGraph(QScrollView):
 
         self.gwidth = self.gright-self.gleft
         self.gheight = self.gbottom - self.gtop
+        return (self.pright, self.pbottom)
             
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -385,7 +454,6 @@ class OWNomogramGraph(QScrollView):
         if clipw == 0 and cliph == 0:
             return
         psize=self.size()
-        #newBuffSize = QSize(clipw, self.verticalSpacing*(self.bnomogram.getNumOfAtt()+4))
         self.resizeBuffer(QSize(clipw, cliph))
         offScreenPainter=QPainter(self.buffer) #create a painter in the off-screen buffer and paint onto it
         prect=QRect(clipx, clipy, clipw, cliph)
@@ -401,9 +469,6 @@ class OWNomogramGraph(QScrollView):
 
         pen=QPen(Qt.black,1,Qt.SolidLine)
         offScreenPainter.setPen(pen)
-
-        # calculate relative Values
-        #self.calculateRelativeValues()
 
         # Draw the actual graph
         self.paintGraph(offScreenPainter, QRect(clipx, clipy, clipw, cliph),
@@ -437,7 +502,6 @@ class OWNomogramGraph(QScrollView):
         
         
         curr_point = self.verticalSpacing
-        print "alignType", self.alignType
         if self.alignType == 0:
             self.mapper = Mapper_Linear_Left(self.bnomogram.max_difference,  self.gleft, self.gright)
         else:
@@ -448,30 +512,39 @@ class OWNomogramGraph(QScrollView):
         self.bnomogram.paintHeader(painter, topRect, self.mapper) 
 
         # draw nomogram
-        middleRect=QRect(self.gleft, self.gtop+self.verticalSpacing, self.gwidth, self.verticalSpacing*self.bnomogram.getNumOfAtt())
-        self.bnomogram.paint(painter, middleRect, self.mapper)
+        middleRect=QRect(self.gleft, self.gtop+self.verticalSpacing, self.gwidth, self.gheight-4*self.verticalSpacing)
+        self.bnomogram.paint(self, painter, middleRect, self.mapper)
         #self.bnomogram.paint(painter, rect)
 
         # draw final line
         bottomRect=QRect(self.gleft, self.gbottom-2*self.verticalSpacing, self.gwidth, 2*self.verticalSpacing)
         self.bnomogram.paintFooter(painter, bottomRect, self.alignType, self.yAxis, self.mapper)
+
+        
         
     def setNomogramData(self, bnomogram):
         self.bnomogram = bnomogram
         
-        psize=self.size()
-        self.setSizes(psize)
-        self.buffer.resize(self.buffer.size()) #make same size as widget
-        self.repaintGraph()        
+        w,h=self.updateAll()
+        self.resizeContents(w-30, h)        
 
     def setAlignType(self, alignType):
         print "grem v setAlignType"
         self.alignType = alignType
+        self.updateAll()
 
+    def setContType(self, contType):
+        self.continuous = contType
+        w,h=self.updateAll()
+        self.resizeContents(w-30, h)        
+
+    def updateAll(self):    
         psize=self.size()
-        self.setSizes(psize)
+        w,h=self.setSizes(psize)
         self.buffer.resize(self.size()) #make same size as widget
-        self.repaintGraph()        
+        self.repaintGraph()
+        return (w,h)
+            
         
     def repaintGraph(self):
         """Repaints the visible viewport region. Plain repaint() does not work."""
@@ -545,7 +618,6 @@ class Mapper_Linear_Fixed:
         return 0
     
     def getHeaderLine(self, painter, rect):
-        print "minmax", self.minGraphBeta, self.maxGraphBeta, self.maxGraphValue, self.minGraphValue
         maxnum = rect.width()/(3*painter.font().pixelSize())
         if maxnum<1:
             maxnum=1
@@ -562,7 +634,7 @@ class Mapper_Linear_Fixed:
         dSum = unique(dLower+dUpper)
         dSum.sort()
         dSum = filter(lambda x:x>self.minValue-dif, dSum)
-        print dSum
+
         # set new graph values
         k = (self.maxGraphBeta - self.minGraphBeta)/(self.maxGraphValue - self.minGraphValue)
     
@@ -573,12 +645,7 @@ class Mapper_Linear_Fixed:
         self.minGraphValue = dSum[0]
         self.maxGraphValue = dSum[len(dSum)-1]
 
-        print "minmax", self.minGraphBeta, self.maxGraphBeta, self.maxGraphValue, self.minGraphValue
-        # coefficient to convert values into betas
-        #if self.minGraphValue==0 or self.minGraphBeta == 0:
         k = (self.maxGraphBeta-self.minGraphBeta)/(self.maxGraphValue-self.minGraphValue)
-        #else:
-        #    k = self.minGraphBeta/self.minGraphValue
 
         headerLine = AttrLine("header", 0)
         for at in range(len(dSum)):
@@ -690,10 +757,7 @@ class Mapper_Linear_Center:
         self.maxGraphValue = dSum[len(dSum)-1]
 
         # coefficient to convert values into betas
-        #if self.minGraphValue==0 or self.minGraphBeta == 0:
         k = (self.maxGraphBeta-self.minGraphBeta)/(self.maxGraphValue-self.minGraphValue)
-        #else:
-        #    k = self.minGraphBeta/self.minGraphValue
 
         headerLine = AttrLine("header", 0)
         for at in range(len(dSum)):
