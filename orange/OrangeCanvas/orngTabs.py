@@ -15,7 +15,7 @@ class WidgetButton(QToolButton):
 	def __init__(self, *args):
 		apply(QToolButton.__init__,(self,)+ args)
 
-	def setValue(self, name, fileName, inList, outList, icon, description, priority, canvasDlg):
+	def setValue(self, name, fileName, inList, outList, icon, description, priority, canvasDlg, useLargeIcons):
 		self.name = name
 		self.fileName = fileName
 		self.iconName = icon
@@ -49,12 +49,18 @@ class WidgetButton(QToolButton):
 		tooltipText = "<b>%s</b><br>Class name: %s<br>in: %s<br>out: %s<br>description: %s" % (name, fileName, formatedInList, formatedOutList, description)
 		QToolTip.add( self, tooltipText)
 
-
 		self.canvasDlg = canvasDlg
-		
+
+		self.setTextLabel(name, FALSE)		
 		self.setPixmap(QPixmap(self.iconName))
-		self.setMaximumSize(48, 48)
-		self.setMinimumSize(48, 48)
+		if useLargeIcons == 1:
+			self.setUsesTextLabel (TRUE)
+			self.setUsesBigPixmap(TRUE)
+			self.setMaximumSize(80, 80)
+			self.setMinimumSize(80, 80)
+		else:
+			self.setMaximumSize(48, 48)
+			self.setMinimumSize(48, 48)
 
 	def clicked(self):
 		win = self.canvasDlg.workspace.activeWindow()
@@ -81,6 +87,7 @@ class WidgetTabs(QTabWidget):
 		self.tabs = []
 		self.canvasDlg = None
 		self.allWidgets = []
+		self.useLargeIcons = FALSE
 
 		tab = WidgetTab(self, "Data")
 		self.tabs.append(tab)
@@ -94,10 +101,11 @@ class WidgetTabs(QTabWidget):
 		self.canvasDlg = canvasDlg
 
 	# read the xml registry and show all installed widgets
-	def readInstalledWidgets(self, registryFileName, widgetDir, picsDir, defaultPic):
+	def readInstalledWidgets(self, registryFileName, widgetDir, picsDir, defaultPic, useLargeIcons):
 		self.widgetDir = widgetDir
 		self.picsDir = picsDir
 		self.defaultPic = defaultPic
+		self.useLargeIcons = useLargeIcons
 		doc = parse(registryFileName)
 		orangeCanvas = doc.firstChild
 		categories = orangeCanvas.getElementsByTagName("widget-categories")[0]
@@ -172,7 +180,7 @@ class WidgetTabs(QTabWidget):
 		exIndex = 0
 		for i in range(len(priorityList)):			
 			button = WidgetButton(tab)
-			button.setValue(nameList[i], fileNameList[i], inListList[i], outListList[i], iconNameList[i], descriptionList[i], priorityList[i], self.canvasDlg)
+			button.setValue(nameList[i], fileNameList[i], inListList[i], outListList[i], iconNameList[i], descriptionList[i], priorityList[i], self.canvasDlg, self.useLargeIcons)
 			self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
 			if exIndex != priorityList[i] / 1000:
 				frame = QFrame(tab)

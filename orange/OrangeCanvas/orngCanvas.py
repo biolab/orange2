@@ -43,30 +43,39 @@ class OrangeCanvasDlg(QMainWindow):
 		self.setCentralWidget(self.workspace)
 		self.statusBar = QStatusBar(self)
 
+		self.settings = {}
+		self.loadSettings()
+		self.rebuildSignals()
+
 		self.initMenu()
 
 		self.toolbar = QToolBar(self, 'test')
-		self.toolNew  = QToolButton(QPixmap(orngResources.file_new), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema') 
+		self.toolNew  = QToolButton(QPixmap(orngResources.file_new), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema')
+		#self.toolNew.setUsesTextLabel (TRUE)
 		self.toolOpen = QToolButton(QPixmap(orngResources.file_open), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
 		self.toolSave = QToolButton(QPixmap(orngResources.file_save), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
 		self.toolbar.addSeparator()
 		toolPrint = QToolButton(QPixmap(orngResources.file_print), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
 		self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, TRUE)
-		
-		widgetsToolBar = QToolBar( self, 'Widgets')
-		widgetsToolBar.setHorizontalStretchable(TRUE)
-		self.tabs = orngTabs.WidgetTabs(widgetsToolBar, 'tabs')
-		self.addToolBar(widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
-		
-		self.settings = {}
-		self.loadSettings()
-		self.rebuildSignals()
-		
+
+		self.widgetsToolBar = QToolBar( self, 'Widgets')
+		self.widgetsToolBar.setHorizontalStretchable(TRUE)		
+		self.createWidgetsToolbar(not os.path.exists(self.registryFileName))
+
 		self.recentDocs = []
+		self.readRecentFiles()
+
+		win = self.menuItemNewSchema()
+
+	def createWidgetsToolbar(self, rebuildRegistry):
+		self.widgetsToolBar.clear()
+		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
+		self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
+		
 		self.tabs.setCanvasDlg(self)
 		
 		# if registry doesn't exist yet, we create it
-		if not os.path.exists(self.registryFileName):
+		if rebuildRegistry == 1:
 			parse = xmlParse.WidgetsToXML()
 			parse.ParseDirectory(self.widgetDir, self.canvasDir)
 			
@@ -76,11 +85,7 @@ class OrangeCanvasDlg(QMainWindow):
 			self.quit()
 			
 		# read widget registry file and create tab with buttons
-		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic)
-		self.readRecentFiles()
-
-		self.menuItemSnapToGrid()
-		win = self.menuItemNewSchema()
+		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
 		
 	def initMenu(self):
 		# ###################
@@ -117,9 +122,19 @@ class OrangeCanvasDlg(QMainWindow):
 		#self.menuOptions.insertItem( "Grid",  self.menuItemGrid )
 		#self.menuOptions.insertSeparator()
 		#self.menuOptions.insertItem( "Show Grid",  self.menuItemShowGrid)
+
+		# snap to grid option
 		self.menupopupSnapToGridID = self.menuOptions.insertItem( "Snap to Grid",  self.menuItemSnapToGrid )
-		self.snapToGrid = FALSE
+		if self.settings.has_key("snapToGrid"): self.snapToGrid = self.settings["snapToGrid"]
+		else:									self.snapToGrid = TRUE
 		self.menuOptions.setItemChecked(self.menupopupSnapToGridID, self.snapToGrid)
+
+		# use large icons with text option
+		self.menupopupLargeIconsID = self.menuOptions.insertItem( "Use large icons",  self.menuItemLargeIcons )
+		if self.settings.has_key("useLargeIcons"): self.useLargeIcons = self.settings["useLargeIcons"]
+		else:									   self.useLargeIcons = FALSE
+		
+		self.menuOptions.setItemChecked(self.menupopupLargeIconsID, self.useLargeIcons)
 		self.menuOptions.insertSeparator()
 		self.menuOptions.insertItem( "Enable All",  self.menuItemEnableAll)
 		self.menuOptions.insertItem( "Disable All",  self.menuItemDisableAll)
@@ -273,6 +288,7 @@ class OrangeCanvasDlg(QMainWindow):
 		
 	def menuItemSnapToGrid(self):
 		self.snapToGrid = not self.snapToGrid
+		self.settings["snapToGrid"] = self.snapToGrid
 		self.menuOptions.setItemChecked(self.menupopupSnapToGridID, self.snapToGrid)
 
 		# reposition all widgets in all documents so that the widgets are aligned
@@ -281,9 +297,17 @@ class OrangeCanvasDlg(QMainWindow):
 				for widget in win.widgets:
 					widget.setCoords(widget.x(), widget.y())
 					widget.moveToGrid()
-					widget.repaintAllLines(win.canvasView)
+					widget.repaintAllLines()
 				win.canvas.update()
-		
+
+	def menuItemLargeIcons(self):
+		self.useLargeIcons = not self.useLargeIcons
+		self.settings["useLargeIcons"] = self.useLargeIcons
+		self.menuOptions.setItemChecked(self.menupopupLargeIconsID, self.useLargeIcons)
+		self.tabs.hide()
+		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
+		self.tabs.setCanvasDlg(self)
+		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
 		
 	def menuItemEnableAll(self):
 		win = self.workspace.activeWindow()
@@ -302,9 +326,14 @@ class OrangeCanvasDlg(QMainWindow):
 			self.rebuildSignals()
 
 	def menuItemRebuildWidgetRegistry(self):
+		self.createWidgetsToolbar(TRUE)
+		"""
+		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
+		self.tabs.setCanvasDlg(self)
 		parse = xmlParse.WidgetsToXML()
 		parse.ParseDirectory(self.widgetDir, self.canvasDir)
-		QMessageBox.information( None, "Orange Canvas", "Rebuild completed.\nYou have to restart Orange Canvas for changes to take effect.", QMessageBox.Ok + QMessageBox.Default ) 
+		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
+		"""
 		
 	def menuCloseAll(self):
 		wins = self.workspace.windowList()

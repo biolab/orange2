@@ -234,16 +234,17 @@ class CanvasWidget(QCanvasRectangle):
         self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
 
-        self.text = QCanvasText(self.caption, canvas)
-        self.text.show()
-        self.text.setTextFlags(Qt.AlignCenter)
-        self.updateTextCoords()
-
         # import widget class and create a class instance
         code = compile("import " + widget.fileName, ".", "single")
         exec(code)
         code = compile(widget.fileName + "." + widget.fileName + "()", ".", "eval")
         self.instance = eval(code)
+
+        self.text = QCanvasText(self.caption, canvas)
+        self.text.show()
+        self.text.setTextFlags(Qt.AlignCenter)
+        self.updateTextCoords()
+            
 
     def updateTextCoords(self):
         self.text.move(self.xPos + 34, self.yPos + 60)
@@ -251,6 +252,10 @@ class CanvasWidget(QCanvasRectangle):
     def updateText(self, text):
         self.caption = str(text)
         self.text.setText(text)
+
+    def updateLinePosition(self):
+        for line in self.inLines: line.updateLinePos()
+        for line in self.outLines: line.updateLinePos()
     
     # set coordinates of the widget
     def setCoords(self, x, y):
@@ -258,6 +263,7 @@ class CanvasWidget(QCanvasRectangle):
         self.yPos = y
         self.move(x,y)
         self.updateTextCoords()
+        self.updateLinePosition()
 
     # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
@@ -265,6 +271,7 @@ class CanvasWidget(QCanvasRectangle):
         self.yPos = self.yPos + dy
         self.move(self.xPos,self.yPos)
         self.updateTextCoords()
+        self.updateLinePosition()
 
     def moveToGrid(self):
         (x,y) = (self.xPos, self.yPos)
