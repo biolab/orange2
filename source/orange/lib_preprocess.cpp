@@ -78,7 +78,7 @@ PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords
     PyObject *variable;
     PExampleGenerator egen;
     int weightID=0;
-    if (!PyArg_ParseTuple(args, "OO&|i", &variable, pt_ExampleGenerator, &egen, &weightID)) 
+    if (!PyArg_ParseTuple(args, "OO&|O&", &variable, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID)) 
       PYERROR(PyExc_SystemError, "invalid parameters", PYNULL);
 
     PVariable toDiscretize = varFromArg_byDomain(variable, egen->domain);
@@ -151,7 +151,7 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
     PExampleGenerator egen;
     PyObject *suspiciousList=NULL;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "O&|Oi", pt_ExampleGenerator, &egen, &suspiciousList, &weight))
+    if (!PyArg_ParseTuple(args, "O&|OO&", pt_ExampleGenerator, &egen, &suspiciousList, pt_weightByGen(egen), &weight))
       PYERROR(PyExc_TypeError, "attribute error", PYNULL);
 
     TVarList suspiciousset;
@@ -207,7 +207,7 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
 { 
   PyTRY
     SETATTRIBUTES
-    long weightID=0;
+    int weightID=0;
     PExampleGenerator egen=exampleGenFromArgs(args, &weightID);
     if (!egen)
       PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
@@ -319,7 +319,7 @@ PyObject *kaplanMeier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(example
   PyObject *pyfailvalue;
   TValue failvalue;
   int weightID = 0;
-  if (!PyArg_ParseTuple(args, "O&OOOi:kaplanMeier", pt_ExampleGenerator, &egen, &outcomevar, &pyfailvalue, &timevar, &weightID))
+  if (!PyArg_ParseTuple(args, "O&OOOO&:kaplanMeier", pt_ExampleGenerator, &egen, &outcomevar, &pyfailvalue, &timevar, pt_weightByGen(egen), &weightID))
 
     return PYNULL;
 
@@ -411,7 +411,7 @@ PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords
     PyObject *boundList;
     char *name;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "O&Os|i", pt_ExampleGenerator, &egen, &boundList, &name, &weight))
+    if (!PyArg_ParseTuple(args, "O&Os|O&", pt_ExampleGenerator, &egen, &boundList, &name, pt_weightByGen(egen), &weight))
       PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
 
     TVarList boundset;
@@ -686,7 +686,7 @@ PyObject *IGConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
     PExampleGenerator egen;
     PyObject *boundList;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weight))
+    if (!PyArg_ParseTuple(args, "O&O|O&", pt_ExampleGenerator, &egen, &boundList, pt_weightByGen(egen), &weight))
       PYERROR(PyExc_TypeError, "attribute error", PYNULL);
 
     TVarList boundset;
@@ -763,7 +763,7 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID = 0;
-    if (PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weightID)) {
+    if (PyArg_ParseTuple(args, "O&O|O&", pt_ExampleGenerator, &egen, &boundList, pt_weightByGen(egen), &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -775,7 +775,7 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
     PyErr_Clear();
 
     PyObject *freeList;
-    if (PyArg_ParseTuple(args, "O&OO|i", pt_ExampleGenerator, &egen, &boundList, &freeList, &weightID)) {
+    if (PyArg_ParseTuple(args, "O&OO|O&", pt_ExampleGenerator, &egen, &boundList, &freeList, pt_weightByGen(egen), &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -807,7 +807,7 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID=0;
-    if (PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weightID)) {
+    if (PyArg_ParseTuple(args, "O&O|O&", pt_ExampleGenerator, &egen, &boundList, pt_weightByGen(egen), &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -819,7 +819,7 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
     PyErr_Clear();
 
     PyObject *freeList;
-    if (PyArg_ParseTuple(args, "O&OO|i", pt_ExampleGenerator, &egen, &boundList, &freeList, &weightID)) {
+    if (PyArg_ParseTuple(args, "O&OO|O&", pt_ExampleGenerator, &egen, &boundList, &freeList, pt_weightByGen(egen), &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -1124,7 +1124,7 @@ PyObject *ExampleDistConstructor_call(PyObject *self, PyObject *args, PyObject *
     PExampleGenerator egen;
     PyObject *boundList;
     int weightID=0;
-    if (!PyArg_ParseTuple(args, "O&O|i:ExampleDistConstructor.__call__", pt_ExampleGenerator, &egen, &boundList, &weightID))
+    if (!PyArg_ParseTuple(args, "O&O|O&:ExampleDistConstructor.__call__", pt_ExampleGenerator, &egen, &boundList, pt_weightByGen(egen), &weightID))
       return PYNULL;
 
     TVarList boundset;

@@ -89,9 +89,9 @@ PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject 
   PyTRY
     SETATTRIBUTES
 
-    PExampleGenerator egen;
-    int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O&|i:AssociationRulesInducer.call", pt_ExampleGenerator, &egen, &weightID))
+    int weightID;
+    PExampleGenerator egen = exampleGenFromArgs(args, &weightID);
+    if (!egen)
       return PYNULL;
 
     return WrapOrange(SELF_AS(TAssociationRulesInducer)(egen, weightID));
@@ -104,9 +104,9 @@ PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyO
   PyTRY
     SETATTRIBUTES
 
-    PExampleGenerator egen;
     int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O&|i:AssociationRulesInducer.call", pt_ExampleGenerator, &egen, &weightID))
+    PExampleGenerator egen =  exampleGenFromArgs(args, &weightID);
+    if (!egen)
       return PYNULL;
 
     return WrapOrange(SELF_AS(TAssociationRulesSparseInducer)(egen, weightID));
@@ -382,7 +382,7 @@ PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator egen;
     PDomainContingency dcont;
     int weight = 0;
-    if (!PyArg_ParseTuple(args, "O&|iO&:TreeStopCriteria.__call__", pt_ExampleGenerator, &egen, &weight, pt_DomainContingency, &dcont))
+    if (!PyArg_ParseTuple(args, "O&|O&O&:TreeStopCriteria.__call__", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight, pt_DomainContingency, &dcont))
       return PYNULL;
 
     bool res;
@@ -430,7 +430,7 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     PyObject *pycandidates = PYNULL;
     PClassifier nodeClassifier;
 
-    if (!PyArg_ParseTuple(args, "O&|iO&O&O&O:TreeSplitConstructor.call", pt_ExampleGenerator, &gen, &weightID, ccn_DomainContingency, &dcont, ccn_Distribution, &apriori, &pycandidates, ccn_Classifier, &nodeClassifier))
+    if (!PyArg_ParseTuple(args, "O&|O&O&O&O&O:TreeSplitConstructor.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, ccn_DomainContingency, &dcont, ccn_Distribution, &apriori, &pycandidates, ccn_Classifier, &nodeClassifier))
       return PYNULL;
 
     vector<bool> candidates;
@@ -486,7 +486,7 @@ PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator gen;
     int weightID = 0;
 
-    if (!PyArg_ParseTuple(args, "O&O&|i:TreeExampleSplitter.call", cc_TreeNode, &node, pt_ExampleGenerator, &gen, &weightID))
+    if (!PyArg_ParseTuple(args, "O&O&|O&:TreeExampleSplitter.call", cc_TreeNode, &node, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       return PYNULL;
 
     vector<int> newWeights;
@@ -690,23 +690,9 @@ PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VAR
 {
   PyTRY
       PExampleGenerator egen;
-      PyObject *pyweight = NULL;
-      if (!PyArg_ParseTuple(args, "O&|O:LogRegLearner", pt_ExampleGenerator, &egen, &pyweight))
-	    return PYNULL;
-
-      int weight;
-
-      if (!pyweight || (pyweight == Py_None))
-        weight = 0;
-	  else if (PyInt_Check(pyweight))
-		weight = (int)PyInt_AsLong(pyweight);
-	  else {
-		PVariable var = varFromArg_byDomain(pyweight, egen->domain);
-		if (!var) 
-		  PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
-
-		weight = egen->domain->getVarNum(var);
-	  }
+      int weight = 0;
+      if (!PyArg_ParseTuple(args, "O&|O&:LogRegLearner", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight))
+  	    return PYNULL;
 
 	  CAST_TO(TLogRegLearner, loglearn)
 
@@ -728,23 +714,10 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
   PyTRY
     SETATTRIBUTES
 
-    PExampleGenerator egen;
-    PyObject *pyweight = NULL;
-    if (!PyArg_ParseTuple(args, "O&|O:LogRegFitter.__call__", pt_ExampleGenerator, &egen, &pyweight))
+    int weight;
+    PExampleGenerator egen = exampleGenFromArgs(args, &weight);
+    if (!egen)
       return PYNULL;
-
-    int weight = 0;
-
-    if (!pyweight || (pyweight == Py_None))
-      weight = 0;
-    else if (PyInt_Check(pyweight))
-	    weight = (int)PyInt_AsLong(pyweight);
-    else {
-      PVariable var = varFromArg_byDomain(pyweight, egen->domain);
-    if (!var) 
-      PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
-      weight = egen->domain->getVarNum(var);
-    }
 
     CAST_TO(TLogRegFitter, fitter)
 

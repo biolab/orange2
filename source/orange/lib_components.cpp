@@ -335,7 +335,7 @@ PyObject *DomainBasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *
       return obj;
     PyErr_Clear();
 
-    long weightID;
+    int weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
     if (gen)
       return WrapNewOrange(mlnew TDomainBasicAttrStat(gen, weightID), type);
@@ -551,7 +551,7 @@ PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject 
     PyObject *object1;
     PExampleGenerator gen;
     int weightID=0;
-    if (PyArg_ParseTuple(args, "OO&|i", &object1, pt_ExampleGenerator, &gen, &weightID)) {
+    if (PyArg_ParseTuple(args, "OO&|O&", &object1, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID)) {
       if (PyOrVariable_Check(object1))
         return WrapNewOrange(mlnew TContingencyAttrClass(gen, PyOrange_AsVariable(object1), weightID), type);
 
@@ -606,7 +606,7 @@ PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject 
     PyObject *object1;
     int weightID=0;
     PExampleGenerator gen;
-    if (   PyArg_ParseTuple(args, "OO&|i", &object1, pt_ExampleGenerator, &gen, &weightID)) {
+    if (   PyArg_ParseTuple(args, "OO&|O&", &object1, pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID)) {
       if (PyOrVariable_Check(object1))
         return WrapNewOrange(mlnew TContingencyClassAttr(gen, PyOrange_AsVariable(object1), weightID), type);
       else {
@@ -656,7 +656,7 @@ PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *
     PyObject *pyvar, *pyinvar;
     PExampleGenerator gen;
     int weightID=0;
-    if (PyArg_ParseTuple(args, "OO|O&i", &pyvar, &pyinvar, &pt_ExampleGenerator, &gen, &weightID))
+    if (PyArg_ParseTuple(args, "OO|O&O&", &pyvar, &pyinvar, &pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       if (gen)
         return WrapNewOrange(mlnew TContingencyAttrAttr(
            varFromArg_byDomain(pyvar, gen->domain),
@@ -955,7 +955,7 @@ PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *ke
 
     PyErr_Clear();
 
-    long weightID;
+    int weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
     if (!gen)
       return PYNULL;
@@ -1136,9 +1136,10 @@ PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyOb
           PYERROR(PyExc_TypeError, "ExamplesDistanceConstructor.__call__: invalid arguments (examples given twice)", PYNULL)
         else {
           gen = gen2;
-          if ((argp+1 != argc) && PyInt_Check(argp[1])) {
+          if (argp+1 != argc) {
             argp++;
-            weightID = int(PyInt_AsLong(*argp));
+            if (!weightFromArg_byDomain(*argp, gen->domain, weightID))
+              return PYNULL;
           }
         }
       }
@@ -1199,8 +1200,10 @@ PyObject *FindNearestConstructor_call(PyObject *self, PyObject *args, PyObject *
     PExampleGenerator egen;
     int weightID = 0;
     int distanceID = 0;
+    PyObject *pydistanceID = PYNULL;
 
-    if (!PyArg_ParseTuple(args, "O&|ii:FindNearestConstructor.__call__", pt_ExampleGenerator, &egen, &weightID, &distanceID))
+    if (   !PyArg_ParseTuple(args, "O&|O&O:FindNearestConstructor.__call__", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID, &pydistanceID)
+        || !weightFromArg_byDomain(pydistanceID, egen->domain, distanceID))
       return PYNULL;
 
     return WrapOrange(SELF_AS(TFindNearestConstructor).call(egen, weightID, distanceID));
@@ -1568,8 +1571,8 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, 
       gen = exampleGenFromParsedArgs(*argp);
       if (gen) {
         argp++;
-        if ((argp != argc) && PyInt_Check(*argp))
-          weightID = (int)PyInt_AsLong(*argp++);
+        if ((argp != argc) && !weightFromArg_byDomain(*(argp++), gen->domain, weightID))
+          return PYNULL;
       }
     }
 
@@ -1631,8 +1634,8 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
       gen = exampleGenFromParsedArgs(*argp);
       if (gen) {
         argp++;
-        if ((argp != argc) && PyInt_Check(*argp))
-          weightID = (int)PyInt_AsLong(*argp++);
+        if ((argp != argc) && !weightFromArg_byDomain(*(argp++), gen->domain, weightID))
+          return PYNULL;
       }
     }
 
@@ -1830,11 +1833,8 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
           PYERROR(PyExc_TypeError, "invalid argument 3 (Distribution or None expected)", PYNULL);
 
       if (arg4 != Py_None)
-        if (PyInt_Check(arg4))
-          weightID = PyInt_AsLong(arg4);
-        else
-          if (!varNumFromVarDom(arg4, egen->domain, weightID))
-            PYERROR(PyExc_TypeError, "invalid argument 4 (weightID or None expected)", PYNULL);
+        if (!weightFromArg_byDomain(arg4, egen->domain, weightID))
+          PYERROR(PyExc_TypeError, "invalid argument 4 (weightID or None expected)", PYNULL);
 
       if (PyOrVariable_Check(arg1))
         return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(arg1), egen, aprClDistr, weightID)));

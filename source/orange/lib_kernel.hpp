@@ -31,7 +31,7 @@
 
 TExampleTable *readListOfExamples(PyObject *args);
 TExampleTable *readListOfExamples(PyObject *args, PDomain);
-PExampleGenerator exampleGenFromArgs(PyObject *args, long *weightID = NULL);
+PExampleGenerator exampleGenFromArgs(PyObject *args, int *weightID = NULL);
 PExampleGenerator exampleGenFromParsedArgs(PyObject *args);
 bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, bool allowSingle=true, bool checkForIncludance=true);
 bool varListFromVarList(PyObject *boundList, PVarList varlist, TVarList &boundSet, bool allowSingle = true, bool checkForIncludance = true);
@@ -52,6 +52,9 @@ int pt_ExampleGenerator(PyObject *args, void *egen);
 
 typedef int (*converter)(PyObject *, void *);
 converter ptd_ExampleGenerator(PDomain domain);
+
+bool weightFromArg_byDomain(PyObject *pyweight, PDomain domain, int &weightID);
+converter pt_weightByGen(PExampleGenerator &peg);
 
 int pt_DomainContingency(PyObject *args, void *egen);
 

@@ -446,6 +446,42 @@ bool varNumFromVarDom(PyObject *pyvar, PDomain domain, int &attrNo)
 }
 
 
+bool weightFromArg_byDomain(PyObject *pyweight, PDomain domain, int &weightID)
+{
+  if (!pyweight || (pyweight == Py_None))
+    weightID = 0;
+
+  else if (PyInt_Check(pyweight))
+    weightID =  PyInt_AsLong(pyweight);
+
+  else {
+    PVariable var = varFromArg_byDomain(pyweight, domain);
+    if (!var)
+      PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", false);
+  
+    weightID = domain->getVarNum(var);
+  }
+
+  return true;
+}
+
+
+static PExampleGenerator *ptw_examplegenerator;
+
+int ptw_weightByDomainCB(PyObject *args, void *weight)
+{ 
+  PDomain dom = ptw_examplegenerator ? (*ptw_examplegenerator)->domain : PDomain();
+  ptw_examplegenerator = NULL;
+  return weightFromArg_byDomain(args, dom, *(int *)weight) ? 1 : 0;
+}
+
+converter pt_weightByGen(PExampleGenerator &peg)
+{ 
+  ptw_examplegenerator = &peg;
+  return ptw_weightByDomainCB;
+}
+
+
 PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(string)")
 { char *s;
   if (!PyArg_ParseTuple(args, "s:StringValue", &s))
@@ -959,19 +995,21 @@ PExampleGenerator exampleGenFromParsedArgs(PyObject *args)
                                : PExampleGenerator(readListOfExamples(args));
 }
 
-PExampleGenerator exampleGenFromArgs(PyObject *args, long *weightID)
-{ PyObject *examples;
-  int aweight = 0;
-  PExampleGenerator gen;
-  if (PyArg_ParseTuple(args, (char *)(weightID ? "O|i" : "O"), &examples, &aweight)) {
-    if (weightID) *weightID=aweight;
 
-    PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-    if (egen)
-      return egen;
+PExampleGenerator exampleGenFromArgs(PyObject *args, int *weightID)
+{ 
+  PyObject *examples, *pyweight = NULL;
+
+  if (weightID) {
+    if (!PyArg_ParseTuple(args, "O|O:exampleGenFromArguments", &examples, &pyweight)) 
+      return PExampleGenerator();
+
+    PExampleGenerator egen = exampleGenFromParsedArgs(examples);
+    return weightFromArg_byDomain(pyweight, egen->domain, *weightID) ? egen : PExampleGenerator();
   }
-  
-  PYERROR(PyExc_TypeError, "attribute error", PExampleGenerator());
+
+  else
+    return PyArg_ParseTuple(args, "O:exampleGenFromArguments", &examples) ? exampleGenFromParsedArgs(examples) : PExampleGenerator();
 }
 
 
@@ -1077,7 +1115,6 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
    of bools or indices (LongList) */
 { 
   PyTRY
-    long weightID = 0;
     CAST_TO(TExampleGenerator, eg);
     PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
 
@@ -1089,10 +1126,11 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
 
     PyObject *mplier;
-    if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
+    PyObject *pyweight = NULL;
+    if (PyArg_ParseTuple(args, "O|O", &mplier, &pyweight)) {
       PyObject *pyneg = keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate = pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven = (PyTuple_Size(args)==2);
+      bool secondArgGiven = (pyweight != NULL);
 
       /* ***** SELECTION BY VECTOR OF BOOLS ****** */
       if (PyList_Check(mplier) && PyList_Size(mplier) && PyInt_Check(PyList_GetItem(mplier, 0))) {
@@ -1102,22 +1140,34 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
         PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
         int i = 0;
 
-        TExampleIterator ei = eg->begin();
-        for(; ei; ++ei) {
-          if (i==nole)
-            break;
-          PyObject *lel = PyList_GetItem(mplier, i++);
+        if (secondArgGiven) {
+          if (PyInt_Check(pyweight)) {
+            int compVal = (int)PyInt_AsLong(pyweight);
+            TExampleIterator ei = eg->begin();
+            for(; ei && (i<nole); ++ei) {
+              PyObject *lel = PyList_GetItem(mplier, i++);
+              if (!PyInt_Check(lel))
+                break;
 
-          if (!PyInt_Check(lel))
-            break;
+              if (negate != (PyInt_AsLong(lel)==compVal))
+                newTable->addExample(*ei);
+            }
 
-          int val = PyInt_AsLong(lel);
-          if (negate != (weightGiven ? (val==weightID) : (val!=0)))
-            newTable->addExample(*ei);
+            if ((i==nole) && !ei)
+              return WrapOrange(newGen);
+          }
         }
+        else {
+          TExampleIterator ei = eg->begin();
+          for(; ei && (i<nole); ++ei) {
+            PyObject *lel = PyList_GetItem(mplier, i++);
+            if (negate != (PyObject_IsTrue(lel) != 0))
+              newTable->addExample(*ei);
+          }
 
-        if ((i==nole) && !ei)
-          return WrapOrange(newGen);
+          if ((i==nole) && !ei)
+            return WrapOrange(newGen);
+        }
       }
 
       PyErr_Clear();
@@ -1128,13 +1178,25 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
         PLongList llist = PyOrange_AsLongList(mplier);
         TLongList::iterator lli(llist->begin()), lle(llist->end());
         
-        TExampleTable *newTable=mlnew TExampleTable(eg->domain);
+        TExampleTable *newTable = mlnew TExampleTable(eg->domain);
         PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
-        TExampleIterator ei=eg->begin();
-        for(;ei && (lli!=lle); ++ei, lli++)
-          if (negate != (weightGiven ? (*lli==weightID) : !!*lli))
-            newTable->addExample(*ei);
+        TExampleIterator ei = eg->begin();
+
+        if (secondArgGiven) {
+          if (!PyInt_Check(pyweight))
+            PYERROR(PyExc_AttributeError, "example selector must be an integer", PYNULL);
+
+          int compVal = (int)PyInt_AsLong(pyweight);
+          for(; ei && (lli!=lle); ++ei, lli++)
+            if (negate != (*lli==compVal))
+              newTable->addExample(*ei);
+        }
+        else {
+          for(; ei && (lli != lle); ++ei, lli++)
+            if (negate != (*lli != 0))
+              newTable->addExample(*ei);
+        }
 
         if ((lli==lle) && !ei)
           return WrapOrange(newGen);
@@ -1147,8 +1209,8 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
       /* ***** CHANGING DOMAIN ***** */
       /* Deprecated: use method 'translate' instead. */
       if (PyOrDomain_Check(mplier)) {
-        PyObject *wrappedGen=WrapOrange(PExampleTable(mlnew TExampleTable(PyOrange_AsDomain(mplier), weg)));
-        return weightGiven ? Py_BuildValue("Ni", wrappedGen, weightID) : wrappedGen;
+        PyObject *wrappedGen = WrapOrange(PExampleTable(mlnew TExampleTable(PyOrange_AsDomain(mplier), weg)));
+        return secondArgGiven ? Py_BuildValue("NO", wrappedGen, pyweight) : wrappedGen;
       }
 
 
@@ -1158,16 +1220,16 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
       if (varListFromDomain(mplier, eg->domain, attributes, true, false)) {
         PDomain newDomain;
         TVarList::iterator vi, ve;
-        for(vi=attributes.begin(), ve=attributes.end(); (vi!=ve) && (*vi!=eg->domain->classVar); vi++);
+        for(vi = attributes.begin(), ve = attributes.end(); (vi!=ve) && (*vi!=eg->domain->classVar); vi++);
         if (vi==ve)
-          newDomain=mlnew TDomain(PVariable(), attributes);
+          newDomain = mlnew TDomain(PVariable(), attributes);
         else {
           attributes.erase(vi);
-          newDomain=mlnew TDomain(eg->domain->classVar, attributes);
+          newDomain = mlnew TDomain(eg->domain->classVar, attributes);
         }
 
-        PyObject *wrappedGen=WrapOrange(PExampleTable(mlnew TExampleTable(newDomain, weg)));
-        return weightGiven ? Py_BuildValue("Ni", wrappedGen, weightID) : wrappedGen;
+        PyObject *wrappedGen = WrapOrange(PExampleTable(mlnew TExampleTable(newDomain, weg)));
+        return secondArgGiven ? Py_BuildValue("NO", wrappedGen, pyweight) : wrappedGen;
       }
 
       PyErr_Clear();
@@ -1175,29 +1237,39 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
       /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
       /* Deprecated: use method 'filter' instead. */
-      if (PyDict_Check(mplier))
-        return applyFilter(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID);
+      if (PyDict_Check(mplier)) {
+        int weightID;
+        if (weightFromArg_byDomain(pyweight, eg->domain, weightID))
+          return applyFilter(filter_sameValues(mplier, eg->domain), weg, secondArgGiven, weightID);
+      }
 
 
       /* ***** PREPROCESSING ***** */
       /* Deprecated: call preprocessor instead. */
       if (PyOrPreprocessor_Check(mplier)) {
-        PExampleGenerator res;
-        int newWeight;
-        PyTRY
-          NAME_CAST_TO(TPreprocessor, mplier, pp);
-          if (!pp)
-            PYERROR(PyExc_TypeError, "invalid object type (preprocessor announced, but not passed)", PYNULL)
-          res = (*pp)(weg, weightID, newWeight);
-        PyCATCH
+        int weightID;
+        if (weightFromArg_byDomain(pyweight, eg->domain, weightID)) {
 
-        return weightGiven ? Py_BuildValue("Ni", WrapOrange(res), newWeight) : WrapOrange(res);
+          PExampleGenerator res;
+          int newWeight;
+          PyTRY
+            NAME_CAST_TO(TPreprocessor, mplier, pp);
+            if (!pp)
+              PYERROR(PyExc_TypeError, "invalid object type (preprocessor announced, but not passed)", PYNULL)
+            res = (*pp)(weg, weightID, newWeight);
+          PyCATCH
+
+          return secondArgGiven ? Py_BuildValue("Ni", WrapOrange(res), newWeight) : WrapOrange(res);
+        }
       }
 
       /* ***** APPLY FILTER ***** */
       /* Deprecated: use method 'filter' instead. */
-      else if (PyOrFilter_Check(mplier))
-        return applyFilter(PyOrange_AsFilter(mplier), weg, weightGiven, weightID);
+      if (PyOrFilter_Check(mplier)) {
+        int weightID;
+        if (weightFromArg_byDomain(pyweight, eg->domain, weightID))
+          return applyFilter(PyOrange_AsFilter(mplier), weg, secondArgGiven, weightID);
+      }
     }
     PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
   PyCATCH
@@ -1774,7 +1846,6 @@ PyObject *ExampleTable_getitemsref(TPyOrange *self, PyObject *pylist)   PYARGS(M
 PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
 { 
   PyTRY
-    int weightID = 0;
     CAST_TO(TExampleTable, eg);
     PExampleGenerator weg = PExampleGenerator(PyOrange_AS_Orange(self));
     PExampleGenerator lock = EXAMPLE_LOCK(eg);
@@ -1787,10 +1858,11 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
     }
 
     PyObject *mplier;
-    if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
+    int index;
+    if (PyArg_ParseTuple(args, "O|i", &mplier, &index)) {
       PyObject *pyneg = keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate = pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven = (PyTuple_Size(args)==2);
+      bool indexGiven = (PyTuple_Size(args)==2);
 
       /* ***** SELECTION BY PYLIST ****** */
       if (PyList_Check(mplier)) {
@@ -1800,18 +1872,26 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
         int i = 0;
         if (toList) {
           PyObject *list = PyList_New(0);
-          EITERATE(ei, *eg) {
-            PyObject *lel = PyList_GetItem(mplier, i++);
-            if (!PyInt_Check(lel))
-              PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
 
-            int val = PyInt_AsLong(lel);
-            if (negate != (weightGiven ? (val==weightID) : (val!=0))) {
-              PyObject *pyex = Example_FromExampleRef(*ei, lock);
-              PyList_Append(list, pyex);
-              Py_DECREF(pyex);
+          if (indexGiven)
+            EITERATE(ei, *eg) {
+              PyObject *lel = PyList_GetItem(mplier, i++);
+              if (!PyInt_Check(lel))
+                PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
+
+              if (negate != (index==PyInt_AsLong(lel))) {
+                PyObject *pyex = Example_FromExampleRef(*ei, lock);
+                PyList_Append(list, pyex);
+                Py_DECREF(pyex);
+              }
             }
-          }
+          else
+            EITERATE(ei, *eg)
+              if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0)) {
+                PyObject *pyex = Example_FromExampleRef(*ei, lock);
+                PyList_Append(list, pyex);
+                Py_DECREF(pyex);
+              }
 
           return list;
         }
@@ -1821,15 +1901,19 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
           TExampleTable *newTable = mlnew TExampleTable(lock, 1); //locks to weg but does not copy
           PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
-          EITERATE(ei, *eg) {
-            PyObject *lel = PyList_GetItem(mplier, i++);
-            if (!PyInt_Check(lel))
-              PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
+          if (indexGiven)
+            EITERATE(ei, *eg) {
+              PyObject *lel = PyList_GetItem(mplier, i++);
+              if (!PyInt_Check(lel))
+                PYERROR(PyExc_IndexError, "example selector must be an integer index", PYNULL)
 
-            int val = PyInt_AsLong(lel);
-            if (negate != (weightGiven ? (val==weightID) : (val!=0)))
-              newTable->addExample(*ei);
-          }
+              if (negate != (index==PyInt_AsLong(lel)))
+                newTable->addExample(*ei);
+            }
+          else
+            EITERATE(ei, *eg)
+              if (negate != (PyObject_IsTrue(PyList_GetItem(mplier, i++)) != 0))
+                newTable->addExample(*ei);
 
           return WrapOrange(newGen);
         }
@@ -1847,7 +1931,7 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
         if (toList) {
           PyObject *list = PyList_New(0);
           for(; ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : !!*lli)) {
+            if (negate != (indexGiven ? (*lli==index) : (*lli!=0))) {
               PyObject *pyex = Example_FromExampleRef(*ei, lock);
               PyList_Append(list, pyex);
               Py_DECREF(pyex);
@@ -1860,7 +1944,7 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
           PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
           for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : (*lli!=0)))
+            if (negate != (indexGiven ? (*lli==index) : (*lli!=0)))
               newTable->addExample(*ei);
 
           return WrapOrange(newGen);
@@ -1962,11 +2046,15 @@ PyObject *ExampleTable_randomexample(TPyOrange *self) PYARGS(0, "() -> Example")
 
 PyObject *ExampleTable_removeDuplicates(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([weightID=0]]) -> None")
 { PyTRY
-    int weightID=0;
-    if (!PyArg_ParseTuple(args, "|i", &weightID))
-      PYERROR(PyExc_AttributeError, "at most one int argument expected", PYNULL);
+    if (PyTuple_Size(args) > 1)
+      PYERROR(PyExc_AttributeError, "at most one argument (weight) expected", PYNULL);
 
     CAST_TO(TExampleTable, table);
+
+    int weightID = 0;
+    if (PyTuple_Size(args) && !weightFromArg_byDomain(PyTuple_GET_ITEM(args, 0), table->domain, weightID))
+      return PYNULL;
+
     table->removeDuplicates(weightID);
     RETURN_NONE;
   PyCATCH
@@ -2852,7 +2940,7 @@ PyObject *GaussianDistribution_density(PyObject *self, PyObject *args) PYARGS(ME
 
 PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weightID]) -> Distribution")
 { PyTRY
-    long weightID;
+    int weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
     if (!gen)
       return PYNULL;
@@ -2900,7 +2988,7 @@ PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *
 
     PyErr_Clear();
 
-    long weightID;
+    int weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
     if (gen)
       return WrapNewOrange(mlnew TDomainDistributions(gen, weightID), type);
@@ -3030,30 +3118,11 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
     }
 
     PExampleGenerator egen;
-    PyObject *pyweight = NULL;
-    if (!PyArg_ParseTuple(targs, "O&|O", pt_ExampleGenerator, &egen, &pyweight)) {
-      PyErr_Clear();
-      if (!PyArg_ParseTuple(targs, "(O&|i)", pt_ExampleGenerator, &egen, &pyweight))
-        PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);
-    }
-
     int weight;
+    if (!PyArg_ParseTuple(targs, "O&|O&", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight))
+      PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);
 
-    if (!pyweight || (pyweight == Py_None))
-      weight = 0;
-
-    else if (PyInt_Check(pyweight))
-      weight = (int)PyInt_AsLong(pyweight);
-
-    else {
-      PVariable var = varFromArg_byDomain(pyweight, egen->domain);
-      if (!var) 
-        PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
-
-      weight = egen->domain->getVarNum(var);
-    }
-
-    // Here for compatibility with some obsolete old scripts
+    // Here for compatibility with obsolete scripts
     if (PyTuple_Size(targs)==1) {
       PyObject **odict = _PyObject_GetDictPtr(self);
       if (*odict) {
@@ -3204,21 +3273,8 @@ PyObject *LookupLearner_call(PyObject *self, PyObject *targs, PyObject *keywords
     PyObject *pyclassVar;
     PyObject *pyvarList;
     PExampleGenerator egen;
-    PyObject *pyweight = NULL;
-    if (PyArg_ParseTuple(targs, "OOO&|O", &pyclassVar, &pyvarList, pt_ExampleGenerator, &egen, &pyweight)) {
-
-      int weight;
-      if (!pyweight || (pyweight == Py_None))
-        weight = 0;
-      else if (PyInt_Check(pyweight))
-        weight = (int)PyInt_AsLong(pyweight);
-      else {
-        PVariable var = varFromArg_byDomain(pyweight, egen->domain);
-        if (!var) 
-          PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
-
-        weight = egen->domain->getVarNum(var);
-      }
+    int weight = 0;
+    if (PyArg_ParseTuple(targs, "OOO&|O&", &pyclassVar, &pyvarList, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight)) {
 
       PVariable classVar = varFromArg_byDomain(pyclassVar, egen->domain);
       TVarList varList;

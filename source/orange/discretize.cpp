@@ -89,6 +89,11 @@ inline int numDecs(const float &diff, float &factor)
 }
 
 
+inline float roundFromDecs(const int &decs)
+{ 
+  return decs <= 0 ? 100.0 : exp(decs*log(10.0));
+}
+
 inline void roundToFactor(float &f, const float &factor)
 { f = floor(f*factor+0.5)/factor; }
 
@@ -105,6 +110,10 @@ string mcvt(double f, int decs)
     'this' transformer. */
 PVariable TEquiDistDiscretizer::constructVar(PVariable var)
 { 
+  TFloatVariable *fvar = var.AS(TFloatVariable);
+  if (!fvar)
+    raiseError("invalid attribute type (continuous attribute expected)");
+
   TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
@@ -114,6 +123,11 @@ PVariable TEquiDistDiscretizer::constructVar(PVariable var)
   else {
     float roundfactor;
     int decs = numDecs(step, roundfactor);
+
+    if ((fvar->adjustDecimals != 2) && (decs < fvar->numberOfDecimals)) {
+      decs = fvar->numberOfDecimals;
+      roundfactor = roundFromDecs(fvar->numberOfDecimals);
+    }
 
     roundToFactor(firstCut, roundfactor);
     roundToFactor(step, roundfactor);
@@ -197,6 +211,10 @@ void TBiModalDiscretizer::transform(TValue &val)
 
 PVariable TBiModalDiscretizer::constructVar(PVariable var)
 { 
+  TFloatVariable *fvar = var.AS(TFloatVariable);
+  if (!fvar)
+    raiseError("invalid attribute type (continuous attribute expected)");
+
   TEnumVariable *evar = mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
@@ -205,6 +223,12 @@ PVariable TBiModalDiscretizer::constructVar(PVariable var)
 
   float roundfactor;
   int decs = numDecs(high-low, roundfactor);
+
+  if ((fvar->adjustDecimals != 2) && (decs < fvar->numberOfDecimals)) {
+    decs = fvar->numberOfDecimals;
+    roundfactor = roundFromDecs(fvar->numberOfDecimals);
+  }
+
   roundToFactor(low, roundfactor);
   roundToFactor(high, roundfactor);
   string lstr = mcvt(low, decs);
@@ -251,6 +275,10 @@ void TIntervalDiscretizer::transform(TValue &val)
     'this' transformer. */
 PVariable TIntervalDiscretizer::constructVar(PVariable var)
 {
+  TFloatVariable *fvar = var.AS(TFloatVariable);
+  if (!fvar)
+    raiseError("invalid attribute type (continuous attribute expected)");
+
   TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
@@ -268,6 +296,11 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
 
     float roundfactor;
     int decs = numDecs(mindiff, roundfactor);
+
+    if ((fvar->adjustDecimals != 2) && (decs < fvar->numberOfDecimals)) {
+      decs = fvar->numberOfDecimals;
+      roundfactor = roundFromDecs(fvar->numberOfDecimals);
+    }
 
     vi=points->begin();
     string ostr;
