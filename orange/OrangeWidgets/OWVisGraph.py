@@ -159,14 +159,15 @@ class OWVisGraph(OWGraph):
     # ####################################################################
     # ####################################################################
     # set new data and scale its values to the 0-1 interval
-    def setData(self, data):
+    def setData(self, data, keepMinMaxVals = 0):
         # clear all curves, markers, tips
         self.removeAllSelections(0)  # clear all selections
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
         self.attributeFlipInfo = {}
-        self.attrValues = {}
+        if not keepMinMaxVals or self.globalValueScaling == 1:
+            self.attrValues = {}
         
         self.rawdata = data
 
@@ -192,103 +193,56 @@ class OWVisGraph(OWGraph):
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        # if there are no missing values then use faster way of data scaling using direct conversion to numeric array
-        if len(orange.Preprocessor_dropMissing(data)) == len(data): # if there are no missing values in the dataset use much faster method to convert to numeric array
-            arr = data.toNumeric("ac")[0]
-            arr = Numeric.transpose(arr)
-            self.originalData = arr.copy()
-            self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
+        arr = data.toNumeric("ac", 0, 1, 1e20)[0]
+        arr = Numeric.transpose(arr)
+        self.validDataArray = Numeric.where(arr == 1e20, 0, 1)
+        self.originalData = arr.copy()
+        self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
 
-            # see if the values for discrete attributes have to be resorted 
-            for index in range(len(data.domain)):
-                attr = data.domain[index]
-                
-                if data.domain[index].varType == orange.VarTypes.Discrete:
-                    variableValueIndices = getVariableValueIndices(data, index)
-                    for i in range(len(data.domain[index].values)):
-                        if i != variableValueIndices[data.domain[index].values[i]]:
-                            line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
-                            indices = [Numeric.where(line == val, 1, 0) for val in range(len(data.domain[index].values))]
-                            for i in range(len(data.domain[index].values)):
-                                Numeric.putmask(line, indices[i], variableValueIndices[data.domain[index].values[i]])
-                            arr[index] = line   # save the changed array
-                            break
+        # see if the values for discrete attributes have to be resorted 
+        for index in range(len(data.domain)):
+            attr = data.domain[index]
+            
+            if data.domain[index].varType == orange.VarTypes.Discrete:
+                variableValueIndices = getVariableValueIndices(data, index)
+                for i in range(len(data.domain[index].values)):
+                    if i != variableValueIndices[data.domain[index].values[i]]:
+                        line = arr[index].copy()  # make the array a contiguous, otherwise the putmask function does not work
+                        indices = [Numeric.where(line == val, 1, 0) for val in range(len(data.domain[index].values))]
+                        for i in range(len(data.domain[index].values)):
+                            Numeric.putmask(line, indices[i], variableValueIndices[data.domain[index].values[i]])
+                        arr[index] = line   # save the changed array
+                        break
 
-                    self.attrValues[attr.name] = [0, len(attr.values)-1]
-                    arr[index] = (arr[index]*2.0 + 1.0)/ float(2*len(attr.values))
-                    self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*len(attr.values)))*(RandomArray.random(len(data)) - 0.5)
+                if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)-1]
+                count = self.attrValues[attr.name][1]
+                arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
+                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
+            else:
+                if self.attrValues.has_key(attr.name):          # keep the old min, max values
+                    min, max = self.attrValues[attr.name]
+                elif self.globalValueScaling == 0:
+                    min = self.domainDataStat[index].min
+                    max = self.domainDataStat[index].max
+                diff = float(max - min)
+                if diff == 0.0: diff = 1.0    # prevent division by zero
+                self.attrValues[attr.name] = [min, max]
+
+                arr[index] = (arr[index] - float(min)) / diff
+
+                if self.jitterContinuous:
+                    line = arr[index].copy() + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
+                    line = Numeric.absolute(line)       # fix values below zero
+
+                    # fix values above 1
+                    ind = Numeric.where(line > 1.0, 1, 0)
+                    Numeric.putmask(line, ind, 2.0 - Numeric.compress(ind, line))
+                    self.scaledData[index] = line
                 else:
-                    if self.globalValueScaling == 0:
-                        min = self.domainDataStat[index].min
-                        max = self.domainDataStat[index].max
-                    diff = float(max - min)
-                    if diff == 0.0: diff = 1.0    # prevent division by zero
-                    self.attrValues[attr.name] = [min, max]
+                    self.scaledData[index] = arr[index]
 
-                    arr[index] = (arr[index] - float(min)) / diff
-
-                    if self.jitterContinuous:
-                        line = arr[index].copy()
-                        line = line + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
-                        line = Numeric.absolute(line)       # fix values below zero
-
-                        # fix values above 1
-                        ind = Numeric.where(line > 1.0, 1, 0)
-                        Numeric.putmask(line, ind, 2.0 - Numeric.compress(ind, line))
-                        self.scaledData[index] = line
-                    else:
-                        self.scaledData[index] = arr[index]
-
-            self.noJitteringScaledData = arr
-            #self.scaledData = Numeric.transpose(self.scaledData)
-
-        # if there are missing values do the transformation value by value
-        else:
-            for index in range(len(data.domain)):
-                attr = data.domain[index]
-
-                # is the attribute discrete
-                if attr.varType == orange.VarTypes.Discrete:
-                    # we create a hash table of variable values and their indices
-                    variableValueIndices = getVariableValueIndices(data, index)
-                    count = float(len(attr.values))
-                    colors = ColorPaletteHSV(len(attr.values))
-                    self.attrValues[attr.name] = [0, len(attr.values)-1]
-
-                    for i in range(len(data)):
-                        if data[i][index].isSpecial():
-                            self.validDataArray[index][i] = 0
-                        else:                    
-                            self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
-                            #self.noJitteringScaledData[index][i] = int(data[i][index])
-
-                    self.noJitteringScaledData[index] = (self.noJitteringScaledData[index]*2.0 + 1.0) / float(2*count)
-                    self.scaledData[index] = self.noJitteringScaledData[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
-                    
-                # is the attribute continuous
-                else:
-                    if self.globalValueScaling == 0:
-                        min = self.domainDataStat[index].min
-                        max = self.domainDataStat[index].max
-                    diff = float(max - min)
-                    if diff == 0.0: diff = 1.0    # prevent division by zero
-                    self.attrValues[attr.name] = [min, max]
-                    colors = ColorPaletteHSV()
-
-                    for i in range(len(data)):
-                        if data[i][index].isSpecial():
-                            self.validDataArray[index][i] = 0
-                        else: self.noJitteringScaledData[index][i] = data[i][index].value
-
-                    self.noJitteringScaledData[index] = (self.noJitteringScaledData[index] - float(min)) / diff
-                    if self.jitterContinuous:
-                        self.scaledData[index] = self.noJitteringScaledData[index] + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
-                        self.scaledData[index] = abs(self.scaledData[index])
-                        for i in range(len(data)):
-                            if self.scaledData[index][i] > 1.0: self.scaledData[index][i] = 2.0-self.scaledData[index][i]
-                    else:
-                        self.scaledData[index] = self.noJitteringScaledData[index]
-
+        self.noJitteringScaledData = arr
+        #self.scaledData = Numeric.transpose(self.scaledData)
         
     # ####################################################################
     # ####################################################################
