@@ -338,6 +338,7 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
 
     learnset, learnweight = demangleExamples(learnset)
     testset, testweight = demangleExamples(testset)
+    storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     
     for pp in pps:
         if pp[0]=="B":
@@ -351,6 +352,11 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             testset = pp[1](testset)
         elif pp[0]=="LT":
             learnset, testset = pp[1](learnset, testset)
+            
+    classifiers = [learner(learnset, learnweight) for learner in learners]
+    if storeclassifiers:
+        testResults.classifiers.append(classifiers)
+    return testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
 
     classifiers = [learner(learnset, learnweight) for learner in learners]        
     if storeclassifiers:
