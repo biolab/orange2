@@ -1740,15 +1740,20 @@ inline PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYAR
 
 #ifndef NO_NUMERIC
 #include "Numeric/arrayobject.h"
+#include "numeric_interface.hpp"
 #endif
 
 TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore);
 
+
 TExampleTable *readListOfExamples(PyObject *args)
 { 
   #ifndef NO_NUMERIC
-  if (PyArray_Check(args))
-    return readListOfExamples(args, PDomain(), false);
+  if (!strcmp(args->ob_type->tp_name, "array")) {
+    prepareNumeric();
+    if (PyArray_Check(args))
+      return readListOfExamples(args, PDomain(), false);
+  }
   #endif
 
   if (PySequence_Check(args)) {
@@ -1791,97 +1796,101 @@ TExampleTable *readListOfExamples(PyObject *args)
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { 
   #ifndef NO_NUMERIC
-  if (PyArray_Check(args)) {
-    PyArrayObject *array = (PyArrayObject *)(args);
-    if (array->nd != 2)
-      PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
+  if (!strcmp(args->ob_type->tp_name, "array")) {
+    prepareNumeric();
 
-    if (!domain) {
-      TVarList variables;
-      char vbuf[20];
-      for(int i = 0, e = array->dimensions[1]; i < e; i++) {
-        sprintf(vbuf, "a%i", i+1);
-        variables.push_back(mlnew TFloatVariable(vbuf));
-      }
-      domain = mlnew TDomain(PVariable(), variables);
-    }
+    if (PyArray_Check(args)) {
+      PyArrayObject *array = (PyArrayObject *)(args);
+      if (array->nd != 2)
+        PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
 
-    else
-      if (array->dimensions[1] != domain->variables->size())
-        PYERROR(PyExc_AttributeError, "the number of columns in the array doesn't match the number of attributes", NULL);
-
-
-    const int arrayType = array->descr->type_num;
-    const TVarList &variables = domain->variables.getReference();
-
-    TVarList::const_iterator vi(variables.begin()), ve(variables.end());
-    for(; vi!=ve; vi++)
-      if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
-        PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
-
-    if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
-      PYERROR(PyExc_AttributeError, "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
-    
-    TExampleTable *table = mlnew TExampleTable(domain);
-    TExample *nex = NULL;
-    table->reserve(array->dimensions[0]);
-
-    const int &strideRow = array->strides[0];
-    const int &strideCol = array->strides[1];
-
-    try {
-      TExample::iterator ei;
-      char *rowPtr = array->data;
-
-      for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow) {
-        char *elPtr = rowPtr;
-        TExample *nex = mlnew TExample(domain);
-
-        #define ARRAYTYPE(TYPE) \
-          for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
-            if ((*vi)->varType == TValue::INTVAR) \
-              intValInit(*ei, *(TYPE *)elPtr); \
-            else \
-              floatValInit(*ei, *(TYPE *)elPtr); \
-          break;
-
-        switch (arrayType) {
-          case PyArray_CHAR: ARRAYTYPE(char)
-          case PyArray_UBYTE: ARRAYTYPE(unsigned char)
-          case PyArray_SBYTE: ARRAYTYPE(signed char)
-          case PyArray_SHORT: ARRAYTYPE(short)
-          case PyArray_INT: ARRAYTYPE(int)
-          case PyArray_LONG: ARRAYTYPE(long)
-
-          case PyArray_FLOAT:
-            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
-              if ((*vi)->varType == TValue::INTVAR)
-                intValInit(*ei, int(floor(0.5 + *(float *)elPtr)));
-              else
-                floatValInit(*ei, *(float *)elPtr);
-            break;
-
-          case PyArray_DOUBLE:
-            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
-              if ((*vi)->varType == TValue::INTVAR)
-                intValInit(*ei, int(floor(0.5 + *(double *)elPtr)));
-              else
-                floatValInit(*ei, *(double *)elPtr);
-            break;
-
+      if (!domain) {
+        TVarList variables;
+        char vbuf[20];
+        for(int i = 0, e = array->dimensions[1]; i < e; i++) {
+          sprintf(vbuf, "a%i", i+1);
+          variables.push_back(mlnew TFloatVariable(vbuf));
         }
-
-        table->addExample(nex);
-        nex = NULL;
+        domain = mlnew TDomain(PVariable(), variables);
       }
-    }
-    catch (...) {
-      mldelete table;
-      mldelete nex;
-      throw;
-    }
 
-    return table;
+      else
+        if (array->dimensions[1] != domain->variables->size())
+          PYERROR(PyExc_AttributeError, "the number of columns in the array doesn't match the number of attributes", NULL);
+
+
+      const int arrayType = array->descr->type_num;
+      const TVarList &variables = domain->variables.getReference();
+
+      TVarList::const_iterator vi(variables.begin()), ve(variables.end());
+      for(; vi!=ve; vi++)
+        if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
+          PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
+
+      if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
+        PYERROR(PyExc_AttributeError, "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
+    
+      TExampleTable *table = mlnew TExampleTable(domain);
+      TExample *nex = NULL;
+      table->reserve(array->dimensions[0]);
+
+      const int &strideRow = array->strides[0];
+      const int &strideCol = array->strides[1];
+
+      try {
+        TExample::iterator ei;
+        char *rowPtr = array->data;
+
+        for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow) {
+          char *elPtr = rowPtr;
+          TExample *nex = mlnew TExample(domain);
+
+          #define ARRAYTYPE(TYPE) \
+            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
+              if ((*vi)->varType == TValue::INTVAR) \
+                intValInit(*ei, *(TYPE *)elPtr); \
+              else \
+                floatValInit(*ei, *(TYPE *)elPtr); \
+            break;
+
+          switch (arrayType) {
+            case PyArray_CHAR: ARRAYTYPE(char)
+            case PyArray_UBYTE: ARRAYTYPE(unsigned char)
+            case PyArray_SBYTE: ARRAYTYPE(signed char)
+            case PyArray_SHORT: ARRAYTYPE(short)
+            case PyArray_INT: ARRAYTYPE(int)
+            case PyArray_LONG: ARRAYTYPE(long)
+
+            case PyArray_FLOAT:
+              for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+                if ((*vi)->varType == TValue::INTVAR)
+                  intValInit(*ei, int(floor(0.5 + *(float *)elPtr)));
+                else
+                  floatValInit(*ei, *(float *)elPtr);
+              break;
+
+            case PyArray_DOUBLE:
+              for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+                if ((*vi)->varType == TValue::INTVAR)
+                  intValInit(*ei, int(floor(0.5 + *(double *)elPtr)));
+                else
+                  floatValInit(*ei, *(double *)elPtr);
+              break;
+
+          }
+
+          table->addExample(nex);
+          nex = NULL;
+        }
+      }
+      catch (...) {
+        mldelete table;
+        mldelete nex;
+        throw;
+      }
+
+      return table;
+    }
   }
   #endif
 
