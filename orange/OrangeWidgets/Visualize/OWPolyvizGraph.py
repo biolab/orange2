@@ -464,8 +464,15 @@ class OWPolyvizGraph(OWVisGraph):
 
                 if self.tooltipValue == TOOLTIPS_SHOW_DATA:
                     text = self.getShortExampleText(self.rawdata, self.rawdata[index], labels)
+
                 elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNames.index(label)][index])
+
+                    # show values of meta attributes
+                    if len(self.rawdata.domain.getmetas()) != 0:
+                        for m in self.rawdata.domain.getmetas().values():
+                            text += "%s = %s; " % (m.name, str(self.rawdata[index][m]))
+
                         
                 self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
 

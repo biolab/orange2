@@ -427,7 +427,13 @@ class OWVisGraph(OWGraph):
                     text += "%s = ?; " % (data.domain[index].name)
                 else:
                     text += "%s = %s; " % (data.domain[index].name, str(example[index]))
+
+            # show values of meta attributes
+            if len(data.domain.getmetas()) != 0:
+                for m in data.domain.getmetas().values():
+                    text += "%s = %s; " % (m.name, str(example[m]))
         except:
+            print "Unable to set tooltip"
             text = ""
         return text
 

@@ -232,6 +232,7 @@ class OWPolyviz(OWWidget):
 
         testIndex = 0
         for (acc, tableLen, other, attrList, strList) in results:
+            if self.optimizationDlg.isOptimizationCanceled(): continue
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
 
