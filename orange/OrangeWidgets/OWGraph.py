@@ -126,6 +126,15 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
             return ''
         return QString(str(self.labels[index]))
 
+# use this class if you want to hide labels on the axis
+class HiddenScaleDraw(QwtScaleDraw):
+    def __init__(self, *args):
+        QwtScaleDraw.__init__(self, *args)
+        
+    def label(self, value):
+        return QString.null
+
+
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
