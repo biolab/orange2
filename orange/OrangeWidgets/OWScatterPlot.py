@@ -12,12 +12,7 @@
 
 from OWWidget import *
 from OWScatterPlotOptions import *
-from random import betavariate 
 from OWScatterPlotGraph import *
-#from OData import *
-#import orngFSS
-#import statc
-#import orngCI
 
 
 ###########################################################################################
@@ -28,12 +23,14 @@ class OWScatterPlot(OWWidget):
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols"]
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
+        #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
+        apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)) 
 
+        self.setCaption("asdf")
         self.spreadType=["none","uniform","triangle","beta"]
         self.jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
         self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
-        
+       
         #set default settings
         self.pointWidth = 5
         self.jitteringType = "uniform"
@@ -87,34 +84,36 @@ class OWScatterPlot(OWWidget):
         self.attrSelGroup = QVGroupBox(self.controlArea)
         self.attrSelGroup.setTitle("Shown attributes")
 
-        self.attrXLabel = QLabel("X axis", self.attrSelGroup)
-        self.attrX = QComboBox(self.attrSelGroup)
+        self.attrXGroup = QVButtonGroup("X axis attribute", self.attrSelGroup)
+        self.attrX = QComboBox(self.attrXGroup)
         self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrXLabel = QLabel("Y axis", self.attrSelGroup)
-        self.attrY = QComboBox(self.attrSelGroup)
+        self.attrYGroup = QVButtonGroup("Y axis attribute", self.attrSelGroup)
+        self.attrY = QComboBox(self.attrYGroup)
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrColorCB = QCheckBox('Enable coloring by', self.attrSelGroup)
-        self.attrColorLegendCB = QCheckBox('Show color legend', self.attrSelGroup)
-        self.attrColor = QComboBox(self.attrSelGroup)
+        self.attrColorGroup = QVButtonGroup("Coloring attribute", self.attrSelGroup)
+        self.attrColorCB = QCheckBox('Enable coloring by', self.attrColorGroup)
+        self.attrColorLegendCB = QCheckBox('Show color legend', self.attrColorGroup)
+        self.attrColor = QComboBox(self.attrColorGroup)
         self.connect(self.attrColorCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColorLegendCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColor, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
-        self.attrShapeCB = QCheckBox('Enable shaping by', self.attrSelGroup)
-        self.attrShape = QComboBox(self.attrSelGroup)
+        self.attrShapeGroup = QVButtonGroup("Shaping attribute", self.attrSelGroup)
+        self.attrShapeCB = QCheckBox('Enable shaping by', self.attrShapeGroup)
+        self.attrShape = QComboBox(self.attrShapeGroup)
         self.connect(self.attrShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
-        self.attrSizeShapeCB = QCheckBox('Enable sizing by', self.attrSelGroup)
-        self.attrSizeShape = QComboBox(self.attrSelGroup)
+        self.attrSizeGroup = QVButtonGroup("Sizing attribute", self.attrSelGroup)
+        self.attrSizeShapeCB = QCheckBox('Enable sizing by', self.attrSizeGroup)
+        self.attrSizeShape = QComboBox(self.attrSizeGroup)
         self.connect(self.attrSizeShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrSizeShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
-        #self.repaint()
 
     # #########################
     # OPTIONS
