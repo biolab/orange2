@@ -61,6 +61,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.showDistributions = 1
         self.toolRects = []
         self.tooltipData = []
+        self.kNeighbours = 0
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
@@ -79,7 +80,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None):
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None, **args):
         self.clear()
         self.tips.removeAll()
         self.enableLegend(0)
@@ -88,6 +89,11 @@ class OWScatterPlotGraph(OWVisGraph):
         toolTipList = [xAttr, yAttr]
         if shapeAttr != "" and shapeAttr != "(One shape)": toolTipList.append(shapeAttr)
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)": toolTipList.append(sizeShapeAttr)
+
+        # initial var values
+        self.showKNNModel = 0
+        self.showCorrect = 1
+        self.__dict__.update(args)
 
         (xVarMin, xVarMax) = self.attrValues[xAttr]
         (yVarMin, yVarMax) = self.attrValues[yAttr]
@@ -101,12 +107,15 @@ class OWScatterPlotGraph(OWVisGraph):
 
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
             self.setXlabels(None)
+            self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
         else:
             self.setXlabels(self.getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
 
-        if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous: self.setYLlabels(None)
+        if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous:
+            self.setYLlabels(None)
+            self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)            
         else:
             self.setYLlabels(self.getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
@@ -159,10 +168,9 @@ class OWScatterPlotGraph(OWVisGraph):
             discreteY = 1
             attrYIndices = self.getVariableValueIndices(self.rawdata, yAttr)
 
-
         #######
         # show the distributions
-        if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete:
+        if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete and not self.showKNNModel:
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
             contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
@@ -197,51 +205,66 @@ class OWScatterPlotGraph(OWVisGraph):
 
         # show normal scatterplot with dots
         else:
-            self.curveKeys = []
-            for i in range(len(self.rawdata)):
-                if self.rawdata[i][xAttr].isSpecial() == 1: continue
-                if self.rawdata[i][yAttr].isSpecial() == 1: continue
-                if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
-                if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
-                if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
-                
-                if discreteX == 1:
-                    x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+            # show quality of knn model with only 2 selected attributes
+            if self.showKNNModel == 1:
+                # variables and domain for the table
+                kNNValues = []
+                shortData = self.rawdata.select([self.rawdata.domain[xAttr], self.rawdata.domain[yAttr], self.rawdata.domain.classVar])
+                shortData = orange.Preprocessor_dropMissing(shortData)
+                knn = orange.kNNLearner(shortData, k=self.kNeighbours, rankWeight = 0)
+                if shortData.domain.classVar.varType == orange.VarTypes.Discrete:
+                    classValues = list(shortData.domain.classVar.values)
+                    for j in range(len(shortData)):
+                        prob = knn(shortData[j], orange.GetProbabilities)[shortData[j].getclass()]
+                        if self.showCorrect == 1: prob = 1.0 - prob
+                        kNNValues.append(prob)
                 else:
-                    x = self.rawdata[i][xAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                    for j in range(len(shortData)): kNNValues.append(pow(shortData[j][2].value - knn(shortData[j]), 2))
+                    maxError = max(kNNValues)
+                    if self.showCorrect == 1: kNNValues = [val/maxError for val in kNNValues]
+                    else:                     kNNValues = [1.0 - val/maxError for val in kNNValues]
+                for j in range(len(kNNValues)):
+                    newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
+                    key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [shortData[j][0].value], yData = [shortData[j][1].value])
 
-                if discreteY == 1:
-                    y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                else:
-                    y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-
-                newColor = QColor(0,0,0)
-                if colorIndex != -1:
-                    newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
+            else:
+                self.curveKeys = []
+                for i in range(len(self.rawdata)):
+                    if self.rawdata[i][xAttr].isSpecial() == 1: continue
+                    if self.rawdata[i][yAttr].isSpecial() == 1: continue
+                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
+                    if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
+                    if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
                     
-                symbol = shapeList[0]
-                if shapeIndex != -1:
-                    symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
+                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                    else:              x = self.rawdata[i][xAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
 
-                size = self.pointWidth
-                if sizeShapeIndex != -1:
-                    size = MIN_SHAPE_SIZE + round(self.scaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
+                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                    else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                newCurveKey = self.insertCurve(str(i))
+                    newColor = QColor(0,0,0)
+                    if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
+                        
+                    symbol = shapeList[0]
+                    if shapeIndex != -1: symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
-                symbolBrush = QBrush(QBrush.NoBrush)
-                if self.showFilledSymbols == 1: symbolBrush = QBrush(newColor)
-                newSymbol = QwtSymbol(symbol, symbolBrush, QPen(newColor), QSize(size, size))
-                self.setCurveSymbol(newCurveKey, newSymbol)
-                self.setCurveData(newCurveKey, [x], [y])
-                self.curveKeys.append(newCurveKey)
+                    size = self.pointWidth
+                    if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.scaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
-                ##########
-                # we add a tooltip for this point
-                r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
-                text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
-                self.tips.addToolTip(r, text)
-                ##########
+                    newCurveKey = self.insertCurve(str(i))
+                    symbolBrush = QBrush(QBrush.NoBrush)
+                    self.setCurveData(newCurveKey, [x], [y])
+                    self.curveKeys.append(newCurveKey)
+                    if self.showFilledSymbols == 1: symbolBrush = QBrush(newColor)
+                    newSymbol = QwtSymbol(symbol, symbolBrush, QPen(newColor), QSize(size, size))
+                    self.setCurveSymbol(newCurveKey, newSymbol)
+
+                    ##########
+                    # we add a tooltip for this point
+                    r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
+                    text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
+                    self.tips.addToolTip(r, text)
+                    ##########
                 
 
         # show legend if necessary
@@ -267,7 +290,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), MIN_SHAPE_SIZE + round(ind*MAX_SHAPE_DIFF/len(varValues)), enableLegend = 1)
 
 
-        if colorAttr != "" and showColorLegend == 1 and self.showDistributions == 0 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
+        if colorAttr != "" and colorAttr != "(One color)" and showColorLegend == 1 and self.showDistributions == 0 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
             x0 = xVarMax + xVar/100
             x1 = x0 + xVar/20
             for i in range(1000):
@@ -327,7 +350,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
 
         
-    def getOptimalSeparation(self, attrCount, className, kNeighbours, updateProgress = None):
+    def getOptimalSeparation(self, attrCount, className, kNeighbours, minExamples, updateProgress = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return None
@@ -372,29 +395,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
                     table.append(example)
 
-                """
-                exampleDist = orange.ExamplesDistanceConstructor_Euclidean()
-                near = orange.FindNearestConstructor_BruteForce(table, distanceConstructor = exampleDist)
-                euclidean = orange.ExamplesDistance_Euclidean()
-                euclidean.normalizers = [1,1]   # our table has attributes x,y, and class
-                for i in range(len(table)):
-                    prob = [0]*classValNum
-                    neighbours = near(kNeighbours, table[i])
-                    for neighbour in neighbours:
-                        dist = euclidean(table[i], neighbour)
-                        val = math.exp(-(dist*dist))
-                        index = classValues.index(neighbour.getclass().value)
-                        prob[index] += val
-
-                    # calculate sum for normalization
-                    sum = 0
-                    for val in prob: sum += val
-                    
-                    index = classValues.index(table[i].getclass().value)
-                    tempValue += float(prob[index])/float(sum)
-                """
-
-                # to bo delalo, ko bo popravljen orangov kNNLearner
+                if len(table) < minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
                 classValues = list(self.rawdata.domain[className].values)
                 knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
 

@@ -129,6 +129,11 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.optimizeSeparationButton.setText("Optimize separation")
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
 
+        self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
+        self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
+        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
+        self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)
+
         self.progressGroup = QVGroupBox(self.controlArea)
         self.progressGroup.setTitle("Optimization progress")
         self.progressBar = QProgressBar(self.progressGroup, "progress bar", QFrame.Raised)
@@ -170,6 +175,7 @@ class OWScatterPlot(OWWidget):
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
@@ -275,14 +281,37 @@ class OWScatterPlot(OWWidget):
         self.graph.enableGridYL(b)
         if self.data != None: self.updateGraph()
 
+
+    # #########################
+    # KNN OPTIMIZATION BUTTON EVENTS
+    # #########################
+
+    def evaluateCurrentProjection(self):
+        acc = self.graph.getProjectionQuality(str(self.attrX.currentText()), str(self.attrY.currentText()), str(self.attrColor.currentText()), self.kNeighbours)
+        if self.data.domain[str(self.attrColor.currentText())].varType == orange.VarTypes.Discrete:
+            QMessageBox.information( None, "Scatterplot", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        else:
+            QMessageBox.information( None, "Scatterplot", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        
+    def showKNNCorect(self):
+        self.graph.updateData(str(self.attrX.currentText()), str(self.attrY.currentText()), "", "", "", 0, self.statusBar, showKNNModel = 1, showCorrect = 1)
+        self.graph.update()
+        self.repaint()
+
+    def showKNNWrong(self):
+        self.graph.updateData(str(self.attrX.currentText()), str(self.attrY.currentText()), "", "", "", 0, self.statusBar, showKNNModel = 1, showCorrect = 0)
+        self.graph.update()
+        self.repaint()
+
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
         self.optimizationDlg.kValue = self.kNeighbours
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
     def testCurrentProjections(self):
         #kList = [3,5,10,15,20,30,50,70,100,150,200]
         kList = [10]
-        className = str(self.classCombo.currentText())
+        className = str(self.attrColor.currentText())
         results = []
         
         #for i in range(min(300, self.optimizationDlg.interestingList.count())):
@@ -309,7 +338,7 @@ class OWScatterPlot(OWWidget):
     def optimizeSeparation(self):
         if self.data != None:
             self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
-            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours, self.updateProgress)
+            fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours, int(str(self.optimizationDlg.minTableLenEdit.text())), self.updateProgress)
             if fullList == []: return
 
             # fill the "interesting visualizations" list box
