@@ -769,15 +769,29 @@ class OWPolyvizGraph(OWVisGraph):
             return fullList
     """
 
+    def createCombinations(self, currCombination, count, attrList, combinations):
+        if count > attrList: return combinations
+
+        if count == 0 and len(currCombination) > 2:
+            combinations.append(currCombination)
+            return combinations
+
+        if len(attrList) == 0: return combinations
+        temp = list(currCombination) + [attrList[0][1]]
+        temp[0] += attrList[0][0]
+        combinations = self.createCombinations(temp, count-1, attrList[1:], combinations)
+
+        combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
+        return combinations
+
+
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrListLength, attrReverseDict, projections, addResultFunct):
-        if projections == []: return []
-        
+    #def getOptimalSeparation(self, attrListLength, attrReverseDict, projections, addResultFunct):
+    def getOptimalSeparation(self, attributes, minLength, maxLength, attrReverseDict, addResultFunct):
         dataSize = len(self.rawdata)
-        anchors = self.createAnchors(attrListLength)
-        
+
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
         domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
@@ -786,89 +800,102 @@ class OWPolyvizGraph(OWVisGraph):
         elif self.kNNOptimization.getQualityMeasure() == AVERAGE_CORRECT: text = "Average correct classification"
         else: text = "Brier score"
 
-        for attrs in projections:
-            attrs = attrs[1:]   # remove the value of this attribute subset
-            
-            indices = [];
-            for attr in attrs:
-                indices.append(self.attributeNames.index(attr))
+        anchorList = []
+        for i in range(minLength, maxLength+1):
+            anchorList.append(self.createAnchors(i))
 
-            indPermutations = {}
-            getPermutationList(indices, [], indPermutations, attrReverseDict == None)
+        for z in range(minLength-1, len(attributes)):
+            for u in range(minLength-1, maxLength):
+                attrListLength = u+1
+                
+                combinations = self.createCombinations([0.0], u, attributes[:z], [])
+                combinations.sort()
+                combinations.reverse()
 
-            attrReverse = []
-            if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
-                temp = [0] * len(self.rawdata.domain)
-                for val in attrReverseDict.keys():
-                    temp[self.attributeNames.index(val)] = attrReverseDict[val]
-                attrReverse.append(temp)
-            else:
-                attrReverse = self.generateAttrReverseLists(attrList, self.attributeNames,[[0]*len(self.rawdata.domain)])
+                anchors = anchorList[u+1-minLength]
+                
+                for attrList in combinations:
+                    attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
 
-            permutationIndex = 0 # current permutation index
-            totalPermutations = len(indPermutations.values())*len(attrReverse)
-            
-            # which data items have all values valid
-            validData = self.getValidList(indices)
+                    indices = [];
+                    for attr in attrs:
+                        indices.append(self.attributeNames.index(attr))
 
-            count = sum(validData)
-            if count < self.kNNOptimization.minExamples:
-                print "Nr. of examples: ", str(count)
-                print "Not enough examples in example table. Ignoring permutation..."
-                self.triedPossibilities += len(indPermutations.keys())
-                if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                continue
-            
-                        
-            # store all sums
-            sum_i = self.calculateAttrValuesSum(self.noJitteringScaledData, len(self.rawdata), indices, validData)
+                    indPermutations = {}
+                    getPermutationList(indices, [], indPermutations, attrReverseDict == None)
 
-            tempList = []
+                    attrReverse = []
+                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
+                        temp = [0] * len(self.rawdata.domain)
+                        for val in attrReverseDict.keys():
+                            temp[self.attributeNames.index(val)] = attrReverseDict[val]
+                        attrReverse.append(temp)
+                    else:
+                        attrReverse = self.generateAttrReverseLists(attrs, self.attributeNames,[[0]*len(self.rawdata.domain)])
 
-            # for every permutation compute how good it separates different classes            
-            for permutation in indPermutations.values():
-                for attrOrder in attrReverse:
-                    if self.kNNOptimization.isOptimizationCanceled(): return
-                    permutationIndex += 1
-                    table = orange.ExampleTable(domain)
-
-                    # calculate projections
-                    for i in range(dataSize):
-                        if validData[i] == 0: continue
-                        
-                        x_i = 0.0; y_i = 0.0
-                        for j in range(attrListLength):
-                            index = permutation[j]
-                            val = self.noJitteringScaledData[index][i]
-                            if attrOrder[index] == 0:
-                                xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
-                                yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
-                            else:
-                                xDataAnchor = anchors[0][j]*val + anchors[0][(j+1)%attrListLength]*(1-val)
-                                yDataAnchor = anchors[1][j]*val + anchors[1][(j+1)%attrListLength]*(1-val)
-                            x_i += xDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
-                            y_i += yDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
-                           
-                        example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
-                        table.append(example)
-
-                    accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
-                    if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, totalPermutations, text, accuracy)
-                    else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
+                    permutationIndex = 0 # current permutation index
+                    totalPermutations = len(indPermutations.values())*len(attrReverse)
                     
-                    # save the permutation
-                    tempList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder))
-                    if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
-                        addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
+                    # which data items have all values valid
+                    validData = self.getValidList(indices)
 
-                    self.triedPossibilities += 1
-                    self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                    count = sum(validData)
+                    if count < self.kNNOptimization.minExamples:
+                        print "Not enough examples (%s) in example table. Ignoring permutation." % (str(count))
+                        self.triedPossibilities += len(indPermutations.keys())
+                        if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                        continue
+                    
+                                
+                    # store all sums
+                    sum_i = self.calculateAttrValuesSum(self.noJitteringScaledData, len(self.rawdata), indices, validData)
 
-            if self.kNNOptimization.onlyOnePerSubset:
-                if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-                else: funct = min
-                (acc, lenTable, attrList, attrOrder) = funct(tempList)
-                if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList, attrOrder)
+                    tempList = []
+
+                    # for every permutation compute how good it separates different classes            
+                    for permutation in indPermutations.values():
+                        for attrOrder in attrReverse:
+                            if self.kNNOptimization.isOptimizationCanceled(): return
+                            permutationIndex += 1
+                            table = orange.ExampleTable(domain)
+
+                            # calculate projections
+                            for i in range(dataSize):
+                                if validData[i] == 0: continue
+                                
+                                x_i = 0.0; y_i = 0.0
+                                for j in range(attrListLength):
+                                    index = permutation[j]
+                                    val = self.noJitteringScaledData[index][i]
+                                    if attrOrder[index] == 0:
+                                        xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
+                                        yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
+                                    else:
+                                        xDataAnchor = anchors[0][j]*val + anchors[0][(j+1)%attrListLength]*(1-val)
+                                        yDataAnchor = anchors[1][j]*val + anchors[1][(j+1)%attrListLength]*(1-val)
+                                    x_i += xDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
+                                    y_i += yDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
+                                   
+                                example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
+                                table.append(example)
+
+                            accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+                            if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, totalPermutations, text, accuracy)
+                            else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
+                            
+                            # save the permutation
+                            tempList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder))
+                            if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
+                                addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
+
+                            self.triedPossibilities += 1
+                            self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+
+                    if self.kNNOptimization.onlyOnePerSubset:
+                        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+                        else: funct = min
+                        (acc, lenTable, attrList, attrOrder) = funct(tempList)
+                        if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList, attrOrder)
 
     
 if __name__== "__main__":

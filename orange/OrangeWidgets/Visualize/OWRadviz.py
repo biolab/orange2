@@ -233,121 +233,50 @@ class OWRadviz(OWWidget):
         
 
     def startOptimization(self):
-        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
-            self.optimizeSeparation()
-        else:
-            self.optimizeAllSubsetSeparation()
-            
-
-    def buildProjections(self, attributes, currentProjection, number, projections):
-        if number == 0:
-            if len(currentProjection) != 1: projections.append(currentProjection)
-            return projections
-        if attributes == []: return projections
-
-        temp = list(currentProjection) + [attributes[0][1]]
-        temp[0] += attributes[0][0]
-        projections = self.buildProjections(attributes[1:], temp, number-1, projections)
-        
-        projections = self.buildProjections(attributes[1:], currentProjection, number, projections)
-        return projections
-        
-        
-            
-    # ####################################
-    # find optimal class separation for shown attributes
-    # numberOfAttrs is different than None only when optimizeSeparation is called by optimizeAllSubsetSeparation
-    def optimizeSeparation(self, numberOfAttrs = None, listOfAttributes = None):
         if self.data == None: return
-
-        if not listOfAttributes:
-            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-
-        if not numberOfAttrs:
-            text = str(self.optimizationDlg.attributeCountCombo.currentText())
-            if text == "ALL": number = len(listOfAttributes)
-            else:             number = int(text)
-
-            self.optimizationDlg.clearResults()
-            total = len(listOfAttributes)
-            if total < number: return
-            self.graph.totalPossibilities = combinations(number, total)*fact(number-1)/2
-            self.graph.triedPossibilities = 0
-        
-            if self.graph.totalPossibilities > 20000:
-                proj = str(self.graph.totalPossibilities)
-                l = len(proj)
-                for i in range(len(proj)-2, 0, -1):
-                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-                res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
-                if res != 0: return
-            
-            self.progressBarInit()
-            self.optimizationDlg.disableControls()
-
-            startTime = time.time()
-            self.graph.startTime = time.time()
-        else:
-            number = numberOfAttrs
-
-        # create a sorted list of attribute subsets to evaluate
-        projections = self.buildProjections(listOfAttributes, [0.0], number, [])
-        projections.sort()
-        projections.reverse()
-
-        self.graph.getOptimalSeparation(number, projections, self.optimizationDlg.addResult)
-
-        if not numberOfAttrs:
-            self.progressBarFinished()
-            self.optimizationDlg.enableControls()
-            self.optimizationDlg.finishedAddingResults()
-        
-            secs = time.time() - startTime
-            print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(len(projections), secs/60, secs%60)
-
-   
-    # #############################################
-    # find optimal separation for all possible subsets of shown attributes
-    def optimizeAllSubsetSeparation(self):
-        if self.data == None: return
-
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
-        total = len(listOfAttributes) 
+        
+        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
+            minLen = maxLen
+        else:
+            minLen = 3
 
-        # compute the number of possible projections
-        proj = 0
-        for i in range(3, maxLen+1):
-            proj += combinations(i, total)*fact(i-1)/2
-        self.graph.triedPossibilities = 0
-        self.graph.totalPossibilities = proj
-
-        if proj > 20000:
-            strProj = str(self.graph.totalPossibilities)
-            l = len(strProj)
-            for i in range(len(strProj)-2, 0, -1):
-                if (l-i)%3 == 0: strProj = strProj[:i] + "," + strProj[i:]
-            res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (strProj),'Yes','No', QString.null,0,1)
-            if res != 0: return
-                
-        startTime = time.time()
-        self.graph.startTime = time.time()
-        self.progressBarInit()
         self.optimizationDlg.clearResults()
+
+        possibilities = 0
+        for i in range(minLen, maxLen+1):
+            possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+            
+        self.graph.totalPossibilities = possibilities
+        self.graph.triedPossibilities = 0
+    
+        if self.graph.totalPossibilities > 20000:
+            proj = str(self.graph.totalPossibilities)
+            l = len(proj)
+            for i in range(len(proj)-2, 0, -1):
+                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+            res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections with the selected number of attributes. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
+            if res != 0: return
+        
+        self.progressBarInit()
         self.optimizationDlg.disableControls()
 
-        for val in range(3, maxLen+1):
-            self.optimizeSeparation(val, listOfAttributes)
+        startTime = time.time()
+        self.graph.startTime = time.time()
+
+        self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
+    
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(proj, secs/60, secs%60)
-            
+        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(possibilities, secs/60, secs%60)
+
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
