@@ -322,7 +322,7 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
 
   if (domain.hasContinuousAttributes(convertClass)) {
     TDomainBasicAttrStat dombas(egen);
-    ITERATE(TDomainBasicAttrStat, di, dombas);
+    ITERATE(TDomainBasicAttrStat, di, dombas)
     if ((*di)->variable->varType == TValue::FLOATVAR) {
       avgs.push_back((*di)->avg);
       spans.push_back((*di)->max-(*di)->min);
