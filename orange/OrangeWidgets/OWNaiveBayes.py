@@ -32,12 +32,16 @@ preprocessors to filter/change the data.
 """,
         FALSE,
         FALSE)
-        
-        self.addInput("cdata")
-        self.addInput("pp")
-        self.addOutput("learner")
-        self.addOutput("classifier")
-        self.addOutput("nbClassifier")
+
+        # TODO: dodaj ps
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("nbClassifier", orange.BayesClassifier)]
+                
+        #self.addInput("cdata")
+        #self.addInput("pp")
+        #self.addOutput("learner")
+        #self.addOutput("classifier")
+        #self.addOutput("nbClassifier")
 
         # Settings
         self.m = 2.0                        # m for probability estimation
@@ -165,18 +169,18 @@ preprocessors to filter/change the data.
                     setattr(cons, "m", self.m)
             
         self.learner.name = self.name
-        self.send("learner", self.learner)
+        self.send("Learner", self.learner)
         if self.data <> None:
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
 
-            self.send("classifier", self.classifier)
+            self.send("Classifier", self.classifier)
             self.send("nbClassifier", self.classifier)
 
     # slots: handle input signals        
         
     def cdata(self,data):
-        self.data=data.table
+        self.data=data
         self.setLearner()
 
     def pp():

@@ -102,6 +102,7 @@ def radioButtonsInBox(widget, master, groupLabel, btnLabels, value, tooltips=Non
     if callback:
         master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
 #        self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
+    return bg
 
 def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.1, callback=None, ticks=0):
     if box:
@@ -130,6 +131,7 @@ class ValueCallback:
         self.widget = widget
         self.attribute = attribute
         self.f = f
+        print "widget", widget
         widget.callbackDeposit.append(self)
     def __call__(self, value):
         setattr(self.widget, self.attribute, self.f and self.f(value) or value)
