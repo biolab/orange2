@@ -299,7 +299,7 @@ class OWInteractionGraph(OWWidget):
         pipePlainIn.close()
         pipePngOut.close()
         pipePlainOut.close()
-        os.remove('interaction.dot')
+        #os.remove('interaction.dot')
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
@@ -536,7 +536,7 @@ class OWInteractionGraph(OWWidget):
                 height = int(bottomRightRectList[1]) - yTop
 
                 rect = QCanvasRectangle(xLeft+2, yTop+2, width, height, self.canvasR)
-                pen = QPen(Qt.green)
+                pen = QPen(Qt.blue)
                 pen.setWidth(4)
                 rect.setPen(pen)
                 rect.hide()

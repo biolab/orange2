@@ -240,10 +240,12 @@ class InteractionMatrix:
                     dir = 'none'
             else:            
                 if ig > 0:
-                    color = '"0.0 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                    #color = '"0.0 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                    color = "green"
                     dir = "both"
                 else:
-                    color = '"0.5 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                    #color = '"0.5 %f 0.9"'%(0.3+0.7*perc/100.0) # adjust saturation
+                    color = "red"
                     dir = 'none'
             if not url:
                 f.write("\t%d -> %d [dir=%s,%scolor=%s,label=\"%s%%\",weight=%d];\n"%(i,j,dir,style,color,mc,(perc/30+1)))
