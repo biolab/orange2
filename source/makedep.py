@@ -4,7 +4,7 @@ import os, re
 
 #filenamedef=re.compile(r".*\.(.pp|px)$")
 filenamedef=re.compile(r".*\..pp$")
-includedef=re.compile(r'\s*#include\s*"(?P<filename>[.*\..pp]*)"')
+includedef=re.compile(r'\s*#include\s*"(?P<filename>.*\..pp*)"')
 filestemdef=re.compile(r'(?P<filestem>.*)\.(?P<fileextension>[^.]*)$')
 
 dirs = ["orange", "statc", "corn", "include"]
