@@ -17,16 +17,20 @@ from OWParallelGraph import *
 from OData import *
 import OWVisAttrSelection 
 
+    
+
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
     jitterSizeList = ['2','5','10', '15', '20', '30']
     jitterSizeNums = [2,  5,  10, 15, 20, 30]
+    linesDistanceList = ['20', '30', '40', '50', '60', '70', '80', '100']
+    linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100]
     
     def __init__(self,parent=None):
         
@@ -46,6 +50,7 @@ class OWParallelCoordinates(OWWidget):
         self.GraphGridColor = str(Qt.black.name())
         self.data = None
         self.jitterSize = 10
+        self.linesDistance = 40
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
         self.globalValueScaling = 0
@@ -60,7 +65,13 @@ class OWParallelCoordinates(OWWidget):
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWParallelGraph(self.mainArea)
+        self.slider = QSlider(QSlider.Horizontal, self.mainArea)
+        self.sliderRange = 0
+        self.slider.setRange(0, 0)
+        self.slider.setTickmarks(QSlider.Below)
+        self.isResizing = 0 
         self.box.addWidget(self.graph)
+        self.box.addWidget(self.slider)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # graph main tmp variables
@@ -77,6 +88,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
         self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
+        self.connect(self.options.linesDistance, SIGNAL("activated(int)"), self.setLinesDistance)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -118,10 +130,19 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
+        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderValueChanged)
+
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
 
         #self.repaint()
+
+    def resizeEvent(self, e):
+        self.isResizing = 1
+        self.updateGraph()
+
+    def sliderValueChanged(self, val):
+        self.updateGraph()
 
     # #########################
     # OPTIONS
@@ -139,6 +160,9 @@ class OWParallelCoordinates(OWWidget):
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
+        for i in range(len(self.linesDistanceList)):
+            self.options.linesDistance.insertItem(self.linesDistanceList[i])
+        self.options.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
@@ -152,6 +176,11 @@ class OWParallelCoordinates(OWWidget):
         self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
+        self.updateGraph()
+
+    # minimum lines distance
+    def setLinesDistance(self, n):
+        self.linesDistance = self.linesDistanceNums[n]
         self.updateGraph()
 
     # jittering options
@@ -262,7 +291,27 @@ class OWParallelCoordinates(OWWidget):
     # #####################
 
     def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        graphWidth = self.width()-230
+        attrs = self.getShownAttributeList()
+        maxAttrs = graphWidth / self.linesDistance
+        if len(attrs) > maxAttrs:
+            rest = len(attrs) - maxAttrs
+            if self.sliderRange != rest:
+                #print rest
+                self.slider.setRange(0, rest)
+                self.sliderRange = rest
+            elif self.isResizing:
+                self.isResizing = 0
+                return  # if we resized widget and it doesn't change the number of attributes that are shown then we return
+        else:
+            #print "returned"
+            self.slider.setRange(0,0)
+            self.sliderRange = 0
+            maxAttrs = len(attrs)
+
+        start = min(self.slider.value(), len(attrs)-maxAttrs)
+        self.graph.updateData(attrs[start:start+maxAttrs], str(self.classCombo.currentText()))
+        self.slider.repaint()
         #self.graph.replot()
         self.graph.update()
         self.repaint()

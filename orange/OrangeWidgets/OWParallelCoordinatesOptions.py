@@ -27,9 +27,16 @@ class OWParallelCoordinatesOptions(OWOptions):
         # jittering options
         self.jitteringOptionsBG = QVButtonGroup("Jittering options", self.top)
         QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
-        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
-        self.jitterLabel = QLabel('Jittering size (% of size)', self.hbox)
+        self.hbox = QHBox(self.jitteringOptionsBG, "Jittering size")
+        self.jitterLabel = QLabel('Jittering size (% of size)  ', self.hbox)
         self.jitterSize = QComboBox(self.hbox)
+
+        # jittering options
+        self.linesDistanceOptionsBG = QVButtonGroup("Attribute axis distance", self.top)
+        QToolTip.add(self.linesDistanceOptionsBG, "What is the minimum distance between two adjecent attributes")
+        self.hbox2 = QHBox(self.linesDistanceOptionsBG, "Minimum distance")
+        self.linesLabel = QLabel('Minimum distance (pixels)  ', self.hbox2)
+        self.linesDistance = QComboBox(self.hbox2)        
 
         #####
         self.visualSettings = QVButtonGroup("Visual settings", self.top)

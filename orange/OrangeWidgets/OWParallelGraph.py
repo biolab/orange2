@@ -55,7 +55,7 @@ class OWParallelGraph(OWVisGraph):
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
         else:   self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
 
-        if self.showAttrValues == 1:
+        if self.showAttrValues or self.showCorrelations:
             self.setAxisScale(QwtPlot.yLeft, -0.03, 1.03, 1)
         else:
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
@@ -87,35 +87,59 @@ class OWParallelGraph(OWVisGraph):
         #############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
         # we do this by adding a integer meta attribute, that for each example stores attribute index, where we stop drawing lines
-        dataStop = []
         lastIndex = indices[length-1]
-        for i in range(dataSize): dataStop.append(lastIndex)
+        dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
+        
         if className != "(One color)":
             classIndex = self.scaledDataAttributes.index(className)
+
         if self.hidePureExamples == 1 and className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
                 metavar = orange.IntVariable("ItemIndex")
                 self.rawdata.domain.addmeta(self.metaid, metavar)
                 for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
 
-            for i in range(length-1,-1,-1):
+            for i in range(length):
                 if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Discrete or labels[i] == className: continue
 
                 attr = self.rawdata.domain[indices[i]]                
                 for attrVal in attr.values:
                     tempData = self.rawdata.select({attr.name:attrVal})
+
                     ind = 0
                     while ind < len(tempData):
-                        if tempData[0][classIndex] != tempData[ind][classIndex]: break
+                        index = int(tempData[ind].getmeta(self.metaid))
+                        if dataStop[index] == lastIndex:
+                            val = tempData[ind][classIndex]
+                            break
                         ind += 1
+                        
+                    # do all instances belong to the same class?
+                    while ind < len(tempData):
+                        index = int(tempData[ind].getmeta(self.metaid))
+                        if dataStop[index] != lastIndex: ind += 1; continue
+                        if val != tempData[ind][classIndex]: break
+                        ind += 1
+
+
+                    #print attr, attrVal, ind, len(tempData)
                     # if all examples belong to one class we repair the meta variable values
-                    if ind == len(tempData):
+                    if ind >= len(tempData):
                         val = indices[i]
                         for item in tempData:
                             index = int(item.getmeta(self.metaid))
-                            dataStop[index] = val
+                            if dataStop[index] == lastIndex:
+                                dataStop[index] = val
 
+        """
+        # DEBUG
+        for i in range(dataSize):
+            #if self.rawdata[i]['y'] == 'D3':
+            print dataStop[i], self.rawdata[i][className]
+        print "-----------------------------------------------"
+        """
 
         #############################################
         # draw the data
@@ -136,7 +160,7 @@ class OWParallelGraph(OWVisGraph):
         #############################################
         # do we want to show distributions with discrete attributes
         if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            self.showDistributionValues(className, self.rawdata, indices)
+            self.showDistributionValues(className, self.rawdata, indices, dataStop)
             
 
         curve = subBarQwtPlotCurve(self)
@@ -203,7 +227,7 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey1).setYValue(1.0)
                 self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
-    def showDistributionValues(self, className, data, indices):
+    def showDistributionValues(self, className, data, indices, dataStop):
         # get index of class         
         classNameIndex = 0
         for i in range(len(data.domain)):
@@ -236,19 +260,20 @@ class OWParallelGraph(OWVisGraph):
                 for i in range(count):
                     values.append([0] * attrLen)
 
+                stop = indices[:graphAttrIndex]
                 for i in range(len(data)):
+                    if self.hidePureExamples == 1 and dataStop[i] in stop: continue
                     if not data[i][index].isSpecial():
                         # processing for distributions
                         attrIndex = variableValueIndices[data[i][index].value]
                         classIndex = classValueIndices[data[i][classNameIndex].value]
                         totals[attrIndex] += 1
-                        values[classIndex][attrIndex] = values[classIndex][attrIndex] + 1
+                        values[classIndex][attrIndex] += 1
 
-                maximum = 0
+                maximum = 1
                 for i in range(len(values)):
                     for j in range(len(values[i])):
                         if values[i][j] > maximum: maximum = values[i][j]
-                        
                 # create bar curve
                 for i in range(count):
                     curve = subBarQwtPlotCurve(self)
