@@ -109,16 +109,8 @@ extern ORANGE_API PyObject *PyExc_OrangeKernel,
                            *PyExc_OrangeCompatibilityWarning,
                            *PyExc_OrangeKernelWarning;
 
-#define PyTRY try {
 
-#define PYNULL ((PyObject *)NULL)
-#define PyCATCH   PyCATCH_r(PYNULL)
-#define PyCATCH_1 PyCATCH_r(-1)
-
-#define PyCATCH_r(r) \
-  } \
-catch (pyexception err)   { err.restore(); return r; } \
-catch (mlexception err) { PYERROR(PyExc_OrangeKernel, err.what(), r); }
+#define PyCATCH_r(e) PyCATCH_r_et(e,PyExc_OrangeKernel)
 
 void raiseWarning(bool, const char *s);
 bool raiseWarning(PyObject *warnType, const char *s, ...);
@@ -181,6 +173,7 @@ public:
 #ifdef _MSC_VER
   #pragma warning (pop)
 #endif
+
 
 ORANGE_API void addClassList(TOrangeType **);
 

@@ -75,4 +75,17 @@ public:
 PyObject *makeExceptionClass(char *name, char *docstr = NULL, PyObject *base = NULL);
 bool setFilterWarnings(PyObject *filterFunction, char *action, char *message, PyObject *warning, char *moduleName);
 
+
+#define PyTRY try {
+
+#define PYNULL ((PyObject *)NULL)
+#define PyCATCH   PyCATCH_r(PYNULL)
+#define PyCATCH_1 PyCATCH_r(-1)
+
+#define PyCATCH_r_et(r,et) \
+  } \
+catch (pyexception err)   { err.restore(); return r; } \
+catch (mlexception err) { PYERROR(et, err.what(), r); }
+
+
 #endif

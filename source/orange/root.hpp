@@ -23,8 +23,8 @@
 #ifndef __ROOT_HPP
 #define __ROOT_HPP
 
-#include "orange_api.hpp"
 #include "garbage.hpp"
+#include "errors.hpp"
 
 
 #define WRAPPER(x) BASIC_WRAPPER(x, ORANGE_API)

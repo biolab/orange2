@@ -12,9 +12,9 @@
         #define EXPIMP_TEMPLATE extern
     
         #ifdef _DEBUG
-            #pragma comment(lib, "orange_d.lib")
+            #pragma comment(lib, "orangene_d.lib")
         #else
-            #pragma comment(lib, "orange.lib")
+            #pragma comment(lib, "orangene.lib")
         #endif
     #endif
 #else
@@ -28,15 +28,6 @@
 
 #include "../pyxtract/pyxtract_macros.hpp"
 
-#define PyTRY try {
-
-#define PYNULL ((PyObject *)NULL)
-#define PyCATCH   PyCATCH_r(PYNULL)
-#define PyCATCH_1 PyCATCH_r(-1)
-
-#define PyCATCH_r(r) \
-  } \
-catch (pyexception err)   { err.restore(); return r; } \
-catch (mlexception err) { PYERROR(PyExc_OrangeKernel, err.what(), r); }
+#define PyCATCH_r(e) PyCATCH_r_et(e,PyExc_OrangeKernel)
 
 #endif

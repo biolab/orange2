@@ -44,7 +44,7 @@ RSC=rc.exe
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -60,7 +60,7 @@ LINK32=link.exe
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	rem copy "c:\temp\orange\release\orange.pyd" "d:\ai\orange\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib
+PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -77,7 +77,7 @@ PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "include" /I "orange/ppp" /I "orange/px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /FD /GZ /Zm700 /c
+# ADD CPP /nologo /MDd /W3 /Gm /GR /GX /ZI /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /FD /GZ /Zm700 /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
@@ -92,7 +92,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /verbose /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\lib\orange_d.lib
+PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\..\lib\orange_d.lib
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
@@ -111,7 +111,7 @@ PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\lib\orange_d.lib
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -123,7 +123,7 @@ BSC32=bscmake.exe
 LINK32=link.exe
 # ADD BASE LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 # SUBTRACT BASE LINK32 /debug
-# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"..\..\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 
 !ENDIF 
 

@@ -19,33 +19,27 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
+#include "orange_api.hpp"
 
 #ifdef _MSC_VER
-  #define NOMINMAX
-  #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
-  #include <windows.h>
+    #ifdef ORANGEOM_EXPORTS
+        #define ORANGEOM_API __declspec(dllexport)
+    #else
+        #define ORANGEOM_API __declspec(dllimport)
+        #ifdef _DEBUG
+            #pragma comment(lib, "orangeom_d.lib")
+        #else
+            #pragma comment(lib, "orangeom.lib")
+        #endif
+    #endif
+#else
+    #define ORANGEOM_API
 #endif
 
-#include "Python.h"
-#include "orangeom_globals.hpp"
+bool initExceptions()
+{ return true; }
 
-PyObject *py_triangulate(PyObject *, PyObject *args, PyObject *);
+void gcUnsafeStaticInitialization()
+{}
 
-
-PyMethodDef orangeom_functions[] = {
-     {"triangulate", (binaryfunc)py_triangulate, METH_VARARGS},
-     {NULL, NULL}
-};
-
-
-extern "C" ORANGEOM_API void initorangeom()
-{ Py_InitModule("orangeom", orangeom_functions); }
-
-
-#ifdef _MSC_VER
-BOOL APIENTRY DllMain( HANDLE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
-{ switch (ul_reason_for_call)
-	{ case DLL_PROCESS_ATTACH:case DLL_THREAD_ATTACH:case DLL_THREAD_DETACH:case DLL_PROCESS_DETACH:break; }
-  return TRUE;
-}
-#endif
+#include "px/initialization.px"

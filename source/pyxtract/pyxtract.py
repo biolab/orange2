@@ -815,11 +815,13 @@ def writeInitialization(functions, constants):
 
   if addconstscalls:
     functionsfile.write(addconstscalls + "\n\n")
-  
-  for classname in ks:
-    if not classdefs[i].hidden:
-      functionsfile.write('     PyModule_AddObject(mod, "%s", (PyObject *)&PyOr%s_Type);\n' % (classname, classname))
+
+  if len(myclasses):
+    for classname in ks:
+      if not classdefs[i].hidden:
+        functionsfile.write('     PyModule_AddObject(mod, "%s", (PyObject *)&PyOr%s_Type);\n' % (classname, classname))
   functionsfile.write("}\n\n")
+
   printV1("\n")
 
   functionsfile.write("""
@@ -837,15 +839,18 @@ extern "C" %(MODULENAME)s_API void init%(modulename)s()
 { 
   if (!initExceptions())
     return;
+""" % {"modulename" : modulename, "MODULENAME": modulename.upper()})
 
+  if len(myclasses):
+    functionsfile.write("""
   for(TOrangeType **type=%(modulename)sClasses; *type; type++)
     if (PyType_Ready((PyTypeObject *)*type)<0)
       return;
-
-  gcUnsafeStaticInitialization();
-
   addClassList(%(modulename)sClasses);
+""" % {"modulename" : modulename})
 
+  functionsfile.write("""
+  gcUnsafeStaticInitialization();
   %(modulename)sModule = Py_InitModule("%(modulename)s", %(modulename)sFunctions);  
   addConstants(%(modulename)sModule);
 }
