@@ -78,7 +78,7 @@ class OWFile(OWWidget):
         if fn!="(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             if fileExt in (".txt",".tab",".xls"):
-                tab=orange.ExampleTable(fn)
+                tab=orange.ExampleTable(fn, dontCheckStored = 1)
             elif fileExt in (".c45",):
                 tab=orange.C45ExampleGenerator(fn)
             else:
