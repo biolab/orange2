@@ -39,6 +39,14 @@ class ColorPaletteHSV:
                 col.setHsv(hue, 255, 255)
                 self.colors.append(col)
 
+    def __getitem__(self, index):
+        if self.numberOfColors == -1:                # is this color for continuous attribute?
+            col = QColor()
+            col.setHsv(index*self.maxHueVal, 255, 255)     # index must be between 0 and 1
+            return col
+        else:                                   # get color for discrete attribute
+            return self.colors[index]           # index must be between 0 and self.numberofColors
+
     # get only hue value for given index
     def getHue(self, index):
         if self.numberOfColors == -1:
@@ -48,12 +56,7 @@ class ColorPaletteHSV:
 
     # get QColor instance for given index
     def getColor(self, index):
-        if self.numberOfColors == -1:                # is this color for continuous attribute?
-            col = QColor()
-            col.setHsv(index*self.maxHueVal, 255, 255)     # index must be between 0 and 1
-            return col
-        else:                                   # get color for discrete attribute
-            return self.colors[index]           # index must be between 0 and self.numberofColors
+        return self.__getitem__(index)
             
 
 # black and white color palette
@@ -66,16 +69,19 @@ class ColorPaletteBW:
         
         if numberOfColors == -1: return  # used for coloring continuous variables
         else:   
-            for val in [int(brightest + (darkest-brightest)*x/float(numberOfColors)) for x in range(numberOfColors)]:
+            for val in [int(brightest + (darkest-brightest)*x/float(numberOfColors-1)) for x in range(numberOfColors)]:
                 self.colors.append(QColor(val, val, val))
-                
-    # get QColor instance for given index
-    def getColor(self, index):
+
+    def __getitem__(self, index):
         if self.numberOfColors == -1:                # is this color for continuous attribute?
             val = int(self.brightest + (self.darkest-self.brightest)*index)
             return QColor(val, val, val)
         else:                                   # get color for discrete attribute
             return self.colors[index]           # index must be between 0 and self.numberofColors
+                
+    # get QColor instance for given index
+    def getColor(self, index):
+        return self.__getitem__(index)
 
         
 
