@@ -18,9 +18,18 @@ import statc, math
 class singleClassLiftCurveGraph(singleClassROCgraph):
     def __init__(self, parent = None, name = None, title = ""):
         singleClassROCgraph.__init__(self, parent, name)
-        self.averagingMethod = 'merge'
-        self.setAxisAutoScale(QwtPlot.yRight)
+
         self.enableYRaxis(1)
+        self.setXaxisTitle("P Rate")
+        self.setAxisAutoScale(QwtPlot.yRight)
+        self.setAxisAutoScale(QwtPlot.yLeft)
+        self.setYLaxisTitle("TP")
+        self.setShowYRaxisTitle(1)
+        self.setYRaxisTitle("Cost")
+        
+        self.setShowMainTitle(1)
+        self.setMainTitle(title)
+        self.averagingMethod = 'merge'
 
     def computeCurve(self, res, classIndex=-1, keepConcavities=1):
         return orngEval.computeLiftCurve(res, classIndex)
@@ -35,9 +44,10 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         ## generate the "base" unmodified Lift curves
         self.targetClass = targetClass
         iteration = 0
+        
         for isplit in splitByIterations:
             # unmodified Lift curve
-            curves = self.computeCurve(isplit, self.targetClass)
+            P, N, curves = self.computeCurve(isplit, self.targetClass)
             self.setIterationCurves(iteration, curves)
             iteration += 1
 
@@ -55,8 +65,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
             i += 1
         self.mergedConvexHullData = []
         if len(mergedIterations.results) > 0:
-            curves = self.computeCurve(mergedIterations, self.targetClass, 1)
-            convexCurves = self.computeCurve(mergedIterations, self.targetClass, 0)
+            self.P, self.N, curves = self.computeCurve(mergedIterations, self.targetClass, 1)
+            _, _, convexCurves = self.computeCurve(mergedIterations, self.targetClass, 0)
             classifier = 0
             for c in curves:
                 x = [px for (px, py, pf) in c]
@@ -72,6 +82,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
                 ckey = self.mergedConvexCKeys[classifier]
                 self.setCurveData(ckey, x, y)
                 classifier += 1
+
+            self.setCurveData(self.diagonalCKey, [0.0, 1.0], [0.0, self.P])               
         else:
             for c in range(len(self.mergedCKeys)):
                 self.setCurveData(self.mergedCKeys[c], [], [])
@@ -94,12 +106,12 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
         globalMinCost = 0
         globalMinCostPoints = []
 
-        for (x, TPrate, fp) in self.hullCurveDataForPerfLine:
+        for (x, TP, fp) in self.hullCurveDataForPerfLine:
             first = 1
             minc = 0
             localMinCostPoints = []
             for (cNum, (threshold, FPrate)) in fp:
-                cost = self.pvalue*(1.0 - TPrate)*self.FNcost + (1.0 - self.pvalue)*FPrate*self.FPcost
+                cost = self.pvalue*(1.0 - TP/self.P)*self.FNcost + (1.0 - self.pvalue)*FPrate*self.FPcost
                 if first or cost < minc:
                     first = 0
                     minc = cost
@@ -157,77 +169,64 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
-                    "ConvexHullCurveWidth", "HullColor"]
+                    "ConvexHullCurveWidth", "HullColor", "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
     def __init__(self, parent=None):
-        "Constructor"
-        OWWidget.__init__(self, parent, "Lift Curve", 1)
+        OWWidget.__init__(self, parent, "Lift Curve Analysis", 1)
 
-        #set default settings
+        # inputs
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]
+
+        # default settings
         self.PointWidth = 7
         self.CurveWidth = 3
+        self.ConvexCurveWidth = 1
         self.ShowDiagonal = TRUE
         self.ConvexHullCurveWidth = 3
         self.HullColor = str(Qt.yellow.name())
+        self.ShowConvexHull = TRUE
+        self.ShowConvexCurves = FALSE
+        self.EnablePerformance = TRUE
 
         #load settings
         self.loadSettings()
-
-        # GUI
-##        self.missClassificationCostQVB = QVGroupBox(self)
-##        self.missClassificationCostQVB.hide()
-        self.grid.expand(3, 3)
-##        self.grid.addMultiCellWidget(self.missClassificationCostQVB,0,3,2,2)
-
-        self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
-##        self.graphsGridLayoutQGL.setResizeMode(QGridLayout.Fixed)
-        ## save each Lift Curve graph in separate file
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
-        self.graphButton.setText("&Save Graphs (each in its own file)")
-
-        # inputs
-        # data and graph temp variables
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]
 
         # temp variables
         self.dres = None
         self.classifierColor = None
         self.numberOfClasses  = 0
-        self.targetClass = 0
-        self.clPerformanceControls = []
+        self.targetClass = None
         self.numberOfClassifiers = 0
         self.numberOfIterations = 0
         self.graphs = []
         self.maxp = 1000
         self.defaultPerfLinePValues = []
 
-        self.options = OWLiftCurveOptions()
-        self.activateLoadedSettings()
+        # performance analysis (temporary values
+        self.FPcost = 500.0
+        self.FNcost = 500.0
+        self.pvalue = 50.0 ##0.400
 
-        #connect settingsbutton to show options
-        self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
+        # list of values (remember for each class)
+        self.FPcostList = []
+        self.FNcostList = []
+        self.pvalueList = []
 
-        #connect GUI controls of options in options dialog to settings
-        self.connect(self.options.pointWidthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
-        self.connect(self.options.lineWidthSlider, SIGNAL("valueChanged(int)"), self.setCurveWidth)
-        self.connect(self.options.showDiagonalQCB, SIGNAL("toggled(bool)"), self.setShowDiagonal)
-        self.connect(self.options.hullWidthSlider, SIGNAL("valueChanged(int)"), self.setConvexHullCurveWidth)
-        self.connect(self.options, PYSIGNAL("hullColorChange(QColor &)"), self.setHullColor)
+        # GUI
+        self.grid.expand(3, 3)
+        self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
+        # save each ROC graph in separate file
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
-        # GUI connections
-        self.splitQS = QSplitter(self.space)
-        self.splitQS.setOrientation(Qt.Vertical)
+        ## general tab
+        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
+        self.generalTab = QVGroupBox(self)
 
-        ## class selection (classQLB)
-##        self.classQVGB = QVGroupBox(self.splitQS)
-##        self.classQVGB.setTitle("Classes")
-##        self.classQLB = QListBox(self.classQVGB)
-##        self.classQLB.setSelectionMode(QListBox.Multi)
-##        self.unselectAllClassedQLB = QPushButton("(Un)select all", self.classQVGB)
-##        self.connect(self.unselectAllClassedQLB, SIGNAL("clicked()"), self.SUAclassQLB)
-##        self.connect(self.classQLB, SIGNAL("selectionChanged()"), self.classSelectionChange)
+        ## target class
+        self.classCombo = OWGUI.comboBox(self.generalTab, self, 'targetClass', box='Target Class', items=[], callback=self.target)
+        self.classCombo.setMaximumSize(150, 20)
 
         ## classifiers selection (classifiersQLB)
-        self.classifiersQVGB = QVGroupBox(self.splitQS)
+        self.classifiersQVGB = QVGroupBox(self.generalTab)
         self.classifiersQVGB.setTitle("Classifiers")
         self.classifiersQLB = QListBox(self.classifiersQVGB)
         self.classifiersQLB.setSelectionMode(QListBox.Multi)
@@ -236,73 +235,69 @@ class OWLiftCurve(OWROC):
         self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
 
         # show Lift Curve convex hull
-        self.convexhullQCB = QCheckBox("Lift Curve convex hull", self.classifiersQVGB)
-        self.connect(self.convexhullQCB, SIGNAL("stateChanged(int)"), self.setShowConvexHull)
+        OWGUI.checkBox(self.generalTab, self, 'ShowConvexHull', 'Show Lift Convex Hull', tooltip='', callback=self.setShowConvexHull)
+        self.tabs.insertTab(self.generalTab, "General")
+        
+
+        # performance analysis
+        self.performanceTab = QVGroupBox(self)
+        self.performanceTabCosts = QVGroupBox(self.performanceTab)
+        OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show Performance Line', tooltip='', callback=self.setShowPerformanceAnalysis)
+
+        ## FP and FN cost ranges
+        mincost = 1; maxcost = 1000; stepcost = 5;
+        self.maxpsum = 100; self.minp = 1; self.maxp = self.maxpsum - self.minp ## need it also in self.pvaluesUpdated
+        stepp = 1.0
+
+        OWGUI.hSlider(self.performanceTabCosts, self, 'FPcost', box='FP Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
+        OWGUI.hSlider(self.performanceTabCosts, self, 'FNcost', box='FN Cost', minValue=mincost, maxValue=maxcost, step=stepcost, callback=self.costsChanged, ticks=50)
+        OWGUI.hSlider(self.performanceTabCosts, self, 'pvalue', box='p(cl) [%]', minValue=self.minp, maxValue=self.maxp, step=stepp, callback=self.pvaluesUpdated, ticks=5, labelFormat="%2.1f")
+        OWGUI.button(self.performanceTabCosts, self, 'Default p(cl)', self.setDefaultPValues) ## reset p values to default
 
         ## test set selection (testSetsQLB)
-        self.testSetsQVGB = QVGroupBox(self.splitQS)
+        self.testSetsQVGB = QVGroupBox(self.performanceTab)
         self.testSetsQVGB.setTitle("Test sets")
         self.testSetsQLB = QListBox(self.testSetsQVGB)
         self.testSetsQLB.setSelectionMode(QListBox.Multi)
         self.connect(self.testSetsQLB, SIGNAL("selectionChanged()"), self.testSetsSelectionChange)
         self.unselectAllTestSetsQLB = QPushButton("(Un)select all", self.testSetsQVGB)
         self.connect(self.unselectAllTestSetsQLB, SIGNAL("clicked()"), self.SUAtestSetsQLB)
+        self.tabs.insertTab(self.performanceTab, "Analysis")
 
-        self.performanceQVGB = QVGroupBox(self.space)
-        self.performanceQVGB.setTitle("Performance line")
-        self.showPerformanceAnalysisQCB = QCheckBox("Enable", self.performanceQVGB)
-        self.missClassificationCostQVB = QVBox(self.performanceQVGB)
-        self.connect(self.showPerformanceAnalysisQCB, SIGNAL("stateChanged(int)"), self.setShowPerformanceAnalysis)
-        self.showPerformanceAnalysisQCB.setChecked(0)
+        # settings tab
+        self.settingsTab = QVGroupBox(self)
+        OWGUI.hSlider(self.settingsTab, self, 'PointWidth', box='Point Width', minValue=3, maxValue=5, step=9, callback=self.setPointWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'CurveWidth', box='Lift Curve Width', minValue=1, maxValue=5, step=1, callback=self.setCurveWidth, ticks=1)
+        OWGUI.hSlider(self.settingsTab, self, 'ConvexHullCurveWidth', box='Lift Curve Convex Hull', minValue=2, maxValue=9, step=1, callback=self.setConvexHullCurveWidth, ticks=1)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show Diagonal', tooltip='', callback=self.setShowDiagonal)
+        self.tabs.insertTab(self.settingsTab, "Settings")
 
-        self.resize(800, 768)
-        szs = self.splitQS.sizes()
-        sum = 0
-        for v in szs: sum += v
-        self.splitQS.setSizes( [round(1.0/5.0*sum), round(2.0/5.0*sum), round(2.0/5.0*sum)] )
-
-    def activateLoadedSettings(self):
-        self.options.pointWidthSlider.setValue(self.PointWidth)
-        self.options.pointWidthLCD.display(self.PointWidth)
-        self.setPointWidth(self.PointWidth)
-        #
-        self.options.lineWidthSlider.setValue(self.CurveWidth)
-        self.options.lineWidthLCD.display(self.CurveWidth)
-        self.setCurveWidth(self.CurveWidth)
-        #
-        self.options.showDiagonalQCB.setChecked(self.ShowDiagonal)
-        self.setShowDiagonal(self.ShowDiagonal)
-        #
-        self.options.hullWidthSlider.setValue(self.ConvexHullCurveWidth)
-        self.options.hullWidthLCD.display(self.ConvexHullCurveWidth)
-        self.setConvexHullCurveWidth(self.ConvexHullCurveWidth)
-        #
-        self.options.hullColor.setNamedColor(QString(self.HullColor))
-        self.setHullColor(self.options.hullColor)
+        self.resize(800, 600)
 
     def calcAllClassGraphs(self):
-        cl = 0
-        for g in self.graphs:
+        for (cl, g) in enumerate(self.graphs):
             g.setNumberOfClassifiersIterationsAndClassifierColors(self.dres.classifierNames, self.numberOfIterations, self.classifierColor)
             g.setTestSetData(self.dresSplitByIterations, cl)
-            g.setShowConvexHull(self.convexhullQCB.isChecked())
-            g.setShowPerformanceLine(self.showPerformanceAnalysisQCB.isChecked())
+            g.setShowConvexHull(self.ShowConvexHull)
+            g.setShowPerformanceLine(self.EnablePerformance)
 
             ## user settings
             g.setPointWidth(self.PointWidth)
             g.setCurveWidth(self.CurveWidth)
             g.setShowDiagonal(self.ShowDiagonal)
             g.setConvexHullCurveWidth(self.ConvexHullCurveWidth)
-            g.setHullColor(self.options.hullColor)
-
-##          g.replot()
-##            g.repaint()
-            cl += 1
+            g.setHullColor(QColor(self.HullColor))
 
     def results(self, dres):
+        self.FPcostList = []
+        self.FNcostList = []
+        self.pvalueList = []
+
+        if not dres:
+            self.targetClass = None
+            return
         self.dres = dres
 
-##        self.classQLB.clear()
         self.classifiersQLB.clear()
         self.testSetsQLB.clear()
         self.removeGraphs()
@@ -314,9 +309,11 @@ class OWLiftCurve(OWROC):
             self.graphs = []
 
             for i in range(self.numberOfClasses):
-                graph = singleClassLiftCurveGraph(self.mainArea, "", self.dres.classValues[i])
+                self.FPcostList.append( 500)
+                self.FNcostList.append( 500)
+                graph = singleClassLiftCurveGraph(self.mainArea, "", "Predicted Class: " + self.dres.classValues[i])
                 self.graphs.append( graph )
-            self.target(self.targetClass)
+                self.classCombo.insertItem(self.dres.classValues[i])
 
             ## classifiersQLB
             self.classifierColor = []
@@ -336,11 +333,6 @@ class OWLiftCurve(OWROC):
 
             self.calcAllClassGraphs()
 
-            ## update graphics
-            ## classQLB
-##            self.classQLB.insertStrList(self.dres.classValues)
-##            self.classQLB.selectAll(1)  ##or: if numberOfClasses > 0: self.classQLB.setSelected(0, 1)
-
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
                 newColor = self.classifierColor[i]
@@ -359,9 +351,13 @@ class OWLiftCurve(OWROC):
                 if reminder < 0:
                     v = v+reminder
                 self.defaultPerfLinePValues.append(v)
+                self.pvalueList.append( v)
+
+            self.targetClass = 0 ## select first target
+            self.target()
         else:
             self.classifierColor = None
-        self.setPerformanceLineBox()
+        self.performanceTabCosts.setEnabled(1)
         self.setDefaultPValues()
 
 if __name__ == "__main__":
@@ -370,6 +366,5 @@ if __name__ == "__main__":
     a.setMainWidget(owdm)
     owdm.show()
     a.exec_loop()
-    owdm.saveSettings()
 
 
