@@ -572,7 +572,7 @@ class OWRadvizGraph(OWVisGraph):
                         
                         # save the permutation
                         tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
-                        if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
+                        if not self.kNNOptimization.onlyOnePerSubset:
                             addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation])
 
                         self.triedPossibilities += 1
@@ -583,7 +583,7 @@ class OWRadvizGraph(OWVisGraph):
                         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
                         else: funct = min
                         (acc, other_results, lenTable, attrList) = funct(tempList)
-                        if addResultFunct: addResultFunct(acc, other_results, lenTable, attrList)
+                        addResultFunct(acc, other_results, lenTable, attrList)
 
    
 

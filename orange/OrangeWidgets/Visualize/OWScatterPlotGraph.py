@@ -443,7 +443,7 @@ class OWScatterPlotGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
         
-    def getOptimalSeparation(self, projections, addResultFunct = None):
+    def getOptimalSeparation(self, projections, addResultFunct):
         testIndex = 0
         totalTestCount = len(projections)
 
@@ -476,7 +476,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
             # save the permutation
-            if addResultFunct: addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name])
+            addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name])
             self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
 
 

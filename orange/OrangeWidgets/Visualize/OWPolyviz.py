@@ -276,8 +276,8 @@ class OWPolyviz(OWWidget):
             l = len(proj)
             for i in range(len(proj)-2, 0, -1):
                 if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            res = QMessageBox.information(self,'Polyviz','There are %s possible polyviz projections with the selected number of attributes. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
-            if res != 0: return
+            self.warning("There are %s possible polyviz projections using currently visualized attributes"% (proj))
+            
         
         self.progressBarInit()
         self.optimizationDlg.disableControls()
@@ -393,7 +393,7 @@ class OWPolyviz(OWWidget):
         print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(proj, secs/60, secs%60)
 
     
-    def addInterestingProjection(self, data, accuracy, other_results, tableLen, attrList, reverse):
+    def addInterestingProjection(self, accuracy, other_results, tableLen, attrList, reverse):
         strList = "["
         for i in range(len(attrList)):
             if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
@@ -401,7 +401,7 @@ class OWPolyviz(OWWidget):
             else:
                 strList += attrList[i] + "+, "
         strList = strList[:-2] + "]"
-        self.optimizationDlg.addResult(data, accuracy, other_results, tableLen, attrList, strList)
+        self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, strList)
         
 
     def reverseSelectedAttribute(self, item):
