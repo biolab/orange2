@@ -277,6 +277,11 @@ distribution of classes for each attribute.
         self.setYPaxisTitle("P( " + outcomeName + " = " + values[int(targetValue)] + " )")
 
     def cdata(self, data):
+        if hasattr(self, "data") and self.data:
+                oldVarName = self.data.getVarNames()[self.Variable]
+        else:
+                oldVarName = "*"
+
         self.data = data
 
         if self.data == None:
@@ -287,18 +292,23 @@ distribution of classes for each attribute.
             self.graph.setShowYRaxisTitle(0)
             return
 
-        self.setVariablesComboBox(self.data.getVarNames())
+        if oldVarName in self.data.getVarNames():
+            ind = self.data.getVarNames().index(oldVarName)
+        else:
+            ind = 0
+            
+        self.setVariablesComboBox(self.data.getVarNames(), ind)
         self.setOutcomeNames(self.data.getVarValues(self.data.getOutcomeName()))
         self.dc = self.data.getDC()
-        self.setVariable(self.data.getVarNames()[0])
+        self.setVariable(self.data.getVarNames()[ind])
 
-    def setVariablesComboBox(self, list):
+    def setVariablesComboBox(self, list, defaultItem = 0):
         "Set the variables with the suplied list."
         self.variablesQCB.clear()
         for i in list:
             self.variablesQCB.insertItem(i)
         if len(list) > 0:
-            self.variablesQCB.setCurrentItem(0)
+            self.variablesQCB.setCurrentItem(defaultItem)
 
 #
 #
