@@ -622,7 +622,7 @@ int TDiscDistribution::highestProbIntIndex() const
       wins = 1;
     }
     else if ((operator[](i)==bestP) && _globalRandom->randbool(++wins))
-      best=i;
+      best = i;
 
   return best;
 }
@@ -650,7 +650,7 @@ int TDiscDistribution::highestProbIntIndex(const long &random) const
   if (wins==1)
     return best;
 
-  for(wins = 1 + random % wins; wins; i++);
+  for(i = 0, wins = 1 + random % wins; wins; i++);
     if (operator[](i)==bestP)
       wins--;
 
@@ -682,7 +682,8 @@ int TDiscDistribution::highestProbIntIndex(const TExample &exam) const
 
   int sumex = exam.sumValues();
   wins = 1 + (sumex ? sumex : _globalRandom->randlong()) % wins;
-    
+
+  i = 0;    
   while (wins)
     if (operator[](i++)==bestP)
       wins--;

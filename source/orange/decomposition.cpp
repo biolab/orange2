@@ -71,7 +71,7 @@ TSortedExamples_nodeIndices::TSortedExamples_nodeIndices(PExampleGenerator eg, c
       const_ITERATE(vector<bool>, bi, bound) {
         if (*bi) {
           if ((*attr)->varType!=TValue::INTVAR)
-            raiseError("attribute '%s' is not discrete", (*attr)->name.c_str());
+            raiseError("bound attribute '%s' is not discrete", (*attr)->name.c_str());
 
           int values=(*attr)->noOfValues();
           if (values<=0)
@@ -88,8 +88,11 @@ TSortedExamples_nodeIndices::TSortedExamples_nodeIndices(PExampleGenerator eg, c
     { sortByAttr(eg->domain->attributes->size(), sorting, eg->domain->classVar->noOfValues());
       TVarList::iterator attr = eg->domain->attributes->begin();
       const_ITERATE(vector<bool>, fi, free) {
-        if (*fi)
+        if (*fi) {
+          if ((*attr)->varType != TValue::INTVAR)
+            raiseError("free attribute '%s' is not discrete", (*attr)->name.c_str());
           sortByAttr(fi-free.begin(), sorting, (*attr)->noOfValues());
+        }
         attr++;
       }
     }
