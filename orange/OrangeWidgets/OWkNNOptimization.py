@@ -42,8 +42,8 @@ class kNNOptimization(OWBaseWidget):
 		self.minExamples = 0
 		self.resultListLen = 100
 		self.percentDataUsed = 100
-		self.qualityMeasure = 0
-		self.testingMethod = 0
+		self.qualityMeasure = 1
+		self.testingMethod = 1
 		self.optimizationType = 0
 		self.attributeCountIndex = 0
 		self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
@@ -308,7 +308,7 @@ class kNNOptimization(OWBaseWidget):
 
 		# open, write and save file
 		file = open(name, "wt")
-		attrs = ["kValue", "minExamples", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod"]
+		attrs = ["kValue", "minExamples", "resultListLen", "percentDataUsed", "qualityMeasure", "testingMethod", "parentName"]
 		dict = {}
 		for attr in attrs:
 			dict[attr] = self.__dict__[attr]
@@ -332,6 +332,11 @@ class kNNOptimization(OWBaseWidget):
 
 		file = open(name, "rt")
 		settings = eval(file.readline()[:-1])
+		if settings.has_key("parentName") and settings["parentName"] != self.parentName:
+			QMessageBox.critical( None, "Optimization Dialog", 'Unable to load projection file. It was saved for %s method'%(settings["parentName"]), QMessageBox.Ok)
+			file.close()
+			return
+
 		self.setSettings(settings)
 
 		line = file.readline()[:-1]; ind = 0
