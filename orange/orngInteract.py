@@ -154,7 +154,10 @@ class InteractionMatrix:
             if simple_too:
                 simp = 0.0
                 for k in xrange(min(len(atc.a),len(atc.b))):
-                    simp += atc.pm[k,k]
+                    try:
+                        simp += atc.pm[k,k]
+                    except:
+                        pass
                 self.simple[(i,-1)] = simp
             # fix the name
             st = '%s'%t.domain.attributes[i].name # copy
