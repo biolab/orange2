@@ -37,6 +37,7 @@ preprocessors to filter/change the data.
 """)
         
         self.callbackDeposit = []
+        self.controledAttributes = []
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset, 1)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier)]
@@ -132,6 +133,7 @@ preprocessors to filter/change the data.
         self.estim = idx
         self.hbxRel1.setEnabled(idx == 3)
         self.hbxRel2.setEnabled(idx == 3)
+        self.bin = (idx == 2)
         
     # handle input signals        
 
