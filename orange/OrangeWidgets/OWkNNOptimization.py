@@ -24,7 +24,7 @@ OTHER_RESULTS = 1
 LEN_TABLE = 2
 ATTR_LIST = 3
 TRY_INDEX = 4
-STR_LIST = 5
+REVERSE_LIST = 5
 
 OTHER_ACCURACY = 0
 OTHER_PREDICTIONS = 1
@@ -302,13 +302,13 @@ class kNNOptimization(OWBaseWidget):
         self.selectedClasses = self.getSelectedClassValues()
         if len(self.selectedClasses) in [self.classesList.count(), 0]:
             for result in results:
-                self.addResult(result[OTHER_RESULTS][0], result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[STR_LIST])
+                self.addResult(result[OTHER_RESULTS][0], result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[REVERSE_LIST])
         else: 
             for result in results:
                 acc = 0.0; sum = 0.0
                 for index in self.selectedClasses:
                     acc += result[OTHER_RESULTS][OTHER_PREDICTIONS][index] * result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]; sum += result[OTHER_RESULTS][OTHER_DISTRIBUTION][index]
-                self.addResult(acc/sum, result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[STR_LIST])
+                self.addResult(acc/sum, result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[TRY_INDEX], result[REVERSE_LIST])
                 
         self.finishedAddingResults()
 
@@ -354,9 +354,7 @@ class kNNOptimization(OWBaseWidget):
                 if self.showAccuracy: string += "%.2f" % (self.allResults[i][ACCURACY])
                 if not self.showInstances and self.showAccuracy: string += " : "
                 elif self.showInstances: string += " (%d) : " % (self.allResults[i][LEN_TABLE])
-
-                if self.allResults[i][STR_LIST] != "": string += self.allResults[i][STR_LIST]
-                else: string += self.buildAttrString(self.allResults[i][ATTR_LIST])
+                string += self.buildAttrString(self.allResults[i][ATTR_LIST], self.allResults[i][REVERSE_LIST])
                 
                 self.resultList.insertItem(string)
                 self.shownResults.append(self.allResults[i])
@@ -436,10 +434,10 @@ class kNNOptimization(OWBaseWidget):
         return attrs
 
     
-    def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, strList = ""):
+    def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList = []):
         if self.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
-        self.insertItem(accuracy, other_results, lenTable, attrList, self.findTargetIndex(accuracy, funct), tryIndex, strList)
+        self.insertItem(accuracy, other_results, lenTable, attrList, self.findTargetIndex(accuracy, funct), tryIndex, attrReverseList)
         qApp.processEvents()        # allow processing of other events
 
     # use bisection to find correct index
@@ -458,10 +456,10 @@ class kNNOptimization(OWBaseWidget):
             return bottom
 
     # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
-    # parameter strList can be a pre-formated string containing attribute list (used by polyviz)
-    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, strList = ""):
+    # parameter attrReverseList can be a list used by polyviz
+    def insertItem(self, accuracy, other_results, lenTable, attrList, index, tryIndex, attrReverseList = []):
         if index < self.maxResultListLen:
-            self.allResults.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, strList))
+            self.allResults.insert(index, (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList))
         if index < self.resultListLen:
             string = ""
             if self.showRank: string += str(index+1) + ". "
@@ -469,11 +467,10 @@ class kNNOptimization(OWBaseWidget):
             if not self.showInstances and self.showAccuracy: string += " : "
             elif self.showInstances: string += " (%d) : " % (lenTable)
 
-            if strList != "": string += strList
-            else: string += self.buildAttrString(attrList)
+            string += self.buildAttrString(attrList, attrReverseList)
 
             self.resultList.insertItem(string, index)
-            self.shownResults.insert(index, (accuracy, lenTable, other_results, attrList, tryIndex, strList))
+            self.shownResults.insert(index, (accuracy, lenTable, other_results, attrList, tryIndex, attrReverseList))
 
         # remove worst projection if list is too long
         if self.resultList.count() > self.resultListLen:
@@ -645,13 +642,14 @@ class kNNOptimization(OWBaseWidget):
 
         testIndex = 0
         strTotal = createStringFromNumber(len(results))
-        for (acc, other, tableLen, attrList, tryIndex, strList) in results:
+        for (acc, other, tableLen, attrList, tryIndex, attrReverseList) in results:
             if self.isOptimizationCanceled(): continue
             testIndex += 1
             self.parentWidget.progressBarSet(100.0*testIndex/float(len(results)))
 
-            accuracy, other_results = self.graph.getProjectionQuality(attrList)            
-            self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, strList)
+            if attrReverseList != []: accuracy, other_results = self.graph.getProjectionQuality(attrList, attrReverseList)
+            else:                     accuracy, other_results = self.graph.getProjectionQuality(attrList)            
+            self.addResult(accuracy, other_results, tableLen, attrList, tryIndex, attrReverseList)
             self.setStatusBarText("Evaluated %s/%s projections..." % (createStringFromNumber(testIndex), strTotal))
 
         self.setStatusBarText("")
@@ -694,7 +692,7 @@ class kNNOptimization(OWBaseWidget):
         
         file.write("%s\n" % (str(dict)))
         file.write("%s\n" % str(self.selectedClasses))
-        for (acc, other_results, lenTable, attrList, tryIndex, strList) in self.shownResults:
+        for (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) in self.shownResults:
             s = "(%.3f, (" % (acc)
             for val in other_results:
                 if type(val) == float: s += "%.3f ," % val
@@ -707,7 +705,7 @@ class kNNOptimization(OWBaseWidget):
                     if s[-2] == ",": s = s[:-2]
                     s += "], "
             if s[-2] == ",": s = s[:-2]
-            s += "), %d, %s, %d, '%s')" % (lenTable, str(attrList), tryIndex, strList)
+            s += "), %d, %s, %d, %s)" % (lenTable, str(attrList), tryIndex, attrReverseList)
             file.write(s + "\n")
         file.flush()
         file.close()
@@ -756,8 +754,8 @@ class kNNOptimization(OWBaseWidget):
             return
         
         while (line != ""):
-            (acc, other_results, lenTable, attrList, tryIndex, strList) = eval(line)
-            self.insertItem(acc, other_results, lenTable, attrList, ind, tryIndex, strList)
+            (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) = eval(line)
+            self.insertItem(acc, other_results, lenTable, attrList, ind, tryIndex, attrReverseList)
             line = file.readline()[:-1]
             ind+=1
         file.close()
@@ -842,11 +840,20 @@ class kNNOptimization(OWBaseWidget):
         else: return min
     
     # from a list of attributes build a nice string with attribute names
-    def buildAttrString(self, attrList):
+    def buildAttrString(self, attrList, attrReverseList):
         if len(attrList) == 0: return ""
-        strList = attrList[0]
-        for item in attrList[1:]:
-            strList = strList + ", " + item
+        
+        if attrReverseList != []:
+            strList = ""
+            for i in range(len(attrList)):
+                strList += attrList[i]
+                if attrReverseList[i]: strList += "-"
+                strList += ", "
+            strList = strList[:-2]
+        else:
+            strList = attrList[0]
+            for attr in attrList[1:]:
+                strList += ", " + attr
         return strList
 
     def getOptimizationType(self):
@@ -913,7 +920,7 @@ class kNNOptimization(OWBaseWidget):
             if foundArguments >= argumentCount and (not self.canUseMoreArguments or (max(vals)*100.0 / sum(vals) > self.moreArgumentsNums[self.moreArgumentsIndex]) or foundArguments >= argumentCount + 100): break
 
             qApp.processEvents()
-            (accuracy, other_results, lenTable, attrList, tryIndex, strList) = self.allResults[index]
+            (accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList) = self.allResults[index]
             attrVals = [testExample[self.graph.attributeNameIndex[attrList[i]]] for i in range(len(attrList))]
             if "?" in attrVals: continue    # the testExample has a missing value at one of the visualized attributes
             [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals)
