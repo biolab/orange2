@@ -462,20 +462,20 @@ class OWRadviz(OWWidget):
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         noChange = 0
         while noChange < 5:
-        for i in range(iterations):
+            for i in range(iterations):
                 self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
-            self.energyLabel.setText("Energy: %.3f" % E)
-            self.energyLabel.repaint()
-            self.graph.updateData(attrList)
-            self.graph.repaint()
-            if singleStep:
-                noChange = 5
-            else:
-                if E > minE*0.99:
-                    noChange += 1
+                self.energyLabel.setText("Energy: %.3f" % E)
+                self.energyLabel.repaint()
+                self.graph.updateData(attrList)
+                self.graph.repaint()
+                if singleStep:
+                    noChange = 5
                 else:
-                    minE = E
-                    noChange = 0
+                    if E > minE*0.99:
+                        noChange += 1
+                    else:
+                        minE = E
+                        noChange = 0
 
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 100)
