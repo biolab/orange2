@@ -85,6 +85,32 @@ bool TFilter_hasSpecial::operator()(const TExample &exam)
 }
 
 
+TFilter_isDefined::TFilter_isDefined(bool aneg, PDomain dom)
+: TFilter(aneg, dom),
+  check(mlnew TBoolList(dom ? dom->variables->size(): 0))
+{}
+
+
+bool TFilter_isDefined::operator()(const TExample &exam)
+{
+  if (!check || !check->size()) {
+    const_ITERATE(TExample, ei, exam)
+      if ((*ei).isSpecial())
+        return negate;
+    return !negate;
+  }
+
+  else {
+    TBoolList::const_iterator ci(check->begin()), ce(check->end());
+    TExample::const_iterator ei(exam.begin()), ee(exam.end());
+    for(; (ci!=ce) && (ei!=ee); ci++, ei++)
+      if (*ci && (*ei).isSpecial())
+        return negate;
+    return !negate;
+  }
+}
+
+
 TFilter_hasClassValue::TFilter_hasClassValue(bool aneg, PDomain dom)
   : TFilter(aneg, dom)
   {}
@@ -195,18 +221,28 @@ TValueFilter_string::TValueFilter_string()
 : TValueFilter(ILLEGAL_INT, -1),
   min(),
   max(),
-  oper(None)
+  oper(None),
+  caseSensitive(true)
 {}
 
 
 
-TValueFilter_string::TValueFilter_string(const int &pos, const int &op, const string &amin, const string &amax, const int &accs)
+TValueFilter_string::TValueFilter_string(const int &pos, const int &op, const string &amin, const string &amax, const int &accs, const bool csens)
 : TValueFilter(pos, accs),
   min(amin),
   max(amax),
-  oper(op)
+  oper(op),
+  caseSensitive(csens)
 {}
 
+
+char *strToLower(string nm)
+{ 
+  char *s = strcpy(new char[nm.size()+1], nm.c_str());
+  for(char *i = s; *i; i++)
+    *i = tolower(*i);
+  return s;
+}
 
 int TValueFilter_string::operator()(const TExample &example) const
 { 
@@ -214,37 +250,51 @@ int TValueFilter_string::operator()(const TExample &example) const
   if (val.isSpecial())
     return acceptSpecial;
 
-  const string &value = val.svalV.AS(TStringValue)->value;
-  const string &ref = min;
+  char *value = caseSensitive ? const_cast<char *>(val.svalV.AS(TStringValue)->value.c_str())
+                              : strToLower(val.svalV.AS(TStringValue)->value.c_str());
 
+  char *ref = caseSensitive ? const_cast<char *>(min.c_str()) : strToLower(min);
+  
   switch(oper) {
-    case Equal:        return TO_BOOL(value == ref);
-    case NotEqual:     return TO_BOOL(value != ref);
-    case Less:         return TO_BOOL(value < ref);
-    case LessEqual:    return TO_BOOL(value <= ref);
-    case Greater:      return TO_BOOL(value > ref);
-    case GreaterEqual: return TO_BOOL(value >= ref);
-    case Contains:     return TO_BOOL(value.find(ref) != string::npos);
-    case NotContains:  return TO_BOOL(value.find(ref) == string::npos);
-    case BeginsWith:   return TO_BOOL(!strncmp(value.c_str(), ref.c_str(), ref.size()));
-    case Between:       return TO_BOOL((value >= min) && (value <= max));
-    case Outside:      return TO_BOOL((value < min) && (value > max));
+    case Equal:        return TO_BOOL(!strcmp(value, ref));
+    case NotEqual:     return TO_BOOL(strcmp(value, ref));
+    case Less:         return TO_BOOL(strcmp(value, ref) < 0);
+    case LessEqual:    return TO_BOOL(strcmp(value, ref) <= 0);
+    case Greater:      return TO_BOOL(strcmp(value, ref) > 0);
+    case GreaterEqual: return TO_BOOL(strcmp(value, ref) >= 0);
+    case Between:      return TO_BOOL((strcmp(value, ref) >= 0) && (strcmp(value, max.c_str()) <= 0));
+    case Outside:      return TO_BOOL((strcmp(value, ref) < 0) && (strcmp(value, max.c_str()) >= 0));
+    case Contains:     return TO_BOOL(string(value).find(ref) != string::npos);
+    case NotContains:  return TO_BOOL(string(value).find(ref) == string::npos);
+    case BeginsWith:   return TO_BOOL(!strncmp(value, ref, strlen(ref)));
 
     case EndsWith:
-      { const int vsize = value.size(), rsize = ref.size();
-        return TO_BOOL((vsize >= rsize) && !strcmp(value.c_str() + (vsize-rsize), ref.c_str()));
+      { const int vsize = strlen(value), rsize = strlen(ref);
+        return TO_BOOL((vsize >= rsize) && !strcmp(value + (vsize-rsize), ref));
       }
 
     default:
       return -1;
   }
+
+  if (!caseSensitive) {
+    delete value;
+    delete ref;
+  }
 }
 
 
+TValueFilter_stringList::TValueFilter_stringList()
+: TValueFilter(ILLEGAL_INT, -1),
+  values(mlnew TStringList()),
+  caseSensitive(true)
+{}
 
-TValueFilter_stringList::TValueFilter_stringList(const int &pos, PStringList bl, const int &accs, const int &op)
+
+TValueFilter_stringList::TValueFilter_stringList(const int &pos, PStringList bl, const int &accs, const int &op, const bool csens)
 : TValueFilter(pos, accs),
-  values(bl)
+  values(bl),
+  caseSensitive(csens)
 {}
 
 int TValueFilter_stringList::operator()(const TExample &example) const
@@ -253,12 +303,32 @@ int TValueFilter_stringList::operator()(const TExample &example) const
   if (val.isSpecial())
     return acceptSpecial;
 
-  const string &value = val.svalV.AS(TStringValue)->value;
+  char *value = caseSensitive ? const_cast<char *>(val.svalV.AS(TStringValue)->value.c_str())
+                              : strToLower(val.svalV.AS(TStringValue)->value.c_str());
+  char *ref = caseSensitive ? NULL : new char[1024];
 
-  const_PITERATE(TStringList, vi, values)
-    if (value == *vi)
-      return 1;
-  return 0;
+  TStringList::const_iterator vi(values->begin()), ve(values->end());
+  for(; vi!=ve; vi++)
+    if (caseSensitive) {
+      if (!strcmp((*vi).c_str(), value))
+        break;
+    }
+    else {
+      if ((*vi).size() >= 1024)
+        raiseError("reference string too long (1023 characters is the limit)");
+      strcpy(ref, (*vi).c_str());
+      for(char *i = ref; *i; i++)
+        *i = tolower(*i);
+      if (!strcmp(ref, value))
+        break;
+    }
+
+  if (!caseSensitive) {
+    delete ref;
+    delete value;
+  }
+
+  return vi==ve ? 0 : 1;
 }
 
 

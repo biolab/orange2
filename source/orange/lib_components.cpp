@@ -1273,7 +1273,8 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 BASED_ON(ValueFilter, Orange)
 C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, oper=, values=, acceptSpecial=])")
 C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, oper=, min=, max=, acceptSpecial=])")
-C_NAMED(ValueFilter_string, ValueFilter, "([position=, oper=, values=])");
+C_NAMED(ValueFilter_string, ValueFilter, "([position=, oper=, min=, max=])");
+C_NAMED(ValueFilter_stringList, ValueFilter, "([position=, oper=, values=])");
 
 
 PYCLASSCONSTANT_INT(ValueFilter, Equal, int(TValueFilter::Equal))
@@ -1305,6 +1306,7 @@ PYCLASSCONSTANT_INT(Filter_values, EndsWith, int(TValueFilter::EndsWith))
 BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
 C_CALL(Filter_hasSpecial, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
+C_CALL(Filter_isDefined, Filter, "([examples], [negate=..., domain=..., checked=]) -/-> ExampleTable")
 C_CALL(Filter_hasClassValue, Filter, "([examples], [negate=..., domain=...]) -/-> ExampleTable")
 C_CALL(Filter_sameValue, Filter, "([examples], [negate=..., domain=..., position=<int>, value=...]) -/-> ExampleTable")
 C_CALL(Filter_values, Filter, "([examples], [negate=..., domain=..., values=<see the manual>) -/-> ExampleTable")
@@ -1335,6 +1337,8 @@ PyObject *ValueFilterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, 
 PyObject *ValueFilterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, (PyTypeObject *)&PyOrValueFilter_Type>::_reverse(self); }
 PyObject *ValueFilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, (PyTypeObject *)&PyOrValueFilter_Type>::_sort(self, args); }
 
+
+PyObject *applyFilterL(PFilter filter, PExampleTable gen);
 
 PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, int weightID)
 { if (!filter) return PYNULL;
@@ -1374,12 +1378,36 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
         return PyInt_FromLong(PyOrange_AsFilter(self)->call(PyExample_AS_ExampleReference(pyex)) ? 1 : 0);
     }
 
-    PExampleGenerator egen = exampleGenFromArgs(args);
-    if (!egen)
-      PYERROR(PyExc_TypeError, "example generator expected", PYNULL);
-    return applyFilter(PyOrange_AsFilter(self), egen, false, 0);
+    PExampleGenerator egen;
+    int references = 0;
+    if (!PyArg_ParseTuple(args, "O&|i:Filter.__call__", &pt_ExampleGenerator, &egen, &references))
+      return PYNULL;
+
+    return references ? applyFilterL(PyOrange_AsFilter(self), egen)
+                      : applyFilter(PyOrange_AsFilter(self), egen, false, 0);
   PyCATCH
 }
+
+
+PyObject *Filter_count(PyObject *self, PyObject *arg) PYARGS(METH_O, "(examples)")
+{ 
+  PyTRY
+    PExampleGenerator egen = exampleGenFromParsedArgs(arg);
+    if (!egen)
+      PYERROR(PyExc_TypeError, "Filter.count: examples expected", PYNULL);
+
+    CAST_TO(TFilter, filter);
+
+    filter->reset();
+    int count = 0;
+    PEITERATE(ei, egen)
+      if (filter->operator()(*ei))
+        count++;
+
+    return PyInt_FromLong(count);
+  PyCATCH
+}
+
 
 
 #include "valuelisttemplate.hpp"
@@ -1455,14 +1483,14 @@ int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
       }
 
       else if (PyTuple_Check(args) && PyTuple_Size(args)) {
-        char *mins, *maxs;
+        char *mins, *maxs = NULL;
         int oper;
         if (!PyArg_ParseTuple(args, "is|s:Filter_values.__setitem__", &oper, &mins, &maxs))
           return -1;
         if ((PyTuple_Size(args) == 3) && (oper != TValueFilter::Between) && (oper != TValueFilter::Outside))
           PYERROR(PyExc_TypeError, "Filter_values.__setitem__: only one reference value expected for the given operator", -1);
 
-        filter->addCondition(var, oper, mins, maxs);
+        filter->addCondition(var, oper, mins, maxs ? maxs : string());
       }
         
       else {

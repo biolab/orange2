@@ -70,6 +70,18 @@ public:
 };
 
 
+/// Selects examples with all values defined
+class TFilter_isDefined : public TFilter {
+public:
+  __REGISTER_CLASS
+
+  PBoolList check; //P tells which attributes to check; checks all if the list is empty
+
+  TFilter_isDefined(bool=false, PDomain =PDomain());
+  virtual bool operator()(const TExample &);
+};
+
+
 /// Selects examples with known class value
 class TFilter_hasClassValue : public TFilter {
 public:
@@ -142,10 +154,11 @@ public:
 
   string min; //P (+ref) reference value (lower bound for interval operators)
   string max; //P upper bound for interval operators
-  int oper;
+  int oper;   //P operator
+  bool caseSensitive; //P if true (default), the operator is case sensitive
 
   TValueFilter_string();
-  TValueFilter_string(const int &pos, const int &op, const string &min, const string &max, const int &accs = -1);
+  TValueFilter_string(const int &pos, const int &op, const string &min, const string &max, const int &accs = -1, const bool csens = true);
   virtual int operator()(const TExample &) const;
 };
 
@@ -155,8 +168,10 @@ public:
   __REGISTER_CLASS
 
   PStringList values; //P accepted values
+  bool caseSensitive; //P if true (default), the comparison is case sensitive
 
-  TValueFilter_stringList(const int &pos, PStringList, const int &accs = -1, const int &op = Equal);
+  TValueFilter_stringList();
+  TValueFilter_stringList(const int &pos, PStringList, const int &accs = -1, const int &op = Equal, const bool csens = true);
   virtual int operator()(const TExample &) const;
 };
 
