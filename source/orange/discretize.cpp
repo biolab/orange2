@@ -909,7 +909,7 @@ void TDiscretizedDomain::learn(PExampleGenerator gen, const vector<int> &discret
 
   PITERATE(TVarList, vi, gen->domain->variables)
     if ((idi!=discretizeId.end()) && (*idi==tid) && ((*vi)->varType==TValue::FLOATVAR)) {
-      // if some joker wants the same attribute discretized twice...
+      // if someone wants the same attribute discretized twice, he won't get it
       while (*idi==tid)
         idi++;
       tid++;

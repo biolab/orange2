@@ -275,7 +275,7 @@ TExample &TExampleTable::back()
   if (_Last == examples)
     raiseError("no examples");
 
-  return **_Last;
+  return *_Last[-1];
 }
 
 
@@ -284,7 +284,7 @@ const TExample &TExampleTable::back() const
   if (_Last == examples)
     raiseError("no examples");
 
-  return **_Last;
+  return *_Last[-1];
 }
 
 
