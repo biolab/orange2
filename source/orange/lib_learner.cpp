@@ -666,6 +666,12 @@ PyObject *C45TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 C_CALL(kNNLearner, Learner, "([examples] [, weight=, k=] -/-> Classifier")
 C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 
+/************* Logistic Regression ************/
+
+#include "logistic.hpp"
+C_CALL(LogisticLearner, Learner, "([examples] [, weight=, estimate=] -/-> Classifier")
+C_NAMED(LogisticClassifier, ClassifierFD, "([probabilities=])")
+
 
 /************* SVM ************/
 
