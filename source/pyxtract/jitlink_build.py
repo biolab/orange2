@@ -1,23 +1,27 @@
 import re, sys
 
 re_funcdef = re.compile(r"extern[^(]*\(\*i__(?P<cname>[^)]+)\)[^;]+;(\s*//\s*AS\s+(?P<dllfname>.*))")
+if sys.platform == "win32":
+    slext = ".dll"
+else:
+    slext = ".so"
 
 dllname = hppname = None
 for arg in sys.argv:
-    if arg[-4:] == ".dll":
+    if arg[-4:] == slext:
         dllname = arg
     elif arg[-4:] == ".hpp":
         hppname = arg
 
 if not dllname:
-    print "DLL name not given"
+    print "shared library name not given"
     sys.exit(1)
 
 if not hppname:
     print "hpp file not given"
     sys.exit(1)
 
-dllnice = dllname[:-4]
+dllnice = dllname[:-len(slext)]
 
 functions = []
 for r in file(hppname):

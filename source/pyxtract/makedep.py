@@ -26,7 +26,7 @@ def finddeps(filename):
     found = includedef.match(line)
     if not found:
       continue
-      
+
     depname = os.path.split(found.group("filename"))[1]
     if (depname[-4:]==".ppp"):
       ppp_timestamp_dep.append(depname[:-4]+".hpp")
@@ -38,7 +38,7 @@ def finddeps(filename):
         if not filename in px_timestamp_dep:
           px_timestamp_dep.append(filename)
 
-      if not depname in files and depname!="Python.h" and depname[-3:]!=".px" and depname[-2:]!=".i" and depname[-2:]!=".h":
+      if not depname in files and depname!="Python.h" and depname[-3:]!=".px" and depname[-2:]!=".i" and depname[-2:]!=".h" and depname[-4:]!=".jpp" and depname[-4:]!=".ipp":
 #        print "%s:%i: Warning: included file %s not found" % (filename, lineno, depname)
         continue
       else:
