@@ -90,7 +90,7 @@ PyObject *AssociationRulesInducer_call(PyObject *self, PyObject *args, PyObject 
     SETATTRIBUTES
 
     int weightID;
-    PExampleGenerator egen = exampleGenFromArgs(args, &weightID);
+    PExampleGenerator egen = exampleGenFromArgs(args, weightID);
     if (!egen)
       return PYNULL;
 
@@ -105,7 +105,7 @@ PyObject *AssociationRulesSparseInducer_call(PyObject *self, PyObject *args, PyO
     SETATTRIBUTES
 
     int weightID = 0;
-    PExampleGenerator egen =  exampleGenFromArgs(args, &weightID);
+    PExampleGenerator egen =  exampleGenFromArgs(args, weightID);
     if (!egen)
       return PYNULL;
 
@@ -713,7 +713,7 @@ PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) 
     SETATTRIBUTES
 
     int weight;
-    PExampleGenerator egen = exampleGenFromArgs(args, &weight);
+    PExampleGenerator egen = exampleGenFromArgs(args, weight);
     if (!egen)
       return PYNULL;
 

@@ -336,7 +336,7 @@ PyObject *DomainBasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *
     PyErr_Clear();
 
     int weightID;
-    PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen)
       return WrapNewOrange(mlnew TDomainBasicAttrStat(gen, weightID), type);
       
@@ -958,7 +958,7 @@ PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *ke
     PyErr_Clear();
 
     int weightID;
-    PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (!gen)
       return PYNULL;
 
@@ -1114,7 +1114,7 @@ PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs, PyOb
     int weightID = 0;
     PDomainDistributions dist;
     PDomainBasicAttrStat bstat;
-    if (!PyArg_ParseTuple(uargs, "|OOOO:ExamplesDistanceConstructor.call", args+0, args+1, args+2, args+3))
+    if (!PyArg_UnpackTuple(uargs, "ExamplesDistanceConstructor.call", 0, 4, args+0, args+1, args+2, args+3))
       return PYNULL;
 
     PyObject **argp = args, **argc = args;
@@ -1310,7 +1310,7 @@ PyObject *ValueFilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, int weightID)
 { if (!filter) return PYNULL;
 
-  TExampleTable *newTable=mlnew TExampleTable(gen->domain);
+  TExampleTable *newTable = mlnew TExampleTable(gen->domain);
   PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
   filter->reset();
   PEITERATE(ei, gen)
@@ -1397,8 +1397,8 @@ PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
     }
 
     int weightID = 0;
-    PExampleGenerator gen;
-    if (PyArg_ParseTuple(args, "O&|O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
+    if (gen)
       return WrapOrange(SELF_AS(TImputer)(gen, weightID));
 
     PYERROR(PyExc_TypeError, "example or examples expected", PYNULL);
@@ -1411,9 +1411,9 @@ PyObject *ImputerConstructor_call(PyObject *self, PyObject *args, PyObject *keyw
   PyTRY
     SETATTRIBUTES
 
-    int weightID=0;
-    PExampleGenerator gen;
-    if (!PyArg_ParseTuple(args, "O&|O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
+    int weightID = 0;
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
+    if (!gen)
       return PYNULL;
 
     return WrapOrange(SELF_AS(TImputerConstructor)(gen, weightID));
@@ -1653,7 +1653,7 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs, 
     PDistribution dist, apriori;
     PExampleGenerator gen;
     int weightID = 0;
-    if (!PyArg_ParseTuple(uargs, "|OOOO:ProbabilityEstimatorConstructor.call", args+0, args+1, args+2, args+3))
+    if (!PyArg_UnpackTuple(uargs, "ProbabilityEstimatorConstructor.call", 0, 4, args+0, args+1, args+2, args+3))
       return PYNULL;
 
     PyObject **argp = args, **argc = args;
@@ -1716,7 +1716,7 @@ PyObject *ConditionalProbabilityEstimatorConstructor_call(PyObject *self, PyObje
     PContingency cont, apriori;
     PExampleGenerator gen;
     int weightID = 0;
-    if (!PyArg_ParseTuple(uargs, "|OOOO:ProbabilityEstimatorConstructor.call", args, args+1, args+2, args+3))
+    if (!PyArg_UnpackTuple(uargs, "ProbabilityEstimatorConstructor.call", 0, 4, args, args+1, args+2, args+3))
       return PYNULL;
 
     PyObject **argp = args, **argc = args;

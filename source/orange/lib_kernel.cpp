@@ -1154,20 +1154,26 @@ PExampleGenerator exampleGenFromParsedArgs(PyObject *args)
 }
 
 
-PExampleGenerator exampleGenFromArgs(PyObject *args, int *weightID)
+PExampleGenerator exampleGenFromArgs(PyObject *args, int &weightID)
 { 
   PyObject *examples, *pyweight = NULL;
+  if (!PyArg_UnpackTuple(args, "exampleGenFromArgs", 1, 2, &examples, &pyweight))
+    return PExampleGenerator();
 
-  if (weightID) {
-    if (!PyArg_ParseTuple(args, "O|O:exampleGenFromArguments", &examples, &pyweight)) 
-      return PExampleGenerator();
+  PExampleGenerator egen = exampleGenFromParsedArgs(examples);
+  if (!egen || !weightFromArg_byDomain(pyweight, egen->domain, weightID))
+    return PExampleGenerator();
 
-    PExampleGenerator egen = exampleGenFromParsedArgs(examples);
-    return weightFromArg_byDomain(pyweight, egen->domain, *weightID) ? egen : PExampleGenerator();
-  }
+  return egen;
+}
 
-  else
-    return PyArg_ParseTuple(args, "O:exampleGenFromArguments", &examples) ? exampleGenFromParsedArgs(examples) : PExampleGenerator();
+
+PExampleGenerator exampleGenFromArgs(PyObject *args)
+{ 
+  if (PyTuple_GET_SIZE(args) != 1)
+    PYERROR(PyExc_TypeError, "exampleGenFromArgs: examples expected", PExampleGenerator())
+
+  return exampleGenFromParsedArgs(PyTuple_GET_ITEM(args, 0));
 }
 
 
@@ -2456,7 +2462,7 @@ PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED
     PExampleGenerator gen;
     PyObject *pyvar;
     int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O|O&i:Distribution.new", &pyvar, &pt_ExampleGenerator, &gen, &weightID))
+    if (!PyArg_ParseTuple(args, "O|O&O&:Distribution.new", &pyvar, &pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID))
       return PYNULL;
 
     TDistribution *dist;
@@ -3128,7 +3134,7 @@ PyObject *GaussianDistribution_density(PyObject *self, PyObject *args) PYARGS(ME
 PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weightID]) -> Distribution")
 { PyTRY
     int weightID;
-    PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (!gen)
       return PYNULL;
     return WrapOrange(getClassDistribution(gen, weightID));
@@ -3176,7 +3182,7 @@ PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *
     PyErr_Clear();
 
     int weightID;
-    PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen)
       return WrapNewOrange(mlnew TDomainDistributions(gen, weightID), type);
       

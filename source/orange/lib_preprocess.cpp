@@ -265,10 +265,10 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
   PyTRY
     SETATTRIBUTES
     int weightID=0;
-    PExampleGenerator egen=exampleGenFromArgs(args, &weightID);
+    PExampleGenerator egen = exampleGenFromArgs(args, weightID);
     if (!egen)
       PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-    bool weightGiven=(weightID!=0);
+    bool weightGiven = (weightID!=0);
 
     int newWeight;
     PExampleGenerator res = SELF_AS(TPreprocessor)(egen, weightID, newWeight);
@@ -872,7 +872,7 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
       if (!varListFromDomain(freeList, egen->domain, freeset))
         return PYNULL;
 
-      PIM im=SELF_AS(TIMConstructor)(egen, boundset, freeset, weightID);
+      PIM im = SELF_AS(TIMConstructor)(egen, boundset, freeset, weightID);
       return WrapOrange(im);
     }
 
