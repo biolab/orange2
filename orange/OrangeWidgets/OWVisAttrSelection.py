@@ -102,6 +102,7 @@ class MeasureFisherDiscriminant:
                     statI = self.stats[self.stats.keys()[i]]
                     statJ = self.stats[self.stats.keys()[j]]
                     for attribute in range(len(data.domain.attributes)):
+                        if data.domain.attributes[attribute].varType != orange.VarTypes.Continuous: continue
                         val = abs(statI[attribute].avg - statJ[attribute].avg) * (statI[attribute].n + statJ[attribute].n)/(statI[attribute].n * statI[attribute].dev + statJ[attribute].n * statJ[attribute].dev)
                         #val = abs(statI[attribute].avg - statJ[attribute].avg)/(statI[attribute].dev + statJ[attribute].dev)
                         arr[attribute] += val
