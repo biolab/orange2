@@ -158,7 +158,7 @@ class OWDistributionsMatrix(OWWidget):
             self.setGraphSettings(graph)
             graph.setMinimumSize(QSize(100,100))
             graph.visibleOutcomes = visibleOutcomes
-            graph.setData(self.data, str(self.attributesLB.text(i)))
+            graph.setData(self.data, selected[i]) ##str(self.attributesLB.text(i)))
             graph.setTargetValue(self.targetValue)
             self.grid.addWidget(graph, i%xSize, i/xSize, Qt.AlignCenter)
             self.graphs.append(graph)
