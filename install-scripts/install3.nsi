@@ -18,6 +18,7 @@ UninstallIcon orange.ico
 	!define INCLUDEQT
 	!define INCLUDESCRIPTDOC
 	!define INCLUDEDATASETS
+	!define INCLUDEGENOMICS
 !else
 !ifdef STANDARD
   !ifndef OUTFILENAME
@@ -110,11 +111,25 @@ Page instfiles
 
 Section "Orange Modules"
 	SetOutPath $INSTDIR
-	!echo ${ORANGEDIR}\*py
 	File ${ORANGEDIR}\*.py
 	File ${ORANGEDIR}\*.pyd
+	
+	SetOutPath $INSTDIR\OrangeWidgets
+	File /r ${ORANGEDIR}\OrangeWidgets\*.py
+	SetOutPath $INSTDIR\OrangeCanvas
+	File /r ${ORANGEDIR}\OrangeCanvas\*.py
 SectionEnd
 
+
+!ifdef INCLUDEGENOMICS
+Section "Genomic Data"
+	SetOutPath $INSTDIR\OrangeWidgets\Genomics
+	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\GO
+	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotations
+	File /r "${ORANGEDIR}\OrangeWidgets\Genomics\Genome Maps"
+SectionEnd
+!endif
+	
 
 !ifdef INCLUDESCRIPTDOC | INCLUDEDATASETS
 	Subsection /e "Documentation"
@@ -129,6 +144,7 @@ SectionEnd
 			File doc\style.css
 			!cd ${CWD}
 			!echo "CHANGING TO ${CWD}"
+			CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
@@ -198,7 +214,7 @@ Function .onGUIInit
 
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
 
-	${If} PythonDir S== ""
+	${If} $PythonDir S== ""
 	
 		!ifdef INCLUDEPYTHON
 		  askpython:

@@ -9,7 +9,9 @@ argflags = [("Python", " /DINCLUDEPYTHON", 1),
             ("dot", " /DINCLUDEDOT", 64),
             ("scriptingdoc", " /DINCLUDESCRIPTDOC", 128),
             ("datasets", " /DINCLUDEDATASETS", 256),
-            ("source", " /DINCLUDESOURCE", 512)]
+            ("source", " /DINCLUDESOURCE", 512),
+            ("genomicsdata", " /DINCLUDEGENOMICS", 1024)
+           ]
 
 args = ""
 flags = 0
@@ -46,11 +48,16 @@ else:
     os.mkdir(filedir)
 
     os.chdir("D:\\webMagix\\orange\\scripts")
-    args += " /DOUTFILENAME=d:\\webMagix\\orange\\download\\%s\\%s install3.nsi" % (filedir, filename)
-    #os.spawnv(os.P_WAIT, "C:\\Program Files\\NSIS\\makensis.exe", [args])
-    os.system('"C:\Program Files\NSIS\makensis.exe"' + args)
-
-    print '<P>Your installation file is ready for <a href="//magix.fri.uni-lj.si/orange/download/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
+    args += ' /DORANGEDIR=d:\\webMagix\\orange\\recentversion\\orange'
+    args += ' /DCWD=%s' % os.getcwd()
+    args += ' /DOUTFILENAME=d:\\webMagix\\orange\\download\\%s\\%s' % (filedir, filename)
+    
+    args += ' install3.nsi'
+#    os.spawnv(os.P_WAIT, "C:\\Program Files\\NSIS\\makensis.exe", [args])
+    if os.system('"C:\Program Files\NSIS\makensis.exe"' + args):
+    	print "<P>Error generating installation program; system administrator will be notified.</P>"
+    else:
+    	print '<P>Your installation file is ready for <a href="//magix.fri.uni-lj.si/orange/download/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
 #    print flags, '<P>%s</P>' % args
 
 print '<P><HR></CENTER>'
