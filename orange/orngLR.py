@@ -23,13 +23,14 @@ def printOUT(classifier):
             longest=len(at.name);
 
     # print out the head
-    formatstr = "%"+str(longest)+"s %10s %10s %10s %10s"
-    print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P")
+    formatstr = "%"+str(longest)+"s %10s %10s %10s %10s %10s"
+    print formatstr % ("Attribute", "beta", "st. error", "wald Z", "P", "OR=exp(beta)")
     print
     formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f"    
     print formatstr % ("Intercept", classifier.beta[0], classifier.beta_se[0], classifier.wald_Z[0], classifier.P[0])
+    formatstr = "%"+str(longest)+"s %10.2f %10.2f %10.2f %10.2f %10.2f"    
     for i in range(len(classifier.domain.attributes)):
-        print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]))
+        print formatstr % (classifier.domain.attributes[i].name, classifier.beta[i+1], classifier.beta_se[i+1], classifier.wald_Z[i+1], abs(classifier.P[i+1]), exp(classifier.beta[i+1]))
         
 
 
@@ -71,6 +72,7 @@ def createNoDiscTable(olddata):
     #print newdomain
     return olddata.select(newdomain)
 
+
 def hasDiscreteValues(domain):
     for at in domain.attributes:
         if at.varType == orange.VarTypes.Discrete:
@@ -85,30 +87,73 @@ def LogisticLearner(examples = None, weightID=0, **kwds):
         return lr
 
 class LogisticLearnerClass:
-    def __init__(self, removeSingular=0, showSingularity=1, **kwds):
+    def __init__(self, removeSingular=0, **kwds):
         self.__dict__ = kwds
+        print removeSingular
         self.removeSingular = removeSingular
-        self.showSingularity = showSingularity
     def __call__(self, examples, weight=0):
+        nexamples = orange.Preprocessor_dropMissing(examples)
         if hasDiscreteValues(examples.domain):
-            nexamples = createNoDiscTable(examples)
+            nexamples = createNoDiscTable(nexamples)
         else:
-            nexamples = examples
+            nexamples = nexamples
 
-        
+                    
+        print " n data = " + str(len(nexamples))
+        print self.removeSingular
+        print examples.domain
+        learner = orange.LogisticLearner()
+
+        #if self.fitter:
+            #learner.fitter = self.fitter
+            
         if self.removeSingular:
-            lr = orange.LogisticLearner(nexamples, weight, showSingularity = not self.removeSingular)
+            lr = learner.fitModel(nexamples, weight)
         else:
-            lr = orange.LogisticLearner(nexamples, weight, showSingularity = self.showSingularity)
-        while (lr.error == 6 or lr.error == 5) and self.removeSingular == 1:
-            print "removing " + lr.error_att.name
-            nexamples.domain.attributes.remove(lr.error_att)
+            print "pravilno"
+            lr = learner(nexamples, weight)
+        while isinstance(lr,orange.Variable):
+            nexamples.domain.attributes.remove(lr)
             nexamples = nexamples.select(orange.Domain(nexamples.domain.attributes, nexamples.domain.classVar))
-            if self.removeSingular:
-                lr = orange.LogisticLearner(nexamples, weight, showSingularity = not self.removeSingular)
-            else:
-                lr = orange.LogisticLearner(nexamples, weight, showSingularity = self.showSingularity)
+            lr = learner.fitModel(nexamples, weight)
         return lr
+
+
+def Univariate_LogRegLearner(examples=None, **kwds):
+    learner = apply(Univariate_LogRegLearner_Class, (), kwds)
+    if examples:
+        return learner(examples)
+    else:
+        return learner
+
+class Univariate_LogRegLearner_Class:
+    def __init__(self, **kwds):
+        self.__dict__ = kwds
+
+    def __call__(self, examples):
+        examples = createNoDiscTable(examples)
+        classifiers = map(lambda x: LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(x, examples.domain.classVar)))), examples.domain.attributes)
+        maj_classifier = LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(examples.domain.classVar))))
+        beta = [maj_classifier.beta[0]] + [x.beta[1] for x in classifiers]
+        beta_se = [maj_classifier.beta_se[0]] + [x.beta_se[1] for x in classifiers]
+        P = [maj_classifier.P[0]] + [x.P[1] for x in classifiers]
+        wald_Z = [maj_classifier.wald_Z[0]] + [x.wald_Z[1] for x in classifiers]
+        domain = examples.domain
+
+        return Univariate_LogRegClassifier(beta = beta, beta_se = beta_se, P = P, wald_Z = wald_Z, domain = domain)
+
+class Univariate_LogRegClassifier:
+    def __init__(self, **kwds):
+        self.__dict__ = kwds
+#        self.beta = beta
+#        self.beta_se = beta_se
+#        self.P = P
+#        self.waldZ = waldZ
+
+    def __call__(self, example, resultType = orange.GetValue):
+        # classification not implemented yet. For now its use is only to provide regression coefficients and its statistics
+        pass
+    
 
 
 ######################################
@@ -172,9 +217,11 @@ class simpleFitter(orange.LogisticFitter):
         ss = sum((y - yhat) ** 2) / (N - len(data.domain.attributes) - 1)
         sigma = math.sqrt(ss)
         beta = []
+        beta_se = []
         for i in range(len(betas)):
-            beta.append(betas[i])        
-        return (self.OK, beta, [sigma], 0)
+            beta.append(betas[i])
+            beta_se.append(0.0)
+        return (self.OK, beta, beta_se, 0)
 
 
 
@@ -203,6 +250,15 @@ def StepWiseFSS(examples = None, **kwds):
     else:
         return fss
 
+def getLikelihood(fitter, examples):
+    res = fitter(examples)
+    if res[0] in [fitter.OK, fitter.Infinity, fitter.Divergence]:
+       status, beta, beta_se, likelihood = res
+       return likelihood
+    else:
+       return -100*len(examples)
+        
+    
 
 class StepWiseFSS_class:
   def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
@@ -211,26 +267,32 @@ class StepWiseFSS_class:
     self.numAttr = numAttr
   def __call__(self, examples):
     attr = []
-    # TODO: kako v enem koraku premaknes vse v remain_attr?    
+    # TODO: kako v enem koraku premaknes vse v remain_attr?
+        
     remain_attr = []
     for at in examples.domain.attributes:
         remain_attr.append(at)
 
+    print self.addCrit
+    print self.deleteCrit
     
     # get LL for Majority Learner 
     tempDomain = orange.Domain(attr,examples.domain.classVar)
-    ll_Old = LogisticLearner(examples.select(tempDomain)).likelihood;
+    tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
 
-    
+    ll_Old = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+    length_Old = len(tempData)
+
     stop = 0
     while not stop:
         # LOOP until all variables are added or no further deletion nor addition of attribute is possible
         
         # if there are more than 1 attribute then perform backward elimination
         if len(attr) >= 2:
-            maxG = -1
+            minG = 1000
             worstAt = attr[0]
             ll_Best = ll_Old
+            length_Best = length_Old
             for at in attr:
                 # check all attribute whether its presence enough increases LL?
 
@@ -243,27 +305,38 @@ class StepWiseFSS_class:
                 
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
                 # domain, calculate P for LL improvement.
-                ll_Delete = LogisticLearner(examples.select(tempDomain), showSingularity = 0).likelihood;
+                tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+                ll_Delete = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+                length_Delete = len(tempData)
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-                G=-2*(ll_Old-ll_Delete);
+                length_Avg = (length_Delete + length_Old)/2
 
+
+                G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old);
+
+                print tempDomain
+                print G
+                print length_Avg*ll_Delete/length_Delete
+                print length_Avg*ll_Old/length_Old
                 # set new best attribute                
-                if G>maxG:
+                if G<minG:
                     worstAt = at
-                    maxG=G
+                    minG=G
                     ll_Best = ll_Delete
+                    length_Best = length_Delete
             # deletion of attribute
+
             if worstAt.varType==orange.VarTypes.Continuous:
-                P=lchisqprob(maxG,1);
+                P=lchisqprob(minG,1);
             else:
-                P=lchisqprob(maxG,len(worstAt.values)-1);
-            if P<=self.deleteCrit:
-                print "Deleting: "
-                print worstAt
+                P=lchisqprob(minG,len(worstAt.values)-1);
+            print P
+            if P>=self.deleteCrit:
                 attr.remove(worstAt)
                 remain_attr.append(worstAt)
                 nodeletion=0
                 ll_Old = ll_Best
+                length_Old = length_Best
             else:
                 nodeletion=1
         else:
@@ -277,29 +350,36 @@ class StepWiseFSS_class:
         # for each attribute in the remaining
         maxG=-1
         ll_Best = ll_Old
+        length_Best = length_Old
         for at in remain_attr:
             tempAttr = attr + [at]
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
             # domain, calculate P for LL improvement.
-            ll_New = LogisticLearner(examples.select(tempDomain), showSingularity = 0).likelihood;
+            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+            ll_New = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+
+            length_New = len(tempData) # get number of examples in tempData to normalize likelihood
+
             # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-            G=-2*(ll_Old-ll_New);
+
+            length_avg = (length_New + length_Old)/2
+            G=-2*length_avg*(ll_Old/length_Old-ll_New/length_New);
             if G>maxG:
                 bestAt = at
                 maxG=G
                 ll_Best = ll_New
-
+                length_Best = length_New
+                
         if bestAt.varType==orange.VarTypes.Continuous:
             P=lchisqprob(maxG,1);
         else:
             P=lchisqprob(maxG,len(bestAt.values)-1);
-
-        print P
         # Add attribute with smallest P to attributes(attr)
         if P<=self.addCrit:
             attr.append(bestAt)
             remain_attr.remove(bestAt)
             ll_Old = ll_Best
+            length_Old = length_Best
 
         if P>self.addCrit and nodeletion:
             stop = 1
