@@ -126,12 +126,12 @@ class OWParallelCoordinates(OWWidget):
         # ####
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setDistributions)
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setDistributions, tooltip = "Show bars with distribution of class values")
         OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.setAttrValues)
-        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.setHidePureExamples)
-        OWGUI.checkBox(box, self, 'showCorrelations', 'Show correlations between attributes', callback = self.setShowCorrelations)
-        OWGUI.checkBox(box, self, 'useSplines', 'Show lines using splines', callback = self.setUseSplines)
-        OWGUI.checkBox(box, self, 'lineTracking', 'Enable line tracking', callback = self.setLineTracking)
+        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.setHidePureExamples, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
+        OWGUI.checkBox(box, self, 'showCorrelations', 'Show correlations', callback = self.setShowCorrelations, tooltip = "Show correlations between two neighboring attributes")
+        OWGUI.checkBox(box, self, 'useSplines', 'Show splines', callback = self.setUseSplines, tooltip  = "Show lines using splines")
+        OWGUI.checkBox(box, self, 'lineTracking', 'Line tracking', callback = self.setLineTracking, tooltip = "Show nearest example with a wide line")
         OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setLegend)
         OWGUI.checkBox(box, self, 'globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
         
