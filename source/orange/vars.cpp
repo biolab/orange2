@@ -514,7 +514,7 @@ void TFloatVariable::val2str(const TValue &valu, string &vname) const
     special2str(valu, vname);
   else {
     char buf[64];
-    sprintf(buf, "%.*f", numberOfDecimals, valu.floatV);
+    sprintf(buf, "%.*g", numberOfDecimals, valu.floatV);
     vname = buf;
   }
 }
