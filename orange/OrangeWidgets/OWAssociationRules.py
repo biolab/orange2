@@ -1,8 +1,8 @@
 """
 <name>Association Rules</name>
 <description>Association rules inducer</description>
-<category>Classification</category>
-<icon>icons/Categorize.png</icon>
+<category>Associations</category>
+<icon>icons/Unknown.png</icon>
 <priority>1100</priority>
 """
 
