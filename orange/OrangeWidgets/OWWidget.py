@@ -113,10 +113,12 @@ class OWWidget(QWidget):
             source - source widget
             cnannel - name of the channel and the function it connects to
         """
-        if channel in self.connections:
-            self.connections.remove(channel)
+        try:
+            self.connections.remove([channel,source])
 #            self.disconnect(source,PYSIGNAL(channel),eval("self."+channel))
             self.disconnect(source,PYSIGNAL(channel),self.receive)
+        except:
+            pass
             
     def send(self,channel,data):
         """
