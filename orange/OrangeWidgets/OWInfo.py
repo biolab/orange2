@@ -32,8 +32,10 @@ class MyMultiLineEdit(QMultiLineEdit):
 class OWInfo(OWWidget):
     settingsList=["text"]
 
-    def __init__(self, parent=None, title="&Info Widget", description="The File Widget allows users to add text information into canvas schemas.", icon="OrangeWidgetsIcon.png", logo="OrangeWidgetsLogo.png"):
-        QWidget.__init__(self,parent)
+    def __init__(self, parent=None, title="&Info Widget", description="The Info Widget allows users to add text information into canvas schemas.", icon="OrangeWidgetsIcon.png", logo="OrangeWidgetsLogo.png"):
+        #QWidget.__init__(self,parent)
+        #OWWidget.__init__(self, parent, "Info Widget", "The Info Widget allows users to add text information into canvas schemas.", TRUE, TRUE)
+        OWBaseWidget.__init__(self, parent, "Info Widget", "The Info Widget allows users to add text information into canvas schemas.", TRUE, FALSE, FALSE) 
         fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
         logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
