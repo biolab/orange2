@@ -70,7 +70,7 @@ def _getattr(ex,attr):
             spec = 1            
     if spec == 0:
         try:
-            spec = value.isSpecial()
+            spec = v.isSpecial()
         except:
             pass
     return (v,spec)
