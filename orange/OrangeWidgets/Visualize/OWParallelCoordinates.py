@@ -15,14 +15,15 @@ from OWParallelGraph import *
 import OWVisAttrSelection 
 import OWToolbars
 import OWGUI
+from sys import getrecursionlimit, setrecursionlimit
 
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
-    attributeContOrder = ["None","ReliefF","Correlation", "Fisher discriminant", "VizRank"]
-    attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs", "VizRank"]
+    attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
+    attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
@@ -106,12 +107,14 @@ class OWParallelCoordinates(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
+        self.optimizationDlg = ParallelOptimization(self)
+        self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
+        self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow)
+
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph)
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
-
         #connect controls to appropriate functions
-        
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
 
@@ -144,7 +147,7 @@ class OWParallelCoordinates(OWWidget):
         OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         OWGUI.checkBox(box2, self, 'sendShownAttributes', 'Send only shown attributes')
 
-        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateShownAttributeList, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "middleLabels", box = " Middle labels ", items = ["Off", "Correlations", "VizRank"], callback = self.updateGraph, tooltip = "What information do you wish to view on top in the middle of coordinate axes?", sendSelectedValue = 1, valueType = str)
         
         # continuous attribute ordering
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
@@ -157,7 +160,7 @@ class OWParallelCoordinates(OWWidget):
         
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
-        self.resize(900, 900)
+        self.resize(900, 700)
 
 
     # #########################
@@ -294,17 +297,11 @@ class OWParallelCoordinates(OWWidget):
                 else: labels.append("")
         elif self.middleLabels == "VizRank":
             for i in range(len(attrs)-1):
-                val = self.getVizRankVal(attrs[i], attrs[i+1])
+                val = self.optimizationDlg.getVizRankVal(attrs[i], attrs[i+1])
                 if val: labels.append("%2.2f%%" % (val))
                 else: labels.append("")
         return labels
                 
-    # get vizrank value for attributes attr1 and attr2
-    def getVizRankVal(self, attr1, attr2):
-        if not self.projections: return None
-        for (val, [a1, a2]) in self.projections:
-            if (attr1 == a1 and attr2 == a2) or (attr1 == a2 and attr2 == a1): return val
-        return None
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############
@@ -325,12 +322,33 @@ class OWParallelCoordinates(OWWidget):
             self.hiddenAttribsLB.insertItem(attr)
         
         
-    def getShownAttributeList (self):
+    def getShownAttributeList(self):
         list = []
         for i in range(self.shownAttribsLB.count()):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
-    ##############################################
+
+    def showSelectedAttributes(self):
+        attrList = self.optimizationDlg.getSelectedAttributes()
+        if not attrList: return
+
+        attrs = [attr.name for attr in self.data.domain.attributes]
+        for attr in attrList:
+            if attr not in attrs:
+                print "Attribute ", attr, " does not exist in the data set. unable to set attributes."
+                return
+
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+
+        for attr in attrList:
+            self.shownAttribsLB.insertItem(attr)
+        for attr in self.data.domain.attributes:
+            if attr.name not in attrList:
+                self.hiddenAttribsLB.insertItem(attr.name)
+        self.updateGraph()
+    
+    # #############################################
 
     # had to override standart show to call updateGraph. otherwise self.mainArea.width() gives incorrect value    
     def show(self):
@@ -430,22 +448,7 @@ class OWParallelCoordinates(OWWidget):
 
     # continuous attribute ordering
     def updateShownAttributeList(self):
-        if self.data != None:
-            if self.projections == None and (self.attrContOrder == "VizRank" or self.attrDiscOrder == "VizRank" or self.middleLabels == "VizRank"):
-                name = str(QFileDialog.getOpenFileName( ".", "Interesting projections (*.proj)", self, "", "Open Projections"))
-                if name == "":
-                    if self.middleLabels == "VizRank": self.middleLabels = "Off"
-                else:
-                    file = open(name, "rt")
-                    settings = eval(file.readline()[:-1])
-                    line = file.readline()[:-1]
-                    self.projections = []
-                    while (line != ""):
-                        (acc, lenTable, attrList, strList) = eval(line)
-                        self.projections+= [(acc, attrList)]
-                        line = file.readline()[:-1]
-                    file.close()
-            self.setShownAttributeList(self.data)
+        self.setShownAttributeList(self.data)
         self.updateGraph()
 
     def setAutoSendSelection(self):
@@ -462,6 +465,292 @@ class OWParallelCoordinates(OWWidget):
             self.graphCanvasColor = str(newColor.name())
             self.graph.setCanvasColor(QColor(newColor))
 
+
+CORRELATION = 0
+VIZRANK = 1
+
+class ParallelOptimization(OWBaseWidget):
+    resultListList = [50, 100, 200, 500, 1000]
+    settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure", "numberOfAttributes"]
+    qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
+    testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
+
+    def __init__(self, parallelWidget, parent=None):
+        OWBaseWidget.__init__(self, parent, "Parallel Optimization Dialog", "Find attribute subsets that are interesting to visualize using parallel coordinates", FALSE, FALSE, FALSE)
+
+        self.setCaption("Qt Parallel Optimization Dialog")
+        self.topLayout = QVBoxLayout( self, 10 ) 
+        self.grid=QGridLayout(4,2)
+        self.topLayout.addLayout( self.grid, 10 )
+        self.parallelWidget = parallelWidget
+
+        self.optimizationMeasure = 0
+        self.attributeCount = 5
+        self.numberOfAttributes = 6
+        self.resultListLen = 1000
+        self.fileName = ""
+        self.lastSaveDirName = os.getcwd() + "/"
+        self.fileBuffer = []
+        self.projections = []
+        self.allResults = []
+        self.canOptimize = 0
+        self.worstVal = -1  # used in heuristics to stop the search in uninteresting parts of the graph
+
+        self.loadSettings()
+
+        self.measureBox = OWGUI.radioButtonsInBox(self, self, "optimizationMeasure", ["Correlation", "VizRank"], box = " Select optimization measure ")
+        self.vizrankSettingsBox = OWGUI.widgetBox(self, " VizRank settings ")
+        self.optimizeBox = OWGUI.widgetBox(self, " Optimize ")
+        self.manageBox = OWGUI.widgetBox(self, " Manage results ")
+        self.resultsBox = OWGUI.widgetBox(self, " Results ")
+
+        self.grid.addWidget(self.measureBox,0,0)
+        self.grid.addWidget(self.vizrankSettingsBox,1,0)
+        self.grid.addWidget(self.optimizeBox,2,0)
+        self.grid.addWidget(self.manageBox,3,0)
+        self.grid.addMultiCellWidget (self.resultsBox,0,3, 1, 1)
+        self.grid.setColStretch(0, 0)
+        self.grid.setColStretch(1, 100)
+        self.grid.setRowStretch(0, 0)
+        self.grid.setRowStretch(1, 0)
+        self.grid.setRowStretch(2, 0)
+        self.grid.setRowStretch(3, 100)
+        self.vizrankSettingsBox.setMinimumWidth(200)
+
+        self.resultList = QListBox(self.resultsBox)
+        self.resultList.setMinimumSize(200,200)
+              
+        # remove non-existing files
+        names = []
+        for (short, longName) in self.fileBuffer:
+            if not os.path.exists(longName):
+                self.fileBuffer.remove((short, longName))
+            else: names.append(short)
+        if len(self.fileBuffer) > 0: self.fileName = self.fileBuffer[0][0]
+                
+        self.hbox1 = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank projections file ", orientation = "horizontal")
+        self.vizrankFileCombo = OWGUI.comboBox(self.hbox1, self, "fileName", items = names, tooltip = "File that contains information about interestingness of scatterplots \ngenerated by VizRank method in scatterplot widget", callback = self.changeProjectionFile, sendSelectedValue = 1, valueType = str)
+        self.browseButton = OWGUI.button(self.hbox1, self, "...", callback = self.loadProjections)
+        self.browseButton.setMaximumWidth(20)
+        
+        
+        self.resultsInfoBox = OWGUI.widgetBox(self.vizrankSettingsBox, " VizRank parameters ")
+        self.kNeighborsLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Number of neighbors (k):")
+        self.percentDataUsedLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Percent of data used:")
+        self.testingMethodLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Testing method used:")
+        self.qualityMeasureLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Quality measure used:")
+
+        self.numberOfAttributesCombo = OWGUI.comboBoxWithCaption(self.optimizeBox, self, "numberOfAttributes", "Number of visualized attributes: ", tooltip = "Projections with this number of attributes will be evaluated", items = [x for x in range(3, 12)], sendSelectedValue = 1, valueType = int)
+        self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, " Start optimization ", callback = self.startOptimization)
+        self.stopOptimizationButton = OWGUI.button(self.optimizeBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
+        self.stopOptimizationButton.hide()
+        self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
+
+        
+        self.resultListCombo = OWGUI.comboBoxWithCaption(self.manageBox, self, "resultListLen", "Number of interesting projections: ", tooltip = "Maximum length of the list of interesting projections", items = self.resultListList, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+        self.clearButton = OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
+        self.loadButton = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
+        self.saveButton = OWGUI.button(self.manageBox, self, "Save", self.saveResults)
+        self.closeButton = OWGUI.button(self.manageBox, self, "Close dialog", self.hide)
+
+        self.changeProjectionFile()
+
+
+    # return list of selected attributes
+    def getSelectedAttributes(self):
+        if self.resultList.count() == 0: return None
+        return self.allResults[self.resultList.currentItem()][1]
+        
+        
+    # called when optimization is in progress
+    def canContinueOptimization(self):
+        return self.canOptimize
+
+    def getWorstVal(self):
+        return self.worstVal
+        
+    def stopOptimizationClick(self):
+        self.canOptimize = 0
+
+    def destroy(self, dw, dsw):
+        self.saveSettings()
+
+    # get vizrank value for attributes attr1 and attr2
+    def getVizRankVal(self, attr1, attr2):
+        if not self.projections: return None
+        for (val, [a1, a2]) in self.projections:
+            if (attr1 == a1 and attr2 == a2) or (attr1 == a2 and attr2 == a1): return val
+        return None
+
+    def changeProjectionFile(self):
+        for (short, long) in self.fileBuffer:
+            if short == self.fileName:
+                self.loadProjections(long)
+                return
+
+    # load projections from a file
+    def loadProjections(self, name = None):
+        self.projections = []
+        self.kNeighborsLabel.setText("Number of neighbors (k): " )
+        self.percentDataUsedLabel.setText("Percent of data used:" )
+        self.testingMethodLabel.setText("Testing method used:" )
+        self.qualityMeasureLabel.setText("Quality measure used:" )
+        
+        if name == None:
+            name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections"))
+            if name == "": return
+
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
+
+        file = open(name, "rt")
+        settings = eval(file.readline()[:-1])
+        
+        line = file.readline()[:-1]; ind = 0
+
+        try:
+            (acc, lenTable, attrList, strList) = eval(line)
+            if len(attrList) != 2:
+                QMessageBox.information(self, "Incorrect file", "File should contain projections with 2 attributes!", QMessageBox.Ok)
+                return
+            
+            while (line != ""):
+                (acc, lenTable, attrList, strList) = eval(line)
+                self.projections += [(acc, attrList)]
+                line = file.readline()[:-1]
+        except:
+            self.projections = []
+            file.close()
+            QMessageBox.information(self, "Incorrect file", "Incorrect file format!", QMessageBox.Ok)
+            return
+
+        file.close()
+
+        if (shortFileName, name) not in self.fileBuffer:
+            self.fileBuffer.insert(0, (shortFileName, name))
+            self.vizrankFileCombo.insertItem(shortFileName)
+            if len(self.fileBuffer) > 10: self.fileBuffer.remove(self.fileBuffer[-1])
+
+        self.kNeighborsLabel.setText("Number of neighbors (k): %s" % (str(settings["kValue"])))
+        self.percentDataUsedLabel.setText("Percent of data used: %d %%" % (settings["percentDataUsed"]))
+        self.testingMethodLabel.setText("Testing method used: %s" % (self.testingMethod[settings["testingMethod"]]))
+        self.qualityMeasureLabel.setText("Quality measure used: %s" % (self.qualityMeasure[settings["qualityMeasure"]]))
+
+
+    def addProjection(self, val, attrList):
+        index = self.findTargetIndex(val, max)
+        if index > self.resultListLen: return
+        self.allResults.insert(index, (val, attrList))
+        self.resultList.insertItem("%.3f - %s" % (val, str(attrList)), index)
+        if len(self.allResults) > self.resultListLen:
+            self.allResults.remove(self.allResults[-1])
+            self.resultList.removeItem(self.resultList.count()-1)
+            self.worstVal = self.allResults[-1][0]
+        
+
+    def findTargetIndex(self, accuracy, funct):
+        # use bisection to find correct index
+        top = 0; bottom = len(self.allResults)
+
+        while (bottom-top) > 1:
+            mid  = (bottom + top)/2
+            if funct(accuracy, self.allResults[mid][0]) == accuracy: bottom = mid
+            else: top = mid
+
+        if len(self.allResults) == 0: return 0
+        if funct(accuracy, self.allResults[top][0]) == accuracy:
+            return top
+        else: 
+            return bottom
+
+
+    def startOptimization(self):
+        self.clearResults()
+        
+        if self.optimizationMeasure == VIZRANK and self.fileName == "":
+            QMessageBox.information(self, "No projection file", "If you wish to optimize using VizRank you first have to load a projection file \ncreated by VizRank using Scatterplot widget.", QMessageBox.Ok)
+            return
+        if self.parallelWidget.data == None:
+            QMessageBox.information(self, "Missing data set", "A data set has to be loaded in order to perform optimization.", QMessageBox.Ok)
+            return
+
+        attrInfo = []
+        if self.optimizationMeasure == CORRELATION:
+            attrList = [attr.name for attr in self.parallelWidget.data.domain.attributes]
+            attrInfo = OWVisAttrSelection.computeCorrelationBetweenAttributes(self.parallelWidget.data, attrList)
+        elif self.optimizationMeasure == VIZRANK:
+            for (val, [a1, a2]) in self.projections:
+                attrInfo.append((val, a1, a2))
+
+        if len(attrInfo) == 0:
+            print "len(attrInfo) == 0. No attribute pairs. Unable to optimize."; return
+
+        self.worstVal = -1
+        self.canOptimize = 1
+        self.startOptimizationButton.hide()
+        self.stopOptimizationButton.show()
+
+        limit = getrecursionlimit()
+        setrecursionlimit(max(limit, len(attrInfo)+1000))
+        OWVisAttrSelection.optimizeAttributeOrder(attrInfo, [], 0.0, self.numberOfAttributes, self, qApp)
+        setrecursionlimit(limit)
+
+        self.stopOptimizationButton.hide()
+        self.startOptimizationButton.show()
+                    
+
+    # ################################
+    # MANAGE RESULTS
+    def updateShownProjections(self, *args):
+        self.resultList.clear()
+        for i in range(min(len(self.allResults), self.resultListLen)):
+            self.resultList.insertItem("%.2f - %s" % (self.allResults[i][0], str(self.allResults[i][1])), i)
+        if self.resultList.count() > 0: self.resultList.setCurrentItem(0)  
+    
+    def clearResults(self):
+        self.allResults = []
+        self.resultList.clear()
+
+
+    def saveResults(self, filename = None):
+        if filename == None:
+            name = str(QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + "Parallel projections", "Parallel projections (*.papr)", self, "", "Save Parallel Projections"))
+            if name == "": return
+        else:
+            name = filename
+
+        # take care of extension
+        if os.path.splitext(name)[1] != ".papr": name = name + ".papr"
+
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
+
+        # open, write and save file
+        file = open(name, "wt")
+        for val in self.allResults:
+            file.write(str(val) + "\n")
+        file.close()
+
+    def loadResults(self):
+        self.clearResults()
+                
+        name = str(QFileDialog.getOpenFileName( self.lastSaveDirName, "Parallel projections (*.papr)", self, "", "Open Parallel Projections"))
+        if name == "": return
+
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
+
+        file = open(name, "rt")
+        line = file.readline()[:-1]; ind = 0
+        while (line != ""):
+            (val, attrList) = eval(line)
+            self.allResults.insert(ind, (val, attrList))
+            self.resultList.insertItem("%.2f - %s" % (val, str(attrList)), ind)
+            line = file.readline()[:-1]
+            ind+=1
+        file.close()
+
+        
    
 
 #test widget appearance
