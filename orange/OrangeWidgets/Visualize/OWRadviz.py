@@ -23,7 +23,7 @@ import OWGUI
 ###########################################################################################
 class OWRadviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "useDifferentColors", "tooltipKind", "tooltipValue"]
+    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -32,7 +32,7 @@ class OWRadviz(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE, icon = "Radviz.png")
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
 
         #GUI
@@ -54,7 +54,6 @@ class OWRadviz(OWWidget):
         self.useDifferentSymbols = 0
         self.useDifferentColors = 1
         self.autoSendSelection = 1
-        self.sendShownAttributes = 0
         self.tooltipKind = 0
         self.tooltipValue = 0
         self.graphCanvasColor = str(Qt.white.name())
@@ -124,7 +123,6 @@ class OWRadviz(OWWidget):
 
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
-        OWGUI.checkBox(box4, self, 'sendShownAttributes', 'Send only shown attributes')
         self.setAutoSendSelection()
 
         # ####
@@ -262,7 +260,6 @@ class OWRadviz(OWWidget):
             res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections with the selected number of attributes. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
             if res != 0: return
         
-        self.progressBarInit()
         self.optimizationDlg.disableControls()
 
         startTime = time.time()
@@ -282,25 +279,15 @@ class OWRadviz(OWWidget):
     def sendSelections(self):
         if not self.data: return
         (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.getShownAttributeList())
-        if not self.sendShownAttributes:
-            self.send("Selected Examples",selected)
-            self.send("Unselected Examples",unselected)
-            self.send("Example Distribution", merged)
-        else:
-            attrs = self.getShownAttributeList() + [self.data.domain.classVar.name]
-            if selected:    self.send("Selected Examples", selected.select(attrs))
-            else:           self.send("Selected Examples", None)
-            if unselected:  self.send("Unselected Examples", unselected.select(attrs))
-            else:           self.send("Unselected Examples", None)
-            if merged:
-                attrs += [merged.domain.classVar.name]
-                self.send("Example Distribution", merged.select(attrs))
-            else:           self.send("Example Distribution", None)
-            
+    
+        self.send("Selected Examples",selected)
+        self.send("Unselected Examples",unselected)
+        self.send("Example Distribution", merged)
 
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
+        self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
         (accuracy, tableLen, list, strList) = val
@@ -327,6 +314,7 @@ class OWRadviz(OWWidget):
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
+        self.graph.removeAllSelections()
         for i in range(self.shownAttribsLB.count()):
             if self.shownAttribsLB.isSelected(i) and i != 0:
                 text = self.shownAttribsLB.text(i)
@@ -337,6 +325,7 @@ class OWRadviz(OWWidget):
 
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
+        self.graph.removeAllSelections()
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
@@ -347,6 +336,7 @@ class OWRadviz(OWWidget):
         self.updateGraph()
 
     def addAttribute(self):
+        self.graph.removeAllSelections()
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
@@ -360,6 +350,7 @@ class OWRadviz(OWWidget):
         self.graph.replot()
 
     def removeAttribute(self):
+        self.graph.removeAllSelections()
         count = self.shownAttribsLB.count()
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
@@ -404,12 +395,18 @@ class OWRadviz(OWWidget):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
             if data:
-                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(attr.name)
+                for i in range(len(data.domain.attributes)):
+                    if i < 50: self.shownAttribsLB.insertItem(data.domain.attributes[i].name)
+                    else: self.hiddenAttribsLB.insertItem(data.domain.attributes[i].name)
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
         self.updateGraph()
         self.sendSelections()
 
+    def subsetdata(self, data):
+        self.graph.subsetData = data
+        self.updateGraph()
+       
 
     # ###### SELECTION signal ################################
     # receive info about which attributes to show

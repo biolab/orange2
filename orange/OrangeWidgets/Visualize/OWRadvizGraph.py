@@ -88,6 +88,7 @@ class OWRadvizGraph(OWVisGraph):
         self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
         self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
         self.scaleFactor = 1.0
+        self.subsetData = None
         
 
     # create anchors around the circle
@@ -185,6 +186,11 @@ class OWRadvizGraph(OWVisGraph):
         selectedData = Numeric.take(self.scaledData, indices)
         sum_i = Numeric.add.reduce(selectedData)
 
+        # test if there are zeros in sum_i
+        if len(Numeric.nonzero(sum_i)) < len(sum_i):
+            add = Numeric.where(sum_i == 0, 1.0, 0.0)
+            sum_i += add
+
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
         validData = self.getValidList(indices)
@@ -223,6 +229,26 @@ class OWRadvizGraph(OWVisGraph):
                 fillColor = bwColors.getColor(kNNValues[j])
                 edgeColor = classColors.getColor(classValueIndices[table[j].getclass().value])
                 key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+
+        # do we have a subset data to show?
+        elif self.subsetData:
+            showFilled = self.showFilledSymbols
+            colors = None
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: colors = ColorPaletteHSV(valLen)
+            for i in range(dataSize):
+                if not validData[i]: continue
+                if colors:
+                    newColor = colors[classValueIndices[self.rawdata[i].getclass().value]]
+                else:
+                    newColor = QColor()
+                    newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
+                self.showFilledSymbols = 0
+                if self.rawdata[i] in self.subsetData: self.showFilledSymbols = 1
+
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
+            self.showFilledSymbols = showFilled                    
+
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -423,6 +449,11 @@ class OWRadvizGraph(OWVisGraph):
 
         selectedData = Numeric.take(self.noJitteringScaledData, indices)
         sum_i = Numeric.add.reduce(selectedData)
+        
+        # test if there are zeros in sum_i
+        if len(Numeric.nonzero(sum_i)) < len(sum_i):
+            add = Numeric.where(sum_i == 0, 1.0, 0.0)
+            sum_i += add
 
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
@@ -482,6 +513,8 @@ class OWRadvizGraph(OWVisGraph):
 
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
 
+        self.radvizWidget.progressBarInit()
+
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
                 combinations = self.createCombinations([0.0], u, attributes[:z], [])
@@ -504,6 +537,11 @@ class OWRadvizGraph(OWVisGraph):
                     selectedData = Numeric.take(self.noJitteringScaledData, indices)
                     sum_i = Numeric.add.reduce(selectedData)
 
+                    # test if there are zeros in sum_i
+                    if len(Numeric.nonzero(sum_i)) < len(sum_i):
+                        add = Numeric.where(sum_i == 0, 1.0, 0.0)
+                        sum_i += add
+
                     # count total number of valid examples
                     count = sum(validData)
                     if count < self.kNNOptimization.minExamples:
@@ -523,7 +561,7 @@ class OWRadvizGraph(OWVisGraph):
                         selectedData2 = Numeric.take(self.noJitteringScaledData, permutation)
                         x_positions = Numeric.matrixmultiply(XAnchors, selectedData2) / sum_i
                         y_positions = Numeric.matrixmultiply(YAnchors, selectedData2) / sum_i
-
+                        
                         for i in range(dataSize):
                             if validData[i] == 0: continue
                             table.append([x_positions[i], y_positions[i], self.rawdata[i].getclass()])
