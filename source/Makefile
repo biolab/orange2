@@ -12,6 +12,8 @@ INCLUDEDIR = $(SOURCEDIR)/include
 CORNDIR = $(SOURCEDIR)/corn
 STATCDIR = $(SOURCEDIR)/statc
 
+C45DIR = $(EXTERNALDIR)/c45
+
 DEVSCRIPTS= $(ORANGEDIR)/devscripts
 PPPDIR = $(ORANGEDIR)/ppp
 PXDIR = $(ORANGEDIR)/px
@@ -24,18 +26,10 @@ EXTERNALDIR = $(ORANGEHOME)/source/external
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 
-C45D = $(EXTERNALDIR)/c45
-C45_OBJECTS = $(C45D)/besttree.o $(C45D)/build.o $(C45D)/classify.o $(C45D)/confmat.o \
-		$(C45D)/contin.o $(C45D)/discr.o $(C45D)/genlogs.o $(C45D)/getdata.o \
-		$(C45D)/getnames.o $(C45D)/getopt.o $(C45D)/info.o \
-		$(C45D)/prune.o $(C45D)/sort.o $(C45D)/st-thresh.o $(C45D)/stats.o \
-		$(C45D)/subset.o $(C45D)/trees.o
-
 LOGREGD = $(EXTERNALDIR)/logreg
-LOGREG_OBJECTS = $(LOGREGD)/logreg.o $(LOGREGD)/lsq.o
+LOGREG_OBJECTS = $(LOGREGD)/logreg.cpp $(LOGREGD)/lsq.cpp
 
 ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
-
 
 INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
@@ -60,7 +54,7 @@ vpath %.px $(PXDIR)
 CC=	gcc
 #CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -ggdb3
 #CXX=	g++ $(INCLUDEPATH) -fPIC -Wno-deprecated -Wno-sign-compare -Wall -DLINK_C45 -O3
-CXX=	g++ $(INCLUDEPATH) -fPIC -w -DLINK_C45 -O3
+CXX=	g++ $(INCLUDEPATH) -fPIC -w -DLINUX -O3
 LINKCC=	$(PURIFY) $(CC)
 
 LNKSTL=	-lstdc++
@@ -82,13 +76,15 @@ $(ODIR)/%.o :
 
 all	: dirs $(ORANGE_SO)
 
+c45 : dirs $(BINDIR)/c45.so
+
 include makefile.deps
 
 dirs:
 	-@mkdir -p $(ODIR) $(BINDIR) > /dev/null
 
-$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ODIR)/c45.a $(ODIR)/logreg.a $(ORANGE_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(ODIR)/c45.a $(ODIR)/logreg.a -o $(BINDIR)/orange.so -shared $(LNKSTL)
+$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ORANGE_OBJECTS) $(LOGREG_OBJECTS)
+	gcc $(ORANGE_OBJECTS) $(LOGREG_OBJECTS) $(ODIR)/logreg.a -o $(BINDIR)/orange.so -shared $(LNKSTL)
 
 $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 	gcc $(CORN_OBJECTS) -o $(BINDIR)/corn.so -shared $(LNKSTL)
@@ -96,13 +92,9 @@ $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 $(BINDIR)/statc.so:	$(STATC_OBJECTS)
 	gcc $(STATC_OBJECTS) -o $(BINDIR)/statc.so -shared $(LNKSTL)
 
-$(ODIR)/c45.a:	$(C45_OBJECTS)
-	ar r $(ODIR)/c45.a $(C45_OBJECTS)
-	rm $(C45D)/*.o
+$(BINDIR)/c45.so:	$(C45DIR)/ensemble.c
+	gcc $(C45DIR)/ensemble.c -o $(BINDIR)/c45.so -shared $(LNKSTL)
 
-$(ODIR)/logreg.a: $(LOGREG_OBJECTS)
-	ar r $(ODIR)/logreg.a $(LOGREG_OBJECTS)
-	rm $(LOGREGD)/*.o
 
 
 install:	all
@@ -121,4 +113,4 @@ dist:
 
 
 clean:
-	rm -f $(ODIR)/* $(BINDIR)/* $(PPPDIR)/* $(PXDIR)/*
+	rm -f $(ODIR)/* $(BINDIR)/*.so $(PPPDIR)/* $(PXDIR)/*

@@ -179,16 +179,6 @@ SOURCE=.\orange\boolcnt.cpp
 # Begin Source File
 
 SOURCE=.\orange\c4.5.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

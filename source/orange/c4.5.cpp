@@ -33,93 +33,36 @@
 
 DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
 
-#ifdef _MSC_VER
+bool c45Loaded = false;
+
+typedef void *getDataFunc();
+typedef void *learnFunc(char gainRatio, char subset, char batch, char probThresh,
+                       int trials, int minObjs, int window, int increment, float cf, char prune);
+typedef void garbageFunc();
+
+
+struct {
+  short		*rMaxAtt, *rMaxClass, *rMaxDiscrVal;
+  int *rMaxItem;
+  Description	**rItem;
+  DiscrValue	**rMaxAttVal;
+  char **rSpecialStatus, ***rClassName, ***rAttName, ****rAttValName; 
+} c45data;
+
+learnFunc *c45learn;
+garbageFunc *c45garbage;
+
+extern PyObject *orangeModule;
+
 
 #ifdef IGNORE
 #undef IGNORE
 #endif
 
-//#include "../../external/c45/c45.h"
+#ifdef _MSC_VER
+
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
-
 #include <windows.h>
-
-bool c45Loaded = false;
-
-float **rClassSum;
-short		*rMaxAtt, *rMaxClass, *rMaxDiscrVal;
-ItemNo *rMaxItem;
-Description	**rItem;
-DiscrValue	**rMaxAttVal;
-char **rSpecialStatus;
-String **rClassName, **rAttName, ***rAttValName, *rFileName;
-short *rVERBOSITY, *rTRIALS;
-Boolean	*rGAINRATIO, *rSUBSET, *rBATCH, *rUNSEENS, *rPROBTHRESH;
-ItemNo *rMINOBJS, *rWINDOW, *rINCREMENT;
-float *rCF;
-Tree **rPruned, **rRaw;
-Boolean *rAllKnown;
-ItemNo **rTargetClassFreq;
-
-int (*rSoftenThresh)(Tree);
-Tree (__cdecl *rFormTree)(ItemNo, ItemNo);
-
-Tree (__cdecl *rCopyTree)(Tree);
-Tree (*rIterate)(ItemNo, ItemNo);
-Boolean (__cdecl *rPrune)(Tree);
-int (__cdecl *rFormTarget)(ItemNo), (*rFormInitialWindow)();
-
-int (__cdecl *rInitialiseTreeData)();
-int (__cdecl *rInitialiseWeights)();
-int (__cdecl *rKillTreeData)();
-
-void (*rReleaseTree)(Tree Node, bool clearSubsets = true);
-
-
-#define ClassSum (*rClassSum)
-#define MaxAtt (*rMaxAtt)
-#define MaxClass (*rMaxClass)
-#define MaxDiscrVal (*rMaxDiscrVal)
-#define MaxItem (*rMaxItem)
-#define Item (*rItem)
-#define MaxAttVal (*rMaxAttVal)
-#define SpecialStatus (*rSpecialStatus)
-#define ClassName (*rClassName)
-#define AttName (*rAttName)
-#define AttValName (*rAttValName)
-#define FileName (*rFileName)
-#define VERBOSITY (*rVERBOSITY)
-#define TRIALS (*rTRIALS)
-#define GAINRATIO (*rGAINRATIO)
-#define SUBSET (*rSUBSET)
-#define BATCH (*rBATCH)
-#define UNSEENS (*rUNSEENS)
-#define PROBTHRESH (*rPROBTHRESH)
-#define MINOBJS (*rMINOBJS)
-#define WINDOW (*rWINDOW)
-#define INCREMENT (*rINCREMENT)
-#define CF (*rCF)
-#define Pruned (*rPruned)
-#define Raw (*rRaw)
-#define AllKnown (*rAllKnown)
-#define TargetClassFreq (*rTargetClassFreq)
-
-#define SoftenThresh (*rSoftenThresh)
-#define FormTree (*rFormTree)
-
-#define CopyTree (*rCopyTree)
-#define ReleaseTree (*rReleaseTree)
-#define Iterate (*rIterate)
-#define Prune (*rPrune)
-#define FormTarget (*rFormTarget)
-#define FormInitialWindow (*rFormInitialWindow)
-#define InitialiseTreeData (*rInitialiseTreeData)
-#define InitialiseWeights (*rInitialiseWeights)
-#define KillTreeData (*rKillTreeData)
-
-typedef void **getDataFunc();
-
-extern PyObject *orangeModule;
 
 void loadC45()
 {
@@ -149,70 +92,98 @@ void loadC45()
     raiseErrorWho("C45Loader", "cannot load c45.dll");
 
   char funcname[258];
+  
+  /*
   PyOS_snprintf(funcname, sizeof(funcname), "%s", "getc45Data");
   getDataFunc *p = (getDataFunc *)(GetProcAddress(c45Dll, funcname));
 
-  if (!p)
+  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45_learn");
+  c45learn = (learnFunc *)(GetProcAddress(c45Dll, funcname));
+
+  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45_collect_garbage");
+  c45garbage = (garbageFunc *)(GetProcAddress(c45Dll, funcname));
+*/
+
+  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45Data");
+  void *p = GetProcAddress(c45Dll, funcname);
+
+  PyOS_snprintf(funcname, sizeof(funcname), "%s", "learn");
+  c45learn = (learnFunc *)(GetProcAddress(c45Dll, funcname));
+
+  PyOS_snprintf(funcname, sizeof(funcname), "%s", "guarded_collect");
+  c45garbage = (garbageFunc *)(GetProcAddress(c45Dll, funcname));
+ 
+  if (!p || !c45learn || !c45garbage)
     raiseErrorWho("C45Loader", "c45.dll is invalid");
 
-  void **data = (*p)();
-  if (!data)
-    raiseErrorWho("C45Loader", "c45.dll cannot initialize");
+  memcpy(&c45data, p, sizeof(c45data));
+  c45Loaded = true;
+}
 
-  #define COPY(x,i) (void *&)(r##x) = data[i];
-  COPY(ClassSum, 0);           COPY(MaxAtt, 1);              COPY(MaxClass, 2);          COPY(MaxDiscrVal, 3);      COPY(MaxItem, 4);
-  COPY(Item, 5);               COPY(MaxAttVal, 6);           COPY(SpecialStatus, 7);     COPY(ClassName, 8);        COPY(AttName, 9);
-  COPY(AttValName, 10);        COPY(FileName, 11);
+#else
+#ifdef LINUX
 
-  COPY(VERBOSITY, 12);         COPY(TRIALS, 13);             COPY(GAINRATIO, 14);        COPY(SUBSET, 15);          COPY(BATCH, 16);
-  COPY(UNSEENS, 17);           COPY(PROBTHRESH, 18);         COPY(MINOBJS, 19);          COPY(WINDOW, 20);          COPY(INCREMENT, 21);
-  COPY(CF, 22);
+#include <dlfcn.h>
 
-  COPY(Pruned, 23);            COPY(Raw, 24);                COPY(AllKnown, 25);         COPY(TargetClassFreq, 26);
+void loadC45()
+{ 
+  char buf[512], *bp = buf;
   
-  COPY(SoftenThresh, 27);      COPY(ReleaseTree, 28);        /* was: Category, 29 */     /* was: Classify, 30 */    COPY(FormTree, 31);
-  COPY(CopyTree, 32);          COPY(Iterate, 33);            COPY(Prune, 34);            /* was: PrintTree, 35 */   COPY(FormTarget, 36);
-  COPY(FormInitialWindow, 37); COPY(InitialiseTreeData, 38); COPY(InitialiseWeights, 39);COPY(KillTreeData, 40);
-  #undef COPY
+  PyObject *orangeDirName = PyDict_GetItemString(PyModule_GetDict(orangeModule), "__file__");
+  if (orangeDirName) {
+    char *odn = PyString_AsString(orangeDirName);
+    if (strlen(odn) <= 500) {
+      strcpy(buf, odn);
+      bp = buf + strlen(buf);
+      while ((bp!=buf) && (*bp!='/'))
+        bp--;
+    } 
+    else
+      raiseErrorWho("C45Loader", "cannot load c45.so (pathname too long)");
+  }
+
+  #ifdef _DEBUG
+  strcpy(bp, "/c45_d.so");
+  #else
+  strcpy(bp, "/c45.so");
+  #endif
+
+  void *handle = dlopen(buf, 0 /*dlopenflags*/);
+  if (handle == NULL)
+    raiseErrorWho("C45Loader", dlerror());
   
+//  getDataFunc *p = (getDataFunc *) dlsym(handle, "_Z10getc45Datav");
+  void *p = dlsym(handle, "c45Data");
+  c45learn = (learnFunc *) dlsym(handle, "learn");
+  c45garbage = (garbageFunc *) dlsym(handle, "guarded_collect");
+  
+  if (!p || !c45learn || !c45garbage)
+    raiseErrorWho("C45Loader", "c45.so is invalid (required functions are not found)");
+
+  memcpy(&c45data, p, sizeof(c45data));
   c45Loaded = true;
 }
 
 #else
 
-extern "C" {
-  short BestTree();
-  int OneTree(), SoftenThresh(Tree);
+void loadC45()
+{ raiseErrorWho("C45Loader", "c45 is not supported on this platform"); }
 
-  Tree FormTree(ItemNo, ItemNo);
-  Tree CopyTree(Tree), Iterate(ItemNo, ItemNo);
-  Boolean Prune(Tree);
-  int FormTarget(ItemNo), FormInitialWindow();
-  void ReleaseTree(Tree Node, bool clearSubsets = true);
+#endif
+#endif
 
-  int InitialiseTreeData();
-  int InitialiseWeights();
-}
+#define MaxAtt (*c45data.rMaxAtt)
+#define MaxClass (*c45data.rMaxClass)
+#define MaxDiscrVal (*c45data.rMaxDiscrVal)
+#define MaxItem (*c45data.rMaxItem)
+#define Item (*c45data.rItem)
+#define MaxAttVal (*c45data.rMaxAttVal)
+#define SpecialStatus (*c45data.rSpecialStatus)
+#define ClassName (*c45data.rClassName)
+#define AttName (*c45data.rAttName)
+#define AttValName (*c45data.rAttValName)
 
-extern float *ClassSum;		/* ClassSum[c] = total weight of class c */
 
-extern  short MaxAtt = 0 , MaxClass = 0, MaxDiscrVal = 2;
-extern  ItemNo		MaxItem = 0;
-extern  Description	*Item = NULL;
-extern  DiscrValue	*MaxAttVal = NULL;
-extern  char *SpecialStatus = NULL;
-extern  String *ClassName = NULL, *AttName = NULL, **AttValName = NULL, FileName = "DF";
-extern  short VERBOSITY = 0, TRIALS = 10;
-extern  Boolean		GAINRATIO  = true, SUBSET = false, BATCH = true, UNSEENS = false, PROBTHRESH = false;
-extern  ItemNo		MINOBJS   = 2, WINDOW = 0, INCREMENT = 0;
-extern  float		CF = 0.25;
-extern  Tree		*Pruned = NULL, *Raw = NULL;
-extern  Boolean		AllKnown = true;
-extern  ItemNo *TargetClassFreq;
-
-extern float atof();
-
-#endif // else of ifdef _MSC_VER
 
 TC45Learner::TC45Learner()
  : gainRatio(true),
@@ -226,11 +197,9 @@ TC45Learner::TC45Learner()
    trials(10),
    prune(true)
 {
-  #ifdef _MSC_VER
     if (!c45Loaded)
       loadC45();
-  #endif
-}
+ }
 
 
 bool TC45Learner::clearDomain()
@@ -473,22 +442,7 @@ bool TC45Learner::parseCommandLine(const string &line)
 
 
 bool TC45Learner::convertParameters()
-{ VERBOSITY  = 0;
-  UNSEENS    = 0;
-
-  TRIALS     = trials;
-
-  GAINRATIO  = gainRatio;
-  SUBSET     = subset;
-  BATCH      = batch;
-
-  PROBTHRESH = probThresh;
-
-  MINOBJS    = minObjs;
-  WINDOW     = window;
-  INCREMENT  = increment;
-  CF         = cf;
-  return true;
+{ return true;
 }
 
 
@@ -497,94 +451,17 @@ bool TC45Learner::convertParameters()
 //#define C45DEBUG(x) x
 #define C45DEBUG(x)
 
-void O_OneTree()
-/*  ---------  */
-{
-    InitialiseTreeData();
-    InitialiseWeights();
-
-    Raw = (Tree *) calloc(1, sizeof(Tree));
-    Pruned = (Tree *) calloc(1, sizeof(Tree));
-
-    AllKnown = true;
-    Raw[0] = FormTree(0, MaxItem);
-
-    Pruned[0] = CopyTree(Raw[0]);
-    Prune(Pruned[0]);
-}
-
-
-
-short O_BestTree()
-{
-    short t, Best=0;
-
-    InitialiseTreeData();
-
-    TargetClassFreq = (ItemNo *) calloc(MaxClass+1, sizeof(ItemNo));
-
-    Raw    = (Tree *) calloc(TRIALS, sizeof(Tree));
-    Pruned = (Tree *) calloc(TRIALS, sizeof(Tree));
-
-    if ( ! WINDOW )
-      WINDOW = ItemNo(Max(2 * sqrt(MaxItem+1.0), (MaxItem+1) / 5));
-
-    if ( ! INCREMENT )
-      INCREMENT = Max(WINDOW / 5, 1);
-
-    FormTarget(WINDOW);
-
-    ForEach(t, 0, TRIALS-1 ) {
-        FormInitialWindow();
-        Raw[t] = Iterate(WINDOW, INCREMENT);
-
-        Pruned[t] = CopyTree(Raw[t]);
-        Prune(Pruned[t]);
-
-        if ( Pruned[t]->Errors < Pruned[Best]->Errors )
-          Best = t;
-    }
-
-    return Best;
-}
-
-
 PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
 {   if (!gen->domain->classVar)
       raiseError("class-less domain");
  
     convertGenerator(gen);
-    convertParameters();
+    Tree tree = (Tree)c45learn(trials, gainRatio, subset, batch, probThresh, minObjs, window, increment, cf, prune);
 
-    short Best;
- 
-    if ( BATCH ) {
-      TRIALS = 1;
-      O_OneTree();
-      Best = 0;
-    }
-    else
-      Best = O_BestTree();
-
-    if ( PROBTHRESH )
-      SoftenThresh((prune ? Pruned : Raw)[Best]);
-
-    PC45TreeNode root = mlnew TC45TreeNode((prune ? Pruned : Raw)[Best], gen->domain);
+    PC45TreeNode root = mlnew TC45TreeNode(tree, gen->domain);
     PClassifier c45classifier = mlnew TC45Classifier(gen->domain->classVar, root);
 
-    Tree *Prunedi = Pruned;
-    Tree *Rawi = Raw;
-    for(int tr=0; tr!=TRIALS; tr++, Prunedi++, Rawi++) {
-      ReleaseTree(*Rawi);
-      ReleaseTree(*Prunedi, false);
-    }
-
-    free Raw;
-    Raw = NULL;
-    free Pruned;
-    Pruned = NULL;
-
-    KillTreeData();
+    c45garbage();
     clearGenerator();
     return c45classifier;
 }

@@ -140,17 +140,35 @@ exception CornException(const string &anerr, const long i)
 
 
 int getIntegerAttr(PyObject *self, char *name)
-{ PyObject *temp = PyObject_GetAttrString(self, name);
-  if (!temp || !PyInt_Check(temp))
+{ 
+  PyObject *temp = PyObject_GetAttrString(self, name);
+  
+  if (!temp)
+    throw CornException("no attribute '%s'", name);
+  if (!PyInt_Check(temp)) {
+    Py_DECREF(temp);
     throw CornException("error in attribute '%s': integer expected", name);
-  return (int)PyInt_AsLong(temp);
+  }
+  
+  int res = (int)PyInt_AsLong(temp);
+  Py_DECREF(temp);
+  return res;
 }
 
 float getFloatAttr(PyObject *self, char *name)
-{ PyObject *temp = PyObject_GetAttrString(self, name);
-  if (!temp || !PyFloat_Check(temp))
+{ 
+  PyObject *temp = PyObject_GetAttrString(self, name);
+
+  if (!temp)
+    throw CornException("no attribute '%s'", name);
+  if (!PyFloat_Check(temp)) {
+    Py_DECREF(temp);
     throw CornException("error in attribute '%s': float expected", name);
-  return (float)PyFloat_AsDouble(temp);
+  }
+
+  float res = (float)PyFloat_AsDouble(temp);
+  Py_DECREF(temp);
+  return res;
 }
 
 
@@ -195,35 +213,47 @@ TestedExample::TestedExample(PyObject *obj)
   iterationNumber(getIntegerAttr(obj, "iterationNumber")),
   weight(getFloatAttr(obj, "weight"))
 
-{ PyObject *temp;
+{ 
+  PyObject *temp = PYNULL;
 
-  temp = PyObject_GetAttrString(obj, "classes");
-  if (!temp || !PyList_Check(temp))
-    throw CornException("error in 'classes' attribute");
-
-  int i,e;
-  for(i = 0, e = PyList_Size(temp); i<e; i++) {
-    PyObject *cp = PyList_GetItem(temp, i);
-    if (!cp || !PyInt_Check(cp))
+  try {
+    temp = PyObject_GetAttrString(obj, "classes");
+    if (!temp || !PyList_Check(temp))
       throw CornException("error in 'classes' attribute");
-    classes.push_back((int)PyInt_AsLong(cp));
-  }
 
-  temp = PyObject_GetAttrString(obj, "probabilities");
-  if (!temp || !PyList_Check(temp))
-    throw CornException("error in 'probabilities' attribute");
-
-  for(i = 0, e = PyList_Size(temp); i<e; i++) {
-    PyObject *slist = PyList_GetItem(temp, i);
-    if (!slist || !PyList_Check(slist))
-      throw CornException("error in 'probabilities' attribute");
-    probabilities.push_back(vector<float>());
-    for(int ii = 0, ee = PyList_Size(slist); ii<ee; ii++) {
-      PyObject *fe = PyList_GetItem(slist, ii);
-      if (!fe || !PyFloat_Check(fe))
-        throw CornException("error in 'probabilities' attribute");
-      probabilities.back().push_back((float)PyFloat_AsDouble(fe));
+    int i,e;
+    for(i = 0, e = PyList_Size(temp); i<e; i++) {
+      PyObject *cp = PyList_GetItem(temp, i);
+      if (!cp || !PyInt_Check(cp))
+        throw CornException("error in attribute 'classes'");
+      classes.push_back((int)PyInt_AsLong(cp));
     }
+    Py_DECREF(temp);
+    temp = PYNULL;
+
+    temp = PyObject_GetAttrString(obj, "probabilities");
+    if (!temp || !PyList_Check(temp))
+      throw CornException("error in attribute 'probabilities'");
+  
+    for(i = 0, e = PyList_Size(temp); i<e; i++) {
+      PyObject *slist = PyList_GetItem(temp, i);
+      if (!slist || !PyList_Check(slist))
+        throw CornException("error in 'probabilities' attribute");
+      
+      probabilities.push_back(vector<float>());
+      for(int ii = 0, ee = PyList_Size(slist); ii<ee; ii++) {
+        PyObject *fe = PyList_GetItem(slist, ii);
+        if (!fe || !PyFloat_Check(fe))
+          throw CornException("error in 'probabilities' attribute");
+        probabilities.back().push_back((float)PyFloat_AsDouble(fe));
+      }
+    }
+
+    Py_DECREF(temp);
+    temp = PYNULL;
+  }
+  catch (...) {
+    Py_XDECREF(temp);
   }
 }
         
@@ -242,18 +272,27 @@ ExperimentResults::ExperimentResults(PyObject *obj)
 { 
   PyObject *temp = PyObject_GetAttrString(obj, "weights");
   weights = temp && (PyObject_IsTrue(temp)!=0);
+  Py_DECREF(temp);
 
   temp = PyObject_GetAttrString(obj, "baseClass");
   baseClass = PyInt_AsLong(temp);
+  Py_DECREF(temp);
 
   PyObject *pyresults = PyObject_GetAttrString(obj, "results");
-  if (!pyresults || !PyList_Check(pyresults))
-    throw CornException("error in 'results' attribute");
+  if (!pyresults)
+    throw CornException("no 'results' attribute");
+
+  if (!PyList_Check(pyresults)) {
+    Py_DECREF(pyresults);
+    throw CornException("'results' is no a list");
+  }
 
   for(int i = 0, e = PyList_Size(pyresults); i<e; i++) {
     PyObject *testedExample = PyList_GetItem(pyresults, i);
     results.push_back(TestedExample(testedExample));
   }
+
+  Py_DECREF(pyresults);
 }
 
 
@@ -365,6 +404,7 @@ PyObject *py_computeROCCumulative(PyObject *, PyObject *arg)
     if (results.numberOfIterations>1)
       PYERROR(PyExc_SystemError, "computeCDT: cannot compute CDT for experiments with multiple iterations", PYNULL);
 
+
     pp totals;
     vector<TCummulativeROC> cummlists;
     C_computeROCCumulative(results, classIndex, totals, cummlists, useweights);
@@ -422,7 +462,12 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
     PyObject *res = PyList_New(cdts.size());
     int i = 0;
     ITERATE(vector<TCDT>, cdti, cdts) {
-      PyObject *PyCDT = PyInstance_New(CDTType, Py_BuildValue("fff", (*cdti).C, (*cdti).D, (*cdti).T), PyDict_New());
+      PyObject *inargs = Py_BuildValue("fff", (*cdti).C, (*cdti).D, (*cdti).T);
+      PyObject *indict = PyDict_New();
+      PyObject *PyCDT = PyInstance_New(CDTType, inargs, indict);
+      Py_DECREF(inargs);
+      Py_DECREF(indict);
+
       if (!PyCDT) {
         Py_XDECREF(res);
         return PYNULL;
