@@ -103,6 +103,7 @@ class InteractionMatrix:
         
     def __init__(self, t):
         t = self._prepare(t)
+        self.discData = t   # save the discretized data
         ### PREPARE INDIVIDUAL ATTRIBUTES ###
 
         # Get the class entropy
