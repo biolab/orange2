@@ -240,13 +240,16 @@ class BasicLogisticLearner(RobustBLogisticLearner):
     def __init__(self):
         self.translation_mode = 0 # dummy
 
-    def __call__(self, examples, weight = 0):
+    def __call__(self, examples, weight = 0,fulldata=0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
             for i in examples.domain.classVar.values:
                 print i
             raise "Logistic learner only works with binary discrete class."
         translate = orng2Array.DomainTranslation(self.translation_mode)
-        translate.analyse(examples, weight)
+        if fulldata != 0:
+            translate.analyse(fulldata, weight)
+        else:
+            translate.analyse(examples, weight)
         translate.prepareLR()
         mdata = translate.transform(examples)
         r = RobustBLogisticLearner.__call__(self,mdata)
@@ -319,14 +322,17 @@ class BasicBayesLearner(orange.Learner):
     def __init__(self):
         self.translation_mode = 1 # binarization
 
-    def __call__(self, examples, weight = 0):
+    def __call__(self, examples, weight = 0,fulldata=0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
             raise "BasicBayes learner only works with binary discrete class."
         for attr in examples.domain.attributes:
             if not(attr.varType == 1):
                 raise "BasicBayes learner does not work with continuous attributes."
         translate = orng2Array.DomainTranslation(self.translation_mode)
-        translate.analyse(examples, weight)
+        if fulldata != 0:
+            translate.analyse(fulldata, weight)
+        else:
+            translate.analyse(examples, weight)
         translate.prepareLR()
         (beta, coeffs) = self._process(orange.BayesLearner(examples), examples)
         return BasicBayesClassifier(beta,coeffs,translate)
@@ -417,11 +423,13 @@ class BasicCalibrationClassifier(orange.Classifier):
 # class distributions. 
 #
 class MarginMetaLearner(orange.Learner):
-    def __init__(self, learner, folds = 10, replications = 1, metalearner = BasicLogisticLearner()):
+    def __init__(self, learner, folds = 10, replications = 1, normalization=0, fulldata=0, metalearner = BasicLogisticLearner()):
         self.learner = learner
         self.folds = 10
         self.metalearner = metalearner
         self.replications = replications
+        self.normalization = normalization
+        self.fulldata = fulldata
         
     def __call__(self, examples, weight = 0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
@@ -446,20 +454,29 @@ class MarginMetaLearner(orange.Learner):
               else:
                   learn_data = examples
                   test_data  = examples
-                  
 
+              # fulldata removes the influence of scaling on the distance dispersion.                  
               if weight!=0:
-                  classifier = self.learner(learn_data, weight=weight)
+                  if self.fulldata:
+                      classifier = self.learner(learn_data, weight=weight, fulldata=examples)
+                  else:
+                      classifier = self.learner(learn_data, weight=weight)
               else:
-                  classifier = self.learner(learn_data)
-              # normalize the range              
-              mi = 1e100
-              ma = -1e100
-              for ex in learn_data:
-                  margin = classifier.getmargin(ex)
-                  mi = min(mi,margin)
-                  ma = max(ma,margin)
-              coeff = 1.0/max(ma-mi,1e-16)
+                  if self.fulldata:
+                      classifier = self.learner(learn_data, fulldata=examples)
+                  else:
+                      classifier = self.learner(learn_data)
+              # normalize the range
+              if self.normalization:
+                  mi = 1e100
+                  ma = -1e100
+                  for ex in learn_data:
+                      margin = classifier.getmargin(ex)
+                      mi = min(mi,margin)
+                      ma = max(ma,margin)
+                  coeff = 1.0/max(ma-mi,1e-16)
+              else:
+                  coeff = 1.0  
               for ex in test_data:
                   margin = coeff*classifier.getmargin(ex)
                   if type(margin)==type(1.0) or type(margin)==type(1):
@@ -485,14 +502,17 @@ class MarginMetaLearner(orange.Learner):
             estimate = self.metalearner(mistakes)
             classifier = self.learner(examples)
 
-        # normalize the range              
-        mi = 1e100
-        ma = -1e100
-        for ex in examples:
-            margin = classifier.getmargin(ex)
-            mi = min(mi,margin)
-            ma = max(ma,margin)
-        coeff = 1.0/max(ma-mi,1e-16)
+        # normalize the range
+        if self.normalization:
+            mi = 1e100
+            ma = -1e100
+            for ex in examples:
+                margin = classifier.getmargin(ex)
+                mi = min(mi,margin)
+                ma = max(ma,margin)
+            coeff = 1.0/max(ma-mi,1e-16)
+        else:
+            coeff = 1.0
         #print estimate.classifier.classifier
         #for x in mistakes:
         #    print x,estimate(x,orange.GetBoth)

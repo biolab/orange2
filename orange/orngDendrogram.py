@@ -352,10 +352,20 @@ class DendrogramPlot:
             tcanvas = canvas
 
         normal = piddle.Font(face=_defaultfont)
+        bold = piddle.Font(face=_defaultfont,bold=1)
+
+        def pickfont(st):
+            if st[0]=='*':
+                return (bold,'%s'%st[1:])
+            else:
+                return (normal,'%s'%st)
 
         # compute the height
         lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
-        labellen = [tcanvas.stringWidth(s,font=normal) for s in labels]
+        labellen = []
+        for s in labels:
+            (myfont,st) = pickfont(s)
+            labellen.append(tcanvas.stringWidth(st,font=myfont))
         maxlabel = max(labellen)
         width = height = int(1 + 2.0*margin + hook + maxlabel + lineskip*(len(labels)) + tcanvas.fontHeight(normal))
 
@@ -368,6 +378,7 @@ class DendrogramPlot:
         _colorize = _color_picker(color_mode)
 
         ### DRAWING ###
+        font = normal
                 
         offset = maxlabel+margin
         halfline = canvas.fontAscent(normal)/2.0
@@ -378,17 +389,18 @@ class DendrogramPlot:
             x = offset - labellen[idx]
             y = offset + lineskip*(i+1)
             # horizontal
+            (myfont,xst) = pickfont(labels[idx])
             if not diagonal or i > 0 or len(att_colors)>0:
-                canvas.drawString(labels[idx], x, y,font=normal)
+                canvas.drawString(xst, x, y+halfline,font = myfont)
             y2 = offset + lineskip*(i+1)
             # vertical
             if diagonal:
                 if len(att_colors)>0:
-                    canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, y2+block-hook-lineskip, angle=90,font=normal)
+                    canvas.drawString(xst, y+block+halfline-lineskip+hook, y2+block-hook-lineskip, angle=90,font=myfont)
                 elif i < len(labels)-1:
-                    canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, y2+block-hook, angle=90,font=normal)
+                    canvas.drawString(xst, y+block+halfline-lineskip+hook, y2+block-hook, angle=90,font=myfont)
             elif not diagonal:
-                canvas.drawString(labels[idx], y+block+halfline-lineskip+hook, offset+lineskip-block-hook, angle=90,font=normal)
+                canvas.drawString(xst, y+block+halfline-lineskip+hook, offset+lineskip-block-hook, angle=90,font=myfont)
             for j in range(i):
                 idx2 = self.order[j]-1
                 colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])

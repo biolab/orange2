@@ -32,6 +32,7 @@
 import orange
 import orngCRS
 import orng2Array
+import math
 
 class BasicSVMLearner(orange.Learner):
   def __init__(self):
@@ -79,15 +80,17 @@ class BasicSVMLearner(orange.Learner):
       self.eps = 1e-3
 
       # shrinking heuristic (1=on, 0=off)
-      self.shrinking = 1
+      self.shrinking = 1      
 
       # class weights
       self.classweights = []
 
       self.translation_mode = 1
       self.for_nomogram = 0
+
+      self.normalize = 0      
       
-  def getmodel(self,data):
+  def getmodel(self,data,fulldata):
       # make sure that regression is used for continuous classes, and classification
       # for discrete class
       assert(data.domain.classVar.varType == 1 or data.domain.classVar.varType == 2)
@@ -124,7 +127,11 @@ class BasicSVMLearner(orange.Learner):
 
       puredata = orange.Filter_hasClassValue(data)
       translate = orng2Array.DomainTranslation(self.translation_mode)
-      translate.analyse(puredata)
+      if fulldata != 0:
+          purefulldata = orange.Filter_hasClassValue(fulldata)
+          translate.analyse(purefulldata)
+      else:
+          translate.analyse(puredata)
       translate.prepareSVM(not self.for_nomogram)
       mdata = translate.transform(puredata)
 
@@ -141,18 +148,34 @@ class BasicSVMLearner(orange.Learner):
           model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking,len(self.classweights), self.classweights, labels)
       return (model, translate)
 
-  def __call__(self, data, weights = 0):
+  def __call__(self, data, weights = 0,fulldata=0):
       # note that weights are ignored
-      (model, translate) = self.getmodel(data)
-      return BasicSVMClassifier(model,translate)
+      (model, translate) = self.getmodel(data,fulldata)
+      return BasicSVMClassifier(model,translate,normalize=self.normalize)
 
 class BasicSVMClassifier(orange.Classifier):
-  def __init__(self, model, translate):
+  def __init__(self, model, translate, normalize):
       self._name = "SVM Classifier Wrap"
       self.model = model
       self.cmodel = orngCRS.SVMClassifier(model)
       self.translate = translate
+      self.normalize = normalize
 
+      if normalize and model['kernel_type'] == 0 and model["svm_type"] == 0 and model["nr_class"] == 2:
+          beta = model["rho"][0]
+          svs = model["SV"]
+          ll = -1
+          for i in xrange(model["total_sv"]):
+              ll = max(ll,svs[i][-1][0])
+          xcoeffs = [0.0]*(ll)
+          for i in xrange(model["total_sv"]):
+              csv = svs[i]
+              coef = csv[0][0]
+              for (j,v) in csv[1:]:
+                  xcoeffs[j-1] += coef*v
+                  
+          self.coefficient = 1.0/math.sqrt(reduce(lambda x,y:x+y*y,xcoeffs))
+          
   def getmargin(self, example):
       # classification with margins
       assert(self.model['nr_class'] <= 2) # this should work only with 2-class problems
@@ -162,7 +185,10 @@ class BasicSVMClassifier(orange.Classifier):
           margin = orngCRS.SVMClassifyM(self.cmodel,td)
         else:
           margin = -orngCRS.SVMClassifyM(self.cmodel,td)
-        return margin
+        if self.normalize:
+            return margin*self.coefficient
+        else:
+            return margin
       else:
         # it can happen that there is a single class
         return 0.0
