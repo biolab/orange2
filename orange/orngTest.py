@@ -111,9 +111,13 @@ def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRan
     return testResults
 
 
-def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
+def crossValidation(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], indicesrandseed="*", **argkw):
     (examples, weight) = demangleExamples(examples)
-    return apply(testWithIndices, (learners, (examples, weight), orange.MakeRandomIndicesCV(examples, folds, stratified = strat), "*", pps), argkw)
+    if indicesrandseed=="*":
+        indices = orange.MakeRandomIndicesCV(examples, folds, stratified = strat)
+    else:
+        indices = orange.MakeRandomIndicesCV(examples, folds, randseed=indicesrandseed, stratified = strat)
+    return apply(testWithIndices, (learners, (examples, weight), indices, '*', pps), argkw)
 
 
 def learningCurveN(learners, examples, folds=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, proportions=orange.frange(0.1), pps=[], **argkw):
