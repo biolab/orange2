@@ -113,9 +113,9 @@ class CanvasLine(QCanvasLine):
     def drawShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
-
+        
         if not self.finished:
-            painter.setPen(QPen(QColor("red"), 1, Qt.SolidLine))
+            painter.setPen(QPen(QColor("green"), 1, Qt.SolidLine))
             painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
             return
         
@@ -124,6 +124,9 @@ class CanvasLine(QCanvasLine):
         else:
             lineStyle = Qt.DotLine 
 
+        painter.setPen(QPen(QColor("green"), 6, lineStyle))
+        painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
+        """
         if len(self.colors) == 1:
             painter.setPen(QPen(QColor(self.colors[0]), 6, lineStyle))
             painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
@@ -139,6 +142,7 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY)   , QPoint(endX, endY))
             painter.setPen(QPen(QColor(self.colors[0]), 2, lineStyle))
             painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
+        """
 
     def printShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
@@ -188,14 +192,20 @@ class CanvasLine(QCanvasLine):
 # # CANVAS WIDGET
 # #######################################
 class CanvasWidget(QCanvasRectangle):
-    def __init__(self, canvas, widget, defaultPic):
+    def __init__(self, canvas, widget, defaultPic, canvasDlg):
         apply(QCanvasRectangle.__init__, (self,canvas))
         self.widget = widget
         self.canvas = canvas
+        self.canvasDlg = canvasDlg
         if os.path.isfile(widget.iconName):
             self.image = QPixmap(widget.iconName)
         else:
             self.image = QPixmap(defaultPic)
+
+        self.imageEdge = None
+        if os.path.isfile(canvasDlg.picsDir + "WidgetEdge.png"):
+            self.imageEdge = QPixmap(canvasDlg.picsDir + "WidgetEdge.png")
+            
         self.setSize(68, 68)
         self.selected = FALSE
         self.invalidPosition = FALSE    # is the widget positioned over other widgets
@@ -254,15 +264,17 @@ class CanvasWidget(QCanvasRectangle):
             else:
                 painter.setPen(QPen(self.green))
             painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
+            painter.drawRect(self.x()+8, self.y(), 52, 52)
 
-        painter.drawRect(self.x()+8, self.y(), 52, 52)
+        #painter.drawRect(self.x()+8, self.y(), 52, 52)
 
-        painter.setBrush(QBrush(self.blue))
-        if self.widget.inList != []:
-            painter.drawRect(self.x(), self.y() + 18, 8, 16)
-
-        if self.widget.outList != []:
-            painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+        if self.imageEdge != None:
+            if self.widget.inList != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
+            if self.widget.outList != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
+        else:
+            painter.setBrush(QBrush(self.blue))
+            if self.widget.inList != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
+            if self.widget.outList != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
         painter.setPen(QPen(self.black))
         rect = painter.boundingRect(0,0,200,20,0,self.caption)

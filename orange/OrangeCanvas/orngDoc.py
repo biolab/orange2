@@ -70,7 +70,7 @@ class SchemaDoc(QMainWindow):
         return line
 
     def addWidget(self, widget):
-        newwidget = orngCanvasItems.CanvasWidget(self.canvas, widget, self.canvasDlg.defaultPic)
+        newwidget = orngCanvasItems.CanvasWidget(self.canvas, widget, self.canvasDlg.defaultPic, self.canvasDlg)
         x = self.canvasView.contentsX() + 10
         for w in self.widgets:
             x = max(w.x() + 90, x)

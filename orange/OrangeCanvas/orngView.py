@@ -180,7 +180,6 @@ class SchemaView(QCanvasView):
         if activeItems == []:
             self.tempWidget = None
             self.tempRect = None
-            # TO DO: if left button pressed and we didn't click on any widget we start drawing a rectangle
             self.bMultipleSelection = TRUE
             for item in self.selWidgets:
                 item.selected = FALSE
