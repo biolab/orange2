@@ -84,6 +84,7 @@ class OWRadvizGraph(OWVisGraph):
         self.useDifferentColors = 1
         self.enhancedTooltips = 0
         self.scaleFactor = 1.0
+        self.tooltipsShowScaledValues = 0
         
 
     def setEnhancedTooltips(self, enhanced):
@@ -373,7 +374,10 @@ class OWRadvizGraph(OWVisGraph):
                     self.tooltipCurveKeys.append(key)
 
                     # draw text
-                    marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)].value), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                    if self.tooltipsShowScaledValues:
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(label)][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                    else:
+                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)].value), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
