@@ -62,7 +62,7 @@ WRAPPER(ExampleGenerator);
    the three methods. Concrete class should provide a more efficient method when possible.
 */
 
-#define ATTRIBUTE_REJECTED numeric_limits<float>::min();
+#define ATTRIBUTE_REJECTED numeric_limits<float>::min()
 
 class TMeasureAttribute : public TOrange {
 public:

@@ -155,7 +155,7 @@ float TMeasureAttribute::operator()(int attrNo, PExampleGenerator gen, PDistribu
     raiseError("attribute index out of range");
 
   if (needs==Contingency_Class) {
-    TContingency contingency(gen->domain->attributes->at(attrNo), gen->domain->classVar);
+    TContingency contingency(gen->domain->getVar(attrNo), gen->domain->classVar);
     PDistribution classDistribution = TDistribution::create(gen->domain->classVar);
  
     PEITERATE(ei, gen) {

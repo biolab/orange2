@@ -137,8 +137,10 @@ PyObject *convertToPythonNative(const TValue &val, PVariable var)
 bool convertFromPython(PyObject *args, TValue &value, PVariable var)
 {
   if (PyOrValue_Check(args)) {
-    if (var && PyValue_AS_Variable(args) && (PyValue_AS_Variable(args)!=var))
-      PYERROR(PyExc_TypeError, "wrong variable", false)
+    if (var && PyValue_AS_Variable(args) && (PyValue_AS_Variable(args)!=var)) {
+      PyErr_Format(PyExc_TypeError, "wrong attribute value (expected value of '%s', got value of '%s')", var->name.c_str(), PyValue_AS_Variable(args)->name.c_str());
+      return false;
+    }
     else
       value = PyValue_AS_Value(args);
     return true;

@@ -320,6 +320,9 @@ PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
     TDistributionMap::iterator mi=cont->continuous->find(ind);
     if (mi!=cont->continuous->end())
       return &(*mi).second;
+
+    PyErr_Format(PyExc_IndexError, "invalid index (%5.3f)", ind);
+    return NULL;
   }
 
   PYERROR(PyExc_IndexError, "invalid index", (PDistribution *)NULL);
@@ -350,7 +353,7 @@ PyObject *Contingency_add(PyObject *self, PyObject *args)  PYARGS(METH_VARARGS, 
    TValue inval, outval;
     if (   !convertFromPython(pyinner, inval, cont->innerVariable)
         || !convertFromPython(pyouter, outval, cont->outerVariable))
-      PYERROR(PyExc_TypeError, "invalid values", PYNULL);
+      return PYNULL;
 
     cont->add(outval, inval, w);
     RETURN_NONE;
@@ -360,11 +363,8 @@ PyObject *Contingency_add(PyObject *self, PyObject *args)  PYARGS(METH_VARARGS, 
 
 bool ContingencyClass_getValuePair(TContingencyClass *cont, PyObject *pyattr, PyObject *pyclass, TValue &attrval, TValue &classval)
 {
-  if (   !convertFromPython(pyattr, attrval, cont->getAttribute())
-      || !convertFromPython(pyclass, classval, cont->getClassVar()))
-    PYERROR(PyExc_TypeError, "invalid values", false);
-
-  return true;
+  return    convertFromPython(pyattr, attrval, cont->getAttribute())
+         && convertFromPython(pyclass, classval, cont->getClassVar());
 }
 
 
@@ -394,12 +394,23 @@ PyObject *ContingencyClass_add_attrclass(PyObject *self, PyObject *args) PYARGS(
 }
 
 
+PyObject *ContingencyClass_get_classVar(PyObject *self)
+{
+  return WrapOrange(SELF_AS(TContingencyClass).getClassVar());
+}
 
-PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Contingency, "(attribute, class attribute) | (attribute, examples[, weightID])")
+
+PyObject *ContingencyClass_get_variable(PyObject *self)
+{
+  return WrapOrange(SELF_AS(TContingencyClass).getAttribute());
+}
+
+
+PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(ContingencyClass, "(attribute, class attribute) | (attribute, examples[, weightID])")
 { PyTRY
-    PyObject *ret = Contingency_new(type, args, keywds);
-    if (ret)
-      return ret;
+    PVariable var1, var2;
+    if (PyArg_ParseTuple(args, "O&O&:Contingency.__new__", cc_Variable, &var1, cc_Variable, &var2))
+      return WrapNewOrange(mlnew TContingencyAttrClass(var1, var2), type);
 
     PyErr_Clear();
 
@@ -431,7 +442,12 @@ PyObject *ContingencyAttrClass_p_class(PyObject *self, PyObject *args) PYARGS(ME
       if (!convertFromPython(PyTuple_GET_ITEM(args, 0), attrval, cont->outerVariable))
         return PYNULL;
 
-      return WrapOrange(cont->p_classes(attrval));
+      PDistribution dist = CLONE(TDistribution, cont->p_classes(attrval));
+      if (!dist)
+        PYERROR(PyExc_AttributeError, "no distribution", PYNULL);
+
+      dist->normalize();
+      return WrapOrange(dist);
     }
 
     else {
@@ -445,23 +461,15 @@ PyObject *ContingencyAttrClass_p_class(PyObject *self, PyObject *args) PYARGS(ME
 }
 
 
-PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Contingency, "(attribute, class attribute) | (attribute, examples[, weightID])")
+PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(ContingencyClass, "(attribute, class attribute) | (attribute, examples[, weightID])")
 { PyTRY
-    PyObject *object1, *object2;
-
-    // cannot use O&O& - need objects, not vars!
-    if (   PyArg_ParseTuple(args, "OO", &object1, &object2)
-        && PyOrVariable_Check(object1)
-        && PyOrVariable_Check(object2)) {
-      PyObject *revtuple = Py_BuildValue("OO", object2, object1);
-      PyObject *ret = Contingency_new(type, revtuple, keywds);
-      Py_DECREF(revtuple);
-      if (ret)
-        return ret;
-    }
+    PVariable var1, var2;
+    if (PyArg_ParseTuple(args, "O&O&:Contingency.__new__", cc_Variable, &var1, cc_Variable, &var2))
+      return WrapNewOrange(mlnew TContingencyClassAttr(var1, var2), type);
 
     PyErr_Clear();
 
+    PyObject *object1;
     int weightID=0;
     PExampleGenerator gen;
     if (   PyArg_ParseTuple(args, "OO&|i", &object1, pt_ExampleGenerator, &gen, &weightID)) {
@@ -490,7 +498,12 @@ PyObject *ContingencyClassAttr_p_attr(PyObject *self, PyObject *args) PYARGS(MET
       if (!convertFromPython(PyTuple_GET_ITEM(args, 0), classval, cont->outerVariable))
         return PYNULL;
 
-      return WrapOrange(cont->p_attrs(classval));
+      PDistribution dist = CLONE(TDistribution, cont->p_attrs(classval));
+      if (!dist)
+        PYERROR(PyExc_AttributeError, "no distribution", PYNULL);
+
+      dist->normalize();
+      return WrapOrange(dist);
     }
 
     else {
@@ -504,25 +517,27 @@ PyObject *ContingencyClassAttr_p_attr(PyObject *self, PyObject *args) PYARGS(MET
 }
 
 
-PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Contingency, "(outer_attr, inner_attr, examples [, weight-id])")
+PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Contingency, "(outer_attr, inner_attr[, examples [, weight-id]])")
 { PyTRY
-    PyObject *pyvar, *pyinvar, *pygen;
+    PyObject *pyvar, *pyinvar;
+    PExampleGenerator gen;
     int weightID=0;
-    if (   PyArg_ParseTuple(args, "OOO|i", &pyvar, &pyinvar, &pygen, &weightID)) {
-      PExampleGenerator gen;
-      PVariable var, invar;
-      if ((gen=exampleGenFromParsedArgs(pygen))==true) {
-        var=varFromArg_byDomain(pyvar, gen->domain);
-        invar=varFromArg_byDomain(pyinvar, gen->domain);
-      }
-      if (!gen || !var || !invar)
-        PYERROR(PyExc_TypeError, "ContingencyAttrAttr: ExampleGenerator, two variables and (opt) weight expected", PYNULL);
+    if (PyArg_ParseTuple(args, "OO|O&i", &pyvar, &pyinvar, &pt_ExampleGenerator, &gen, &weightID))
+      if (gen)
+        return WrapNewOrange(mlnew TContingencyAttrAttr(
+           varFromArg_byDomain(pyvar, gen->domain),
+           varFromArg_byDomain(pyinvar, gen->domain),
+           gen, weightID), type);
 
-      return WrapNewOrange(mlnew TContingencyAttrAttr(var, invar, gen, weightID), type);
-    }
+      else
+        if (PyOrVariable_Check(pyvar) && PyOrVariable_Check(pyinvar))
+          return WrapNewOrange(mlnew TContingencyAttrAttr(
+            PyOrange_AsVariable(pyvar),
+            PyOrange_AsVariable(pyinvar)),
+            type);
   PyCATCH
 
-  PYERROR(PyExc_TypeError, "ContingencyAttrAttr: ExampleGenerator, two variables and (opt) weight expected", PYNULL);
+  PYERROR(PyExc_TypeError, "ContingencyAttrAttr: two variables and (opt) examples and (opt) weight expected", PYNULL);
 }
 
 
@@ -530,16 +545,22 @@ PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *
 PyObject *ContingencyAttrAttr_p_attr(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(outer_value[, inner_value]) -> p | distribution of values")
 {
   PyTRY
-    CAST_TO(TContingencyClass, cont);
+    CAST_TO(TContingencyAttrAttr, cont);
 
     PyObject *pyouter, *pyinner = PYNULL;
     TValue outerval, innerval;
-    if (   !PyArg_ParseTuple(args, "O|O:ContingencyAttrAttr.p_attr", &pyinner, &pyouter)
+    if (   !PyArg_ParseTuple(args, "O|O:ContingencyAttrAttr.p_attr", &pyouter, &pyinner)
         || !convertFromPython(pyouter, outerval, cont->outerVariable))
       return PYNULL;
 
-    if (!pyinner)
-      return WrapOrange(cont->p_attrs(outerval));
+    if (!pyinner) {
+      PDistribution dist = CLONE(TDistribution, cont->p_attrs(outerval));
+      if (!dist)
+        PYERROR(PyExc_AttributeError, "no distribution", PYNULL);
+
+      dist->normalize();
+      return WrapOrange(dist);
+    }
 
     else {
       if (!convertFromPython(pyinner, innerval, cont->innerVariable))
@@ -782,9 +803,9 @@ inline PyObject *DomainContingency_reverse(TPyOrange *self) PYARGS(METH_NOARGS, 
 inline PyObject *DomainContingency_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PDomainContingency, TDomainContingency, PContingencyClass, (PyTypeObject *)&PyOrContingency_Type>::_sort(self, args); }
 
 
-/* Note that this is not like callable-constructors. They return different type when given
-   parameters, while this one returns the same type, disregarding whether it was given examples or not.
-*/
+
+CONSTRUCTOR_KEYWORDS(DomainContingency, "classIsOuter")
+
 PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples [, weightID] | <list of Contingency>) -> DomainContingency")
 { PyTRY
     PyObject *obj = ListOfWrappedMethods<PDomainContingency, TDomainContingency, PDomainContingency, (PyTypeObject *)&PyOrContingency_Type>::_new(type, args, keywds);
@@ -804,8 +825,10 @@ PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *ke
     bool classOuter = false;
     if (keywds) {
       PyObject *couter = PyDict_GetItemString(keywds, "classIsOuter");
-      classOuter = (PyObject_IsTrue(couter) != 0);
-      Py_DECREF(couter);
+      if (couter) {
+        classOuter = (PyObject_IsTrue(couter) != 0);
+        Py_DECREF(couter);
+      }
     }
 
     return WrapNewOrange(mlnew TDomainContingency(gen, weightID, classOuter), type);
@@ -832,6 +855,8 @@ int DomainContingency_getItemIndex(PyObject *self, PyObject *args)
 { PyTRY
     CAST_TO_err(TDomainContingency, cont, -1);
   
+    const bool &couter = cont->classIsOuter;
+
     if (PyInt_Check(args)) {
       int i=(int)PyInt_AsLong(args);
       if ((i>=0) && (i<int(cont->size())))
@@ -843,7 +868,8 @@ int DomainContingency_getItemIndex(PyObject *self, PyObject *args)
     if (PyString_Check(args)) {
       char *s=PyString_AsString(args);
       PITERATE(vector<PContingencyClass>, ci, cont)
-        if ((*ci)->outerVariable && ((*ci)->outerVariable->name==s))
+        if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable->name==s)
+                   : (*ci)->outerVariable && ((*ci)->outerVariable->name==s))
           return ci - cont->begin();
       PYERROR(PyExc_IndexError, "invalid variable name", -1);
     }
@@ -851,7 +877,8 @@ int DomainContingency_getItemIndex(PyObject *self, PyObject *args)
     if (PyOrVariable_Check(args)) {
       PVariable var = PyOrange_AsVariable(args);
       PITERATE(vector<PContingencyClass>, ci, cont)
-        if ((*ci)->outerVariable && ((*ci)->outerVariable==var))
+        if (couter ? (*ci)->innerVariable && ((*ci)->innerVariable==var)
+                   : (*ci)->outerVariable && ((*ci)->outerVariable==var))
           return ci - cont->begin();
       PYERROR(PyExc_IndexError, "invalid variable", -1);
     }
@@ -880,10 +907,11 @@ int DomainContingency_setitem(PyObject *self, PyObject *args, PyObject *obj)
     if (!convertFromPython(obj, cont))
       PYERROR(PyExc_TypeError, "invalid Contingency object", -1);
 
-    int index=DomainContingency_getItemIndex(self, args);
-    if (index==-1) return -1;
+    int index = DomainContingency_getItemIndex(self, args);
+    if (index==-1)
+      return -1;
 
-    SELF_AS(TDomainContingency)[index]=cont;
+    SELF_AS(TDomainContingency)[index] = cont;
     return 0;
   PyCATCH_1
 }
@@ -1514,11 +1542,14 @@ PyObject *ConditionalProbabilityEstimator_call(PyObject *self, PyObject *args, P
 #include "relief.hpp"
 
 BASED_ON(MeasureAttribute, Orange)
-C_CALL(MeasureAttribute_info, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_gini, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_gainRatio, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_gainRatioA, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_cheapestClass, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
+BASED_ON(MeasureAttributeFromProbabilities, MeasureAttribute)
+
+C_CALL(MeasureAttribute_info, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_gini, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_gainRatio, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_gainRatioA, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_cheapestClass, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
+
 C_CALL(MeasureAttribute_relief, MeasureAttribute, "(estimate=, m=, k=) | (attr, examples[, apriori] [,weightID]) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_Tretis, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
@@ -1540,6 +1571,7 @@ PYCLASSCONSTANT_INT(MeasureAttribute, IgnoreUnknowns, TMeasureAttributeFromProba
 PYCLASSCONSTANT_INT(MeasureAttribute, ReduceByUnknowns, TMeasureAttributeFromProbabilities::ReduceByUnknowns)
 PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsToCommon, TMeasureAttributeFromProbabilities::UnknownsToCommon)
 
+PYCLASSCONSTANT_FLOAT(MeasureAttribute, Rejected, ATTRIBUTE_REJECTED)
 
 PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
 { if (type == (PyTypeObject *)&PyOrMeasureAttribute_Type)
@@ -1549,7 +1581,7 @@ PyObject *MeasureAttribute_new(PyTypeObject *type, PyObject *args, PyObject *key
 }
 
 
-PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attr, xmpls[, apr, wght]) | (attrno, domcont[, apr]) | (cont, clss-dist [,apr]) -> (float, meas-type)")
+PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attr, xmpls[, apr, wght]) | (attr, domcont[, apr]) | (cont, clss-dist [,apr]) -> (float, meas-type)")
 { PyTRY
     if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrMeasureAttribute_Type) {
       PyErr_Format(PyExc_SystemError, "MeasureAttribute.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
@@ -1559,64 +1591,123 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
     SETATTRIBUTES
     CAST_TO(TMeasureAttribute, meat)
 
-    PyObject *object1;
-    PyObject *object2;
+    PyObject *arg1;
     PDistribution aprClDistr;
-    int weightID=0;
-    int attrNo;
 
-    if (PyArg_ParseTuple(args, "OO|O&i", &object1, &object2, ccn_Distribution, &aprClDistr, &weightID)) {
+    // Try (contingency, class distribution, aprior class distribution)
 
-      // Try (variable, examples, aprior class distribution, weight)
-      PExampleGenerator egen=
-        PyOrExampleGenerator_Check(object2)
-          ? PExampleGenerator(PyOrange_AsExampleGenerator(object2))
-          : PExampleGenerator(readListOfExamples(object2));
+    PContingency contingency;
+    PDistribution clDistr;
+    if (PyArg_ParseTuple(args, "O&O&|O&", cc_Contingency, &contingency, cc_Distribution, &clDistr, ccn_Distribution, &aprClDistr))
+      return PyFloat_FromDouble((double)(meat->operator()(contingency, clDistr, aprClDistr)));
 
-      if (egen)
-        if (PyOrVariable_Check(object1))
-          return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(object1), egen, aprClDistr, weightID)));
-        else
-          if (varNumFromVarDom(object1, egen->domain, attrNo))
-            return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
+    PyErr_Clear();
 
-      // Try (variable, domaincontingency, aprior class distribution)
 
-      if (PyOrDomainContingency_Check(object2)) {
-        PDomainContingency cont = PyOrange_AsDomainContingency(object2);
-        TDomainContingency::const_iterator ci(cont->begin()), ce(cont->end());
+    // Try (variable, domaincontingency, aprior class distribution)
 
-        int attrNo = -1;
+    PDomainContingency dcont;
+    if (PyArg_ParseTuple(args, "OO&|O&", &arg1, cc_DomainContingency, &dcont, ccn_Distribution, &aprClDistr)) {
+
+        int attrNo;
       
-        if (PyOrVariable_Check(object1)) {
-          PVariable var = PyOrange_AsVariable(object1);
-          for(; (ci!=ce) && ((*ci)->outerVariable!=var); ci++, attrNo++);
+        if (PyInt_Check(arg1)) {
+          attrNo = int(PyInt_AsLong(arg1));
+          if ((attrNo<0) || (attrNo>=dcont->size())) {
+            PyErr_Format(PyExc_IndexError, "attribute index %i out of range for the given DomainContingency", attrNo);
+            return PYNULL;
+          }
         }
 
-        else if (PyInt_Check(object1))
-          attrNo=int(PyInt_AsLong(object1));
+        else {
+          TDomainContingency::const_iterator ci(dcont->begin()), ce(dcont->end());
+          const bool &couter = dcont->classIsOuter;
 
-        else if (PyString_Check(object1)) {
-          char *attrName=PyString_AsString(object1);
-          for(; (ci!=ce) && ((*ci)->outerVariable->name!=attrName); ci++, attrNo++);
+          if (PyOrVariable_Check(arg1)) {
+            PVariable var = PyOrange_AsVariable(arg1);
+            for(attrNo = 0; (ci!=ce) && (couter ? ((*ci)->innerVariable != var) : ((*ci)->outerVariable != var)); ci++, attrNo++);
+
+            if (ci==ce) {
+              PyErr_Format(PyExc_IndexError, "attribute '%s' not in the given DomainContingency", var->name.c_str());
+              return PYNULL;
+            }
+          }
+
+          else if (PyString_Check(arg1)) {
+            char *attrName = PyString_AsString(arg1);
+            for(attrNo = 0; (ci!=ce) && (couter ? ((*ci)->innerVariable->name != attrName) : ((*ci)->outerVariable->name!=attrName)); ci++, attrNo++);
+
+            if (ci==ce) {
+              PyErr_Format(PyExc_IndexError, "attribute '%s' not in the given DomainContingency", attrName);
+              return PYNULL;
+            }
+          }
+
+          else {
+            PyErr_Format(PyExc_IndexError, "cannot guess the attribute from the object of type '%s'", arg1->ob_type->tp_name);
+            return PYNULL;
+          }  
         }
 
-        if ((attrNo<0) || (attrNo>=int(cont->size())))
-          PYERROR(PyExc_AttributeError, "Invalid attribute specification", PYNULL);
+        return PyFloat_FromDouble((double)(meat->operator()(attrNo, dcont, aprClDistr)));
+    }
 
-        return PyFloat_FromDouble((double)(meat->operator()(attrNo, cont, aprClDistr)));
-      }
+
+    PyErr_Clear();
+
+
+    // Try (variable, examples, aprior class distribution, weight)
+
+    PExampleGenerator egen;
+    PyObject *arg3 = PYNULL, *arg4 = PYNULL;
+    if (PyArg_ParseTuple(args, "OO&|O&i", &arg1, pt_ExampleGenerator, &egen, &arg3, &arg4)) {
+
+      int weightID=0;
+
+      if (arg3)
+        if (PyOrDistribution_Check(arg3))
+          aprClDistr = PyOrange_AsDistribution(arg3);
+
+        // This is for compatibility; previously, weightID could only be the 4th argument; 3rd had to be either Distribution or None if 4th was to be given
+        else {
+          if (arg4)
+            PYERROR(PyExc_AttributeError, "invalid arguments (unexpected argument 4)", PYNULL);
+
+          arg4 = arg3;
+          arg3 = PYNULL;
+        }
+
+        if (arg4)
+          if (PyInt_Check(arg4))
+            weightID = PyInt_AsLong(arg4);
+
+          else
+            if (!varNumFromVarDom(arg4, egen->domain, weightID))
+              return PYNULL;
+          
+        if (PyOrVariable_Check(arg1))
+          return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(arg1), egen, aprClDistr, weightID)));
+
+        else if (PyInt_Check(arg1)) {
+          int attrNo = PyInt_AsLong(arg1);
+          if (attrNo >= (int)egen->domain->attributes->size()) {
+            PyErr_Format(PyExc_IndexError, "attribute index %i out of range for the given DomainContingency", attrNo);
+            return PYNULL;
+          }
+          return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
+        }
+
+        else {
+          int attrNo;
+          if (!varNumFromVarDom(arg1, egen->domain, attrNo))
+            return PYNULL;
+
+          return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
+        }
     }
 
     PyErr_Clear();
 
-    // Try (contingency, class distribution, aprior class distribution)
-    PContingency contingency;
-    PDistribution clDistr;
-    if (   PyArg_ParseTuple(args, "OO&|O&", &object1, cc_Distribution, &clDistr, ccn_Distribution, &aprClDistr)
-        && convertFromPython(object1, contingency))
-      return PyFloat_FromDouble((double)(meat->operator()(contingency, clDistr, aprClDistr)));
-    PyErr_Clear(); // for unreported error from convertFromPython
 
     PYERROR(PyExc_TypeError, "invalid set of parameters", PYNULL);
     return PYNULL;

@@ -159,6 +159,7 @@ class TContingencyAttrAttr : public TContingency {
 public:
   __REGISTER_CLASS
 
+  TContingencyAttrAttr(PVariable, PVariable);
   TContingencyAttrAttr(PVariable variable, PVariable innervar, PExampleGenerator, const long weightID=0);
   TContingencyAttrAttr(const int &var, const int &innervar, PExampleGenerator, const long weightID=0);
 
@@ -182,8 +183,8 @@ class TDomainContingency : public TOrangeVector<PContingencyClass> {
 public:
   __REGISTER_CLASS
 
-  PDistribution classes; //P distribution of class values
-  bool classIsOuter; //P tells whether the class is the outer variable
+  PDistribution classes; //PR distribution of class values
+  bool classIsOuter; //PR tells whether the class is the outer variable
   
   TDomainContingency(bool acout=false); // this is the preferred constructor; use computeMatrix to fill the matrix
   TDomainContingency(PExampleGenerator, const long weightID=0, bool acout=false);  // obsolete; use ComputeDomainContingency instead

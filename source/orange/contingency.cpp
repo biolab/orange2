@@ -512,9 +512,16 @@ PDistribution TContingencyAttrClass::p_classes(const TValue &varValue) const
 
 
 
+TContingencyAttrAttr::TContingencyAttrAttr(PVariable variable, PVariable innervar)
+: TContingency(variable, innervar)
+{}
+
+
 TContingencyAttrAttr::TContingencyAttrAttr(PVariable variable, PVariable innervar, PExampleGenerator gen, const long weightID)
 : TContingency(variable, innervar)
-{ operator()(gen, weightID); }
+{ if (gen)
+    operator()(gen, weightID);
+}
 
 
 TContingencyAttrAttr::TContingencyAttrAttr(const int &var, const int &innervar, PExampleGenerator gen, const long weightID)

@@ -125,6 +125,7 @@ if 1: ### Definitions of regular expressions
   keywargsdef=re.compile(r"METH_VARARGS\s*\|\s*METH_KEYWORDS")
 
   classconstantintdef=re.compile(r"PYCLASSCONSTANT_INT\((?P<typename>\w*)\s*,\s*(?P<constname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
+  classconstantfloatdef=re.compile(r"PYCLASSCONSTANT_FLOAT\((?P<typename>\w*)\s*,\s*(?P<constname>\w*)\s*,\s*(?P<constant>.*)\)\s*$")
   constantdef=re.compile(r"PYCONSTANT\((?P<pyname>\w*)\s*,\s*(?P<ccode>.*)\)\s*$")
   constantfuncdef=re.compile(r"PYCONSTANTFUNC\((?P<pyname>\w*)\s*,\s*(?P<cfunc>.*)\)\s*$")
   constantwarndef=re.compile("PYCONSTANT")
@@ -171,6 +172,17 @@ def detectAttrs(line, classdefs):
     addClassDef(classdefs, typename, parsedFile)
     if not classdefs[typename].constants.has_key(constname):
       classdefs[typename].constants[constname] = "PyInt_FromLong((long)(%s))" % constant
+    else:
+      printV0("Warning: constant %s.%s duplicated", (typename, constname))
+    return
+
+  found=classconstantfloatdef.search(line)
+  if found:
+    typename, constname, constant = found.group("typename", "constname", "constant")
+    printV2("%s: constant definition (%s)", (typename, constname))
+    addClassDef(classdefs, typename, parsedFile)
+    if not classdefs[typename].constants.has_key(constname):
+      classdefs[typename].constants[constname] = "PyFloat_FromDouble((double)(%s))" % constant
     else:
       printV0("Warning: constant %s.%s duplicated", (typename, constname))
     return
