@@ -1281,9 +1281,9 @@ bool rankdata(const vector<T> &flist, vector<double> &ranks, U cf)
 
 // This follows http://www-2.cs.cmu.edu/afs/cs/project/jair/pub/volume4/cohn96a-html/node7.html
 
-template<class T>
-T loess_y(const T &refx, map<T, T> points, const float &windowProp)
-{ typedef typename map<T, T>::const_iterator mapiterator;
+template<class T, class U>
+T loess_y(const T &refx, map<T, U> points, const float &windowProp)
+{ typedef typename map<T, U>::const_iterator mapiterator;
   mapiterator from, to;
 
   /* Find the window */
@@ -1464,14 +1464,44 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
   }
 }
 
+int nUniquePoints(const vector<double> &points);
 
-template<class T>
-void loess(const map<T, T> &points, int nPoints, const float &windowProp, map<T, T> &loess_curve, int distributionMethod = DISTRIBUTE_MINIMAL)
+void samplingFactor (const vector<double> &points,      int nPoints, vector<double> &result);
+void samplingFactor (const map<double, double> &points, int nPoints, vector<double> &result);
+void samplingMinimal(const vector<double> &points,      int nPoints, vector<double> &result);
+void samplingMinimal(const map<double, double> &points, int nPoints, vector<double> &result);
+void samplingFixed  (const vector<double> &points,      int nPoints, vector<double> &result);
+void samplingFixed  (const map<double, double> &points, int nPoints, vector<double> &result);
+void samplingUniform(const vector<double> &points,      int nPoints, vector<double> &result);
+void samplingUniform(const map<double, double> &points, int nPoints, vector<double> &result);
+
+template<class T, class U>
+void loess(const U &points, int nPoints, const float &windowProp, map<T, T> &loess_curve, int distributionMethod = DISTRIBUTE_MINIMAL)
 { DEFINE_TYPENAME
   vector<T> xpoints;
   distributePoints(points, nPoints, xpoints, distributionMethod);
   for (const_iterator xi(xpoints.begin()), xe(xpoints.end()); xi!=xe; xi++) 
     loess_curve[*xi] = loess_y(*xi, points, windowProp);
 }
+
+class TXYW {
+public:
+  double x, y, w;
+
+  TXYW(const double &ax, const double &ay, const double &aw = 1.0)
+  : x(ax), y(ay), w(aw)
+  {}
+
+  TXYW(const TXYW &o)
+  : x(o.x), y(o.y), w(o.w)
+  {}
+};
+
+
+// refpoints and points should be sorted
+void loess(const vector<double> &refpoints, const vector<TXYW> &points, const float &windowProp, vector<pair<double, double> > &result);
+
+void loess(const vector<double> &refpoints, const vector<pair<double, double> > &points, const float &windowProp, vector<pair<double, double> > &result);
+void loess(const vector<double> &refpoints, const map<double, double> &points, const float &windowProp, vector<pair<double, double> > &result);
 
 #endif
