@@ -690,7 +690,8 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
       while (imputedExample.nextExample());
     }
 
-    TExampleTable sortedAdd(PExampleGenerator(additionalExamples), false);
+    PExampleGenerator wadde = PExampleGenerator(additionalExamples);
+    TExampleTable sortedAdd(wadde, false);
     sortedAdd.sort();
 
     PExampleGenerator oldSortedExamples = classifier->sortedExamples;
