@@ -18,6 +18,7 @@ export CPATH=orange:orange/ppp:orange/px:include:corn:statc:$(PYTHONINCLUDE):/us
 vpath %.cpp orange:corn:statc:include
 vpath %.hpp orange:corn:statc:include
 vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl
+vpath %.px orange/px
 
 obj/%.o :
 	g++ $(COMPILEOPTIONS) -c $< -o $@
