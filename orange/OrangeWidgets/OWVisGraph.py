@@ -48,6 +48,8 @@ class OWVisGraph(OWGraph):
         self.jitterSize = 10
         self.globalValueScaling = 0         # do we want to scale data globally
         self.setCanvasColor(QColor(Qt.white.name()))
+        self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
+        self.ypos = 0
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
