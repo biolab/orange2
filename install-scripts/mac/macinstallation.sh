@@ -1,4 +1,6 @@
 #!/bin/bash
+cd ~/install-scripts/mac
+
 ##cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs login
 
 if [ $# -ne 4 ]; then
@@ -55,8 +57,8 @@ rm -R orange/doc
 
 # remove files we don't want in the installation
 for f in `cat orange/exclude.lst`; do
-  echo removing orange/$f
-  rm orange/$f
+  echo removing $f
+  rm $f
 done
 
 ## rm orange/OrangeWidgets/Visualize/OWLinVizGraph.py
