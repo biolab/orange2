@@ -121,10 +121,11 @@ class MeasureFisherDiscriminant:
 def evaluateAttributes(data, contMeasure, discMeasure):
     attrs = []
     for attr in data.domain.attributes:
-        if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:   attrs.append((0.1, attr.name))
-        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous: attrs.append((0.1, attr.name))
-        elif attr.varType == orange.VarTypes.Continuous: attrs.append((contMeasure(attr.name, data), attr.name))
-        else:                                              attrs.append((discMeasure(attr.name, data), attr.name))
+        if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
+        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
+        elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.1, attr.name))
+        elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
+        else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
     attrs.sort()
     attrs.reverse()
     return attrs
@@ -140,7 +141,7 @@ def evaluateAttributes(data, contMeasure, discMeasure):
 # SELECT ATTRIBUTES ##########################
 # #############################################
 def selectAttributes(data, attrContOrder, attrDiscOrder, projections = None):
-    if data.domain.classVar.varType != orange.VarTypes.Discrete:
+    if data.domain.classVar == None or data.domain.classVar.varType != orange.VarTypes.Discrete:
         return ([attr.name for attr in data.domain.attributes], [], 0)
 
     shown = [data.domain.classVar.name]; hidden = []; maxIndex = 0    # initialize outputs

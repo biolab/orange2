@@ -233,7 +233,7 @@ class kNNOptimization(OWBaseWidget):
         self.attrLenList.clear()
 
     def addResult(self, rawdata, accuracy, lenTable, attrList, strList = None):
-        if rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.getQualityMeasure() != BRIER_SCORE: funct = max
+        if self.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
 
         targetIndex = self.findTargetIndex(accuracy, funct)
@@ -404,16 +404,24 @@ class kNNOptimization(OWBaseWidget):
                 results.results[i].setResult(0, cls, pro)
     
         # compute classification success using selected measure
-        if self.qualityMeasure == AVERAGE_CORRECT:
+        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+            if self.qualityMeasure == AVERAGE_CORRECT:
+                val = 0.0
+                for res in results.results:
+                    val += res.probabilities[0][res.actualClass]
+                val/= float(len(results.results))
+                return 100.0*val
+            elif self.qualityMeasure == BRIER_SCORE:
+                return orngStat.BrierScore(results)[0]
+            elif self.qualityMeasure == CLASS_ACCURACY:
+                return 100*orngStat.CA(results)[0]
+        else:
+            # for continuous class we can't compute brier score and classification accuracy
             val = 0.0
             for res in results.results:
-                val += res.probabilities[0][res.actualClass]
+                val += res.probabilities[0].density(res.actualClass)
             val/= float(len(results.results))
             return 100.0*val
-        elif self.qualityMeasure == BRIER_SCORE:
-            return orngStat.BrierScore(results)[0]
-        elif self.qualityMeasure == CLASS_ACCURACY:
-            return 100*orngStat.CA(results)[0]
 
         
     # #############################
@@ -437,18 +445,23 @@ class kNNOptimization(OWBaseWidget):
                 results.results[i].setResult(0, cls, pro)
     
         returnTable = []
-        lenClassValues = len(list(table.domain.classVar.values))
-        if self.qualityMeasure == AVERAGE_CORRECT:
+        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+            lenClassValues = len(list(table.domain.classVar.values))
+            if self.qualityMeasure == AVERAGE_CORRECT:
+                for res in results.results:
+                    returnTable.append(res.probabilities[0][res.actualClass])
+            elif self.qualityMeasure == BRIER_SCORE:
+                for res in results.results:
+                    sum = 0
+                    for val in res.probabilities[0]: sum += val*val
+                    returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+            elif self.qualityMeasure == CLASS_ACCURACY:
+                for res in results.results:
+                    returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
+        else:
+            # for continuous class we can't compute brier score and classification accuracy
             for res in results.results:
-                returnTable.append(res.probabilities[0][res.actualClass])
-        elif self.qualityMeasure == BRIER_SCORE:
-            for res in results.results:
-                sum = 0
-                for val in res.probabilities[0]: sum += val*val
-                returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
-        elif self.qualityMeasure == CLASS_ACCURACY:
-            for res in results.results:
-                returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
+                returnTable.append(res.probabilities[0].density(res.actualClass))
 
         return returnTable
 
