@@ -135,20 +135,20 @@ shows regression coeficients of attributes estimated in a regression learner
             return
 
         if isinstance(self.classifier, orange.LogRegClassifier):
-            if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+            if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.continuizedDomain.classVar[1]:
                 mult = -1
             else:
                 mult = 1
 
-            self.table.setNumRows(len(self.classifier.domain.attributes)+1)
+            self.table.setNumRows(len(self.classifier.continuizedDomain.attributes)+1)
             self.table.setText(0,0,"Constant")        
             self.table.setText(0,1,str(mult*round(self.classifier.beta[0],2)))        
             self.table.setText(0,2,str(round(self.classifier.beta_se[0],2)))        
             self.table.setText(0,3,str(round(self.classifier.wald_Z[0],2)))        
             self.table.setText(0,4,str(abs(round(self.classifier.P[0],2))))
                                   
-            for i in range(len(self.classifier.domain.attributes)):
-                self.table.setText(i+1,0,str(self.classifier.domain.attributes[i].name))        
+            for i in range(len(self.classifier.continuizedDomain.attributes)):
+                self.table.setText(i+1,0,str(self.classifier.continuizedDomain.attributes[i].name))        
                 self.table.setText(i+1,1,str(mult*round(self.classifier.beta[i+1],2)))        
                 self.table.setText(i+1,2,str(round(self.classifier.beta_se[i+1],2)))        
                 self.table.setText(i+1,3,str(round(self.classifier.wald_Z[i+1],2)))        
