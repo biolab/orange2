@@ -5,6 +5,9 @@
 #
 # CVS Status: $Id$
 #
+# Version 2.0 (20/11/2003)
+#   - SVM no longer uses -1 for minimum value in categorical attributes
+#
 # Version 1.9 (17/11/2003)
 #   - Dummy picks the most frequent value to be the default
 #   - added standardization
@@ -134,6 +137,9 @@ class Scalizer:
         else:
             return ['%s(x)=(x-%f)*%f'%(self.attr.name,self.disp,self.mult)]
 
+    def description(self):
+        return (0,'%s'%(self.attr.name))
+
     def inverse(self,list):
         return self.attr((list[self.idx]/self.mult)+self.disp)
         
@@ -196,11 +202,14 @@ class Standardizer:
             list[self.idx] = (float(value)-self.disp)*self.mult
         return
 
-    def description(self):
+    def descript(self):
         if self.disp==0.0 and self.mult==1.0:
             return ['%s'%(self.attr.name)]
         else:
             return ['(%s-%f)*%f'%(self.attr.name,self.disp,self.mult)]
+
+    def description(self):
+        return (0,'%s'%(self.attr.name))
 
     def inverse(self,list):
         return self.attr((list[self.idx]/self.mult)+self.disp)
@@ -271,11 +280,14 @@ class Ordinalizer:
             list[self.idx] = (int(value)-self.disp)*self.mult
         return
 
-    def description(self):
+    def descript(self):
         if self.disp==0 and self.mult==1:
             return ['%s'%(self.attr.name)]
         else:
             return ['%s(x)=(x-%f)*%f'%(self.attr.name,self.disp,self.mult)]
+
+    def description(self):
+        return (1,'%s'%(self.attr.name),['%s'%(v) for v in self.attr.values])
 
     def inverse(self,list):
         return self.attr(int((list[self.idx]/self.mult)+self.disp+0.5))
@@ -297,7 +309,7 @@ class Binarizer:
         return
             
     def prepareSVM(self):
-        self.min = -1.0
+        self.min = 0.0
         self.max = 1.0
         self.missing = (0,1)
         return
@@ -321,8 +333,11 @@ class Binarizer:
                 list[i] = self.min
             list[self.idx+int(value)] = self.max
 
-    def description(self):
+    def descript(self):
         return ['%s=%s'%(self.attr.name,v) for v in self.attr.values]
+
+    def description(self):
+        return (1,'%s'%(self.attr.name),['%s'%(v) for v in self.attr.values])
 
     def inverse(self,list):
         best = -1
@@ -369,7 +384,7 @@ class Dummy:
         print "\tidxn:",self.nidx-self.idx
             
     def prepareSVM(self):
-        self.min = -1.0
+        self.min = 0.0
         self.max = 1.0
         self.missing = (0,1)
         return
@@ -393,12 +408,21 @@ class Dummy:
             if i != -1:
                 list[self.idx+i] = self.max
 
-    def description(self):
+    def descript(self):
         d = []
         for x in range(len(self.attr.values)):
             if self.lut[x] != -1:
                 d.append('%s=%s'%(self.attr.name,self.attr.values[x]))
         return d 
+
+    def description(self):
+        d = []
+        for x in range(len(self.attr.values)):
+            if self.lut[x] != -1:
+                d.append('%s'%(self.attr.values[x]))
+            else:
+                d.append('')
+        return (1,'%s'%(self.attr.name),d)
 
     def inverse(self,list):
         best = self.nidx

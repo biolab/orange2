@@ -12,7 +12,7 @@
 #
 # ChangeLog:
 #   - 2003/10/28: project initiated
-#   - 2003/11/17: 
+#   - 2003/11/20: returning the parameters of the transform
 
 import Numeric,LinearAlgebra,mathutil
 
@@ -32,24 +32,33 @@ class PCA:
             s = 1.0
         self.R_squared = s # percentage of total variance explained by individual components
 
-def Centering(vector):
+def Centering(vector, m = None):
     assert(len(Numeric.shape(vector))==1) # this must be a vector
+    if m == None:
+        m = Numeric.average(vector)
+    return (vector-m,m)
 
-    avg = Numeric.average(vector)
-    print "shifting by ",-avg
-    return vector-avg
+def MaxScaling(vector, param = None):
+    if param == None:
+        (v,m) = Centering(vector)
+        s = max(abs(v))
+        if s > 1e-6:
+            s = 1.0/s
+    else:
+        (m,s) = param
+        (v,m_) = Centering(vector,m)
+    return (v*s,(m,s))
 
-def MaxScaling(vector):
-    v = Centering(vector)
-    s = max(abs(v))
-    print "scaling by ",1.0/s
-    return v/s
-
-def VarianceScaling(vector):
-    v = Centering(vector)
-    s = Numeric.sqrt(Numeric.average(Numeric.power(v,2)))
-    print "scaling by ",1.0/s
-    return v/s
+def VarianceScaling(vector,param=None):
+    if param == None:
+        (v,m) = Centering(vector)
+        s = Numeric.sqrt(Numeric.average(Numeric.power(v,2)))
+        if s > 1e-6:
+            s = 1.0/s
+    else:
+        (m,s) = param
+        (v,m_) = Centering(vector,m)
+    return (s*v,(m,s))
 
 def _BC(vector,lambd):
     if lambd != 0.0:
@@ -66,7 +75,6 @@ class _BCskewness:
         cv = nv-mean
         skewness = Numeric.average(Numeric.power(cv,3))/Numeric.power(Numeric.average(Numeric.power(cv,2)),1.5)
         # kurtosis = Numeric.average(Numeric.power(cv,4))/Numeric.power(Numeric.average(Numeric.power(cv,2)),2)-3
-##        print lambd,skewness
         return skewness**2
 
 def BoxCoxTransform(vector,lambd=None):
