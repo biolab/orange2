@@ -184,7 +184,7 @@ void lsq::tolset() {
 	double eps, ten = 10.0, total, *work;
 	
 	work = new double[ncol+1];
-	eps = .2220e-14;
+	eps = .2220e-7;
 	
 	/*
 	!     Set tol(i) = sum of absolute values in column I of R after
