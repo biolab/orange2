@@ -42,7 +42,7 @@ class OWBaseWidget(QDialog):
     description="This a base for OWWidget. It encorporates saving, loading settings and signal processing.",
     wantSettings=FALSE,
     wantGraph = FALSE, 
-    wantAbout = TRUE,
+    wantAbout = FALSE,
     icon="OrangeWidgetsIcon.png",
     logo="OrangeWidgetsLogo.png",
     modal=FALSE
@@ -101,9 +101,9 @@ class OWBaseWidget(QDialog):
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
-        self.mainArea=QWidget(self)
-        self.controlArea=QVBox(self)
-        self.space=QVBox(self)
+        #self.mainArea=QWidget(self)
+        #self.controlArea=QVBox(self)
+        #self.space=QVBox(self)
         
     # put this widget on top of all windows
     def reshow(self):
