@@ -1,10 +1,13 @@
 exclude.lst
+c45.dll
 orangeWidgets/OWLin_Results.py
 orangeWidgets/Visualize/OWLinViz.py
+OrangeWidgets/Visualize/OWLinVizGraph.py
 orangeWidgets/Data/OWSelectAttributes.py
 orangeWidgets/Data/OWExampleBuilder.py
 orangeWidgets/Data/OWSubsetGenerator.py
 orangeWidgets/Classify/OWLearner.py
 orangeWidgets/Classify/OWCalibratedClassifier.py
 orangeWidgets/Other/OWITree.py
+
 
