@@ -704,16 +704,16 @@ PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_V
 	  PVariable variable;
 	  PClassifier classifier;
 
-	  classifier = loglearn->fitModel(egen, weight, false, error, variable);
-	  if (error == 0)
-		  return Py_BuildValue("NiN", WrapOrange(classifier));
+	  classifier = loglearn->fitModel(egen, weight, error, variable);
+	  if (error <= TLogisticFitter::Divergence)
+		  return Py_BuildValue("N", WrapOrange(classifier));
 	  else 
-		  return Py_BuildValue("NiN", WrapOrange(variable));
+		  return Py_BuildValue("N", WrapOrange(variable));
   PyCATCH
 }
 
 
-PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> Classifier")
+PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 {
   PyTRY
     SETATTRIBUTES
@@ -743,7 +743,7 @@ PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords
     int error;
     PVariable attribute;
     
-    beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute, false);
+    beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute);
 
     if (error <= TLogisticFitter::Divergence)
       return Py_BuildValue("iNNf", error, WrapOrange(beta), WrapOrange(beta_se), likelihood);

@@ -52,13 +52,25 @@ double *ones(int n) {
 }
 
 
-PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att, const bool &exception_at_singularity) {
+PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
 	// get all needed/necessarily attributes and set
+   // check for class variable	
+  if (!gen->domain->classVar)
+    raiseError("class-less domain");
+  // class has to be discrete!
+  if (gen->domain->classVar->varType != TValue::INTVAR)
+    raiseError("discrete class attribute expected");
+  // attributes have to be continuous 
+  PITERATE(TVarList, vli, gen->domain->attributes) {
+	  if ((*vli)->varType == TValue::INTVAR) 
+	    raiseError("only continuous attributes expected");
+  }
+
 	LRInput input;
 	LRInfo O;
 
 
-	// fill input data
+  // fill input data
 	input.data = generateDoubleXMatrix(gen, input.nn, input.k);
 	input.success = generateDoubleYVector(gen, weight);
 	//input.trials = ones(input.nn+1);
@@ -97,27 +109,19 @@ PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const in
   else 
     error = OK;
 
-	// error at computing/fitting logistic regression model
-//	if (O.error==7) // infinitive beta
-//		raiseWarning(errors[O.error-1]);
-	if (O.error == 6 || O.error == 5) // singularity in data or constant variable
-	{
-		int i=1;
-		PITERATE(TVarList, vli, gen->domain->attributes) {
-			if (O.dependent[i]==1) {
-				error_att=*vli;
-				break;
-			}
-			i++;
-		}
-		if (exception_at_singularity) // throw singularity error
-          raiseError(O.error == 6 ? "singularity in '%s'" : "constant variable in '%s'", error_att->name.c_str());
+  // get offending attribute
+  if (O.error == 6 || O.error == 5 || O.error == 7) {
+    int i=1;
+    PITERATE(TVarList, vli, gen->domain->attributes) {
+	    if (O.dependent[i]==1) {
+		    error_att=*vli;
+		    break;
+	    }
+	    i++;
+    }
+  }
 
-		likelihood = -gen->numberOfExamples(); // set worst possible likelihood. Well not really the worst possible, it is the 
-											    // the likelihood of majority learner	
-		return PFloatList();
-	}
-	else if (O.error>0 && O.error<5) {
+  if (O.error>0 && O.error<5) {
 		raiseError(errors[O.error-1]);
 	}
 
@@ -145,15 +149,9 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 	numAttr=gen->domain->attributes->size();
 	matrix = new double*[numExamples+1];
 
-    { for(int i = 0; i<numExamples; matrix[i++] = NULL); }
+  { for(int i = 0; i<numExamples; matrix[i++] = NULL); }
 
     try {
-	    // get number of attributes 
-	    // TODO
-    /*	PITERATE(TVarList, vli, gen->domain->attributes) {
-		    numAttr++;
-	    } */
-	    
 	    // copy gen to double matrix
 	    int n=0;
 	    matrix[n]= new double[numAttr+1];
@@ -166,6 +164,8 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 		    // iteration through attributes
 		    PITERATE(TVarList, vli, gen->domain->attributes) {
 			    // copy att. value
+/*          if ((*first)[at].isSpecial())
+            raiseError("unknown value in attribute '%s'", (*vli)->name.c_str()); */
 			    matrix[n+1][at+1]=(*first)[at].floatV;
 			    at++;
 		    }

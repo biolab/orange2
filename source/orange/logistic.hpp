@@ -55,7 +55,7 @@ public:
 	// Constructs a Logistic classifier 
 	// weights are not implemented at the moment
 	virtual PClassifier operator()(PExampleGenerator gen, const int & = 0);
-	PClassifier fitModel(PExampleGenerator, const int &, const bool &, int &, PVariable &);
+	PClassifier fitModel(PExampleGenerator, const int &, int &, PVariable &);
 };
 
 

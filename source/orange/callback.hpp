@@ -69,7 +69,7 @@ public:
 class TLogisticFitter_Python : public TLogisticFitter {
 public:
   __REGISTER_CLASS
-  virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &, const bool &);
+  virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
 };
 
 

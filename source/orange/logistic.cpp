@@ -72,25 +72,27 @@ PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weigh
 { 
   int error;
   PVariable var;
-  return fitModel(gen, weight, true, error, var);
+  PClassifier cl = fitModel(gen, weight, error, var);
+
+  if (error >= TLogisticFitter::Constant) {
+    raiseError("%s in %s", error==TLogisticFitter::Constant?"constant":"singularity", var->name.c_str());
+/*    
+    string error_str;
+    if (error == TLogisticFitter::Singularity)
+			error_str = "singularity in ";
+		else
+			error_str = "constant variable in ";
+		error_str.append(errorAt->name);
+		raiseError(error_str.c_str()); */
+	}
+
+  return cl;
 }
 
 
-PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight, const bool &exception_at_singularity, int &error, PVariable &errorAt)
+PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight, int &error, PVariable &errorAt)
 { 
   
-   // check for class variable	
-  if (!gen->domain->classVar)
-    raiseError("class-less domain");
-  // class has to be discrete!
-  if (gen->domain->classVar->varType != TValue::INTVAR)
-    raiseError("discrete class attribute expected");
-  // attributes have to be continuous 
-  PITERATE(TVarList, vli, gen->domain->attributes) {
-	  if ((*vli)->varType == TValue::INTVAR) 
-	    raiseError("only continuous attributes expected");
-  }
-
   // construct result classifier	
   TLogisticClassifier *lrc = mlnew TLogisticClassifier(gen->domain);
   PClassifier cl = lrc;
@@ -100,11 +102,11 @@ PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight,
 
   // fit logistic regression 
   // mogoce bi bilo bolje poslati kar celotni classifier fitterju ?	
-  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, error, errorAt, exception_at_singularity);
+  lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, error, errorAt);
   lrc->fit_status = error;
-  if (error >= TLogisticFitter::Constant) {
-    return cl;      
-  }
+
+  if (error >= TLogisticFitter::Constant) 
+    return cl;
 
   lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
   lrc->P = computeP(lrc->wald_Z);

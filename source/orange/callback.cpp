@@ -149,12 +149,12 @@ PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)
 
 #include "vectortemplates.hpp"
 #include "converts.hpp"
-PFloatList TLogisticFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute, const bool &exceptionAtSingularity)
+PFloatList TLogisticFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute)
 {
   if (!eg)
     raiseError("invalid example generator");
 
-  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Nii)", WrapOrange(POrange(eg)), weightID, exceptionAtSingularity ? 1: 0));
+  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weightID));
 
   if (!PyTuple_Check(res) || (PyTuple_Size(res)<2) || !PyInt_Check(PyTuple_GET_ITEM(res, 0)))
     raiseError("invalid result from __call__");
