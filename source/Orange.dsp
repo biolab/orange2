@@ -740,6 +740,18 @@ SOURCE=.\orange\lib_vectors.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\logfit.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\logistic.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\external\logreg\logreg.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\lookup.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -751,6 +763,10 @@ SOURCE=.\orange\lookup.cpp
 
 !ENDIF 
 
+# End Source File
+# Begin Source File
+
+SOURCE=.\external\logreg\lsq.cpp
 # End Source File
 # Begin Source File
 
@@ -1391,7 +1407,23 @@ SOURCE=.\orange\linreg.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\logfit.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\logistic.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\external\logreg\logreg.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\lookup.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\external\logreg\lsq.h
 # End Source File
 # Begin Source File
 
