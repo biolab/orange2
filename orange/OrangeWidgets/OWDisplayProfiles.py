@@ -130,10 +130,28 @@ class profilesGraph(OWGraph):
         self.showSingleProfiles = ShowSingleProfiles
 
         self.groups = [('grp', data.domain.attributes)]
+        ## remove any non continuous attributes from list
+        ## at the same time convert any attr. string name into orange var type
+        filteredGroups = []
+        for (grpname, grpattrs) in self.groups:
+            filteredGrpAttrs = []
+            for a in grpattrs:
+                var = data.domain[a]
+                if (var.varType == orange.VarTypes.Continuous):
+                    filteredGrpAttrs.append(var)
+                else:
+                    print "warning, skipping attribute:", a
+            if len(filteredGrpAttrs) > 0:
+                filteredGroups.append( (grpname, filteredGrpAttrs) )
+        self.groups = filteredGroups
+        
         ## go group by group
         avgCurveData = []
         boxPlotCurveData = []
         ccn = 0
+        if data.domain.classVar.varType <> orange.VarTypes.Discrete:
+            print "error, class variable not discrete:", data.domain.classVar
+            return
         for c in data.domain.classVar.values:
             classSymb = QwtSymbol(QwtSymbol.Ellipse, QBrush(self.classColor[ccn]), QPen(self.classColor[ccn]), QSize(7,7)) ##self.black
             self.showClasses.append(0)
@@ -235,10 +253,7 @@ class profilesGraph(OWGraph):
         labels = []
         for (grpname, grpattrs) in self.groups:
             for a in grpattrs:
-                try:
-                    labels.append( a.name)
-                except:
-                    labels.append( a)
+                labels.append( a.name)
 
         self.setXlabels(labels)
         self.updateCurveDisplay()
@@ -518,7 +533,9 @@ class OWDisplayProfiles(OWWidget):
 
     def newdata(self):
         self.classQLB.clear()
-        if self.MAdata <> None:
+        if self.MAdata.domain.classVar.varType <> orange.VarTypes.Discrete:
+            print "error, class variable not discrete:", self.MAdata.domain.classVar
+        if self.MAdata <> None and self.MAdata.domain.classVar.varType == orange.VarTypes.Discrete:
             ## classQLB
             self.numberOfClasses = len(self.MAdata.domain.classVar.values)
             self.classColor = []
