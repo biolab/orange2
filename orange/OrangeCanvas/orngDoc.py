@@ -236,6 +236,7 @@ class SchemaDoc(QMainWindow):
         qApp.setOverrideCursor(QWidget.waitCursor)
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
+            newwidget.instance.signalManager = self.signalManager   # set signal manager for the widget instance
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
@@ -532,7 +533,7 @@ class SchemaDoc(QMainWindow):
 
         #format string with file content
         t = "    "  # instead of tab
-        imports = "import sys, os, cPickle, orange\nfrom orngSignalManager import *\n"
+        imports = "import sys, os, cPickle, orange\nimport orngSignalManager\n\n#set value in next line to 1 if want to output debugging info to file 'signalManagerOutput.txt'\nDEBUG_MODE = 0\n"
         imports += """
 widgetDir = os.path.join(os.path.split(orange.__file__)[0], "OrangeWidgets")
 if os.path.exists(widgetDir):
@@ -630,7 +631,8 @@ if os.path.exists(widgetDir):
         classinit = """
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        self.setCaption("Qt %s")""" % (fileName)
+        self.setCaption("Qt %s")
+        signalManager = orngSignalManager.SignalManager(DEBUG_MODE)""" % (fileName)
 
         if asTabs == 1:
             classinit += """
@@ -700,6 +702,8 @@ ow = """ + classname + """()
 application.setMainWidget(ow)
 ow.loadSettings()
 ow.show()
+
+# comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
 application.exec_loop()
 ow.saveSettings()
 """
