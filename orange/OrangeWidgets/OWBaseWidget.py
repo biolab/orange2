@@ -53,7 +53,7 @@ class OWBaseWidget(QDialog):
         if self.captionTitle[:2].upper() != "QT":
             self.captionTitle = "Qt " + self.captionTitle
 
-        apply(QDialog.__init__, (self, parent, title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize))
+        apply(QDialog.__init__, (self, parent, title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize + Qt.WStyle_Maximize))
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
