@@ -31,6 +31,8 @@
 #       - black&white dissimilarity matrix
 #   2004/03/17:
 #       - general matrix visualization
+#   2004/12/23:
+#       - various improvements (matrix drawing, dendrograms)
 
 
 import orngCluster
@@ -145,12 +147,7 @@ class DendrogramPlot:
         else:
             block = 0
 
-        if color_mode==1:
-            _colorize = _colorize1 # gregor
-        elif color_mode==0:
-            _colorize = _colorize0 # aleks
-        else:
-            _colorize = _bw2
+        _colorize = _color_picker(color_mode)
 
         ### EXTRACT THE DENDROGRAM ###
         vlines = []               # vertical lines (cluster)
@@ -356,15 +353,7 @@ class DendrogramPlot:
         if canvas == None:
             canvas = piddlePIL.PILCanvas(size=(width,height))
 
-
-        if color_mode==1:
-            _colorize = _colorize1 # gregor
-        elif color_mode==0:
-            _colorize = _colorize0 # aleks
-        elif color_mode==2:
-            _colorize = _blackwhite # interaction matrices, etc.
-        else:
-            _colorize = _blackwhite
+        _colorize = _color_picker(color_mode)
 
         ### DRAWING ###
                 
@@ -409,9 +398,9 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
-def Matrix(self,labels, diss, vlabels=[], sizing = [], margin = 10, hook = 10, block = None, line_size = 2.0, canvas = None):
+def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, block = None, line_size = 2.0, color_mode=0, sizing2 = [], canvas = None, multiplier = 1.0):
     # prevent divide-by-zero...
-    if len(labels) < 2:
+    if len(hlabels) < 2:
         return canvas
 
     ## ADJUST DIMENSIONS ###        
@@ -424,15 +413,15 @@ def Matrix(self,labels, diss, vlabels=[], sizing = [], margin = 10, hook = 10, b
     normal = piddle.Font(face="Courier")
 
     if len(vlabels) == 0:
-        vlabels = labels # vertical labels...
+        vlabels = hlabels # vertical labels...
 
     # compute the height
     lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
-    labellen = [tcanvas.stringWidth(s,font=normal) for s in labels]
+    labellen = [tcanvas.stringWidth(s,font=normal) for s in hlabels]
     vlabellen = [tcanvas.stringWidth(s,font=normal) for s in vlabels]
     maxlabelx = max(labellen)
     maxlabely = max(vlabellen)
-    width = int(1 + 2.0*margin + hook + maxlabelx + max(lineskip*(0.5+len(labels)) + tcanvas.fontHeight(normal),2*maxlabelx))
+    width = int(1 + 2.0*margin + hook + maxlabelx + max(lineskip*(0.5+len(hlabels)) + tcanvas.fontHeight(normal),2*maxlabelx))
     height = int(1 + 2.0*margin + hook + maxlabely + max(lineskip*(0.5+len(vlabels)) + tcanvas.fontHeight(normal),2*maxlabely))
 
     if block == None:
@@ -441,7 +430,7 @@ def Matrix(self,labels, diss, vlabels=[], sizing = [], margin = 10, hook = 10, b
     if canvas == None:
         canvas = piddlePIL.PILCanvas(size=(width,height))
 
-    _colorize = _blackwhite
+    _colorize = colorpicker(color_mode)
 
     ### DRAWING ###
             
@@ -449,29 +438,44 @@ def Matrix(self,labels, diss, vlabels=[], sizing = [], margin = 10, hook = 10, b
     offsety = maxlabely+margin
     halfline = canvas.fontAscent(normal)/2.0
 
-    # print names
-    for j in range(len(vlabels)):
-        x = offsetx + lineskip*(j+1.5)
-        y = offsety + lineskip/2
-        canvas.drawString(vlabels[j], x+block, y, angle=90,font=normal)
+    for i in range(len(vlabels)):
+        x2 = offsetx + lineskip/2
+        y2 = offsety + lineskip*(i+1)
+        # vertical
+        canvas.drawString(vlabels[i], y2+lineskip, x2+block-lineskip, angle=90,font=normal)
 
-    for i in range(len(labels)):
+    # print names
+    for i in range(len(hlabels)):
         # self.order identifies the label at a particular row
-        x = offsetx - labellen[i] + lineskip/2
-        y = offsety + lineskip*(i+1.5)
-        canvas.drawString(labels[i], x, y+block,font=normal)
-        for j in range(len(vlabels)):
-            colo = _colorize(diss[i][j])
-            x = offset+hook+lineskip*(j+1)
-            y = offset+hook+lineskip*(i+1)
+        x = offsetx - labellen[i] + lineskip
+        y = offsety + lineskip*(i+1)
+        canvas.drawString(hlabels[i], x, y,font=normal)
+        for j in range(len(hlabels)):
+            colo = _colorize(diss[i,j])
+            x = offsetx+hook+lineskip*(j+1)+block
+            y = offsety+lineskip*(i+1)-halfline
             if len(sizing) == 0:
                 ss = 1.0
             else:
                 ss = min(1,sizing[i][j])
-            canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=colo,fillColor=colo)
-            
+            ss *= multiplier
+            canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=colo,fillColor=colo,edgeWidth=0.5)
+            if len(sizing2) > 0:
+                ss = sizing2[i][j]
+                ss *= multiplier
+                canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=piddle.black,fillColor=None,edgeWidth=0.5)
     canvas.flush()
     return canvas
+
+# test colors
+##    y = 100
+##    for x in xrange(256):
+##        colo = _colorize(x/255.0)
+##        canvas.drawRect(x*2,y-block,x*2+1,y+block,edgeColor=colo,fillColor=colo)
+##    y = 150
+##    for x in xrange(125,130):
+##        colo = _colorize(x/255.0)
+##        canvas.drawRect(x*2,y-block,x*2+1,y+block,edgeColor=colo,fillColor=colo)
 
 
 class GDHClustering(DendrogramPlot,orngCluster.DHClustering):
@@ -505,6 +509,73 @@ class ViewCanvas:
         self.root.title("ViewCanvas")
         self.canvas = canvas
         self.root.mainloop()
+
+
+#
+# Some color schemes follow...
+#
+##Apache-Style Software License for ColorBrewer software and ColorBrewer Color Schemes
+##Version 1.1
+##
+##Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University. All rights reserved.
+##Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+##1. Redistributions as source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+##2. The end-user documentation included with the redistribution, if any, must include the following acknowledgment:
+##This product includes color specifications and designs developed by Cynthia Brewer (http://colorbrewer.org/).
+##Alternately, this acknowledgment may appear in the software itself, if and wherever such third-party acknowledgments normally appear.
+##4. The name "ColorBrewer" must not be used to endorse or promote products derived from this software without prior written permission. For written permission, please 
+##contact Cynthia Brewer at cbrewer@psu.edu.
+##5. Products derived from this software may not be called "ColorBrewer", nor may "ColorBrewer" appear in their name, without prior written permission of Cynthia Brewer.
+##
+##THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
+##MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL CYNTHIA BREWER, MARK HARROWER, OR THE 
+##PENNSYLVANIA STATE UNIVERSITY BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+##BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
+##CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY 
+##WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#
+# this class interpolates between the 11 steps
+class RdBu:
+    def __init__(self,darken=0):
+        profile = [[103,0,31],[178,24,43],[214,96,77],[244,165,130],[253,219,199],[247,247,247],[209,229,240],[146,197,222],[67,147,195],[33,102,172],[5,48,97]]
+        profile.append(profile[-1]) # terminator...
+        profile.append(profile[-1]) # terminator...
+        self.LUT = []
+        for i in xrange(256):
+            a = i/255.0
+            b = a*(len(profile)-3)
+            bi = int(b) # round down
+            db = b-bi   # difference
+            assert(db >= 0.0)
+            if darken:
+                idb = (1.0-db)/270.0
+                db /= 270.0
+            else:
+                idb = (1.0-db)/255.0
+                db /= 255.0
+            rgb = [profile[bi][x]*idb+profile[bi+1][x]*db for x in xrange(3)]
+            self.LUT.append(piddle.Color(rgb[0],rgb[1],rgb[2]))
+                            
+    def __call__(self, x):
+        return self.LUT[int(round(max(0.0,min(1.0,x))*255.0))]
+
+def _color_picker(color_mode):
+    if color_mode==1:
+        _colorize = _colorize1 # gregor
+    elif color_mode==0:
+        _colorize = _colorize0 # aleks
+    elif color_mode==2:
+        _colorize = _blackwhite # interaction matrices, etc., 1/color
+    elif color_mode==3:
+        _colorize = _bw2        # grayscale for dendrograms
+    elif color_mode==4:
+        _colorize = RdBu()
+    elif color_mode==5:
+        _colorize = RdBu(darken=1)
+    return _colorize
+
+
 
 if __name__== "__main__":
     import orange, orngInteract
