@@ -128,16 +128,19 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
 		bg = widget
 
 	bg.setRadioButtonExclusive(1)
+	bg.buttons = []
 	for i in range(len(btnLabels)):
-		if type(btnLabels[i])==type("string"):
+		if type(btnLabels[i]) == str:
 			w = QRadioButton(btnLabels[i], bg)
 		else:
 			w = QRadioButton(str(i), bg)
 			w.setPixmap(btnLabels[i])
 		w.setOn(getattr(master, value) == i)
+		bg.buttons.append(w)
 		if tooltips:
 			QToolTip.add(w, tooltips[i])
 	master.connect(bg, SIGNAL("clicked(int)"), ValueCallback(master, value))
+	master.controledAttributes.append((value, CallFront_radioButtons(bg)))
 	if callback:
 		master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
 #		self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
@@ -348,6 +351,15 @@ class CallFront_lineEdit:
 
 	def __call__(self, value):
 		self.control.setText(str(value))
+
+
+class CallFront_radioButtons:
+	def __init__ (self, control):
+		self.control = control
+
+	def __call__(self, value):
+		self.control.buttons[value].setOn(1)
+		
 
 class tableItem(QTableItem):
 	def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white):
