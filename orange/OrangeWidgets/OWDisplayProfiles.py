@@ -419,9 +419,10 @@ class OWDisplayProfiles(OWWidget):
             noClass.getValueFrom = lambda ex, w: 0
             newDomain = orange.Domain(MAdata.data.domain.variables + [noClass])
             self.MAdata = MAdata.data.select(newDomain)
+            self.MAnoclass = 1 ## remember that there is no class to display
         else:
             self.MAdata = MAdata.data
-        self.MAnoclass = 1 ## remember that there is no class to display
+            self.MAnoclass = 0 ## there are classes
         self.newdata()
 
     def cdata(self, MAcdata):
