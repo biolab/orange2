@@ -24,6 +24,7 @@ class ZoomSelectToolbar(QHButtonGroup):
         QHButtonGroup.__init__(self, "Zoom / Select", parent)
         
         self.graph = graph # save graph. used to send signals
+        self.widget = None
         
         self.buttonZoom = createButton(self, "Zooming", self.actionZooming, QPixmap(dlg_zoom), toggle = 1)
         self.buttonSelectRect = createButton(self, "Rectangle selection", self.actionRectangleSelection, QPixmap(dlg_rect), toggle = 1)
@@ -37,20 +38,24 @@ class ZoomSelectToolbar(QHButtonGroup):
         self.buttonSendSelections.setEnabled(not autoSend)
 
         self.actionZooming()    # activate zooming
+        self.widget = widget    # we set widget here so that it doesn't affect the value of self.widget.toolbarSelection
 
     def actionZooming(self):
+        if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 0
         self.buttonZoom.setOn(1)
         self.buttonSelectRect.setOn(0)
         self.buttonSelectPoly.setOn(0)
         self.graph.activateZooming()
 
     def actionRectangleSelection(self):
+        if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 1
         self.buttonZoom.setOn(0)
         self.buttonSelectRect.setOn(1)
         self.buttonSelectPoly.setOn(0)
         self.graph.activateRectangleSelection()
 
     def actionPolygonSelection(self):
+        if self.widget and "toolbarSelection" in self.widget.__dict__.keys(): self.widget.toolbarSelection = 2
         self.buttonZoom.setOn(0)
         self.buttonSelectRect.setOn(0)
         self.buttonSelectPoly.setOn(1)
