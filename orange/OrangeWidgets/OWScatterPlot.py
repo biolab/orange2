@@ -22,16 +22,18 @@ class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "jitteringType", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols"]
+    spreadType=["none","uniform","triangle","beta"]
+    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
+    jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+
     def __init__(self,parent=None):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
         apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)) 
 
-        self.spreadType=["none","uniform","triangle","beta"]
-        self.jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
-        self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+        
        
         #set default settings
-        self.pointWidth = 5
+        self.pointWidth = 7
         self.jitteringType = "uniform"
         self.showXAxisTitle = 1
         self.showYAxisTitle = 1
@@ -39,7 +41,7 @@ class OWScatterPlot(OWWidget):
         self.showHorizontalGridlines = 0
         self.showLegend = 1
         self.jitterContinuous = 0
-        self.jitterSize = 1
+        self.jitterSize = 5
         self.showFilledSymbols = 1
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())

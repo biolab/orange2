@@ -89,14 +89,11 @@ class OWPolyvizGraph(OWVisGraph):
         if data == None: return
 
         self.localScaledData = []        
-        if self.globalValueScaling == 1:
+        if self.jitteringType != 'none':
             for index in range(len(data.domain)):
-                scaled, values = self.scaleData(data, index)
+                scaled, values = self.scaleData(data, index, jitteringEnabled = 0)
                 self.localScaledData.append(scaled)
                 self.attrLocalValues[data.domain[index].name] = values
-        else:
-            self.localScaledData = self.scaledData
-            self.attrLocalValues = self.attrValues
 
     #
     # update shown data. Set labels, coloring by className ....
@@ -134,7 +131,7 @@ class OWPolyvizGraph(OWVisGraph):
             indices.append(index)
 
         ###########
-        # create anchor for every attribute
+        # create anchor for two edges of every attribute
         anchors = [[],[]]
         for i in range(length):
             x = math.cos(2*math.pi * float(i) / float(length)); strX = "%.4f" % (x)

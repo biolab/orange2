@@ -9,6 +9,7 @@ from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
+from statc import pearsonr
 
 class OWParallelGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
@@ -17,6 +18,7 @@ class OWParallelGraph(OWVisGraph):
 
         self.showDistributions = 0
         self.hidePureExamples = 1
+        self.showCorrelations = 1
         self.metaid = -1
         
 
@@ -28,6 +30,9 @@ class OWParallelGraph(OWVisGraph):
 
     def setHidePureExamples(self, hide):
         self.hidePureExamples = hide
+
+    def setShowCorrelations(self, show):
+        self.showCorrelations = show
 
     def setData(self, data):
         OWVisGraph.setData(self, data)
@@ -85,8 +90,9 @@ class OWParallelGraph(OWVisGraph):
         dataStop = []
         lastIndex = indices[length-1]
         for i in range(dataSize): dataStop.append(lastIndex)
-        classIndex = self.scaledDataAttributes.index(className)
-        if self.hidePureExamples == 1 and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+        if className != "(One color)":
+            classIndex = self.scaledDataAttributes.index(className)
+        if self.hidePureExamples == 1 and className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
                 metavar = orange.IntVariable("ItemIndex")
@@ -179,7 +185,23 @@ class OWParallelGraph(OWVisGraph):
                         self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
                         self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignHCenter)
                     
-                    
+        ###################################################
+        # show correlations
+        if self.showCorrelations == 1:
+            for j in range(length-1):
+                attr1 = indices[j]
+                attr2 = indices[j+1]
+                if self.rawdata.domain[attr1].varType == orange.VarTypes.Discrete or self.rawdata.domain[attr2].varType == orange.VarTypes.Discrete: continue
+                array1 = []; array2 = []
+                # create two arrays with continuous values to compute correlation
+                for index in range(len(self.rawdata)):
+                    array1.append(self.rawdata[index][attr1])
+                    array2.append(self.rawdata[index][attr2])
+                (corr, b) = pearsonr(array1, array2)
+                mkey1 = self.insertMarker("%.3f" % (corr))
+                self.marker(mkey1).setXValue(j+0.5)
+                self.marker(mkey1).setYValue(1.0)
+                self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
     def showDistributionValues(self, className, data, indices):
         # get index of class         

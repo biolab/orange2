@@ -39,7 +39,7 @@ class OWSurveyPlotOptions(OWOptions):
         self.attrDiscRelieF = QRadioButton('RelieF', self.attrDiscButtons)
         self.attrDiscGainRatio = QRadioButton('GainRatio', self.attrDiscButtons)
         self.attrDiscGini = QRadioButton('Gini', self.attrDiscButtons)
-        self.attrDiscFD   = QRadioButton('Functional decomposition', self.attrDiscButtons)
+        self.attrDiscFD   = QRadioButton('Oblivious decision graphs', self.attrDiscButtons)
 
         #####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.top)

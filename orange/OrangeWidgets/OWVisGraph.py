@@ -21,6 +21,7 @@ class OWVisGraph(OWGraph):
         self.scaledData = []
         self.scaledDataAttributes = []
         self.jitteringType = 'none'
+        self.jitterSize = 10
         self.globalValueScaling = 0
         self.GraphCanvasColor = str(Qt.white.name())
 
@@ -31,10 +32,17 @@ class OWVisGraph(OWGraph):
         self.noneSymbol.setStyle(QwtSymbol.None)
         self.tips = DynamicToolTipFloat()
         self.statusBar = None
-        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.plotMouseMoved)
+        self.canvas().setMouseTracking(1)
+        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.onMouseMoved)
+        self.zoomStack = []
+        self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
+        self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
 
     def setJitteringOption(self, jitteringType):
         self.jitteringType = jitteringType
+
+    def setJitterSize(self, size):
+        self.jitterSize = size
 
     def setPointWidth(self, pointWidth):
         self.pointWidth = pointWidth
@@ -167,7 +175,7 @@ class OWVisGraph(OWGraph):
                     temp.append(val)
             elif jitteringEnabled == 1:
                 for i in range(len(data)):
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(0.2/count)
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(self.jitterSize/(100.0*count))
                     temp.append(val)
             else:
                 for i in range(len(data)):
@@ -249,7 +257,62 @@ class OWVisGraph(OWGraph):
             self.scaledData.append(scaled)
             self.attrValues[attr.name] = values
 
-    def plotMouseMoved(self, e):
+
+    ################################################
+    # HANDLING MOUSE EVENTS
+    ################################################
+    def onMousePressed(self, e):
+        if Qt.LeftButton == e.button():
+            # Python semantics: self.pos = e.pos() does not work; force a copy
+            self.xpos = e.pos().x()
+            self.ypos = e.pos().y()
+            self.enableOutline(1)
+            self.setOutlinePen(QPen(Qt.black))
+            self.setOutlineStyle(Qwt.Rect)
+            self.zooming = 1
+            if self.zoomStack == []:
+                self.zoomState = (
+                    self.axisScale(QwtPlot.xBottom).lBound(),
+                    self.axisScale(QwtPlot.xBottom).hBound(),
+                    self.axisScale(QwtPlot.yLeft).lBound(),
+                    self.axisScale(QwtPlot.yLeft).hBound(),
+                    )
+        elif Qt.RightButton == e.button():
+            self.zooming = 0
+        # fake a mouse move to show the cursor position
+        self.onMouseMoved(e)
+
+    # onMousePressed()
+
+    def onMouseReleased(self, e):
+        if Qt.LeftButton == e.button():
+            xmin = min(self.xpos, e.pos().x())
+            xmax = max(self.xpos, e.pos().x())
+            ymin = min(self.ypos, e.pos().y())
+            ymax = max(self.ypos, e.pos().y())
+            self.setOutlineStyle(Qwt.Cross)
+            xmin = self.invTransform(QwtPlot.xBottom, xmin)
+            xmax = self.invTransform(QwtPlot.xBottom, xmax)
+            ymin = self.invTransform(QwtPlot.yLeft, ymin)
+            ymax = self.invTransform(QwtPlot.yLeft, ymax)
+            if xmin == xmax or ymin == ymax:
+                return
+            self.zoomStack.append(self.zoomState)
+            self.zoomState = (xmin, xmax, ymin, ymax)
+            self.enableOutline(0)
+        elif Qt.RightButton == e.button():
+            if len(self.zoomStack):
+                xmin, xmax, ymin, ymax = self.zoomStack.pop()
+            else:
+                return
+
+        self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+        self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+        self.replot()
+
+
+
+    def onMouseMoved(self, e):
         x = e.x()
         y = e.y()
         """

@@ -36,11 +36,12 @@ class OWWidget(QWidget):
         fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
         logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
-        self.title=title.replace("&","")
+        self.title = title.replace("&","")
+        self.captionTitle=title.replace("&","")
 
         # if we want the widget to show the title then the title must start with "Qt"
-        if self.title[:2].upper != "QT":
-            self.title = "Qt " + self.title
+        if self.captionTitle[:2].upper != "QT":
+            self.captionTitle = "Qt " + self.captionTitle
             
         QWidget.__init__(self,parent)
         #list of all active connections to this widget
@@ -56,7 +57,7 @@ class OWWidget(QWidget):
         #is widget enabled?
         self.enabled=TRUE
         #the title
-        self.setCaption(self.title)
+        self.setCaption(self.captionTitle)
         self.setIcon(QPixmap(fullIcon))
         #about box
         self.about=OWAboutX(title,description,fullIcon,logo)

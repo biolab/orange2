@@ -22,16 +22,13 @@ import OWVisAttrSelection
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
     settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling"]
+    attributeContOrder = ["None","RelieF","Correlation"]
+    attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
+        
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "Survey Plot",
-        "Show data using survey plot visualization method",
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", TRUE, TRUE)
 
-        self.attributeContOrder = ["None","RelieF","Correlation"]
-        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Functional decomposition"]
+        
 
         #set default settings
         self.attrDiscOrder = "RelieF"
@@ -116,8 +113,6 @@ class OWSurveyPlot(OWWidget):
         
         # add a settings dialog and initialize its values
         self.setOptions()
-
-        #self.repaint()
 
     # #########################
     # OPTIONS
@@ -245,7 +240,7 @@ class OWSurveyPlot(OWWidget):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.insertItem(self.data.domin.classVar.name)
+        self.classCombo.insertItem(self.data.domain.classVar.name)
         self.classCombo.setCurrentItem(self.classCombo.count()-1)
 
 
@@ -282,6 +277,7 @@ class OWSurveyPlot(OWWidget):
     def sortingClick(self):
         primaryOn = self.primarySortCB.isOn()
         secondaryOn = self.secondarySortCB.isOn()
+
         primaryAttr = str(self.primaryAttr.currentText())
         secondaryAttr = str(self.secondaryAttr.currentText())
 

@@ -4,7 +4,7 @@ import statc
 import orngCI
 
 ###########################################################################################
-##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING FUNCTIONAL DECOMPOSITION
+##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING Oblivious decision graphs
 ###########################################################################################
 def replaceAttributes(index1, index2, merged, data):
     attrs = list(data.domain.attributes)
@@ -217,7 +217,7 @@ def selectAttributes(data, attrContOrder, attrDiscOrder):
 		for item in newAttrs:
 				shown.append(item[0])
 
-	elif attrDiscOrder == "Functional decomposition":
+	elif attrDiscOrder == "Oblivious decision graphs":
             shown.append(data.domain.classVar.name)
             list = getFunctionalList(data)
             for item in list:

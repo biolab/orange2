@@ -31,8 +31,10 @@ class OWScatterPlotOptions(OWOptions):
         self.spreadTriangle = QRadioButton('triangle', self.jitteringButtons)
         self.spreadBeta = QRadioButton('beta', self.jitteringButtons)
 
+        ######
+        # jittering options
         self.jitteringOptionsBG = QVButtonGroup("Jittering options", self.top)
-
+        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
         self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
         self.jitterLabel = QLabel('Jittering size (% of size)', self.hbox)
         self.jitterSize = QComboBox(self.hbox)

@@ -23,17 +23,25 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.spreadTriangle = QRadioButton('triangle', self.spreadButtons)
         self.spreadBeta = QRadioButton('beta', self.spreadButtons)
 
+        ######
+        # jittering options
+        self.jitteringOptionsBG = QVButtonGroup("Jittering options", self.top)
+        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
+        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
+        self.jitterLabel = QLabel('Jittering size (% of size)', self.hbox)
+        self.jitterSize = QComboBox(self.hbox)
+
         #####
         self.visualSettings = QVButtonGroup("Visual settings", self.top)
         self.showDistributions = QCheckBox("Show distributions", self.visualSettings)
         self.showAttrValues = QCheckBox("Show attribute values", self.visualSettings)
         self.hidePureExamples = QCheckBox("Hide pure examples", self.visualSettings)
+        self.showCorrelations = QCheckBox("Show correlations between attributes", self.visualSettings)      # show correlations
 
         #####
         # attribute value scaling
         self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
         self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
-        
 
         #####        
         # continuous attribute ordering
@@ -55,7 +63,7 @@ class OWParallelCoordinatesOptions(OWOptions):
         self.attrDiscRelieF = QRadioButton('RelieF', self.attrDiscButtons)
         self.attrDiscGainRatio = QRadioButton('GainRatio', self.attrDiscButtons)
         self.attrDiscGini = QRadioButton('Gini', self.attrDiscButtons)
-        self.attrDiscFD   = QRadioButton('Functional decomposition', self.attrDiscButtons)
+        self.attrDiscFD   = QRadioButton('Oblivious decision graphs', self.attrDiscButtons)
 
         #####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.top)

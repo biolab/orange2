@@ -15,7 +15,6 @@ class OWScatterPlotGraph(OWVisGraph):
         OWVisGraph.__init__(self, parent, name)
 
         self.jitterContinuous = 0
-        self.jitterSize = 1
         
         self.enabledLegend = 0
 
@@ -24,9 +23,6 @@ class OWScatterPlotGraph(OWVisGraph):
 
     def setJitterContinuous(self, enable):
         self.jitterContinuous = enable
-
-    def setJitterSize(self, size):
-        self.jitterSize = size
 
     def setShowFilledSymbols(self, filled):
         self.showFilledSymbols = filled

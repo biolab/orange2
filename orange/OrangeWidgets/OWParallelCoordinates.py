@@ -21,29 +21,31 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling"]
+    spreadType=["none","uniform","triangle","beta"]
+    attributeContOrder = ["None","RelieF","Correlation"]
+    attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
+    jitterSizeList = ['2','5','10', '15', '20', '30']
+    jitterSizeNums = [2,  5,  10, 15, 20, 30]
+    
     def __init__(self,parent=None):
-        self.spreadType=["none","uniform","triangle","beta"]
-        self.attributeContOrder = ["None","RelieF","Correlation"]
-        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Functional decomposition"]
-        OWWidget.__init__(self,
-        parent,
-        "Parallel Coordinates",
-        "Show data using parallel coordinates visualization method",
-        TRUE,
-        TRUE)
+        
+        
+        OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", TRUE, TRUE)
 
         #set default settings
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         
-        self.jitteringType = "none"
+        self.jitteringType = "uniform"
         self.GraphCanvasColor = str(Qt.white.name())
-        self.showDistributions = 0
+        self.showDistributions = 1
         self.showAttrValues = 1
         self.hidePureExamples = 1
+        self.showCorrelations = 1
         self.GraphGridColor = str(Qt.black.name())
         self.data = None
+        self.jitterSize = 10
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
         self.globalValueScaling = 0
@@ -71,8 +73,9 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.options.hidePureExamples, SIGNAL("clicked()"), self.updateSettings)
+        self.connect(self.options.showCorrelations, SIGNAL("clicked()"), self.updateSettings)
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
-
+        self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -130,13 +133,18 @@ class OWParallelCoordinates(OWWidget):
         self.options.showDistributions.setChecked(self.showDistributions)
         self.options.showAttrValues.setChecked(self.showAttrValues)
         self.options.hidePureExamples.setChecked(self.hidePureExamples)
+        self.options.showCorrelations.setChecked(self.showCorrelations)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        for i in range(len(self.jitterSizeList)):
+            self.options.jitterSize.insertItem(self.jitterSizeList[i])
+        self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
         self.graph.setShowAttrValues(self.showAttrValues)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setJitterSize(self.jitterSize)
 
     # jittering options
     def setSpreadType(self, n):
@@ -145,6 +153,12 @@ class OWParallelCoordinates(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
+    # jittering options
+    def setJitteringSize(self, n):
+        self.jitterSize = self.jitterSizeNums[n]
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
 
     def updateSettings(self):
         self.showDistributions = self.options.showDistributions.isChecked()
@@ -155,6 +169,9 @@ class OWParallelCoordinates(OWWidget):
 
         self.hidePureExamples = self.options.hidePureExamples.isChecked()
         self.graph.setHidePureExamples(self.hidePureExamples)
+
+        self.showCorrelations = self.options.showCorrelations.isChecked()
+        self.graph.setShowCorrelations(self.showCorrelations)
 
         self.updateGraph()
 

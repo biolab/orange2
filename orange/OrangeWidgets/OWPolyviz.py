@@ -22,27 +22,26 @@ import OWVisAttrSelection
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitteringType", "graphCanvasColor", "globalValueScaling"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling"]
+    spreadType=["none","uniform","triangle","beta"]
+    attributeContOrder = ["None","RelieF"]
+    attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
+    attributeOrdering  = ["Original", "Optimized class separation"]
+    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
+    jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+        
     def __init__(self,parent=None):
-        self.spreadType=["none","uniform","triangle","beta"]
-        self.attributeContOrder = ["None","RelieF"]
-        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Functional decomposition"]
-        self.attributeOrdering  = ["Original", "Optimized class separation"]
-        OWWidget.__init__(self,
-        parent,
-        "Polyviz",
-        "Show data using Polyviz visualization method",
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", TRUE, TRUE)
 
         #set default settings
         self.pointWidth = 5
         self.lineLength = 2
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
-        self.jitteringType = "none"
+        self.jitteringType = "uniform"
         self.attrOrdering = "Original"
         self.globalValueScaling = 1
+        self.jitterSize = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -71,6 +70,7 @@ class OWPolyviz(OWWidget):
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
         self.connect(self.options.lengthSlider, SIGNAL("valueChanged(int)"), self.setLineLength)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
+        self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
@@ -134,11 +134,15 @@ class OWPolyviz(OWWidget):
         self.options.widthLCD.display(self.pointWidth)
         self.options.lengthLCD.display(self.lineLength)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        for i in range(len(self.jitterSizeList)):
+            self.options.jitterSize.insertItem(self.jitterSizeList[i])
+        self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setJitterSize(self.jitterSize)
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -158,6 +162,12 @@ class OWPolyviz(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
+    # jittering options
+    def setJitteringSize(self, n):
+        self.jitterSize = self.jitterSizeNums[n]
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
