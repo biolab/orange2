@@ -27,7 +27,7 @@ class kNNOptimization(OWBaseWidget):
         #QWidget.__init__(self, parent)
         OWBaseWidget.__init__(self, parent, "Optimization Dialog", "optimize visualization impression and manage result", FALSE, FALSE, FALSE)
 
-        self.setCaption("Qt kNN Optimization Dialog")
+        self.setCaption("Qt VizRank Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
         self.grid=QGridLayout(4,2)
         self.topLayout.addLayout( self.grid, 10 )
@@ -40,7 +40,7 @@ class kNNOptimization(OWBaseWidget):
         self.percentDataUsed = 100
         self.bestSubsets = 100
         self.qualityMeasure = 0
-        self.useLeaveOneOut = 0
+        self.useLeaveOneOut = 1
         self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.parentName = "Projection"
         self.useHeuristics = 0
@@ -53,20 +53,11 @@ class kNNOptimization(OWBaseWidget):
 
         self.loadSettings()
         
-        self.optimizeButtonBox =QVGroupBox(self, "Optimize toolbox")
-        self.optimizeButtonBox.setTitle("Optimize toolbox")
-        
-        self.manageResultsBox = QVGroupBox (self, "Manage results")
-        self.manageResultsBox.setTitle("Manage results")
+        self.optimizeButtonBox =QVGroupBox("Optimize toolbox", self)
+        self.manageResultsBox = QVGroupBox ("Manage projections", self)
 
-        #self.infoBox =QVGroupBox(self, "Selected projection information")
-        #self.infoBox.setTitle("Information")
-
-        self.evaluateBox = QVGroupBox(self, "Evaluate projection/classifier ")
-        self.evaluateBox.setTitle("Evaluate projection / classifier ")
-
-        self.resultsBox = QVGroupBox (self, "Results")
-        self.resultsBox.setTitle("Results")
+        self.evaluateBox = QVGroupBox("Evaluate projection / classifier ", self)
+        self.resultsBox = QVGroupBox ("List of interesting projections", self)
 
         self.grid.addWidget(self.optimizeButtonBox,0,0)
         self.grid.addWidget(self.evaluateBox,1,0)
@@ -88,17 +79,18 @@ class kNNOptimization(OWBaseWidget):
         self.attrKNeighbour = QComboBox(self.hbox1)
 
         self.hbox2 = QHBox(self.optimizeButtonBox)
-        self.resultListLabel = QLabel('Length of results list:  ', self.hbox2)
+        self.resultListLabel = QLabel('Number of most interesting projections: ', self.hbox2)
         self.resultListCombo = QComboBox(self.hbox2)
         
         self.hbox3 = QHBox(self.optimizeButtonBox)
-        self.minTableLenLabel = QLabel('Minimum examples in example table: ', self.hbox3)
+        self.minTableLenLabel = QLabel('Minimum examples in data set:         ', self.hbox3)
         self.minTableLenEdit = QLineEdit(self.hbox3)
         self.hbox4 = QHBox (self.optimizeButtonBox)
-        self.percentDataUsedLabel = QLabel('Percent of data used in evaluation:   ', self.hbox4)
+        self.percentDataUsedLabel = QLabel('Percent of data used in evaluation:  ', self.hbox4)
         self.percentDataUsedCombo = QComboBox(self.hbox4)
 
         self.useLeaveOneOutCB = QCheckBox("Test using Leave one out (slower)", self.optimizeButtonBox)
+        self.useLeaveOneOutCB.hide()
         self.connect(self.useLeaveOneOutCB, SIGNAL("clicked()"), self.setUseLeaveOneOut)
         self.useLeaveOneOutCB.setChecked(self.useLeaveOneOut)
 
@@ -109,8 +101,7 @@ class kNNOptimization(OWBaseWidget):
         self.measureCombo.insertItem("Brier score")
         self.connect(self.measureCombo, SIGNAL("activated(int)"), self.setQualityMeasure)
         
-        self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
-        self.numberOfAttrBox.setTitle("Number of attributes")
+        self.numberOfAttrBox = QVGroupBox ("Find interesting projections", self.optimizeButtonBox)
     
         self.hbox5 = QHBox(self.numberOfAttrBox)
         self.optimizeSeparationButton = QPushButton(' Optimize for exactly  ', self.hbox5)
@@ -123,16 +114,20 @@ class kNNOptimization(OWBaseWidget):
         self.exactlyAttrLabel2 = QLabel(' attributes', self.hbox6)
 
         self.hbox11 = QHBox(self.numberOfAttrBox)
-        self.useHeuristicsCB = QCheckBox("Test only best ", self.hbox11)
-        self.connect(self.useHeuristicsCB, SIGNAL("clicked()"), self.setUseHeuristics)
-        self.useHeuristicsCB.setChecked(self.useHeuristics)
-        self.numberOfBestSubsetsEdit = QLineEdit(self.hbox11)
-        self.numberOfBestSubsetsEdit.setMaximumWidth(40)
-        self.numberOfBestSubsetsLabel = QLabel(' feature subsets (FSS)', self.hbox11)
+        self.hbox11.hide()
+        #self.useHeuristicsCB = QCheckBox("Test only best ", self.hbox11)
+        #self.useHeuristicsCB.hide()
+        #self.connect(self.useHeuristicsCB, SIGNAL("clicked()"), self.setUseHeuristics)
+        #self.useHeuristicsCB.setChecked(self.useHeuristics)
+        #self.numberOfBestSubsetsEdit = QLineEdit(self.hbox11)
+        #self.numberOfBestSubsetsEdit.hide()
+        #self.numberOfBestSubsetsEdit.setMaximumWidth(40)
+        #self.numberOfBestSubsetsLabel = QLabel(' feature subsets (FSS)', self.hbox11)
 
-        self.onlyOnePerSubsetCB = QCheckBox("Save only one projection per attribute subset", self.numberOfAttrBox)
-        self.onlyOnePerSubsetCB.setChecked(self.onlyOnePerSubset)
-        self.connect(self.onlyOnePerSubsetCB, SIGNAL("clicked()"), self.setOnlyOnePerSubset)
+        #self.onlyOnePerSubsetCB = QCheckBox("Save only one projection per attribute subset", self.numberOfAttrBox)
+        #self.onlyOnePerSubsetCB.hide()
+        #self.onlyOnePerSubsetCB.setChecked(self.onlyOnePerSubset)
+        #self.connect(self.onlyOnePerSubsetCB, SIGNAL("clicked()"), self.setOnlyOnePerSubset)
         
         self.exactlyLenCombo.insertItem("ALL")
         self.maxLenCombo.insertItem("ALL")
@@ -153,7 +148,7 @@ class kNNOptimization(OWBaseWidget):
         self.showKNNResetButton = QPushButton('Original', self.hbox7) 
                 
         #self.resize(200, 500)
-        self.attrLenCaption = QLabel('Select attribute count', self.manageResultsBox)
+        self.attrLenCaption = QLabel('Number of concurrently visualized attributes:', self.manageResultsBox)
         self.attrLenList = QListBox(self.manageResultsBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
@@ -172,7 +167,7 @@ class kNNOptimization(OWBaseWidget):
         self.connect(self.resultListCombo, SIGNAL("activated(int)"), self.setResultListLen)
         self.connect(self.percentDataUsedCombo, SIGNAL("activated(int)"), self.setPercentDataUsed)
         self.connect(self.minTableLenEdit, SIGNAL("textChanged(const QString &)"), self.setMinTableLen)
-        self.connect(self.numberOfBestSubsetsEdit, SIGNAL("textChanged(const QString &)"), self.setBestSubsetsEdit)
+        #self.connect(self.numberOfBestSubsetsEdit, SIGNAL("textChanged(const QString &)"), self.setBestSubsetsEdit)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
         self.connect(self.filterButton, SIGNAL("clicked()"), self.filter)
         self.connect(self.removeSelectedButton, SIGNAL("clicked()"), self.removeSelected)
@@ -205,12 +200,12 @@ class kNNOptimization(OWBaseWidget):
         self.measureCombo.setCurrentItem(self.qualityMeasure)
 
         self.minTableLenEdit.setText(str(self.minExamples))
-        self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
-        self.useHeuristicsCB.setChecked(self.useHeuristics)
+        #self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
+        #self.useHeuristicsCB.setChecked(self.useHeuristics)
 
     def destroy(self, dw, dsw):
         self.saveSettings()
-        OWBaseWidget.destroy(self, dw, dsw)
+        #OWBaseWidget.destroy(self, dw, dsw)
 
     def setQualityMeasure(self, n):
         self.qualityMeasure = n
@@ -417,8 +412,8 @@ class kNNOptimization(OWBaseWidget):
         self.percentDataUsedCombo.setCurrentItem(self.percentDataNums.index(self.percentDataUsed))
 
         self.measureCombo.setCurrentItem(self.qualityMeasure)
-        self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
-        self.useHeuristicsCB.setChecked(self.useHeuristics)
+        #self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
+        #self.useHeuristicsCB.setChecked(self.useHeuristics)
 
         # update loaded results
         self.updateNewResults()
