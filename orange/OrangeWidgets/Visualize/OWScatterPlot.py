@@ -29,7 +29,7 @@ class OWScatterPlot(OWWidget):
     def __init__(self, parent=None):
         OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Attribute selection", list, self.attributeSelection, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
 
         #set default settings
@@ -369,6 +369,11 @@ class OWScatterPlot(OWWidget):
         if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)): # preserve attribute choice if the domain is the same
             self.initAttrValues()
         
+        self.updateGraph()
+        self.sendSelections()
+
+    def subsetdata(self, data):
+        self.graph.subsetData = data
         self.updateGraph()
        
     

@@ -64,6 +64,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.scatterWidget = scatterWidget
         self.optimizeForPrinting = 0
         self.kNNOptimization = None
+        self.subsetData = None
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
@@ -74,6 +75,11 @@ class OWScatterPlotGraph(OWVisGraph):
         self.enableLegend(0)
         self.removeTooltips()
         self.tooltipData = []
+
+        # if we have some subset data then we show the examples in the data set with full symbols, others with empty
+        if self.subsetData:
+            oldShowFilledSymbols = self.showFilledSymbols
+            self.showFilledSymbols = 1
 
         if len(self.scaledData) == 0:
             self.setAxisScale(QwtPlot.xBottom, 0, 1, 1)
@@ -226,7 +232,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addTip(x, y, text = text)
 
             # create a small number of curves which will make drawing much faster
-            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1:
+            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not self.subsetData:
                 if colorIndex != -1:
                     classIndices = getVariableValueIndices(self.rawdata, colorAttr)
                     classCount = len(classIndices)
@@ -263,6 +269,7 @@ class OWScatterPlotGraph(OWVisGraph):
             else:
                 if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
+                xVals = []; yVals = []
 
                 for i in range(len(self.rawdata)):
                     if self.rawdata[i][xAttr].isSpecial() == 1: continue
@@ -277,19 +284,46 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
+                    selected = 1
+                    if self.subsetData != None and self.rawdata[i] not in self.subsetData: selected = 0
+
                     newColor = QColor(0,0,0)
                     if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
-                        
+                            
                     Symbol = self.curveSymbols[0]
                     if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
+                    
+                    if self.subsetData:
+                        self.showFilledSymbols = selected
+
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
+                        
                     # we add a tooltip for this point
                     self.addTip(x, y, toolTipList, i)
+
+                    """
+                    # if the example in the subsetData?
+                    if self.subsetData:
+                        if self.rawdata[i] in self.subsetData:
+                            xVals.append(x)
+                            yVals.append(y)
+                    """
+                """
+                if self.subsetData:
+                    if sizeShapeIndex == -1: size = self.pointWidth + 4
+                    else: size = MIN_SHAPE_SIZE + MAX_SHAPE_DIFF
+                    if shapeIndex == -1: shape = self.curveSymbols[0]
+                    else : shape = QwtSymbol.XCross
+                    filled = self.showFilledSymbols
+                    self.showFilledSymbols = 0
+                    self.addCurve("selection", QColor(0,0,0), QColor(0,0,0), size, symbol = shape, xData = xVals, yData = yVals)
+                    self.showFilledSymbols = filled
+                """
 
                 
 
@@ -349,6 +383,12 @@ class OWScatterPlotGraph(OWVisGraph):
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
             self.addMarker("%s = %.3f" % (colorAttr, colorVarMin), x1 + xVar/50, yVarMin + yVar*0.04, Qt.AlignRight)
             self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x1 + xVar/50, yVarMin + yVar*0.96, Qt.AlignRight)
+
+
+        # restore the correct showFilledSymbols
+        if self.subsetData:
+            self.showFilledSymbols = oldShowFilledSymbols 
+            
 
         
     # -----------------------------------------------------------
