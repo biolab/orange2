@@ -191,14 +191,6 @@ class OWRadvizGraph(OWVisGraph):
                 for (i,j) in closureDict[key]:
                     color = classValueIndices[graph.objects[i].getclass().value]
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
-
-            """
-            for key in closureDict.keys():
-                for (i,j) in closureDict[key]:
-                    color = classValueIndices[graph.objects[i].getclass().value]
-                    #self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = graph[i,j][0])
-                    self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [data[i][0].value, data[j][0].value], yData = [data[i][1].value, data[j][1].value], lineWidth = 1)
-            """
         elif self.clusterClosure: self.showClusterLines(indices, validData)        
 
         # ##############################################################
@@ -249,24 +241,21 @@ class OWRadvizGraph(OWVisGraph):
                     if self.subsetData[i] in self.rawdata: continue
 
                     # check if has missing values
-                    indicesWithClass = indices + [classNameIndex]
-                    for ind in indicesWithClass:
-                        if self.subsetData[i][ind].isSpecial(): break
-                    if ind != indicesWithClass[-1]: continue
-
+                    if 1 in [self.subsetData[i][ind].isSpecial() for ind in indices]: continue
+                    
                     # scale data values for example i
-                    dataVals = [self.scaleExampleValue(self.subsetData[i], indicesWithClass[index]) for index in range(len(indicesWithClass))]
+                    dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
                     if min(dataVals) < 0.0 or max(dataVals) > 1.0:
-                        self.radvizWidget.warning("Subset data values are out of range and their data points can be placed at the wrong position.")
+                        self.radvizWidget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
                         for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
-                    [x,y] = self.getProjectedPointPosition(indices, dataVals[:-1])  # compute position of the point, but don't use the class value
+                    [x,y] = self.getProjectedPointPosition(indices, dataVals)  # compute position of the point
                     x = x * self.scaleFactor; y = y * self.scaleFactor
 
                     if colors and not self.subsetData[i].getclass().isSpecial():
                         newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
                     elif not self.subsetData[i].getclass().isSpecial():
-                        newColor = QColor(); newColor.setHsv(dataVals[-1], 255, 255)
+                        newColor = QColor(); newColor.setHsv(self.scaleExampleValue(self.subsetData[i], classNameIndex), 255, 255)
                     else: newColor = QColor(0,0,0)
 
                     if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
