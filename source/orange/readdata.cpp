@@ -67,7 +67,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
     for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
       if (*ext == '.')
         break;
-      else if ((*ext=='\\') || (*ext==':')) {
+      else if ((*ext=='/') || (*ext=='\\') || (*ext==':')) {
         ext = NULL;
         break;
       }
@@ -138,7 +138,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
       char dirName[_MAX_PATH];
       _getcwd(dirName, _MAX_PATH);
       ep = dirName + strlen(dirName);
-      for(filename = ep; *filename != '\\'; filename--);
+      for(filename = ep; (*filename != '\\') && (*filename != '/'); filename--);
     #else
       char dirName[256];
       getcwd(dirName, 256);
@@ -185,7 +185,11 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
   /* Assistant is annoying: if path+stem is given, asd[ao] must be inserted in between */
   char *stem;
-  for(stem = filename+strlen(filename); (stem != filename) && (*stem != '\\') && (*stem != ':'); stem--);
+  #ifdef _MSC_VER
+  for(stem = filename+strlen(filename); (stem != filename) && (*stem != '\\') && (*stem != ':') && (*stem != '/'); stem--);
+  #else
+  for(stem = filename+strlen(filename); (stem != filename) && (*stem != '/'); stem--);
+  #endif
   if (stem!=filename)
     stem++;
   

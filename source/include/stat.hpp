@@ -1456,7 +1456,7 @@ void distributePoints(const map<T, U> points, int nPoints, vector<T> &result, in
       T fi = (*points.begin()).first;
       mapiterator pe(points.end());
       pe--;
-      T rg = (*pe).first / (nPoints-1);
+      T rg = ((*pe).first-fi) / (nPoints-1);
       for (int i = 0; i<nPoints; i++)
         result.push_back(fi + i*rg);
       return;
