@@ -34,7 +34,7 @@ class TreeLearnerClass:
 			if examples.domain.classVar.varType == orange.VarTypes.Discrete:
 				measure = orange.MeasureAttribute_gainRatio()
 			else:
-				measure = orange.MeasureAttribute_retis()
+				measure = orange.MeasureAttribute_MSE()
 			self.learner.split.continuousSplitConstructor.measure = measure
 			self.learner.split.discreteSplitConstructor.measure = measure
 				
@@ -63,7 +63,7 @@ class TreeLearnerClass:
 					"gainRatio": orange.MeasureAttribute_gainRatio,
 					"gini": orange.MeasureAttribute_gini,
 					"relief": orange.MeasureAttribute_relief,
-					"retis": orange.MeasureAttribute_retis
+					"retis": orange.MeasureAttribute_MSE
 					}
 
 			measure = getattr(self, "measure", None)

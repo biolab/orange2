@@ -46,7 +46,7 @@ class TreeLearnerClass:
 					"gainRatio": orange.MeasureAttribute_gainRatio,
 					"gini": orange.MeasureAttribute_gini,
 					"relief": orange.MeasureAttribute_relief,
-					"retis": orange.MeasureAttribute_retis
+					"retis": orange.MeasureAttribute_MSE
 					}
 
 			measure = getattr(self, "measure", None)
