@@ -101,25 +101,29 @@ class singleClassCalibrationPlotGraph(OWGraph):
             x = []
             y = []
             for (px, py) in yesClassRugPoints:
+                n = 1.0 ##py
+                py = 1.0
                 x.append(px)
-                y.append(py - self.rugHeight / 2.0)
+                y.append(py - self.rugHeight*n / 2.0)
 
                 x.append(px)
                 y.append(py)
 
                 x.append(px)
-                y.append(py - self.rugHeight)
+                y.append(py - self.rugHeight*n)
             ckey = self.classifierYesClassRugCKeys[classifier]
             self.setCurveData(ckey, x, y)
 
             x = []
             y = []
             for (px, py) in noClassRugPoints:
+                n = 1.0 ##py
+                py = 0.0
                 x.append(px)
-                y.append(py + self.rugHeight / 2.0)
+                y.append(py + self.rugHeight*n / 2.0)
 
                 x.append(px)
-                y.append(py + self.rugHeight)
+                y.append(py + self.rugHeight*n)
 
                 x.append(px)
                 y.append(py)

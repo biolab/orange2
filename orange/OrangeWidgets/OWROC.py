@@ -49,6 +49,7 @@ def TCconvexHull(curves):
 class singleClassROCgraph(OWGraph):
     def __init__(self, parent = None, name = None, title = ""):
         OWGraph.__init__(self, parent, name)
+
         self.setYRlabels(None)
         self.enableGridXB(0)
         self.enableGridYL(0)
@@ -58,6 +59,10 @@ class singleClassROCgraph(OWGraph):
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
         self.setAxisScale(QwtPlot.xBottom, -0.0, 1.0, 0)
         self.setAxisScale(QwtPlot.yLeft, -0.0, 1.0, 0)
+        self.setShowXaxisTitle(1)
+        self.setXaxisTitle("FP rate")
+        self.setShowYLaxisTitle(1)
+        self.setYLaxisTitle("TP rate")
         self.setShowMainTitle(1)
         self.setMainTitle(title)
         self.targetClass = 0
@@ -504,6 +509,14 @@ class singleClassROCgraph(OWGraph):
             for (cNum, threshold) in fscorelist:
                 s = "%1.3f %s" % (threshold, self.classifierNames[cNum])
                 py = py - 0.05
+                if py < 0.05:
+                    py = 0.05
+                if py > 1.0:
+                    py = 1.0
+                if px < 0.0:
+                    px = 0.0
+                if px > 0.8:
+                    px = 0.8
                 mkey = self.insertMarker(s)
                 self.marker(mkey).setXValue(px)
                 self.marker(mkey).setYValue(py)
@@ -568,7 +581,7 @@ class singleClassROCgraph(OWGraph):
         self.update()
 
     def sizeHint(self):
-        return QSize(170, 170)
+        return QSize(100, 100)
 
 class BalancedSpinBoxCallback:
     def __init__(self, widget, index, minp, maxp, maxsum):
@@ -870,25 +883,21 @@ class OWROC(OWWidget):
     def classSelectionChange(self):
         numOfClasseVisible = 0
         for i in range(self.classQLB.numRows()):
+            self.graphs[i].hide()
             if self.classQLB.isSelected(i):
                 numOfClasseVisible += 1
 
-        maxCol = int(round(math.sqrt(numOfClasseVisible)))
-        if maxCol == 0: maxCol = 1
-        maxRow = int(round(float(numOfClasseVisible)/ maxCol)) + 1
-        self.graphsGridLayoutQGL.expand(maxRow, maxCol)
-        curRow = 0
-        curCol = 0
+        max = 1
+        while max*max < numOfClasseVisible: max += 1
+
+        gcn = 0
         for i in range(self.classQLB.numRows()):
             if self.classQLB.isSelected(i):
-                self.graphsGridLayoutQGL.addWidget(self.graphs[i], curRow, curCol)
+                print gcn/max, gcn%max
+                self.graphsGridLayoutQGL.addWidget(self.graphs[i], gcn%max, gcn/max)
                 self.graphs[i].show()
-                curCol += 1
-                if curCol == maxCol:
-                    curCol = 0
-                    curRow += 1
-            else:
-                self.graphs[i].hide()
+                gcn += 1
+
     ##
 
     ## classifiers selection (classifiersQLB)
@@ -1049,8 +1058,9 @@ class OWROC(OWWidget):
             ## classQLB
             self.numberOfClasses = len(self.dres.classValues)
             self.graphs = []
+
             for i in range(self.numberOfClasses):
-                graph = singleClassROCgraph(self.mainArea, "", self.dres.classValues[i])
+                graph = singleClassROCgraph(self.mainArea, "", "cl: " + self.dres.classValues[i])
                 self.graphs.append( graph )
             self.classSelectionChange()
 
@@ -1107,4 +1117,5 @@ if __name__ == "__main__":
     owdm.show()
     a.exec_loop()
     owdm.saveSettings()
+
 

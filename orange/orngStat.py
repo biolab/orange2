@@ -35,7 +35,7 @@ def sqr(x):
 #### Utility
 
 def splitByIterations(res):
-    ress = [orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded) 
+    ress = [orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
             for i in range(res.numberOfIterations)]
     for te in res.results:
         ress[te.iterationNumber].results.append(te)
@@ -1093,3 +1093,4 @@ def legend2PiCTeX(file, legend, **options):
         file.close()
     file.close()
     del file
+
