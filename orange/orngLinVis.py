@@ -5,6 +5,7 @@
 # CVS Status: $Id$
 #
 # Author: Aleks Jakulin (jakulin@acm.org)
+# (Copyright (C)2004 Aleks Jakulin)
 #
 # Purpose: Visualize all linear models (NB, LogReg, linear SVM, perceptron, etc.).
 #
@@ -335,25 +336,6 @@ class _parseSVM(_parseLR):
         return (beta, coeffs, coeff_names, basis, m, _treshold)
 
 
-
-class _parseLR2(_parseLR):
-    def __call__(self,classifier,examples, buckets):
-        
-        beta = -classifier.beta[0]
-        coeffs = [x for x in classifier.beta[1:]]
-        dim = len(coeffs)
-        coeff_names = [[x.name,1.0] for x in classifier.domain.attributes]
-        basis = Numeric.identity(dim,Numeric.Float)
-
-        m = Numeric.zeros((len(examples),dim), Numeric.Float)
-        for i in xrange(len(examples)):
-            tex = orange.Example(classifier.domain,examples[i])
-            for j in xrange(dim):
-                m[i][j] = float(tex[j])
-
-        return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
-
-
 class _marginConverter:
     def __init__(self,estdomain,estimator):
         self.estdomain = estdomain
@@ -380,9 +362,7 @@ class _parseMargin(_parse):
 class Visualizer:
     def findParser(self, classifier):
         if type(classifier)==orange.BayesClassifier:
-            return _parseNB()
-        elif type(classifier)==orange.LogRegClassifier:
-            return _parseLR2()
+             return _parseNB()
         else:
             try:
                 name = classifier._name
@@ -463,7 +443,6 @@ class Visualizer:
         if getexamples:
             # coordinates of examples in the visualization
             self.example_c = [[h_dist[i]] for i in range(len(examples))]
-            self.m = m
 
         if dimensions > 1:
             # perform standardization of attributes; the pa
@@ -493,7 +472,7 @@ class Visualizer:
 
 
 if __name__== "__main__":
-    import orngLR, orngLR_Jakulin, orngSVM, orngMultiClass
+    import orngLR_Jakulin, orngSVM, orngMultiClass
 
     def printmodel(t,c,printexamples=1):
         m = Visualizer(t,c,buckets=3,getpies=1)
@@ -534,10 +513,7 @@ if __name__== "__main__":
                     if e[x] > 0.001:
                         print '\t%2.1f%% : '%(100*e[x]),m.coeff_names[i][0],'=',
                         if type(j)==type(1.0):
-                            try:
-                                print t[idx][m.coeff_names[i][0]] # continuous
-                            except:
-                                print m.m[idx][x]
+                            print t[idx][m.coeff_names[i][0]] # continuous
                         else:
                             print j # discrete
                     x += 1
@@ -574,11 +550,6 @@ if __name__== "__main__":
     print "\n\nLOGISTIC REGRESSION"
     print     "==================="
     c = orngLR_Jakulin.BasicLogisticLearner()(t)
-    printmodel(t,c,printexamples=0)
-
-    print "\n\nLOGISTIC REGRESSION (Martin)"
-    print     "==================="
-    c = orngLR.LogRegLearner(t)
     printmodel(t,c,printexamples=0)
 
     print "\n\nLINEAR SVM"

@@ -4,7 +4,8 @@
 #
 # CVS Status: $Id$
 #
-# Author: Aleks Jakulin (jakulin@acm.org)
+# Author: Aleks Jakulin (jakulin@acm.org) 
+# (Copyright (C)2004 Aleks Jakulin)
 #
 # Purpose: Dendrogram rendering for hierarchical clustering.
 #
@@ -28,6 +29,8 @@
 #   2004/02/16:
 #       - latent variable visualization
 #       - black&white dissimilarity matrix
+#   2004/03/17:
+#       - general matrix visualization
 
 
 import orngCluster
@@ -37,7 +40,9 @@ import piddle, piddlePIL, math
 
 def _colorize0(cc):
     #bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
-    #redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))    
+    #redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
+    cc = max(-50,cc)
+    cc = min(50,cc)
     bluefunc = lambda cc:1.0 / (1.0 + math.exp(-10*(cc-0.6)))
     redfunc = lambda cc:1.0 / (1.0 + math.exp(10*(cc-0.5)))
     cblu = bluefunc(cc)
@@ -294,11 +299,13 @@ class DendrogramPlot:
             # self.order identifies the label at a particular row
             idx = self.order[i]-1
             x = offset - labellen[idx] + lineskip/2
-            y = offset + lineskip*(i+1)
-            canvas.drawString(labels[idx], x, y+block,font=normal)
+            y = offset + lineskip*(i+2)
+            # horizontal
+            canvas.drawString(labels[idx], x, y,font=normal)
             x = offset + lineskip/2
-            y = offset + lineskip*(i+1)
-            canvas.drawString(labels[idx], y+block, x, angle=90,font=normal)
+            y = offset + lineskip*(i+2)
+            # vertical
+            canvas.drawString(labels[idx], y, x, angle=90,font=normal)
             for j in range(i):
                 idx2 = self.order[j]-1
                 colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])
@@ -314,6 +321,68 @@ class DendrogramPlot:
                 
         canvas.flush()
         return canvas
+
+
+def Matrix(self,labels, diss, vlabels=[], margin = 10, hook = 10, block = None, line_size = 2.0, canvas = None):
+    # prevent divide-by-zero...
+    if len(labels) < 2:
+        return canvas
+
+    ## ADJUST DIMENSIONS ###        
+
+    if canvas == None:
+        tcanvas = piddlePIL.PILCanvas()
+    else:
+        tcanvas = canvas
+
+    normal = piddle.Font(face="Courier")
+
+    if len(vlabels) == 0:
+        vlabels = labels # vertical labels...
+
+    # compute the height
+    lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
+    labellen = [tcanvas.stringWidth(s,font=normal) for s in labels]
+    vlabellen = [tcanvas.stringWidth(s,font=normal) for s in vlabels]
+    maxlabelx = max(labellen)
+    maxlabely = max(vlabellen)
+    width = int(1 + 2.0*margin + hook + maxlabelx + max(lineskip*(0.5+len(labels)) + tcanvas.fontHeight(normal),2*maxlabelx))
+    height = int(1 + 2.0*margin + hook + maxlabely + max(lineskip*(0.5+len(vlabels)) + tcanvas.fontHeight(normal),2*maxlabely))
+
+    if block == None:
+        block = lineskip/2-1
+
+    if canvas == None:
+        canvas = piddlePIL.PILCanvas(size=(width,height))
+
+    _colorize = _blackwhite
+
+    ### DRAWING ###
+            
+    offsetx = maxlabelx+margin
+    offsety = maxlabely+margin
+    halfline = canvas.fontAscent(normal)/2.0
+
+    # print names
+    for j in range(len(vlabels)):
+        x = offsetx + lineskip*(j+1)
+        y = offsety + lineskip/2
+        canvas.drawString(vlabels[j], x+block, y, angle=90,font=normal)
+
+    for i in range(len(labels)):
+        # self.order identifies the label at a particular row
+        x = offsetx - labellen[i] + lineskip/2
+        y = offsety + lineskip*(i+1)
+        canvas.drawString(labels[i], x, y+block,font=normal)
+        for j in range(len(vlabels)):
+            colo = _colorize(diss[i][j])
+            x = offset+hook+lineskip*(j+1)
+            y = offset+hook+lineskip*(i+1)
+            canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
+            
+    canvas.flush()
+    return canvas
+
 
 class GDHClustering(DendrogramPlot,orngCluster.DHClustering):
     pass

@@ -5,6 +5,7 @@
 # CVS Status: $Id$
 #
 # Author: Aleks Jakulin (jakulin@acm.org)
+# (Copyright (C)2004 Aleks Jakulin)
 #
 # Purpose: Dimension reduction
 #

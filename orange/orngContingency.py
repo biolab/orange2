@@ -5,6 +5,7 @@
 # CVS Status: $Id$
 #
 # Author: Aleks Jakulin (jakulin@acm.org)
+# (Copyright (C)2004 Aleks Jakulin)
 #
 # Purpose: Management of contingency tables and various heuristics.
 #          For performance reasons, handling of 2 and 3-way tables
@@ -203,7 +204,10 @@ class ContingencyTable2:
 
     def JaccardInteraction(self):
         c = Entropy(self.m)
-        return (Entropy(self.a)+Entropy(self.b)-c)/c
+        if c > 0:
+            return (Entropy(self.a)+Entropy(self.b)-c)/c
+        else:
+            return 0
 
     def Divergence(self,x,y):
         ptrue = self.pm[x,y]

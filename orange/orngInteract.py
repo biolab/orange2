@@ -5,6 +5,7 @@
 # CVS Status: $Id$
 #
 # Author: Aleks Jakulin (jakulin@acm.org)
+# (Copyright (C)2004 Aleks Jakulin)
 #
 # Purpose: Analysis of dependencies between attributes given the class.
 #          3-WAY INTERACTIONS
@@ -27,6 +28,8 @@
 #   - 2004/01/31:
 #       removed adhoc stats-gathering code in favor of the orngContingency module
 #       added p-value estimates
+#   - 2004/03/24:
+#       fixed an ugly bug in dep-dissimilarity matrix processing
 
 import orange
 import orngContingency, Numeric
@@ -680,7 +683,7 @@ class InteractionMatrix:
             for y in sett:
                 t = self.corr[(y,x)]
                 if jaccard:
-                    l = self.ents[(x,)]+self.ents[(y,)]-t
+                    l = self.ents[(y,x)]
                     if l > 1e-6:
                         t /= l
                 if color_coding:
@@ -721,7 +724,7 @@ class InteractionMatrix:
                     if xx == self.NA:
                         xx = -1
                     t = self.corr[(yy,xx)]
-                    l = self.ents[(xx,)]+self.ents[(yy,)]-t
+                    l = self.ents[(yy,xx)]
                     if l > 1e-6:
                         t /= l
                     sum += t
