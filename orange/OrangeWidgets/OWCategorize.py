@@ -186,9 +186,9 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
                 self.removedAtt.append(i.name)
 
         attrlist.append(self.catData.domain.classVar)
-        self.catData.select(attrlist)
+        self.newData = self.catData.select(attrlist)
 
-        self.odata = OrangeData(self.catData)
+        self.odata = OrangeData(self.newData)
         self.send("cdata", self.odata)
         self.setTable()
 
