@@ -223,6 +223,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
 
    
 def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **argkw):
+    
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 1)
     storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
@@ -233,6 +234,8 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
 
     if not examples:
         raise SystemError, "no examples"
+    if not examples.domain.classVar:
+        raise "Datasets has no class attribute"
     
 ##    for pp in pps:
 ##        if pp[0]!="L":
