@@ -433,7 +433,7 @@ class Visualizer:
         if getexamples or getpies or dimensions > 1:
             # project the example matrix on the separating hyperplane, removing the displacement
             h_dist = Numeric.dot(m,n)
-            h_proj = m - Numeric.dot(Numeric.reshape(h_dist,(len(examples),1)),Numeric.reshape(n,(1,len(coeffs))))
+            h_proj = m - Numeric.dot(Numeric.reshape(h_dist,(len(examples),1)),Numeric.reshape(n,(1,len(coeffs))))/Numeric.dot(n,n)
             h_dist -= beta # correct distance
 
         # perform classification for all examples
@@ -455,7 +455,7 @@ class Visualizer:
                 self.pies.append((evidence0,evidence1,projj))
 
         basis_dist = Numeric.dot(basis,n)
-        basis_proj = basis - Numeric.dot(Numeric.reshape(basis_dist,(len(coeffs),1)),Numeric.reshape(n,(1,len(coeffs))))
+        basis_proj = basis - Numeric.dot(Numeric.reshape(basis_dist,(len(coeffs),1)),Numeric.reshape(n,(1,len(coeffs))))/Numeric.dot(n,n)
         basis_dist -= beta
 
         # coordinates of the basis vectors in the visualization
