@@ -116,7 +116,8 @@ class WidgetsToXML:
 		text = data[result.start():result.end()]
 		text = text[text.index("[")+1:text.index("]")]
 		text= text.replace('"',"'")
-		inputs = re.findall("\(.*?\)", text)
+		#inputs = re.findall("\(.*?\)", text)
+		inputs = re.findall("\(.*?[\"\'].*?[\"\'].*?\)", text)
 		inputList = []
 		for input in inputs:
 			inputList.append(self.GetAllValues(input))
