@@ -299,11 +299,11 @@ class DendrogramPlot:
             # self.order identifies the label at a particular row
             idx = self.order[i]-1
             x = offset - labellen[idx] + lineskip/2
-            y = offset + lineskip*(i+2)
+            y = offset + lineskip*(i+1.5)
             # horizontal
             canvas.drawString(labels[idx], x, y,font=normal)
             x = offset + lineskip/2
-            y = offset + lineskip*(i+2)
+            y = offset + lineskip*(i+1.5)
             # vertical
             canvas.drawString(labels[idx], y, x, angle=90,font=normal)
             for j in range(i):
