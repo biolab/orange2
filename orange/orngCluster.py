@@ -7,7 +7,14 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
 # Version 1.7 (11/10/2002)
+#
+# ChangeLog:
+#   2004/4/32 (peter.juvan@fri.uni-lj.si)
+#       - added BIC score for MClustering and DMClustering (requires input vectors)
+#       - added conversion functions: diss ragged list <-> Numeric.array
+#       - fixed bug: DMClustering for k = len(diss) + 1
 
+import math, Numeric, statc
 import orngCRS
 
 class HClustering:
@@ -159,7 +166,11 @@ class MClustering:
                 self.medoids = range(1,self.n+1)
                 self.cdisp = [0]*self.n
                 self.disp = 0
-                self.values = distrlist
+        self.values = distrlist
+        self.metric = metric
+
+    def bic(self):
+        return _bic(self.values, self.mapping, self.medoids, self.k)
 
 class FClustering:
 #
@@ -219,24 +230,27 @@ class DHClustering(HClustering):
 class DMClustering:
 #
 #
-    def __init__(self, diss,k):
-        if len(diss) <= k-1: #len = 1 if two elements ---- then k can be 2 or less
-                self.n = len(distrlist)+1
-                self.k = self.n
-                self.mapping = range(1,self.n+1)
-                self.medoids = range(1,self.n+1)
-                self.cdisp = [0]*self.n
-                self.disp = 0
-                self.values = distrlist
-        else:
-                (a,b,c,d,e,f) = orngCRS.DMCluster(diss,k)
-                self.n = a
-                self.k = b
-                self.mapping = c
-                self.medoids = d 
-                self.cdisp = e
-                self.disp = f
+        def __init__(self, diss,k):
+                if len(diss) <= k-1: #len = 1 if two elements ---- then k can be 2 or less
+                        self.n = len(diss)+1
+                        self.k = self.n
+                        self.mapping = range(1,self.n+1)
+                        self.medoids = range(1,self.n+1)
+                        self.cdisp = [0]*self.n
+                        self.disp = 0
+                        self.values = diss
+                else:
+                        (a,b,c,d,e,f) = orngCRS.DMCluster(diss,k)
+                        self.n = a
+                        self.k = b
+                        self.mapping = c
+                        self.medoids = d 
+                        self.cdisp = e
+                        self.disp = f
+                self.diss = diss
 
+        def bic(self, distrlist):
+                return _bic(distrlist, self.mapping, self.medoids, self.k)
 
 class DFClustering:
     def __init__(self, diss,k):
@@ -253,3 +267,89 @@ class DFClustering:
         self.mapping = f
         self.cdisp = g
         self.disp = h
+
+
+def bicMC(distrlist, mc):
+        assert issubclass(mc.__class__, MClustering) or issubclass(mc.__class__, DMClustering), "mc: MClustering or DMClustering instance expected"
+        return _bic(distrlist, mc.mapping, mc.medoids, mc.k)
+
+def _bic(distrlist, mapping, medoids, K):
+        """returns Bayesian Information Criteria score of the clustering
+        WARNING: cannot evaluate BIC for K == len(distrlist), that is each element represents a cluster
+        """
+        mapping0 = [m-1 for m in mapping]       # fix indices
+        medoids0 = [m-1 for m in medoids]       # fix indices
+        M = len(distrlist[0])                   # number of dimensions
+        R = len(distrlist) * 1.                 # number of input vectors
+##        print mapping0, medoids0, K, M, R
+        numFreePar = (M+1) * K * math.log(R, 2) / 2
+        Ri = [0] * K
+        sumdiffsq = {}
+        s2 = 0                                  # max. likelihood of the variance: sigma**2
+        for i,c in enumerate(mapping0):
+            Ri[c] += 1
+            xsumdiffsq = statc.sumdiffsquared(distrlist[i], distrlist[medoids0[c]])
+##            print xsumdiffsq, "\t", i, c, medoids0[c]
+##            print distrlist[i], distrlist[medoids0[c]]
+            s2 += xsumdiffsq
+            sumdiffsq[i] = xsumdiffsq
+        s2 = s2 / (R - K)
+## overflow        logf = R * math.log(pow(2. * math.pi, -0.5) * pow(s2, M / -2.), 2)
+        # log-likelihood of the vectors = ld + logf
+        logf = R * (-0.5*math.log(2.*math.pi,2) + M/-2.*math.log(s2,2))         # sigma**(-M) == sigma**2**(-M/2)
+        ld = 0                                  
+        for i,c in enumerate(mapping0):
+            ld += math.log(Ri[c] / R, 2) - sumdiffsq[i] / (2 * s2)
+        return ld + logf - numFreePar
+
+
+def _fixIndices0(indList):
+    """is there any special not to start indices with 0?"""
+    return [x-1 for x in indList]
+
+
+def _fixMCResults0(mc):
+        """ before: medoid value of vector i = distrlist[MCluster.medoids[MCluster.mapping[i] - 1] - 1]
+            after:  medoid value of vector i = distrlist[MCluster.medoids[MCluster.mapping[i]]]
+        """
+        mc.mapping = [m-1 for m in mc.mapping]
+        mc.medoids = [m-1 for m in mc.medoids]
+        
+
+
+def mtrx2raggedList(mtrx, startEmpty=False):
+    """convert a square matrix (2d array) to bottom triangular ragged list
+    elements are taken from the bottom part of the matrix
+    ragged list equals to distrlist in ?Cluster
+    optional empty list at the begining (statEmpty=True)
+    """
+    rl = [line.tolist()[:i] for i,line in enumerate(mtrx)]
+    if startEmpty:
+        return rl
+    else:
+        return rl[1:]
+
+
+def raggedList2mtrx(raggedList):
+    """convert a bottom triangular ragged list (with optional empty list at the beginning) to a square matrix"""
+    if len(raggedList[0]) == 0:
+        raggedList = raggedList[1:]
+    rlLen = len(raggedList) + 1
+    m = Numeric.zeros((rlLen,rlLen), Numeric.Float)
+    idx = 0
+    for lst in raggedList:
+        idx += 1
+        m[idx, :idx] = Numeric.array(lst, Numeric.Float)
+        m[:idx, idx] = Numeric.array(lst, Numeric.Float)
+    return m
+
+
+if __name__ == "__main__":
+        import RandomArray
+        vecta1 = RandomArray.random((10,2))
+        vect1 = vecta1.tolist()
+        K = 8
+        mcm = orngCluster.MClustering(vect1,k=K,metric=2)
+        mce = orngCluster.MClustering(vect1,k=K,metric=1)
+        print mcm.bic()
+        print mce.bic()
