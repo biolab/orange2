@@ -61,9 +61,7 @@ for f in `cat orange/exclude.lst`; do
   rm $f
 done
 
-## rm orange/OrangeWidgets/Visualize/OWLinVizGraph.py
-## rm orange/c45.dll
-
+rm orange/*.pyd ## no need for windows files
 
 ## after compiling orange, move it out of the path and into the orange directory
 cp compiledOrange/*.so orange
