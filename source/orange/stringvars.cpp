@@ -99,7 +99,7 @@ bool TStringVariable::nextValue(TValue &) const
 }
 
 
-TValue TStringVariable::randomValue(const int &rand) const
+TValue TStringVariable::randomValue(const int &rand)
 { return TValue(mlnew TStringValue("")); }
 
 

@@ -624,6 +624,34 @@ PyObject *C45Learner_commandline(PyObject *self, PyObject *args) PYARGS(METH_VAR
   PyCATCH
 }
 
+C_NAMED(C45TreeNode, Orange, "")
+
+PC45TreeNodeList PC45TreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::P_FromArguments(arg); }
+PyObject *C45TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_FromArguments(type, arg); }
+PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_new(type, arg, kwds); }
+PyObject *C45TreeNodeList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_getitem(self, index); }
+int       C45TreeNodeList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_setitem(self, index, item); }
+PyObject *C45TreeNodeList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_getslice(self, start, stop); }
+int       C45TreeNodeList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_setslice(self, start, stop, item); }
+int       C45TreeNodeList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_len(self); }
+PyObject *C45TreeNodeList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_richcmp(self, object, op); }
+PyObject *C45TreeNodeList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_concat(self, obj); }
+PyObject *C45TreeNodeList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_repeat(self, times); }
+PyObject *C45TreeNodeList_str(TPyOrange *self) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_str(self); }
+PyObject *C45TreeNodeList_repr(TPyOrange *self) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_str(self); }
+int       C45TreeNodeList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_contains(self, obj); }
+PyObject *C45TreeNodeList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(C45TreeNode) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_append(self, item); }
+PyObject *C45TreeNodeList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> int") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_count(self, obj); }
+PyObject *C45TreeNodeList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> C45TreeNodeList") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_filter(self, args); }
+PyObject *C45TreeNodeList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> int") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_index(self, obj); }
+PyObject *C45TreeNodeList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_insert(self, args); }
+PyObject *C45TreeNodeList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_native(self); }
+PyObject *C45TreeNodeList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> C45TreeNode") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_pop(self, args); }
+PyObject *C45TreeNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_remove(self, obj); }
+PyObject *C45TreeNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_reverse(self); }
+PyObject *C45TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_sort(self, args); }
+
+
 #endif
 
 /************* kNN ************/

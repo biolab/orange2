@@ -1039,7 +1039,11 @@ inline PPreprocessor pp_sameValues(PyObject *dict, PDomain dom)
 }
 
 inline PFilter filter_sameValues(PyObject *dict, PDomain domain, PyObject *kwds = PYNULL)
-{ PFilter filter = TPreprocessor_take::constructFilter(sameValuesMap(dict, domain), domain); 
+{ PVariableFilterMap svm = sameValuesMap(dict, domain);
+  if (!svm)
+    return PFilter();
+
+  PFilter filter = TPreprocessor_take::constructFilter(svm, domain); 
   PyObject *pyneg = kwds ? PyDict_GetItemString(kwds, "negate") : NULL;
   filter->negate = pyneg && PyObject_IsTrue(pyneg);
   return filter;
@@ -2973,7 +2977,7 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
     PExampleGenerator egen;
 
     PyObject *pyweight = NULL;
-    if (!PyArg_ParseTuple(targs, "O&|i", pt_ExampleGenerator, &egen, &pyweight)) {
+    if (!PyArg_ParseTuple(targs, "O&|O", pt_ExampleGenerator, &egen, &pyweight)) {
       PyErr_Clear();
       if (!PyArg_ParseTuple(targs, "(O&|i)", pt_ExampleGenerator, &egen, &pyweight))
         PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);

@@ -383,9 +383,12 @@ bool TExampleTable::remove(TExampleIterator &it)
 
 bool TExampleTable::randomExample(TExample &ex)
 {
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator();
+
   if (!size())
     return 0;
-  ex = operator[](LOCAL_OR_GLOBAL_RANDOM.randint(size()));
+  ex = operator[](randomGenerator->randint(size()));
   return true;
 }
 

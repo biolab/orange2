@@ -41,22 +41,19 @@ public:
   PRandomGenerator randomGenerator;
 
   rsrgen(const int &seed)
-    : randomGenerator(seed>=0 ? PRandomGenerator(mlnew TRandomGenerator((unsigned long)(seed))) 
-                              : globalRandom)
-    {}
+  : randomGenerator(PRandomGenerator(mlnew TRandomGenerator((unsigned long)(seed>=0 ? seed : 0))))
+  {}
 
   rsrgen(PRandomGenerator rgen)
-    : randomGenerator(rgen ? rgen : globalRandom)
-    {}
+  : randomGenerator(rgen ? rgen : PRandomGenerator(mlnew TRandomGenerator()))
+  {}
 
   rsrgen(PRandomGenerator rgen, const int &seed)
-    : randomGenerator(rgen ? rgen : 
-                             ((seed>=0) ? PRandomGenerator(mlnew TRandomGenerator((unsigned long)(seed)))
-                                        : globalRandom))
-    {}
+  : randomGenerator(rgen ? rgen : PRandomGenerator(mlnew TRandomGenerator((unsigned long)(seed>=0 ? seed : 0))))
+  {}
 
   int operator()(int n)
-    { return randomGenerator->randint(n); }
+  { return randomGenerator->randint(n); }
 };
 
 

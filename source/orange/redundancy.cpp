@@ -254,6 +254,8 @@ PDomain TRemoveRedundantByQuality::operator()
     PDomain retDomain;
     try {
 
+      TSimpleRandomGenerator srgen(0);
+
       float bestM = -1.0;
       do {
         int bestAttr = -1, wins=0, attrNo=0;
@@ -264,7 +266,7 @@ PDomain TRemoveRedundantByQuality::operator()
               || find(suspicious->begin(), suspicious->end(), *vi)!=suspicious->end()) {
             float thisM = measure->operator ()(attrNo, PExampleGenerator(*newGen), PDistribution(), weightID);
             if (   (!wins || (thisM <bestM)) && ((wins=1)==1)
-                || (thisM==bestM) && _globalRandom->randbool(++wins)) {
+                || (thisM==bestM) && srgen.randbool(++wins)) {
               bestAttr = attrNo; 
               bestM = thisM; 
             }

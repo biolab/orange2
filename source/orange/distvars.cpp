@@ -147,7 +147,7 @@ NOT_IMPLEMENTED("addint(int, float)")
 void TDistribution::setint(const int &, const float &)
 NOT_IMPLEMENTED("add(int, float)")
 
-int TDistribution::randomInt() const
+int TDistribution::randomInt()
 NOT_IMPLEMENTED("randomInt()")
 
 int TDistribution::highestProbIntIndex() const
@@ -179,7 +179,7 @@ NOT_IMPLEMENTED("addfloat(float, float)")
 void TDistribution::setfloat(const float &, const float &)
 NOT_IMPLEMENTED("add(float, float)")
 
-float TDistribution::randomFloat() const
+float TDistribution::randomFloat()
 NOT_IMPLEMENTED("randomFloat()")
 
 float TDistribution::highestProbFloatIndex() const
@@ -302,7 +302,7 @@ TValue TDistribution::highestProbValue(const TExample &exam) const
 }
 
 
-TValue TDistribution::randomValue() const
+TValue TDistribution::randomValue()
 { if (supportsDiscrete)
     return TValue(randomInt());
   else if (supportsContinuous)
@@ -769,8 +769,7 @@ int TDiscDistribution::highestProbIntIndex(const TExample &exam) const
   if (wins==1)
     return best;
 
-  int sumex = exam.sumValues();
-  wins = 1 + (sumex ? sumex : _globalRandom->randlong()) % wins;
+  wins = 1 + exam.sumValues() % wins;
 
   i = 0;    
   while (wins)
@@ -802,8 +801,12 @@ bool TDiscDistribution::noDeviation() const
 }
   
 
-int TDiscDistribution::randomInt() const
-{ float ri = _globalRandom->randfloat(abs);
+int TDiscDistribution::randomInt()
+{ 
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator;
+
+  float ri = randomGenerator->randfloat(abs);
   const_iterator di(begin());
   while (ri > *di)
     ri -= *(di++);
@@ -1103,13 +1106,18 @@ void TContDistribution::normalize()
 }
 
 
-float TContDistribution::randomFloat() const
-{ float ri = _globalRandom->randfloat(abs);
+float TContDistribution::randomFloat()
+{
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator;
+
+  float ri = randomGenerator->randfloat(abs);
   const_iterator di(begin());
   while (ri > (*di).first)
     ri -= (*(di++)).first;
   return (*di).second;
 }
+
 
 float TContDistribution::p(const float &x) const
 { const_iterator rb = upper_bound(x);
@@ -1178,8 +1186,13 @@ float TGaussianDistribution::highestProb() const
 { return abs * 1/(sigma * sqrt(2*pi)); }
 
 
-float TGaussianDistribution::randomFloat() const
-{ return (float)gasdev((double)mean, (double)sigma, *_globalRandom); }
+float TGaussianDistribution::randomFloat()
+{  
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator;
+
+  return (float)gasdev((double)mean, (double)sigma, randomGenerator.getReference());
+}
 
 
 float TGaussianDistribution::p(const float &x) const

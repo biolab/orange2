@@ -43,7 +43,8 @@ WRAPPER(Variable)
 WRAPPER(Distribution)
 WRAPPER(DiscDistribution)
 WRAPPER(ContDistribution)
-WRAPPER(ExampleGenerator);
+WRAPPER(ExampleGenerator)
+WRAPPER(RandomGenerator)
 
 class TExample;
 
@@ -63,6 +64,8 @@ public:
 
   bool supportsDiscrete; //PR distribution supports discrete interface
   bool supportsContinuous; //PR distribution supports continuous interface
+
+  PRandomGenerator randomGenerator; //P random generator; initialized when needed, if not given earlier
 
   TDistribution();
   TDistribution(PVariable var);
@@ -91,7 +94,7 @@ public:
   virtual int   highestProbIntIndex() const;
   virtual int   highestProbIntIndex(const long &) const;
   virtual int   highestProbIntIndex(const TExample &) const;
-  virtual int   randomInt() const;
+  virtual int   randomInt();
   virtual float p(const int &) const;
   virtual int   noOfElements() const;
 
@@ -103,7 +106,7 @@ public:
   virtual void  addfloat(const float &v, const float &w = 1.0);
   virtual void  setfloat(const float &v, const float &w);
   virtual float highestProbFloatIndex() const;
-  virtual float randomFloat() const;
+  virtual float randomFloat();
   virtual float average() const;
   virtual float dev() const;
   virtual float var() const;
@@ -130,7 +133,7 @@ public:
   virtual TValue highestProbValue() const;
   virtual TValue highestProbValue(const long &random) const;
   virtual TValue highestProbValue(const TExample &random) const;
-  virtual TValue randomValue() const;
+  virtual TValue randomValue();
   virtual float p(const TValue &) const;
 
   virtual float operator -  (const TSomeValue &v) const;
@@ -191,7 +194,7 @@ public:
   virtual int   highestProbIntIndex(const long &) const;
   virtual int   highestProbIntIndex(const TExample &) const;
   virtual float highestProb() const;
-  virtual int   randomInt() const;
+  virtual int   randomInt();
   virtual bool  noDeviation() const;
 };
 
@@ -236,7 +239,7 @@ public:
   virtual void  normalize();
   virtual float highestProbFloatIndex() const;
   virtual float highestProb() const;
-  virtual float randomFloat() const;
+  virtual float randomFloat();
   virtual bool  noDeviation() const;
 };
 
@@ -260,7 +263,7 @@ public:
   virtual void  normalize();
   virtual float highestProbFloatIndex() const;
   virtual float highestProb() const;
-  virtual float randomFloat() const;
+  virtual float randomFloat();
 
   virtual float p(const float &) const;
   virtual bool  noDeviation() const;

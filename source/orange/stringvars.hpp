@@ -59,7 +59,7 @@ public:
 
   virtual bool firstValue(TValue &val) const;
   virtual bool nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand) const;
+  virtual TValue randomValue(const int &rand);
 
   virtual int  noOfValues() const;
 

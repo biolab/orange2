@@ -242,7 +242,7 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
 
   if (proportions)
     PITERATE(TVariableFloatMap, vi, proportions) {
-      const TVariable &var = (*vi).first.getReference();
+      TVariable &var = (*vi).first.getReference();
       const int idx = domain.getVarNum((*vi).first);
       if ((*vi).second > 0.0) {
         PLongList rind = makerind(n, 1 - (*vi).second);
@@ -264,7 +264,7 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
     const vector<bool>::const_iterator bb(attributeUsed.begin()), be(attributeUsed.end());
     for(vector<bool>::const_iterator bi(bb); bi != be; bi++, vi++, idx++)
       if (!*bi) {
-        const TVariable &var = (*vi).getReference();
+        TVariable &var = (*vi).getReference();
         PLongList rind = makerind(n, 1 - defaultProportion);
 
         int eind = 0;
@@ -428,7 +428,7 @@ PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen,
     TMakeRandomIndices2 mri2;
     PLongList rind(mri2(table->size(), 1-proportion));
 
-    const TVariable &classVar = table->domain->classVar.getReference();
+    TVariable &classVar = table->domain->classVar.getReference();
     int eind = 0;
     PITERATE(TLongList, ri, rind) {
       if (*ri)

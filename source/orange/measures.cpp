@@ -349,6 +349,11 @@ float TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dva
 void TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval, float &ccost, TValue &cclass)
 { checkProperty(cost);
 
+  int sum = 0;
+  const_ITERATE(TDiscDistribution, di, dval)
+    sum += *(const long *)(&*di);
+  TSimpleRandomGenerator srgen(sum);
+
   ccost=numeric_limits<float>::max();
   int wins=0, bestPrediction;
   int dsize = dval.size();
@@ -359,7 +364,7 @@ void TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval
 
     thisCost /= dval.abs;
     if (   (thisCost<ccost) && ((wins=1)==1)
-        || (thisCost==ccost) && _globalRandom->randbool(++wins)) {
+        || (thisCost==ccost) && srgen.randbool(++wins)) {
       bestPrediction = predicted;
       ccost = thisCost; 
     }

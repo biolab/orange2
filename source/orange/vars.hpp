@@ -40,8 +40,7 @@ class TDistribution;
 WRAPPER(Domain);
 WRAPPER(ExampleGenerator)
 WRAPPER(Classifier);
-WRAPPER(Learner);
-
+WRAPPER(RandomGenerator);
 
 #include "getarg.hpp"
 #include "stladdon.hpp"
@@ -62,6 +61,8 @@ public:
   int  varType; //P variable type
   bool ordered; //P variable values are ordered
   bool distributed; //P variable values are distributions
+
+  PRandomGenerator randomGenerator; //P random generator for random values (initialized when first needed)
 
   PVariable sourceVariable; //P The attribute that this attribute is computed from (when applicable)
   PClassifier getValueFrom; //P Function to compute the value from values of other variables
@@ -84,7 +85,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const =0;
   virtual bool   nextValue(TValue &val) const =0;
-  virtual TValue randomValue(const int &rand=-1) const =0;
+  virtual TValue randomValue(const int &rand=-1) =0;
 
   // Returns the number of different values, -1 if it cannot be done (for example, if variable is continuous)
   virtual int  noOfValues() const =0;
@@ -116,7 +117,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1) const;
+  virtual TValue randomValue(const int &rand=-1);
 
   virtual int  noOfValues() const;
 
@@ -140,7 +141,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1) const;
+  virtual TValue randomValue(const int &rand=-1);
 
   virtual int noOfValues() const;
 
@@ -164,7 +165,7 @@ public:
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;
-  virtual TValue randomValue(const int &rand=-1) const;
+  virtual TValue randomValue(const int &rand=-1);
 
   virtual int  noOfValues() const;
  

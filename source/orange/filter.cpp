@@ -47,15 +47,19 @@ void TFilter::reset()
 {}
 
 // Sets the maxrand field to RAND_MAX*ap
-TFilter_random::TFilter_random(const float ap, bool aneg, PDomain dom)
-: TFilter(aneg, dom),
-  prob(ap) 
+TFilter_random::TFilter_random(const float ap, bool aneg, PRandomGenerator rgen)
+: TFilter(aneg, PDomain()),
+  prob(ap),
+  randomGenerator(rgen ? rgen : PRandomGenerator(mlnew TRandomGenerator()))
 {};
 
 // Chooses an example (returns true) if rand()<maxrand; example is ignored
 bool TFilter_random::operator()(const TExample &)
 {
-  return (LOCAL_OR_GLOBAL_RANDOM.randfloat()<prob)!=negate;
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator;
+
+  return (randomGenerator->randfloat()<prob)!=negate;
 }
 
 

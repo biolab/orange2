@@ -37,6 +37,8 @@
 #undef IGNORE
 #endif
 
+DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
+
 //#include "../../external/c45/c45.h"
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 
@@ -60,19 +62,17 @@ Boolean *rAllKnown;
 ItemNo **rTargetClassFreq;
 
 int (*rSoftenThresh)(Tree);
-int (*rReleaseTree)(Tree);
-ClassNo (*rCategory)(Description, Tree);
-int (*rClassify)(Description, Tree, double);
 Tree (__cdecl *rFormTree)(ItemNo, ItemNo);
 
 Tree (__cdecl *rCopyTree)(Tree);
 Tree (*rIterate)(ItemNo, ItemNo);
 Boolean (__cdecl *rPrune)(Tree);
-int (__cdecl *rPrintTree)(Tree);
 int (__cdecl *rFormTarget)(ItemNo), (*rFormInitialWindow)();
 
 int (__cdecl *rInitialiseTreeData)();
 int (__cdecl *rInitialiseWeights)();
+
+void (*rReleaseTree)(Tree Node, bool clearSubsets = true);
 
 
 #define ClassSum (*rClassSum)
@@ -105,15 +105,12 @@ int (__cdecl *rInitialiseWeights)();
 #define TargetClassFreq (*rTargetClassFreq)
 
 #define SoftenThresh (*rSoftenThresh)
-#define ReleaseTree (*rReleaseTree)
-#define Category (*rCategory)
-#define Classify (*rClassify)
 #define FormTree (*rFormTree)
 
 #define CopyTree (*rCopyTree)
+#define ReleaseTree (*rReleaseTree)
 #define Iterate (*rIterate)
 #define Prune (*rPrune)
-#define PrintTree (*rPrintTree)
 #define FormTarget (*rFormTarget)
 #define FormInitialWindow (*rFormInitialWindow)
 #define InitialiseTreeData (*rInitialiseTreeData)
@@ -172,8 +169,8 @@ void loadC45()
 
   COPY(Pruned, 23);            COPY(Raw, 24);                COPY(AllKnown, 25);         COPY(TargetClassFreq, 26);
   
-  COPY(SoftenThresh, 27);      COPY(ReleaseTree, 28);        COPY(Category, 29);         COPY(Classify, 30);        COPY(FormTree, 31);
-  COPY(CopyTree, 32);          COPY(Iterate, 33);            COPY(Prune, 34);            COPY(PrintTree, 35);       COPY(FormTarget, 36);
+  COPY(SoftenThresh, 27);      COPY(ReleaseTree, 28);        /* was: Category, 29 */     /* was: Classify, 30 */    COPY(FormTree, 31);
+  COPY(CopyTree, 32);          COPY(Iterate, 33);            COPY(Prune, 34);            /* was: PrintTree, 35 */   COPY(FormTarget, 36);
   COPY(FormInitialWindow, 37); COPY(InitialiseTreeData, 38); COPY(InitialiseWeights, 39);
   #undef COPY
   
@@ -185,14 +182,10 @@ void loadC45()
 extern "C" {
   short BestTree();
   int OneTree(), SoftenThresh(Tree);
-  int ReleaseTree(Tree);
-  ClassNo Category(Description, Tree);
-  int Classify(Description, Tree, double);
 
   Tree FormTree(ItemNo, ItemNo);
   Tree CopyTree(Tree), Iterate(ItemNo, ItemNo);
   Boolean Prune(Tree);
-  int PrintTree(Tree);
   int FormTarget(ItemNo), FormInitialWindow();
 
   int InitialiseTreeData();
@@ -506,10 +499,9 @@ void O_OneTree()
 
     AllKnown = true;
     Raw[0] = FormTree(0, MaxItem);
-    C45DEBUG(PrintTree(Raw[0]);)
 
     Pruned[0] = CopyTree(Raw[0]);
-    C45DEBUG(if ( Prune(Pruned[0]) ) PrintTree(Pruned[0]);)
+    Prune(Pruned[0]);
 }
 
 
@@ -536,10 +528,9 @@ short O_BestTree()
     ForEach(t, 0, TRIALS-1 ) {
         FormInitialWindow();
         Raw[t] = Iterate(WINDOW, INCREMENT);
-        C45DEBUG(PrintTree(Raw[t]);)
 
         Pruned[t] = CopyTree(Raw[t]);
-        C45DEBUG(if ( Prune(Pruned[t]) ) PrintTree(Pruned[t]);)
+        Prune(Pruned[t]);
 
         if ( Pruned[t]->Errors < Pruned[Best]->Errors )
           Best = t;
@@ -547,7 +538,6 @@ short O_BestTree()
 
     return Best;
 }
-
 
 
 PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
@@ -570,17 +560,15 @@ PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
     if ( PROBTHRESH )
       SoftenThresh((prune ? Pruned : Raw)[Best]);
 
-    PClassifier c45classifier = mlnew TC45Classifier(gen->domain, (prune ? Pruned : Raw)[Best]);
+    PC45TreeNode root = mlnew TC45TreeNode((prune ? Pruned : Raw)[Best], gen->domain);
+    PClassifier c45classifier = mlnew TC45Classifier(gen->domain->classVar, root);
 
     Tree *Prunedi = Pruned;
     Tree *Rawi = Raw;
-    for(int tr=0; tr!=TRIALS; tr++, Prunedi++, Rawi++)
-      if (tr!=Best) {
-        ReleaseTree(*Prunedi);
-        ReleaseTree(*Rawi);
-      }
-      else
-        ReleaseTree(prune ? *Rawi : *Prunedi);
+    for(int tr=0; tr!=TRIALS; tr++, Prunedi++, Rawi++) {
+      ReleaseTree(*Rawi);
+      ReleaseTree(*Prunedi, false);
+    }
 
     mldelete Raw;
     Raw = NULL;
@@ -594,51 +582,172 @@ PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
 
 
 
-TC45Classifier::TC45Classifier(PDomain adom, Tree atree)
-  : TClassifierFD(adom), domainVersion(adom->version), tree(atree)
-  {}
+TC45TreeNode::TC45TreeNode()
+: nodeType(4),
+  leaf(TValue::INTVAR),
+  items(-1),
+  classDist(),
+  tested(),
+  cut(0),
+  lower(0),
+  upper(0),
+  mapping(),
+  branch()
+{}
+
+
+TC45TreeNode::TC45TreeNode(const Tree &node, PDomain domain)
+: nodeType(node->NodeType),
+  leaf(TValue(node->Leaf)),
+  items(node->Items),
+  classDist(mlnew TDiscDistribution(domain->classVar)),
+  tested(domain->attributes->operator[](node->Tested)),
+  cut(node->Cut),
+  lower(node->Lower),
+  upper(node->Upper),
+  mapping(),
+  branch()
+{ 
+  double *cd = node->ClassDist; // no +1
+  int i, e;
+  for(i = 0, e = domain->classVar.AS(TEnumVariable)->values->size(); i!=e; i++, cd++)
+    classDist->setint(i, float(*cd));
+
+  if (nodeType != Leaf) {
+    branch = mlnew TC45TreeNodeList;
+    Tree *bi = node->Branch+1;
+    for(i = node->Forks; i--; bi++)
+      branch->push_back(mlnew TC45TreeNode(*bi, domain));
+  }
+
+  if (nodeType == Subset) {
+    int ve = tested.AS(TEnumVariable)->values->size();
+    mapping = mlnew TIntList(ve, -1);
+    char **si = node->Subset+1;
+    for(i = 0, e = node->Forks; i!=e; si++, i++)
+      for(int vi = 0; vi<ve; vi++)
+        if (In(vi+1, *si))
+          mapping->operator [](vi) = i;
+  }
+}
 
 
 
-TC45Classifier::~TC45Classifier()
-{ ReleaseTree(tree); }
+PDiscDistribution TC45TreeNode::vote(const TExample &example, PVariable classVar)
+{
+  PDiscDistribution res = mlnew TDiscDistribution(classVar);
+  PITERATE(TC45TreeNodeList, bi, branch) {
+    PDiscDistribution vote = (*bi)->classDistribution(example, classVar);
+    vote->operator *= ((*bi)->items);
+    res->operator += (vote);
+  }
+  res->operator *= (1.0/items);
+  return res;       
+}
 
+
+#undef min
+
+PDiscDistribution TC45TreeNode::classDistribution(const TExample &example, PVariable classVar)
+{
+  if (nodeType == Leaf) {
+    if (items > 0) {
+      PDiscDistribution res = CLONE(TDiscDistribution, classDist);
+      res->operator *= (1.0/items);
+      return res;
+    }
+    else {
+      PDiscDistribution res = mlnew TDiscDistribution(classVar);
+      res->operator[](leaf.intV) = 1.0;
+      return res;
+    }
+  }
+
+  int varnum = example.domain->getVarNum(tested, false);
+  const TValue &val = (varnum != ILLEGAL_INT) ? example[varnum] : tested->computeValue(example);
+  if (val.isSpecial())
+    return vote(example, classVar);
+
+  switch (nodeType) {
+//    case Leaf: - taken care of above
+
+    case Branch:
+      if (val.intV >= branch->size())
+        return vote(example, classVar);
+      else
+        return branch->operator[](val.intV)->classDistribution(example, classVar);
+
+    case Cut:
+      return branch->operator[](val.floatV <= cut ? 0 : 1)->classDistribution(example, classVar);
+
+    case Subset:
+      if ((val.intV > mapping->size()) || (mapping->operator[](val.intV) < 0))
+        return vote(example, classVar);
+      else
+        return branch->operator[](mapping->operator[](val.intV))->classDistribution(example, classVar);
+
+    default:
+      raiseError("invalid 'nodeType'");
+  }
+
+  return PDiscDistribution();
+}
+
+
+TC45Classifier::TC45Classifier(PVariable classVar, PC45TreeNode atree)
+: TClassifier(classVar),
+  tree(atree)
+{}
+
+
+
+/* We need to define this separately to ensure that the first class
+   is selected in case of a tie */
 TValue TC45Classifier::operator ()(const TExample &example)
-{ if (domain->version!=domainVersion)
-    raiseError("domain has changed, cannot classify (re-run learning)");
+{
+  checkProperty(tree);
 
-  Description c45example = convertExample(example);
-  MaxClass = classVar->noOfValues()-1;
-  int pred = Category(c45example, tree);
-  mldelete c45example;
-  return TValue(pred);
+  PDiscDistribution classDist = tree->classDistribution(example, classVar);
+  int bestClass = 0;
+  float bestP = -1;
+  TDiscDistribution::const_iterator pi(classDist->begin());
+  for(int cl = 0, ce = classVar.AS(TEnumVariable)->values->size(); cl!=ce; cl++, pi++) {
+    if (*pi > bestP) {
+      bestP = *pi;
+      bestClass = cl;
+    }
+  }
+
+  return TValue(bestClass);
 }
 
 
 
 PDistribution TC45Classifier::classDistribution(const TExample &example)
-{ if (domain->version!=domainVersion)
-    raiseError("domain has changed, cannot classify (re-run learning)");
+{ 
+  checkProperty(tree);
 
-  Description c45example = convertExample(example);
-  MaxClass = classVar->noOfValues()-1;
-
-  ClassNo c;
-  if (!ClassSum)
-    ClassSum = mlnew double[((MaxClass+1) * sizeof(double))];
-
-  ForEach(c, 0, MaxClass)
-    ClassSum[c] = 0;
-
-  Classify(c45example, tree, 1.0);
-
-  TDiscDistribution *distval = mlnew TDiscDistribution();
-  PDistribution res = distval;
-  ForEach(c, 0, MaxClass)
-    distval->addint(int(c), ClassSum[c]);
-  distval->normalize();
-
-  mldelete c45example;
-  return res;
+  PDiscDistribution classDist = tree->classDistribution(example, classVar);
+  classDist->normalize();
+  return classDist;
 }
 
+
+void TC45Classifier::predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist)
+{
+  checkProperty(tree);
+
+  dist = tree->classDistribution(example, classVar);
+  int bestClass = 0;
+  float bestP = -1;
+  for(int cl = 0, ce = classVar.AS(TEnumVariable)->values->size()-1; cl!=ce; cl++) {
+    float td = dist->atint(cl);
+    if (td > bestP) {
+      bestP = td;
+      bestClass = cl;
+    }
+  }
+
+  value = TValue(bestClass);
+  dist->normalize();
+}

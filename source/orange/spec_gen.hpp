@@ -116,7 +116,7 @@ public:
   PRandomGenerator randomGenerator; //P random generator
 
   TMissValuesGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &);
-  TMissValuesGenerator::TMissValuesGenerator(const vector<pair<int, float> > &, PExampleGenerator);
+  TMissValuesGenerator(const vector<pair<int, float> > &, PExampleGenerator);
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };

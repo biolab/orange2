@@ -101,8 +101,6 @@ public:
 extern TRandomGenerator *_globalRandom;
 extern PRandomGenerator globalRandom;
 
-#define LOCAL_OR_GLOBAL_RANDOM (randomGenerator ? randomGenerator.getReference() : *_globalRandom)
-
 
 /* This is to be used when you only need a few random numbers and don't want to
    initialize the Mersenne twister.

@@ -52,7 +52,7 @@ public:
   float prob; //P probability of selecting an example
   PRandomGenerator randomGenerator; //P random generator
 
-  TFilter_random(const float =0.0, bool=false, PDomain =PDomain());
+  TFilter_random(const float =0.0, bool=false, PRandomGenerator = PRandomGenerator());
 
   virtual bool operator()(const TExample &);
 };

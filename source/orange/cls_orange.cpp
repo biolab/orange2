@@ -516,7 +516,9 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
   PyCATCH_1;
   // this reports only errors that occur when setting built-in properties
 
-  if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description")) {
+  // setting 'name', 'shortDescription', 'description' or setting any attributes to types that are
+  // *derived* from Orange types is OK and without warning
+  if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description") && PyOrange_CheckType(self->ob_type)) {
     char sbuf[255];
     sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
     if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))

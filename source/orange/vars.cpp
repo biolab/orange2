@@ -201,11 +201,15 @@ bool TEnumVariable::nextValue(TValue &val) const
 
 
 
-TValue TEnumVariable::randomValue(const int &rand) const
-{ if (!values->size())
+TValue TEnumVariable::randomValue(const int &rand)
+{
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator;
+
+  if (!values->size())
     raiseErrorWho("randomValue", "no values");
 
-  return TValue(int(rand<=0 ? _globalRandom->randint(values->size()) : rand%values->size()));
+  return TValue(int(rand<=0 ? randomGenerator->randint(values->size()) : rand%values->size()));
 }
 
 
@@ -311,9 +315,13 @@ bool TIntVariable::nextValue(TValue &val) const
 }
 
 
-TValue TIntVariable::randomValue(const int &rand) const
+TValue TIntVariable::randomValue(const int &rand)
 { CHECK_INTERVAL
-  return TValue(rand<0 ? _globalRandom->randint(startValue, endValue) : (rand % (endValue-startValue+1) + startValue));
+
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator();
+
+  return TValue(rand<0 ? randomGenerator->randint(startValue, endValue) : (rand % (endValue-startValue+1) + startValue));
 }
 
 
@@ -392,12 +400,15 @@ bool TFloatVariable::nextValue(TValue &val) const
 }
 
 
-TValue TFloatVariable::randomValue(const int &rand) const
+TValue TFloatVariable::randomValue(const int &rand)
 { if ((stepValue<=0) || (startValue>=endValue))
     raiseError("randomValue: interval not given");
 
+  if (!randomGenerator)
+    randomGenerator = mlnew TRandomGenerator();
+
   if (rand<0)
-    return TValue(_globalRandom->randfloat(startValue, endValue));
+    return TValue(randomGenerator->randfloat(startValue, endValue));
   else
     return TValue(float(double(rand)/double(4294967295.0)*(endValue-startValue)+startValue));
 }

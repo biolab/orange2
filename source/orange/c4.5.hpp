@@ -63,17 +63,47 @@ public:
 };
 
 
-class TC45Classifier : public TClassifierFD {
+WRAPPER(C45TreeNode)
+
+#define TC45TreeNodeList TOrangeVector<PC45TreeNode> 
+VWRAPPER(C45TreeNodeList)
+
+class TC45TreeNode : public TOrange {
 public:
   __REGISTER_CLASS
 
-  int domainVersion; //P domain version on which the tree was trained
-  Tree tree;
+  enum {Leaf = 0, Branch, Cut, Subset};
 
-  TC45Classifier(PDomain, Tree);
-  virtual ~TC45Classifier();
+  int nodeType; //P 0 = leaf,  1 = branch,  2 = cut,  3 = subset
+  TValue leaf; //P most frequent class at this node
+  float items; //P no of items at this node
+  PDiscDistribution classDist; //P class distribution of items
+  // skipped: ItemCount	Errors;		/* no of errors at this node */
+	PVariable	tested; //P	attribute referenced in test
+	// skipped - this is len(branch)    short	Forks;		/* number of branches at this node */
+  float cut; //P threshold for continuous attribute
+  float lower; //P lower limit of soft threshold
+  float upper; //P upper limit of soft threshold
+  PIntList mapping; //P mapping for discrete value
+  PC45TreeNodeList branch; //P branch[x] = (sub)tree for outcome x */
+
+  TC45TreeNode();
+  TC45TreeNode(const Tree &, PDomain);
+  PDiscDistribution vote(const TExample &example, PVariable classVar);
+  PDiscDistribution classDistribution(const TExample &example, PVariable classVar);
+};
+
+
+class TC45Classifier : public TClassifier {
+public:
+  __REGISTER_CLASS
+
+  PC45TreeNode tree; //P tree
+
+  TC45Classifier(PVariable classVar, PC45TreeNode = PC45TreeNode());
   virtual TValue operator ()(const TExample &);
   PDistribution classDistribution(const TExample &);
+  void predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist);
 };
 
 

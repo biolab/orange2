@@ -64,5 +64,7 @@ public:
   TLearnerFD(PDomain);
 };
 
+WRAPPER(Learner)
+
 #endif
 
