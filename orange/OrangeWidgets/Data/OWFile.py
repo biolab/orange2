@@ -37,6 +37,7 @@ class OWFile(OWWidget):
         vb=QGridLayout(self.mainArea,3)
         rfbox=QVGroupBox("Recent Files",self.mainArea)
         self.filecombo=QComboBox(rfbox)
+        self.filecombo.setMinimumWidth(150)
         fbox=QVGroupBox("New File",self.mainArea)
         browse=QPushButton("&Browse...",fbox)
         vb.addWidget(rfbox,0,0)
