@@ -605,7 +605,7 @@ bool checkSpecial(TPyValue *self, char *casttype)
 
 PyObject *Value_int(TPyValue *self)
 { PyTRY
-    if (!checkSpecial(self, "casted to an integer"))
+    if (!checkSpecial(self, "cast to an integer"))
       return PYNULL;
 
     return Py_BuildValue("i", (self->value.varType==TValue::INTVAR) ? self->value.intV : int(self->value.floatV)); 
@@ -615,7 +615,7 @@ PyObject *Value_int(TPyValue *self)
 
 PyObject *Value_long(TPyValue *self)
 { PyTRY
-    if (!checkSpecial(self, "casted to a long integer"))
+    if (!checkSpecial(self, "cast to a long integer"))
       return PYNULL;
 
     return Py_BuildValue("l", (self->value.varType==TValue::INTVAR) ? long(self->value.intV) : long(self->value.floatV)); 
@@ -625,7 +625,7 @@ PyObject *Value_long(TPyValue *self)
 
 PyObject *Value_float(TPyValue *self)
 { PyTRY
-    if (!checkSpecial(self, "casted to a float"))
+    if (!checkSpecial(self, "cast to a float"))
       return PYNULL;
 
     return Py_BuildValue("f", (self->value.varType==TValue::INTVAR) ? float(self->value.intV) : self->value.floatV); 
