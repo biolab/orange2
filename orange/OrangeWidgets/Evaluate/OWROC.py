@@ -649,13 +649,7 @@ class OWROC(OWWidget):
                     "ConvexHullCurveWidth", "HullColor"]
     def __init__(self,parent=None):
         "Constructor"
-        OWWidget.__init__(self,
-        parent,
-        "&ROC",
-        """None.
-        """,
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "&ROC", "ROC Analysis", TRUE, TRUE)
 
         #set default settings
         self.PointWidth = 7
@@ -680,7 +674,7 @@ class OWROC(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, 1), ("Target", int, self.target, 1)]
 
         # temp variables
         self.dres = None
@@ -1059,7 +1053,10 @@ class OWROC(OWWidget):
 
         if show: self.missClassificationCostQVB.setEnabled(1)
 
-    def results(self, dres):
+    def test_results(self, dres):
+        if not dres:
+            print 'do something'
+            return
         self.dres = dres
 
 ##        self.classQLB.clear()

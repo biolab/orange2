@@ -13,7 +13,7 @@ from OWGraph import *
 from OWGUI import *
 from OWCalibrationPlotOptions import *
 
-import orngEval
+import orngTest, orngStat
 import statc, math
 
 class singleClassCalibrationPlotGraph(OWGraph):
@@ -93,12 +93,12 @@ class singleClassCalibrationPlotGraph(OWGraph):
             return
 
         self.setMainTitle(self.dres.classValues[self.targetClass])
-        calibrationCurves = orngEval.computeCalibrationCurve(self.dres, self.targetClass)
+        calibrationCurves = orngStat.computeCalibrationCurve(self.dres, self.targetClass)
 
         classifier = 0
         for (curve, yesClassRugPoints, noClassRugPoints) in calibrationCurves:
-            x = [px for (px, py) in curve]
-            y = [py for (px, py) in curve]
+            x = [px for (px, py, dev) in curve]
+            y = [py for (px, py, dev) in curve]
             ckey = self.classifierCalibrationCKeys[classifier]
             self.setCurveData(ckey, x, y)
 
@@ -193,13 +193,7 @@ class OWCalibrationPlot(OWWidget):
     settingsList = ["CalibrationCurveWidth", "ShowDiagonal", "ShowRugs"]
     def __init__(self,parent=None):
         "Constructor"
-        OWWidget.__init__(self,
-        parent,
-        "&Calibration Plot",
-        """None.
-        """,
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "Calibration Plot", "None.", TRUE, TRUE)
 
         #set default settings
         self.CalibrationCurveWidth = 3
@@ -354,7 +348,7 @@ class OWCalibrationPlot(OWWidget):
             for i in range(self.numberOfClasses):
                 graph = singleClassCalibrationPlotGraph(self.mainArea)
                 graph.hide()
-                self.graphs.append( graph )
+                self.graphs.append(graph)
 
             ## classifiersQLB
             self.classifierColor = []

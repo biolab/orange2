@@ -91,6 +91,7 @@ class OWFile(OWWidget):
             self.selectedFileName = fn
             
             #make new data and send it
+            tab.name = fn
             self.send("Examples",tab)
             if tab.domain.classVar:
                     self.send("Classified Examples", tab)

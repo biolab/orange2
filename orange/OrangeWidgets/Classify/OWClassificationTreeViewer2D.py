@@ -566,7 +566,8 @@ class OWClassificationTreeViewer2D(OWWidget):
         # recurse on childreen
         if node.treesize() > 1:
             for i in range(len(node.branches)):
-                self.annotateTree(node.branches[i], node.branchDescriptions[i], node.branchSelector.classVar.name, crule, depth+1)
+                if node.branches[i]: # check for null-leaf
+                    self.annotateTree(node.branches[i], node.branchDescriptions[i], node.branchSelector.classVar.name, crule, depth+1)
 
     def setTreeVisibility(self):
         for node in self.nodes:
@@ -696,14 +697,15 @@ class OWClassificationTreeViewer2D(OWWidget):
     def setTreeEdges(self, node):
         if node.branches:
             for sibling in node.branches:
-                if self.LineWidthMethod == 0:
-                    width = self.LineWidth
-                elif self.LineWidthMethod == 1:
-                    width = (sibling.distribution.cases/self.root.distribution.cases) * self.LineWidth
-                elif self.LineWidthMethod == 2:
-                    width = (sibling.distribution.cases/node.distribution.cases) * self.LineWidth
-                sibling.edge.setPen(QPen(Qt.gray, width))
-                self.setTreeEdges(sibling)
+                if sibling: # not null-leaf?
+                    if self.LineWidthMethod == 0:
+                        width = self.LineWidth
+                    elif self.LineWidthMethod == 1:
+                        width = (sibling.distribution.cases/self.root.distribution.cases) * self.LineWidth
+                    elif self.LineWidthMethod == 2:
+                        width = (sibling.distribution.cases/node.distribution.cases) * self.LineWidth
+                    sibling.edge.setPen(QPen(Qt.gray, width))
+                    self.setTreeEdges(sibling)
 
     ##########################################################################
     # SET THE SIZE AND POSITION OF GRAPHICAL ELEMENTS
@@ -768,14 +770,20 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.setNodePositionY(node, y)
     
     def setTreePositions(self, node, level=0):
+        self.setTreePositionsX(node, level=level)
+        self.setTreePositionsY(node, level=level)
+        return
+    
         y = 10 + level * self.yNodeToNode
-        if (not node.branches) or (self.AutoArrange and node.borderline): # finish with last visible node
+        if (not node.branches) or (self.AutoArrange and node.borderline): # finish with leaf or last visible node
             x = self.offset
             self.offset = self.offset + self.xNodeToNode
-        else:
+        else: # a node
             for child in node.branches:
-                self.setTreePositions(child, level + 1)
-            x = (node.branches[0].x+node.branches[-1].x) * 0.5 #- self.nodeWidth
+                if child: # not null-leaf?
+                    self.setTreePositions(child, level + 1)
+            # place node in the middle, but watch out for null-leaves XXXXX
+            x = (node.branches[0].x+node.branches[-1].x) * 0.5 # place node in the middle
         self.setNodePosition(node, x, y)
         self.maxX = max(self.maxX, x + self.nodeWidth)
         self.maxY = max(self.maxY, y + self.nodeHeight)
@@ -786,8 +794,19 @@ class OWClassificationTreeViewer2D(OWWidget):
             self.offset = self.offset + self.xNodeToNode
         else:
             for child in node.branches:
-                self.setTreePositions(child, level + 1)
-            x = (node.branches[0].x+node.branches[-1].x) * 0.5 #- self.nodeWidth
+                if child: # not null-leaf?
+                    self.setTreePositions(child, level + 1)
+            # have to figure out which is the leftmost and rightmost child (take care for null-leaves)
+            left = None; right = None
+            for left in node.branches:
+                if left:
+                    break
+            for i in range(len(node.branches)-1, -1, -1):
+                if node.branches[i]:
+                    right = node.branches[i]
+                    break
+            x = (left.x+right.x) * 0.5 #- self.nodeWidth
+#            x = (node.branches[0].x+node.branches[-1].x) * 0.5 #- self.nodeWidth
         self.setNodePositionX(node, x)
         self.maxX = max(self.maxX, x + self.nodeWidth)
 
@@ -797,16 +816,18 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.maxY = max(self.maxY, y + self.nodeHeight)
         if not((not node.branches) or (self.AutoArrange and node.borderline)):
             for child in node.branches:
-                self.setTreePositionsY(child, level + 1)
+                if child: # not null-leaf?
+                    self.setTreePositionsY(child, level + 1)
 
     # set position of outgoing edges
     def setEdgesPositions(self, node):
         if node.branches and not (self.AutoArrange and node.borderline):
             [x1, y1] = [node.x + self.BodyWidth/2, node.y + self.BodyHeight]  # CCC -5
             for sibling in node.branches:
-                [x2, y2] = [sibling.x + self.BodyWidth/2, sibling.y + 5]
-                sibling.edge.setPoints(x1, y1, x2, y2)
-                self.setEdgesPositions(sibling)
+                if sibling: # not null-leaf?
+                    [x2, y2] = [sibling.x + self.BodyWidth/2, sibling.y + 5]
+                    sibling.edge.setPoints(x1, y1, x2, y2)
+                    self.setEdgesPositions(sibling)
 
     def rescaleTree(self):
         self.maxX = 0; self.maxY = 0; self.offset = 10
@@ -970,7 +991,8 @@ if __name__=="__main__":
     ow = OWClassificationTreeViewer2D()
     a.setMainWidget(ow)
 
-    data = orange.ExampleTable('voting')
+#    data = orange.ExampleTable('../../doc/datasets/voting')
+    data = orange.ExampleTable('insi')
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.ctree(tree)
 

@@ -171,7 +171,7 @@ preprocessors to filter/change the data.
 
         elif pageIndex == 2:
             self.learner.kernel = 2     # rbf
-            self.learner.gamma = float(str(self.rbfG.text()))
+            self.learner.gamma = float(str(self.rbfGValue.text()))
 
         else:
             self.learner.kernel = 3     # sigmoid

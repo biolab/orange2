@@ -1,9 +1,9 @@
 """
-<name>C45 Tree</name>
-<description>C45 Tree widget constructs a classification tree learner by the original
+<name>C4.5</name>
+<description>C45 widget constructs a classification tree learner by the original
 Quinlan's C45 algorithm.</description>
 <category>Classification</category>
-<icon>icons/Unknown.png</icon>
+<icon>icons/C45.png</icon>
 <priority>50</priority>
 """
 
@@ -15,16 +15,8 @@ class OWC45Tree(OWWidget):
                     "gainRatio", "subset", "probThresh", "minObjs", "window",
                     "increment", "cf", "trials", "prune", "convertToOrange"]
 
-    def __init__(self, parent=None, name='Classification Tree'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """ClassificationTree widget can either \nconstruct a classification tree leraner, or,
-if given a data set, a classification tree classifier. \nIt can also be combined with
-preprocessors to filter/change the data.
-""",
-        FALSE,
-        FALSE)
+    def __init__(self, parent=None, name='C4.5'):
+        OWWidget.__init__(self, parent, name, "Construct a C4.5 classification tree")
         
         self.callbackDeposit = []
 
@@ -32,7 +24,7 @@ preprocessors to filter/change the data.
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Tree", orange.C45Classifier)]
 
         # Settings
-        self.name = 'C45 Tree'
+        self.name = 'C4.5'
         self.gainRatio = 1;  self.subset = 0;     self.probThresh = 0;      self.minObjs = 2
         self.window = 0;     self.increment = 0;  self.cf = 0.25;          self.trials = 10
         self.prune = 1;      self.convertToOrange = 0

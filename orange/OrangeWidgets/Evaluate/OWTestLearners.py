@@ -174,7 +174,7 @@ AUC (area under ROC curve), and Brier score.
 
             # update the tables that show the results
             self.setStatTable()
-            self.send("results", res)
+            self.send("Evaluation Results", self.results)
             pb.finish()
             
 #        except Exception, msg:
