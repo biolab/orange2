@@ -1,6 +1,6 @@
 Name "Orange"
-Icon orange.ico
-UninstallIcon orange.ico
+Icon OrangeInstall.ico
+UninstallIcon OrangeInstall.ico
 
 !ifndef ORANGEDIR
 	!define ORANGEDIR orange
@@ -104,6 +104,8 @@ Section "Orange Modules"
 	SetOutPath $INSTDIR
 	File ${ORANGEDIR}\*.py
 	File ${ORANGEDIR}\*.pyd
+	SetOutPath $INSTDIR\icons
+	File Orange.ico
 	
 	SetOutPath $INSTDIR\OrangeWidgets
 	File /r ${ORANGEDIR}\OrangeWidgets\*.py
@@ -111,11 +113,21 @@ Section "Orange Modules"
 	SetOutPath $INSTDIR\OrangeCanvas
 	File /r ${ORANGEDIR}\OrangeCanvas\*.py
 	File /r ${ORANGEDIR}\OrangeCanvas\*.png
+
+	SetOutPath $INSTDIR\OrangeCanvas\icons
+	File OrangeOWS.ico
 SectionEnd
 
 
 !ifdef INCLUDEGENOMICS
 Section "Genomic Data"
+	SetOutPath $INSTDIR\doc
+	File "various\Orange Genomics.pdf"
+
+	SetOutPath $INSTDIR
+	CreateDirectory "$SMPROGRAMS\Orange"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets For Functional Genomics.lnk" "$INSTDIR\doc\Orange Genomics.pdf"
+
 	SetOutPath $INSTDIR\OrangeWidgets\Genomics
 	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\GO
 	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotation
@@ -127,7 +139,10 @@ Section "Genomic Data"
 	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
 	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
 	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
-	Delete $INSTDIR\OrangeWidgets\OWITree.py
+	Delete $INSTDIR\OrangeWidgets\Classify\OWCalibratedClassifier.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWExampleBuilder.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWSubsetGenerator.py
+	Delete $INSTDIR\OrangeWidgets\Other\OWITree.py
 SectionEnd
 !endif
 	
@@ -137,6 +152,10 @@ SectionEnd
 
 	!ifdef INCLUDESCRIPTDOC
 		Section "Scripting Documentation"
+			SetOutPath $INSTDIR\doc
+			File "various\Orange White Paper.pdf"
+			File "various\Orange Widgets White Paper.pdf"
+
 			!cd ${ORANGEDIR}\doc
 			SetOutPath $INSTDIR\doc
 			File /r ofb
@@ -145,6 +164,8 @@ SectionEnd
 			File style.css
 			SetOutPath $INSTDIR
                         CreateDirectory "$SMPROGRAMS\Orange"
+			CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
+			CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
@@ -155,7 +176,7 @@ SectionEnd
   
 	!ifdef INCLUDEDATASETS
 		Section "Datasets"
-			SetOutPath $INSTDIR\doc
+			SetOutPath $INSTDIR\doc\datasets
 			File /r ${ORANGEDIR}\doc\datasets\*
 			SectionEnd
 	!endif
@@ -175,13 +196,18 @@ Section ""
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
-	CreateShortCut "$DESKTOP\Orange.lnk" "$SMPROGRAMS\Orange" "" $INSTDIR\uninst.exe 0
 	SetOutPath $INSTDIR\OrangeCanvas
-	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py"
+	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py" "" $INSTDIR\icons\Orange.ico 0
 
 	WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
+	
+	;ows icon and association, schema-click launch
+	WriteRegStr HKEY_CLASSES_ROOT ".ows" "" "OrangeCanvas"
+	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\DefaultIcon" "" "$INSTDIR\OrangeCanvas\icons\OrangeOWS.ico"
+	WriteRegStr HKEY_CLASSES_ROOT "OrangeCanvas\Shell\Open\Command\" "" '$PythonDir\python.exe $INSTDIR\orangeCanvas\orngCanvas.py "%1"'
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
 SectionEnd  
@@ -192,7 +218,12 @@ Section Uninstall
 	RmDir /R "$SMPROGRAMS\Orange"
 	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
 	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
-	Delete "$DESKTOP\Orange.lnk"
+	Delete "$DESKTOP\Orange Canvas.lnk"
+
+	; remove owc icon and file type associations
+	DeleteRegKey HKEY_CLASSES_ROOT ".ows"
+	DeleteRegKey HKEY_CLASSES_ROOT "OrangeCanvas"
+
 	MessageBox MB_OK "Orange has been succesfully removed from your system.$\r$\nPython and other applications need to be removed separately.$\r$\n$\r$\nYou may now continue without rebooting your machine."
   abort:
 SectionEnd
