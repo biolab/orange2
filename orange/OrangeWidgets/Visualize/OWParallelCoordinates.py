@@ -21,8 +21,8 @@ import OWGUI
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
-    attributeContOrder = ["None","RelieF","Correlation", "Fisher discriminant"]
-    attributeDiscOrder = ["None","RelieF","GainRatio", "Oblivious decision graphs"]
+    attributeContOrder = ["None","ReliefF","Correlation", "Fisher discriminant"]
+    attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 

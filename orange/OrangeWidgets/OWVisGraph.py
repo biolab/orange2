@@ -67,7 +67,7 @@ class OWVisGraph(OWGraph):
         OWGraph.__init__(self, parent, name)
 
         self.MAX_HUE_VAL = 280              # max hue value used in coloring continuous data values. because red is at 0 and 360, we shorten the range
-        self.rawdata = []                   # input data
+        self.rawdata = None                   # input data
         self.scaledData = []                # scaled data to the interval 0-1
         self.noJitteringScaledData = []
         self.coloringScaledData = []

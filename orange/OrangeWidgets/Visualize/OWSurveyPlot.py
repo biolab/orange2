@@ -20,8 +20,8 @@ import OWVisAttrSelection
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
     settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "exampleTracking", "showLegend"]
-    attributeContOrder = ["None","RelieF","Correlation"]
-    attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
+    attributeContOrder = ["None","ReliefF","Correlation"]
+    attributeDiscOrder = ["None","ReliefF","GainRatio","Gini", "Oblivious decision graphs"]
 
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE)
@@ -30,8 +30,8 @@ class OWSurveyPlot(OWWidget):
         self.outputs = [("Selection", list)] 
 
         #set default settings
-        self.attrDiscOrder = "RelieF"
-        self.attrContOrder = "RelieF"
+        self.attrDiscOrder = "ReliefF"
+        self.attrContOrder = "ReliefF"
         self.GraphCanvasColor = str(Qt.white.name())
         self.data = None
         self.globalValueScaling = 0
@@ -348,7 +348,7 @@ class OWSurveyPlotOptions(QVGroupBox):
         self.attrContButtons.setExclusive(TRUE)
         
         self.attrContNone = QRadioButton('None', self.attrContButtons)
-        self.attrContRelieF = QRadioButton('RelieF', self.attrContButtons)
+        self.attrContRelieF = QRadioButton('ReliefF', self.attrContButtons)
         self.attrCorrelation = QRadioButton('Correlation', self.attrContButtons)
 
         # ####
@@ -358,7 +358,7 @@ class OWSurveyPlotOptions(QVGroupBox):
         self.attrDiscButtons.setExclusive(TRUE)
 
         self.attrDiscNone = QRadioButton('None', self.attrDiscButtons)
-        self.attrDiscRelieF = QRadioButton('RelieF', self.attrDiscButtons)
+        self.attrDiscRelieF = QRadioButton('ReliefF', self.attrDiscButtons)
         self.attrDiscGainRatio = QRadioButton('GainRatio', self.attrDiscButtons)
         self.attrDiscGini = QRadioButton('Gini', self.attrDiscButtons)
         self.attrDiscFD   = QRadioButton('Oblivious decision graphs', self.attrDiscButtons)
