@@ -3,14 +3,9 @@
 #
 # the base for all graphs
 
-import sys
-#import math
-#import os.path
 from qt import *
 from OWTools import *
 from qwt import *
-from Numeric import *
-#from OWBaseWidget import *
 from OWGraphTools import *      # color palletes, user defined curves, ...
 from OWDlgs import OWChooseImageSizeDlg
 
@@ -257,46 +252,3 @@ class OWGraph(QwtPlot):
     def setCanvasColor(self, c):
         self.setCanvasBackground(c)
         self.repaint()   
-
-
-if __name__== "__main__":
-    #Draw a simple graph
-    a = QApplication(sys.argv)
-    c = OWChooseImageSizeDlg(None)
-    """
-    c = OWGraph()
-    c.setXlabels(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
-    c.setYLlabels(None)
-    c.setYRlabels(range(0,101,10))
-    c.enableXaxis(1)
-    c.enableYLaxis(1)
-    c.enableYRaxis(0)
-    c.setMainTitle("Graph Title")
-    c.setShowMainTitle(1)
-
-    c.setLeftTip("left tip")
-    c.setRightTip("right tip")
-    c.setBottomTip("bottom tip")
-    cl = QColor()
-    c.setCanvasColor(Qt.blue)
-    cl.setNamedColor(QString("#00aaff"))
-    c.setCanvasColor(cl)
-    curve = c.insertCurve("c1")
-    curve2 = c.insertCurve("c2")
-    c.setCurveData(curve, [0, 1, 2], [3,2,1])
-    c.setCurveData(curve2, [0, 1, 2], [1,2,1.5])
-    c.setCurveSymbol(curve, QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow), QSize(7, 7)))
-
-    c.enableLegend(1);
-    c.setLegendPos(Qwt.Right)
-
-    legend = QwtLegend()
-    symbol = QwtSymbol(QwtSymbol.None, QBrush(QColor("black")), QPen(QColor("black")), QSize(1, 1))
-    #legend.appendItem("test 1", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0)
-    #legend.insertItem("test 2", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0, 1)
-    """
-    
-    a.setMainWidget(c)
-    c.show()
-    #c.saveToFile()
-    a.exec_loop()

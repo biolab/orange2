@@ -81,7 +81,7 @@ class OWScatterPlotGraph(OWVisGraph):
             oldShowFilledSymbols = self.showFilledSymbols
             self.showFilledSymbols = 1
 
-        if len(self.scaledData) == 0:
+        if self.scaledData == None or len(self.scaledData) == 0:
             self.setAxisScale(QwtPlot.xBottom, 0, 1, 1)
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             self.setXaxisTitle(""); self.setYLaxisTitle("")
@@ -296,35 +296,12 @@ class OWScatterPlotGraph(OWVisGraph):
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
-                    
-                    if self.subsetData:
-                        self.showFilledSymbols = selected
+                    if self.subsetData:  self.showFilledSymbols = selected
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
-
                         
                     # we add a tooltip for this point
                     self.addTip(x, y, toolTipList, i)
-
-                    """
-                    # if the example in the subsetData?
-                    if self.subsetData:
-                        if self.rawdata[i] in self.subsetData:
-                            xVals.append(x)
-                            yVals.append(y)
-                    """
-                """
-                if self.subsetData:
-                    if sizeShapeIndex == -1: size = self.pointWidth + 4
-                    else: size = MIN_SHAPE_SIZE + MAX_SHAPE_DIFF
-                    if shapeIndex == -1: shape = self.curveSymbols[0]
-                    else : shape = QwtSymbol.XCross
-                    filled = self.showFilledSymbols
-                    self.showFilledSymbols = 0
-                    self.addCurve("selection", QColor(0,0,0), QColor(0,0,0), size, symbol = shape, xData = xVals, yData = yVals)
-                    self.showFilledSymbols = filled
-                """
-
                 
 
         # show legend if necessary

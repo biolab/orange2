@@ -30,7 +30,6 @@ class OWParallelGraph(OWVisGraph):
         self.curvePoints = []       # save curve points in form [(y1, y2, ..., yi), (y1, y2, ... yi), ...] - used for sending selected and unselected points
         self.lineTracking = 0
         self.dataKeys = []
-        
 
     def setData(self, data):
         OWVisGraph.setData(self, data)
@@ -48,12 +47,11 @@ class OWParallelGraph(OWVisGraph):
         self.curvePoints = []
         self.dataKeys = []
 
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(attributes))
+        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw([self.getAttributeLabel(attr) for attr in attributes]))
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         blackColor = QColor(0, 0, 0)
         
-        if len(self.scaledData) == 0 or len(attributes) == 0:
-            return
+        if self.scaledData == None:  return
 
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
             #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
@@ -61,10 +59,8 @@ class OWParallelGraph(OWVisGraph):
         else:
             self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-1.0, 1)
 
-        if self.showAttrValues or midLabels:
-            self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
-        else:
-            self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+        if self.showAttrValues or midLabels:       self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)
+        else:                                      self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
 
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setOptions(0) 
@@ -77,12 +73,7 @@ class OWParallelGraph(OWVisGraph):
             classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         
         length = len(attributes)
-        indices = []
-        xs = []
-
-        # create a table of indices that stores the sequence of variable indices
-        for label in attributes: indices.append(self.attributeNames.index(label))
-
+        indices = [self.attributeNames.index(label) for label in attributes]
         xs = range(length)
         dataSize = len(self.scaledData[0])
         continuousClass = (self.rawdata.domain.classVar != None and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)

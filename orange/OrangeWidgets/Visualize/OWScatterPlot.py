@@ -141,7 +141,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
         OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
         OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.updateValues)
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
+        #OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
 

@@ -4,6 +4,7 @@
 # the base for all parallel graphs
 
 from OWVisGraph import *
+from math import *
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -14,7 +15,6 @@ class OWSurveyPlotGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
-        self.jitteringType = "none"
         self.selectedRectangle = 0
         self.exampleTracking = 1
         self.length = 0 # number of shown attributes - we need it also in mouse movement

@@ -52,14 +52,11 @@ def combinations(select, total):
     return fact(total)/ (fact(total-select)*fact(select))
 
 
-VALID = 0
-XPOS = 1
-YPOS = 2
-SYMBOL = 3
-PENCOLOR = 4
-BRUSHCOLOR = 5
-XANCHORS = 6
-YANCHORS = 7
+SYMBOL = 0
+PENCOLOR = 1
+BRUSHCOLOR = 2
+XANCHORS = 3
+YANCHORS = 4
 
 LINE_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -83,7 +80,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.enhancedTooltips = 1
         self.kNNOptimization = None
         self.polyvizWidget = polyvizWidget
-        self.useDifferentSymbols = 1
+        self.useDifferentSymbols = 0
         self.useDifferentColors = 1
         self.tooltipKind = 0        # index in ["Show line tooltips", "Show visible attributes", "Show all attributes"]
         self.tooltipValue = 0       # index in ["Tooltips show data values", "Tooltips show spring values"]
@@ -106,19 +103,11 @@ class OWPolyvizGraph(OWVisGraph):
             anchors[1].append(float(strY))
         return anchors
 
-    def calculateAttrValuesSum(self, data, datalen, indices, validData):
-        if datalen == 0: return []
-        
-        sum=[]
-        for i in range(datalen):
-            if validData[i] == 0:
-                sum.append(1.0)
-                continue
-            temp = 0
-            for j in range(len(indices)): temp += data[indices[j]][i]
-            if temp == 0.0: temp = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
-            sum.append(temp)
-        return sum
+    def createXAnchors(self, numOfAttrs):
+        return Numeric.cos(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
+
+    def createYAnchors(self, numOfAttrs):
+        return Numeric.sin(Numeric.arange(numOfAttrs) * 2*math.pi / float(numOfAttrs))
 
     #
     # if we use globalScaling we must also create a copy of localy scaled data
@@ -152,12 +141,13 @@ class OWPolyvizGraph(OWVisGraph):
 
         length = len(labels)
         self.dataMap = {}               # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
-        indices = []
-        self.anchorData = []
+        self.XAnchor = self.createXAnchors(length)
+        self.YAnchor = self.createYAnchors(length)
+        self.shownAttributes = labels
         polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
             
         # we must have at least 3 attributes to be able to show anything
-        if not self.rawdata or len(self.rawdata) == 0 or len(labels) < 3: self.updateLayout(); return
+        if self.scaledData == None or len(labels) < 3: self.updateLayout(); return
         dataSize = len(self.rawdata)
         classIsDiscrete = (self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete)
         classNameIndex = -1
@@ -175,21 +165,11 @@ class OWPolyvizGraph(OWVisGraph):
         else:               self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
-        for label in labels:
-            index = self.attributeNames.index(label)
-            indices.append(index)
+        # store indices to shown attributes
+        indices = [self.attributeNames.index(label) for label in labels]
 
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-
-        # ##########
-        # create anchor for every attribute
-        for i in range(length):
-            x1 = math.cos(2*math.pi * float(i) / float(length)); strX1 = "%.4f" % (x1)
-            y1 = math.sin(2*math.pi * float(i) / float(length)); strY1 = "%.4f" % (y1)
-            x2 = math.cos(2*math.pi * float(i+1) / float(length)); strX2 = "%.4f" % (x2)
-            y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
-            self.anchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
 
         classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
@@ -198,7 +178,6 @@ class OWPolyvizGraph(OWVisGraph):
         else:    # if we have a continuous class
             valLen = 0
 
-
         # will we show different symbols?        
         useDifferentSymbols = 0
         if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
@@ -206,14 +185,13 @@ class OWPolyvizGraph(OWVisGraph):
         dataSize = len(self.rawdata)
         blackColor = QColor(0,0,0)
         curveData = [[0, 0, 0, QwtSymbol.Ellipse, blackColor, blackColor, [], []] for i in range(dataSize)]
-        validData = self.getValidList(indices)
 
         
         # ##########
         # draw text at lines
         for i in range(length):
             # print attribute name
-            self.addMarker(labels[i], 0.6*(self.anchorData[i][0]+ self.anchorData[i][2]), 0.6*(self.anchorData[i][1]+ self.anchorData[i][3]), Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
+            self.addMarker(labels[i], 0.6*(self.XAnchor[i]+ self.XAnchor[(i+1)%length]), 0.6*(self.YAnchor[i]+ self.YAnchor[(i+1)%length]), Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
 
             if self.rawdata.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
@@ -223,49 +201,49 @@ class OWPolyvizGraph(OWVisGraph):
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
                     if attributeReverse[labels[i]] == 0:
-                        self.addMarker(values[j], k*(1-pos)*self.anchorData[i][0]+k*pos*self.anchorData[i][2], k*(1-pos)*self.anchorData[i][1]+k*pos*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
+                        self.addMarker(values[j], k*(1-pos)*self.XAnchor[i]+k*pos*self.XAnchor[(i+1)%length], k*(1-pos)*self.YAnchor[i]+k*pos*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                     else:
-                        self.addMarker(values[j], k*pos*self.anchorData[i][0]+k*(1-pos)*self.anchorData[i][2], k*pos*self.anchorData[i][1]+k*(1-pos)*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
+                        self.addMarker(values[j], k*pos*self.XAnchor[i]+k*(1-pos)*self.XAnchor[(i+1)%length], k*pos*self.YAnchor[i]+k*(1-pos)*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
             else:
                 # min and max value
                 names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
                 if attributeReverse[labels[i]] == 1: names.reverse()
-                self.addMarker(names[0],0.95*self.anchorData[i][0]+0.15*self.anchorData[i][2], 0.95*self.anchorData[i][1]+0.15*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
-                self.addMarker(names[1], 0.15*self.anchorData[i][0]+0.95*self.anchorData[i][2], 0.15*self.anchorData[i][1]+0.95*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
+                self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
+                self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
 
+        selectedData = Numeric.take(self.scaledData, indices)
+        sum_i = Numeric.add.reduce(selectedData)
+
+        XAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
+        YAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
+        XAnchor = self.createXAnchors(length)
+        YAnchor = self.createYAnchors(length)
+
+        for i in range(length):
+            if attributeReverse[labels[i]]:
+                Xdata = XAnchor[i] * self.noJitteringScaledData[indices[i]] + XAnchor[(i+1)%length] * (1-self.noJitteringScaledData[indices[i]])
+                Ydata = YAnchor[i] * self.noJitteringScaledData[indices[i]] + YAnchor[(i+1)%length] * (1-self.noJitteringScaledData[indices[i]])
+            else:
+                Xdata = XAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + XAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
+                Ydata = YAnchor[i] * (1-self.noJitteringScaledData[indices[i]]) + YAnchor[(i+1)%length] * self.noJitteringScaledData[indices[i]]
+            XAnchorPositions[i] = Xdata
+            YAnchorPositions[i] = Ydata
+
+        XAnchorPositions = Numeric.swapaxes(XAnchorPositions, 0,1)
+        YAnchorPositions = Numeric.swapaxes(YAnchorPositions, 0,1)
+            
+        selectedData = Numeric.take(self.scaledData, indices)
+        sum_i = Numeric.add.reduce(selectedData)
+
+        x_positions = Numeric.sum(Numeric.swapaxes(XAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
+        y_positions = Numeric.sum(Numeric.swapaxes(YAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sum_i
+        validData = self.getValidList(indices)      
 
         for i in range(dataSize):
-            if validData[i] == 0: continue
-            
-            sum_i = 0.0
-            for j in range(length):
-                sum_i += self.scaledData[indices[j]][i]
-            if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
-
-            ##########
-            # calculate the position of the data point
-            x_i = 0.0; y_i = 0.0
-            xDataAnchors = []; yDataAnchors = []
-            for j in range(length):
-                index = indices[j]
-                val = self.noJitteringScaledData[index][i]
-                if attributeReverse[labels[j]] == 1: val = 1-val
-                xDataAnchor = self.anchorData[j][0]*(1-val) + self.anchorData[j][2]*val
-                yDataAnchor = self.anchorData[j][1]*(1-val) + self.anchorData[j][3]*val
-                x_i += xDataAnchor * (self.scaledData[index][i] / sum_i)
-                y_i += yDataAnchor * (self.scaledData[index][i] / sum_i)
-                xDataAnchors.append(xDataAnchor)
-                yDataAnchors.append(yDataAnchor)
-
-            # scale data according to scale factor
-            x_i = x_i * self.scaleFactor
-            y_i = y_i * self.scaleFactor
-            curveData[i][VALID] = 1
-            curveData[i][XPOS] = x_i
-            curveData[i][YPOS] = y_i
-            curveData[i][XANCHORS] = xDataAnchors
-            curveData[i][YANCHORS] = yDataAnchors
+            if validData[i] == 0: continue                       
+            curveData[i][XANCHORS] = XAnchorPositions[i]
+            curveData[i][YANCHORS] = YAnchorPositions[i]
 
 
         if self.showKNNModel == 1:
@@ -275,8 +253,8 @@ class OWPolyvizGraph(OWVisGraph):
 
             # build an example table            
             for i in range(dataSize):
-                if curveData[i][VALID]:
-                    table.append(orange.Example(domain, [curveData[i][XPOS], curveData[i][YPOS], self.rawdata[i].getclass()]))
+                if validData[i]:
+                    table.append(orange.Example(domain, [x_positions[i], y_positions[i], self.rawdata[i].getclass()]))
 
             kNNValues = self.kNNOptimization.kNNClassifyData(table)
             accuracy = copy(kNNValues)
@@ -302,20 +280,20 @@ class OWPolyvizGraph(OWVisGraph):
                 fillColor = bwColors.getColor(kNNValues[i])
                 edgeColor = classColors.getColor(classValueIndices[table[i].getclass().value])
                 key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [table[i][0].value], yData = [table[i][1].value])
-                self.addAnchorLine(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
+                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], fillColor, i, length)
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
             for i in range(dataSize):
-                if not curveData[i][VALID]: continue
+                if not validData[i]: continue
                 newColor = QColor(0,0,0)
                 if self.useDifferentColors: newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
-                self.addAnchorLine(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
+                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
         # DISCRETE class + optimize drawing
         elif self.optimizedDrawing:
@@ -323,14 +301,14 @@ class OWPolyvizGraph(OWVisGraph):
             colors = ColorPaletteHSV(valLen)
             
             for i in range(dataSize):
-                if not curveData[i][VALID]: continue
-                pos[classValueIndices[self.rawdata[i].getclass().value]][0].append(curveData[i][XPOS])
-                pos[classValueIndices[self.rawdata[i].getclass().value]][1].append(curveData[i][YPOS])
+                if not validData[i]: continue
+                pos[classValueIndices[self.rawdata[i].getclass().value]][0].append(x_positions[i])
+                pos[classValueIndices[self.rawdata[i].getclass().value]][1].append(y_positions[i])
                 pos[classValueIndices[self.rawdata[i].getclass().value]][2].append(i)
                 pos[classValueIndices[self.rawdata[i].getclass().value]][3].append(curveData[i][XANCHORS])
                 pos[classValueIndices[self.rawdata[i].getclass().value]][4].append(curveData[i][YANCHORS])
-                if self.useDifferentColors: self.addAnchorLine(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], colors.getColor(classValueIndices[self.rawdata[i].getclass().value]), i, length)
-                else: self.addAnchorLine(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
+                if self.useDifferentColors: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], colors.getColor(classValueIndices[self.rawdata[i].getclass().value]), i, length)
+                else: self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], QColor(0,0,0), i, length)
 
             for i in range(valLen):
                 newColor = colors[i]
@@ -346,21 +324,19 @@ class OWPolyvizGraph(OWVisGraph):
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             colors = ColorPaletteHSV(valLen)
             for i in range(dataSize):
-                if not curveData[i][VALID]: continue
+                if not validData[i]: continue
                 newColor = colors[classValueIndices[self.rawdata[i].getclass().value]]
                 if not self.useDifferentColors: newColor = QColor(0,0,0)
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                 else: curveSymbol = self.curveSymbols[0]
-                self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
-                self.addAnchorLine(curveData[i][XPOS], curveData[i][YPOS], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
+                self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
+                self.addTooltipKey(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i)
+                self.addAnchorLine(x_positions[i], y_positions[i], curveData[i][XANCHORS], curveData[i][YANCHORS], newColor, i, length)
 
         # ##########
         # draw polygon
-        xdata = []; ydata = []
-        for i in range(len(labels)+1):
-            xdata.append(math.cos(2*math.pi * float(i) / float(len(labels))))
-            ydata.append(math.sin(2*math.pi * float(i) / float(len(labels))))
+        xdata = [x for x in self.XAnchor]; xdata.append(xdata[0])
+        ydata = [y for y in self.YAnchor]; ydata.append(ydata[0])
 
         newCurveKey = self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata, yData = ydata)
         pen = self.curve(newCurveKey).pen(); pen.setWidth(2); self.curve(newCurveKey).setPen(pen)
@@ -458,8 +434,7 @@ class OWPolyvizGraph(OWVisGraph):
 
             (x_i, y_i, xAnchors, yAnchors, color, index) = nearestPoint
             if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
-                for i in range(len(self.anchorData)):
-                    (xAnchor1, yAnchor1, xAnchor2, yAnchor2, label) = self.anchorData[i]
+                for i in range(len(self.shownAttributes)):
                     
                     # draw lines
                     key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
@@ -468,9 +443,9 @@ class OWPolyvizGraph(OWVisGraph):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(self.shownAttributes[i])]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(label)][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(self.shownAttributes[i])][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
@@ -481,7 +456,7 @@ class OWPolyvizGraph(OWVisGraph):
                 intY = self.transform(QwtPlot.yLeft, y_i)
                 text = ""
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                    labels = [s for (xA1, yA1, xA2, yA2, s) in self.anchorData]
+                    labels = self.shownAttributes
                 else:
                     labels = self.attributeNames
 
@@ -501,7 +476,7 @@ class OWPolyvizGraph(OWVisGraph):
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getProjectionQuality(self, attrList, attributeReverse):
-        (xArray, yArray) = self.createProjection(attrList, attributeReverse)
+        (xArray, yArray, validData) = self.createProjection(attrList, attributeReverse)
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
@@ -509,7 +484,7 @@ class OWPolyvizGraph(OWVisGraph):
         table = orange.ExampleTable(domain)
                  
         for i in range(len(self.rawdata)):
-            if xArray[i] == "?": continue
+            if not validData[i]: continue
             example = orange.Example(domain, [xArray[i], yArray[i], self.rawdata[i].getclass()])
             table.append(example)
         return self.kNNOptimization.kNNComputeAccuracy(table)
@@ -524,16 +499,17 @@ class OWPolyvizGraph(OWVisGraph):
 
    
     # save projection (xAttr, yAttr, classVal) into a filename fileName
-    def saveProjectionAsTabData(self, fileName, attrList, attributeReverse, validData = None, anchors = None):
-        (xArray, yArray) = self.createProjection(attrList, attributeReverse, validData, anchors)
+    def saveProjectionAsTabData(self, fileName, attrList, attributeReverse):
+        (xArray, yArray, validData) = self.createProjection(attrList, attributeReverse)
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
         domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
         table = orange.ExampleTable(domain)
+        validData = self.validData(attrList)
                  
         for i in range(len(self.rawdata)):
-            if xArray[i] == "?": continue
+            if not validData[i]: continue
             example = orange.Example(domain, [xArray[i], yArray[i], self.rawdata[i].getclass()])
             table.append(example)
 
@@ -541,44 +517,41 @@ class OWPolyvizGraph(OWVisGraph):
 
     # ####################################
     # create x-y projection of attributes in attrList
-    def createProjection(self, attrList, attributeReverse, validData = None, anchors = None, scaleFactor = 1.0):
-        # define lenghts and variables
-        attrListLength = len(attrList)
+    def createProjection(self, attrList, attributeReverse, validData = None, sums = None, scaleFactor = 1.0):
+        # store indices to shown attributes
+        indices = [self.attributeNames.index(label) for label in attrList]
+        length = len(attrList)
         dataSize = len(self.rawdata)
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
-        # create anchor for every attribute if necessary
-        if anchors == None:
-            anchors = self.createAnchors(attrListLength)
+        selectedData = Numeric.take(self.noJitteringScaledData, indices)
+        if not sums:
+            sums = Numeric.add.reduce(selectedData)
 
-        indices = []
-        for attr in attrList:
-            indices.append(self.attributeNames.index(attr))
-        
-        if validData == None:
-            validData = self.getValidList(indices)
+        if not validData:
+            validData = self.getValidList(indices)     
 
-        # store all sums
-        sum = self.calculateAttrValuesSum(self.noJitteringScaledData, len(self.rawdata), indices, validData)
+        XAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
+        YAnchorPositions = Numeric.zeros([length, dataSize], Numeric.Float)
+        XAnchor = self.createXAnchors(length)
+        YAnchor = self.createYAnchors(length)
 
-        # calculate projections
-        xArray = []
-        yArray = []
-        for i in range(dataSize):
-            if not validData[i]: xArray.append("?"); yArray.append("?"); continue
+        for i in range(length):
+            if attributeReverse[attrList[i]]:
+                Xdata = XAnchor[i] * selectedData[i] + XAnchor[(i+1)%length] * (1-selectedData[i])
+                Ydata = YAnchor[i] * selectedData[i] + YAnchor[(i+1)%length] * (1-selectedData[i])
+            else:
+                Xdata = XAnchor[i] * (1-selectedData[i]) + XAnchor[(i+1)%length] * selectedData[i]
+                Ydata = YAnchor[i] * (1-selectedData[i]) + YAnchor[(i+1)%length] * selectedData[i]
+            XAnchorPositions[i] = Xdata
+            YAnchorPositions[i] = Ydata
+
+        XAnchorPositions = Numeric.swapaxes(XAnchorPositions, 0,1)
+        YAnchorPositions = Numeric.swapaxes(YAnchorPositions, 0,1)
             
-            x_i = 0.0; y_i = 0.0
-            for j in range(attrListLength):
-                val = self.noJitteringScaledData[indices[j]][i]
-                if attributeReverse[attrList[j]] == 1: val = 1-val
-                xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
-                yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
-                x_i += xDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
-                y_i += yDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
-            xArray.append(x_i*scaleFactor)
-            yArray.append(y_i*scaleFactor)
-               
-        return (xArray, yArray)
+        x_positions = Numeric.sum(Numeric.swapaxes(XAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sums
+        y_positions = Numeric.sum(Numeric.swapaxes(YAnchorPositions * Numeric.swapaxes(selectedData, 0,1), 0,1)) * self.scaleFactor / sums
+
+        return (x_positions, y_positions, validData)
     
 
     # ####################################
@@ -588,10 +561,10 @@ class OWPolyvizGraph(OWVisGraph):
         selected = orange.ExampleTable(self.rawdata.domain)
         unselected = orange.ExampleTable(self.rawdata.domain)
 
-        xArray, yArray = self.createProjection(attrList, attributeReverse, scaleFactor = self.scaleFactor)
+        xArray, yArray, validData = self.createProjection(attrList, attributeReverse, scaleFactor = self.scaleFactor)
                  
         for i in range(len(self.rawdata)):
-            if xArray[i] == "?": continue
+            if not validData[i]: continue
             
             if self.isPointSelected(xArray[i], yArray[i]): selected.append(self.rawdata[i])
             else:                                          unselected.append(self.rawdata[i])
@@ -601,173 +574,6 @@ class OWPolyvizGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
-    """
-    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, numOfAttr, addResultFunct = None):
-        if attrList == [] or numOfAttr == 0:
-            if len(subsetList) < 3 or numOfAttr != 0: return []
-            print subsetList
-            return self.getOptimalSeparation(subsetList, attrReverseDict, printFullOutput = 0, addResultFunct = addResultFunct)
-
-        #full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr, addResultFunct)
-        self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr, addResultFunct)
-        subsetList2 = list(subsetList)
-        subsetList2.insert(0, attrList[0])
-        #full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1, addResultFunct)
-        self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1, addResultFunct)
-
-        # find max values in booth lists
-        #full = full1 + full2
-        #shortList = []
-        #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-        #else: funct = min
-        #for i in range(min(self.kNNOptimization.resultListLen, len(full))):
-        #    item = funct(full)
-        #    shortList.append(item)
-        #    full.remove(item)
-        #return shortList
-
-    
-    # #######################################
-    # try to find the optimal attribute order by trying all diferent circular permutations
-    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, attrReverseDict, printFullOutput = 1, addResultFunct = None):
-        # define lenghts and variables
-        attrListLength = len(attrList)
-        dataSize = len(self.rawdata)
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-
-        # create a table of indices that stores the sequence of variable indices        
-        indices = [];
-        for label in attrList:
-            indices.append(self.attributeNames.index(label))
-
-        # if we want global value scaling, we must first compute it
-        if self.globalValueScaling == 1:
-            selectedGlobScaledData = []
-            for i in range(len(self.rawdata.domain)): selectedGlobScaledData.append([])
-        
-            (minVal, maxVal) =  self.getMinMaxValDomain(self.rawdata, attrList)
-            
-            for attr in attrList:
-                index = self.attributeNames.index(attr)
-                scaled, values = self.scaleData(self.rawdata, index, minVal, maxVal, jitteringEnabled = 0)
-                selectedGlobScaledData[index] = scaled
-        else:
-            selectedGlobScaledData = self.noJitteringScaledData
-
-        if printFullOutput:
-            print "Generating permutations. Please wait..."
-
-        indPermutations = {}
-        getPermutationList(indices, [], indPermutations, attrReverseDict == None)
-
-        attrReverse = []
-        if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
-            temp = [0] * len(self.rawdata.domain)
-            for val in attrReverseDict.keys():
-                temp[self.attributeNames.index(val)] = attrReverseDict[val]
-            attrReverse.append(temp)
-        else:
-            attrReverse = self.generateAttrReverseLists(attrList, self.attributeNames,[[0]*len(self.rawdata.domain)])
-
-        fullList = []
-        permutationIndex = 0 # current permutation index
-        totalPermutations = len(indPermutations.values())*len(attrReverse)
-        if printFullOutput: print "Total permutations: ", totalPermutations
-
-        if self.totalPossibilities == 0:
-            self.totalPossibilities = totalPermutations
-            self.triedPossibilities = 0
-
-        xVar = orange.FloatVariable("xVar")
-        yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
-
-        # which data items have all values valid
-        validData = [1] * dataSize
-        for i in range(dataSize):
-            for j in range(attrListLength):
-                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
-
-        count = 0
-        for i in range(dataSize):
-            if validData[i] == 1: count+=1
-        
-        if count < self.kNNOptimization.minExamples:
-            print "Nr. of examples: ", str(count)
-            print "Not enough examples in example table. Ignoring permutation..."
-            print "------------------------------"
-            self.triedPossibilities += 1
-            if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-            return []
-
-        # create anchor for every attribute
-        anchors = self.createAnchors(attrListLength)
-        
-        # store all sums
-        sum = self.calculateAttrValuesSum(selectedGlobScaledData, len(self.rawdata), indices, validData)
-
-        t = time.time()
-        if self.kNNOptimization.getQualityMeasure() == CLASS_ACCURACY: text = "Classification accuracy"
-        elif self.kNNOptimization.getQualityMeasure() == AVERAGE_CORRECT: text = "Average correct classification"
-        else: text = "Brier score"
-
-        # for every permutation compute how good it separates different classes            
-        for permutation in indPermutations.values():
-            for attrOrder in attrReverse:
-                permutationIndex += 1
-                #progressBar.setProgress(progressBar.progress()+1)
-                table = orange.ExampleTable(domain)
-
-                # calculate projections
-                for i in range(dataSize):
-                    if validData[i] == 0: continue
-                    
-                    x_i = 0.0; y_i = 0.0
-                    for j in range(attrListLength):
-                        index = permutation[j]
-                        val = selectedGlobScaledData[index][i]
-                        if attrOrder[index] == 0:
-                            xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
-                            yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
-                        else:
-                            xDataAnchor = anchors[0][j]*val + anchors[0][(j+1)%attrListLength]*(1-val)
-                            yDataAnchor = anchors[1][j]*val + anchors[1][(j+1)%attrListLength]*(1-val)
-                        x_i += xDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
-                        y_i += yDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
-                       
-                    example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
-                    table.append(example)
-
-                accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
-                if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                    print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, totalPermutations, text, accuracy)
-                else:
-                    print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
-                
-                # save the permutation
-                fullList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder))
-                if addResultFunct and not self.kNNOptimization.onlyOnePerSubset:
-                    addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
-
-                self.triedPossibilities += 1
-                if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-
-        if printFullOutput:
-            secs = time.time() - t
-            print "Used time: %d min, %d sec" %(secs/60, secs%60)
-            print "------------------------------"
-
-        if self.kNNOptimization.onlyOnePerSubset:
-            # return only the best attribute placements
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
-            else: funct = min
-            (acc, lenTable, attrList, attrOrder) = funct(fullList)
-            if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList, attrOrder)
-            return [(acc, lenTable, attrList, attrOrder)]
-        else:
-            return fullList
-    """
 
     def createCombinations(self, currCombination, count, attrList, combinations):
         if count > attrList: return combinations
@@ -800,9 +606,7 @@ class OWPolyvizGraph(OWVisGraph):
         elif self.kNNOptimization.getQualityMeasure() == AVERAGE_CORRECT: text = "Average correct classification"
         else: text = "Brier score"
 
-        anchorList = []
-        for i in range(minLength, maxLength+1):
-            anchorList.append(self.createAnchors(i))
+        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
 
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
@@ -812,14 +616,12 @@ class OWPolyvizGraph(OWVisGraph):
                 combinations.sort()
                 combinations.reverse()
 
-                anchors = anchorList[u+1-minLength]
+                XAnchors = anchorList[u+1-minLength][0]
+                YAnchors = anchorList[u+1-minLength][1]
                 
                 for attrList in combinations:
                     attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
-
-                    indices = [];
-                    for attr in attrs:
-                        indices.append(self.attributeNames.index(attr))
+                    indices = [self.attributeNames.index(attr) for attr in attrs]
 
                     indPermutations = {}
                     getPermutationList(indices, [], indPermutations, attrReverseDict == None)
@@ -835,20 +637,17 @@ class OWPolyvizGraph(OWVisGraph):
 
                     permutationIndex = 0 # current permutation index
                     totalPermutations = len(indPermutations.values())*len(attrReverse)
-                    
-                    # which data items have all values valid
-                    validData = self.getValidList(indices)
 
+                    validData = self.getValidList(indices)                    
+                    selectedData = Numeric.take(self.noJitteringScaledData, indices)
+                    sum_i = Numeric.add.reduce(selectedData)
+                    
                     count = sum(validData)
                     if count < self.kNNOptimization.minExamples:
                         print "Not enough examples (%s) in example table. Ignoring permutation." % (str(count))
                         self.triedPossibilities += len(indPermutations.keys())
                         if self.polyvizWidget: self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                        continue
-                    
-                                
-                    # store all sums
-                    sum_i = self.calculateAttrValuesSum(self.noJitteringScaledData, len(self.rawdata), indices, validData)
+                        continue                    
 
                     tempList = []
 
@@ -859,24 +658,16 @@ class OWPolyvizGraph(OWVisGraph):
                             permutationIndex += 1
                             table = orange.ExampleTable(domain)
 
+                            attrPermutation = [self.attributeNames[val] for val in permutation]
+                            attrReverseOrder = {}
+                            for i in range(len(attrs)):
+                                attrReverseOrder[attrs[i]] = attrOrder[i]
+                            x_positions, y_positions, foo = self.createProjection(attrPermutation, attrReverseOrder, validData, sum_i)
+    
                             # calculate projections
                             for i in range(dataSize):
-                                if validData[i] == 0: continue
-                                
-                                x_i = 0.0; y_i = 0.0
-                                for j in range(attrListLength):
-                                    index = permutation[j]
-                                    val = self.noJitteringScaledData[index][i]
-                                    if attrOrder[index] == 0:
-                                        xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
-                                        yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
-                                    else:
-                                        xDataAnchor = anchors[0][j]*val + anchors[0][(j+1)%attrListLength]*(1-val)
-                                        yDataAnchor = anchors[1][j]*val + anchors[1][(j+1)%attrListLength]*(1-val)
-                                    x_i += xDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
-                                    y_i += yDataAnchor * (self.noJitteringScaledData[index][i] / sum_i[i])
-                                   
-                                example = orange.Example(domain, [x_i, y_i, self.rawdata[i].getclass()])
+                                if not validData[i]: continue                                
+                                example = orange.Example(domain, [x_positions[i], y_positions[i], self.rawdata[i].getclass()])
                                 table.append(example)
 
                             accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
@@ -884,7 +675,7 @@ class OWPolyvizGraph(OWVisGraph):
                             else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
                             
                             # save the permutation
-                            tempList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder))
+                            tempList.append((accuracy, len(table), attrPermutation, attrOrder))
                             if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
                                 addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
 

@@ -3,12 +3,11 @@
 #
 # extension for the base graph class that is used in all visualization widgets
 from OWGraph import *
-from Numeric import *
 import sys, math, os.path
 import orange
-from qtcanvas import *
+import qtcanvas
+import Numeric, RandomArray
 from OWTools import *
-
 
 ZOOMING = 1
 SELECT_RECTANGLE = 2
@@ -84,16 +83,15 @@ class OWVisGraph(OWGraph):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
 
-        self.MAX_HUE_VAL = 280              # max hue value used in coloring continuous data values. because red is at 0 and 360, we shorten the range
         self.rawdata = None                   # input data
-        self.scaledData = []                # scaled data to the interval 0-1
-        self.noJitteringScaledData = []
-        self.coloringScaledData = []
+        self.scaledData = None                # scaled data to the interval 0-1
+        self.noJitteringScaledData = None
+        self.coloringScaledData = None
         self.attributeNames = []      # list of attribute names from self.rawdata
         self.domainDataStat = []
+        self.attributeFlipInfo = {}     # dictionary with attrName: 0/1 attribute is flipped or not
         self.optimizedDrawing = 1
         self.pointWidth = 5
-        self.jitteringType = 'uniform'
         self.jitterSize = 10
         self.jitterContinuous = 0
         self.showFilledSymbols = 1
@@ -174,19 +172,22 @@ class OWVisGraph(OWGraph):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
+        self.attributeFlipInfo = {}
+        self.attrValues = {}
         
         self.rawdata = data
-        self.scaledData = []
-        self.noJitteringScaledData = []
-        self.coloringScaledData = []
-        self.attrValues = {}
-        self.attributeNames = []
-
-        if data == None: return
+        if data == None or len(data) == 0:
+            self.scaledData = self.noJitteringScaledData = self.coloringScaledData = self.validDataArray = None
+            return
         
-        self.domainDataStat = orange.DomainBasicAttrStat(data)
-        for attr in data.domain: self.attributeNames.append(attr.name)
+        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+        self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+        self.coloringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+        self.validDataArray = Numeric.ones([len(data.domain), len(data)])
 
+        self.domainDataStat = orange.DomainBasicAttrStat(data)
+        self.attributeNames = [attr.name for attr in data.domain]
+        
         min = -1; max = -1
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
@@ -197,11 +198,7 @@ class OWVisGraph(OWGraph):
         # scale all data for coloring
         for index in range(len(data.domain)):
             attr = data.domain[index]
-            original = []
-            noJittering = []
-            coloring = []
-            values = []
-            jitter = self.jitterSize/100.0
+            self.attributeFlipInfo[attr.name] = 0
 
             # is the attribute discrete
             if attr.varType == orange.VarTypes.Discrete:
@@ -209,51 +206,49 @@ class OWVisGraph(OWGraph):
                 variableValueIndices = getVariableValueIndices(data, index)
                 count = float(len(attr.values))
                 colors = ColorPaletteHSV(len(attr.values))
-                values = [0, count-1]
-                countx2 = float(2*count)    # we compute this value here, so that we don't have to compute it in the loop
-                count100 = float(100.0*count) # same
+                self.attrValues[attr.name] = [0, len(attr.values)-1]
 
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: original.append("?"); noJittering.append("?"); coloring.append("?"); continue
-                    val = variableValueIndices[data[i][index].value]
-                    noJittering.append( (1.0 + 2.0 * val)/ countx2 )
-                    original.append( ((1.0 + 2.0 * val)/ countx2) + ((1+val)/count) * self.rndCorrection(self.jitterSize/count100))
-                    coloring.append(colors.getHue(val))
+                    if data[i][index].isSpecial() == 1:
+                        self.validDataArray[index][i] = 0
+                        continue
+                    
+                    self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
+                    self.coloringScaledData[index][i] = colors.getHue(int(self.noJitteringScaledData[index][i]))
 
-
+                self.noJitteringScaledData[index] = (self.noJitteringScaledData[index]*2 + 1) / float(2*count)
+                self.scaledData[index] = self.noJitteringScaledData[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
+                
             # is the attribute continuous
             else:
                 if self.globalValueScaling == 0:
                     min = self.domainDataStat[index].min
                     max = self.domainDataStat[index].max
-                diff = max - min
-                if diff == 0.0: diff = 1    # prevent division by zero
-                values = [min, max]
-                colors = ColorPaletteHSV(-1)
+                diff = float(max - min)
+                if diff == 0.0: diff = 1.0    # prevent division by zero
+                self.attrValues[attr.name] = [min, max]
+                colors = ColorPaletteHSV()
 
-                max_hue = self.MAX_HUE_VAL / 360.0
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: original.append("?"); coloring.append("?"); continue
-                    val = (data[i][attr].value - min) / diff
-                    if self.jitterContinuous:
-                        val += self.rndCorrection(jitter)
-                        if val < 0: val = abs(val)
-                        elif val > 1.0: val = 2 - val
-                    original.append(val)
-                    coloring.append(colors.getHue(val))        # we make color palette smaller, because red is in the begining and ending of hsv
-                noJittering = original
+                    if data[i][index].isSpecial() == 1:
+                        self.validDataArray[index][i] = 0
+                        continue
+                    self.noJitteringScaledData[index][i] = data[i][index].value
+
+                self.noJitteringScaledData[index] = (self.noJitteringScaledData[index] - float(min)) / diff
+                self.coloringScaledData[index] = self.noJitteringScaledData[index] * colors.maxHueVal
+                if self.jitterContinuous:
+                    self.scaledData[index] = self.noJitteringScaledData[index] + 0.5 - self.jitterSize/50.0 * RandomArray.random(len(data))
+                    self.scaledData[index] = abs(self.scaledData[index])
+                    for i in range(len(data)):
+                        if self.scaledData[index][i] > 1.0: self.scaledData[index][i] = 2.0-self.scaledData[index][i]
+                else:
+                    self.scaledData[index] = self.noJitteringScaledData[index]
                 
-            self.scaledData.append(original)
-            self.noJitteringScaledData.append(noJittering)
-            self.coloringScaledData.append(coloring)
-            self.attrValues[attr.name] = values
-
         
-    #####################################################################
-    #####################################################################
+    # ####################################################################
+    # ####################################################################
 
-
-    
     # ####################################################################
     # compute min and max value for a list of attributes 
     def getMinMaxValDomain(self, data, attrList):
@@ -282,7 +277,6 @@ class OWVisGraph(OWGraph):
             print "warning. Computing min, max value for discrete attribute."
             return (0, float(len(attr.values))-1)
         else:
-            #print data.domain[index].name
             return (self.domainDataStat[index].min, self.domainDataStat[index].max)
         
     # ####################################################################
@@ -293,61 +287,49 @@ class OWVisGraph(OWGraph):
     # ####################################################################
     def scaleData(self, data, index, min = -1, max = -1, forColoring = 0, jitteringEnabled = 1):
         attr = data.domain[index]
-        temp = []; values = []
+        values = []
 
+        arr = Numeric.zeros([len(data)], Numeric.Float)
+        
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
+            # is the attribute discrete
             # we create a hash table of variable values and their indices
             variableValueIndices = getVariableValueIndices(data, index)
             count = float(len(attr.values))
-            values = [0, count-1]
-            countx2 = float(2*count)    # we compute this value here, so that we don't have to compute it in the loop
-            count100 = float(100.0*count) # same
+            values = [0, len(attr.values)-1]
 
-            if forColoring == 1:
+            if forColoring:
+                colors = ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    val = float(variableValueIndices[data[i][index].value]) / float(count)
-                    temp.append(val)
-            elif jitteringEnabled == 1:
-                for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / countx2 + self.rndCorrection(self.jitterSize/count100)
-                    temp.append(val)
+                    if data[i][index].isSpecial() == 1: continue
+                    arr[i] = colors.getHue(variableValueIndices[data[i][index].value])
             else:
                 for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / countx2
-                    temp.append(val)
-                    
+                    if data[i][index].isSpecial() == 1: continue
+                    arr[i] = variableValueIndices[data[i][index].value]
+                    arr = (arr*2 + 1) / float(2*count)
+                if jitteringEnabled:
+                    arr = arr + 0.5 - (self.jitterSize/(50.0*count))*RandomArray.random(len(data))
+            
         # is the attribute continuous
         else:
             if min == max == -1:
                 min = self.domainDataStat[index].min
                 max = self.domainDataStat[index].max
-            diff = max - min
             values = [min, max]
+            diff = max - min
+            if diff == 0.0: diff = 1    # prevent division by zero
+            
+            for i in range(len(data)):
+                if data[i][index].isSpecial() == 1: continue
+                arr[i] = data[i][index].value
+            arr = (arr - min) / diff
 
             if forColoring == 1:
-                hue = self.MAX_HUE_VAL /360.0
-                for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    temp.append((data[i][attr].value - min)*hue / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
-            else:
-                for i in range(len(data)):
-                    if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    temp.append((data[i][attr].value - min) / diff)
-        return (temp, values)
-
-    # ####################################################################
-    # scale data with no jittering
-    def scaleDataNoJittering(self):
-        # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
-        self.noJitteringScaledData = []
-        for i in range(len(self.rawdata.domain)):
-            scaled, vals = self.scaleData(self.rawdata, i, jitteringEnabled = 0)
-            self.noJitteringScaledData.append(scaled)
-
+                colors = ColorPaletteHSV()
+                arr = arr * colors.maxHueVal
+        return (arr, values)
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
         if len(attrList) == 0: return
@@ -361,32 +343,35 @@ class OWVisGraph(OWGraph):
             self.scaledData[index] = scaled
             self.attrValues[attr] = values
 
+    def getAttributeLabel(self, attrName):
+        if self.attributeFlipInfo[attrName] and self.rawdata.domain[attrName].varType == orange.VarTypes.Continuous: return "-" + attrName
+        return attrName
+
+    def flipAttribute(self, attrName):
+        if attrName not in self.attributeNames: return
+        if self.globalValueScaling: return
+            
+        index = self.attributeNames.index(attrName)
+        self.attributeFlipInfo[attrName] = not self.attributeFlipInfo[attrName]
+        if self.rawdata.domain[attrName].varType == orange.VarTypes.Continuous:
+            self.attrValues[attrName] = [-self.attrValues[attrName][1], -self.attrValues[attrName][0]]
+    
+        self.scaledData[index] = 1 - self.scaledData[index]
+        self.noJitteringScaledData[index] = 1 - self.noJitteringScaledData[index]
+        self.coloringScaledData[index] = 1 - self.coloringScaledData[index]
+
+
     # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
     def getValidList(self, indices):
-        validData = [1] * len(self.rawdata)
-        for i in range(len(self.rawdata)):
-            for j in range(len(indices)):
-                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
-        return validData
-
-    def setJitteringOption(self, jitteringType):
-        self.jitteringType = jitteringType
-
+        selectedArray = Numeric.take(self.validDataArray, indices)
+        arr = Numeric.add.reduce(selectedArray) - len(indices)
+        return Numeric.equal(arr, 0)
+        
+    # returns a number from -max to max
     def rndCorrection(self, max):
-        """
-        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
-        function is used to plot data points for categorical variables
-        """
         if max == 0: return 0.0
-        if self.jitteringType == 'none': return 0.0
-        elif self.jitteringType  == 'uniform': 
-            return (random() - 0.5)*2*max
-        elif self.jitteringType  == 'triangle': 
-            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
-        elif self.jitteringType  == 'beta': 
-            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
-                     
-
+        return (random() - 0.5)*2*max
+        
     def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0, xData = [], yData = [], forceFilledSymbols = 0):
         newCurveKey = self.insertCurve(name)
         if self.showFilledSymbols or forceFilledSymbols:

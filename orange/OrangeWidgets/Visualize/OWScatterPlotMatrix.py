@@ -49,7 +49,6 @@ class OWScatterPlotMatrix(OWWidget):
         #set default settings
         self.data = None
         self.pointWidth = 5
-        self.jitteringType = "uniform"
         self.showTitle = 0
         self.showAttributeValues = 0
         self.showXAxisTitle = 0
@@ -102,7 +101,6 @@ class OWScatterPlotMatrix(OWWidget):
         self.connect(self.SettingsTab.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.SettingsTab.jitterContinuous, SIGNAL("clicked()"), self.setJitterContinuous)
         self.connect(self.SettingsTab.gShowDistributions, SIGNAL("clicked()"), self.updateSettings)
-        self.connect(self.SettingsTab.jitteringButtons, SIGNAL("clicked(int)"), self.setSpreadType)
 
 
         self.grid = QGridLayout(self.mainArea)
@@ -119,7 +117,6 @@ class OWScatterPlotMatrix(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.SettingsTab.jitteringButtons.setButton(self.spreadType.index(self.jitteringType))
         self.SettingsTab.gShowTitle.setChecked(self.showTitle)
         self.SettingsTab.gShowAttributeValues.setChecked(self.showAttributeValues)
         self.SettingsTab.gSetXaxisCB.setChecked(self.showXAxisTitle)
@@ -136,7 +133,6 @@ class OWScatterPlotMatrix(OWWidget):
 
     def setGraphOptions(self, graph, title):
         graph.updateSettings(showDistributions = self.SettingsTab.gShowDistributions.isChecked(), showAttributeValues = self.showAttributeValues)
-        graph.setJitteringOption(self.jitteringType)
         graph.setShowXaxisTitle(self.showXAxisTitle)
         graph.setShowYLaxisTitle(self.showYAxisTitle)
         graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
@@ -152,11 +148,6 @@ class OWScatterPlotMatrix(OWWidget):
             graph.pointWidth = n
         self.updateGraph()
         
-    # jittering options
-    def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.updateJitteringSettings()
-
     def setJitterContinuous(self):
         self.jitterContinuous = self.SettingsTab.jitterContinuous.isChecked()
         self.updateJitteringSettings()
@@ -432,16 +423,6 @@ class OWScatterPlotMatrixOptions(QVGroupBox):
         self.widthSlider = QSlider(2, 20, 1, 3, QSlider.Horizontal, widthBox)
         self.widthSlider.setTickmarks(QSlider.Below)
         self.widthLCD = QLCDNumber(2, widthBox)
-
-        #####
-        # jittering
-        self.jitteringButtons = QVButtonGroup("Jittering type", self)
-        QToolTip.add(self.jitteringButtons, "Selected the type of jittering for discrete variables")
-        self.jitteringButtons.setExclusive(TRUE)
-        self.spreadNone = QRadioButton('none', self.jitteringButtons)
-        self.spreadUniform = QRadioButton('uniform', self.jitteringButtons)
-        self.spreadTriangle = QRadioButton('triangle', self.jitteringButtons)
-        self.spreadBeta = QRadioButton('beta', self.jitteringButtons)
 
         ######
         # jittering options
