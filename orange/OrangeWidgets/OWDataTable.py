@@ -1,5 +1,5 @@
 """
-<name>Data table</name>
+<name>Data Table</name>
 <description>DataTable shows the data set in a spreadsheet.</description>
 <category>Data</category>
 <icon>icons/DataTable.png</icon>
@@ -17,6 +17,17 @@
 from qttable import *
 from OData import *
 from OWWidget import *
+
+##############################################################################
+
+class colorItem(QTableItem):
+         def __init__(self, table, editType, text):
+                 QTableItem.__init__(self, table, editType, text)
+
+         def paint(self, painter, colorgroup, rect, selected):
+                 g = QColorGroup(colorgroup)
+                 g.setColor(QColorGroup.Base, Qt.lightGray)
+                 QTableItem.paint(self, painter, g, rect, selected)
 
 ##############################################################################
 
@@ -76,7 +87,9 @@ class OWDataTable(OWWidget):
         if self.dataset.domain.classVar:
             j = len(self.dataset.domain.attributes)
             for i in range(len(self.dataset)):
-                self.table.setText(i, j, self.dataset[i].getclass().native())
+                item = colorItem(self.table, QTableItem.WhenCurrent, self.dataset[i].getclass().native())
+                self.table.setItem(i, j, item)
+#                self.table.setText(i, j, self.dataset[i].getclass().native())
 
         # adjust the width of the table
         for i in range(len(self.dataset.domain.attributes)):
@@ -84,16 +97,18 @@ class OWDataTable(OWWidget):
 
         # manage sorting (not correct, does not handle real values)
         self.connect(self.header,SIGNAL("clicked(int)"),self.sort)
-        self.sortby = len(self.dataset.domain.attributes)+2
+        self.sortby = 0
         #self.resize(100,100)
+
+        #self.table.setColumnMovingEnabled(1)
                 
     def sort(self, col):
         "sorts the table by column col"
-        if col == self.sortby:
+        if col == self.sortby-1:
             self.sortby = - self.sortby
         else:
-            self.sortby = col
-        self.table.sortColumn(abs(self.sortby),self.sortby>=0,TRUE)
+            self.sortby = col+1
+        self.table.sortColumn(col, self.sortby>=0, TRUE)
 
 ##############################################################################
 # Test the widget, run from DOS prompt
@@ -106,6 +121,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     dataset = orange.ExampleTable('adult_sample')
+#    dataset = orange.ExampleTable('outcome')
     od = OrangeData(dataset)
     ow.data(od)
 
