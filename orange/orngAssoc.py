@@ -1,7 +1,7 @@
 import orange, string, types
 
 def build(data, support=0.9, maxItemSets=15000):
-    rules=AssociationRulesInducer(data, supp=support, maxItemSets=maxItemSets)
+    rules=AssociationRulesInducer(data, support=support, maxItemSets=maxItemSets)
     AssociationRules.sortByFields(rules, ['support', 'confidence'])
     return rules
 
