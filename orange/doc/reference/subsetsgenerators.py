@@ -14,8 +14,8 @@ for attrs in gen1:
   print attrs
 
 print "\n\nSubsets by ordinary subsets generator"
-gen2 = orange.SubsetsGenerator_constSize()
-for attrs in gen2(data.domain.attributes, B=3):
+gen2 = orange.SubsetsGenerator_constSize(B=3)
+for attrs in gen2(data.domain.attributes):
   print attrs
 
 def f(gen, data):

@@ -4,6 +4,8 @@
 # Uses:        
 # Referenced:  pythonvariable.htm
 
+# xtest: RANDOM
+
 import orange
 
 data = orange.ExampleTable("lenses")
@@ -14,7 +16,11 @@ data.domain.addmeta(orange.newmetaid(), newattr)
 data[0]["foo"] = ("a", "tuple")
 data[1]["foo"] = "a string"
 data[2]["foo"] = orange
-data[3]["foo"] = data
+
+# Could, but won't do this; the script is also used
+# in regression tests and printing the pointer would
+# cause a mismatch btw Win, Linux and Mac version
+# data[3]["foo"] = data
 
 for i in range(4):
     print data[i]

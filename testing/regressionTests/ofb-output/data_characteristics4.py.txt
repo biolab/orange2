@@ -1,10 +1,10 @@
 Average values and mean square errors:
-age, mean=977.00 +-  0.44
-fnlwgt, mean=977.00 +- 3464.37
-education-num, mean=977.00 +-  0.08
-capital-gain, mean=977.00 +- 218.78
-capital-loss, mean=977.00 +- 13.68
-hours-per-week, mean=977.00 +-  0.41
+age, mean=38.91 +-  0.44
+fnlwgt, mean=187280.29 +- 3464.37
+education-num, mean= 9.98 +-  0.08
+capital-gain, mean=1041.83 +- 218.78
+capital-loss, mean=96.18 +- 13.68
+hours-per-week, mean=39.91 +-  0.41
 
 Frequencies for values of discrete attributes:
 workclass:

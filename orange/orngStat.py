@@ -501,7 +501,8 @@ def NPV(confm):
 
 
 def AROC(res, classIndex=-1):
-    apply(AUCWilcoxon, (AUCWilcoxon,), argkw)
+    return apply(AUCWilcoxon, (AUCWilcoxon,), argkw)
+
 def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
@@ -905,7 +906,8 @@ def computeCDT(res, classIndex=-1, **argkw):
     
    
 def AROCFromCDT(cdt, **argkw):
-    apply(ROCsFromCDT, (cdt,), argkw)
+    return apply(ROCsFromCDT, (cdt,), argkw)
+
 def ROCsFromCDT(cdt, **argkw):
     if type(cdt) == list:
         return [ROCsFromCDT(c) for c in cdt]
@@ -1179,7 +1181,7 @@ defaultPointTypes=("{$\\circ$}", "{$\\diamond$}", "{$+$}", "{$\\times$}", "{$|$}
 defaultLineTypes=("\\setsolid", "\\setdashpattern <4pt, 2pt>", "\\setdashpattern <8pt, 2pt>", "\\setdashes", "\\setdots")
 
 def learningCurveLearners2PiCTeX(file, allResults, proportions, **options):
-    apply(learningCurve2PiCTeX, (file, allResults, proportions), options)
+    return apply(learningCurve2PiCTeX, (file, allResults, proportions), options)
     
 def learningCurve2PiCTeX(file, allResults, proportions, **options):
     import types
@@ -1260,7 +1262,7 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
     del file
 
 def legendLearners2PiCTeX(file, learners, **options):
-  apply(legend2PiCTeX, (file, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
+  return apply(legend2PiCTeX, (file, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))]), options)
     
 def legend2PiCTeX(file, legend, **options):
     import types

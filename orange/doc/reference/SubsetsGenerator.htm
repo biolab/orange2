@@ -66,8 +66,6 @@ for attrs in sgen(data.domain.attributes):
   print attrs
 </XMP>
 
-<P><SMALL>If you use the old reset-next protocol, you can specify the attribute set as an argument to <CODE>reset</CODE> function.</SMALL></P>
-
 <P><B>Warning</B>: do not modify the generator during iteration. The <CODE>for</CODE> loop, for instance, should neither change anything in the generator neither try to reuse the same generator in a nested for loop. This would result in unexpected results, at least.</P>
 
 <H2>SubsetsGenerator_constSize</H2>
@@ -80,7 +78,7 @@ for attrs in sgen(data.domain.attributes):
 <DD>Subsets size. Default size is 2.</DD>
 </DL>
 
-<P>As usual, <CODE>B</CODE> can be given either at construction, later (as an attribute) or at call time. The below two examples are equivalent:</P>
+<P>Here is an example</P>
 
 <p class="header">part of <a href="subsetsgenerators.py">subsetsgenerators.py</a>
 (uses <a href="monks-1.tab">monks-1.tab</a>)</p>
@@ -88,13 +86,15 @@ for attrs in sgen(data.domain.attributes):
 gen1 = orange.SubsetsGenerator_constSize(data.domain.attributes, B=3)
 for attrs in gen1:
   print attrs
-
->>> gen2 = orange.SubsetsGenerator_constSize()
-for attrs in gen2(data.domain.attributes, B=3):
-  print attrs
 </XMP>
 
-<P>Output for both begins by:</P>
+<P><SMALL><B>Note:</B> There has been a change in the way Orange treats arguments in a call.
+Setting the attributes in a call (eg <CODE>for attrs in gen1(data.domain.attributes, B=3):</CODE>)
+is no longer legal and will raise an exception.
+The change was required for various reasons, most importantly to avoid the confusion whether
+B is set for the duration of the call or permanently.</SMALL></P>
+
+<P>Output begins by:</P>
 
 <XMP class="code">
 (EnumVariable 'a', EnumVariable 'b', EnumVariable 'c')

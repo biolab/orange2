@@ -7,6 +7,7 @@ from xml.dom import minidom
 import re
 
 regtestdir = os.getcwd().replace("\\", "/")
+re_israndom = re.compile(r"#\s*xtest\s*:\s*RANDOM")
 
 date = "%2.2i-%2.2i-%2.2i" % time.localtime()[:3]
 
@@ -172,7 +173,7 @@ def testScripts(complete):
 
     skip = ["buildC45.py"]
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in ["cvs", "datasets"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in ["cvs", "datasets", "widgets"] or (directories and not dir in directories):
             continue
         
         print "\nDirectory '%s'\n" % dir
@@ -232,7 +233,9 @@ def testScripts(complete):
                 if os.path.exists(remname):
                     os.remove(remname)
                 
-            os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, `iterations`, `runNo`, `int(isNewFile)`, outputsdir)
+            
+            titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
+            os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, `titerations`, `runNo`, `int(isNewFile)`, outputsdir)
             report = open("xtest1_report", "rt")
             
             result = rstrip(report.readline())

@@ -4,6 +4,8 @@
 # Uses:        
 # Referenced:  DomainDepot.htm
 
+# xtest: RANDOM
+
 import orange
 
 de = orange.DomainDepot()

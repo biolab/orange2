@@ -1,7 +1,7 @@
 ['young', 'myope', 'no', 'reduced', 'none'], {"foo":'('a', 'tuple')'}
 ['young', 'myope', 'no', 'normal', 'soft'], {"foo":'a string'}
 ['young', 'myope', 'yes', 'reduced', 'none'], {"foo":'<module 'orange' from 'd:\ai\orange\orange.pyd'>'}
-['young', 'myope', 'yes', 'normal', 'hard'], {"foo":'<ExampleTable instance at 0x00C819B0>'}
+['young', 'myope', 'yes', 'normal', 'hard']
 
 ['young', 'myope', 'no', 'reduced', '[0, 0, 0, 0, 0]', 'none']
 ['young', 'myope', 'no', 'normal', '[0, 0, 0, 1, 1]', 'soft']

@@ -1,3 +1,5 @@
+# xtest: RANDOM
+
 import orange
 
 data1 = orange.ExampleTable("merge1")
@@ -10,5 +12,5 @@ print "Domain 1: ", data1.domain
 print "Domain 2: ", data2.domain
 print "Merged:   ", merged.domain
 print
-for ex in merged:
-    print ex
+for i in range(len(data1)):
+    print "   %s\n + %s\n-> %s\n" % (data1[i], data2[i], merged[i])

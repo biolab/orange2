@@ -138,12 +138,13 @@ data2 = orange.ExampleTable("merge2", use = data1.domain)
 
 merged = orange.ExampleTable([data1, data2])
 
+print
 print "Domain 1: ", data1.domain
 print "Domain 2: ", data2.domain
 print "Merged:   ", merged.domain
-
+print
 for i in range(len(data1)):
-    print "%s\t%s\t%s" % (data1[i], data2[i], merged[i])
+    print "   %s\n + %s\n-> %s\n" % (data1[i], data2[i], merged[i])
 </XMP>
 
 <P>First, note the <CODE>use = data1.domain</CODE> which ensures that while loading the second table, the attributes from the first will be reused if they are of same name and type. Without that, the attribute <CODE>a1</CODE> from the first and the attribute <CODE>a2</CODE> from the second table would be two different attributes and the merged table would have two attributes named <CODE>a1</CODE> instead of a single one, which is what we want. The same goes for meta-attribute <CODE>m1</CODE> which will also have the same id in both table. (For this reason, it is important to pass the entire domain, <EM>ie</EM> <CODE>data1.domain</CODE>, not a list of attributes, such as <CODE>data1.domain.variables</CODE> or - obviously intentionally doing it wrong -- <CODE>data1.domain.variables + data1.domain.getmetas().values()</CODE>.)</P>
@@ -154,9 +155,17 @@ Domain 1:  [a1, a2], {-2:m1, -3:m2}
 Domain 2:  [a1, a3], {-2:m1, -4:m3}
 Merged:    [a1, a2, a3], {-2:m1, -3:m2, -4:m3}
 
-[1, 2, 2.5], {"m1":3, "m2":4, "m3":4.5}
-[5, 6, 6.5], {"m1":7, "m2":8, "m3":8.5}
-[9, 10, 10.5], {"m1":11, "m2":12, "m3":12.5}
+   [1, 2], {"m1":3, "m2":4}
+ + [1, 2.5], {"m1":3, "m3":4.5}
+-> [1, 2, 2.5], {"m1":3, "m2":4, "m3":4.5}
+
+   [5, 6], {"m1":7, "m2":8}
+ + [5, 6.5], {"m1":7, "m3":8.5}
+-> [5, 6, 6.5], {"m1":7, "m2":8, "m3":8.5}
+
+   [9, 10], {"m1":11, "m2":12}
+ + [9, 10.5], {"m1":11, "m3":12.5}
+-> [9, 10, 10.5], {"m1":11, "m2":12, "m3":12.5}
 </XMP>
 </P>
 </DD>

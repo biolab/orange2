@@ -61,14 +61,15 @@ class BayesClassifierClass:
 
 
 
-<h2>Passing Attributes in Calls and to Constructor</h2>
+<h2>Passing Attributes to Constructors</h2>
 
 <p>Another peculiarity of constructors is that they accept values of attributes to be set. Essentially, everything that is passed as a keyword argument is copied to the instances dictionary, just as if constructors were defined like this.</p>
 
 <xmp class="code">
 class MyClass:
-  def __init__(self, **args):
+  def __init__(self, <positional arguments>, **args):
     self.__dict__.update(args)
+    <...>
 </xmp>
 
 <p>This will significantly reduce the length of your scripts. Instead of</p>
@@ -87,14 +88,13 @@ tree = orange.TreeLearner(data, storeExamples = 1)
 
 <p>The constructor will construct an <code>orange.TreeLearner</code>, set its attribute <code>storeExamples</code>, call it with the <code>data</code> and return the resulting tree classifier.</p>
 
-<p>Keyword arguments are also accepted and stored as attribute values by call operators.
+<P><B>Important note:</B> Previously, Orange also accepted key arguments to calls, which were stored as attribute values by call operators. This was removed for several reasons. Most importantly, statements like <CODE>filtered_data = filter(data, negate=1)</CODE> were sometimes understood as if negate was set to 1 only for the duration of the call, while in fact it was stored and remained in effect for the subsequent calls. The other reason is that Python now uses this syntax for naming positional arguments (this wasn't so when we began developing Orange).</P>
 
-<xmp class="code">
-treeLearner = orange.TreeLearner()
-tree = treeLearner(data, storeExamples=1)
-</xmp>
+<P>Passing attribute values in calls was seldom used, so we felt we can eliminate this functionality without major inconvenience. Passing attribute values now raises an exception, telling that the call doesn't support keyword arguments; if you happen to see this in your code, please move setting the attribute above the call.</P>
 
-<p>Note that <code>storeExamples</code> will be permanently set to <code>1</code>, although one could understand the above line as if <code>storeExamples=1</code> would be effective only during the call.</p>
+<P>There are a two cases where this functionality was handy: setting 'negate' in filters and specifying probabilities or number of folds in descendants of <CODE>MakeRandomIndices</CODE>. In these two places we therefore retained it, but setting the attribute is now effective only for the duration of the call. This is the only normal expected behaviour; there may be some who would have problems because of this incompatibility (we hope to avoid it by properly advertising it), but we believe that many more would have problems if we kept the counterintuitive version that we had before.
+
+Passing attribute values to constructors is not ambiguous and is very handy, so it will remain supported.
 
 
 <h2>Type Checking for Built-in Attributes</h2>

@@ -10,4 +10,4 @@ supp	conf 	rule
 supp	conf 	rule
 0.805	0.982 	aspiration=std -> engine-location=front
 0.805	0.817 	engine-location=front -> aspiration=std
-0.785	0.958 	aspiration=std -> fuel-type=gas
+0.805	0.982 	aspiration=std -> engine-location=front
