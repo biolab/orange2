@@ -1,7 +1,6 @@
 """
 <name>Mosaic Display</name>
 <description>Show mosaic display</description>
-<category>Visualization</category>
 <icon>icons/MosaicDisplay.png</icon>
 <priority>4200</priority>
 """
@@ -10,7 +9,7 @@
 # 
 
 from OWWidget import *
-from qt import *
+#from qt import *
 from qtcanvas import *
 import orngInteract
 from math import sqrt, floor, ceil, pow
@@ -27,7 +26,7 @@ class OWMosaicDisplay(OWWidget):
     settingsList = ["horizontalDistribution", "showDistribution", "showAprioriDistribution"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Mosaic display", 'show Mosaic display', FALSE, TRUE, icon = "MosaicDisplay.png")
+        OWWidget.__init__(self, parent, "Mosaic display", TRUE)
 
         #set default settings
         self.data = None

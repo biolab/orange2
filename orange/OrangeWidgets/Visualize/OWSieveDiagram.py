@@ -1,13 +1,11 @@
 """
 <name>Sieve Diagram</name>
 <description>Show sieve diagram</description>
-<category>Visualization</category>
 <icon>icons/SieveDiagram.png</icon>
 <priority>4100</priority>
 """
 # OWSieveDiagram.py
 #
-# 
 
 from OWWidget import *
 from qt import *
@@ -24,7 +22,7 @@ class OWSieveDiagram(OWWidget):
     settingsList = ["showLines"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE, icon = "SieveDiagram.png")
+        OWWidget.__init__(self, parent, "Sieve diagram", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.data, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = []

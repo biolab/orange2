@@ -1,7 +1,6 @@
 """
 <name>Attribute Statistics</name>
 <description>Show basic statistics about attributes.</description>
-<category>Data</category>
 <icon>icons/AttributeStatistics.png</icon>
 <priority>1100</priority>
 """
@@ -9,7 +8,7 @@
 # OWAttributeStatistics.py
 #
 
-import orange
+#import orange
 from qtcanvas import *
 from OWWidget import *
 from OWGUI import *
@@ -18,10 +17,7 @@ class OWAttributeStatistics(OWWidget):
     settingsList=["LastAttributeSelected"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "AttributeStatistics",
-        "OWAttributeStatistics is an Orange Widget that displays basic statistics about attributes", icon = "AttributeStatistics.png")
+        OWWidget.__init__(self, parent, "AttributeStatistics", TRUE)
 
         self.callbackDeposit = []
 

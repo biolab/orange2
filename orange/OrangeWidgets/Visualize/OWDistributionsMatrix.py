@@ -1,7 +1,6 @@
 """
 <name>Distributions Matrix</name>
 <description>Create a matrix with distributions.</description>
-<category>Standard Visualizations</category>
 <icon>icons/Distribution.png</icon>
 <priority>1050</priority>
 """
@@ -16,19 +15,12 @@ from OWWidget import *
 import math
 from OWDistributions import *
 
-        
-
 class OWDistributionsMatrix(OWWidget):
     settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth", "ShowMainTitle", "ShowXaxisTitle", "ShowYaxisTitle", "ShowYPaxisTitle"]
 
     def __init__(self,parent=None):
         "Constructor"
-        OWWidget.__init__(self,
-        parent,
-        "&Distributions Matrix",
-        "Widget for comparing distributions of two datasets with same domain and different examples.",
-        TRUE,
-        TRUE, icon = "Distribution.png")
+        OWWidget.__init__(self, parent, "&Distributions Matrix", TRUE)
 
         # inputs
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]

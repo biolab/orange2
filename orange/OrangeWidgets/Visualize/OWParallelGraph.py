@@ -1,17 +1,20 @@
 #
 # OWParallelGraph.py
 #
-# the base for all parallel graphs
 
 from OWVisGraph import *
 from OWDistributions import *
-from qt import *
-from OWTools import *
-from qwt import *
-from Numeric import *
-from LinearAlgebra import *
+#from qt import *
+#from OWTools import *
+#from qwt import *
+#from Numeric import *
+#from LinearAlgebra import *
 from statc import pearsonr
+import MLab
 
+NO_STATISTICS = 0
+MEANS  = 1
+MEDIAN = 2
 
 class OWParallelGraph(OWVisGraph):
     def __init__(self, parallelDlg, parent = None, name = None):
@@ -25,6 +28,7 @@ class OWParallelGraph(OWVisGraph):
         self.toolInfo = []
         self.toolRects = []
         self.useSplines = 0
+        self.showStatistics = 0
         self.lastSelectedKey = 0
         self.enabledLegend = 0
         self.curvePoints = []       # save curve points in form [(y1, y2, ..., yi), (y1, y2, ... yi), ...] - used for sending selected and unselected points
@@ -176,6 +180,22 @@ class OWParallelGraph(OWVisGraph):
         if targetValue != None:
             for curve in curves[0]: self.insertCurve(curve)
             for curve in curves[1]: self.insertCurve(curve)
+
+        if self.showStatistics:
+            data = []
+            for i in range(length):
+                if self.rawdata.domain[indices[i]].varType != orange.VarTypes.Continuous:
+                    data.append(())
+                    continue  # only for continuous attributes
+                array = self.scaledData[indices[i]]
+                if self.showStatistics == MEANS:
+                    mean = MLab.mean(array)
+                    dev = MLab.std(array)
+                    data.append((mean-dev, mean, mean+dev))
+                elif self.showStatistics == MEDIAN:
+                    sorted = Numeric.sort(array)
+                    data.append((sorted[int(len(a)/4.0)], sorted[int(len(a)/2.0)], sorted[int(len(a)*0.75)]))
+            
 
 
         # ############################################

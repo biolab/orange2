@@ -1,8 +1,6 @@
 """
 <name>Distributions</name>
-<description>Widget for comparing distributions of two datasets with same domain and different
-examples.</description>
-<category>Standard Visualizations</category>
+<description>Widget for comparing distributions of two datasets with same domain and different examples.</description>
 <icon>icons/Distribution.png</icon>
 <priority>1000</priority>
 """
@@ -285,16 +283,7 @@ class OWDistributions(OWWidget):
 
     def __init__(self,parent=None):
         "Constructor"
-        OWWidget.__init__(self,
-        parent,
-        "&Distributions",
-        """The Distribution Widget is an Orange Widget
-that shows data distributions, 
-distribution of attribute values and
-distribution of classes for each attribute.
-        """,
-        FALSE,
-        TRUE, icon = "Distribution.png")
+        OWWidget.__init__(self, parent, "&Distributions", TRUE)
         # settings
         self.numberOfBars = 5
         self.barSize = 50

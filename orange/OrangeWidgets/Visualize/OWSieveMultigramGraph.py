@@ -1,8 +1,3 @@
-#
-# OWSieveMultigramGraph.py
-#
-# the base for all parallel graphs
-
 from OWVisGraph import *
 
 ###########################################################################################

@@ -1,7 +1,6 @@
 """
 <name>Parallel coordinates</name>
 <description>Shows data using parallel coordianates visualization method</description>
-<category>Visualization</category>
 <icon>icons/ParallelCoordinates.png</icon>
 <priority>3200</priority>
 """
@@ -21,14 +20,14 @@ from sys import getrecursionlimit, setrecursionlimit
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes", "toolbarSelection"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes", "toolbarSelection", "showStatistics"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE, icon = "ParallelCoordinates.png")
+        OWWidget.__init__(self, parent, "Parallel Coordinates", TRUE)
         self.resize(700,700)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
@@ -41,6 +40,7 @@ class OWParallelCoordinates(OWWidget):
         self.linesDistance = 60
         
         self.showDistributions = 1
+        self.showStatistics = 0
         self.showAttrValues = 1
         self.hidePureExamples = 1
         
@@ -137,13 +137,16 @@ class OWParallelCoordinates(OWWidget):
         # ####
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values")
         OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
         OWGUI.checkBox(box, self, 'useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
         OWGUI.checkBox(box, self, 'lineTracking', 'Line tracking', callback = self.updateValues, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
         OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.updateValues)
         OWGUI.checkBox(box, self, 'globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
+
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Statistics ")
+        OWGUI.comboBox(box3, self, "showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
+        OWGUI.checkBox(box3, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
         
         
         box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
@@ -171,11 +174,8 @@ class OWParallelCoordinates(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         self.graph.updateSettings(enabledLegend = self.showLegend, useSplines = self.useSplines, lineTracking = self.lineTracking)
-        self.graph.showDistributions = self.showDistributions
-        self.graph.showAttrValues = self.showAttrValues
-        self.graph.hidePureExamples = self.hidePureExamples
-        self.graph.globalValueScaling = self.globalValueScaling
-        self.graph.jitterSize = self.jitterSize
+        self.graph.updateSettings(showDistributions = self.showDistributions, showAttrValues = self.showAttrValues, hidePureExamples = self.hidePureExamples)
+        self.graph.updateSettings(globalValueScaling = self.globalValueScaling, jitterSize = self.jitterSize, showStatistics = self.showStatistics)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
@@ -459,8 +459,7 @@ class OWParallelCoordinates(OWWidget):
     def updateValues(self):
         self.isResizing = 0
         self.graph.updateSettings(showDistributions = self.showDistributions, useSplines = self.useSplines, enabledLegend = self.showLegend, lineTracking = self.lineTracking)
-        self.graph.showAttrValues = self.showAttrValues
-        self.graph.hidePureExamples = self.hidePureExamples
+        self.graph.updateSettings(showAttrValues = self.showAttrValues, hidePureExamples = self.hidePureExamples, showStatistics = self.showStatistics)
         self.updateGraph()
 
     def resizeEvent(self, e):
@@ -506,7 +505,8 @@ class OWParallelCoordinates(OWWidget):
 
 CORRELATION = 0
 VIZRANK = 1
-
+#
+# Find attribute subsets that are interesting to visualize using parallel coordinates
 class ParallelOptimization(OWBaseWidget):
     resultListList = [50, 100, 200, 500, 1000]
     settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure", "numberOfAttributes", "orderAllAttributes"]
@@ -514,7 +514,7 @@ class ParallelOptimization(OWBaseWidget):
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
 
     def __init__(self, parallelWidget, parent=None):
-        OWBaseWidget.__init__(self, parent, "Parallel Optimization Dialog", "Find attribute subsets that are interesting to visualize using parallel coordinates", FALSE, FALSE, FALSE)
+        OWBaseWidget.__init__(self, parent, "Parallel Optimization Dialog", FALSE)
 
         self.setCaption("Qt Parallel Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 

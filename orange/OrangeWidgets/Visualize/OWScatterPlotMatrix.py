@@ -1,7 +1,6 @@
 """
 <name>Scatterplot matrix</name>
 <description>Show all possible projections of the data</description>
-<category>Visualization</category>
 <icon>icons/ScatterPlotMatrix.png</icon>
 <priority>120</priority>
 """
@@ -12,7 +11,7 @@
 
 from OWWidget import *
 from OWScatterPlotGraph import OWScatterPlotGraph
-import qt
+#import qt
 import orngInteract
 import statc
 import OWDlgs
@@ -40,7 +39,7 @@ class OWScatterPlotMatrix(OWWidget):
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Scatterplot matrix", 'Show all possible projections of the data', FALSE, TRUE, icon = "ScatterPlotMatrix.png")
+        OWWidget.__init__(self, parent, "Scatterplot matrix", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Attribute selection", list)] 

@@ -1,14 +1,9 @@
 """
 <name>Sieve multigram</name>
 <description>Shows sieve multigram</description>
-<category>Visualization</category>
 <icon>icons/SieveMultigram.png</icon>
 <priority>4150</priority>
 """
-# Polyviz.py
-#
-# Show data using Polyviz visualization method
-# 
 
 from OWWidget import *
 from random import betavariate 
@@ -24,7 +19,7 @@ class OWSieveMultigram(OWWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
             
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve Multigram", "Show sieve multigram", FALSE, TRUE, icon = "SieveMultigram.png")
+        OWWidget.__init__(self, parent, "Sieve Multigram", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
         self.outputs = [] 

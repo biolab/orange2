@@ -1,7 +1,6 @@
 """
 <name>Survey Plot</name>
 <description>Shows data using survey plot visualization method</description>
-<category>Visualization</category>
 <icon>icons/SurveyPlot.png</icon>
 <priority>3250</priority>
 """
@@ -24,7 +23,7 @@ class OWSurveyPlot(OWWidget):
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE, icon = "SurveyPlot.png")
+        OWWidget.__init__(self, parent, "Survey Plot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Selection", list)] 

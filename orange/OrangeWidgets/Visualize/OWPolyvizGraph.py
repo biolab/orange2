@@ -1,14 +1,9 @@
-#
-# OWPolyvizGraph.py
-#
-# the base for all parallel graphs
-
 from OWVisGraph import *
 from copy import copy, deepcopy
 import time
 from OWkNNOptimization import *
 import math
-import orange
+#import orange
 
 # ####################################################################
 # get a list of all different permutations

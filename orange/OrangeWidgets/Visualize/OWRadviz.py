@@ -1,7 +1,6 @@
 """
 <name>Radviz</name>
 <description>Shows data using radviz visualization method</description>
-<category>Visualization</category>
 <icon>icons/Radviz.png</icon>
 <priority>3100</priority>
 """
@@ -30,7 +29,7 @@ class OWRadviz(OWWidget):
     scaleFactorList = [str(x) for x in scaleFactorNums]
         
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE, icon = "Radviz.png")
+        OWWidget.__init__(self, parent, "Radviz", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]

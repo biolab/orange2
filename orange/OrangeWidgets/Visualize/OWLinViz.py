@@ -1,7 +1,6 @@
 """
 <name>LinViz</name>
 <description>TO DO</description>
-<category>Visualization</category>
 <icon>icons/LinViz.png</icon>
 <priority>5200</priority>
 """
@@ -12,9 +11,8 @@
 from OWWidget import *
 #from random import betavariate 
 from OWLinVizGraph import *
-from qt import *
-import orange, orngDimRed
-import math, Numeric, LinearAlgebra
+#from qt import *
+#import orange, orngDimRed
 import orngLinVis
 
 ###########################################################################################
@@ -24,7 +22,7 @@ class OWLinViz(OWWidget):
     settingsList = []
        
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "LinViz", "TO DO", TRUE, TRUE, icon = "LinViz.png")
+        OWWidget.__init__(self, parent, "LinViz", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.newdata, 1), ("Classifier", orange.Classifier, self.learner, 0)]
         self.outputs = [] 

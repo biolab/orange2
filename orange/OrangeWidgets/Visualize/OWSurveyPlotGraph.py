@@ -1,10 +1,4 @@
-#
-# OWParallelGraph.py
-#
-# the base for all parallel graphs
-
 from OWVisGraph import *
-from math import *
 
 DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
@@ -116,7 +110,7 @@ class OWSurveyPlotGraph(OWVisGraph):
         elif not self.rawdata:
             return
         else:
-            yFloat = floor(self.invTransform(QwtPlot.yLeft, e.y()))
+            yFloat = math.floor(self.invTransform(QwtPlot.yLeft, e.y()))
             if self.exampleTracking:
                 width = 0.49
                 xData = [-width, self.length+width-1, self.length+width-1, -width, -width]

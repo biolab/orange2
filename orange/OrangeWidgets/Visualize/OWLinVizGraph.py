@@ -1,14 +1,9 @@
-#
-# OWRadvizGraph.py
-#
-# the base for all parallel graphs
-
 from OWVisGraph import *
 from copy import copy
 import time
 from operator import add
 import orange, orngDimRed
-import math, Numeric, LinearAlgebra
+import LinearAlgebra
 
 ###########################################################################################
 ##### CLASS : OWRADVIZGRAPH

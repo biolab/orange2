@@ -1,16 +1,12 @@
 #
 # OWRadvizGraph.py
 #
-# the base for all parallel graphs
-
 from OWVisGraph import *
 from copy import copy
 import time
 from operator import add
 from math import *
 from OWkNNOptimization import *
-import orange
-
 
 
 # ####################################################################
