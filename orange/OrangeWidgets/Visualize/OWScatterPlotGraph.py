@@ -183,7 +183,7 @@ class OWScatterPlotGraph(OWVisGraph):
             for key in valueDict.keys():
                 if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
-                    color = int(graph.objects[i].getclass())
+                    color = classIndices[graph.objects[i].getclass().value]
                     self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = graph[i,j][0])
 
             """
@@ -354,8 +354,8 @@ class OWScatterPlotGraph(OWVisGraph):
                         if discreteY == 1: y = attrYIndices[self.subsetData[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                         else:              y = self.subsetData[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                        newColor = QColor(0,0,0)
-                        if colorIndex != -1: newColor.setHsv(classColors.getHue(int(classIndices[self.subsetData[i][colorIndex].value])), 255, 255)
+                        if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial(): newColor = classColors[self.subsetData[i][colorIndex].value]
+                        else: newColor = QColor(70,70,70)
                                 
                         Symbol = self.curveSymbols[0]
                         if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
@@ -520,9 +520,10 @@ class OWScatterPlotGraph(OWVisGraph):
         if not validData: validData = self.getValidList(attrIndices)
 
         if not classList:
-            classIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
-            else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
+            #classIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            #if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: classList = (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0  # remove data with missing values and convert floats back to ints
+            #else:                                                                classList = self.noJitteringScaledData[classIndex]  # for continuous attribute just add the values
+            classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
 
         xArray = self.noJitteringScaledData[attrIndices[0]]
         yArray = self.noJitteringScaledData[attrIndices[1]]
