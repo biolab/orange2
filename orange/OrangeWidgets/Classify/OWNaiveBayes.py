@@ -153,8 +153,6 @@ class OWNaiveBayes(OWWidget):
 #                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                 return            
             self.classifier.name = self.name
-
-            print "data", self.classifier.data
             self.send("Classifier", self.classifier)
             self.send("Naive Bayesian Classifier", self.classifier)
         self.error()
