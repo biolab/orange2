@@ -296,11 +296,20 @@ if __name__== "__main__":
     c.setCanvasColor(Qt.blue)
     cl.setNamedColor(QString("#00aaff"))
     c.setCanvasColor(cl)
-    curve = c.insertCurve("c1", QwtPlot.xBottom, QwtPlot.yLeft)
+    curve = c.insertCurve("c1")
+    curve2 = c.insertCurve("c2")
     c.setCurveData(curve, [0, 1, 2], [3,2,1])
+    c.setCurveData(curve2, [0, 1, 2], [1,2,1.5])
+    c.setCurveSymbol(curve, QwtSymbol(QwtSymbol.Ellipse, QBrush(), QPen(Qt.yellow), QSize(7, 7)))
 
-#    c.setData({'1':[4,3,5],'2':[0,0,0],'3':[6,0,1]})
-#    c.setTarget(0)
+    c.enableLegend(1);
+    c.setLegendPos(Qwt.Right)
+
+    legend = QwtLegend()
+    symbol = QwtSymbol(QwtSymbol.None, QBrush(QColor("black")), QPen(QColor("black")), QSize(1, 1))
+    #legend.appendItem("test 1", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0)
+    #legend.insertItem("test 2", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0, 1)
+
     a.setMainWidget(c)
     c.show()
     c.saveToFile()
