@@ -129,7 +129,7 @@ class OWScatterPlot(OWWidget):
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
         box2 = OWGUI.widgetBox(box, orientation = "horizontal")
         self.jitterLabel = QLabel('Jittering size (% of size)  ', box2)
-        self.jitterSizeCombo = OWGUI.comboBox(box2, self, "jitterSize", callback = self.setJitterSize, items = self.jitterSizeList)
+        self.jitterSizeCombo = OWGUI.comboBox(box2, self, "jitterSize", callback = self.setJitterSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.setJitterCont, tooltip = "Does jittering apply also on continuous attributes?")
         
         # general graph settings
@@ -377,7 +377,7 @@ class OWScatterPlot(OWWidget):
         self.updateGraph()
 
     def setJitterSize(self):
-        self.graph.setJitterSize(self.jitterSizeNums[self.jitterSize])
+        self.graph.setJitterSize(self.jitterSize)
         self.updateGraph()
 
     def setFilledSymbols(self):
