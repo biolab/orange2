@@ -3,11 +3,11 @@ PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.ve
 
 COMPILEOPTIONS=-fPIC -w -DLINUX -O3
 LINKOPTIONS=-shared -lstdc++
-export CPATH=orange:orange/ppp:orange/px:include:corn:statc:$(PYTHONINCLUDE)
+export CPATH=orange:orange/ppp:orange/px:include:corn:statc:$(PYTHONINCLUDE):/usr/local/include
 
 vpath %.cpp orange:corn:statc:include
 vpath %.hpp orange:corn:statc:include
-vpath %.h orange:include:$(PYTHONINCLUDE)
+vpath %.h orange:include:$(PYTHONINCLUDE):/usr/local/include/gsl
 
 obj/%.o :
 	g++ $(COMPILEOPTIONS) -c $< -o $@
@@ -21,7 +21,7 @@ dirs:
 	-@mkdir -p obj > /dev/null
 
 ../orange.so: orange/ppp/stamp orange/px/stamp $(ORANGE_OBJECTS)
-	gcc $(ORANGE_OBJECTS) $(LINKOPTIONS) -o ../orange.so
+	gcc $(ORANGE_OBJECTS) $(LINKOPTIONS) -o ../orange.so -lgsl -lgslcblas
 
 ../corn.so:	$(CORN_OBJECTS)
 	gcc $(CORN_OBJECTS) $(LINKOPTIONS) -o ../corn.so

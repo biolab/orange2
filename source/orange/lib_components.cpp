@@ -2206,7 +2206,7 @@ PyObject *SymMatrix_str(PyObject *self)
 
     float matmax = 0.0;
     for(float *ei = matrix->elements, *ee = matrix->elements + ((dim*(dim+1))>>1); ei != ee; ei++) {
-      const tei = *ei<0 ? abs(10* *ei) : *ei;
+      const float tei = *ei<0 ? fabs(10.0 * *ei) : *ei;
       if (tei > matmax)
         matmax = tei;
     }

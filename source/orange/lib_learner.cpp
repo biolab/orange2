@@ -765,5 +765,19 @@ PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
   PyCATCH
 }
 
+
+/************* LINEAR REGRESSION ************/
+
+#include "linreg.hpp"
+C_CALL(LinRegLearner, Learner, "([examples] -/-> Classifier)")
+C_NAMED(LinRegClassifier, ClassifierFD, "([coefficients=, coefficients_se=, SSres=, SStot=])")
+
+
+/************* LWR ************/
+
+#include "lwr.hpp"
+C_CALL(LWRLearner, Learner, "([examples] -/-> Classifier)")
+C_NAMED(LWRClassifier, ClassifierFD, "([findNearestConstructor=, linRegLearner=, k=, rankWeight=])")
+
 #include "lib_learner.px"
 
