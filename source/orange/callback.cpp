@@ -139,13 +139,49 @@ PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)
   PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight));
 
   if (!PyOrClassifier_Check(res)) 
-    raiseError("LearnerPython: __call__ is expected to return something derived from Classifier");
+    raiseError("__call__ is expected to return something derived from Classifier");
 
   PClassifier clsf = PyOrange_AsClassifier(res);
   Py_DECREF(res);
   return clsf;
 }
 
+
+#include "vectortemplates.hpp"
+#include "converts.hpp"
+PFloatList TLogisticFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute, const bool &exceptionAtSingularity)
+{
+  if (!eg)
+    raiseError("invalid example generator");
+
+  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Nii)", WrapOrange(POrange(eg)), weightID, exceptionAtSingularity ? 1: 0));
+
+  if (!PyTuple_Check(res) || (PyTuple_Size(res)<2) || !PyInt_Check(PyTuple_GET_ITEM(res, 0)))
+    raiseError("invalid result from __call__");
+
+  status = (int)PyInt_AsLong(PyTuple_GET_ITEM(res, 0));
+  if (status <= TLogisticFitter::Divergence) {
+    if (PyTuple_Size(res) != 4)
+      raiseError("invalid result from __call__");
+
+    PFloatList beta = ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 1));
+    beta_se = ListOfUnwrappedMethods<PFloatList, TFloatList, float>::P_FromArguments(PyTuple_GET_ITEM(res, 2));
+    Py_DECREF(res);
+    if (!beta || !beta_se || !PyNumber_ToFloat(PyTuple_GET_ITEM(res, 3), likelihood))
+      throw pyexception();
+
+    attribute = PVariable();
+    return beta;
+  }
+  else {
+    if (PyTuple_Size(res) != 2)
+      raiseError("invalid result from __call__");
+
+    attribute = PyOrange_AsVariable(PyTuple_GET_ITEM(res, 1));
+    beta_se = PFloatList();
+    return PFloatList();
+  }
+}
 
 
 TValue TClassifier_Python::operator ()(const TExample &ex)

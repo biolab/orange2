@@ -660,7 +660,14 @@ C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 C_CALL(LogisticLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
 C_NAMED(LogisticClassifier, ClassifierFD, "([probabilities=])")
 
-BASED_ON(LogisticFitter, Orange)
+
+PyObject *LogisticFitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrLogisticFitter_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TLogisticFitter_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TLogisticFitter_Python(), type);
+}
+
 C_CALL(LogisticFitter_Cholesky, LogisticFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
 PYCLASSCONSTANT_INT(LogisticFitter, OK, TLogisticFitter::OK)
