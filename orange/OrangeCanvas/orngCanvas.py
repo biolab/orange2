@@ -200,7 +200,11 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuWindow.setItemChecked(self.menupopupShowWidgetToolbarID, self.showWidgetToolbar)
 		
 		self.menuWindow.insertSeparator()
-		self.menuWindow.insertItem("Show output window", self.menuItemShowOutputWindow)
+		self.menuOutput = QPopupMenu(self)
+		self.menuWindow.insertItem( "Output Window", self.menuOutput)
+		self.menuOutput.insertItem("Show Output Window", self.menuItemShowOutputWindow)
+		self.menuOutput.insertItem("Clear Output Window", self.menuItemClearOutputWindow)
+		self.menuOutput.insertItem("Save Output Text", self.menuItemSaveOutputWindow)
 		self.menuWindow.insertSeparator()
 
 		self.menuWindow.insertItem("Minimize All", self.menuMinimizeAll)
@@ -389,6 +393,21 @@ class OrangeCanvasDlg(QMainWindow):
 	def menuItemShowOutputWindow(self):
 		self.output.show()
 		self.output.setFocus()
+
+	def menuItemClearOutputWindow(self):
+		self.output.textOutput.setText("")
+		self.statusBar.message("")
+
+	def menuItemSaveOutputWindow(self):
+		qname = QFileDialog.getSaveFileName( self.canvasDir + "/Output.txt", "Text (*.txt)", self, "", "Save Output To File")
+		if qname.isEmpty(): return
+		name = str(qname)
+
+		file = open(name, "wt")
+		file.write(str(self.output.textOutput.text()))
+		file.flush()
+		file.close()
+
 
 	def menuItemShowToolbar(self):
 		self.showToolbar = not self.showToolbar
