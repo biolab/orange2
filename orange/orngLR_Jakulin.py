@@ -436,7 +436,7 @@ class MarginMetaLearner(orange.Learner):
         for replication in range(self.replications):
             # perform 10 fold CV, and create a new dataset
             try:
-                selection = orange.MakeRandomIndicesCV(examples, self.folds) # orange 2.2
+                selection = orange.MakeRandomIndicesCV(examples, self.folds, stratified=0, randomGenerator = orange.globalRandom) # orange 2.2
             except:
                 selection = orange.RandomIndicesCVGen(examples, self.folds) # orange 2.1
             for fold in range(self.folds):
