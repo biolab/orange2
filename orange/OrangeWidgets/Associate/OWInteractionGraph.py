@@ -235,6 +235,8 @@ class OWInteractionGraph(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if not data:
+            return
         self.originalData = orange.Preprocessor_dropMissing(data)
         self.dataSize = len(self.originalData)
 

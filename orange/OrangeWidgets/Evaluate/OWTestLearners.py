@@ -196,7 +196,7 @@ AUC (area under ROC curve), and Brier score.
         # what if None is send (widget is removed!). Then remove the learner,
         # and corresponding data in self.results and self.scores, and refresh everything
         if not learner:
-            pass
+            return
         if not self.learnDict.has_key(id):
             self.learners.append(learner)
         else:
