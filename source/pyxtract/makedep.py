@@ -3,7 +3,7 @@
 import os, re, sys
 
 filenamedef=re.compile(r".*\..pp$")
-includedef=re.compile(r'\s*#include\s*"(?P<filename>.*(([chp]pp)|(px)))"')
+includedef=re.compile(r'\s*#include\s*"(?P<filename>.*(([chpij]pp)|(px)))"')
 filestemdef=re.compile(r'(?P<filestem>.*)\.(?P<fileextension>[^.]*)$')
 
 def findfiles():
