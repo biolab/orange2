@@ -1458,7 +1458,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 }
 
 
-#define EXAMPLE_LOCK(tab) (((tab)->ownsExamples || !(tab)->lock) ? (tab) : (tab)->lock)
+#define EXAMPLE_LOCK(tab) (((tab)->ownsExamples || !(tab)->lock) ? PExampleGenerator(tab) : (tab)->lock)
 
 PyObject *ExampleTable_native(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "([nativity, tuple=]) -> examples")
 { PyTRY

@@ -608,7 +608,7 @@ TC45TreeNode::TC45TreeNode(const Tree &node, PDomain domain)
   mapping(),
   branch()
 { 
-  double *cd = node->ClassDist; // no +1
+  float *cd = node->ClassDist; // no +1
   int i, e;
   for(i = 0, e = domain->classVar.AS(TEnumVariable)->values->size(); i!=e; i++, cd++)
     classDist->setint(i, float(*cd));

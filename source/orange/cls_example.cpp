@@ -774,6 +774,11 @@ static PyObject *PyExampleIter_Iternext(TPyExampleIter *self)
 }
 
 
+PyObject *PyExampleIter_Iter(PyObject *self)
+{ Py_INCREF(self);
+  return self;
+}
+
 
 PyTypeObject PyExampleIter_Type = {
 	PyObject_HEAD_INIT(&PyType_Type)
@@ -789,7 +794,7 @@ PyTypeObject PyExampleIter_Type = {
  	0,
  	(traverseproc)PyExampleIter_Traverse,
  	(inquiry)PyExampleIter_Clear, 0, 0,
-	PyObject_SelfIter,
+	PyExampleIter_Iter,
 	(iternextfunc)PyExampleIter_Iternext,
 	0, 0, 0, 0, 0, 0, 0,
 };
