@@ -23,7 +23,7 @@ class OWVisGraph(OWGraph):
         self.jitteringType = 'none'
         self.jitterSize = 10
         self.globalValueScaling = 0
-        self.GraphCanvasColor = str(Qt.white.name())
+        self.setCanvasColor(QColor(Qt.white.name()))
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
