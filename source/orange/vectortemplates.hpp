@@ -193,7 +193,7 @@ public:
 
 
 
-template<class _WrappedListType, class _ListType, class _WrappedElement, PyTypeObject *_PyElementType>
+template<class _WrappedListType, class _ListType, class _WrappedElement, TOrangeType *_PyElementType>
 class ListOfWrappedMethods : public CommonListMethods<_WrappedListType, _ListType> {
 public:
   typedef typename _ListType::iterator iterator;
@@ -205,15 +205,15 @@ public:
       return true;
     }
   
-    if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
-      if (PyOrange_CheckType(_PyElementType) && _PyElementType->tp_new) {
-        PyObject *pyel = objectOnTheFly(obj, _PyElementType);
+    if (!obj || !PyObject_TypeCheck(obj, (PyTypeObject *)_PyElementType)) {
+      if (_PyElementType->ot_inherited.tp_new) {
+        PyObject *pyel = objectOnTheFly(obj, (PyTypeObject *)_PyElementType);
         if (pyel)
           res = PyOrange_AS_Orange(pyel);
           return true;
       }
         
-      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "NULL");
+      PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->ot_inherited.tp_name, obj ? obj->ob_type->tp_name : "NULL");
       res = _WrappedElement();
       return false;
     }
