@@ -243,7 +243,6 @@ class SignalDialog(QDialog):
     def __init__(self, canvasDlg, *args):
         apply(QDialog.__init__,(self,) + args)
         self.canvasDlg = canvasDlg
-        self.setCaption("Qt Activate Signals")
         self.topLayout = QVBoxLayout( self, 10 )
         self.signals = []
         self.inList = []
@@ -363,6 +362,37 @@ class SignalDialog(QDialog):
 
     def getLinks(self):
         return self._links
+
+
+
+# canvas dialog
+class CanvasOptionsDlg(QDialog):
+    def __init__(self, canvasDlg, *args):
+        apply(QDialog.__init__,(self,) + args)
+        self.canvasDlg = canvasDlg
+        self.setCaption("Qt Canvas Options")
+        #self.controlArea = QVBoxLayout (self)
+        self.topLayout = QVBoxLayout( self, 10 )
+
+        exceptions = QVButtonGroup(self, "Exceptions")
+        self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
+        self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
+        
+        output = QVButtonGroup(self, "System output")
+        self.catchOutputCB = QCheckBox('Catch system output', output)
+        self.focusOnCatchOutputCB = QCheckBox('Focus output window on system output', output)
+        
+        hbox = QHBox(self)
+        self.okButton = QPushButton("OK", hbox)
+        self.cancelButton = QPushButton("Cancel", hbox)
+
+        self.topLayout.addWidget(exceptions)
+        self.topLayout.addWidget(output)
+        self.topLayout.addWidget(hbox)
+
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+        self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
+
 
         
 # #######################################
@@ -518,11 +548,12 @@ class PreferencesDlg(QDialog):
 
 if __name__=="__main__":
     app = QApplication(sys.argv) 
-    dlg = SignalDialog(app)
+    #dlg = SignalDialog(app)
     #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'),("Examples", 'ExampleTable'),("Examples", 'ExampleTable'),("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass'),("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
     #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'),("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
-    dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass', None, 1)], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
+    #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass', None, 1)], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
     #dlg.addSignalList("outWidget name", "inWidget name", [("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
+    dlg = CanvasOptionsDlg(app)
     app.setMainWidget(dlg)
     dlg.show()
     #dlg.addSignals(["data", "cdata", "ddata"], ["test", "ddata", "cdata"])

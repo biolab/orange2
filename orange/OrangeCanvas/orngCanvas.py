@@ -78,17 +78,15 @@ class OrangeCanvasDlg(QMainWindow):
 
 		self.output = orngOutput.OutputWindow(self, self.workspace)
 		self.output.show()
-		#self.output.hide()
-		#self.output.resize(400,400)
-		#QWidget.hide(self.output)
-		
+		self.output.catchException(self.settings["catchException"])
+		self.output.catchOutput(self.settings["catchOutput"])
+		self.output.setFocusOnException(self.settings["focusOnCatchException"])
+		self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+
 		win = self.menuItemNewSchema()
 		win.showMaximized()
-		
-	def focusDocument(self, w):	
-		if w != None:
-			w.setFocus()
 
+	
 	def createWidgetsToolbar(self, rebuildRegistry):
 		self.widgetsToolBar.clear()
 		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
@@ -155,16 +153,20 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menupopupLargeIconsID = self.menuOptions.insertItem( "Use large icons",  self.menuItemLargeIcons )
 		if self.settings.has_key("useLargeIcons"): self.useLargeIcons = self.settings["useLargeIcons"]
 		else:									   self.useLargeIcons = FALSE
-		
+
+		self.menuOptions.insertSeparator()
+
 		self.menuOptions.setItemChecked(self.menupopupLargeIconsID, self.useLargeIcons)
 		self.menuOptions.insertSeparator()
 		self.menuOptions.insertItem( "Enable All Links",  self.menuItemEnableAll)
 		self.menuOptions.insertItem( "Disable All Links",  self.menuItemDisableAll)
 		self.menuOptions.insertItem( "Clear All",  self.menuItemClearWidgets)
 		self.menuOptions.insertSeparator()
-		self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
-		self.menuOptions.insertSeparator()
+		#self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
+		#self.menuOptions.insertSeparator()
 		self.menuOptions.insertItem( "Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
+		self.menuOptions.insertSeparator()
+		self.menuOptions.insertItem( "Canvas options",  self.menuItemCanvasOptions)
 		
 		self.menuWindow = QPopupMenu( self )		
 		self.menuWindow.insertItem("Cascade", self.workspace.cascade)
@@ -201,6 +203,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuBar.insertItem("&Window", self.menuWindow)
 
 		self.printer = QPrinter() 
+
 
 	def showWindows(self):
 		for id in self.windows:
@@ -448,6 +451,43 @@ class OrangeCanvasDlg(QMainWindow):
 		else:
 			return [symbName, str(1), "green"]
 
+	def focusDocument(self, w):	
+		if w != None:
+			w.setFocus()
+
+
+	def menuItemCanvasOptions(self):
+		dlg = orngDlgs.CanvasOptionsDlg(self, None, "", TRUE)
+
+		# set current settings
+		dlg.catchExceptionCB.setChecked(self.settings["catchException"])
+		dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
+		dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
+		dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
+        
+		dlg.exec_loop()
+		if dlg.result() == QDialog.Accepted:
+			self.settings["catchException"] = dlg.catchExceptionCB.isChecked()
+			self.settings["catchOutput"] = dlg.catchOutputCB.isChecked()
+			self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
+			self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
+			self.output.catchException(self.settings["catchException"])
+			self.output.catchOutput(self.settings["catchOutput"])
+			self.output.setFocusOnException(self.settings["focusOnCatchException"])
+			self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+
+
+	def setStatusBarEvent(self, text):
+		if text == "":
+			self.statusBar.message("")
+			return
+		elif text == "\n": return
+		self.statusBar.message(QString("Last event: " + text))
+		
+	#######################
+	# SETTINGS
+	#######################
+
 	# Loads settings from the widget's .ini file	
 	def loadSettings(self):
 		filename = self.canvasDir + "orngCanvas.ini"
@@ -458,12 +498,23 @@ class OrangeCanvasDlg(QMainWindow):
 		else:
 			self.settings = {}
 
+		if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
+		if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
+		if not self.settings.has_key("focusOnCatchException"): self.settings["focusOnCatchException"] = 1
+		if not self.settings.has_key("focusOnCatchOutput"): self.settings["focusOnCatchOutput"] = 0
+				
+
 	# Saves settings to this widget's .ini file
 	def saveSettings(self):
 		filename = self.canvasDir + "orngCanvas.ini"
 		file=open(filename, "w")
 		cPickle.dump(self.settings, file)
 		file.close()
+
+
+	#######################
+	# EVENTS
+	#######################
 
 	def closeEvent(self,ce):
 		for win in self.workspace.windowList():

@@ -28,41 +28,51 @@ class OutputWindow(QMainWindow):
 		self.setCentralWidget(self.textOutput)
 		self.setCaption("Output Window")
 		self.setIcon(QPixmap(orngResources.output))
+
+		self.defaultExceptionHandler = sys.excepthook
+		self.defaultSysOutHandler = sys.stdout
 		
-		sys.excepthook = self.exceptionHandler
+		#sys.excepthook = self.exceptionHandler
 		#sys.stdout = self
 		#self.textOutput.setText("")
 		self.setFocusPolicy(QWidget.NoFocus)
 
-	"""
-	def setFocus(self):
-		print "setFocus"
-	
+	def catchException(self, catch):
+		if catch: sys.excepthook = self.exceptionHandler
+		else:     sys.excepthook = self.defaultExceptionHandler
 
-	def raise(self):
-		print "show"
-		QMainWindow.raise(self)
-	"""
+	def catchOutput(self, catch):
+		if catch:	sys.stdout = self
+		else: 		sys.stdout = self.defaultSysOutHandler
+
+	def setFocusOnException(self, focusOnCatchException):
+		self.focusOnCatchException = focusOnCatchException
+		
+	def setFocusOnOutput(self, focusOnCatchOutput):
+		self.focusOnCatchOutput = focusOnCatchOutput
 
 	def clear(self):
 		self.textOutput.setText("")
 	
-	def write(self, str):
-		self.canvasDlg.menuItemShowOutputWindow()
-		self.textOutput.append(str)
+	def write(self, text):
+		if self.focusOnCatchOutput:
+			self.canvasDlg.menuItemShowOutputWindow()
+		self.textOutput.append(text)
 		self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+		self.canvasDlg.setStatusBarEvent(text)
 
 	def keyReleaseEvent (self, event):
 		if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:	# user pressed CTRL+"C"
 			self.textOutput.copy()
 
 	def exceptionHandler(self, type, value, tracebackInfo):
-		self.canvasDlg.menuItemShowOutputWindow()
+		if self.focusOnCatchException:
+			self.canvasDlg.menuItemShowOutputWindow()
 			
 		t = time.localtime()
-		self.textOutput.append("<hr>")
 		self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))
 		self.textOutput.append("<nobr>Traceback:</nobr>")
+		self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%d:%d" % ( str(type) , t[3],t[4],t[5]))
 
 		# TO DO:repair this code to shown full traceback. when 2 same errors occur, only the first one gets full traceback, the second one gets only 1 item
 		
@@ -82,6 +92,7 @@ class OutputWindow(QMainWindow):
 				totalSpace += space
 			
 		self.textOutput.append("<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr>")
-		self.textOutput.append("<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr>")	
+		self.textOutput.append("<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr>")
+		self.textOutput.append("<hr>")
 		self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 		
