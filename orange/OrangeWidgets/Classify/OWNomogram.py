@@ -1,9 +1,8 @@
 """
 <name>Nomogram</name>
 <description>Visualizes Naive Bayesian or logistic regression or any linear classifier using interactive nomogram.</description>
-<category>Classification</category>
 <icon>icons/Nomogram.png</icon>
-<priority>9998</priority>
+<priority>2500</priority>
 """
 
 #
