@@ -3,6 +3,7 @@
 <description>None.</description>
 <category>Genomics</category>
 <icon>icons\DisplayProfiles.png</icon>
+<priority>10</priority>
 """
 
 from OData import *
@@ -55,6 +56,7 @@ class profilesGraph(OWGraph):
         self.classColor = classColor
         self.showAverageProfile = ShowAverageProfile
         self.showSingleProfiles = ShowSingleProfiles
+        print self.showAverageProfile, self.showSingleProfiles
 
         self.groups = [('grp', data.domain.attributes)]
         ## go group by group
@@ -246,8 +248,8 @@ class OWDisplayProfiles(OWWidget):
         self.showSingleQLB = QPushButton("Show Single", self.classQVGB)
         self.showSingleQLB.setToggleButton(1)
         self.showSingleQLB.setOn(self.ShowSingleProfiles)
-        self.connect(self.showAverageQLB, SIGNAL("toggled(bool)"), self.graph.setShowAverageProfile)
-        self.connect(self.showSingleQLB, SIGNAL("toggled(bool)"), self.graph.setShowSingleProfiles)
+        self.connect(self.showAverageQLB, SIGNAL("toggled(bool)"), self.setShowAverageProfile)
+        self.connect(self.showSingleQLB, SIGNAL("toggled(bool)"), self.setShowSingleProfiles)
 
         self.graph.canvas().setMouseTracking(1)
 
@@ -323,6 +325,14 @@ class OWDisplayProfiles(OWWidget):
                 clfname = fil + "_" + str(cl) + "." + ext
                 g.saveToFileDirect(clfname, ext)
             cl += 1
+
+    def setShowAverageProfile(self, v):
+        self.ShowAverageProfile = v
+        self.graph.setShowAverageProfile(v)
+
+    def setShowSingleProfiles(self, v):
+        self.ShowSingleProfiles = v
+        self.graph.setShowSingleProfiles(v)
 
     def setPointWidth(self, v):
         self.PointWidth = v
@@ -437,4 +447,3 @@ if __name__ == "__main__":
     owdm.show()
     a.exec_loop()
     owdm.saveSettings()
-
