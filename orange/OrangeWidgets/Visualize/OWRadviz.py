@@ -512,6 +512,13 @@ class OWRadviz(OWWidget):
                     else:
                         minE = E
                         noChange = 0
+##                imagebmp, palette = orangeom.potentialsBitmap(orange.P2NN(self.graph.rawdata, self.graph.anchorData), 3, 3, 100)
+##                print [ord(x) for x in palette]
+##                palette = [qRgb(ord(palette[i]), ord(palette[i+1]), ord(palette[i+2])) for i in range(0, 255, 3)]
+##                image = QImage(imagebmp, 300, 300, 8, palette, 256, QImage.LittleEndian)
+##                pm = QPixmap()
+##                pm.convertFromImage(image)
+##                self.setBackgroundPixmap(pm)
 
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 100)
