@@ -1905,12 +1905,14 @@ PyObject *GeneralExampleClustering_feature(PyObject *self, PyObject *args) PYARG
 
 #include "heatmap.hpp"
 
-PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable)")
+PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap = None, noSorting = 0])")
 {
   PExampleTable table;
-  if (!PyArg_ParseTuple(args, "O&:HeatmapConstructor.__new__", cc_ExampleTable, &table))
+  PHeatmapConstructor baseHeatmap;
+  int noSorting = 0;
+  if (!PyArg_ParseTuple(args, "O&|O&:HeatmapConstructor.__new__", cc_ExampleTable, &table, ccn_HeatmapConstructor, &baseHeatmap))
     return NULL;
-  return WrapNewOrange(mlnew THeatmapConstructor(table), type);
+  return WrapNewOrange(mlnew THeatmapConstructor(table, baseHeatmap, (PyTuple_Size(args)==2) && !baseHeatmap), type);
 }
 
 
@@ -1928,6 +1930,18 @@ PyObject *HeatmapConstructor_call(PyObject *self, PyObject *args, PyObject *keyw
 }
 
 
+PyObject *HeatmapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height) -> bitmap")
+{ float width, height;
+  if (!PyArg_ParseTuple(args, "ff:HeatmapConstructor.getLegend", &width, &height))
+    return NULL;
+
+  int size;
+  unsigned char *bitmap = SELF_AS(THeatmapConstructor).getLegend(width, height, size);
+  PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
+  delete bitmap;
+  return res;
+}
+
 BASED_ON(Heatmap, Orange)
 
 PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height) -> bitmap")
@@ -1941,6 +1955,22 @@ PyObject *Heatmap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) 
   int size;
   unsigned char *bitmap = hm->heatmap2string(cellWidth, cellHeight, size);
   PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * hm->width, cellHeight * hm->height);
+  delete bitmap;
+  return res;
+}
+
+
+PyObject *Heatmap_getAverages(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height) -> bitmap")
+{
+  int width, height;
+  if (!PyArg_ParseTuple(args, "ii:Heatmap.getAverageBitmap", &width, &height))
+    return NULL;
+
+  CAST_TO(THeatmap, hm)
+
+  int size;
+  unsigned char *bitmap = hm->averages2string(width, height, size);
+  PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), width, height * hm->height);
   delete bitmap;
   return res;
 }
