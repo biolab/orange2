@@ -42,7 +42,9 @@ class SchemaDoc(QMainWindow):
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
         self.setCentralWidget(self.canvasView)
         self.canvasView.show()
-        
+
+    # we are about to close document
+    # ask user if he is sure
     def closeEvent(self,ce):
         if not self.hasChanged:
             ce.accept()
@@ -59,7 +61,9 @@ class SchemaDoc(QMainWindow):
         else:
             ce.ignore()
 
- 
+
+    # add line connecting widgets outWidget and inWidget
+    # if necessary ask which signals to connect
     def addLine(self, outWidget, inWidget, setSignals = TRUE, enabled = TRUE):
         # check if line already exists
         for line in self.lines:
@@ -68,66 +72,70 @@ class SchemaDoc(QMainWindow):
                 return None
 
         line = None
-        try:
-            line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
-            self.lines.append(line)
-            outWidget.addOutLine(line)
-            outWidget.updateTooltip()
-            inWidget.addInLine(line)
-            inWidget.updateTooltip()
-            line.show()
-            line.setEnabled(enabled)
+        #try:
+        line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
+        
+        if setSignals:
+            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+            dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+            canConnect = dialog.addDefaultLinks()
+            if not canConnect:
+                QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
+                line.remove()
+                return None
 
-            if setSignals:
-                dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-                dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
-                canConnect = dialog.addDefaultLinks()
-                if not canConnect:
-                    QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
-                    line.remove()
-                    return None
-
-                # if there are multiple choices, how to connect this two widget, then show the dialog
-                
-                if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
-                    res = dialog.exec_loop()
-                    if dialog.result() == QDialog.Rejected:
-                        line.remove()
-                        return None
-                    
-                connected = []
-                self.signalManager.setFreeze(1)
-                signals = dialog.getLinks()
-                for (outName, inName) in signals:
-                    widget = inWidget.instance.removeExistingSingleLink(inName)
-                    if widget:
-                        existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
-                        existingOutName = None
-                        for (outN, inN) in existingSignals:
-                            if inN == inName: existingOutName = outN
-                        self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
-                    ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
-                    if ok: connected.append((outName, inName))
-
-                if connected == []:
-                    print "Error. No connections were maid."
-                    line.remove()
-                    self.signalManager.setFreeze(0)
-                    return None
-
-                line.setSignals(connected)
-                self.signalManager.setFreeze(0, outWidget.instance)
-
-            self.hasChanged = TRUE
-            self.canvasDlg.enableSave(TRUE)
+            # if there are multiple choices, how to connect this two widget, then show the dialog
             
-            return line
-        except:
+            if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
+                res = dialog.exec_loop()
+                if dialog.result() == QDialog.Rejected:
+                    line.remove()
+                    return None
+                
+            connected = []
+            self.signalManager.setFreeze(1)
+            signals = dialog.getLinks()
+            for (outName, inName) in signals:
+                widget = inWidget.instance.removeExistingSingleLink(inName)
+                if widget:
+                    existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
+                    existingOutName = None
+                    for (outN, inN) in existingSignals:
+                        if inN == inName: existingOutName = outN
+                    self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
+                ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
+                if ok: connected.append((outName, inName))
+
+            if connected == []:
+                print "Error. No connections were maid."
+                line.remove()
+                self.signalManager.setFreeze(0)
+                return None
+
+            line.setSignals(connected)
+            self.signalManager.setFreeze(0, outWidget.instance)
+
+        # if signals were set correctly create the line, update widget tooltips and show the line
+        self.lines.append(line)
+        outWidget.addOutLine(line)
+        outWidget.updateTooltip()
+        inWidget.addInLine(line)
+        inWidget.updateTooltip()
+        line.show()
+        line.setEnabled(enabled)
+
+        self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
+        
+        return line
+        """
+        except Exception, msg:
+            print "Exception occured. Additional message: ", msg
             if line != None:
-                "Failed to connect widgets. Removing connection."
+                print "Failed to connect widgets. Removing connection."
                 self.removeLine1(line)
             return None
-
+        """
 
     def resetActiveSignals(self, line, newSignals = None, enabled = 1):
         signals = line.getSignals()

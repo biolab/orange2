@@ -20,6 +20,7 @@ class OrangeCanvasDlg(QMainWindow):
 	def __init__(self,*args):
 		apply(QMainWindow.__init__,(self,) + args)
 		self.ctrlPressed = 0	# we have to save keystate, so that orngView can access information about keystate
+		self.debugMode = 1		# print extra output for debuging
 		self.resize(900,800)
 		self.setCaption("Qt Orange Canvas")
 		self.windows = []	# list of id for windows in Window menu

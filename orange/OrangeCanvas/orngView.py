@@ -328,7 +328,7 @@ class SchemaView(QCanvasView):
                 self.tempLine.setCanvas(None)
                 self.tempLine = None
 
-                line = self.doc.addLine(outWidget, inWidget, 1)
+                line = self.doc.addLine(outWidget, inWidget, setSignals = 1)
                 if line:
                     line.repaintLine(self)
                 
