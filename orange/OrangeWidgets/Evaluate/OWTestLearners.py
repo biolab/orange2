@@ -115,11 +115,6 @@ class OWTestLearners(OWWidget):
     # be tested. the list in results should either be recomputed or added
     # else, if learner=None, all results are recomputed (user pressed apply button)
     def test(self, learner=None):
-        if self.data:
-            print 'ddd', len(self.data)
-        else:
-            print 'no data'
-            
         pb = ProgressBar(self, iterations=self.nFolds)
 
         # testing
@@ -144,7 +139,6 @@ class OWTestLearners(OWWidget):
         if self.results and learner:
             if len(self.learners) > len(self.scores[0]):
                 # this is a new learner, add new results
-                print 'new learner'
                 self.results.classifierNames.append(learner.name)
                 self.results.numberOfLearners += 1
                 for i,r in enumerate(self.results.results):
@@ -155,7 +149,6 @@ class OWTestLearners(OWWidget):
             else:
                 # this is an old but updated learner
                 indx = self.learners.index(learner)
-                print 'old learner', indx
                 self.results.classifierNames[indx] = learner.name
                 for i,r in enumerate(self.results.results):
                     r.classes[indx] = res.results[i].classes[0]
@@ -163,7 +156,6 @@ class OWTestLearners(OWWidget):
                 for (i, stat) in enumerate(self.stat):
                     self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
         else: # test on all learners
-            print 'all learners', learner
             self.results = res
             self.scores = []
             for i in range(len(self.stat)):
@@ -174,21 +166,11 @@ class OWTestLearners(OWWidget):
         self.send("Evaluation Results", self.results)
         pb.finish()
 
-##        print 'XXX RESULTS'
-##        for r in self.results.results:
-##            for p in r.probabilities:
-##                print '%1.2f' % p[0],
-##            print
-
 #        except Exception, msg:
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 
     # slots: handle input signals        
     def cdata(self,data):
-        if data:
-            print 'GOT DATA', len(data)
-        else:
-            print 'GOT EMPTY DATA'
         if not data:
             return # have to handle this appropriately
         self.data = orange.Filter_hasClassValue(data)
@@ -199,10 +181,6 @@ class OWTestLearners(OWWidget):
             self.test()
 
     def learner(self, learner, id=None):
-        print
-        if learner: print 'xxx UPDATE/NEW', id
-        else: print 'xxx REMOVE', id
-
         if not learner: # remove a learner and corresponding results
             indx = self.learners.index(self.learnDict[id])
             for i,r in enumerate(self.results.results):
@@ -225,11 +203,6 @@ class OWTestLearners(OWWidget):
             if self.data:
                 self.test(learner)
                 self.applyBtn.setDisabled(FALSE)
-        for k in self.learnDict.keys():
-            print '     ', k
-        print 'xxx LEARNERS'
-        for k in self.learners:
-            print '     ', k
             
     # signal processing
     def statChanged(self, value, id):
