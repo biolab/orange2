@@ -663,6 +663,12 @@ C_NAMED(LogisticClassifier, ClassifierFD, "([probabilities=])")
 BASED_ON(LogisticFitter, Orange)
 C_CALL(LogisticFitter_Cholesky, LogisticFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
+PYCLASSCONSTANT_INT(LogisticFitter, OK, TLogisticFitter::OK)
+PYCLASSCONSTANT_INT(LogisticFitter, Infinity, TLogisticFitter::Infinity)
+PYCLASSCONSTANT_INT(LogisticFitter, Divergence, TLogisticFitter::Divergence)
+PYCLASSCONSTANT_INT(LogisticFitter, Constant, TLogisticFitter::Constant)
+PYCLASSCONSTANT_INT(LogisticFitter, Singularity, TLogisticFitter::Singularity)
+
 PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
 {
   PyTRY
