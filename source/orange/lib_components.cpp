@@ -3105,7 +3105,8 @@ int PyEdge_Setitem(TPyEdge *self, int ind, PyObject *item)
       self->weights[ind] = w;
 
       if (w == GRAPH__NO_CONNECTION) {
-        for(float *w = self->weights, *we = self->weights + self->graph->nEdgeTypes; (w != we) && (*w == GRAPH__NO_CONNECTION); w++);
+        float *w, *we;
+        for(w = self->weights, we = self->weights + self->graph->nEdgeTypes; (w != we) && (*w == GRAPH__NO_CONNECTION); w++);
         if (w == we) {
           self->graph->removeEdge(self->v1, self->v2);
           self->weights = NULL;
@@ -3384,7 +3385,8 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
       float *weights = graph->getOrCreateEdge(v1, v2);
       weights[type] = w;
 
-      for(float *we = weights, *wee = weights + graph->nEdgeTypes; (we != wee) && (*we == GRAPH__NO_CONNECTION); we++);
+      float *we, *wee;
+      for(we = weights, wee = weights + graph->nEdgeTypes; (we != wee) && (*we == GRAPH__NO_CONNECTION); we++);
       if (we == wee)
         graph->removeEdge(v1, v2);
 

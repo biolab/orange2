@@ -59,7 +59,7 @@ bool fileExists(const string &s) {
 }
 
 
-typedef enum {UNKNOWN, TXT, CSV, BASKET, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
+typedef enum {UNKNOWN, TXT, CSV, BASKET, TAB, TSV, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
 WRAPPER(ExampleTable);
 
@@ -94,7 +94,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
       return mlnew TExampleTable(gen);
     }
 
-    if (!strcmp(ext, ".tab")) {
+    if (!strcmp(ext, ".tab") || !strcmp(ext, ".tsv")) {
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
@@ -178,6 +178,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
   CHECKFF(".csv", CSV);
   CHECKFF(".basket", BASKET);
   CHECKFF(".tab", TAB);
+  CHECKFF(".tsv", TSV);
   CHECKFF(".names", C45);
   CHECKFF(".rdo", RETIS);
 
@@ -229,6 +230,11 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
     case TAB: {
       PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
+      return mlnew TExampleTable(gen);
+    }
+
+    case TSV: {
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tsv", false, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 

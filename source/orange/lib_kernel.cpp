@@ -1963,15 +1963,16 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     PyErr_Clear();
 
-    PyObject *args;
-    if (PyArg_ParseTuple(argstuple, "O", &args)) {
-      if (PyOrOrange_Check(args)) {
-        if (PyOrDomain_Check(args))
-          return WrapNewOrange(mlnew TExampleTable(PyOrange_AsDomain(args)), type);
+    PExampleGenerator egen;
+    PyObject *args = PYNULL;
+    if (PyArg_ParseTuple(argstuple, "O&|O", cc_ExampleTable, &egen, &args))
+      return WrapNewOrange(mlnew TExampleTable(egen, args && (PyObject_IsTrue(args) != 0)), type);
 
-        if (PyOrExampleGenerator_Check(args))
-          return WrapNewOrange(mlnew TExampleTable(PyOrange_AsExampleGenerator(args)), type);
-      }
+    PyErr_Clear();
+
+    if (PyArg_ParseTuple(argstuple, "O", &args)) {
+      if (PyOrDomain_Check(args))
+        return WrapNewOrange(mlnew TExampleTable(PyOrange_AsDomain(args)), type);
 
       TExampleTable *res = readListOfExamples(args);
       if (res)
