@@ -98,8 +98,9 @@ class SignalManager:
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
                 #print "signal Manager - remove link. removing ", widgetFrom, widgetTo, signalFrom, signalTo
-                self.send(widgetFrom, signalNameFrom, None, None)
+                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, None)
                 self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
+                if not self.freezing and not self.signalProcessingInProgress: self.processNewSignals(widgetFrom)
 
 
     # ############################################
@@ -131,7 +132,6 @@ class SignalManager:
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
-                # DEBUG:
                 #print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
                 widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id)
                 
