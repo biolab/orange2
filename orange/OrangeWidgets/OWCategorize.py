@@ -40,10 +40,10 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
 """,
         FALSE,
         FALSE)
-        
+
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.outputs = [("Classified Examples", ExampleTableWithClass)]
         self.dataset=None
-        self.addInput("cdata")
-        self.addOutput("cdata")
 
         # Settings
         self.Categorization = 0  # default to entropy
@@ -111,8 +111,8 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
 
         self.resize(500,500)
         
-    def cdata(self,dataset):
-        self.dataset=dataset.table
+    def data(self,dataset):
+        self.dataset=dataset
         self.categorize()
         self.setTable()
 
@@ -188,8 +188,7 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
         attrlist.append(self.catData.domain.classVar)
         self.newData = self.catData.select(attrlist)
 
-        self.odata = OrangeData(self.newData)
-        self.send("cdata", self.odata)
+        self.send("Classified Examples", self.newData)
         self.setTable()
 
     # management of signals (parameter setting)    

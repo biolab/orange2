@@ -238,7 +238,6 @@ class SchemaView(QCanvasView):
     # ###################################################################
     # mouse button was pressed and mouse is moving ######################
     def contentsMouseMoveEvent(self, ev):
-        print "drag move event\n"
         if self.bWidgetDragging:
             for item in self.selWidgets:
                 ex_pos = QPoint(item.x(), item.y())
