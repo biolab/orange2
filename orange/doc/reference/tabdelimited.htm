@@ -6,11 +6,12 @@
 
 <BODY>
 
-<H1>Tab-delimited and simlar formats</H1>
+<H1>Tab-delimited and similar formats</H1>
 
 <P>Besides supporting several common file formats that are used in machine learning (C4.5, Assistant, Retis), Orange introduces a more capable format that supports many additional features. There are several variations of it. The most powerful is the old-style tab-delimited file, with a header that gives the names of attributes, their type and role (ordinary attributes, class, meta-attribute). A simpler new-style tab-delimited file has a simpler header and when attribute types are omitted, Orange will attempt to guess them itself. Comma-separated files are essentially the same as the new-style tab-delimited, except that they have commas instead of tabulators. Finally, Orange for Windows can also read files in Excel format, provided that you have Excel installed. The organization of the file is again similar to the new-style tab-delimited files.</P>
 
-<P>All file formats begin with the header; in the old-style it has three lines and in the new style it has only one. The remaining lines contain examples.</P>
+<P>All file formats begin with the header; in the old-style it has three lines and in the new style it has only one. The remaining lines contain examples. These are given as lists of symbolic values, separated by tabulators in .tab and .txt files, commas in .csv, or occupying a row in an Excel file. Lines in (.tab, .txt and .csv) files that commence by "|" are comment lines and are ignored. There are no comments in Excel. Lines that are entirely empty (except for the delimiters) are skipped.</P>
+
 
 <H3>Domain description - older version (.tab)</H3>
 
@@ -37,8 +38,20 @@ Note that at the moment, Orange learning methods can only use discrete and conti
 <DD>denotes a meta-attribute. Such attributes are not used by any learning algorithm (or by algorithms for, say, measuring distances between examples) but are stored with examples. Meta attributes are most often used for weighting the examples.</DD>
 
 <DT><CODE>-dc</CODE></DT>
-<DD>followed by a value or by a list of space-separated values enclosed in double quotes specifies the "don't care" symbol for this attribute. By default, empty fields, <CODE>?</CODE> and <CODE>NA</CODE> are interpreted as "don't care" and "~" as don't know. If your file contains another string, such as "UNDETERMINED" to denote such values, you can either search&replace it or add the flag </CODE>-dc UNDETERMINED</CODE> to the third line for this attribute.</DD>
+<DD>followed by a value that serves as "don't care" symbol for this attribute. This option can be used more than once for each attribute if don't cares are specified with different symbols. See below for the details.</DD>
 </DL>
+
+<P>The first few lines of iris dataset in this format look like this:</P>
+
+<XMP class="code">
+sepal length   sepal width   petal length   petal width   iris
+c              c             c              c             d
+                                                          class
+5.1            3.5           1.4            0.2           Iris-setosa
+4.9            3.0           1.4            0.2           Iris-setosa
+4.7            3.2           1.3            0.2           Iris-setosa
+4.6            3.1           1.5            0.2           Iris-setosa
+</XMP>
 
 <H3>Domain description - new version (.txt, .csv and .xls)</H3>
 
@@ -60,25 +73,7 @@ Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
 
 <P>Prefixed attributes contain one- or two-lettered prefix, followed by "#" and the name. The first letter of the prefix can be either "m" for meta-attributes, "i" to ignore the attribute, and "c" to define the class attribute. As always, only one attribute can be a class attribue. The second letter denotes the attribute type, "D" for discrete, "C" for continuous and "S" for string attributes.</P>
 
-<P>In most cases, however, the attribute detection mechanism will suffice.</P>
-
-<H3>Examples</H3>
-
-<P>Examples are given as lists of symbolic values, separated by tabulators in .tab and .txt files or occupying a row in an Excel file. Lines in (.tab or .txt) files that commence by "|" are comment lines and are ignored. There is no such thing in Excel.</P>
-
-<P>The first few lines of iris dataset in the old format looks like this:</P>
-
-<XMP class="code">
-sepal length   sepal width   petal length   petal width   iris
-c              c             c              c             d
-                                                          class
-5.1            3.5           1.4            0.2           Iris-setosa
-4.9            3.0           1.4            0.2           Iris-setosa
-4.7            3.2           1.3            0.2           Iris-setosa
-4.6            3.1           1.5            0.2           Iris-setosa
-</XMP>
-
-<P>The more compact new format skips the second and the third line.</P>
+<P>In most cases, however, the attribute detection mechanism will suffice. Therefore, Iris can be given like this:</P>
 
 <XMP class="code">
 sepal length   sepal width   petal length   petal width   iris
@@ -94,7 +89,10 @@ sepal length   sepal width   petal length   petal width   iris
 i#sepal length   c#sepal width    D#petal length    mC#petal width    iris
 </XMP>
 
-<P>As for the comma-separated format, you can download some such files from UCI repository. When we were writing documentation on censoring, for instance, we needed some censored data. We downloaded the new Wisconsin breast cancer data, looks as follows:</P>
+
+<H3>Comma separated files</H3>
+
+<P>Comma separated files are just like the new-format tab-delimited, except that commas are used instead of tabs. For instance, for documentation on censoring, we downloaded the new Wisconsin breast cancer data from UCI:</P>
 
 <XMP class=code>
 119513,N,31,18.02,27.6,117.5,1013,0.09489,0.1036, <...>
@@ -104,10 +102,78 @@ i#sepal length   c#sepal width    D#petal length    mC#petal width    iris
 <...>
 </XMP>
 
-<P>To make the data acceptable by Orange, we only needed to add the first line.</P>
+<P>To import this data to Orange, we only needed to add the first line, describing the attribute names.</P>
 
 <XMP class=code>
 m#ID,c#recur,time,radius,texture,perimeter,area,smoothness, <...>
 </XMP>
 
-<P>Since we don't want the ID to be used for learning, we turned it into a meta-attribute. Besides, we needed to tell Orange that "recur" is the class attributes.</P>
+<P>Since we don't want the ID to be used for learning, we turned it into a meta-attribute. Besides, we needed to tell Orange that "recur" is the class attribute.</P>
+
+
+<H3>Undefined values</H3>
+
+<P>By default, empty fields, <CODE>?</CODE> and <CODE>NA</CODE> are interpreted as "don't care", and "~" and "*" as "don't know". You can't change this: this symbols are reserved.</P>
+
+<P>You can, however, specify additional symbols to denote undefineds. This can be done either per attribute or for all attributes at ones. Per-attribute unknowns are specified using <CODE>-dc</CODE> option in the old-style tab-delimited files. For instance, if unknowns for some attribute are given as "UNK", add <CODE>-dc UNK</CODE> in the third line. There is no similar option in the .txt in .csv files.</P>
+
+<P>General symbols for unknown values are not specified in the file but given as keyword arguments to <CODE>ExampleTable</CODE>. Three keywords are recognized: <CODE>DC</CODE> and <CODE>DK</CODE> give symbols for don't cares and don't knows, and <CODE>NA</CODE> for both; <CODE>DC</CODE> and <CODE>DK</CODE> have the priority over <CODE>NA</CODE>. Only one symbol can be specified for each kind of undefined values.</P>
+
+<P>Although we can also load data in other format (such as C4.5) through calling <CODE>ExampleTable</CODE>, these keyword arguments only affect the formats described on this page.</P>
+
+<P>To show how this works, we shall use the file <A href="undefineds.tab">undefineds.tab</A> which looks like this.</P>
+
+<XMP class=code>
+a               b               c
+d               d               d
+-dc X -dc UNK   -dc UNAVAILABLE      
+0               0               0
+1               1               1
+                                1
+*               *               *          
+?               ?               ?          
+.               .               .          
+GDC             GDC             GDC
+GDK             GDK             GDK
+X               X               X          
+UNK             UNK             UNK        
+UNAVAILABLE     UNAVAILABLE     UNAVAILABLE
+</XMP>
+
+<P>Let's load and print it.</P>
+
+<p class="header">part of <a href="undefineds.py">undefineds.py</a> (uses <a href=
+"undefineds.tab">undefineds.tab</a>)</p>
+<XMP class=code>
+import orange
+data = orange.ExampleTable("undefineds", DK="GDK", DC="GDC")
+
+for ex in data:
+    print ex
+</XMP>
+
+<P>Here's how the file is interpreted.</P>
+
+<XMP class=code>
+['0', '0', '0']
+['1', '1', '1']
+['?', '?', '1']
+['~', '~', '~']
+['?', '?', '?']
+['?', '?', '?']
+['?', '?', '?']
+['~', '~', '~']
+['?', 'X', 'X']
+['?', 'UNK', 'UNK']
+['UNAVAILABLE', '?', 'UNAVAILABLE']
+</XMP>
+
+<P>As the call to <CODE>ExampleTable</CODE> specifies, symbols GDC and GDK stand for don't care and don't know for all attributes. In addition, X and UNK denote don't cares for the first attribute and UNAVAILABLE for the second. For other attributes, these symbols are just normal values.</P>
+
+<P>As you have noted, undefined values are printed as "?" and "~", disregarding the way they were specified in the files they were read from. Orange cannot remember such details.</P>
+
+<P>However, when saving the data back to files, you can specify the symbols to be used (for all attributes, not per-attribute). This is done in a similar fashion as when reading the data - by giving additional keyword arguments <CODE>DC</CODE>, <CODE>DK</CODE> and/or <CODE>NA</CODE> to the function <CODE>saveTabDelimited</CODE>, <CODE>saveTxt</CODE> or <CODE>saveCSV</CODE>.</P>
+
+<P>For instance, if we save the file by <xmp class=CODE>orange.saveTabDelimited("undefined-saved-dc-dk", data, DC="GDC", DK="GDK")</xmp>all don't cares ("?") are written as "GDC" and don't knows as "GDK".</P>
+
+<P>This mechanism should provide for easier exporting to other data mining programs that can handle tab- or comma-delimited files. For specific problems, such as having more names denoting different types of unknowns, possibly in combination with other attribute values, you can easily program your own input/output routines in Python.</P> 
