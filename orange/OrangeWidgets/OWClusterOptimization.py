@@ -315,7 +315,7 @@ def computeAreas(graph, closureDict, outerEdgeValue):
         areaDict[key] = currArea
     return areaDict
 
-# for a given graph and starting edge return a set of polygons that represent the class boundaries. in the simples case there will be only one polygon.
+# for a given graph and starting edge return a set of polygons that represent the boundaries. in the simples case there will be only one polygon.
 # However there can be also subpolygons and connected polygons
 # this method is unable to guaranty correct computation of polygons in case there is an ambiguity - such as in case of 3 connected triangles where each shares two vertices with the other two triangles.
 def computePolygons(graph, startingEdge, outerEdgeValue):
@@ -368,6 +368,19 @@ def getVerticesInPolygons(verticesDict):
     return polygonVerticesDict
 
 
+def pointInsideCluster(data, closure, xTest, yTest):
+    p1 = closure[0][0]
+    count = 0
+    for (p2, p3) in closure[1:]:
+        pos = getPosition(data[p1][0], data[p1][1], data[p2][0], data[p2][1], xTest, yTest)
+        pos2 = getPosition(data[p1][0], data[p1][1], data[p3][0], data[p3][1], xTest, yTest)
+        if pos2 != pos: continue
+        pos3 = getPosition(data[p2][0], data[p2][1], data[p3][0], data[p3][1], xTest, yTest)
+        if pos3 == pos: count += 1
+    if count % 2 == 0: return 0
+    else: return 1
+        
+
 class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
@@ -376,9 +389,10 @@ class ClusterOptimization(OWBaseWidget):
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
 
-    def __init__(self,parent=None, graph = None):
-        OWBaseWidget.__init__(self, parent, "Cluster Dialog")
+    def __init__(self,parentWidget = None, graph = None):
+        OWBaseWidget.__init__(self, None, "Cluster Dialog")
 
+        self.parentWidget = parentWidget
         self.setCaption("Qt Cluster Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
         self.grid=QGridLayout(5,2)
@@ -395,6 +409,8 @@ class ClusterOptimization(OWBaseWidget):
         self.attrCont = 1
         self.attrDisc = 1
         self.rawdata = None
+        self.subsetdata = None
+        self.arguments = []
         self.selectedClasses = []
         self.optimizationType = 0
         self.jitterDataBeforeTriangulation = 0
@@ -407,8 +423,10 @@ class ClusterOptimization(OWBaseWidget):
         self.datasetName = ""
         self.dataset = None
         self.cancelOptimization = 0
+        self.cancelArgumentation = 0
         self.pointStability = None
         self.pointStabilityCount = None
+        self.argumentationClassValue = 0
 
         self.loadSettings()
 
@@ -416,22 +434,40 @@ class ClusterOptimization(OWBaseWidget):
         
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
+        self.ArgumentationTab = QVGroupBox(self)
         self.ManageTab = QVGroupBox(self)
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
+        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")
         
-
+        # main tab
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
         self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting First ")
         self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
 
+        # settings tab
         self.jitteringBox = OWGUI.checkBox(self.SettingsTab, self, 'jitterDataBeforeTriangulation', 'Use data jittering', box = " Jittering options ", tooltip = "Use jittering if you get an exception when evaluating clusters. \nIt adds a small random noise to poins which fixes the triangluation problems.")
         self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ordering ")
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
         #self.miscSettingsBox.hide()
 
+        # argumentation tab        
+        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " ")
+        self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
+        f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
+        self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
+        self.stopArgumentationButton.setFont(f)
+        self.stopArgumentationButton.hide()
+        self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
+        self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
+        self.argumentList = QListBox(self.argumentBox)
+        self.argumentList.setMinimumSize(200,200)
+        self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
+
+
+        # manage tab
         self.classesBox = OWGUI.widgetBox(self.ManageTab, " Class values in data set ")   
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
         self.evaluateBox = OWGUI.widgetBox(self.ManageTab, " Evaluate Current Projection / Classifier ")
@@ -677,13 +713,15 @@ class ClusterOptimization(OWBaseWidget):
             i+=1
         if self.resultList.count() > 0: self.resultList.setCurrentItem(0)        
 
-    # set value of k to sqrt(n)
+
+    # save input dataset, get possible class values, ...
     def setData(self, data):
         if hasattr(data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
         self.rawdata = data
         self.selectedClasses = []
         self.classesList.clear()
+        self.classValueList.clear()
         self.clearResults()
                 
         if not data: return
@@ -692,8 +730,14 @@ class ClusterOptimization(OWBaseWidget):
         # add class values
         for i in range(len(data.domain.classVar.values)):
             self.classesList.insertItem(data.domain.classVar.values[i])
+            self.classValueList.insertItem(data.domain.classVar.values[i])
         self.classesList.insertItem("All clusters")
         self.classesList.selectAll(1)
+        if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
+
+    # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
+    def setSubsetData(self, subsetdata):
+        self.subsetdata = subsetdata
     
                 
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
@@ -937,6 +981,88 @@ class ClusterOptimization(OWBaseWidget):
 
     def destroy(self, dw, dsw):
         self.saveSettings()
+
+
+    # ######################################################
+    # Argumentation functions
+    # ######################################################
+    def findArguments(self):
+        self.cancelArgumentation = 0
+        self.arguments = [[] for i in range(self.classValueList.count())]
+        
+        if self.subsetdata == None:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
+            return
+        if len(self.shownResults) == 0:
+            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to find clusters in some projections by clicking "Find arguments" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
+            return
+
+        example = self.subsetdata[0]
+        testExample = [example[attr].value - float(self.graph.attrValues[attr.name][0]) / float(self.graph.attrValues[attr.name][1]-self.graph.attrValues[attr.name][0]) for attr in example.domain.attributes]
+        self.findArgumentsButton.hide()
+        self.stopArgumentationButton.show()
+        self.parentWidget.removeGraphProperties()
+
+        for i in range(len(self.allResults)):
+            if self.cancelArgumentation: break
+            (value, closure, vertices, attrList, classValue, tryIndex, strList) = self.shownResults[i]
+
+            qApp.processEvents()
+            
+            if type(classValue) == list: continue       # the projection contains several clusters
+            possiblyInside = 1
+            for attr in attrList:
+                if testExample[self.graph.attributeNames.index(attr)] < 0.0 or testExample[self.graph.attributeNames.index(attr)] > 1.0:
+                    possiblyInside = 0
+                    break
+            if not possiblyInside: continue
+
+            xTest = testExample[self.graph.attributeNames.index(attrList[0])]
+            yTest = testExample[self.graph.attributeNames.index(attrList[1])]
+            
+            array = self.graph.createProjectionAsNumericArray([self.graph.attributeNames.index(attr) for attr in attrList])
+            short = Numeric.take(array, vertices)
+            m = min(short); M = max(short)
+            if xTest < m[0] or xTest > M[0] or yTest < m[1] or yTest > M[1]: continue       # the point is definitely not inside the cluster
+
+            if not pointInsideCluster(array, closure, xTest, yTest): continue
+            
+            # if the point lies inside a cluster -> save this figure into a pixmap
+            self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+            painter = QPainter()
+            pic = QPixmap(QSize(100,100))
+            painter.begin(pic)
+            painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
+            self.graph.printPlot(painter, pic.rect())
+            painter.flush()
+            painter.end()
+
+            self.arguments[classValue].append((pic, value, attrList, i))
+            if classValue == self.classValueList.currentItem():
+                self.argumentList.insertItem(pic, "%.2f - %s" %(value, attrList))
+
+        self.stopArgumentationButton.hide()
+        self.findArgumentsButton.show()
+        self.parentWidget.restoreGraphProperties()
+       
+        
+    def stopArgumentationClick(self):
+        self.cancelArgumentation = 1
+    
+
+    def argumentationClassChanged(self):
+        self.argumentList.clear()
+        if len(self.arguments) == 0: return
+        ind = self.classValueList.currentItem()
+        for i in range(len(self.arguments[ind])):
+            val = self.arguments[ind][i]
+            self.argumentList.insertItem(val[0], "%.2f - %s" %(val[1], val[2]))
+
+    def argumentSelected(self):
+        ind = self.argumentList.currentItem()
+        classInd = self.classValueList.currentItem()
+        self.parentWidget.showAttributes(self.arguments[classInd][ind][2], clusterClosure = self.allResults[self.arguments[classInd][ind][3]][CLOSURE])
+        
 
 
 #test widget appearance
