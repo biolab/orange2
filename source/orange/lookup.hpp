@@ -43,6 +43,8 @@ public:
 
   virtual int getIndex(const TExample &ex, TExample *conv=NULL) = 0;
   virtual void giveBoundSet(TVarList &boundSet) = 0;
+
+  void valuesFromDistributions();
 };
 
 
@@ -135,10 +137,13 @@ class TLookupLearner : public TLearner {
 public:
   __REGISTER_CLASS
 
-  PLearner learnerForUnknown; //P a learner for classifying unknown cases
+  enum {UnknownsIgnore = 0, UnknownsDistribute, UnknownsKeep};
 
+  PLearner learnerForUnknown; //P a learner for classifying cases not found in the table
+  bool allowFastLookups; //P if true, it constructs LookupClassifiers for <=3 attributes
+  int unknownsHandling; //P 0 omit examples with unknowns, 1 distribute them, 2 keep them in table
+  
   TLookupLearner();
-  TLookupLearner(const TLookupLearner &old);
 
   virtual PClassifier operator()(PExampleGenerator, const int & =0);
 };
@@ -151,7 +156,9 @@ public:
   __REGISTER_CLASS
 
   PExampleTable sortedExamples; //P a table of examples
+  bool containsUnknowns; //P if true, the table contains unknown values
   PClassifier classifierForUnknown;  //P a classifier for unknown cases
+  PEFMDataDescription dataDescription; //P data description
 
   TClassifierByExampleTable(PDomain dom = PDomain());
   TClassifierByExampleTable(PExampleGenerator, PClassifier = PClassifier());
@@ -162,38 +169,7 @@ public:
   virtual PDistribution classDistribution(const TExample &);
   virtual void predictionAndDistribution(const TExample &ex, TValue &pred, PDistribution &dist);
   
-  PDistribution classDistributionLow(TExample **low, TExample **high);
-  void getExampleRange(const TExample &exam, TExample **&low, TExample **&high);
-
-protected:
-  PDomain domainWithoutClass;
-};
-
-
-WRAPPER(DomainDistributions);
-#include "examplegen.hpp"
-
-/*  Classifies by looking for the example in the example set */
-class TClassifierFromGenerator : public TDefaultClassifier {
-public:
-  __REGISTER_CLASS
-
-  PExampleGenerator generator; //P an example generator
-  int weightID; //P an id of meta-attribute with weights
-  PDomain domainWithoutClass; //P a class-less domain
-  PEFMDataDescription dataDescription; //P data description
-  PClassifier classifierForUnknown; //P a classifier for examples that were not found
-
-  TClassifierFromGenerator();
-  TClassifierFromGenerator(PVariable &);
-  TClassifierFromGenerator(PVariable &, TValue &, TDistribution &);
-  TClassifierFromGenerator(PExampleGenerator, int weightID=0);
-  TClassifierFromGenerator(const TClassifierFromGenerator &old);
-
-//  virtual int copiesOfClassVar();
-
-  virtual TValue operator ()(const TExample &);
-  virtual PDistribution classDistribution(const TExample &);
+  PDistribution classDistributionLow(const TExample &);
 };
 
 #endif

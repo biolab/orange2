@@ -294,9 +294,15 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     if (etable.domain->classVar->varType != TValue::INTVAR)
       raiseError("class attribute is not discrete");
     nClasses = etable.domain->classVar->noOfValues();
+    if (!haveBase)
+      for(int i = nClasses+1; i; i--)
+        classBoundaries.push_back(0);
   }
-  else
+  else {
     nClasses = 0;
+    classBoundaries.push_back(0);
+    classBoundaries.push_back(nRows);
+  }
 
   vector<float *> tempFloatMap;
   vector<float> tempLineCenters;
@@ -306,11 +312,8 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
   tempFloatMap.reserve(nRows);
 
   tempLineCenters.reserve(nRows);
-  if (!haveBase) {
+  if (!haveBase)
     sortIndices.reserve(nRows);
-    for(int i = nClasses+1; i; i--)
-      classBoundaries.push_back(0);
-  }
 
   bool pushSortIndices = !haveBase && (!noSorting || nClasses);
 
@@ -327,7 +330,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
         TValue &classVal = (*ei).getClass();
         const int tClass = classVal.isSpecial() ? nClasses : classVal.intV;
         classes.push_back(tClass);
-        classBoundaries[tClass]++;
+        classBoundaries[tClass+1]++;
       }
       
       TExample::const_iterator eii((*ei).begin());
@@ -367,7 +370,8 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     }
 
     else {
-      for(vector<int>::iterator cbi(classBoundaries.begin()+1), cbe(classBoundaries.end()); cbi!=cbe; *cbi += cbi[-1], cbi++);
+      if (nClasses)
+        for(vector<int>::iterator cbi(classBoundaries.begin()+1), cbe(classBoundaries.end()); cbi!=cbe; *cbi += cbi[-1], cbi++);
     
       if (!noSorting) {
         if (nClasses) {

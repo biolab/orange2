@@ -526,7 +526,7 @@ void TDiscDistribution::setint(const int &v, const float &w)
 }
 
 
-TDistribution &TDiscDistribution::operator +=(const TDistribution &other)
+TDistribution &TDiscDistribution::adddist(const TDistribution &other, const float &factor)
 {
   const TDiscDistribution *mother=dynamic_cast<const TDiscDistribution *>(&other);
   if (!mother)
@@ -542,8 +542,8 @@ TDistribution &TDiscDistribution::operator +=(const TDistribution &other)
   iterator ti = begin();
   const_iterator oi = mother->begin(), oe = mother->end();
   while(oi!=oe)
-    *(ti++) += *(oi++);
-  abs += mother->abs;
+    *(ti++) += *(oi++) * factor;
+  abs += mother->abs * factor;
   cases += mother->cases;
   unknowns += mother->unknowns;
   normalized = false;
@@ -576,8 +576,16 @@ TDistribution &TDiscDistribution::operator -=(const TDistribution &other)
 }
 
 
+TDistribution &TDiscDistribution::adddist(PDistribution other, const float &factor)
+{ return adddist(other.getReference(), 1.0); }
+
+
+TDistribution &TDiscDistribution::operator +=(const TDistribution &other)
+{ return adddist(other, 1.0); }
+
+
 TDistribution &TDiscDistribution::operator +=(PDistribution other)
-{ return operator += (other.getReference()); }
+{ return adddist(other.getReference(), 1.0); }
 
 
 TDistribution &TDiscDistribution::operator -=(PDistribution other)

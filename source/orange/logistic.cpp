@@ -102,6 +102,7 @@ PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, i
 
   // construct classifier	
   TLogRegClassifier *lrc = mlnew TLogRegClassifier(imputed->domain);
+  lrc->dataDescription = mlnew TEFMDataDescription(gen->domain, mlnew TDomainDistributions(gen), 0, getMetaID());
   PClassifier cl = lrc;
   lrc->imputer = imputer;
 
@@ -143,27 +144,39 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
   checkProperty(domain);
   TExample cexample(domain, origexam);
 
-  TExample *example2 = imputer ? imputer->call(cexample) : &cexample;
+  TExample *example2;
+
+  if (imputer)
+    example2 = imputer->call(cexample);
+  else {
+    if (dataDescription)
+      for(TExample::const_iterator ei(cexample.begin()), ee(cexample.end()-1); ei!=ee; ei++)
+        if ((*ei).isSpecial())
+          return TClassifier::classDistribution(cexample, dataDescription);
+
+    example2 = &cexample;
+  }
+
   TExample *example = continuizedDomain ? mlnew TExample(continuizedDomain, *example2) : example2;
 
   float prob1;
   try {
 	  // multiply example with beta
 	  TAttributedFloatList::const_iterator b(beta->begin()), be(beta->end());
-	  TExample::const_iterator ei(example->begin()), ee(example->end());
-	  TVarList::const_iterator vi(example->domain->attributes->begin());
 
 	  // get beta 0
 	  prob1 = *b;
 	  b++;
 	  // multiply beta with example
+    TVarList::const_iterator vi(example->domain->attributes->begin());
+    TExample::const_iterator ei(example->begin()), ee(example->end());
 	  for (; (b!=be) && (ei!=ee); ei++, b++, vi++) {
-		  if ((*ei).isSpecial())
-			  raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
-		  prob1 += (*ei).floatV*(*b); 
-	  }
+      if ((*ei).isSpecial())
+		    raiseError("unknown value in attribute '%s'", (*vi)->name.c_str());
+		  prob1 += (*ei).floatV * (*b); 
+    }
 
-	  prob1=exp(prob1)/(1+exp(prob1));
+	  prob1 = exp(prob1)/(1+exp(prob1));
   }
   catch (...) {
     if (imputer)

@@ -70,7 +70,8 @@ class TLogRegClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
 
-    PDomain continuizedDomain; //P if absent, there is no continuous attributes in original domain
+  PDomain continuizedDomain; //P if absent, there is no continuous attributes in original domain
+  PEFMDataDescription dataDescription; //P Data needed for classification in presence of undefined values
 
 	// coeficients
 	PAttributedFloatList beta; //P estimated beta coefficients for logistic regression

@@ -32,11 +32,13 @@
 #include "bayes.hpp"
 #include "contingency.hpp"
 #include "table.hpp"
+#include "filter.hpp"
 
 #include "lookup.ppp"
 
 inline TValue getValue(const TExample &ex, const int &varIndex, PVariable variable)
 { return (varIndex==ILLEGAL_INT) ? variable->computeValue(ex) : ex[varIndex]; }
+
 
 
 TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PValueList vlist)
@@ -46,6 +48,19 @@ TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PValueList 
 { 
   for(int i = lookupTable->size(); i--; )
     distributions->push_back(TDistribution::create(aclass));
+}
+
+
+void TClassifierByLookupTable::valuesFromDistributions()
+{
+  if (lookupTable->size() != distributions->size())
+    raiseError("sizes of 'lookupTable' and 'distributions' mismatch");
+
+  TValueList::iterator vi(lookupTable->begin());
+  TDistributionList::const_iterator di(distributions->begin()), de(distributions->end());
+  for(; di!=de; di++, vi++)
+    if ((*vi).isSpecial())
+      *vi = (*di)->highestProbValue();
 }
 
 
@@ -144,7 +159,7 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
         if (!(*vi).isSpecial()) {
           const TDiscDistribution &tdi = CAST_TO_DISCDISTRIBUTION(*dvi);
           TDiscDistribution::const_iterator tdii(tdi.begin());
-          for(TDiscDistribution::iterator si(sum.begin()), se(sum.end()); si!=se; si++)
+          for(TDiscDistribution::iterator si(sum.begin()), se(sum.end()); si!=se; si++, tdii++)
             *si += *tdii * *di;
           sum.abs += tdi.abs * *di;
           classes->addint((*vi).intV, *di);
@@ -190,7 +205,7 @@ void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
 
 
 void TClassifierByLookupTable1::giveBoundSet(TVarList &boundSet)
-{ boundSet=TVarList(1, variable1); }
+{ boundSet = TVarList(1, variable1); }
 
 
 
@@ -490,53 +505,218 @@ void TClassifierByLookupTable3::giveBoundSet(TVarList &boundSet)
 
 
 TLookupLearner::TLookupLearner()
+: unknownsHandling(UnknownsKeep),
+  allowFastLookups(false)
 {}
 
-TLookupLearner::TLookupLearner(const TLookupLearner &old)
-: TLearner(old)
-{}
 
 
-PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight)
-{ if (!ogen->domain->classVar)
+#define UNKNOWN_CLASS_WARNING \
+{ \
+  if (!alreadyWarned) { \
+    raiseWarning("examples with unknown class are ignored"); \
+    alreadyWarned = true; \
+  } \
+}
+
+
+PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weightID)
+{ 
+  if (!ogen->domain->classVar)
     raiseError("class-less domain");
+
+  const TVarList &attributes = ogen->domain->attributes.getReference();
+  const int nattrs = attributes.size();
+  PVariable classVar = ogen->domain->classVar;
+
+  bool alreadyWarned = false;
+
+  // we shall use ClassifierByLookupTable if the number of attributes
+  // is <= 3 and the are all discrete
+  if (allowFastLookups && (nattrs <= 3)) {
+    TVarList::const_iterator vi(attributes.begin()), ve(attributes.end());
+    for(; (vi!=ve) && ((*vi)->varType == TValue::INTVAR); vi++);
+    if (vi==ve) {
+
+      if (!nattrs) {
+        PDistribution classDist = getClassDistribution(ogen, weightID);
+        return mlnew TDefaultClassifier(classVar, classDist->highestProbValue(), classDist);
+      }
+    
+      else if (nattrs == 1) {
+        TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(classVar, attributes[0]);
+        PClassifier wcblt = cblt;
+
+        TDiscDistribution valDist(attributes[0]);
+        TDiscDistribution unkDist(attributes[0]);
+
+        PEITERATE(ei, ogen) {
+          if ((*ei).getClass().isSpecial())
+            UNKNOWN_CLASS_WARNING
+          else {
+            const TValue val = (*ei)[0];
+            const float weight = WEIGHT(*ei);
+
+            if (val.isSpecial()) {
+              if (unknownsHandling)
+                unkDist.addint((*ei)[1], weight);
+            }
+            else {
+              cblt->distributions->at(val.intV)->addint((*ei)[1], weight);
+              valDist.addint(val.intV, weight);
+            }
+          }
+        }
+
+        if (unkDist.abs && valDist.abs) {
+          TDistributionList::iterator dli(cblt->distributions->begin());
+          TDiscDistribution::const_iterator vdi(valDist.begin()), vde(valDist.end());
+          for(; vdi!=vde; (dynamic_cast<TDiscDistribution &>((*dli++).getReference())).adddist(unkDist, *vdi++));
+        }
+
+        cblt->replaceDKs(valDist);
+        cblt->valuesFromDistributions();
+        return wcblt;
+      }
+
+      else {
+        TClassifierByLookupTable *cblt = 
+          nattrs == 2 ? (TClassifierByLookupTable *)mlnew TClassifierByLookupTable2(classVar, attributes[0], attributes[1])
+                      : (TClassifierByLookupTable *)mlnew TClassifierByLookupTable3(classVar, attributes[0], attributes[1], attributes[2]);
+
+        PClassifier wcblt = cblt;
+
+        TExampleIterator ei(ogen->begin());
+        for(; ei; ++ei) {
+          if ((*ei).getClass().isSpecial())
+            UNKNOWN_CLASS_WARNING
+          else {
+            const int idx = cblt->getIndex(*ei);
+            if (idx<0) {
+              raiseWarning("unknown attribute values detected: constructing ClassifierByExampleTable instead of LookupClassifier");
+              break;
+            }
+            cblt->distributions->at(idx)->addint((*ei)[nattrs].intV, WEIGHT(*ei));
+          }
+        }
+
+        if (!ei) { // have we finished prematurely due to unknown values?
+          if (nattrs==2)
+            dynamic_cast<TClassifierByLookupTable2 *>(cblt)->replaceDKs(ogen);
+          else
+            dynamic_cast<TClassifierByLookupTable3 *>(cblt)->replaceDKs(ogen);
+
+          cblt->valuesFromDistributions();
+          return wcblt;
+        }
+        // else fallthrough
+      }
+    }
+  }
+
 
   PExampleGenerator gen = fixedExamples(ogen);
   TExampleTable examplePtrs(gen, false);
   examplePtrs.sort();
 
+  TExampleTable unknowns(gen->domain);
+
+  TEFMDataDescription *efmdata = mlnew TEFMDataDescription(gen->domain, mlnew TDomainDistributions(gen), weightID, getMetaID());
+  PEFMDataDescription wefmdata = efmdata;
+
   TClassifierByExampleTable *classifier = mlnew TClassifierByExampleTable(examplePtrs.domain);
   PClassifier wclassifier = PClassifier(classifier);
-  
-  int attrs = examplePtrs.domain->attributes->size();
+  classifier->dataDescription = wefmdata;  
 
-  TExampleIterator bi(examplePtrs.begin());
-  while (bi) {
-    TExampleIterator bbi = bi;
+  TFilter_hasSpecial hasSpecial;
+  
+  for (TExampleIterator bi(examplePtrs.begin()), bbi(bi); bi; bi = bbi) {
     PDistribution classDist = TDistribution::create(examplePtrs.domain->classVar);
     TDistribution &tcv = classDist.getReference();
+
+    if ((*bbi).getClass().isSpecial()) {
+      UNKNOWN_CLASS_WARNING
+      continue;
+    }
+
     int diff;
     do {
-      if (!(*bbi).getClass().isSpecial())
-        tcv.add((*bbi).getClass(), WEIGHT2(*bbi, weight));
+      tcv.add((*bbi).getClass(), WEIGHT2(*bbi, weightID));
       if (!++bbi)
         break;
       TExample::iterator bii((*bi).begin()), bbii((*bbi).begin());
-      for(diff = attrs; diff && (*(bii++)==*(bbii++)); diff--);
+      for(diff = nattrs; diff && (*(bii++)==*(bbii++)); diff--);
     } while (!diff);
 
-    if (classDist->abs > 0.0) {
-      TExample ex = *bi;
-      ex.setClass(tcv.highestProbValue(ex));
-      ex.getClass().svalV = classDist;
+    bool hasUnknowns = hasSpecial(*bi);
 
-      classifier->sortedExamples->addExample(ex);
+    if (classDist->abs == 0.0 || hasUnknowns && !unknownsHandling)
+      continue;
+
+    TExample ex = *bi;
+    ex.setClass(classVar->DK());
+    ex.getClass().svalV = classDist;
+
+    if (hasUnknowns) {
+      if (unknownsHandling == UnknownsDistribute) {
+        unknowns.addExample(ex);
+        dynamic_cast<TDistribution &>(ex.getClass().svalV.getReference()) *= efmdata->getExampleWeight(ex);
+        continue;
+      }
+      else
+        classifier->containsUnknowns = true;
     }
-    bi = bbi;
+
+    classifier->sortedExamples->addExample(ex);
+  }
+
+  if (unknowns.size()) {
+    const int missWeight = getMetaID();
+
+    efmdata = mlnew TEFMDataDescription(gen->domain, mlnew TDomainDistributions(gen), weightID, missWeight);
+    wefmdata = efmdata;
+
+    TExampleTable additionalExamples(gen->domain);
+
+    EITERATE(ui, unknowns) {
+      TExampleForMissing imputedExample(*ui, wefmdata);
+      imputedExample.resetExample();
+      do {
+        additionalExamples.addExample(imputedExample);
+        TExample &justAdded = additionalExamples.back();
+        dynamic_cast<TDistribution &>(justAdded.getClass().svalV.getReference()) *= imputedExample.getMeta(missWeight).floatV;
+        justAdded.removeMeta(missWeight);
+      }
+      while (imputedExample.nextExample());
+    }
+
+    TExampleTable sortedAdd(PExampleGenerator(additionalExamples), false);
+    sortedAdd.sort();
+
+    PExampleGenerator oldSortedExamples = classifier->sortedExamples;
+    
+    TExampleTable *sortedExamples = mlnew TExampleTable(gen->domain);
+    classifier->sortedExamples = sortedExamples;
+
+    for(TExampleIterator osi(oldSortedExamples->begin()), nsi(sortedAdd.begin()); osi && nsi; ) {
+      int cmp = (*osi).compare(*nsi);
+      if (cmp <= 0) {
+        sortedExamples->addExample(*osi);
+        ++osi;
+      }
+      else {
+        TExample *lastAdded = sortedExamples->size() ? &sortedExamples->back() : NULL;
+        if (lastAdded && !(*nsi).compare(*lastAdded))
+          dynamic_cast<TDistribution &>(lastAdded->getClass().svalV.getReference()) += dynamic_cast<TDistribution &>((*nsi).getClass().svalV.getReference());
+        else
+          sortedExamples->addExample(*nsi);
+        ++nsi;
+      }
+    }
   }
 
   if (learnerForUnknown)
-    classifier->classifierForUnknown = learnerForUnknown->operator()(ogen, weight);
+    classifier->classifierForUnknown = learnerForUnknown->operator()(ogen, weightID);
 
   return wclassifier;
 }
@@ -545,81 +725,79 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
 
 TClassifierByExampleTable::TClassifierByExampleTable(PDomain dom)
 : TClassifierFD(dom),
-  domainWithoutClass(CLONE(TDomain, dom)),
   sortedExamples(mlnew TExampleTable(dom))
-{ domainWithoutClass->removeClass(); }
+{}
 
 
 TClassifierByExampleTable::TClassifierByExampleTable(PExampleGenerator gen, PClassifier unk)
 : TClassifierFD(gen->domain),
-  domainWithoutClass(CLONE(TDomain, gen->domain)),
   sortedExamples(mlnew TExampleTable(gen)),
+  containsUnknowns(false),
   classifierForUnknown(unk)
-{ domainWithoutClass->removeClass(); }
-
-
-void TClassifierByExampleTable::getExampleRange(const TExample &exam, TExample **&low, TExample **&high)
 {
-  /* There's a reason why we need domainWithoutClass.
-     TClassifierByExampleTable is often used for getValueFrom. If it
-     tried to convert the example to a domain with the class,
-     this would also convert the class attribute, which would
-     usually trigger a call to its getValueFrom and so forth
-     until a stack overflow :) */
-
-  TExample convertedEx(domainWithoutClass, exam);
-  low = sortedExamples->examples;
-  high = sortedExamples->_Last;
-  TExample **tee;
-  for(int aind=0, aend=domain->attributes->size(); (aind<aend) && (low!=high); aind++) {
-    while( (low!=high) && ((**low)[aind].compare(convertedEx[aind])<0))
-      low++;
-    if (low!=high) {
-      tee = low;
-      while ( (tee!=high) && ((**tee)[aind]==(**low)[aind]))
-        tee++;
-      high = tee;
-    }
-  }
-
-  if (low == high)
-    low = high = NULL;
+  TFilter_hasSpecial hasSpecial;
+  for(TExampleIterator ei(sortedExamples->begin()); ei && !containsUnknowns; containsUnknowns = hasSpecial(*ei), ++ei);
 }
 
 
-PDistribution TClassifierByExampleTable::classDistributionLow(TExample **low, TExample **high)
+
+PDistribution TClassifierByExampleTable::classDistributionLow(const TExample &exam)
 {
-  PDistribution res;
-  for(; low!=high; low++) {
-    TDistribution *ures = NULL;
+  TExample convertedEx(domain, exam);
 
-    TValue cval = (**low).getClass();
-    if (!cval.svalV || !cval.svalV.is_derived_from(TDistribution))
-      raiseError("invalid value type");
-
-    if (!ures) {
-      ures = CLONE(TDistribution, cval.svalV);
-      res = ures;
+  if (containsUnknowns || TFilter_hasSpecial()(convertedEx)) {
+    bool weightUnknowns = dataDescription && (classVar->varType == TValue::INTVAR);
+    TDistribution *distsum = TDistribution::create(classVar);
+    PDistribution res = distsum;
+    PEITERATE(ei, sortedExamples)
+      if (convertedEx.compatible(*ei)) {
+        TValue &classVal = (*ei).getClass();
+        TDistribution *dist = classVal.svalV.AS(TDistribution);
+        if (dist)
+          if (weightUnknowns)
+            ((TDiscDistribution *)(distsum))->adddist(*dist, dataDescription->getExampleWeight(*ei));
+          else
+            *distsum += *dist;
+        else if (!classVal.isSpecial())
+          distsum->addint(classVal.intV);
+      }
+    if (distsum->abs) {
+      distsum->normalize();
+      return res;
     }
     else
-      (*ures) += cval.svalV;
+      return PDistribution();
   }
 
-  return res;
+  int L = 0, H = sortedExamples->size();
+  while(L<H) {
+    const int M = (L+H)/2;
+    int cmp = convertedEx.compare(sortedExamples->at(M));
+    if (cmp > 0)
+      L = M+1;
+    else if (cmp > 0)
+      H = M;
+    else {
+      TValue &classVal = sortedExamples->at(M).getClass();
+      TDistribution *dist = classVal.svalV.AS(TDistribution);
+      if (dist)
+        return CLONE(TDistribution, dist);
+      else {
+        dist = TDistribution::create(classVar);
+        dist->add(classVal);
+        return dist;
+      }  
+    }
+  }
+
+  return PDistribution();
 }
 
 
 TValue TClassifierByExampleTable::operator()(const TExample &exam)
-{ TExample **low, **high;
-  getExampleRange(exam, low, high);
-
-  if (low && (low==high-1))
-    return (*low)->getClass();
-
-  PDistribution probs = classDistributionLow(low, high);
-
+{ 
+  PDistribution probs = classDistributionLow(exam);
   if (probs)
-    //  might be that low was NULL or classDistributionLow returned NULL
     return probs->highestProbValue(exam);
   else
     return classifierForUnknown ? classifierForUnknown->operator()(exam) : domain->classVar->DK();
@@ -627,10 +805,8 @@ TValue TClassifierByExampleTable::operator()(const TExample &exam)
 
 
 PDistribution TClassifierByExampleTable::classDistribution(const  TExample &exam)
-{ TExample **low, **high;
-  getExampleRange(exam, low, high);
-
-  PDistribution dval = classDistributionLow(low, high);
+{ 
+  PDistribution dval = classDistributionLow(exam);
   if (dval) {
     PDistribution dd = CLONE(TDistribution, dval);
     dval->normalize();
@@ -647,10 +823,8 @@ PDistribution TClassifierByExampleTable::classDistribution(const  TExample &exam
 
 
 void TClassifierByExampleTable::predictionAndDistribution(const TExample &exam, TValue &pred, PDistribution &dist)
-{ TExample **low, **high;
-  getExampleRange(exam, low, high);
-
-  PDistribution dval = classDistributionLow(low, high);
+{ 
+  PDistribution dval = classDistributionLow(exam);
   if (dval) {
     pred = dval->highestProbValue(exam);
     dist = CLONE(TDistribution, dval);
@@ -673,92 +847,7 @@ void TClassifierByExampleTable::afterSet(const char *name)
   if (!strcmp(name, "sortedExamples")) {
     domain = sortedExamples->domain; 
     classVar = sortedExamples->domain->classVar;
-    domainWithoutClass = CLONE(TDomain, domain);
-    domainWithoutClass->removeClass();
   }
 
   TClassifierFD::afterSet(name);
-}
-
-
-
-
-TClassifierFromGenerator::TClassifierFromGenerator() 
-: weightID(0)
-{ computesProbabilities=true; }
-
-
-TClassifierFromGenerator::TClassifierFromGenerator(PVariable &acv)
-: TDefaultClassifier(acv),
-  weightID(0),
-  dataDescription()
-{ computesProbabilities = true; }
-
-
-TClassifierFromGenerator::TClassifierFromGenerator(PVariable &acv, TValue &val, TDistribution &dval)
-: TDefaultClassifier(acv, val, CLONE(TDistribution, &dval)),
-  weightID(0),
-  dataDescription()
-{ computesProbabilities = true; }
-
-
-TClassifierFromGenerator::TClassifierFromGenerator(PExampleGenerator agen, int aWeightID)
-: TDefaultClassifier(agen->domain->classVar),
-  generator(mlnew TExampleTable(agen)),
-  weightID(aWeightID),
-  domainWithoutClass(CLONE(TDomain, agen->domain)),
-  dataDescription(mlnew TEFMDataDescription(agen->domain, mlnew TDomainDistributions(agen), aWeightID, getMetaID()))
-{ domainWithoutClass->removeClass(); 
-  computesProbabilities=true; }
-
-
-TClassifierFromGenerator::TClassifierFromGenerator(const TClassifierFromGenerator &old)
-: TDefaultClassifier(old), generator(old.generator),
-  weightID(old.weightID),
-  domainWithoutClass(old.domainWithoutClass),
-  dataDescription(old.dataDescription)
-{}
-
-
-#include "filter.hpp"
-
-
-TValue TClassifierFromGenerator::operator ()(const TExample &exam)
-{ static TFilter_hasSpecial hasSpecial;
-
-  TExample cexam(domainWithoutClass, exam);
-
-  if (hasSpecial(exam)) {
-    TExample exam2(dataDescription->domain, cexam);
-    return TClassifier::operator()(exam2, dataDescription);
-  }
-
-  PDistribution wclassDist = TDistribution::create(generator->domain->classVar);
-  TDistribution &classDist = wclassDist.getReference();
-  for(TExampleIterator ri(generator->begin()); ri; ++ri)
-    if (cexam.compatible(*ri) && !(*ri).getClass().isSpecial())
-      classDist.add((*ri).getClass(), WEIGHT(*ri));
-    
-  if (classDist.abs)
-    return classDist.highestProbValue(exam);
-  else
-    return classifierForUnknown ? classifierForUnknown->operator()(exam) : classVar->DK();
-}
-
-
-PDistribution TClassifierFromGenerator::classDistribution(const TExample &exam)
-{ TExample cexam(domainWithoutClass, exam);
-
-  if (TFilter_hasSpecial()(exam)) {
-    TExample exam2(dataDescription->domain, cexam);
-    return TClassifier::classDistribution(exam, dataDescription);
-  }
-  
-  PDistribution wclassDist = TDistribution::create(generator->domain->classVar);
-  TDistribution &classDist = wclassDist.getReference();
-  for(TExampleIterator ri(generator->begin()); ri; ++ri)
-    if (cexam.compatible(*ri) && !(*ri).getClass().isSpecial())
-      classDist.add((*ri).getClass(), WEIGHT(*ri));
-
-  return wclassDist;
 }

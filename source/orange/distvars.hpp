@@ -182,6 +182,9 @@ public:
   TDistribution &operator *=(PDistribution);
   TDistribution &operator /=(const TDistribution &);
   TDistribution &operator /=(PDistribution);
+
+  TDistribution &adddist(const TDistribution &, const float &factor);
+  TDistribution &adddist(PDistribution, const float &factor);
   TDistribution &mul(const TDistribution &, const float &weight);
   TDistribution &mul(PDistribution, const float &weight);
 

@@ -87,26 +87,6 @@ void TClassifier::predictionAndDistribution(const TExample &ex, TValue &val, PDi
 
 
 
-class TExampleForMissing : public TExample {
-public:
-  PEFMDataDescription dataDescription; //P data description
-  vector<int> DKs;
-  vector<int> DCs;
-
-  TExampleForMissing(PDomain, PEFMDataDescription = PEFMDataDescription());
-  TExampleForMissing(const TExample &orig, PEFMDataDescription =PEFMDataDescription());
-  TExampleForMissing(const TExampleForMissing &orig);
-  TExampleForMissing(PDomain dom, const TExample &orig, PEFMDataDescription);
-
-  virtual TExampleForMissing &operator =(const TExampleForMissing &orig);
-  virtual TExample &operator =(const TExample &orig);
-
-  void resetExample();
-  bool nextExample();
-  bool hasMissing();
-};
-
-
 TEFMDataDescription::TEFMDataDescription(PDomain dom, PDomainDistributions dist, int ow, int mw)
 : domain(dom),
   domainDistributions(dist),
@@ -123,6 +103,70 @@ void TEFMDataDescription::getAverages()
                           ? numeric_limits<float>::quiet_NaN()
                           : (*si)->average());
 }
+
+
+float TEFMDataDescription::getExampleWeight(const TExample &example) const
+{ 
+  if (example.domain != domain)
+    raiseError("example's domain doesn't match the data descriptor's");
+
+  float weight=1.0;
+  TVarList::const_iterator vi(domain->attributes->begin()), vie(domain->attributes->end());
+  TExample::iterator ei(example.begin());
+  for(; vi!=vie; ei++, vi++)
+    if ((*ei).isDK() && ((*ei).varType == TValue::INTVAR))
+      weight /= (*vi)->noOfValues();
+
+  return weight;
+}
+
+
+
+float TEFMDataDescription::getExampleMatch(const TExample &ex1, const TExample &ex2)
+{ 
+  if ((ex1.domain != domain) && (ex2.domain != domain))
+    raiseError("example's domain doesn't match the data descriptor's");
+
+  float weight=1.0;
+  TExample::iterator e1i(ex1.begin()), e2i(ex2.end());
+
+  if (domainDistributions) {
+    if (matchProbabilities.size() != domainDistributions->size())
+      matchProbabilities = vector<float>(domainDistributions->size(), -1);
+
+    vector<float>::iterator mi(matchProbabilities.begin());
+    TDomainDistributions::const_iterator di(domainDistributions->begin()), de(domainDistributions->end());
+
+    for(; di!=de; e1i++, e2i++, di++, mi++) {
+      if ((*e1i).varType == TValue::INTVAR) {
+        if ((*e1i).isDK()) {
+          if ((*e2i).isDK()) {
+            if (*mi == -1) {
+              float mp = 0.0;
+              ITERATE(TDiscDistribution, ddi, ((TDiscDistribution &)((*di).getReference())))
+                mp += *ddi * *ddi;
+              *mi = mp;
+            }
+            weight *= *mi;
+          }
+          else if (!(*e2i).isSpecial())
+            weight *= (*di)->p(*e2i);
+        }
+        else if ((*e2i).isDK() && !(*e1i).isSpecial())
+          weight *= (*di)->p(*e1i);
+      }
+    }
+  }
+  else {
+    TVarList::const_iterator vi(domain->attributes->begin()), vie(domain->attributes->end());
+    for(; vi!=vie; e1i++, e2i++, vi++)
+      if (((*e1i).varType == TValue::INTVAR) && ((*e1i).isDK() && !(*e2i).isSpecial()   ||   (*e2i).isDK() && !(*e1i).isSpecial()))
+        weight /= (*vi)->noOfValues();
+  }
+
+  return weight;
+}
+
 
 
 TExampleForMissing::TExampleForMissing(PDomain dom, PEFMDataDescription dd)
@@ -204,7 +248,8 @@ void TExampleForMissing::resetExample()
       ITERATE(vector<int>, ci, DKs) {
         // DKs contain only discrete variables, so it is safe to cast
         const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*(di+*ci));
-        weight *= dist.front() / dist.abs;
+        if (dist.abs)
+          weight *= dist.front() / dist.abs;
       }
     }
     else
@@ -253,7 +298,7 @@ bool TExampleForMissing::nextExample()
 bool TExampleForMissing::hasMissing() 
 { return DCs.size() || DKs.size(); }
 
-/*  This method can be called by derived classes when example misses values and missed
+/*  This method can be called by derived classes when example misses values and missing
     values are not tolerated by the model.
     Provided the data description for missing values it constructs the TExampleForMissing,
     calls the operator()(const TExample &) and returns the majority class of the weighted

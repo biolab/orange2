@@ -48,9 +48,16 @@ bool TTreeStopCriteria::operator()(PExampleGenerator gen, const int &, PDomainCo
     TExampleIterator ei = gen->begin();
     TValue fv = (*ei).getClass();
 
-    while(++ei)
-      if ((*ei).getClass()!=fv)
+    while(fv.isSpecial() && ++ei)
+      fv = (*ei).getClass();
+    if (!ei)
+      return true;
+
+    while(++ei) {
+      TValue &cval = (*ei).getClass();
+      if (!cval.isSpecial() && ((*ei).getClass()!=fv))
         return false; // yes, may continue
+    }
   }
 
   return true; // no, there's just one class left!

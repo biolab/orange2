@@ -208,32 +208,59 @@ public:
     return *this;
   }
    
-  #define CASES(in,fl,sv,def)         \
-    { if (isSpecial() || v.isSpecial()) return def; \
+  #define CASES(in,fl,sv)             \
+    {                                 \
       switch(varType) {               \
         case INTVAR:     return in;   \
         case FLOATVAR:   return fl;   \
-        default:   return sv;   \
+        default:   return sv;         \
       }                               \
-      return (def);                   \
     }
 
 
   inline int TValue::compare(const TValue &v) const
-  { if (isSpecial())
+  {
+    if (isSpecial())
       return v.isSpecial() ? 0 : 1;
-    // -1 in cases now corresponds to this being regular and v special
-    CASES((sign(intV-v.intV)), (sign(floatV-v.floatV)), (svalV->compare(v.svalV.getReference())), -1)
+    else
+      if (v.isSpecial())
+        return -1;
+
+    CASES((sign(intV-v.intV)), (sign(floatV-v.floatV)), (svalV->compare(v.svalV.getReference())))
   }
 
+
   inline bool TValue::compatible(const TValue &v) const
-  CASES((intV==v.intV), (floatV==v.floatV), (svalV->compatible(v.svalV.getReference())), true)
+  {
+    if (isSpecial() || v.isSpecial())
+      return true;
 
-  inline signed char TValue::operator ==(const TValue &v) const
-  CASES((intV==v.intV), (floatV==v.floatV), (svalV->operator == (v.svalV.getReference())), -1)
+    CASES((intV==v.intV), (floatV==v.floatV), (svalV->compatible(v.svalV.getReference())));
+  }
 
-  inline signed char TValue::operator !=(const TValue &v) const
-  CASES((intV!=v.intV), (floatV!=v.floatV), (svalV->operator != (v.svalV.getReference())), -1)
+
+  inline bool TValue::operator ==(const TValue &v) const
+  { 
+    if (isSpecial())
+      return v.isSpecial();
+    else
+      if (v.isSpecial())
+        return false;
+
+    CASES((intV==v.intV), (floatV==v.floatV), (svalV->operator == (v.svalV.getReference())));
+  }
+
+
+  inline bool TValue::operator !=(const TValue &v) const
+  {
+    if (isSpecial())
+      return !v.isSpecial();
+    else
+      if (v.isSpecial())
+        return true;
+
+    CASES((intV==v.intV), (floatV==v.floatV), (svalV->operator == (v.svalV.getReference())))
+  }
 };
 
 inline void intValInit(TValue &val, const int &i)

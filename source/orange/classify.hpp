@@ -25,6 +25,7 @@
 
 #include <string>
 
+#include "examples.hpp"
 #include "distvars.hpp"
 
 using namespace std;
@@ -155,23 +156,47 @@ public:
 };
 
 
-
 WRAPPER(DomainDistributions);
 WRAPPER(ExampleGenerator);
-
 
 
 class TEFMDataDescription : public TOrange {
 public:
   __REGISTER_CLASS
 
-  PDomain domain; //P domain
-  PDomainDistributions domainDistributions; //P distributions of values for attributes
+  PDomain domain; //PR domain
+  PDomainDistributions domainDistributions; // distributions of values for attributes
   vector<float> averages;
+  vector<float> matchProbabilities; // if you intend to really export this class, you'll need to define 'afterSet' for domain distributions
   int originalWeight, missingWeight;
 
   TEFMDataDescription(PDomain, PDomainDistributions=PDomainDistributions(), int ow=0, int mw=0);
   void getAverages();
+
+  float getExampleWeight(const TExample &) const;
+  float getExampleMatch(const TExample &, const TExample &);
+};
+
+
+class TExampleForMissing : public TExample {
+public:
+  __REGISTER_CLASS
+
+  PEFMDataDescription dataDescription; //P data description
+  vector<int> DKs;
+  vector<int> DCs;
+
+  TExampleForMissing(PDomain, PEFMDataDescription = PEFMDataDescription());
+  TExampleForMissing(const TExample &orig, PEFMDataDescription =PEFMDataDescription());
+  TExampleForMissing(const TExampleForMissing &orig);
+  TExampleForMissing(PDomain dom, const TExample &orig, PEFMDataDescription);
+
+  virtual TExampleForMissing &operator =(const TExampleForMissing &orig);
+  virtual TExample &operator =(const TExample &orig);
+
+  void resetExample();
+  bool nextExample();
+  bool hasMissing();
 };
 
 
