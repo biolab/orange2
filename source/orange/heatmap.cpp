@@ -50,6 +50,7 @@ WRAPPER(ExampleTable);
 
 THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
 : bitmap(new unsigned char [h*w]),
+  averages(new unsigned char[h]),
   height(h),
   width(w),
   examples(ex),
@@ -60,19 +61,30 @@ THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
 THeatmap::~THeatmap()
 {
   delete bitmap;
+  delete averages;
 }
 
+/* Expends the bitmap 
+   Each pixel in bitmap 'smmp' is replaced by a square with
+     given 'cellWidth' and 'cellHeight'
+   The original bitmaps width and height are given by arguments
+     'width' and 'height'
 
-unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHeight, int &size)
+   Beside returning the bitmap, the function return its size
+   in bytes (argument '&size'). Due to alignment of rows to 4 bytes,
+   this does not necessarily equal cellWidth * cellHeight * width * height.
+*/
+
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, unsigned char *smmp, const int &width, const int &height)
 {
   const int lineWidth = width * cellWidth;
   const int fill = (4 - lineWidth & 3) & 3;
   const int rowSize = lineWidth + fill;
   size = rowSize * height * cellHeight;
-  unsigned char *res = new unsigned char[size];
 
-  unsigned char *smmp = bitmap;
+  unsigned char *res = new unsigned char[size];
   unsigned char *resi = res;
+
   for(int line = 0; line<height; line++) {
     unsigned char *thisline = resi;
     int xpoints, inpoints;
@@ -87,7 +99,7 @@ unsigned char *THeatmap::heatmap2string(const int &cellWidth, const int &cellHei
 }
 
 
-THeatmapConstructor::THeatmapConstructor(PExampleTable table)
+THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructor baseHeatmap, bool noSorting)
 : sortedExamples(new TExampleTable(table, 1)), // lock, but do not copy
   floatMap(),
   classBoundaries(),
@@ -97,7 +109,12 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table)
   nClasses(0)
 {
   TExampleTable &etable = table.getReference();
+  if (baseHeatmap && (etable.numberOfExamples() != baseHeatmap->sortedExamples->numberOfExamples()))
+    raiseError("'baseHeatmap has a different number of spots");
+
   TExampleTable &esorted = sortedExamples.getReference();
+
+  bool haveBase = baseHeatmap;
 
   PITERATE(TVarList, ai, etable.domain->attributes)
     if ((*ai)->varType != TValue::FLOATVAR)
@@ -113,17 +130,20 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table)
 
   vector<float *> tempFloatMap;
   vector<float> tempLineCenters;
-  vector<int>sortIndices;
+  vector<float> tempLineAverages;
   vector<int>classes;
 
   tempFloatMap.reserve(nRows);
+
   tempLineCenters.reserve(nRows);
-  sortIndices.reserve(nRows);
+  if (!haveBase)
+    sortIndices.reserve(nRows);
 
   try {
     // Extract the data from the table, compute the centers and fill the sortIndices
     EITERATE(ei, etable) {
-      sortIndices.push_back(sortIndices.size());
+      if (!haveBase)
+        sortIndices.push_back(sortIndices.size());
 
       float *i_floatMap = new float[nColumns];
       tempFloatMap.push_back(i_floatMap);
@@ -160,38 +180,48 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table)
         }
       }
 
+      tempLineAverages.push_back(N ? sumBri/N : UNKNOWN_F);
       tempLineCenters.push_back(N && (thismax != thismin) ? (sumBriX - thismin * sumX) / (sumBri - thismin * N) : UNKNOWN_F);
     }
 
-    // Sort the indices
-    if (nClasses) {
-      CompareIndicesWClass compare(tempLineCenters, classes);
-      sort(sortIndices.begin(), sortIndices.end(), compare);
+    if (haveBase) {
+      sortIndices = baseHeatmap->sortIndices;
+      classBoundaries = baseHeatmap->classBoundaries;
     }
-    else {
-      CompareIndices compare(tempLineCenters);
-      sort(sortIndices.begin(), sortIndices.end(), compare);
+
+    else if (!noSorting) {
+      if (nClasses) {
+        CompareIndicesWClass compare(tempLineCenters, classes);
+        sort(sortIndices.begin(), sortIndices.end(), compare);
+      }
+      else {
+        CompareIndices compare(tempLineCenters);
+        sort(sortIndices.begin(), sortIndices.end(), compare);
+      }
     }
 
     floatMap.reserve(nRows);
     lineCenters.reserve(nRows);
+    lineAverages.reserve(nRows);
         
     int pcl = -1;
     ITERATE(vector<int>, si, sortIndices) {
       esorted.addExample(etable[*si]);
       lineCenters.push_back(tempLineCenters[*si]);
+      lineAverages.push_back(tempLineAverages[*si]);
       floatMap.push_back(tempFloatMap[*si]);
       tempFloatMap[*si] = NULL;
-      if (nClasses && (classes[*si] != pcl)) {
+      if (!haveBase && nClasses && (classes[*si] != pcl)) {
         classBoundaries.push_back(floatMap.size());
         pcl = classes[*si];
       }
     }
 
-    if (!nClasses)
-      classBoundaries.push_back(0);
-    classBoundaries.push_back(floatMap.size());
-
+    if (!haveBase) {
+      if (!nClasses)
+        classBoundaries.push_back(0);
+      classBoundaries.push_back(floatMap.size());
+    }
   }
   catch (...) {
     ITERATE(vector<float *>, tfmi, tempFloatMap)
@@ -226,12 +256,16 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
     
   int ncl = nClasses ? nClasses : 1;
   float **floatMaps = new float *[ncl];
+  float **averageMaps = new float *[ncl];
   
   float **fmi = floatMaps;
+  float **ami = averageMaps;
   int classNo;
 
   PHeatmapList hml = new THeatmapList;
 
+  int *spec = new int[nColumns];
+  
   for(classNo = 0; classNo < ncl; classNo++, fmi++) {
     const int classBegin = classBoundaries[classNo];
     const int classEnd = classBoundaries[classNo+1];
@@ -244,25 +278,33 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
     const float squeeze = float(nLines) / (classEnd-classBegin);
 
     float *fm1i = *fmi = new float [nLines * nColumns]; // that's the space for floatmap for one class
+    float *am1i = *ami = new float [nLines]; // merged line averages
 
     float inThisRow = 0;
     float *ri, *fri;
-    int *spec = new int[nColumns];
     int *si;
     int xpoint;
+    vector<float>::const_iterator lavi(lineAverages.begin());
 
     int exampleIndex = classBegin;
     hm->exampleIndices->push_back(exampleIndex);
 
-    for(vector<float *>::iterator rowi = floatMap.begin()+classBegin, rowe = floatMap.begin()+classEnd; rowi!=rowe; nLines--, inThisRow-=1.0) {
+    for(vector<float *>::iterator rowi = floatMap.begin()+classBegin, rowe = floatMap.begin()+classEnd; rowi!=rowe; nLines--, inThisRow-=1.0, am1i++) {
       for(xpoint = nColumns, ri = fm1i, si = spec; xpoint--; *(ri++) = 0, *(si++) = 0);
+      float lineAverage = 0.0;
+      int nDefinedAverages = 0;
 
-      for(; (rowi != rowe) && ((inThisRow < 1.0) || (nLines==1)); inThisRow += squeeze, rowi++, exampleIndex++) {
+      for(; (rowi != rowe) && ((inThisRow < 1.0) || (nLines==1)); inThisRow += squeeze, rowi++, exampleIndex++, lavi++) {
         for(xpoint = nColumns, fri = *rowi, ri = fm1i, si = spec; xpoint--; fri++, ri++, si++)
           if (*fri != UNKNOWN_F) {
             *ri += *fri;
             (*si)++;
           }
+
+        if (*lavi != UNKNOWN_F) {
+          lineAverage += *lavi;
+          nDefinedAverages++;
+        }
       }
 
       hm->exampleIndices->push_back(exampleIndex);
@@ -279,10 +321,13 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
         else
           *fm1i = UNKNOWN_F;
       }
+
+      *am1i = nDefinedAverages ? lineAverage/nDefinedAverages : UNKNOWN_F;
     }
 
-    delete spec;
   }
+
+  delete spec;
 
   gamma = agamm;
   bool gammaIs1 = (agamm == 1.0);
@@ -296,32 +341,45 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
   }
 
   fmi = floatMaps;
+  ami = averageMaps;
+  vector<float>::const_iterator ai(lineAverages.begin());
+
   PITERATE(THeatmapList, hmi, hml) {
-    float *fm1i = *(fmi++);
-    unsigned char *bmi = (*hmi)->bitmap;
-    for(int idx = (*hmi)->height * (*hmi)->width; idx--; fm1i++, bmi++)
-      if (*fm1i == UNKNOWN_F)
-        *bmi = 255;
-      else if (*fm1i < abslow)
-        *bmi = 253;
-      else if (*fm1i > abshigh)
-        *bmi = 254;
-      else {
-        float norm = colorFact * (*fm1i - colorBase);
-        if (!gammaIs1)
-          if ((norm > -0.008) && (norm < 0.008))
-            norm = 125;
-          else
-            norm = 124.5 * (1 + (norm<0 ? -exp(agamm * log(-norm)) : exp(gamma * log(norm))));
+    float *fm1i;
+    unsigned char *bmi;
+    int idx;
 
-        if (norm<0)
-          norm = 0;
-        else if (norm>249)
-          norm = 249;
+    if (gammaIs1) {
+      for(fm1i = *fmi, bmi = (*hmi)->bitmap,   idx = (*hmi)->height * (*hmi)->width; idx--; *(bmi++) = computePixelGamma1(*(fm1i++)));
+      for(fm1i = *ami, bmi = (*hmi)->averages, idx = (*hmi)->height;                 idx--; *(bmi++) = computePixelGamma1(*(fm1i++)));
+    }
+    else {
+      for(fm1i = *fmi, bmi = (*hmi)->bitmap,   idx = (*hmi)->height * (*hmi)->width; idx--; *(bmi++) = computePixel(*(fm1i++)));
+      for(fm1i = *ami, bmi = (*hmi)->averages, idx = (*hmi)->height;                 idx--; *(bmi++) = computePixel(*(fm1i++)));
+    }
 
-        *bmi = int(floor(norm));
-      }
+    delete *(fmi++);
+    delete *(ami++);
   }
 
+  delete floatMaps;
+  delete averageMaps;
+
   return hml;
+}
+
+
+unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, int &size) const
+{
+  unsigned char *legendbmp = new unsigned char[width];
+  unsigned char *lbmpi = legendbmp;
+  float intwid = (absHigh - absLow) / (width-1);
+  if (gamma == 1.0)
+    for(int wi = 0; wi<width; *(lbmpi++) = computePixelGamma1(absLow + (wi++) * intwid));
+  else
+    for(int wi = 0; wi<width; *(lbmpi++) = computePixel(absLow + (wi++) * intwid));
+
+  unsigned char *legend = bitmap2string(1, height, size, legendbmp, width, 1);
+  delete legendbmp;
+  return legend;
 }
