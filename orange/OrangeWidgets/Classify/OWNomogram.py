@@ -247,7 +247,15 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                             conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], 0.00000001)
                             conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[self.notTargetClassIndex]], 0.00000001)
                             try:
-                                a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), math.log(conditional0/conditional1/prior),lineWidth=thickness))
+                                # compute error of loess in logistic space
+                                standard_error= math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.TargetClassIndex])
+                                # se = sqrt((log(P(c|a)+st_error / 1-P(c|a)-st_error) - log(P(c|a)-st_error / 1-P(c|a)+st_error))^2 + priorError^2)
+                                se = math.sqrt(math.pow(math.log((conditional0+standard_error)/(conditional1-standard_error)/(conditional0-standard_error)*(conditional1+standard_error)),2)+math.pow(priorError,2))
+                                # add value to set of values                                
+                                a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)),
+                                                       math.log(conditional0/conditional1/prior),
+                                                       lineWidth=thickness,
+                                                       error = se))
                             except:
                                 pass
                 a.continuous = True
@@ -532,7 +540,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
     def setBaseLine(self):
         if self.bnomogram:
             self.bnomogram.showBaseLine(self.showBaseLine)
-
+            
     def saveToFileCanvas(self):
         EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
         
@@ -547,7 +555,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         ext = ext.replace(".","")
         ext = ext.upper()
 
-        # create buffers and painters
+        #create buffers and painters
         headerBuffer = QPixmap(self.header.canvas().size())
         graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE))
         footerBuffer = QPixmap(self.footer.canvas().size())
@@ -570,10 +578,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         buffer = QPixmap(size) # any size can do, now using the window size
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-
         bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.canvas().size().height(), Qt.CopyROP)
         bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom+EMPTY_SPACE, Qt.CopyROP)
         bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom+EMPTY_SPACE, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
+        
 
         painter.end()
         headerPainter.end()
@@ -581,6 +589,99 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         footerPainter.end()
         
         buffer.save(fileName, ext)
+            
+    def saveToFileCanvas_new(self):
+        EMPTY_SPACE = 25 # Empty space between nomogram and summarization scale
+        
+        sizeW = self.graph.canvas().pright
+        sizeH = self.graph.canvas().gbottom + self.header.canvas().size().height() + self.footer.canvas().size().height()+EMPTY_SPACE
+        size = QSize(sizeW, sizeH)
+
+        #qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        #fileName = str(qfileName)
+        #if fileName == "": return
+        #(fil,ext) = os.path.splitext(fileName)
+        #ext = ext.replace(".","")
+        #ext = ext.upper()
+
+        # create buffers and painters
+        #headerBuffer = QPixmap(self.header.canvas().size())
+        #graphBuffer = QPixmap(QSize(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE))
+        #footerBuffer = QPixmap(self.footer.canvas().size())
+        
+        #headerPainter = QPainter(headerBuffer)
+        #graphPainter = QPainter(graphBuffer)
+        #footerPainter = QPainter(footerBuffer)
+
+        # fill painters
+        #headerPainter.fillRect(headerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        #graphPainter.fillRect(graphBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        #footerPainter.fillRect(footerBuffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        
+        #self.header.drawContents(headerPainter, 0, 0, sizeW, self.header.canvas().size().height())
+        #self.graph.drawContents(graphPainter, 0, 0, sizeW, self.graph.canvas().gbottom+EMPTY_SPACE)
+        #self.footer.drawContents(footerPainter, 0, 0, sizeW, self.footer.canvas().size().height())
+
+        
+
+        #buffer = QPixmap(size) # any size can do, now using the window size
+        #painter = QPainter(buffer)
+        #painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+
+        #bitBlt(buffer, 0, 0, headerBuffer, 0, 0,  sizeW, self.header.canvas().size().height(), Qt.CopyROP)
+        #bitBlt(buffer, 0, self.header.canvas().size().height(), graphBuffer, 0, 0,  sizeW, self.graph.canvas().gbottom+EMPTY_SPACE, Qt.CopyROP)
+        #bitBlt(buffer, 0, self.header.canvas().size().height()+self.graph.canvas().gbottom+EMPTY_SPACE, footerBuffer, 0, 0,  sizeW, self.footer.canvas().size().height(), Qt.CopyROP)
+
+        import copy
+        canvas_glued = QCanvas(self.graph.canvas().pright, self.graph.canvas().gbottom+EMPTY_SPACE+self.header.size().height()+self.footer.canvas().size().height())
+        # draw header items
+        items_header = self.header.canvas().allItems()
+        for item in items_header:
+            if item.visible():
+                item.setCanvas(canvas_glued)
+        
+        # draw graph items
+        items_graph = self.graph.canvas().allItems()
+        for item in items_graph:
+            if item.visible():
+                item.setCanvas(canvas_glued)
+                if isinstance(item, QCanvasLine):
+                    item.setPoints(item.startPoint().x(), item.startPoint().y()+self.header.size().height(), item.endPoint().x(), item.endPoint().y()+self.header.size().height())
+                else:
+                    item.setY(item.y()+self.header.size().height())
+
+        # draw graph items
+        items_footer = self.footer.canvas().allItems()
+        for item in items_footer:
+            if item.visible():
+                item.setCanvas(canvas_glued)
+                item.setY(item.y()+self.header.size().height()+self.graph.canvas().gbottom+EMPTY_SPACE)
+                
+        import OWDlgs
+        try:
+            import OWDlgs
+        except:
+            print "Missing file OWDlgs.py. This file should be in widget directory. Unable to print/save image."
+            return
+        print "grem v size dlg v nomogamu"
+        sizeDlg = OWDlgs.OWChooseImageSizeDlg(canvas_glued)
+        sizeDlg.exec_loop()
+
+        for item in items_header:
+            item.setCanvas(self.header.canvas())
+        for item in items_graph:
+            item.setCanvas(self.graph.canvas())
+            item.setY(item.y()-self.header.size().height())
+        for item in items_footer:
+            item.setCanvas(self.footer.canvas())
+            item.setY(item.y()-self.header.size().height()-self.graph.canvas().gbottom-EMPTY_SPACE)
+            
+        #painter.end()
+        #headerPainter.end()
+        #graphPainter.end()
+        #footerPainter.end()
+        
+        #buffer.save(fileName, ext)
 
         
     # Callbacks
@@ -600,18 +701,6 @@ if __name__=="__main__":
 
     discretizer = orange.EntropyDiscretization()
     catData = orange.Preprocessor_discretize(data, method=discretizer)
-
-    # remove attributes that were discretized to a constant
-    attrlist = []
-    nrem=0
-    for i in catData.domain.attributes:
-        if (len(i.values)>1):
-            attrlist.append(i)
-
-    attrlist.append(catData.domain.classVar)
-    newData = catData.select(attrlist)
-    for at in newData.domain.attributes:
-        at.ordered = True
 
     bayes = orange.BayesLearner(data)
     #l = orngSVM.BasicSVMLearner()

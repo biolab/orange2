@@ -639,9 +639,14 @@ class AttrLineCont(AttrLine):
         if len(self.contValues) == 0:
             for at in self.attValues:
                 a = QCanvasLine(canvas)
+                a.upperSE = QCanvasLine(canvas)
+                a.lowerSE = QCanvasLine(canvas)
                 a.setPen(QPen(Qt.black, at.lineWidth))
+                a.upperSE.setPen(QPen(Qt.blue, 0))
+                a.lowerSE.setPen(QPen(Qt.blue, 0))
                 self.contValues.append(a)
 
+                
                 # for 1d cont space
                 at.setCreation(canvas)
 
@@ -734,7 +739,7 @@ class AttrLineCont(AttrLine):
         self.label.setText(self.name)
 
         # get all values tranfsormed with current mapper 
-        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
 
         # draw a bounding box
         self.drawBox(min_mapped, max_mapped, rect)
@@ -766,10 +771,13 @@ class AttrLineCont(AttrLine):
             if canvas.parent.histogram:
                 a.setPen(QPen(Qt.black, 1+self.attValues[i].lineWidth*canvas.parent.histogram_size))
             else:
-                a.setPen(QPen(Qt.black, 1))
+                a.setPen(QPen(Qt.black, 2))
             #if self.attValues[i].lineWidth>0:
             a.setPoints(atValues_mapped[i], atValues_mapped_vertical[i], atValues_mapped[i+1], atValues_mapped_vertical[i+1])
+            a.upperSE.setPoints(atErrors_mapped[i][0], atValues_mapped_vertical[i], atErrors_mapped[i+1][0], atValues_mapped_vertical[i+1])
+            a.lowerSE.setPoints(atErrors_mapped[i][1], atValues_mapped_vertical[i], atErrors_mapped[i+1][1], atValues_mapped_vertical[i+1])
             self.selectValues.append([atValues_mapped[i],atValues_mapped_vertical[i], self.attValues[i].betaValue, self.atNames.attValues[i].betaValue])
+
 
             # if distance between i and i+1 is large, add some select values.
             n = int(math.sqrt(math.pow(atValues_mapped[i+1]-atValues_mapped[i],2)+math.pow(atValues_mapped_vertical[i+1]-atValues_mapped_vertical[i],2)))/5-1
@@ -778,6 +786,14 @@ class AttrLineCont(AttrLine):
                                           self.attValues[i].betaValue+(float(j+1)/float(n+1))*(self.attValues[i+1].betaValue-self.attValues[i].betaValue),
                                           self.atNames.attValues[i].betaValue+(float(j+1)/float(n+1))*(self.atNames.attValues[i+1].betaValue-self.atNames.attValues[i].betaValue)] for j in range(n)]
             a.show()
+
+            if canvas.parent.confidence_check:            
+                a.upperSE.show()
+                a.lowerSE.show()
+            else:
+                a.upperSE.hide()
+                a.lowerSE.hide()
+                
         self.updateValue()
         self.box.show()
         self.label.show()
@@ -937,6 +953,7 @@ class BasicNomogramFooter(QCanvas):
         self.connectedLine = QCanvasLine(self)
         self.connectedLine.setPen(QPen(Qt.blue))
         self.errorLine = QCanvasLine(self)
+        
         self.errorPercentLine = QCanvasLine(self)
         self.leftArc = QCanvasPolygon(self)
         self.rightArc = QCanvasPolygon(self)
@@ -1070,11 +1087,13 @@ class BasicNomogramFooter(QCanvas):
         ax = max(ax, axMin)
         ax = min(ax, axMax)
         self.errorLine.setPoints(ax_minError, self.footer.marker.y(), ax_maxError, self.footer.marker.y())
+        self.errorLine.setCanvas(self)
         ax_minError = min(ax_minError, axPercentMax)
         ax_minError = max(ax_minError, axPercentMin)        
         ax_maxError = min(ax_maxError, axPercentMax)
         ax_maxError = max(ax_maxError, axPercentMin)        
         
+        self.errorPercentLine.setCanvas(self)
         self.errorPercentLine.setPoints(ax_minError, self.footerPercent.marker.y(), ax_maxError, self.footerPercent.marker.y())
         
         self.footer.selectedValue = [ax,self.footer.marker.y(),self.m.mapBetaToLinear(sum, self.footer)]
@@ -1092,6 +1111,7 @@ class BasicNomogramFooter(QCanvas):
             self.footerPercent.marker.show()
             if self.footer.marker.x() == self.footerPercent.marker.x():
                 self.connectedLine.setPoints(self.footer.marker.x(), self.footer.marker.y(), self.footerPercent.marker.x(), self.footerPercent.marker.y())
+                self.connectedLine.setCanvas(self)
                 self.connectedLine.show()
             else:
                 self.connectedLine.hide()
@@ -1169,6 +1189,7 @@ class BasicNomogram(QCanvas):
             self.footerCanvas.showCI()
         if self.footerCanvas.footer.marker.x() == self.footerCanvas.footerPercent.marker.x():
             self.footerCanvas.connectedLine.setPoints(self.footerCanvas.footer.marker.x(), self.footerCanvas.footer.marker.y(), self.footerCanvas.footerPercent.marker.x(), self.footerCanvas.footerPercent.marker.y())
+            self.footerCanvas.connectedLine.setCanvas(self.footerCanvas)
             self.footerCanvas.connectedLine.show()
         self.update()
         self.footerCanvas.update()
@@ -1217,7 +1238,7 @@ class BasicNomogram(QCanvas):
         for at in self.attributes:
             if not (self.parent.contType == 1 and isinstance(at, AttrLineCont)) and at.label.boundingRect().width()>self.gleft:
                 self.gleft = at.label.boundingRect().width()
-        if QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width>self.gleft:
+        if QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width()>self.gleft:
             self.gleft = QCanvasText(self.footerCanvas.footerPercentName, self.footerCanvas).boundingRect().width()
             
         #self.gleft = max(self.gleft, 100) # should really test footer width, and with of other lables
@@ -1232,7 +1253,8 @@ class BasicNomogram(QCanvas):
 
         if self.pbottom < parent.graph.height() - 30:
             self.pbottom = parent.graph.height() - 30
-           
+
+
     def show(self):
         # set sizes
         [item.hide() for item in self.allItems()]
@@ -1252,7 +1274,6 @@ class BasicNomogram(QCanvas):
                 self.mapper = Mapper_Linear_Center(self.minBeta, self.maxBeta, self.gleft, self.gright)
             else:
                 self.mapper = Mapper_Linear_Center(self.minBeta, self.maxBeta, self.gleft, self.gright, maxLinearValue = self.maxBeta, minLinearValue = self.minBeta)
-
         # draw HEADER and vertical line
         topRect=QRect(self.gleft, self.gtop, self.gwidth, self.parent.verticalSpacing-20)
         self.header.paintHeader(topRect, self.mapper) 
@@ -1549,6 +1570,7 @@ class Mapper_Linear_Center:
             k1 = self.propBeta(at.betaValue-error_factor*at.error, attrLine)
             k2 = self.propBeta(at.betaValue+error_factor*at.error, attrLine)
             b_error.append([self.left+k1*(self.right-self.left), self.left+k2*(self.right-self.left)])
+
         if max_mapped<min_mapped+5:
             max_mapped=min_mapped+5
         return (beta, b_error, min_mapped, max_mapped)
@@ -1594,7 +1616,6 @@ class Mapper_Linear_Center:
         if maxnum<1:
             maxnum=1
         d = (self.maxValue - self.minValue)/maxnum
-
         dif = getDiff(d)
         dSum = createSetOfVisibleValues(self.minValue, self.maxValue, dif);
 
