@@ -17,7 +17,58 @@ from OWParallelGraph import *
 from OData import *
 import orngFSS
 import statc
+import orngCI
 
+
+###########################################################################################
+##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING FUNCTIONAL DECOMPOSITION
+###########################################################################################
+def replaceAttributes(index1, index2, merged, data):
+    data.domain.attributes.remove(data.domain[index1])
+    data.domain.attributes.remove(data.domain[index2])
+    return data.select([merged] + data.domain.attributes + [data.domain.classVar], data)
+
+
+def getFunctionalList(data):
+    bestQual = -10000000
+    bestAttrs = []
+    testAttrs = []
+    outList = []
+
+    # compute the best attribute combination
+    for i in range(len(data.domain)):
+        if data.domain[i].varType != orange.VarTypes.Discrete: continue
+        testAttrs.append(i)
+        for j in range(i+1, len(data.domain)):
+            if data.domain[j].varType != orange.VarTypes.Discrete: continue
+            vals, qual = orngCI.FeatureByMinComplexity(data, [data.domain[i].name, data.domain[j].name])
+            if qual > bestQual:
+                bestQual = qual
+                bestAttrs = [i, j, vals]
+
+    if bestAttrs == []: return []
+    outList.append(data.domain[bestAttrs[0]].name)
+    outList.append(data.domain[bestAttrs[1]].name)
+    dataNew = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], data)
+    testAttrs.remove(bestAttrs[0])
+    testAttrs.remove(bestAttrs[1])
+    while (testAttrs != []):
+        bestQual = -10000000
+        for i in testAttrs:
+            vals, qual = orangCI.FeatureByMinComplexity(dataNew, [dataNew.domain[0].name, data.domain[i].name])
+            if qual > bestQual:
+                bestqual = qual
+                bestAttrs = [0, i, dataNew]
+        dataNew = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], dataNew)
+        outList.append(dataNew.domain[bestAttrs[1]].name)
+        testAttrs.remove(bestAttrs[1])
+        
+    return outList
+
+
+###########################################################################################
+##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING CORRELATION
+###########################################################################################
 
 def insertToSortedList(array, val, names):
     for i in range(len(array)):
@@ -110,10 +161,11 @@ def getCorrelationList(data):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrOrder", "jitteringType", "GraphCanvasColor", "showDistributions"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
-        self.attributeOrder = ["None","RelieF","GainRatio","Gini", "Correlation"]
+        self.attributeContOrder = ["None","RelieF","Correlation"]
+        self.attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Functional decomposition"]
         OWWidget.__init__(self,
         parent,
         "Parallel Coordinates",
@@ -122,7 +174,9 @@ class OWParallelCoordinates(OWWidget):
         TRUE)
 
         #set default settings
-        self.attrOrder = "RelieF"
+        self.attrDiscOrder = "RelieF"
+        self.attrContOrder = "RelieF"
+        
         self.jitteringType = "none"
         self.GraphCanvasColor = str(Qt.white.name())
         self.showDistributions = 0
@@ -151,7 +205,8 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.setShowDistributions)
-        self.connect(self.options.attrButtons, SIGNAL("clicked(int)"), self.setAttrOrderType)
+        self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
+        self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
@@ -201,7 +256,8 @@ class OWParallelCoordinates(OWWidget):
     # #########################
     def setOptions(self):
         self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
-        self.options.attrButtons.setButton(self.attributeOrder.index(self.attrOrder))
+        self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
+        self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.showDistributions.setChecked(self.showDistributions)
         
@@ -221,11 +277,21 @@ class OWParallelCoordinates(OWWidget):
         self.showDistributions = self.options.showDistributions.isChecked()
         self.updateGraph()
 
-    # attribute ordering
-    def setAttrOrderType(self, n):
-        self.attrOrder= self.attributeOrder[n]
-        self.cdata(self.data)
-    
+    # continuous attribute ordering
+    def setAttrContOrderType(self, n):
+        self.attrContOrder = self.attributeContOrder[n]
+        if self.data != None:
+            self.setShownAttributeList(self.data.data)
+        self.updateGraph()
+
+    # discrete attribute ordering
+    def setAttrDiscOrderType(self, n):
+        self.attrDiscOrder = self.attributeDiscOrder[n]
+        if self.data != None:
+            self.setShownAttributeList(self.data.data)
+        self.updateGraph()
+
+        
     def setCanvasColor(self, c):
         self.GraphCanvasColor = c
         self.graph.setCanvasColor(c)
@@ -315,52 +381,88 @@ class OWParallelCoordinates(OWWidget):
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
     def setShownAttributeList(self, data):
-        self.shownAttribsLB.clear()
+        #print "continuous order = ", self.attrContOrder
+        #print "discrete order = ", self.attrDiscOrder
 
-        if self.attrOrder == "None":
-            for item in data.domain:
-                self.shownAttribsLB.insertItem(item.name)
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+        if data == None: return
+        
+        ## RELIEF
+        if self.attrContOrder == "RelieF" and self.attrDiscOrder == "RelieF":
+            self.shownAttribsLB.insertItem(data.domain.classVar.name)
+            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
+            for item in newAttrs:
+                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
+                else:                       self.hiddenAttribsLB.insertItem(item[0])
+            return
+        ## NONE
+        elif self.attrContOrder == "None" and self.attrDiscOrder == "None":
+            for item in data.domain:    self.shownAttribsLB.insertItem(item.name)
             return
 
-        if self.attrOrder == "RelieF":
-            self.shownAttribsLB.insertItem(data.domain.classVar.name)
-            measure = orange.MeasureAttribute_relief(k=20, m=50)
-            newAttrs = orngFSS.attMeasure(data, measure)
+        ###############################
+        # sort continuous attributes
+        if self.attrContOrder == "None":
+            for item in data.domain:
+                if item.varType == orange.VarTypes.Continuous: self.shownAttribsLB.insertItem(item.name)
+        elif self.attrContOrder == "RelieF":
+            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
             for item in newAttrs:
-                if float(item[1]) > 0.01:
-                    self.shownAttribsLB.insertItem(item[0])
-                else:
-                    self.hiddenAttribsLB.insertItem(item[0])
-                
-        elif self.attrOrder == "GainRatio":
-            measure = orange.MeasureAttribute_gainRatio()
-        elif self.attrOrder == 'Gini':
-            measure = orange.MeasureAttribute_gini()
-        elif self.attrOrder == "Correlation":
-            print "start getting correlation list"
+                if data.domain[item[0]].varType != orange.VarTypes.Continuous: continue
+                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
+                else:                       self.hiddenAttribsLB.insertItem(item[0])
+        elif self.attrContOrder == "Correlation":
             (shownList, hiddenList) = getCorrelationList(data)    # get the list of continuous attributes sorted by using correlation
-            for item in shownList:
-                self.shownAttribsLB.insertItem(item)
-            for item in hiddenList:
-                self.hiddenAttribsLB.insertItem(item)
-
-            if data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.shownAttribsLB.insertItem(data.domain.classVar.name)
-            # rest of the attributes (discrete ones) sort by relieF measure
-            measure = orange.MeasureAttribute_relief(k=20, m=50)
-            newAttrs = orngFSS.attMeasure(data, measure)
-            for item in newAttrs:
-                if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
-                if float(item[1]) > 0.01:
-                    self.shownAttribsLB.insertItem(item[0])
-                else:
-                    self.hiddenAttribsLB.insertItem(item[0])
-            print "finished setting attribute list"
-            
+            for item in shownList:  self.shownAttribsLB.insertItem(item)
+            for item in hiddenList: self.hiddenAttribsLB.insertItem(item)
         else:
             print "Incorrect value for attribute order"
-            return
-        
+
+        ################################
+        # sort discrete attributes
+        if self.attrDiscOrder == "None":
+            for item in data.domain:
+                if item.varType == orange.VarTypes.Discrete: self.shownAttribsLB.insertItem(item.name)
+        elif self.attrDiscOrder == "RelieF":
+            newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
+            for item in newAttrs:
+                if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
+                if float(item[1]) > 0.01:   self.shownAttribsLB.insertItem(item[0])
+                else:                       self.hiddenAttribsLB.insertItem(item[0])
+        elif self.attrDiscOrder == "GainRatio" or self.attrDiscOrder == "Gini":
+            if self.attrDiscOrder == "GainRatio":   measure = orange.MeasureAttribute_gainRatio()
+            else:                                   measure = orange.MeasureAttribute_gini()
+            if data.domain.classVar.varType != orange.VarTypes.Discrete:
+                measure = orange.MeasureAttribute_relief(k=20, m=50)
+
+            # create new table with only discrete attributes
+            attrs = []
+            for attr in data.domain:
+                if attr.varType == orange.VarTypes.Discrete: attrs.append(attr)
+            dataNew = data.select(attrs)
+            newAttrs = orngFSS.attMeasure(dataNew, measure)
+            for item in newAttrs:
+                    self.shownAttribsLB.insertItem(item[0])
+
+        elif self.attrDiscOrder == "Functional decomposition":
+            list = getFunctionalList(data)
+            for item in list:
+                self.shownAttribsLB.insertItem(item[0])
+        else:
+            print "Incorrect value for attribute order"
+
+        #################################
+        # if class attribute hasn't been added yet, we add it
+        foundClass = 0
+        for i in range(self.shownAttribsLB.count()):
+            if str(self.shownAttribsLB.text(i)) == data.domain.classVar.name:
+                foundClass = 1
+        for i in range(self.hiddenAttribsLB.count()):
+            if str(self.hiddenAttribsLB.text(i)) == data.domain.classVar.name:
+                foundClass = 1
+        if not foundClass:
+            self.shownAttribsLB.insertItem(data.domain.classVar.name)
         
     def getShownAttributeList (self):
         list = []
@@ -373,7 +475,7 @@ class OWParallelCoordinates(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        print "starting cdata"
+        #print "starting cdata"
         self.data = data
         self.graph.setData(data)
         self.shownAttribsLB.clear()
@@ -386,7 +488,7 @@ class OWParallelCoordinates(OWWidget):
         
         self.setShownAttributeList(self.data.data)
         self.updateGraph()
-        print "finished cdata"
+        #print "finished cdata"
     #################################################
 
 #test widget appearance
