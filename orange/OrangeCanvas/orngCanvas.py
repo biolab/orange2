@@ -120,7 +120,7 @@ class OrangeCanvasDlg(QMainWindow):
 		if self.settings.has_key("WidgetTabs"):
 			widgetTabList = self.settings["WidgetTabs"]
 		else:
-			widgetTabList = ["Data", "Classification", "Evaluation", "Standard Visualizations", "Advanced Visualizations", "Associations", "Genomics", "Miscelaneous"]
+			widgetTabList = ["Data", "Classify", "Evaluate", "Visualize", "Associate", "Genomics", "Miscelaneous"]
 			
 		for tab in widgetTabList: self.tabs.insertWidgetTab(tab)
 				
