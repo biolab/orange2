@@ -349,7 +349,7 @@ class SignalDialog(QDialog):
                         #self.multiplePossibleConnections = 1
                         continue
                     
-                    if inS.name not in inConnected + addedInLinks or not inS.single:
+                    if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
                         addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                         self.addLink(outS.name, inS.name)
                     elif self.countCompatibleConnections(nonMinorOutputs, nonMinorInputs, outS.type, inS.type) > 1:
@@ -370,7 +370,7 @@ class SignalDialog(QDialog):
                             self.multiplePossibleConnections = 1
                             continue
                         
-                        if inS.name not in inConnected + addedInLinks or not inS.single:
+                        if inS.name not in inConnected + addedInLinks or (not inS.single and inS.name not in addedInLinks):
                             addedInLinks.append(inS.name); addedOutLinks.append(outS.name)
                             self.addLink(outS.name, inS.name)
                         elif self.countCompatibleConnections(allOutputs, allInputs, outS.type, inS.type) > 1:
@@ -387,6 +387,11 @@ class SignalDialog(QDialog):
         outType = self.outWidget.instance.getOutputType(outName)
         inType = self.inWidget.instance.getInputType(inName)
         if not issubclass(outType, inType): return 0
+
+        inSignal = None
+        inputs = self.inWidget.widget.getInputs()
+        for i in range(len(inputs)):
+            if inputs[i].name == inName: inSignal = inputs[i]
 
         # if inName is a single signal and connection already exists -> delete it        
         for (outN, inN) in self._links:
