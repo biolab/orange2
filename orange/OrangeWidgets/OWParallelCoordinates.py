@@ -161,7 +161,7 @@ def getCorrelationList(data):
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "showDistributions", "showAttrValues", "hidePureExamples"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF","Correlation"]
@@ -181,6 +181,7 @@ class OWParallelCoordinates(OWWidget):
         self.GraphCanvasColor = str(Qt.white.name())
         self.showDistributions = 0
         self.showAttrValues = 0
+        self.hidePureExamples = 1
         self.GraphGridColor = str(Qt.black.name())
         self.data = None
         self.ShowVerticalGridlines = TRUE
@@ -205,8 +206,11 @@ class OWParallelCoordinates(OWWidget):
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
-        self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.setShowDistributions)
-        self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.setShowAttrValues)
+
+        self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.updateSettings)
+        self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.updateSettings)
+        self.connect(self.options.hidePureExamples, SIGNAL("clicked()"), self.updateSettings)
+
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -277,15 +281,18 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
 
 
-    def setShowDistributions(self):
-        self.graph.setShowDistributions(self.options.showDistributions.isChecked())
+    def updateSettings(self):
         self.showDistributions = self.options.showDistributions.isChecked()
+        self.graph.setShowDistributions(self.showDistributions)
+
+        self.showAttrValues = self.options.showAttrValues.isChecked()        
+        self.graph.setShowAttrValues(self.showAttrValues)
+
+        self.hidePureExamples = self.options.hidePureExamples.isChecked()
+        self.graph.setHidePureExamples(self.hidePureExamples)
+
         self.updateGraph()
 
-    def setShowAttrValues(self):
-        self.graph.setShowAttrValues(self.options.showAttrValues.isChecked())
-        self.showAttrValues = self.options.showAttrValues.isChecked()
-        self.updateGraph()
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):

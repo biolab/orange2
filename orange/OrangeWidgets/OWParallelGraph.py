@@ -23,6 +23,7 @@ class OWParallelGraph(OWGraph):
         self.scaledDataAttributes = []
         self.jitteringType = 'none'
         self.showDistributions = 0
+        self.hidePureExamples = 1 
         self.GraphCanvasColor = str(Qt.white.name())
 
         self.enableGridX(FALSE)
@@ -41,6 +42,10 @@ class OWParallelGraph(OWGraph):
     def setShowAttrValues(self, showAttrValues):
         self.showAttrValues = showAttrValues
 
+
+    def setHidePureExamples(self, hide):
+        self.hidePureExamples = hide
+        
     #
     # scale data at index index to the interval 0 to 1
     #
@@ -60,18 +65,14 @@ class OWParallelGraph(OWGraph):
             if len(attr.values) > 1: num = float(len(attr.values)-1)
             else: num = float(1)
 
-            
-                #if data[i][index].isSpecial(): temp.append(0)
-                #else:
-                #    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
-                #    temp.append(val)
+
             if forColoring == 1:
                 for i in range(len(data)):
                     val = float(variableValueIndices[data[i][index].value]) / float(count)
                     temp.append(val)
             else:
                 for i in range(len(data)):
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + 0.2 * self.rndCorrection(1.0/count)
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(0.2/count)
                     temp.append(val)
                     
         # is the attribute continuous
@@ -168,10 +169,43 @@ class OWParallelGraph(OWGraph):
             scaledClassData, classValues = self.scaleData(self.rawdata, className, 1)
             self.setJitteringOption(ex_jitter)
 
-        #############################################
-        # draw the data
         xs = range(length)
         dataSize = len(self.scaledData[0])        
+
+        #############################################
+        # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
+        dataStop = []
+        lastIndex = indices[length-1]
+        for i in range(dataSize): dataStop.append(lastIndex)
+        classIndex = self.scaledDataAttributes.index(className)
+        if self.hidePureExamples == 1 and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+            newData = self.rawdata.select(self.rawdata.domain)
+            metaid = orange.newmetaid()
+            metavar = orange.IntVariable("ItemIndex")
+            newData.domain.addmeta(metaid, metavar)
+
+            for i in range(dataSize): newData[i].setmeta(metaid, i)
+
+            for i in range(length-1,-1,-1):
+                if newData.domain[indices[i]].varType != orange.VarTypes.Discrete or labels[i] == className: continue
+
+                attr = newData.domain[indices[i]]                
+                for attrVal in attr.values:
+                    tempData = newData.select({attr.name:attrVal})
+                    ind = 0
+                    while ind < len(tempData):
+                        if tempData[0][classIndex] != tempData[ind][classIndex]: break
+                        ind += 1
+                    # if all examples belong to one class we repair the meta variable values
+                    if ind == len(tempData):
+                        val = indices[i]
+                        for item in tempData:
+                            index = int(item.getmeta(metaid))
+                            dataStop[index] = val
+
+
+        #############################################
+        # draw the data
         for i in range(dataSize):
             newCurveKey = self.insertCurve(str(i))
             self.curveKeys.append(newCurveKey)
@@ -182,6 +216,7 @@ class OWParallelGraph(OWGraph):
             ys = []
             for index in indices:
                 ys.append(self.scaledData[index][i])
+                if index == dataStop[i]: break
             self.setCurveData(newCurveKey, xs, ys)
 
 
