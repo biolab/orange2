@@ -142,18 +142,20 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         elif self.custom.isChecked():  return QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
         else: return QSize(400,400)
         
-    def saveToFileDirect(self, fileName, ext, size):
-        if os.path.exists(fileName):
+    def saveToFileDirect(self, fileName, ext, size, overwriteExisting = 0):
+        if os.path.exists(fileName) and not overwriteExisting:
             res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
             if res == 1: return
-
+        painter = QPainter()
         if size.isEmpty(): buffer = QPixmap(self.graph.size()) # any size can do, now using the window size
         else:              buffer = QPixmap(size)
-        painter = QPainter(buffer)
+        painter.begin(buffer)
         painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
         self.fillPainter(painter, buffer.rect())
+        painter.flush()
         painter.end()
         buffer.save(fileName, ext)
+        
 
     def fillPainter(self, painter, rect):
         if isinstance(self.graph, QwtPlot):
