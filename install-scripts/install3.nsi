@@ -129,6 +129,12 @@ Section "Genomic Data"
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesViewer.py
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesFilter.py
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRules.py
+	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
+	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
+	Delete $INSTDIR\OrangeWidgets\Evaluate\OW2DMisclassified.py
+	Delete $INSTDIR\OrangeWidgets\OWITree.py
+	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWITree.py
 SectionEnd
 !endif
 	
