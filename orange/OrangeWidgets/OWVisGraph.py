@@ -173,6 +173,7 @@ class OWVisGraph(OWGraph):
         self.state = ZOOMING
         self.tempSelectionCurve = None
         self.selectionCurveKeyList = []
+        self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -205,6 +206,7 @@ class OWVisGraph(OWGraph):
             self.removeCurve(lastCurve)
             self.selectionCurveKeyList.remove(lastCurve)
         self.replot()
+        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
         
 
     def removeAllSelections(self):
@@ -213,6 +215,7 @@ class OWVisGraph(OWGraph):
             self.removeCurve(curve)
             self.selectionCurveKeyList.remove(curve)
         self.replot()
+        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
 
 
     #####################################################################
@@ -551,6 +554,20 @@ class OWVisGraph(OWGraph):
             if not isinstance(curve, SelectionCurve):
                 self.removeCurve(key)
 
+    def changeClassAttr(self, selected, unselected):
+        classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
+        classVar.getValueFrom = lambda ex,what: 0  # orange.Value(classVar, 0)
+        if selected:
+            domain = orange.Domain(selected.domain.attributes + [classVar])
+            table = orange.ExampleTable(domain, selected)
+            if unselected:
+                classVar.getValueFrom = lambda ex,what: 1
+                table.extend(unselected)
+        else:
+            domain = orange.Domain(unselected.domain.attributes + [classVar])
+            table = orange.ExampleTable(domain, unselected)
+        return table
+       
 
     # ###############################################
     # HANDLING MOUSE EVENTS
@@ -589,6 +606,7 @@ class OWVisGraph(OWGraph):
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
                 self.tempSelectionCurve = None
                 self.replot()
+                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
                 
 
         # fake a mouse move to show the cursor position
@@ -660,6 +678,7 @@ class OWVisGraph(OWGraph):
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
             if self.tempSelectionCurve:
                 self.tempSelectionCurve = None
+                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
        
         self.replot()
         self.event(e)
