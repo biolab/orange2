@@ -245,17 +245,12 @@ class kNNOptimization(OWBaseWidget):
         self.vizRankLearner = VizRankLearner(self, self.parentWidget)
         if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
         
-    # if we load a schema we have to reset learner name
-    def activateLoadedSettings(self):
-        self.vizRankLearner.name = self.classifierName
-
     # ##############################################################
     # EVENTS
     # ##############################################################
     # when text of vizrank or cluster learners change update their name
     def classifierNameChanged(self, text):
         self.vizRankLearner.name = self.classifierName
-
         
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -909,7 +904,7 @@ class kNNOptimization(OWBaseWidget):
             value = 0.5 * accuracy + 50.0 * prob[classValue]
             ind = self.getArgumentIndex(value, classValue)
 
-            self.arguments[classValue].insert(ind, (pic, value, accuracy, 100.0 * prob[classValue], attrList, index))
+            self.arguments[classValue].insert(ind, (pic, value, accuracy, 100.0 * prob[classValue], prob, attrList, index))
             if classValue == self.classValueList.currentItem():
                 if snapshots: self.argumentList.insertItem(pic, "%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
                 else:         self.argumentList.insertItem("%.2f (%.2f, %.2f) - %s" %(value, accuracy, 100.0*prob[classValue], attrList), ind)
@@ -966,7 +961,8 @@ class kNNOptimization(OWBaseWidget):
         worstAccuracy = self.allResults[-1][0]
         for i in range(len(self.arguments)):
             for j in range(len(self.arguments[i])):
-                arguments.append(((self.arguments[i][j][2] - worstAccuracy) * self.arguments[i][j][3], i))
+                #arguments.append(((self.arguments[i][j][2] - worstAccuracy) * self.arguments[i][j][3], i))
+                arguments.append((self.arguments[i][j][2], self.arguments[i][j][4], i))
 
         if len(arguments) == 0:
             print "Unable to find any arguments for the current example. Returning uniform class distribution."
@@ -980,9 +976,10 @@ class kNNOptimization(OWBaseWidget):
 
         vals = [0.0 for i in range(len(self.arguments))]
         if self.useProjectionValue:
-            for (val, i) in arguments: vals[i] += val
+            for (val, prob, foo) in arguments:
+                for i in range(len(prob)): vals[i] += prob[prob.keys()[i]]
         else:
-            for (val, i) in arguments: vals[i] += 1
+            for (val, prob, i) in arguments: vals[i] += 1
 
         ind = vals.index(max(vals))
         s = sum(vals)

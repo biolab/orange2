@@ -23,7 +23,7 @@ class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols",
-                    "showDistributions", "autoSendSelection", "optimizedDrawing", "toolbarSelection", "showClusters"]
+                    "showDistributions", "autoSendSelection", "optimizedDrawing", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -46,6 +46,8 @@ class OWScatterPlot(OWWidget):
         self.tooltipKind = 1
         self.toolbarSelection = 0
         self.showAxisScale = 1
+        self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
+        self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
         
         self.jitterContinuous = 0
         self.jitterSize = 5
@@ -171,6 +173,9 @@ class OWScatterPlot(OWWidget):
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
         self.connect(self.gSetGridColorB, SIGNAL("clicked()"), self.setGraphGridColor)
         self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+
+        self.connect(self.optimizationDlg.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.VizRankClassifierNameChanged)
+        self.connect(self.clusterDlg.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.clusterClassifierNameChanged)
         
         self.activateLoadedSettings()
         self.resize(900, 700)
@@ -195,7 +200,17 @@ class OWScatterPlot(OWWidget):
         self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
                 
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
-        
+
+        self.optimizationDlg.classifierName = self.VizRankClassifierName
+        self.optimizationDlg.classifierNameChanged(self.VizRankClassifierName)
+        self.clusterDlg.classifierName = self.clusterClassifierName
+        self.clusterDlg.classifierNameChanged(self.clusterClassifierName)
+
+    def VizRankClassifierNameChanged(self, text):
+        self.VizRankClassifierName = self.optimizationDlg.classifierName
+
+    def clusterClassifierNameChanged(self, text):
+        self.clusterClassifierName = self.clusterDlg.classifierName
 
     # #######################################################################################################
     # KNN OPTIMIZATION BUTTON EVENTS

@@ -422,7 +422,7 @@ class ClusterOptimization(OWBaseWidget):
 
     settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank",
                     "showValue", "jitterDataBeforeTriangulation", "createSnapshots", "useProjectionValue",
-                    "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes", "classifierName", "argumentCountIndex"]
+                    "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes", "argumentCountIndex"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
     argumentCounts = [5, 10, 20, 40, 100, 100000]
@@ -619,10 +619,6 @@ class ClusterOptimization(OWBaseWidget):
         self.clusterLearner = clusterLearner(self, self.parentWidget)
         if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner, 1)
 
-
-    # if we load a schema we have to reset learner name
-    def activateLoadedSettings(self):
-        self.clusterLearner.name = self.classifierName
 
     # ##############################################################
     # EVENTS
@@ -1261,7 +1257,8 @@ class ClusterOptimization(OWBaseWidget):
             for (val, i) in arguments: vals[i] += 1
 
         # print argument count and argument values
-        l = [len(self.arguments[i]) for i in range(len(self.arguments))]
+        l = [0 for i in range(len(self.arguments))]
+        for (val, i) in arguments: l[i] += 1
         print "%s, %s" % (str(l), str(vals))
 
         ind = vals.index(max(vals))

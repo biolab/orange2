@@ -24,7 +24,7 @@ import OWGUI
 class OWRadviz(OWWidget):
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
-                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters"]
+                    "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -69,6 +69,8 @@ class OWRadviz(OWWidget):
         self.data = None
         self.toolbarSelection = 0
         self.showClusters = 0
+        self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
+        self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
 
         #load settings
         self.loadSettings()
@@ -165,6 +167,9 @@ class OWRadviz(OWWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
+        self.connect(self.optimizationDlg.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.VizRankClassifierNameChanged)
+        self.connect(self.clusterDlg.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.clusterClassifierNameChanged)
+        
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(900, 700)
@@ -185,6 +190,16 @@ class OWRadviz(OWWidget):
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
+        self.optimizationDlg.classifierName = self.VizRankClassifierName
+        self.optimizationDlg.classifierNameChanged(self.VizRankClassifierName)
+        self.clusterDlg.classifierName = self.clusterClassifierName
+        self.clusterDlg.classifierNameChanged(self.clusterClassifierName)
+
+    def VizRankClassifierNameChanged(self, text):
+        self.VizRankClassifierName = self.optimizationDlg.classifierName
+
+    def clusterClassifierNameChanged(self, text):
+        self.clusterClassifierName = self.clusterDlg.classifierName
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
