@@ -139,8 +139,8 @@ class WidgetTab(QWidget):
 		while self.widgetIndex > 0 and windowWidth > widgetsWidth + self.widgets[self.widgetIndex-1].width():
 			widgetsWidth += self.widgets[self.widgetIndex-1].width()
 			self.widgetIndex -= 1
-			
-		while isinstance(self.widgets[self.widgetIndex], QFrame) and self.widgetIndex < len(self.widgets):
+
+		while self.widgetIndex < len(self.widgets) and isinstance(self.widgets[self.widgetIndex], QFrame):
 			self.widgetIndex += 1
 
 		for widget in self.widgets[:self.widgetIndex]:

@@ -45,7 +45,7 @@ class WidgetsToXML:
         
         for filename in os.listdir(full_dirname):
             full_filename = os.path.join(full_dirname, filename)
-            if os.path.isdir(full_filename) or os.path.islink(full_filename) or os.path.splitext(full_filename)[1] != "py":
+            if os.path.isdir(full_filename) or os.path.islink(full_filename) or os.path.splitext(full_filename)[1] != ".py":
                 continue
 
             file = open(full_filename)
