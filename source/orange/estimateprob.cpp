@@ -101,6 +101,12 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_relative::operator()(PDis
 
 
 
+TProbabilityEstimatorConstructor_Laplace::TProbabilityEstimatorConstructor_Laplace(const float &al, const bool &an)
+: l(al),
+  renormalize(an)
+{}
+
+
 PProbabilityEstimator TProbabilityEstimatorConstructor_Laplace::operator()(PDistribution frequencies, PDistribution, PExampleGenerator, const long &, const int &) const
 { TProbabilityEstimator_FromDistribution *pefd = mlnew TProbabilityEstimator_FromDistribution(CLONE(TDistribution, frequencies));
   PProbabilityEstimator estimator = pefd;
@@ -109,15 +115,15 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_Laplace::operator()(PDist
   if (ddist) {
     const float &abs = ddist->abs;
     const float &cases = ddist->cases;
-    const float div = ddist->cases + ddist->noOfElements();
+    const float div = cases + l * ddist->noOfElements();
     int i = 0;
     if (div) {
-      if (cases == abs)
+      if ((cases == abs) || !renormalize || (abs<1e-20))
         PITERATE(TDiscDistribution, di, ddist)
-          ddist->setint(i++, (*di + 1.0) / div);
+          ddist->setint(i++, (*di + l) / div);
       else
         PITERATE(TDiscDistribution, di, ddist)
-          ddist->setint(i++, (*di * cases + abs) / div);
+          ddist->setint(i++, (*di / abs * cases + l) / div);
     }
     else
       pefd->probabilities->normalize();
@@ -130,8 +136,9 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_Laplace::operator()(PDist
 
 
 
-TProbabilityEstimatorConstructor_m::TProbabilityEstimatorConstructor_m(const float &am)
-: m(am)
+TProbabilityEstimatorConstructor_m::TProbabilityEstimatorConstructor_m(const float &am, const bool &an)
+: m(am),
+  renormalize(an)
 {}
 
 
@@ -140,18 +147,29 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_m::operator()(PDistributi
   PProbabilityEstimator estimator = pefd;
   
   TDiscDistribution *ddist = pefd->probabilities.AS(TDiscDistribution);  
-  if (ddist && ddist->abs && apriori) {
+  if (ddist && (ddist->cases > 1e-20) && apriori) {
     TDiscDistribution *dapriori = apriori.AS(TDiscDistribution);
-    if (!dapriori || !dapriori->abs)
+    if (!dapriori || (dapriori->abs < 1e-20))
       raiseError("invalid apriori distribution");
     
     float mabs = m/dapriori->abs;
-    float abs = ddist->abs + m;
-    int i = 0;
-    for(TDiscDistribution::iterator di(ddist->begin()), de(ddist->end()), ai(dapriori->begin());
-        di != de;
-        di++, ai++, i++)
-       ddist->setint(i, (*di+*ai*mabs)/abs);
+    const float &abs = ddist->abs;
+    const float &cases = ddist->cases;
+    const float div = cases + m;
+    if ((abs==cases) || !renormalize) {
+      int i = 0;
+      for(TDiscDistribution::iterator di(ddist->begin()), de(ddist->end()), ai(dapriori->begin());
+          di != de;
+          di++, ai++, i++)
+         ddist->setint(i, (*di+*ai*mabs)/div);
+    }
+    else {
+      int i = 0;
+      for(TDiscDistribution::iterator di(ddist->begin()), de(ddist->end()), ai(dapriori->begin());
+          di != de;
+          di++, ai++, i++)
+         ddist->setint(i, (*di / abs * cases + *ai*mabs)/div);
+    }
   }
   else
     pefd->probabilities->normalize();

@@ -132,6 +132,11 @@ public:
 class TProbabilityEstimatorConstructor_Laplace : public TProbabilityEstimatorConstructor {
 public:
   __REGISTER_CLASS
+
+  float l; //P number of examples added to each class (default: 1)
+  bool renormalize; //P computes the estimate on the original (not the normalized) distribution
+
+  TProbabilityEstimatorConstructor_Laplace(const float & = 1.0, const bool & = true);
   virtual PProbabilityEstimator operator()(PDistribution frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const;
 };
 
@@ -141,8 +146,9 @@ public:
   __REGISTER_CLASS
 
   float m; //P parameter m for m-estimation
+  bool renormalize; //P computes the estimate on the original (not the normalized) distribution
 
-  TProbabilityEstimatorConstructor_m(const float &m = 2.0);
+  TProbabilityEstimatorConstructor_m(const float & = 2.0, const bool & = true);
   virtual PProbabilityEstimator operator()(PDistribution frequencies, PDistribution apriori = PDistribution(), PExampleGenerator = PExampleGenerator(), const long &weightID = 0, const int &attrNo = -1) const;
 };
 
