@@ -605,12 +605,28 @@ def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
         for prob in plist:
             f = prob[0]
             if f <> fPrev:
-                curve = ROCaddPoint((FP/N, TP/P, fPrev), curve, keepConcavities)
+                if P:
+                    tpr = TP/P
+                else:
+                    tpr = 0.0
+                if N:
+                    fpr = FP/N
+                else:
+                    fpr = 0.0
+                curve = ROCaddPoint((fpr, tpr, fPrev), curve, keepConcavities)
                 fPrev = f
             thisPos, thisNeg = prob[1][1], prob[1][0]
             TP += thisPos
             FP += thisNeg
-        curve = ROCaddPoint((FP/N, TP/P, f), curve, keepConcavities) ## ugly
+        if P:
+            tpr = TP/P
+        else:
+            tpr = 0.0
+        if N:
+            fpr = FP/N
+        else:
+            fpr = 0.0
+        curve = ROCaddPoint((fpr, tpr, f), curve, keepConcavities) ## ugly
         results.append(curve)
 
     return results

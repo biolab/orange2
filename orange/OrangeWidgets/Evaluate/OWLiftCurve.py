@@ -242,7 +242,7 @@ class OWLiftCurve(OWROC):
         # performance analysis
         self.performanceTab = QVGroupBox(self)
         self.performanceTabCosts = QVGroupBox(self.performanceTab)
-        OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show Performance Line', tooltip='', callback=self.setShowPerformanceAnalysis)
+        OWGUI.checkBox(self.performanceTabCosts, self, 'EnablePerformance', 'Show Cost Function', tooltip='', callback=self.setShowPerformanceAnalysis)
 
         ## FP and FN cost ranges
         mincost = 1; maxcost = 1000; stepcost = 5;
@@ -295,12 +295,16 @@ class OWLiftCurve(OWROC):
 
         if not dres:
             self.targetClass = None
+            self.classCombo.clear()
+            self.removeGraphs()
+            self.testSetsQLB.clear()
             return
         self.dres = dres
 
         self.classifiersQLB.clear()
         self.testSetsQLB.clear()
         self.removeGraphs()
+        self.classCombo.clear()
 
         self.defaultPerfLinePValues = []
         if self.dres <> None:

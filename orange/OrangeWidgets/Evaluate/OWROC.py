@@ -836,13 +836,13 @@ class OWROC(OWWidget):
             g.hide()
 
     def costsChanged(self):
-        if self.targetClass <> None:
+        if self.targetClass <> None and (len(self.graphs) > 0):
             self.FPcostList[self.targetClass] = self.FPcost
             self.FNcostList[self.targetClass] = self.FNcost
             self.graphs[self.targetClass].costChanged(self.FPcost, self.FNcost)
 
     def pvaluesUpdated(self):
-        if (self.targetClass == None): return
+        if (self.targetClass == None) or (len(self.graphs) == 0): return
 
         ## update p values
         if self.pvalue > self.maxpsum - (len(self.pvalueList) - 1):
@@ -869,8 +869,8 @@ class OWROC(OWWidget):
         ## small changes
         dif = self.maxpsum - int(statc.sum(self.pvalueList))
         while abs(dif) > 0:
-            if dif > 0: vi = self.pvalueList.index(min(self.pvalueList[:self.index] + [self.maxp + 1] + self.pvalueList[self.index+1:]))
-            else: vi = self.pvalueList.index(max(self.pvalueList[:self.index] + [self.minp - 1] + self.pvalueList[self.index+1:]))
+            if dif > 0: vi = self.pvalueList.index(min(self.pvalueList[:self.targetClass] + [self.maxp + 1] + self.pvalueList[self.targetClass+1:]))
+            else: vi = self.pvalueList.index(max(self.pvalueList[:self.targetClass] + [self.minp - 1] + self.pvalueList[self.targetClass+1:]))
 
             if dif > 0: self.pvalueList[vi] += 1
             elif dif < 0: self.pvalueList[vi] -= 1
@@ -895,12 +895,16 @@ class OWROC(OWWidget):
 
         if not dres:
             self.targetClass = None
+            self.classCombo.clear()
+            self.removeGraphs()
+            self.testSetsQLB.clear()
             return
         self.dres = dres
 
         self.classifiersQLB.clear()
         self.testSetsQLB.clear()
         self.removeGraphs()
+        self.classCombo.clear()
 
         self.defaultPerfLinePValues = []
         if self.dres <> None:
