@@ -8,7 +8,7 @@ import OWGUI
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName"]
     def __init__(self, graph):
-        OWBaseWidget.__init__(self, None, "Image settings", "Set size of output image", TRUE, FALSE, FALSE, modal = TRUE)
+        OWBaseWidget.__init__(self, None, "Image settings", modal = TRUE)
 
         self.graph = graph
         self.selectedSize = 0
