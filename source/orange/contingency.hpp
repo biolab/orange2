@@ -57,6 +57,7 @@ public:
 
   PDistribution outerDistribution; //P distribution of values of outer attributes
   PDistribution innerDistribution; //P distribution of values of inner attributes
+  PDistribution innerDistributionUnknown; // distribution of inner variable for examples where the outer value was unknown
 
   TContingency(PVariable variable=PVariable(), PVariable innervar=PVariable());
   TContingency(const TContingency &old);

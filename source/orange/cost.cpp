@@ -22,16 +22,52 @@
 
 #include "cost.ppp"
 
+void TCostMatrix::init(const int &dimension, const float &inside)
+{ 
+  reserve(dimension);
+  for(int i = dimension; i--; )
+    push_back(mlnew TFloatList(dimension, inside));
+}
+
+
+
 TCostMatrix::TCostMatrix(const int &dimension, const float &inside)
-{ distributions.reserve(dimension);
-  for(int i=dimension; i--; )
-    distributions.push_back(mlnew TDiscDistribution(dimension, inside));
+{
+  init(dimension, inside);
 }
 
 
 TCostMatrix::TCostMatrix(const int &dimension)
-{ distributions.reserve(dimension);
-  float dd=1.0/float(dimension);
-  for(int i=dimension; i--; )
-    distributions.push_back(mlnew TDiscDistribution(dimension, dd));
+{ 
+  if (dimension <= 0)
+    raiseError("invalid dimension (%i)", dimension);
+
+  init(dimension, 1.0/float(dimension));
+}
+
+
+
+TCostMatrix::TCostMatrix(PVariable acv, const float &inside)
+: classVar(acv)
+{ 
+  TEnumVariable *dcv = classVar.AS(TEnumVariable);
+  if (!dcv)
+    raiseError("attribute '%s' is not discrete", classVar->name.c_str());
+
+  init(dcv->noOfValues(), inside);
+}
+
+
+TCostMatrix::TCostMatrix(PVariable acv)
+: classVar(acv)
+{ 
+  TEnumVariable *dcv = classVar.AS(TEnumVariable);
+  if (!dcv)
+    raiseError("attribute '%s' is not discrete", classVar->name.c_str());
+
+  const int dimension = dcv->noOfValues();
+  if (!dimension)
+    raiseError("attribute '%s' has no values", classVar->name.c_str());
+
+  init(dcv->noOfValues(), 1.0/float(dimension));
 }

@@ -483,7 +483,7 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
           if (propertyPyType->tp_new) {
             PyObject *emptyDict = PyDict_New();
             PyObject *targs;
-            if PyTuple_Check(args) {
+            if (PyTuple_Check(args)) {
               targs = args;
               Py_INCREF(targs);
             }
@@ -491,6 +491,15 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
               targs = Py_BuildValue("(O)", args);
 
             PyObject *obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict);
+
+            // If this failed, maybe the constructor actually expected a tuple...
+            if (!obj && PyTuple_Check(args)) {
+              PyErr_Clear();
+              Py_DECREF(targs);
+              targs = Py_BuildValue("(O)", args);
+              obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict);
+            }
+
             if (obj) {
               if (   propertyPyType->tp_init != NULL
 		              && propertyPyType->tp_init(obj, targs, emptyDict) < 0) {

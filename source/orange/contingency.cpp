@@ -47,8 +47,10 @@ TContingency::TContingency(PVariable var, PVariable innervar)
   varType(var ? var->varType : TValue::NONE),
   outerDistribution(TDistribution::create(var)),
   discrete((TDistributionVector *)NULL),
-  innerDistribution(TDistribution::create(innervar))
-{ if (varType==TValue::INTVAR) {
+  innerDistribution(TDistribution::create(innervar)),
+  innerDistributionUnknown(TDistribution::create(innervar))
+{ 
+  if (varType==TValue::INTVAR) {
     discrete = mlnew TDistributionVector();
     for(int i=0, e=outerVariable->noOfValues(); i!=e; i++)
       discrete->push_back(TDistribution::create(innervar));
@@ -64,7 +66,8 @@ TContingency::TContingency(const TContingency &old)
   varType(old.varType),
   discrete((TDistributionVector *)NULL),
   outerDistribution(CLONE(TDistribution, old.outerDistribution)),
-  innerDistribution(CLONE(TDistribution, old.innerDistribution))
+  innerDistribution(CLONE(TDistribution, old.innerDistribution)),
+  innerDistributionUnknown(CLONE(TDistribution, old.innerDistributionUnknown))
 { if (varType==TValue::INTVAR)
     discrete = mlnew TDistributionVector(*old.discrete);
   else if (varType==TValue::FLOATVAR)
@@ -105,6 +108,7 @@ TContingency &TContingency::operator =(const TContingency &old)
   varType = old.varType;
   innerDistribution = CLONE(TDistribution, old.innerDistribution);
   outerDistribution = CLONE(TDistribution, old.outerDistribution);
+  innerDistributionUnknown = CLONE(TDistribution, old.innerDistributionUnknown);
 
   if (varType==TValue::INTVAR)
     discrete=mlnew TDistributionVector(*old.discrete);
@@ -161,7 +165,7 @@ PDistribution TContingency::operator [](const float &i)
     
 const PDistribution TContingency::operator [](const float &i) const
 { NEEDS(TValue::FLOATVAR); 
-  TDistributionMap::iterator mi=continuous->find(float(i));
+  TDistributionMap::iterator mi = continuous->find(float(i));
   if (mi==continuous->end())
     raiseError("index out of range.");
   return (*mi).second;
@@ -199,9 +203,13 @@ PDistribution const TContingency::operator [](const string &i) const // same, bu
 void TContingency::add(const TValue &outvalue, const TValue &invalue, const float p)
 {
   outerDistribution->add(outvalue, p);
-  innerDistribution->add(invalue, p);
 
-  if (!outvalue.isSpecial())
+  if (outvalue.isSpecial()) {
+    innerDistributionUnknown->add(invalue, p);
+  }
+  else {
+    innerDistribution->add(invalue, p);
+
     switch(outvalue.varType) {
       case TValue::INTVAR:
         if (!outvalue.svalV) {
@@ -232,6 +240,7 @@ void TContingency::add(const TValue &outvalue, const TValue &invalue, const floa
       default:
         raiseError("unknown value type");
     }
+  }
 }
 
        
@@ -327,8 +336,10 @@ void TContingencyClass::constructFromGenerator(PVariable outer, PVariable inner,
 {
   outerVariable = outer;
   innerVariable = inner;
-  innerDistribution = TDistribution::create(innerVariable);
+
   outerDistribution = TDistribution::create(outerVariable);
+  innerDistribution = TDistribution::create(innerVariable);
+  innerDistributionUnknown = TDistribution::create(innerVariable);
 
   varType = outerVariable->varType;
   if (varType==TValue::INTVAR) {

@@ -28,7 +28,6 @@
 
 WRAPPER(Contingency)
 WRAPPER(Distribution)
-WRAPPER(CostMatrix)
 
 bool convertFromPython(PyObject *, string &);
 bool convertFromPython(PyObject *, float &);
@@ -36,11 +35,9 @@ bool convertFromPython(PyObject *, pair<float, float> &);
 bool convertFromPython(PyObject *, int &);
 bool convertFromPython(PyObject *, unsigned char &);
 bool convertFromPython(PyObject *, bool &);
-bool convertFromPython(PyObject *, PCostMatrix &, bool allowNull=false, PyTypeObject *type=NULL);
 bool convertFromPython(PyObject *, PContingency &, bool allowNull=false, PyTypeObject *type=NULL);
 
 PyObject *convertToPython(const string &);
-PyObject *convertToPython(const PCostMatrix &);
 PyObject *convertToPython(const float &);
 PyObject *convertToPython(const pair<float, float> &);
 PyObject *convertToPython(const int &);

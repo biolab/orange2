@@ -34,16 +34,22 @@ class TCostMatrix : public TOrange {
 public:
   __REGISTER_CLASS
 
-  VECTOR_INTERFACE(PDiscDistribution, distributions)
+  PVariable classVar;
+  VECTOR_INTERFACE(PFloatList, costs)
 
   TCostMatrix(const int &dimension, const float &inside);
   TCostMatrix(const int &dimension);
+  TCostMatrix(PVariable, const float &inside);
+  TCostMatrix(PVariable);
   	  
   inline const float &getCost(const int &predicted, const int &correct)
     { return at(predicted)->at(correct); }
   
   inline void setCost(const int &predicted, const int &correct, const float &cost)
-  	{ at(predicted)->setint(correct, cost); }
+  	{ at(predicted)->at(correct) = cost; }
+
+protected:
+  void init(const int &dimension, const float &inside);
 };
 
 WRAPPER(CostMatrix);
