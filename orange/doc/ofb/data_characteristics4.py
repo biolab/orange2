@@ -12,7 +12,7 @@ print "Average values and mean square errors:"
 for i in range(len(data.domain.attributes)):
     if data.domain.attributes[i].varType == orange.VarTypes.Continuous:
         print "%s, mean=%5.2f +- %5.2f" % \
-          (data.domain.attributes[i].name, dist[i].abs, dist[i].error())
+          (data.domain.attributes[i].name, dist[i].average(), dist[i].error())
 
 print "\nFrequencies for values of discrete attributes:"
 for i in range(len(data.domain.attributes)):

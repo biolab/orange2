@@ -95,7 +95,39 @@ class ExperimentResults:
                 pickler.dump([(  (x.actualClass, x.iterationNumber), (x.classes[i], x.probabilities[i])  ) for x in self.results])
                 f.close()
 
+    # removes data on i-th learner (i=learnerID) from the results
+    def remove(self, learnerID):
+        for r in self.results:
+            del r.classes[learnerID]
+            del r.probabilities[learnerID]
+        del self.classifierNames[learnerID]
+        self.numberOfLearners -= 1
 
+    # adds evaluation result (for one learner)
+    # handle "classifiers"
+    def add(self, results, index, replace=-1):
+        if len(self.results)<>len(results.results): raise SystemError, "mismatch in number of test cases"
+        if self.numberOfIterations<>results.numberOfIterations:
+            raise SystemError, "mismatch in number of iteraions (%d<>%d)" % (self.numberOfIterations, results.numberOfIterations)
+        if len(self.classifiers) and len(results.classifiers)==0: raise SystemError, "classifiers needed in results, present in base results"
+
+        if replace < 0 or replace >= self.numberOfLearners: # results for new learner
+            self.classifierNames.append(results.classifierNames[index])
+            self.numberOfLearners += 1
+            for i,r in enumerate(self.results):
+                r.classes.append(results.results[i].classes[index])
+                r.probabilities.append(results.results[i].probabilities[index])
+            if len(self.classifiers):
+                for i in range(self.numberOfIterations):
+                    self.classifiers[i].append(results.classifiers[i][index])
+        else: # replace results of existing learner
+            self.classifierNames[replace] = results.classifierNames[index]
+            for i,r in enumerate(self.results):
+                r.classes[replace] = results.results[i].classes[index]
+                r.probabilities[replace] = results.results[i].probabilities[index]
+            if len(self.classifiers):
+                for i in range(self.numberOfIterations):
+                    self.classifiers[replace] = results.classifiers[i][index]
 
 #### Experimental procedures
 def leaveOneOut(learners, examples, pps=[], **argkw):
@@ -147,6 +179,7 @@ def learningCurveN(learners, examples, folds=10, strat=orange.MakeRandomIndices.
 def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.frange(0.1), pps=[], **argkw):
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 0)
+    callback = argkw.get("callback", 0)
 
     for pp in pps:
         if pp[0]!="L":
@@ -214,6 +247,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                             if not cache or not testResults.loaded[cl]:
                                 cls, pro = classifiers[cl](ex, orange.GetBoth)
                                 testResults.results[i].setResult(cl, cls, pro)
+                if callback: callback()
             if cache:
                 testResults.saveToFiles(learners, fnstr)
 

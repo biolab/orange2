@@ -194,9 +194,9 @@ class OWTestLearners(OWWidget):
             self.setStatTable()
             self.send("Evaluation Results", self.results)
         else: # a new or updated learner
-            if not self.learnDict.has_key(id):
+            if not self.learnDict.has_key(id): # new
                 self.learners.append(learner)
-            else:
+            else: # updated
                 self.learners[self.learners.index(self.learnDict[id])] = learner
             self.learnDict[id] = learner
             if self.data:
@@ -264,24 +264,27 @@ if __name__=="__main__":
     data = orange.ExampleTable('voting')
     ow.cdata(data)
 
+    l1 = orange.BayesLearner()
+    l1.name = 'Naive Bayes'
     ow.learner(l1, 1)
 
-##    l2 = orange.BayesLearner()
-##    l2.name = 'Naive Bayes(m=10)'
-##    l2.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10)
-##    l2.conditionalEstimatorConstructor = orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10))
-##    ow.learner(l2,2)
-##
-##    # now we resend the first learner
-##    l3 = orange.BayesLearner()
-##    l3.name = 'NB First'
-##    ow.learner(l3,1)
+    l2 = orange.BayesLearner()
+    l2.name = 'Naive Bayes (m=10)'
+    l2.estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10)
+    l2.conditionalEstimatorConstructor = orange.ConditionalProbabilityEstimatorConstructor_ByRows(estimatorConstructor = orange.ProbabilityEstimatorConstructor_m(m=10))
+    ow.learner(l2, 2)
+
+    # now we resend the first learner
+    l3 = orange.BayesLearner()
+    l3.name = 'NB First'
+    ow.learner(l3, 1)
 
     import orngTree
     l4 = orngTree.TreeLearner(minSubset=2)
     l4.name = "Decision Tree"
     ow.learner(l4, 4)
 
+    # and now we kill the first learner    
     ow.learner(None, 1)    
 
     ow.show()

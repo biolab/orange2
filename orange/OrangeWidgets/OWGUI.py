@@ -56,9 +56,9 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
 
-def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = []):
+def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = []):
     b = widgetBox(widget, box, orientation=None)
-    wa = QCheckBox(text, b)
+    wa = QCheckBox(label, b)
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
     wa.setChecked(getattr(master, value))
@@ -90,9 +90,9 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     wa.box = b
     return wa
 
-def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None):
+def checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None):
     hb = QHBox(widget)
-    wa = checkBox(hb, master, checked, text, callback = checkCallback, labelWidth = labelWidth)
+    wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
 
     wb = QSpinBox(min, max, step, hb)
     wb.setValue(getattr(master, value))
@@ -111,8 +111,8 @@ def checkWithSpin(widget, master, text, min, max, checked, value, posttext = Non
     
     return wa, wb
 
-def button(widget, master, text, callback = None, disabled=0):
-    btn = QPushButton(text, widget)
+def button(widget, master, label, callback = None, disabled=0):
+    btn = QPushButton(label, widget)
     btn.setDisabled(disabled)
     if callback: master.connect(btn, SIGNAL("clicked()"), callback)
     return btn
@@ -452,3 +452,18 @@ class tableItem(QTableItem):
         g = QColorGroup(colorgroup)
         g.setColor(QColorGroup.Base, self.background)
         QTableItem.paint(self, painter, g, rect, selected)
+
+##############################################################################
+# progress bar management
+
+class ProgressBar:
+    def __init__(self, widget, iterations):
+        self.iter = iterations
+        self.widget = widget
+        self.count = 0
+        self.widget.progressBarInit()
+    def advance(self):
+        self.count += 1
+        self.widget.progressBarSet(int(self.count*100/self.iter))
+    def finish(self):
+        self.widget.progressBarFinished()

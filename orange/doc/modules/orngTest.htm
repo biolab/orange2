@@ -5,17 +5,39 @@
 <h1>orngTest: Orange Module for Sampling and Testing</h1>
 <br>
 
-<p><CODE>orngTest</CODE> is Orange module for testing learning algorithms. It includes functions for data sampling and splitting, and for testing learners. It implements cross-validation, leave-one out, random sampling, learning curves. All functions return result in the same for - an instance of <CODE>ExperimentResults</CODE> or, in case of learning curves, a list of <CODE>ExperimentResults</CODE>. This object(s) can be passed to statistical function for model evaluation (classification accuracy, Brier score, ROC analysis...) available in module <CODE>orngStat</CODE>.</p>
+<p><CODE>orngTest</CODE> is Orange module for testing learning
+algorithms. It includes functions for data sampling and splitting, and
+for testing learners. It implements cross-validation, leave-one out,
+random sampling, learning curves. All functions return result in the
+same for - an instance of <CODE>ExperimentResults</CODE> or, in case
+of learning curves, a list of <CODE>ExperimentResults</CODE>. This
+object(s) can be passed to statistical function for model evaluation
+(classification accuracy, Brier score, ROC analysis...) available in
+module <CODE>orngStat</CODE>.</p>
 
-<P>Your scripts will thus basically conduct experiments using functions in <CODE>orngTest</CODE>, covered on this page and then evaluate the results by functions in <A href="orngStat.htm"><CODE>orngStat</CODE></a>. For those interested in writing their own statistical measures of the quality of models, description of <CODE>TestedExample</CODE> and <CODE>ExperimentResults</CODE> are available at the end of this page.</P>
+<P>Your scripts will thus basically conduct experiments using
+functions in <CODE>orngTest</CODE>, covered on this page and then
+evaluate the results by functions in <A
+href="orngStat.htm"><CODE>orngStat</CODE></a>. For those interested in
+writing their own statistical measures of the quality of models,
+description of <CODE>TestedExample</CODE> and
+<CODE>ExperimentResults</CODE> are available at the end of this
+page.</P>
 
 <hr>
 
 <H2>Functions</H2>
 
-<P><B>An important change over previous versions of Orange:</B> Orange has been "de-randomized". Running the same script twice will generally give the same results, unless special care is taken to randomize it. This is opposed to the previous versions where special care needed to be taken to make experiments repeatable. See arguments <CODE>randseed</CODE> and <CODE>randomGenerator</CODE> for the explanation.</P>
+<P><B>An important change over previous versions of Orange:</B> Orange
+has been "de-randomized". Running the same script twice will generally
+give the same results, unless special care is taken to randomize
+it. This is opposed to the previous versions where special care needed
+to be taken to make experiments repeatable. See arguments
+<CODE>randseed</CODE> and <CODE>randomGenerator</CODE> for the
+explanation.</P>
 
-<P>Example scripts in this section suppose that the data is loaded and a list of learning algorithms is prepared.</P>
+<P>Example scripts in this section suppose that the data is loaded and
+a list of learning algorithms is prepared.</P>
 
 <p class=header><a href="test.py">part of test.py</a>
 (uses <a href="voting.tab">voting.tab</a>)</p>
@@ -32,49 +54,83 @@ learners = [bayes, tree, majority]
 names = [x.name for x in learners]
 </XMP>
 
-<P>After testing is done, classification accuracies can be computed and printed by the following function (function uses list <CODE>names</CODE> constructed above).</P>
+<P>After testing is done, classification accuracies can be computed
+and printed by the following function (function uses list
+<CODE>names</CODE> constructed above).</P>
 
 <XMP class=code>
 def printResults(res):
     CAs = orngStat.CA(res, reportSE=1)
     for i in range(len(names)):
-        print "%s: %5.3f+-   " % (names[i], CAs[i][0], 1.96*CAs[i][1]),
+        print "%s: %5.3f+-%4.3f" % (names[i], CAs[i][0], 1.96*CAs[i][1]),
     print
 </XMP>
 
 
 <h3>Common Arguments</H3>
 
-<P>Besides the specialized arguments for particular sampling procedures, many function in this module accept a set of common arguments.</P>
+<P>Besides the specialized arguments for particular sampling
+procedures, many function in this module accept a set of common
+arguments.</P>
 
 <DL class=attributes>
 <DT>learners</DT>
-<DD>A list of learning algorithms. These can be either pure Orange objects (such as <CODE>orange.BayesLearner</CODE>) or Python classes or functions written in pure Python (anything that can be called with the same arguments and results as Orange's classifiers and performs similar function).</DD>
+<DD>A list of learning algorithms. These can be either pure Orange
+objects (such as <CODE>orange.BayesLearner</CODE>) or Python classes
+or functions written in pure Python (anything that can be called with
+the same arguments and results as Orange's classifiers and performs
+similar function).</DD>
 
 <DT>examples, learnset, testset</DT>
-<DD>Examples, given as an <CODE>ExampleTable</CODE> (some functions need an undivided set of examples while others need examples that are already split into two sets). If examples are weighted, pass them as a tuple (<CODE>examples</CODE>, <CODE>weightID</CODE>). Weights are respected by learning and testing, but not by sampling. When selecting 10% of examples, this means 10% by number, not by weights. There is also no guarantee that sums of example weights will be (at least roughly) equal for folds in cross validation.</DD>
+<DD>Examples, given as an <CODE>ExampleTable</CODE> (some functions
+need an undivided set of examples while others need examples that are
+already split into two sets). If examples are weighted, pass them as a
+tuple (<CODE>examples</CODE>, <CODE>weightID</CODE>). Weights are
+respected by learning and testing, but not by sampling. When selecting
+10% of examples, this means 10% by number, not by weights. There is
+also no guarantee that sums of example weights will be (at least
+roughly) equal for folds in cross validation.</DD>
 
 <DT>strat</DT>
-<DD>Tells whether to stratify the random selections. Its default value is <CODE>orange.StratifiedIfPossible</CODE> which stratifies selections if the class attribute is discrete and has no unknown values.</DD>
+<DD>Tells whether to stratify the random selections. Its default value
+is <CODE>orange.StratifiedIfPossible</CODE> which stratifies
+selections if the class attribute is discrete and has no unknown
+values.</DD>
 
 <DT>randseed <SPAN class=normalfont>(obsolete: </SPAN>indicesrandseed<span class=normalfont>),</span> randomGenerator</DT>
-<DD>Random seed (<CODE>randseed</CODE>) or random generator (<CODE>randomGenerator</CODE>) for random selection of examples. If omitted, random seed of 0 is used and the same test will always select the same examples from the example set. There are various slightly different ways to randomize it.</P>
+<DD>Random seed (<CODE>randseed</CODE>) or random generator
+(<CODE>randomGenerator</CODE>) for random selection of examples. If
+omitted, random seed of 0 is used and the same test will always select
+the same examples from the example set. There are various slightly
+different ways to randomize it.</P>
 <P>
 <UL>
 
-<LI>Set <CODE>randomGenerator</CODE> to <CODE>orange.globalRandom</CODE>. The function's selection will depend upon Orange's global random generator that is reset (with random seed 0) when Orange is imported. Script's output will therefore depend upon what you did after Orange was first imported in the current Python session.
+<LI>Set <CODE>randomGenerator</CODE> to
+<CODE>orange.globalRandom</CODE>. The function's selection will depend
+upon Orange's global random generator that is reset (with random seed
+0) when Orange is imported. Script's output will therefore depend upon
+what you did after Orange was first imported in the current Python
+session.
 <XMP class=code>
 res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = orange.globalRandom)
 </XMP></LI>
 
-<LI>Construct a new <CODE>orange.RandomGenerator</CODE> and use in various places and times. The code below, for instance, will produce different results in each iteration, but overall the same results each time it's run.
+<LI>Construct a new <CODE>orange.RandomGenerator</CODE> and use in
+various places and times. The code below, for instance, will produce
+different results in each iteration, but overall the same results each
+time it's run.
 <XMP class=code>
 for i in range(3):
     res = orngTest.proportionTest(learners, data, 0.7, randomGenerator = myRandom)
     printResults(res)
 </XMP>
 
-<LI>Set the random seed (argument <CODE>randseed</CODE>) to a random number provided by Python. Python has a global random generator that is reset when Python is loaded, using current system time for a seed. With this, results will be (in general) different each time the script is run.
+<LI>Set the random seed (argument <CODE>randseed</CODE>) to a random
+number provided by Python. Python has a global random generator that
+is reset when Python is loaded, using current system time for a
+seed. With this, results will be (in general) different each time the
+script is run.
 <XMP class=code>
 import random
 for i in range(3):
@@ -82,14 +138,26 @@ for i in range(3):
     printResults(res)
 </XMP>
 
-The same module also provides random generators as object, so that you can have independent local random generators in case you need them.</LI>
-</UL>
-</DD>
+The same module also provides random generators as object, so that you
+can have independent local random generators in case you need
+them.</LI> </UL> </DD>
 
 <DT>pps</DT>
-<DD>A list of preprocessors. It consists of tuples <CODE>(c, preprocessor)</CODE>, where c determines whether the preprocessor will be applied to learning set ("L"), test set ("T") or to both ("B"). The latter is applied first, when the example set is still undivided. The "L" and "T" preprocessors are applied on the separated subsets. Preprocessing testing examples is allowed only on experimental procedures that do not report the <CODE>TestedExample</CODE>'s in the same order as examples in the original set. The second item in the tuple, <CODE>preprocessor</CODE> can be either pure Orange or pure Python preprocessor, that is, any function or callable class that accept a table of examples and weight, and returns a preprocessed table and weight.</P>
+<DD>A list of preprocessors. It consists of tuples <CODE>(c,
+preprocessor)</CODE>, where c determines whether the preprocessor will
+be applied to learning set ("L"), test set ("T") or to both ("B"). The
+latter is applied first, when the example set is still undivided. The
+"L" and "T" preprocessors are applied on the separated
+subsets. Preprocessing testing examples is allowed only on
+experimental procedures that do not report the
+<CODE>TestedExample</CODE>'s in the same order as examples in the
+original set. The second item in the tuple, <CODE>preprocessor</CODE>
+can be either pure Orange or pure Python preprocessor, that is, any
+function or callable class that accept a table of examples and weight,
+and returns a preprocessed table and weight.</P>
 
-<P>This example will demonstrate the devastating effect of 100% class noise on learning.</P>
+<P>This example will demonstrate the devastating effect of 100% class
+noise on learning.</P>
 <XMP class>
 classnoise = orange.Preprocessor_addClassNoise(proportion=1.0)
 res = orngTest.proportionTest(learners, data, 0.7, 100, pps = [("L", classnoise)])
@@ -129,15 +197,23 @@ res = orngTest.proportionTest(learners, data, 0.7, 100)
 </XMP>
 <P>Note that Python allows naming the arguments; instead of "<CODE>100</CODE>" you can use "<CODE>times = 100</CODE>" to increase the clarity (not so with keyword arguments, such as <CODE>storeClassifiers</CODE>, <CODE>randseed</CODE> or <CODE>verbose</CODE> that must always be given with a name, as shown in examples above).</DD>
 
-<DT>leaveOneOut(learners, examples, pps = [])</DT>
-<DD>Performs a leave-one-out experiment with the given list of learners and examples. This is equivalent to performing len(examples)-fold cross validation. Function accepts additional keyword arguments for preprocessing, storing classifiers and verbose output.</DD>
+<DT>leaveOneOut(learners, examples, pps = [])</DT> 
+<DD>Performs a leave-one-out experiment with the given list of
+learners and examples. This is equivalent to performing
+len(examples)-fold cross validation. Function accepts additional
+keyword arguments for preprocessing, storing classifiers and verbose
+output.</DD>
 
 <DT>crossValidation(learners, examples, folds = 10, strat = ..., pps = [])</DT>
 <DD>Performs a cross validation with the given number of folds.</DD>
 
 
 <DT>testWithIndices(learners, examples, weight, indices, indicesrandseed="*", pps=None)</DT>
-<DD>Performs a cross-validation-like test. The difference is that the caller provides indices (each index gives a fold of an example) which do not necessarily divide the examples into folds of (approximately) same sizes. In fact, function <CODE>crossValidation</CODE> is actually written as a single call to <CODE>testWithIndices</CODE>.<P>
+<DD>Performs a cross-validation-like test. The difference is that the
+caller provides indices (each index gives a fold of an example) which
+do not necessarily divide the examples into folds of (approximately)
+same sizes. In fact, function <CODE>crossValidation</CODE> is actually
+written as a single call to <CODE>testWithIndices</CODE>.</P>
 
 <CODE>testWithIndices</CODE> takes care the <CODE>TestedExamples</CODE> are in the same order as the corresponding examples in the original set. Preprocessing of testing examples is thus not allowed. The computed results can be saved in files or loaded therefrom if you add a keyword argument <CODE>cache = 1</CODE>. In this case, you also have to specify the rand seed which was used to compute the indices (argument <CODE>indicesrandseed</CODE>; if you don't there will be no caching.
 </P>
@@ -147,7 +223,12 @@ res = orngTest.proportionTest(learners, data, 0.7, 100)
 
 
 <DT>learningCurveN(learners, examples, folds = 10, strat = ..., proportions = ..., pps=[])</DT>
-<DD>A simpler interface for function learningCurve (see below). Instead of methods for preparing indices, it simply takes number of folds and a flag telling whether we want a stratified cross-validation or not.  This function does not return a single <CODE>ExperimentResults</CODE> but a list of them, one for each proportion.</P>
+<DD>A simpler interface for function learningCurve (see
+below). Instead of methods for preparing indices, it simply takes
+number of folds and a flag telling whether we want a stratified
+cross-validation or not.  This function does not return a single
+<CODE>ExperimentResults</CODE> but a list of them, one for each
+proportion.</P>
 
 <XMP class=code>
 prop = [0.2, 0.4, 0.6, 0.8, 1.0]
@@ -162,17 +243,39 @@ for i, p in enumerate(prop):
 </DD>
 
 
-<DT>learningCurve(learners, examples, cv = None, pick = None, proportions = ..., pps=[])</DT>
-<DD>Computes learning curves using a procedure recommended by Salzberg (1997). It first prepares folds. For each proportion, it performs the cross-validation, but taking only a portion of learning examples.<P>
+<DT>learningCurve(learners, examples, cv = None, pick = None,
+proportions = ..., pps=[])</DT>
 
-Arguments <CODE>cv</CODE> and <CODE>pick</CODE> give the methods for preparing indices for cross-validation and random selection of learning examples. If they are not given, <CODE>orange.MakeRandomIndicesCV</CODE> and <CODE>orange.MakeRandomIndices2</CODE> are used, both will be stratified and the cross-validation will be 10-fold. Proportions is a list of proportions of learning examples.<P>
+<DD>Computes learning curves using a procedure recommended by Salzberg
+(1997). It first prepares data subsets (folds). For each proportion,
+it performs the cross-validation, but taking only a proportion of
+examples for learning.</P>
 
-The function can save time by loading experimental existing data for any test that were already conducted and saved. Also, the computed results are stored for later use. You can enable this by adding a keyword argument <CODE>cache=1</CODE>. Another keyword deals with progress report. If you add <CODE>verbose=1</CODE>, the function will print the proportion and the fold number.
-</DD>
+<P>Arguments <CODE>cv</CODE> and <CODE>pick</CODE> give the methods
+for preparing indices for cross-validation and random selection of
+learning examples. If they are not given,
+<CODE>orange.MakeRandomIndicesCV</CODE> and
+<CODE>orange.MakeRandomIndices2</CODE> are used, both will be
+stratified and the cross-validation will be 10-fold. Proportions is a
+list of proportions of learning examples.</P>
+
+<P>The function can save time by loading experimental existing data
+for any test that were already conducted and saved. Also, the computed
+results are stored for later use. You can enable this by adding a
+keyword argument <CODE>cache=1</CODE>. Another keyword deals with
+progress report. If you add <CODE>verbose=1</CODE>, the function will
+print the proportion and the fold number.</p> </DD>
 
 
 <DT>learningCurveWithTestData(learners, learnset, testset, times = 10, proportions = ..., strat = ..., pps=[])</DT>
-<DD>This function is suitable for computing a learning curve on datasets, where learning and testing examples are split in advance.For each proportion of learning examples, it randomly select the requested number of learning examples, builds the models and tests them on the entire <CODE>testset</CODE>. The whole test is repeated for the given number of <CODE>times</CODE> for each proportion. The result is a list of <CODE>ExperimentResults</CODE>, one for each proportion.</P>
+
+<DD>This function is suitable for computing a learning curve on
+datasets, where learning and testing examples are split in advance. For
+each proportion of learning examples, it randomly select the requested
+number of learning examples, builds the models and tests them on the
+entire <CODE>testset</CODE>. The whole test is repeated for the given
+number of <CODE>times</CODE> for each proportion. The result is a list
+of <CODE>ExperimentResults</CODE>, one for each proportion.</P>
 
 <P>In the following scripts, examples are pre-divided onto training and testing set. Learning curves are computed in which 20, 40, 60, 80 and 100 percents of the examples in the former set are used for learning and the latter set is used for testing. Random selection of the given proportion of learning set is repeated for five times.
 <XMP class=code>
@@ -252,7 +355,8 @@ for i, p in enumerate(prop):
 
 <H3>ExperimentResults</H3>
 
-<p>Stores results of one or more repetitions of some test (cross validation, repeated sampling...) under the same circumstances.</p>
+<p>Stores results of one or more repetitions of some test (cross
+validation, repeated sampling...) under the same circumstances.</p>
 
 <p class=section>Attributes</p>
 <DL class=attributes>
@@ -287,15 +391,43 @@ for i, p in enumerate(prop):
 <p>The data is saved in a separate file for each classifier. The file is a binary pickle file containing a list of tuples<BR>
 <code>((x.actualClass, x.iterationNumber), (x.classes[i], x.probabilities[i]))</code><BR> where x is a <CODE>TestedExample</CODE> and <CODE>i</CODE> is the index of a learner.</P>
 
-<p>The file resides in the directory <CODE>./cache</CODE>. Its name consists of a template, given by a caller. The filename should contain a <CODE>%s</CODE> which is replaced by <CODE>name</CODE>, <CODE>shortDescription</CODE>, <CODE>description</CODE>, <CODE>func_doc</CODE> or <CODE>func_name</CODE> (in that order) attribute of the learner (this gets extracted by <CODE>orngMisc.getobjectname</CODE>). If a learner has none of these attributes, its class name is used.</P>
+<p>The file resides in the directory <CODE>./cache</CODE>. Its name
+consists of a template, given by a caller. The filename should contain
+a <CODE>%s</CODE> which is replaced by <CODE>name</CODE>,
+<CODE>shortDescription</CODE>, <CODE>description</CODE>,
+<CODE>func_doc</CODE> or <CODE>func_name</CODE> (in that order)
+attribute of the learner (this gets extracted by
+<CODE>orngMisc.getobjectname</CODE>). If a learner has none of these
+attributes, its class name is used.</P>
 
-<p>Filename should include enough data to make sure that it indeed contains the right experimental results. The function <CODE>learningCurve</CODE>, for example, forms the name of the file from a string "<CODE>{learningCurve}</CODE>", the proportion of learning examples, random seeds for cross-validation and learning set selection, a list of preprocessors' names and a checksum for examples. Of course you can outsmart this, but it should suffice in most cases.</p>
+<p>Filename should include enough data to make sure that it indeed
+contains the right experimental results. The function
+<CODE>learningCurve</CODE>, for example, forms the name of the file
+from a string "<CODE>{learningCurve}</CODE>", the proportion of
+learning examples, random seeds for cross-validation and learning set
+selection, a list of preprocessors' names and a checksum for
+examples. Of course you can outsmart this, but it should suffice in
+most cases.</p>
+
+<DT>remove(i)</DT>
+<DD>Removes the results for the <code>i</code>-th learner.</DD>
+
+<DT>add(results, index, replace=-1)</DT>
+
+<DD>Appends the results of the <code>index</code>-th learner, or uses
+it to replace the results of the learner with the index
+<code>replace</code> if <code>replace</code> is a valid index. Assumes
+that <code>results</code> came from evaluation on the same data set
+using the same testing technique (same number of iterations). </DD>
+
 </DL>
 
 <hr>
 
 <H2>References</H2>
 
-Salzberg, S. L. (1997). On comparing classifiers: Pitfalls to avoid and a recommended approach. <EM>Data Mining and Knowledge Discovery 1</EM>, pages 317-328.<P>
+<p>Salzberg, S. L. (1997). On comparing classifiers: Pitfalls to avoid
+and a recommended approach. <EM>Data Mining and Knowledge Discovery
+1</EM>, pages 317-328.</P>
 
 </BODY> 

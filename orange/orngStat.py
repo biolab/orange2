@@ -500,8 +500,9 @@ def NPV(confm):
         return confm.TP/tot
 
 
-
 def AROC(res, classIndex=-1):
+    apply(AUCWilcoxon, (AUCWilcoxon,), argkw)
+def AUCWilcoxon(res, classIndex=-1, **argkw):
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
     problists, tots = corn.computeROCCumulative(res, classIndex, useweights)
@@ -531,8 +532,10 @@ def AROC(res, classIndex=-1):
         results.append((W, SE))
     return results
 
-    
-def compare2AROCs(res, lrn1, lrn2, classIndex=-1, **argkw):
+
+def compare2AROCs(res, lrn1, lrn2, classIndex=-1):
+    compare2AUCs(res, lrn1, lrn2, classIndex)
+def compare2AUCs(res, lrn1, lrn2, classIndex=-1, **argkw):
     import corn
     return corn.compare2ROCs(res, lrn1, lrn2, classIndex, res.weights and not argkw.get("unweighted"))
 
@@ -872,7 +875,7 @@ def computeLiftCurve(res, classIndex=-1):
 ###
 
 class CDT:
-  """ Stores number of concordant (C), discordant (D) and tied (T) pairs (used for aROC) """
+  """ Stores number of concordant (C), discordant (D) and tied (T) pairs (used for AUC) """
   def __init__(self, C=0.0, D=0.0, T=0.0):
     self.C, self.D, self.T = C, D, T
    
@@ -902,8 +905,10 @@ def computeCDT(res, classIndex=-1, **argkw):
     
    
 def AROCFromCDT(cdt, **argkw):
+    apply(ROCsFromCDT, (cdt,), argkw)
+def ROCsFromCDT(cdt, **argkw):
     if type(cdt) == list:
-        return [AROCFromCDT(c) for c in cdt]
+        return [ROCsFromCDT(c) for c in cdt]
 
     C, D, T = cdt.C, cdt.D, cdt.T
     N = C+D+T
@@ -925,11 +930,16 @@ def AROCFromCDT(cdt, **argkw):
     return res
 
 def AUCFromCDT(cdt, **argkw):
-    aucs = apply(AROCFromCDT, (cdt,), argkw)
+    aucs = apply(ROCsFromCDT, (cdt,), argkw)
     if type(cdt) == list:
         return [x[-1] for x in aucs]
     else:
         return aucs[-1]
+
+def AUC(res, classIndex=-1, **argkw):
+    cdt = apply(computeCDT, (res,), argkw)
+    aucs = apply(ROCsFromCDT, (cdt,), argkw)
+    return [x[-1] for x in aucs]
 
 
 def McNemar(res, **argkw):
