@@ -1,15 +1,29 @@
 #!/bin/bash
 ##cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs login
 
-CORNG=0
-CCRS=0
+if [ $# -lt 2 ]; then
+        echo "parameters not given: version RPMfile CVStag"
+        exit 1
+fi
+
+VER=$1
+DMGFILE=$2
+TAG=${3:-stable}
+
+echo Version: $VER
+echo DMGFILE: $DMGFILE
+echo TAG: $TAG
+echo
+
+COMPILEORANGE=0
+COMPILECRS=0
 GEN=0
 
 ## check out orange source and compile orange
 mkdir compiledOrange
-if [ $CORNG == 1 ]; then
+if [ $COMPILEORANGE == 1 ]; then
   rm -Rf source
-  cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r HEAD source
+  cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f source
   cd source
   python makedep.py
   make -f Makefile.mac
@@ -19,7 +33,7 @@ mv *.so compiledOrange
 
 
 ## compile orngCRS
-if [ $CCRS == 1 ]; then
+if [ $COMPILECRS == 1 ]; then
   rm -Rf orngExtn-1_8_1_py23
   tar -xvzf orngExtn-1_8_1_py23.mac.tar.gz
   cd orngExtn-1_8_1_py23
@@ -29,10 +43,14 @@ if [ $CCRS == 1 ]; then
 fi
 
 ## check out orange modules
-rm -Rf orange doc Orange\ Doc
-cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r HEAD orange
-cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r HEAD -d orange/OrangeWidgets/Genomics Genomics
-mv orange/doc Orange\ Doc
+rm -Rf orange doc
+cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f orange
+
+if [ $GEN == 1 ]; then
+  cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f -d orange/OrangeWidgets/Genomics Genomics
+fi
+
+rm -R orange/doc
 
 # remove files we don't want in the installation
 rm orange/OrangeWidgets/Visualize/OWLinViz.py
@@ -44,27 +62,22 @@ rm orange/OrangeWidgets/OWLin_Results.py
 rm orange/OrangeWidgets/Other/OWITree.py
 rm orange/c45.dll
 
-if [ $GEN == 0 ]; then
-  rm -Rf orange/OrangeWidgets/Genomics
-fi
 
 ## after compiling orange, move it out of the path and into the orange directory
 cp compiledOrange/*.so orange
 PYTHONPATH=.
 rm -Rf build
 python makeapplication.py --resource=orange build
-tar -C ~/Desktop -xvzf emptyDiskImages/Orange.tar.gz
-open build
-open ~/Desktop/Orange.dmg
-echo "drag orange application into orange mount drive"
-echo "resize and convert with the Disk Copy utility"
-open /Applications/Utilities/Disk\ Copy.app
-cat
 
-tar -C ~/Desktop -xvzf emptyDiskImages/OrangeDoc.tar.gz
-open . 
-open ~/Desktop/Orange\ Doc.dmg
-echo "drag documentation into orange documentation mount drive"
-echo "resize and convert with the Disk Copy utility"
-open /Applications/Utilities/Disk\ Copy.app
+## create image file and copy the compiled application into it
+rm tmp.dmg
+hdiutil create -size 64m -type UDIF -fs HFS+ -volname Orange tmp.dmg
+hdiutil mount tmp.dmg
+cp -R build/Orange.app /Volumes/Orange
+hdiutil unmount /Volumes/Orange
+## hdiutil resize tmp.dmg -size min
+hdiutil convert -format UDZO tmp.dmg -o $DMGFILE
+rm tmp.dmg
 
+## mkdir estelle.mount
+##mount_smbfs -W AI //Administrator@estelle.fri.uni-lj.si/wwwUsers estelle.mount
