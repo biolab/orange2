@@ -56,9 +56,13 @@ class OWBaseWidget(QDialog):
             icon - the icon file
             logo - the logo file
         """
-        fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
+        # directories are better defined this way, otherwise .ini files get written in many places
+        fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon 
         logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
+        #fullIcon = os.path.realpath("./icons") + "/" + icon
+        #logo = os.path.realpath("./icons") + "/" +logo
+        #self.widgetDir = os.path.realpath(".") + "/"
         self.title = title.replace("&","")
         self.captionTitle=title.replace("&","")
 
@@ -78,6 +82,7 @@ class OWBaseWidget(QDialog):
         self.wrappers =[]    # stored wrappers for widget events
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: signalData
+        self.progressBarHandler = None  # handler for progress bar events
     
         #the map with settings
         if not hasattr(self, 'settingsList'):
@@ -252,6 +257,23 @@ class OWBaseWidget(QDialog):
                 self.linksIn[signalName][i] = (1, widget, handler, value)
         self.needProcessing = 1
 
+
+    # ############################################
+    # PROGRESS BAR FUNCTIONS
+    def progressBarInit(self):
+        if self.progressBarHandler: self.progressBarHandler(self, -1)
+
+    def progressBarSet(self, value):
+        if self.progressBarHandler: self.progressBarHandler(self, value)
+
+    def progressBarFinished(self):
+        if self.progressBarHandler: self.progressBarHandler(self, 101)
+
+    # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
+    def progressBarSetHandler(self, handler):
+        self.progressBarHandler = handler
+
+    
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
     oww=OWBaseWidget()
