@@ -408,6 +408,7 @@ class Visualizer:
         #print m
         #print "basis:"
         #print basis
+        self.m = m
 
         # get the parameters of the hyperplane, and normalize it
         n = Numeric.array(coeffs, Numeric.Float)
