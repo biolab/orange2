@@ -162,10 +162,23 @@ TItemSetValue::~TItemSetValue()
 
 
 
+TAssociationRule::TAssociationRule(PExample al, PExample ar)
+: left(al),
+  right(ar),
+  support(0.0),
+  confidence(0.0),
+  coverage(0.0),
+  strength(0.0),
+  lift(0.0),
+  leverage(0.0),
+  nAppliesLeft(0),
+  nAppliesRight(0),
+  nAppliesBoth(0),
+  nExamples(0),
+  nLeft(countItems(al)),
+  nRight(countItems(ar))
+{}
 
-
-TAssociationRule::TAssociationRule()
-{ raiseError("invalid constructor call"); };
 
 TAssociationRule::TAssociationRule(PExample al, PExample ar,
                    const float &napLeft, const float &napRight, const float &napBoth, const float &nExamples,
@@ -182,8 +195,8 @@ TAssociationRule::TAssociationRule(PExample al, PExample ar,
   nAppliesRight(napRight),
   nAppliesBoth(napBoth),
   nExamples(nExamples),
-  nleft(anleft < 0 ? countItems(al) : anleft),
-  nright(anright < 0 ? countItems(ar) : anright)
+  nLeft(anleft < 0 ? countItems(al) : anleft),
+  nRight(anright < 0 ? countItems(ar) : anright)
 {
   TExample::iterator ei, ee;
 
@@ -206,6 +219,20 @@ int TAssociationRule::countItems(PExample ex)
   return res;
 }
 
+
+bool TAssociationRule::applies(const TExample &ex, const PExample &side)
+{
+  if (side->domain->variables->size())
+    return side->compatible(ex);
+
+  // all meta-attributes that appear in 'side' must also appear in 'ex' and be noSpecial
+  const_ITERATE(TMetaValues, mi, side->meta) {
+    if (!ex.hasMeta((*mi).first) || ex.getMeta((*mi).first).isSpecial())
+      return false;
+  }
+
+  return true;
+}
 
 
 float computeIntersection(const TExampleSet &set1, const TExampleSet &set2, TExampleSet &intersection)

@@ -590,9 +590,24 @@ PyObject *Value_repr(TPyValue *self)
 }
 
 
+bool checkSpecial(TPyValue *self, char *casttype)
+{
+  if (self->value.isSpecial()) {
+    if (self->variable && self->variable->name.length())
+      PyErr_Format(PyExc_TypeError, "value of '%s' is unknown and cannot be %s", self->variable->name.c_str(), casttype);
+    else
+      PyErr_Format(PyExc_TypeError, "attribute value is unknown and cannot be %s", casttype);
+    return false;
+  }
+
+  return true;
+}
+
 PyObject *Value_int(TPyValue *self)
 { PyTRY
-    CHECK_SPECIAL_OTHER
+    if (!checkSpecial(self, "casted to an integer"))
+      return PYNULL;
+
     return Py_BuildValue("i", (self->value.varType==TValue::INTVAR) ? self->value.intV : int(self->value.floatV)); 
   PyCATCH
 }
@@ -600,7 +615,9 @@ PyObject *Value_int(TPyValue *self)
 
 PyObject *Value_long(TPyValue *self)
 { PyTRY
-    CHECK_SPECIAL_OTHER
+    if (!checkSpecial(self, "casted to a long integer"))
+      return PYNULL;
+
     return Py_BuildValue("l", (self->value.varType==TValue::INTVAR) ? long(self->value.intV) : long(self->value.floatV)); 
   PyCATCH
 }
@@ -608,7 +625,9 @@ PyObject *Value_long(TPyValue *self)
 
 PyObject *Value_float(TPyValue *self)
 { PyTRY
-    CHECK_SPECIAL_OTHER
+    if (!checkSpecial(self, "casted to a float"))
+      return PYNULL;
+
     return Py_BuildValue("f", (self->value.varType==TValue::INTVAR) ? float(self->value.intV) : self->value.floatV); 
   PyCATCH
 }
@@ -675,7 +694,9 @@ PyObject *Value_pow(TPyValue *self, PyObject *other, PyObject *)
 
 PyObject *Value_neg(TPyValue *self)
 { PyTRY
-    CHECK_SPECIAL_OTHER
+    if (!checkSpecial(self, "negated"))
+      return PYNULL;
+
     const TValue &val1 = self->value;
     if (val1.varType!=TValue::FLOATVAR)
       PYERROR(PyExc_TypeError, "cannot negate non-continuous value", false);
@@ -686,7 +707,14 @@ PyObject *Value_neg(TPyValue *self)
 
 PyObject *Value_abs(TPyValue *self)
 { PyTRY
-    CHECK_SPECIAL_OTHER
+    if (self->value.isSpecial())
+      if (self->variable && self->variable->name.length()) {
+        PyErr_Format(PyExc_TypeError, "cannot compute an absolute value of '%s' since its value is unknown", self->variable->name.c_str());
+        return PYNULL;
+      }
+      else
+        PYERROR(PyExc_TypeError, "cannot compute an absolute value of attribute since its value is unknown", PYNULL);
+
     const TValue &val1 = self->value;
     if (val1.varType!=TValue::FLOATVAR)
       PYERROR(PyExc_TypeError, "cannot compute abs of non-continuous value", false);

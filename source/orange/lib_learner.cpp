@@ -176,18 +176,38 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
     }
 
   TExample *le, *re;
-  float support, confidence;
-  if (PyArg_ParseTuple(obj, "O&O&ff", ptr_Example, &le, ptr_Example, &re, &support, &confidence)) {
-    PExample nle = mlnew TExample(*le);
-    PExample nre = mlnew TExample(*re);
-    rule = mlnew TAssociationRule(nle, nre, support, confidence, TAssociationRule::countItems(nle), TAssociationRule::countItems(nre));
-    return true;
+
+  switch (PyTuple_Size(obj)) {
+    case 6:
+      float nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples;
+      if (PyArg_ParseTuple(obj, "O&O&ffff", ptr_Example, &le, ptr_Example, &re, &nAppliesLeft, &nAppliesRight, &nAppliesBoth, &nExamples)) {
+        PExample nle = mlnew TExample(*le);
+        PExample nre = mlnew TExample(*re);
+        rule = mlnew TAssociationRule(nle, nre, nAppliesLeft, nAppliesRight, nAppliesBoth, nExamples);
+        return true;
+      }
+      else
+        break;
+
+    case 4:
+      float support, confidence;
+      if (PyArg_ParseTuple(obj, "O&O&ff", ptr_Example, &le, ptr_Example, &re, &support, &confidence)) {
+        PExample nle = mlnew TExample(*le);
+        PExample nre = mlnew TExample(*re);
+        rule = mlnew TAssociationRule(nle, nre);
+        rule->support = support;
+        rule->confidence = confidence;
+        return true;
+      }
+      else
+        break;
+
+    case 1: 
+      if (PyArg_ParseTuple(obj, "O&:convertFromPython(AssociationRule)", cc_AssociationRule, &rule))
+        return true;
+      else
+        break;
   }
- 
-  PyErr_Clear();
-   
-  if (PyArg_ParseTuple(obj, "O&:convertFromPython(AssociationRule)", cc_AssociationRule, &rule))
-    return true;
     
   PYERROR(PyExc_TypeError, "invalid arguments", false);
 }

@@ -123,7 +123,8 @@ TSparseExample::TSparseExample(TExample *example, int weightID){
     length = 0;
     itemset = new long[example->meta.size() - (weightID ? 1 : 0)];
     ITERATE(TMetaValues, mi, example->meta)
-      itemset[length++] = (*mi).first;
+      if ((*mi).first != weightID)
+        itemset[length++] = (*mi).first;
     sort(itemset, itemset+length);
   }
 }

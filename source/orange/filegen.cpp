@@ -207,7 +207,7 @@ bool TFileExampleGenerator::checkDomain(const TDomain *domain,
   TVarList::const_iterator vi(domain->variables->begin());
   const_PITERATE(TAttributeDescriptions, ai, attributes)
     if (    ((*ai).name != (*vi)->name)
-         || ((*ai).varType<0) && ((*ai).varType != (*vi)->varType))
+         || ((*ai).varType>0) && ((*ai).varType != (*vi)->varType))
       return false;
     else
       vi++;

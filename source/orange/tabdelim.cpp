@@ -242,6 +242,8 @@ PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool aut
 class TSearchWarranty 
 { public:
   int posInFile, posInDomain, suspectedType;
+  // suspectedType can be 3 (never seen it yet), 2 (can even be coded discrete), 1 (can be float);
+  //   if it's found that it cannot be float, it can only be discrete, so the warranty is removed
   TSearchWarranty(const int &pif, const int &pid)
   : posInFile(pif), posInDomain(pid), suspectedType(3)
   {}

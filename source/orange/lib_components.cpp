@@ -1792,55 +1792,64 @@ PyObject *MeasureAttribute_call(PyObject *self, PyObject *args, PyObject *keywor
     // Try (variable, examples, aprior class distribution, weight)
 
     PExampleGenerator egen;
-    PyObject *arg3 = PYNULL, *arg4 = PYNULL;
-    if (PyArg_ParseTuple(args, "OO&|O&i", &arg1, pt_ExampleGenerator, &egen, &arg3, &arg4)) {
+    if ((PyTuple_Size(args) >= 2) && pt_ExampleGenerator(PyTuple_GET_ITEM(args, 1), &egen)) {
+
+      // No need to INCREF (ParseArgs doesn't INCREF either)
+      PyObject *arg3 = Py_None, *arg4 = Py_None;
+      
+      arg1 = PyTuple_GET_ITEM(args, 0);
+    
+      if (PyTuple_Size(args) == 4) {
+        arg3 = PyTuple_GET_ITEM(args, 2);
+        arg4 = PyTuple_GET_ITEM(args, 3);
+      }
+
+      else if (PyTuple_Size(args) == 3) {
+        arg4 = PyTuple_GET_ITEM(args, 2);
+        // This mess is for compatibility; previously, weightID could only be the 4th argument; 3rd had to be either Distribution or None if 4th was to be given
+        if (PyOrDistribution_Check(arg4)) {
+          arg3 = arg4;
+          arg4 = Py_None;
+        }
+        else
+          arg3 = Py_None;
+      }
 
       int weightID=0;
 
-      if (arg3)
-        if (PyOrDistribution_Check(arg3))
+      if (arg3 != Py_None)
+        if (PyOrDistribution_Check(arg4))
           aprClDistr = PyOrange_AsDistribution(arg3);
+        else
+          PYERROR(PyExc_TypeError, "invalid argument 3 (Distribution or None expected)", PYNULL);
 
-        // This is for compatibility; previously, weightID could only be the 4th argument; 3rd had to be either Distribution or None if 4th was to be given
-        else {
-          if (arg4)
-            PYERROR(PyExc_AttributeError, "invalid arguments (unexpected argument 4)", PYNULL);
+      if (arg4 != Py_None)
+        if (PyInt_Check(arg4))
+          weightID = PyInt_AsLong(arg4);
+        else
+          if (!varNumFromVarDom(arg4, egen->domain, weightID))
+            PYERROR(PyExc_TypeError, "invalid argument 4 (weightID or None expected)", PYNULL);
 
-          arg4 = arg3;
-          arg3 = PYNULL;
+      if (PyOrVariable_Check(arg1))
+        return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(arg1), egen, aprClDistr, weightID)));
+
+      else if (PyInt_Check(arg1)) {
+        int attrNo = PyInt_AsLong(arg1);
+        if (attrNo >= (int)egen->domain->attributes->size()) {
+          PyErr_Format(PyExc_IndexError, "attribute index %i out of range for the given DomainContingency", attrNo);
+          return PYNULL;
         }
+        return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
+      }
 
-        if (arg4)
-          if (PyInt_Check(arg4))
-            weightID = PyInt_AsLong(arg4);
+      else {
+        int attrNo;
+        if (!varNumFromVarDom(arg1, egen->domain, attrNo))
+          PYERROR(PyExc_TypeError, "invalid argument 1 (attribute index, name or descriptor expected)", PYNULL);
 
-          else
-            if (!varNumFromVarDom(arg4, egen->domain, weightID))
-              return PYNULL;
-          
-        if (PyOrVariable_Check(arg1))
-          return PyFloat_FromDouble((double)(meat->operator()(PyOrange_AsVariable(arg1), egen, aprClDistr, weightID)));
-
-        else if (PyInt_Check(arg1)) {
-          int attrNo = PyInt_AsLong(arg1);
-          if (attrNo >= (int)egen->domain->attributes->size()) {
-            PyErr_Format(PyExc_IndexError, "attribute index %i out of range for the given DomainContingency", attrNo);
-            return PYNULL;
-          }
-          return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
-        }
-
-        else {
-          int attrNo;
-          if (!varNumFromVarDom(arg1, egen->domain, attrNo))
-            return PYNULL;
-
-          return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
-        }
+        return PyFloat_FromDouble((double)(meat->operator()(attrNo, egen, aprClDistr, weightID)));
+      }
     }
-
-    PyErr_Clear();
-
 
     PYERROR(PyExc_TypeError, "invalid set of parameters", PYNULL);
     return PYNULL;
