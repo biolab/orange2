@@ -140,12 +140,10 @@ class OWParallelGraph(OWVisGraph):
         # ############################################
         # draw the data
         # ############################################
-        validData = [1] * dataSize
+        
+        validData = self.getValidList(indices + [self.attributeNames.index(self.rawdata.domain.classVar.name)])
+        #validData = [1] * dataSize
         for i in range(dataSize):
-            valid = 1
-            # check for missing values
-            for index in indices:
-                if self.scaledData[index][i] == "?": validData[i] = 0; break;
             if not validData[i]:
                 self.curvePoints.append([]) # add an empty list
                 self.dataKeys.append(-1)
