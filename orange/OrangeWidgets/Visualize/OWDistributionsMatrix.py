@@ -32,18 +32,20 @@ class OWDistributionsMatrix(OWWidget):
 
         # inputs
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.updating = 0
 
         self.data = None
-        self.NumberOfBars = 5
-        self.BarSize = 50
-        self.ShowProbabilities = 0
-        self.ShowConfidenceIntervals = 0
-        self.SmoothLines = 0
-        self.LineWidth = 1
-        self.ShowMainTitle = 0
-        self.ShowXaxisTitle = 1
-        self.ShowYaxisTitle = 1
-        self.ShowYPaxisTitle = 1
+        self.numberOfBars = 5
+        self.barSize = 50
+        self.showProbabilities = 0
+        self.showConfidenceIntervals = 0
+        self.smoothLines = 0
+        self.lineWidth = 1
+        self.showMainTitle = 0
+        self.showXaxisTitle = 1
+        self.showYaxisTitle = 1
+        self.showYPaxisTitle = 1
+        self.yPaxisTitle = ""
 
         #load settings
         self.loadSettings()
@@ -52,21 +54,25 @@ class OWDistributionsMatrix(OWWidget):
         # add a settings dialog and initialize its values
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = OWDistributionsOptions(self, "Settings")
-        self.tabs.insertTab(self.GeneralTab, "General")
-        self.tabs.insertTab(self.SettingsTab, "Settings")
-        
-        self.outcomesGroup = QVGroupBox(self.GeneralTab)
-        self.commonAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.outcomesGroup.setTitle("Outcomes")
-        self.commonAttribsGroup.setTitle("Visualized Attributes")
+        self.SettingsTab = QVGroupBox(self, "Settings")
+
+        self.target = OWGUI.widgetBox(self.GeneralTab, " Target value ")
+        self.outcomesGroup = OWGUI.widgetBox(self.GeneralTab, " Outcomes ")
+        self.outcomesGroup.setMaximumHeight(100)
+        self.outcomesGroup.setMinimumWidth(170)
+        self.commonAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Visualized Attributes ")
+
+        self.targetQCB = QComboBox(self.target)
         
         self.outcomesLB = QListBox(self.outcomesGroup)
+        #self.outcomesLB.setMaximumHeight(30)
         self.outcomesLB.setSelectionMode(QListBox.Multi)
 
         self.attributesLB = QListBox(self.commonAttribsGroup)
         self.attributesLB.setSelectionMode(QListBox.Multi)
         self.updateGraphsButton = QPushButton("Update Selection", self.commonAttribsGroup)
+
+        self.connect(self.targetQCB, SIGNAL('activated (const QString &)'), self.setTarget)
         self.connect(self.updateGraphsButton, SIGNAL("clicked()"), self.createGraphs)
         self.connect(self.outcomesLB, SIGNAL("selectionChanged()"), self.updateGraphSettings)
 
@@ -80,40 +86,27 @@ class OWDistributionsMatrix(OWWidget):
 
         # GUI connections
         # options dialog connections
-        self.connect(self.SettingsTab.barSize, SIGNAL("valueChanged(int)"), self.setBarSize)
-        self.connect(self.SettingsTab.gSetXaxisCB, SIGNAL("stateChanged(int)"), self.setShowXaxisTitle)
-        self.connect(self.SettingsTab.gSetXaxisLE, SIGNAL("textChanged(const QString &)"), self.setXaxisTitle)
-        self.connect(self.SettingsTab.gSetYaxisCB, SIGNAL("stateChanged(int)"), self.setShowYaxisTitle)
-        self.connect(self.SettingsTab.gSetYaxisLE, SIGNAL("textChanged(const QString &)"), self.setYaxisTitle)
-        self.connect(self.SettingsTab.gSetYPaxisCB, SIGNAL("stateChanged(int)"), self.setShowYPaxisTitle)
-        self.connect(self.SettingsTab.gSetYPaxisLE, SIGNAL("textChanged(const QString &)"), self.setYPaxisTitle)
-        self.connect(self.SettingsTab.showprob, SIGNAL("stateChanged(int)"), self.setShowProbabilities)
-        self.connect(self.SettingsTab.numberOfBars, SIGNAL("valueChanged(int)"), self.setNumberOfBars)
-        self.connect(self.SettingsTab.smooth, SIGNAL("stateChanged(int)"), self.setSmoothLines)
-        self.connect(self.SettingsTab.lineWidth, SIGNAL("valueChanged(int)"), self.setLineWidth)
-        self.connect(self.SettingsTab.showcoin, SIGNAL("stateChanged(int)"), self.setShowConfidenceIntervals)
-        # self connections
+        self.numberOfBarsSlider = OWGUI.hSlider(self.SettingsTab, self, 'numberOfBars', box='Number of Bars', minValue=5, maxValue=60, step=5, callback=self.setNumberOfBars, ticks=5)
+        self.numberOfBarsSlider.setTracking(0) # no change until the user stop dragging the slider
 
- 
-    def activateLoadedSettings(self):
-        self.SettingsTab.numberOfBars.setValue(self.NumberOfBars)
-        self.setNumberOfBars(self.NumberOfBars)
-        self.SettingsTab.barSize.setValue(self.BarSize)
-        self.SettingsTab.gSetMainTitleCB.setChecked(self.ShowMainTitle)
-        self.SettingsTab.gSetXaxisCB.setChecked(self.ShowXaxisTitle)
-        self.SettingsTab.gSetYaxisCB.setChecked(self.ShowYaxisTitle)
-        self.SettingsTab.gSetYPaxisCB.setChecked(self.ShowYPaxisTitle)
-        self.SettingsTab.showprob.setChecked(self.ShowProbabilities)
-        self.SettingsTab.showcoin.setChecked(self.ShowConfidenceIntervals)
-        self.SettingsTab.smooth.setChecked(self.SmoothLines)
-        self.SettingsTab.lineWidth.setValue(self.LineWidth)
+        self.barSizeSlider = OWGUI.hSlider(self.SettingsTab, self, 'barSize', box=' Bar Size ', minValue=30, maxValue=100, step=5, callback=self.setBarSize, ticks=10)
 
-        self.setShowXaxisTitle(self.ShowXaxisTitle)
-        self.setShowYaxisTitle(self.ShowYaxisTitle)
-        self.setShowYPaxisTitle(self.ShowYPaxisTitle)
-        self.setShowProbabilities(self.ShowProbabilities)
+        box = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        OWGUI.checkBox(box, self, 'showXaxisTitle', 'Show X axis title', callback = self.setShowXaxisTitle)
+        OWGUI.checkBox(box, self, 'showYaxisTitle', 'Show Y axis title', callback = self.setShowYaxisTitle)
+        
+        box5 = OWGUI.widgetBox(self.SettingsTab, " Probability graph ")
+        self.showProb = OWGUI.checkBox(box5, self, 'showProbabilities', ' Show Probabilities ', callback = self.setShowProbabilities)
 
- 
+        self.confIntCheck = OWGUI.checkBox(box5, self, 'showConfidenceIntervals', 'Show Confidence Intervals', callback = self.setShowConfidenceIntervals)
+        
+        OWGUI.checkBox(box5, self, 'smoothLines', 'Smooth probability lines', callback = self.setSmoothLines)
+
+        self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
+
+        self.tabs.insertTab(self.GeneralTab, "General")
+        self.tabs.insertTab(self.SettingsTab, "Settings")
+        
  
     def cdata(self, data):
         # if we got the same domain than the last dataset we only update the data in graphs
@@ -128,19 +121,29 @@ class OWDistributionsMatrix(OWWidget):
             self.data = data
             if (not data) or (not self.data.domain.classVar): return
             
+            i = 0
+            for attr in self.data.domain.attributes:
+                self.attributesLB.insertItem(attr.name)
+                self.attributesLB.setSelected(i, i < 9)
+                i+=1
+
+            self.targetQCB.clear()
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                for val in self.data.domain.classVar.values:
+                    self.targetQCB.insertItem(val)
+                self.setTarget(self.data.domain.classVar.values[0])
+            
             classValues = getVariableValuesSorted(data, self.data.domain.classVar.name)
             colors = ColorPaletteHSV(len(classValues))
+            self.updating = 1
             for val in classValues:
                 color = colors.getColor(classValues.index(val))
                 self.outcomesLB.insertItem(ColorPixmap(color), val)
                 self.outcomesLB.setSelected(classValues.index(val), 1)
+            self.updating = 0
 
-            i = 0
-            for attr in self.data.domain.attributes:
-                self.attributesLB.insertItem(attr.name)
-                self.attributesLB.setSelected(i, 1)
-                i+=1
             self.createGraphs()
+
 
 
     def createGraphs(self):
@@ -160,20 +163,20 @@ class OWDistributionsMatrix(OWWidget):
         xSize = int(math.ceil(math.sqrt(len(selected))))
         for i in range(len(selected)):
             graph = OWDistributionGraph(self, self.mainArea)
+            self.setGraphSettings(graph)
             graph.setMinimumSize(QSize(100,100))
-            #graph.setMaximumSize(QSize(500,500))
-            #graph.sizeHint = QSize(100, 100)
             graph.visibleOutcomes = visibleOutcomes
             graph.setData(self.data, str(self.attributesLB.text(i)))
+            graph.setTargetValue(self.targetValue)
             self.grid.addWidget(graph, i%xSize, i/xSize, Qt.AlignCenter)
             self.graphs.append(graph)
-            self.setGraphSettings(graph)
+            
             graph.show()
             
 
-        
 
     def updateGraphSettings(self):
+        if self.updating: return
         visibleOutcomes = []
         for i in range(self.outcomesLB.count()):
             visibleOutcomes.append(self.outcomesLB.isSelected(i))
@@ -185,81 +188,62 @@ class OWDistributionsMatrix(OWWidget):
        
         
     def setGraphSettings(self, graph):
-        graph.showConfidenceIntervals = self.ShowConfidenceIntervals
-        graph.barSize = self.BarSize
-        graph.showProbabilities = self.ShowProbabilities
-        graph.setShowXaxisTitle(self.ShowXaxisTitle)
-        graph.setShowYLaxisTitle(self.ShowYaxisTitle)
-        #graph.setYLaxisTitle(self.YaxisTitle)
-        graph.setShowYRaxisTitle(self.ShowYPaxisTitle)
-        graph.setNumberOfBars(self.NumberOfBars)
-        graph.refreshVisibleOutcomes()
+        graph.numberOfBars = self.numberOfBars
+        graph.barSize = self.barSize
+        graph.setShowXaxisTitle(self.showXaxisTitle)
+        graph.setShowYLaxisTitle(self.showYaxisTitle)
+        graph.setShowYRaxisTitle(self.showYPaxisTitle)
+        graph.showProbabilities = self.showProbabilities
+        graph.showConfidenceIntervals = self.showConfidenceIntervals
+        graph.smoothLines = self.smoothLines
+        graph.lineWidth = self.lineWidth
+    
 
-    def setShowXaxisTitle(self, b):
-        self.ShowXaxisTitle = b
+    def setShowXaxisTitle(self):
         for graph in self.graphs:
-            graph.setShowXaxisTitle(b)
+            graph.setShowXaxisTitle(self.showXaxisTitle)
 
-    def setXaxisTitle(self, t):
-        self.XaxisTitle = t
+    def setShowYaxisTitle(self):
         for graph in self.graphs:
-            graph.setXaxisTitle(str(t))
+            graph.setShowYLaxisTitle(self.showYaxisTitle)
 
-    def setShowYaxisTitle(self, b):
-        self.ShowYaxisTitle = b
+    def setBarSize(self):
         for graph in self.graphs:
-            graph.setShowYLaxisTitle(b)
+            graph.setBarSize(self.barSize)
 
-    def setYaxisTitle(self, t):
-        self.YaxisTitle = t
+    def setShowProbabilities(self):
         for graph in self.graphs:
-            graph.setYLaxisTitle(str(t))
-
-    def setShowYPaxisTitle(self, b):
-        self.ShowYPaxisTitle = b
-        for graph in self.graphs:
-            graph.setShowYRaxisTitle(b)
-            
-    def setYPaxisTitle(self, t):
-        self.YPaxisTitle = t
-        for graph in self.graphs:
-            graph.setYRaxisTitle(str(t))
-
-    def setBarSize(self, n):
-        self.BarSize = n
-        for graph in self.graphs:
-            graph.setBarSize(n)
-
-    def setShowProbabilities(self, n):
-        "Sets whether the probabilities are drawn or not"
-        self.ShowProbabilities = n
-        for graph in self.graphs:
-            graph.showProbabilities = n
+            graph.showProbabilities = self.showProbabilities
             graph.refreshProbGraph()
             #graph.replot()
         self.repaint()
 
-    def setNumberOfBars(self, n):
-        self.NumberOfBars = n
+    def setNumberOfBars(self):
+        print self.graphs, self.numberOfBars
         for graph in self.graphs:
-            graph.setNumberOfBars(n)
+            graph.setNumberOfBars(self.numberOfBars)
         
-    def setSmoothLines(self, n):
+    def setSmoothLines(self):
         "sets the line smoothing on and off"
-        self.SmoothLines = n
+        pass
 
-    def setLineWidth(self, n): 
+    def setLineWidth(self): 
         "Sets the line thickness for probability"
-        self.LineWidth = n
+        pass
 
-    def setShowConfidenceIntervals(self,value):
+    def setShowConfidenceIntervals(self):
         "Sets whether the confidence intervals are shown"
-        self.ShowConfidenceIntervals = value
         for graph in self.graphs:
-            graph.showConfidenceIntervals = value
+            graph.showConfidenceIntervals = self.showConfidenceIntervals
             graph.refreshProbGraph()
             #graph.replot()
         self.repaint()
+
+    def setTarget(self, targetVal):
+        self.targetValue = self.data.domain.classVar.values.index(str(targetVal))
+        for graph in self.graphs:
+            graph.setTargetValue(self.targetValue)
+
 
 
 if __name__ == "__main__":
