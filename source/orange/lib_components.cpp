@@ -153,6 +153,14 @@ PyObject *BasicAttrStat_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 }
 
 
+PyObject *BasicAttrStat_recompute(PyObject *self) PYARGS(METH_), "() -> None")
+{ PyTRY
+    SELF_AS(TBasicAttrStat).recompute();
+    RETURN_NONE;
+  PyCATCH
+}
+
+
 /* We redefine new (removed from below!) and add mapping methods
 */
 

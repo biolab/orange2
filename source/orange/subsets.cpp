@@ -159,6 +159,7 @@ bool TSubsetsGenerator_constant::reset()
   if (!varList)
     moreToCome = false;
   else {
+    moreToCome = true;
     PITERATE(TVarList, vi, constant)
       if (!exists(varList.getReference(), *vi)) {
         moreToCome = false;

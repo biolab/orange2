@@ -44,7 +44,7 @@ list<TDomain *> TTabDelimExampleGenerator::knownDomains;
 TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
 : TFileExampleGenerator(old),
   attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
-  DCs(old.DCs),
+  DCs(CLONE(TStringList, old.DCs)),
   classPos(old.classPos),
   headerLines(old.headerLines)
 {}
@@ -108,6 +108,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   TVarList::iterator vi(domain->attributes->begin());
   TIdList ::iterator ai(atoms.begin());
   vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
+  bool dcs = DCs && DCs->size();
   vector<string>::iterator dci(DCs->begin());
   int pos=0;
   for (; (si!=se); pos++, si++, ai++, dci++)
@@ -120,7 +121,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
       else { // else check if one of don't care symbols
         valstr = *ai;
         if (valstr.length()==1) {
-          if ((*dci).size()) {
+          if (dcs && (*dci).size()) {
             string::iterator dcii = (*dci).begin();
             for(; (dcii!=(*dci).end()) && (*dcii!=valstr[0]); dcii++);
             if (dcii!=(*dci).end())
@@ -246,7 +247,6 @@ class TSearchWarranty
 PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
 { 
   headerLines = 1;
-  DCs = mlnew TStringList(domain->variables->size(), "");
 
   TFileExampleIteratorData fei(stem);
   

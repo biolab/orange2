@@ -203,11 +203,13 @@ TMakeRandomIndicesN::TMakeRandomIndicesN(PFloatList ap, const int &astrat, PRand
     floats and the constructor prepares a vector with elements from 0 to p.size() (therefore p.size()+1 elements
     with the last one having probability 1-sum(p)). */
 PRandomIndices TMakeRandomIndicesN::operator()(const int &n)
-{ return operator()(n, p); }
+{ checkProperty(p); // although it is checked later, a better diagnostics can be given here
+  return operator()(n, p); }
 
 
 PRandomIndices TMakeRandomIndicesN::operator()(PExampleGenerator gen)
-{ return operator()(gen->numberOfExamples(), p); }
+{ checkProperty(p); // although it is checked later, a better diagnostics can be given here
+  return operator()(gen->numberOfExamples(), p); }
 
 
 PRandomIndices TMakeRandomIndicesN::operator()(PExampleGenerator gen, PFloatList ap)
@@ -215,14 +217,16 @@ PRandomIndices TMakeRandomIndicesN::operator()(PExampleGenerator gen, PFloatList
 
 
 PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
-{ if (stratified==TMakeRandomIndices::STRATIFIED)
+{ if (!ap || !ap->size())
+    raiseError("invalid (empty) vector of probabilities");
+  if (stratified==TMakeRandomIndices::STRATIFIED)
     raiseError("stratification not implemented");
 
   PRandomIndices indices(mlnew TFoldIndices(n, ap->size()));
   TFoldIndices::iterator ii(indices->begin()), ie(indices->end());
   int no, ss=-1;
   PITERATE(vector<float>, pi, ap)
-    for(ss++, no=int(*pi*n); no-- && (ii!=ie); *(ii++)=ss);
+    for(ss++, no= *pi<1.0 ? int(*pi*n+0.5) : int(*pi+0.5); no-- && (ii!=ie); *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);
   random_shuffle(indices->begin(), indices->end(), rg);

@@ -150,6 +150,7 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
       raiseError("filename not given and cannot be concluded from the working directory");
 
     filename++;
+    hash = filename + strlen(filename);
   }
 
   int fileFormat = UNKNOWN;

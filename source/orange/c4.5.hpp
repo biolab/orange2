@@ -27,7 +27,7 @@
 #include "learn.hpp"
 
 
-#include "c45/types.i"
+#include "../external/c45/types.i"
 #define __TYPES_I
 
 

@@ -38,6 +38,7 @@ private:
   LPWSTR lfilename;
   LPWSTR lsheet;
   char *cellvalue;
+  char celcol[3];
 
   void Invoke(int autoType, IDispatch *pDisp, LPOLESTR ptName, int cArgs);
   void getProperty(IDispatch *pDisp, LPOLESTR ptName);
@@ -51,6 +52,8 @@ private:
   PDomain constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
   TExampleTable *readExamples(PDomain domain, const vector<int> &specials);
   void readValue(const int &row, const int &col, PVariable var, TValue &value);
+
+  char *column2Chars(const int &);
 
   static void destroyNotifier(TDomain *domain);
 
@@ -233,6 +236,20 @@ void TExcelReader::openFile(char *filename, char *sheet)
 }
 
 
+char *TExcelReader::column2Chars(const int &col)
+{ if (col<=26) {
+    celcol[0] = col+'A';
+    celcol[1] = 0;
+  }
+  else {
+    celcol[0] = col/26 + 'A';
+    celcol[1] = col%26 + 'A';
+    celcol[2] = 0;
+  }
+
+  return celcol;
+}
+
 // row = example number (1..nExamples), or 0 for attribute row
 // col = 0..nAttrs-1
 void TExcelReader::cellAsVariant(const int &row, const int &col)
@@ -240,6 +257,8 @@ void TExcelReader::cellAsVariant(const int &row, const int &col)
   VariantInit(&result);
   long pos[] = {rowsLow + row, columnsLow + col};
   SafeArrayGetElement(cells, pos, &result);
+  if (result.vt == VT_ERROR)
+    raiseError("invalid value in cell %s%i", column2Chars(col), row+1);
 }
 
 
@@ -252,22 +271,17 @@ char *TExcelReader::cellAsText(const int &row, const int &col)
 
   cellAsVariant(row, col);
 
-  if (result.vt & VT_BSTR) {
-    const int blen = SysStringLen(result.bstrVal)+1;
-    cellvalue = mlnew char[blen];
-    const int res = WideCharToMultiByte(CP_ACP, 0, result.bstrVal, -1, cellvalue, blen, NULL, NULL);
-    VariantClear(&result);
-    if (!res)
-      raiseError("invalid cell value");
-  }
+  int prevvt = result.vt;
+  if (   (VariantChangeType(&result, &result, 0, VT_BSTR) != S_OK)
+      || (result.vt != VT_BSTR))
+    raiseError("cannot convert the cell %s%i content into a string", column2Chars(col), row+1);
 
-  else if (result.vt & VT_R8) {
-    cellvalue = mlnew char[32];
-    sprintf(cellvalue, "%8.6f", result.dblVal);
-  }
-
-  else
-    raiseError("invalid cell value");
+  const int blen = SysStringLen(result.bstrVal)+1;
+  cellvalue = mlnew char[blen];
+  const int res = WideCharToMultiByte(CP_ACP, 0, result.bstrVal, -1, cellvalue, blen, NULL, NULL);
+  VariantClear(&result);
+  if (!res)
+    raiseError("invalid value in cell %s%i", column2Chars(col), row+1);
 
   return cellvalue;    
 }
@@ -276,19 +290,21 @@ char *TExcelReader::cellAsText(const int &row, const int &col)
 int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be continuous, 1 can be continuous, 2 can even be coded discrete
 { cellAsVariant(row, col);
 
-  if (result.vt & VT_BSTR) {
-    char buf[32];
-    const int res = WideCharToMultiByte(CP_ACP, 0, result.bstrVal, -1, buf, 32, NULL, NULL);
-    VariantClear(&result);
-    if (!res)
-      return false;
-
-    float f;
-    int ssr = sscanf(buf, "%f", &f);
-    return (ssr && (ssr!=EOF));
+  if (result.vt == VT_R8) {
+    float t = float(result.dblVal);
+    if (floor(t) != t)
+      return 1;
   }
 
-  return (result.vt & VT_R8) ? 1 : 0;
+  cellAsText(row, col);
+
+  if (   !*cellvalue
+      || !cellvalue[1] && (*cellvalue>='0') && (*cellvalue<='9'))
+    return 2;
+
+  float f;
+  int ssr = sscanf(cellvalue, "%f", &f);
+  return (ssr && (ssr!=EOF)) ? 1 : 0;
 }
 
 
@@ -325,7 +341,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       else
         raiseError("unrecognized flags in attribute name '%s'", cptr);
 
-      *cptr += 2;
+      cptr += 2;
     }
 
     else if (*cptr && cptr[1] && (cptr[2]=='#')) {
@@ -349,7 +365,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       else
         raiseError("unrecognized flags in attribute name '%s'", cptr);
 
-      *cptr += 2; // we have already increased cptr once
+      cptr += 2; // we have already increased cptr once
     }
 
     switch (special) {
@@ -368,6 +384,7 @@ PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars
       case 'c':
         classDescription.name = cptr;
         classDescription.varType = type;
+        attributeDescription = &classDescription;
         specials.push_back(-1);
         break;
     };
@@ -431,20 +448,28 @@ void TExcelReader::readValue(const int &row, const int &col, PVariable var, TVal
 
   cellAsVariant(row, col);
 
+  if ((result.vt == VT_R8) && (var->varType == TValue::FLOATVAR))
+    value = TValue(float(result.dblVal));
+
+  else {
+    int prevvt = result.vt;
+    if (   (VariantChangeType(&result, &result, 0, VT_BSTR) != S_OK)
+        || (result.vt != VT_BSTR))
+      raiseError("cannot convert content of cell %s%i", column2Chars(col), row+1);
+  }
+
+
   if ((result.vt & VT_BSTR) != 0) {
     const int blen = SysStringLen(result.bstrVal)+1;
     cellvalue = mlnew char[blen];
     const int res = WideCharToMultiByte(CP_ACP, 0, result.bstrVal, -1, cellvalue, blen, NULL, NULL);
     VariantClear(&result);
     if (!res)
-      raiseError("invalid cell value");
+      raiseError("invalid value in cell %s%i", column2Chars(col), row+1);
 
     var->str2val_add(cellvalue, value);
   }
 
-  else if ((result.vt & VT_R8) != 0) 
-    if (var->varType == TValue::FLOATVAR)
-      value = TValue(float(result.dblVal));
     else {
       cellvalue = mlnew char[32];
       sprintf(cellvalue, "%8.6f", result.dblVal);

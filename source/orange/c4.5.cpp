@@ -29,7 +29,7 @@
 
 #include "c4.5.ppp"
 
-#include "c45/defns.i"
+#include "../external/c45/defns.i"
 
 #ifdef _MSC_VER
 
