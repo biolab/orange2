@@ -758,22 +758,36 @@ def computeCalibrationCurve(res, classIndex=-1):
     results = []
     P, N = tots[1], tots[0]
 
+    bins = 10 ## divide interval between 0.0 and 1.0 into N bins
+
     for plist in problists:
-        allP = 0.0
-        allN = 0.0
-        curve = [(0.0, 0.0)]
         yesClassRugPoints = [] 
         noClassRugPoints = []
+
+        yesBinsVals = [0] * bins
+        noBinsVals = [0] * bins
         for (f, (thisNeg, thisPos)) in plist:
-            allP += thisPos
-            allN += thisNeg
-            yesClassRugPoints.append( (f, 1.0) ) #thisPos
-            noClassRugPoints.append( (f, 1.0) ) #thisNeg
-            curve.append( (f, (allP+allN)/(P + N)) )
+            yesClassRugPoints.append( (f, thisPos) ) #1.0
+            noClassRugPoints.append( (f, thisNeg) ) #1.0
+
+            index = int(f * bins )
+            index = min(index, bins - 1) ## just in case for value 1.0
+            yesBinsVals[index] += thisPos
+            noBinsVals[index] += thisNeg
+
+        curve = []
+        for cn in range(bins):
+            f = float(cn * 1.0 / bins) + (1.0 / 2.0 / bins)
+            yesVal = yesBinsVals[cn]
+            noVal = noBinsVals[cn]
+            allVal = yesVal + noVal
+            if allVal == 0.0: continue
+            y = float(yesVal)/float(allVal)
+            curve.append( (f,  y) )
 
         ## smooth the curve
         maxnPoints = 100
-        loessCurve = statc.loess(curve, -3, 0.7)
+        loessCurve = statc.loess(curve, -3, 0.6)
         clen = len(loessCurve)
         if clen > maxnPoints:
             df = clen / maxnPoints
