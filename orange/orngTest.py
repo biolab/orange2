@@ -230,9 +230,9 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
     if not examples:
         raise SystemError, "no examples"
     
-    for pp in pps:
-        if pp[0]!="L":
-            raise SystemError, "cannot preprocess testing examples"
+##    for pp in pps:
+##        if pp[0]!="L":
+##            raise SystemError, "cannot preprocess testing examples"
 
     nIterations = max(indices)+1
     if examples.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -259,13 +259,28 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
             learnset = examples.selectref(indices, fold, negate=1)
             if not len(learnset):
                 continue
+            testset = examples.selectref(indices, fold, negate=0)
+            if not len(testset):
+                continue
             
             for pp in pps:
-                learnset = pp[1](learnset)
+                if pp[0]=="B":
+                    learnset = pp[1](learnset)
+                    testset = pp[1](testset)
+
+            for pp in pps:
+                if pp[0]=="L":
+                    learnset = pp[1](learnset)
+                elif pp[0]=="T":
+                    testset = pp[1](testset)
+                elif pp[0]=="LT":
+                    (learnset, testset) = pp[1](learnset, testset)
 
             if not learnset:
-                raise SystemError, "no examples after preprocessing"
+                raise SystemError, "no learn examples after preprocessing"
 
+            if not testset:
+                raise SystemError, "no test examples after preprocessing"
 
             classifiers = [None]*nLrn
             for i in range(nLrn):
@@ -275,12 +290,14 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
                 testResults.classifiers.append(classifiers)
 
             # testing
+            tcn = 0
             for i in range(len(examples)):
                 if (indices[i]==fold):
-                    ex = examples[i]
+                    ex = testset[tcn]
+                    tcn += 1
                     for cl in range(nLrn):
                         if not cache or not testResults.loaded[cl]:
-                            cr = classifiers[cl](examples[i], orange.GetBoth)
+                            cr = classifiers[cl](ex, orange.GetBoth)
                             testResults.results[i].setResult(cl, cr[0], cr[1])
         if cache:
             testResults.saveToFiles(learners, fnstr)
@@ -297,14 +314,16 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
     
     for pp in pps:
         if pp[0]=="B":
-            learnset = pp[0](learnset)
-            testset = pp[0](testset)
+            learnset = pp[1](learnset)
+            testset = pp[1](testset)
 
     for pp in pps:
         if pp[0]=="L":
-            learnset = pp[0](learnset)
+            learnset = pp[1](learnset)
         elif pp[0]=="T":
-            testset = pp[0](testset)
+            testset = pp[1](testset)
+        elif pp[0]=="LT":
+            learnset, testset = pp[1](learnset, testset)
             
     return testOnData([learner(learnset, learnweight) for learner in learners],
                             (testset, testweight), testResults, iterationNumber)
@@ -316,7 +335,7 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
     hasLorT = 0    
     for pp in pps:
         if pp[0]=="B":
-            learnset = pp[0](learnset)
+            learnset = pp[1](learnset)
         else:
             hasLorT = 1
 
@@ -324,9 +343,11 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
         testset = orange.ExampleTable(learnset)
         for pp in pps:
             if pp[0]=="L":
-                learnset = pp[0](learnset)
+                learnset = pp[1](learnset)
             elif pp[0]=="T":
-                testset = pp[0](testset)
+                testset = pp[1](testset)
+            elif pp[0]=="LT":
+                learnset, testset = pp[1](learnset, testset)
     else:
         testset = learnset    
 
