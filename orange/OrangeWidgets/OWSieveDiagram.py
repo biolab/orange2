@@ -266,7 +266,7 @@ class OWSieveDiagram(OWWidget):
 
     ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
-    def updateData(self):
+    def updateData(self, *args):
         if self.data == None : return
 
         self.showLines = self.showLinesCB.isOn()
