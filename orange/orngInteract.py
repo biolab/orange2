@@ -169,6 +169,7 @@ class InteractionMatrix:
                         self.plut[(j,i)] = pv
                 if interactions_too:
                     c = orngContingency.get3Int(t,t.domain.attributes[j],t.domain.attributes[i],t.domain.classVar)
+                    self.way3[(j,i,-1)] = c
                     igv = c.InteractionInformation()
                     line.append(igv)
                     self.list.append((igv,(igv,j,i)))
@@ -481,13 +482,13 @@ class InteractionMatrix:
                     ej = self.ents[(j,)]
                     if TAN:
                         # I(A;B|C)
-                        v = self.way3[(i,j,-1)].InteractionInformation()
-                        v += self.way2[(i,j)].InteractionInformation()
+                        v = self.way3[(j,i,-1)].InteractionInformation()
+                        v += self.way2[(j,i)].InteractionInformation()
                     else:
                         if jaccard:
-                            v = self.way2[(i,j)].JaccardInteraction() # I(A;B) chow-liu, mutual information
+                            v = self.way2[(j,i)].JaccardInteraction() # I(A;B) chow-liu, mutual information
                         else:
-                            v = self.way2[(i,j)].InteractionInformation() # I(A;B) chow-liu, mutual information
+                            v = self.way2[(j,i)].InteractionInformation() # I(A;B) chow-liu, mutual information
                     if ei > ej:
                         lmm.append((abs(v),v,ej,(j,i)))
                     else:

@@ -125,7 +125,7 @@ class BasicSVMLearner(orange.Learner):
       puredata = orange.Filter_hasClassValue(data)
       translate = orng2Array.DomainTranslation(self.translation_mode)
       translate.analyse(puredata)
-      translate.prepareSVM(self.for_nomogram)
+      translate.prepareSVM(not self.for_nomogram)
       mdata = translate.transform(puredata)
 
       if len(self.classweights)==0:
