@@ -242,7 +242,6 @@ class OWBaseWidget(QDialog):
             
         for signalName in self.linksIn.keys():
             if signalName == signal:
-                print self.linksIn[signalName]
                 widget = self.linksIn[signalName][0][1]
                 del self.linksIn[signalName]
                 return widget

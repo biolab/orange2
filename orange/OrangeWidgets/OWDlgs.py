@@ -83,6 +83,9 @@ class OWChooseImageSizeDlg(OWBaseWidget):
             metrics = QPaintDeviceMetrics(printer)
             height = metrics.height() - 2*printer.margins().height()
             width = metrics.width() - 2*printer.margins().width()
+            if height == 0:
+                print "Error. Height is zero. Preventing division by zero."
+                return
             pageKvoc = width / float(height)
             sizeKvoc = size.width() / float(size.height())
             if pageKvoc < sizeKvoc:     rect = QRect(printer.margins().width(),printer.margins().height(), width, height*pageKvoc/sizeKvoc)

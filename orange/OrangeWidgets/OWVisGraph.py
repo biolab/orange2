@@ -75,26 +75,23 @@ class SelectionCurve(QwtPlotCurve):
             self.pointArray = QPointArray(self.dataSize() + 1)
             for i in range(self.dataSize()):
                 self.pointArray.setPoint(i, xMap.transform(self.x(i)), yMap.transform(self.y(i)))
-            self.pointArray.setPoint(self.dataSize(), self.pointArray[0])
+            self.pointArray.setPoint(self.dataSize(), xMap.transform(self.x(0)), yMap.transform(self.y(0)))
             self.pointArrayValid = 1
 
-        return QRegion(self.pointArray).contains(xMap.transform(x), yMap.transform(y));
+        return QRegion(self.pointArray).contains(QPoint(xMap.transform(x), yMap.transform(y)))
 
     # test if the line going from before last and last point intersect any lines before
     # if yes, then add the intersection point and remove the outer points
     def closed(self):
-        if self.dataSize() < 4: return 0
-        """
-        x1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(self.dataSize()-2))
-        x2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(self.dataSize()-1))
-        y1 = self.parentPlot().transform(QwtPlot.yLeft, self.y(self.dataSize()-2))
-        y2 = self.parentPlot().transform(QwtPlot.yLeft, self.y(self.dataSize()-1))
-        """
-        x1 = self.x(self.dataSize()-2)
-        x2 = self.x(self.dataSize()-1)
-        y1 = self.y(self.dataSize()-2)
-        y2 = self.y(self.dataSize()-1)
-        for i in range(self.dataSize()-4, -1, -1):
+        if self.dataSize() < 5: return 0
+        #print "all points"
+        #for i in range(self.dataSize()):
+        #    print "(%.2f,%.2f)" % (self.x(i), self.y(i))
+        x1 = self.x(self.dataSize()-3)
+        x2 = self.x(self.dataSize()-2)
+        y1 = self.y(self.dataSize()-3)
+        y2 = self.y(self.dataSize()-2)
+        for i in range(self.dataSize()-5, -1, -1):
             """
             X1 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i))
             X2 = self.parentPlot().transform(QwtPlot.xBottom, self.x(i+1))
@@ -105,12 +102,12 @@ class SelectionCurve(QwtPlotCurve):
             X2 = self.x(i+1)
             Y1 = self.y(i)
             Y2 = self.y(i+1)
-            print x1, x2, y1, y2, X1, X2, Y1, Y2
+            #print "(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f),(%.2f,%.2f)" % (x1, y1, x2, y2, X1, Y1, X2, Y2)
             (intersect, xi, yi) = self.lineIntersection(x1, y1, x2, y2, X1, Y1, X2, Y2)
             if intersect:
-                print "intersected"
                 xData = [xi]; yData = [yi]
-                for j in range(i, self.dataSize()): xData.append(self.x(j)); yData.append(self.y(j))
+                for j in range(i+1, self.dataSize()-2): xData.append(self.x(j)); yData.append(self.y(j))
+                xData.append(xi); yData.append(yi)
                 self.setData(xData, yData)
                 return 1
         return 0
@@ -132,16 +129,16 @@ class SelectionCurve(QwtPlotCurve):
         xi=((b1*c2 - b2*c1)*det_inv)
         yi=((m2*c1 - m1*c2)*det_inv)
 
-        if xi > min(x1, x2) and xi < max(x1,x2) and xi > min(X1, X2) and xi < max(X1, Y2) and yi > min(y1,y2) and yi < max(y1, y2) and yi > min(Y1, Y2) and yi < max(Y1, Y2):
+        if xi >= min(x1, x2) and xi <= max(x1,x2) and xi >= min(X1, X2) and xi <= max(X1, X2) and yi >= min(y1,y2) and yi <= max(y1, y2) and yi >= min(Y1, Y2) and yi <= max(Y1, Y2):
             return (1, xi, yi)
         else:
-            return (0, x1, y1)
+            return (0, xi, yi)
 
 
 
 ZOOMING = 1
-SELECT_POLYGON = 2
-SELECT_RECTANGLE = 3
+SELECT_RECTANGLE = 2
+SELECT_POLYGON = 3
 
 class OWVisGraph(OWGraph):
     def __init__(self, parent = None, name = None):
@@ -171,10 +168,11 @@ class OWVisGraph(OWGraph):
         self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
+        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
 
-        self.state = SELECT_POLYGON
+        self.state = ZOOMING
         self.tempSelectionCurve = None
-        self.selectionCurveList = []
+        self.selectionCurveKeyList = []
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -191,6 +189,31 @@ class OWVisGraph(OWGraph):
         self.zoomStack = []
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
+
+    def activateZooming(self):
+        self.state = ZOOMING
+
+    def activateRectangleSelection(self):
+        self.state = SELECT_RECTANGLE
+
+    def activatePolygonSelection(self):
+        self.state = SELECT_POLYGON
+
+    def removeLastSelection(self):
+        if self.selectionCurveKeyList != []:
+            lastCurve = self.selectionCurveKeyList[len(self.selectionCurveKeyList)-1]
+            self.removeCurve(lastCurve)
+            self.selectionCurveKeyList.remove(lastCurve)
+        self.replot()
+        
+
+    def removeAllSelections(self):
+        while self.selectionCurveKeyList != []:
+            curve = self.selectionCurveKeyList[0]
+            self.removeCurve(curve)
+            self.selectionCurveKeyList.remove(curve)
+        self.replot()
+
 
     #####################################################################
     #####################################################################
@@ -374,6 +397,14 @@ class OWVisGraph(OWGraph):
             self.scaledData[index] = scaled
             self.attrValues[attr] = values
 
+    # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example
+    def getValidList(self, indices):
+        validData = [1] * len(self.rawdata)
+        for i in range(len(self.rawdata)):
+            for j in range(len(indices)):
+                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+        return validData
+
 
     # ####################################################################    
     # return a list of sorted values for attribute at index index
@@ -514,6 +545,13 @@ class OWVisGraph(OWGraph):
                 pass
         return text
 
+    def removeDrawingCurves(self):
+        for key in self.curveKeys():
+            curve = self.curve(key)
+            if not isinstance(curve, SelectionCurve):
+                self.removeCurve(key)
+
+
     # ###############################################
     # HANDLING MOUSE EVENTS
     # ###############################################
@@ -534,7 +572,8 @@ class OWVisGraph(OWGraph):
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
             self.xpos = e.x(); self.ypos = e.y()
             self.tempSelectionCurve = SelectionCurve(self)
-            self.index = self.insertCurve(self.tempSelectionCurve)
+            key = self.insertCurve(self.tempSelectionCurve)
+            self.selectionCurveKeyList.append(key)
 
         # ####
         # SELECT POLYGON
@@ -543,17 +582,47 @@ class OWVisGraph(OWGraph):
             y = self.invTransform(QwtPlot.yLeft, e.y())
             if self.tempSelectionCurve == None:
                 self.tempSelectionCurve = SelectionCurve(self)
-                self.insertCurve(self.tempSelectionCurve)
+                key = self.insertCurve(self.tempSelectionCurve)
+                self.selectionCurveKeyList.append(key)
                 self.tempSelectionCurve.addPoint(x, y)
             self.tempSelectionCurve.addPoint(x,y)
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
-                self.selectionCurveList.append(self.tempSelectionCurve)
                 self.tempSelectionCurve = None
+                self.replot()
                 
 
         # fake a mouse move to show the cursor position
         self.onMouseMoved(e)
         self.event(e)
+
+    # only needed to show the message in statusbar
+    def onMouseMoved(self, e):
+        x = e.x(); y = e.y()
+
+        xTransf = self.invTransform(QwtPlot.xBottom, x)
+        yTransf = self.invTransform(QwtPlot.yLeft, y)
+        if self.statusBar != None:
+            text = self.tips.maybeTip(xTransf, yTransf)
+            self.statusBar.message(text)
+
+        if self.state == SELECT_RECTANGLE and self.tempSelectionCurve != None:
+            xposTransf = self.invTransform(QwtPlot.xBottom, self.xpos)
+            yposTransf = self.invTransform(QwtPlot.yLeft, self.ypos)
+            xTransf = self.invTransform(QwtPlot.xBottom, e.x())
+            yTransf = self.invTransform(QwtPlot.yLeft, e.y())
+            xData = [xposTransf, xposTransf, xTransf, xTransf, xposTransf]
+            yData = [yposTransf, yTransf, yTransf, yposTransf, yposTransf]
+            self.tempSelectionCurve.setData(xData, yData)
+            self.replot()
+
+        elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
+            x = self.invTransform(QwtPlot.xBottom, e.x())
+            y = self.invTransform(QwtPlot.yLeft, e.y())
+            self.tempSelectionCurve.replaceLastPoint(x,y)
+            self.replot()            
+            
+        self.event(e)
+
 
     def onMouseReleased(self, e):
         self.mouseCurrentlyPressed = 0
@@ -590,37 +659,27 @@ class OWVisGraph(OWGraph):
         # SELECT RECTANGLE
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
             if self.tempSelectionCurve:
-                self.selectionCurveList.append(self.tempSelectionCurve)
                 self.tempSelectionCurve = None
-
        
         self.replot()
         self.event(e)
 
+    # does a point (x,y) lie inside one of the selection rectangles (polygons)
+    def isPointSelected(self, x,y):
+        for curveKey in self.selectionCurveKeyList:
+            curve = self.curve(curveKey)
+            if curve.isInside(x,y): return 1
+        return 0
 
-    # only needed to show the message in statusbar
-    def onMouseMoved(self, e):
-        x = e.x(); y = e.y()
 
-        xTransf = self.invTransform(QwtPlot.xBottom, x)
-        yTransf = self.invTransform(QwtPlot.yLeft, y)
-        if self.statusBar != None:
-            text = self.tips.maybeTip(xTransf, yTransf)
-            self.statusBar.message(text)
-
-        if self.state == SELECT_RECTANGLE and self.tempSelectionCurve != None:
-            xposTransf = self.invTransform(QwtPlot.xBottom, self.xpos)
-            yposTransf = self.invTransform(QwtPlot.yLeft, self.ypos)
-            xTransf = self.invTransform(QwtPlot.xBottom, e.x())
-            yTransf = self.invTransform(QwtPlot.yLeft, e.y())
-            xData = [xposTransf, xposTransf, xTransf, xTransf, xposTransf]
-            yData = [yposTransf, yTransf, yTransf, yposTransf, yposTransf]
-            self.tempSelectionCurve.setData(xData, yData)
-
-        elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
-            x = self.invTransform(QwtPlot.xBottom, e.x())
-            y = self.invTransform(QwtPlot.yLeft, e.y())
-            self.tempSelectionCurve.replaceLastPoint(x,y)
-
-        self.replot()            
-        self.event(e)
+#test widget appearance
+if __name__=="__main__":
+    a=QApplication(sys.argv)
+    ow = OWVisGraph()
+    sc = SelectionCurve(ow)
+    (intersect, xi, yi) = sc.lineIntersection(-10, -10, 10, 10, -10, 10, 10, -10)
+    print intersect, xi, yi
+    #a.setMainWidget(ow)
+    #ow.show()
+    #a.exec_loop()
+        
