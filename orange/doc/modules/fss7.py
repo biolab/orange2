@@ -9,6 +9,7 @@
 #              validation (how many and which attributes were used?).
 # Category:    preprocessing
 # Uses:        crx.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngDisc, orngTest, orngStat, orngFSS
 

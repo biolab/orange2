@@ -3,6 +3,7 @@
 # Description: Ranking of attributes with two different measures (Relief and gain ratio)
 # Category:    preprocessing
 # Uses:        voting.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngFSS
 data = orange.ExampleTable("voting")

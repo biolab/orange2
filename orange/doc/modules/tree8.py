@@ -1,3 +1,11 @@
+# Description: Builds a classification tree, and prunes it using minimal error
+               prunning with different values of parameter m. Prints
+               out m and the size of the tree.
+#              a tree in text and dot format
+# Category:    modelling
+# Uses:        iris
+# Referenced:  orngTree.htm
+
 import orange, orngTree
 data = orange.ExampleTable("../datasets/adult_sample.tab")
 

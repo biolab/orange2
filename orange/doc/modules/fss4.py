@@ -6,6 +6,7 @@
 #              attributes was used the most.
 # Category:    preprocessing
 # Uses:        voting.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngFSS, orngTest, orngStat
 data = orange.ExampleTable("voting")

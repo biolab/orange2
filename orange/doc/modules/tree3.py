@@ -3,6 +3,7 @@
 # Description: Grow classification tree with a self-defined stopping criteria
 # Category:    modelling
 # Uses:        iris.tab
+# Referenced:   orngTree.htm
 
 import orange, orngTree
 from random import randint, seed

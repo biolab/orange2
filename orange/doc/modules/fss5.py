@@ -5,6 +5,7 @@
 #              Makes use of filterRelieff from orngFSS
 # Category:    preprocessing
 # Uses:        voting.tab
+# Referenced:  orngFSS.htm
 
 # todo: change orngEval such that it stores 
 import orange, orngFSS

@@ -1,5 +1,4 @@
 # Author:      B Zupan
-# Version:     1.0
 # Description: Read data, show mean for continuous attributes and contingency matrix for nominal attributes
 # Category:    description
 # Uses:        adult_sample.tab

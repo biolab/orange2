@@ -1,10 +1,9 @@
-# Author:      B Zupan
-# Version:     1.0
 # Description: Takes three different domains, builds a classification
 #              tree for each single attribute in the domain, and reports
 #              on the size of the tree (quite useless)
 # Category:    modelling
 # Uses:        promoters,voting,adult_sample
+# Referenced:  orngTree.htm
 
 import orange, orngTree
 

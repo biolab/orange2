@@ -3,6 +3,7 @@
 # Description: Compares naive Bayes with and withouth feature subset selection
 # Category:    preprocessing
 # Uses:        voting.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngFSS
 data = orange.ExampleTable("voting")

@@ -3,6 +3,7 @@
 # Description: Prepruning of classification tree using a worstAcceptable attribute in orngTree module
 # Category:    modelling
 # Uses:        iris.tab
+# Referenced:   orngTree.htm
 
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")

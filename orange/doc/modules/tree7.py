@@ -3,6 +3,7 @@
 # Description: Printing out a prunned tree with continuous class values
 # Category:    evaluation
 # Uses:        housing.tab
+# Referenced:   orngTree.htm
 
 import orange, orngTree
 

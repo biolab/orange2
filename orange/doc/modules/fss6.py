@@ -3,6 +3,7 @@
 # Description: Same as fss5.py but uses FilterRelieff class from orngFSS
 # Category:    preprocessing
 # Uses:        adult_saple.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngFSS
 data = orange.ExampleTable("../datasets/adult_sample")

@@ -3,6 +3,7 @@
 # Description: Ranking and selection of best N attributes
 # Category:    preprocessing
 # Uses:        voting.tab
+# Referenced:  orngFSS.htm
 
 import orange, orngFSS
 data = orange.ExampleTable("voting")

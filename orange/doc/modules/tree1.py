@@ -4,6 +4,7 @@
 #              a tree in text and dot format
 # Category:    modelling
 # Uses:        iris
+# Referenced:  orngTree.htm
 
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")

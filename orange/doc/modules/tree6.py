@@ -3,6 +3,7 @@
 # Description: Shows the use of some attributes in printing-out the classification trees with orngTree module
 # Category:    modelling
 # Uses:        iris.tab
+# Referenced:   orngTree.htm
 
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")

@@ -3,6 +3,7 @@
 # Description: Pre-prunning of classification tree using orngTree module
 # Category:    modelling
 # Uses:        iris.tab
+# Referenced:   orngTree.htm
 
 import orange, orngTree
 data = orange.ExampleTable("iris.tab")
