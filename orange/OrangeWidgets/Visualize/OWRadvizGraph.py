@@ -157,7 +157,7 @@ class OWRadvizGraph(OWVisGraph):
             if self.hideRadius > 0:
                 xdata = self.createXAnchors(100)*(self.hideRadius / 10)
                 ydata = self.createYAnchors(100)*(self.hideRadius / 10)
-                self.addCurve("hidecircle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
+                self.addCurve("hidecircle", QColor(200,200,200), QColor(200,200,200), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
                 
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
@@ -192,11 +192,9 @@ class OWRadvizGraph(OWVisGraph):
 
         dataSize = len(self.rawdata)
         selectedData = Numeric.take(self.scaledData, indices)
-        sum_i = self._getSum_i(selectedData)
+        sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
         XAnchors = [a[0] for a in self.anchorData]
         YAnchors = [a[1] for a in self.anchorData]
-        print XAnchors
-        print self.scaleFactor
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
         validData = self.getValidList(indices)
@@ -560,7 +558,9 @@ class OWRadvizGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
+    """
     def createCombinations(self, currCombination, count, attrList, combinations):
+        
         if count > attrList: return combinations
 
         if count == 0 and len(currCombination) > 2:
@@ -568,12 +568,37 @@ class OWRadvizGraph(OWVisGraph):
             return combinations
 
         if len(attrList) == 0: return combinations
-        temp = list(currCombination) + [attrList[0][1]]
+        temp = list(currCombination) + [attrList[0]]
         temp[0] += attrList[0][0]
         combinations = self.createCombinations(temp, count-1, attrList[1:], combinations)
 
         combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
         return combinations
+    """
+
+    def createCombinations(self, attrList, count):
+        if count > len(attrList): return []
+        answer = []
+        indices = range(count)
+        indices[-1] = indices[-1] - 1
+        while 1:
+            limit = len(attrList) - 1
+            i = count - 1
+            while i >= 0 and indices[i] == limit:
+                i = i - 1
+                limit = limit - 1
+            if i < 0: break
+
+            val = indices[i]
+            for i in xrange( i, count ):
+                val = val + 1
+
+                indices[i] = val
+            temp = []
+            for i in indices:
+                temp.append( attrList[i] )
+            answer.append( temp )
+        return answer
 
     # ############################################################## 
     # create x-y projection of attributes in attrList
@@ -645,8 +670,13 @@ class OWRadvizGraph(OWVisGraph):
 
     # ##############################################################
     # function to compute the sum of all values for each element in the data. used to normalize.
-    def _getSum_i(self, data):
-        sum_i = Numeric.add.reduce(data)
+    def _getSum_i(self, data, useCurrentAnchors = 0):
+        if useCurrentAnchors:
+            r = [a[0]**2+a[1]**2 for a in self.anchorData]
+            r = Numeric.sqrt(r)
+            sum_i = Numeric.add.reduce(Numeric.transpose(Numeric.transpose(data)*r))
+        else:
+            sum_i = Numeric.add.reduce(data)
         if len(Numeric.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
             sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
         return sum_i        
@@ -659,7 +689,7 @@ class OWRadvizGraph(OWVisGraph):
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
-        attributes = [(val, self.attributeNameIndex[name]) for (val, name) in attributes]
+        attributes = [self.attributeNameIndex[name] for name in attributes]
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
 
         # variables and domain for the table
@@ -682,14 +712,13 @@ class OWRadvizGraph(OWVisGraph):
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
-                combinations = self.createCombinations([0.0], u, attributes[:z], [])
-                combinations.sort(); combinations.reverse()
+                combinations = self.createCombinations(attributes[:z], u)
 
                 XAnchors = anchorList[u+1-minLength][0]
                 YAnchors = anchorList[u+1-minLength][1]
                 
                 for attrList in combinations:
-                    attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
+                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
                     permIndices = permutationIndices[len(attrs)]
                     
                     validData = self.getValidList(attrs)
@@ -697,13 +726,6 @@ class OWRadvizGraph(OWVisGraph):
                     selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
                     sum_i = self._getSum_i(selectedData)
 
-                    # count total number of valid examples
-                    if len(selectedData[0]) < self.kNNOptimization.minExamples:
-                        print "Not enough examples (%s) in example table. Ignoring permutation." % (str(sum(validData)))
-                        self.triedPossibilities += len(permIndices.keys())
-                        self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                        continue
-                    
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            
@@ -742,13 +764,13 @@ class OWRadvizGraph(OWVisGraph):
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.radvizWidget.progressBarFinished()
 
-    def optimizeGivenProjection(self, projection, accuracy, attributes, addResultFunct):
+    def optimizeGivenProjection(self, projection, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
         dataSize = len(self.rawdata)
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
-        attributes = [(val, self.attributeNameIndex[name]) for (val, name) in attributes]
+        attributes = [self.attributeNameIndex[name] for name in attributes]
         lenOfAttributes = len(attributes)
         projection = [self.attributeNameIndex[name] for name in projection]
 
@@ -760,15 +782,18 @@ class OWRadvizGraph(OWVisGraph):
         optimizedProjection = 1
         while optimizedProjection:
             optimizedProjection = 0
+            significantImprovement = 0
             
             # in the first step try to find a better projection by substituting an existent attribute with a new one
             # in the second step try to find a better projection by adding a new attribute to the circle
             for iteration in range(2):
+                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
                 if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
                 strTotalAtts = createStringFromNumber(lenOfAttributes)
                 listOfCanditates = []
-                for (attrIndex, (val, attr)) in enumerate(attributes):
+                for (attrIndex, attr) in enumerate(attributes):
                     if attr in projection: continue
+                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
 
                     projections = [copy(projection) for i in range(len(projection))]
                     if iteration == 0:  # replace one attribute in each projection with attribute attr
@@ -807,6 +832,7 @@ class OWRadvizGraph(OWVisGraph):
                         self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                         optimizedProjection = 1
                         listOfCanditates.append((acc, attrList))
+                        if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
                     else:
                         self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
                         if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
@@ -825,7 +851,7 @@ class OWRadvizGraph(OWVisGraph):
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
-        attributes = [(val, self.attributeNameIndex[name]) for (val, name) in attributes]
+        attributes = [self.attributeNameIndex[name] for name in attributes]
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
 
         # variables and domain for the table
@@ -854,7 +880,7 @@ class OWRadvizGraph(OWVisGraph):
                 YAnchors = anchorList[u+1-minLength][1]
                 
                 for attrList in combinations:
-                    attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
+                    attrs = attrList[1:] + [attributes[z]] # remove the value of this attribute subset
                     permIndices = permutationIndices[len(attrs)]
                     
                     validData = self.getValidList(attrs)
@@ -862,13 +888,6 @@ class OWRadvizGraph(OWVisGraph):
                     selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
                     sum_i = self._getSum_i(selectedData)
 
-                    # count total number of valid examples
-                    if len(selectedData[0]) < self.clusterOptimization.minExamples:
-                        print "Not enough examples (%s) in example table. Ignoring permutation." % (str(sum(validData)))
-                        self.triedPossibilities += len(permIndices.keys())
-                        self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                        continue
-                    
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            

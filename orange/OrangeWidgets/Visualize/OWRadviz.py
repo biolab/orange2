@@ -15,7 +15,26 @@ from OWRadvizGraph import *
 from OWkNNOptimization import *
 from OWClusterOptimization import *
 import time
-import OWToolbars, OWGUI, orngTest, orangeom
+import OWToolbars, OWGUI, orngTest, orangeom, DESolver
+
+class RadvizSolver(DESolver.DESolver):
+    def __init__(self, radvizWidget, dim, pop):
+        DESolver.DESolver.__init__(self, dim, pop) # superclass
+        self.count = 0
+        self.radviz = radvizWidget
+        self.testGenerations = 20
+        self.classes = [int(x.getclass()) for x in self.radviz.data]
+
+        ai = self.radviz.graph.attributeNameIndex
+        self.attrIndices = [ai[attr] for attr in self.radviz.getShownAttributeList()]
+        self.data = Numeric.transpose(self.radviz.graph.scaledData).tolist()
+
+    def EnergyFunction(self, trial, bAtSolution):
+        anchorData = [(trial[2*i], trial[2*i+1], self.radviz.data.domain.attributes[i].name) for i in self.attrIndices]
+        for (x,y,a) in anchorData:
+            if x**2 + y**2 > 1: return 999999999999, 0
+        E = orangeom.computeEnergy(self.data, self.classes, anchorData, self.attrIndices, self.radviz.attractG, -self.radviz.repelG)
+        return E, 0
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -78,6 +97,10 @@ class OWRadviz(OWWidget):
         self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
         self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
         self.classificationResults = None
+
+        # differential evolution
+        self.differentialEvolutionPopSize = 100
+        self.DERadvizSolver = None
 
         #load settings
         self.loadSettings()
@@ -169,24 +192,31 @@ class OWRadviz(OWWidget):
         self.manualPositioningButton.setToggleButton(1)
         self.lockCheckbox = OWGUI.checkBox(vbox, self, "lockToCircle", "Restrain anchors to circle", callback = self.setLockToCircle)
 
-        box = OWGUI.widgetBox(self.AnchorsTab, "Anchor Optimization")
-        inbox = box #QHBox(box)
-        self.freeAttributesButton = OWGUI.button(inbox, self, "Single Step", callback = self.singleStep)
-        self.freeAttributesButton = OWGUI.button(inbox, self, "Optimize", callback = self.optimize)
-        self.freeAttributesButton = OWGUI.button(inbox, self, "Animate", callback = self.animate)
-        self.freeAttributesButton = OWGUI.button(inbox, self, "Slow Animate", callback = self.slowAnimate)
+        box = OWGUI.widgetBox(self.AnchorsTab, "Gradient Optimization")
+        self.freeAttributesButton = OWGUI.button(box, self, "Single Step", callback = self.singleStep)
+        self.freeAttributesButton = OWGUI.button(box, self, "Optimize", callback = self.optimize)
+        self.freeAttributesButton = OWGUI.button(box, self, "Animate", callback = self.animate)
+        self.freeAttributesButton = OWGUI.button(box, self, "Slow Animate", callback = self.slowAnimate)
         #self.setAnchorsButton = OWGUI.button(box, self, "Cheat", callback = self.setAnchors)
 
-        OWGUI.qwtHSlider(box, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
-        OWGUI.qwtHSlider(box, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
+        box = OWGUI.widgetBox(self.AnchorsTab, "Differential Evolution")
+        self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)        
+        self.createPopulationButton = OWGUI.button(box, self, "Create population", callback = self.createPopulation)
+        self.evolvePopulationButton = OWGUI.button(box, self, "Evolve population", callback = self.evolvePopulation)
+    
+        box2 = OWGUI.widgetBox(self.AnchorsTab, "Forces")
+        OWGUI.qwtHSlider(box2, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
+        OWGUI.qwtHSlider(box2, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
 #        OWGUI.comboBoxWithCaption(box, self, "showOptimizationSteps", 'Show optimization', items = ["Yes", "Every 10", "No"])
 
         box = OWGUI.widgetBox(self.AnchorsTab, "Show Anchors")
         OWGUI.checkBox(box, self, 'showAnchors', 'Show anchors', callback = self.updateValues)
         OWGUI.qwtHSlider(box, self, "hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateValues)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attriubtes", callback = self.removeHidden)
-        
-        self.energyLabel = QLabel(self.AnchorsTab, "Energy: ")
+
+
+        box = OWGUI.widgetBox(self.AnchorsTab, 1)
+        self.energyLabel = QLabel(box, "Energy: ")
         
         # ####################################
         # K-NN OPTIMIZATION functionality
@@ -363,11 +393,17 @@ class OWRadviz(OWWidget):
 
     # ################################################################################################
     # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
-    def optimizeGivenProjectionClick(self):
+    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1, maxProjLen = -1):
+        if numOfBestAttrs == -1:
+            if self.data and len(self.data.domain.attributes) > 1000:
+                (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
+                if not ok: return
+                numOfBestAttrs = int(str(text))
+            else: numOfBestAttrs = 10000
         self.optimizationDlg.disableControls()
         acc = self.graph.getProjectionQuality(self.getShownAttributeList())[0]
         # try to find a better separation than the one that is currently shown
-        self.graph.optimizeGivenProjection(self.getShownAttributeList(), acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+        self.graph.optimizeGivenProjection(self.getShownAttributeList(), acc, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1, maxProjectionLen = maxProjLen)
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
 
@@ -382,10 +418,7 @@ class OWRadviz(OWWidget):
         self.send("Example Distribution", merged)
 
     def sendShownAttributes(self):
-        attributes = []
-        for i in range(self.shownAttribsLB.count()):
-            attributes.append(str(self.shownAttribsLB.text(i)))
-        self.send("Attribute Selection List", attributes)
+        self.send("Attribute Selection List", [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())])
 
 
     # ####################################
@@ -401,7 +434,7 @@ class OWRadviz(OWWidget):
     def ranch(self, label):
         import random
         r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
-        print r
+        #print r
         phi = 2*pi*random.random()
         return (r*math.cos(phi), r*math.sin(phi), label)
 
@@ -422,19 +455,19 @@ class OWRadviz(OWWidget):
         optimizer = self.lockToCircle and orangeom.optimizeAnchorsRadial or orangeom.optimizeAnchors
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
-
+    
         if not singleStep:
             minE = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
-
+        
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         noChange = 0
         while noChange < 5:
-            for i in range(iterations):
+        for i in range(iterations):
                 self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
-                self.energyLabel.setText("Energy: %.3f" % E)
-                self.energyLabel.repaint()
-                self.graph.updateData(attrList)
-                self.graph.repaint()
+            self.energyLabel.setText("Energy: %.3f" % E)
+            self.energyLabel.repaint()
+            self.graph.updateData(attrList)
+            self.graph.repaint()
             if singleStep:
                 noChange = 5
             else:
@@ -481,9 +514,27 @@ class OWRadviz(OWWidget):
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
         E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
-        print E
+        #print E
         self.energyLabel.setText("Energy: %.3f" % E)
         self.energyLabel.repaint()
+
+    def createPopulation(self):
+        l = len(self.data.domain.attributes)
+        self.DERadvizSolver = RadvizSolver(self, l * 2 , self.differentialEvolutionPopSize)
+        Min = [0.0] * 2* l
+        Max = [1.0] * 2* l
+
+        self.DERadvizSolver.Setup(Min, Max, 0, 0.95, 1)
+        
+        
+    def evolvePopulation(self):
+        if not self.DERadvizSolver:
+            QMessageBox.critical( None, "Differential evolution", 'To evolve a population you first have to create one by pressing "Create population" button', QMessageBox.Ok)
+
+        self.DERadvizSolver.Solve(5)
+        solution = self.DERadvizSolver.Solution()
+        self.graph.anchorData = [(solution[2*i], solution[2*i+1], self.data.domain.attributes[i].name) for i in range(len(self.data.domain.attributes))]
+        self.graph.updateData([attr.name for attr in self.data.domain.attributes], 0)
 
     # ####################################
     # show selected interesting projection
@@ -537,10 +588,7 @@ class OWRadviz(OWWidget):
     # LIST BOX FUNCTIONS
     # ####################
     def getShownAttributeList(self):
-        list = []
-        for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i)))
-        return list
+        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]        
     
     def setShownAttributes(self, attributes):
         self.shownAttribsLB.clear()
@@ -624,7 +672,7 @@ class OWRadviz(OWWidget):
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
-    def cdata(self, data, clearResults = 1):
+    def cdata(self, data, clearResults = 1, keepMinMaxVals = 0):
         if data:
             name = ""
             if hasattr(data, "name"): name = data.name
@@ -633,7 +681,7 @@ class OWRadviz(OWWidget):
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         exData = self.data
         self.data = data
-        self.graph.setData(self.data)
+        self.graph.setData(self.data, keepMinMaxVals)
         self.optimizationDlg.setData(data)  
         self.clusterDlg.setData(data, clearResults)
         self.graph.insideColors = None; self.graph.clusterClosure = None
@@ -671,7 +719,7 @@ class OWRadviz(OWWidget):
             if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
             else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
-        self.updateGraph()
+        self.updateGraph(1)
 
 
     def test_results(self, results):

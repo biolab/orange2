@@ -104,6 +104,8 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()
         self.optimizationDlg.attributeLabel.hide()
+        self.optimizationDlg.optimizeBestProjectionCheck.hide()
+        self.optimizationDlg.optimizeBestProjectionCombo.hide()
         self.graph.kNNOptimization = self.optimizationDlg
 
         # cluster dialog

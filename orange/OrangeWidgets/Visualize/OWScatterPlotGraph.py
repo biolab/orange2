@@ -464,7 +464,8 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # compute how good is a specific projection with given xAttr and yAttr
     # ##############################################################
-    def getProjectionQuality(self, xAttr, yAttr, className):
+    def getProjectionQuality(self, attrList):
+        [xAttr, yAttr] = attrList
         xArray = self.noJitteringScaledData[self.attributeNameIndex[xAttr]]
         yArray = self.noJitteringScaledData[self.attributeNameIndex[yAttr]]
 
@@ -582,7 +583,8 @@ class OWScatterPlotGraph(OWVisGraph):
 
         for i in range(len(attributeNameOrder)):
             for j in range(i):
-                attr1 = attributeNameOrder[j][1]; attr2 = attributeNameOrder[i][1]
+                attr1 = self.attributeNameIndex[attributeNameOrder[j]]
+                attr2 = self.attributeNameIndex[attributeNameOrder[i]]
                 testIndex += 1
                 if self.kNNOptimization.isOptimizationCanceled():
                     secs = time.time() - startTime
@@ -590,15 +592,13 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.scatterWidget.progressBarFinished()
                     return
                 
-                valid = self.validDataArray[self.attributeNameIndex[attr1]] + self.validDataArray[self.attributeNameIndex[attr2]] - 1
+                valid = self.validDataArray[attr1] + self.validDataArray[attr2] - 1
                 table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
                 table = table.select(list(valid))
                 
-                if len(table) < self.kNNOptimization.minExamples: print "Not enough examples (%d)" % (len(table)); continue
-                
                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
                 self.kNNOptimization.setStatusBarText("Evaluated %s/%s projections..." % (createStringFromNumber(testIndex), strCount))
-                addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
+                addResultFunct(accuracy, other_results, len(table), [self.rawdata.domain[attr1].name, self.rawdata.domain[attr2].name], testIndex)
                 
                 self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
                 del valid, table

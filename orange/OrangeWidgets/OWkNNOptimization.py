@@ -521,7 +521,6 @@ class kNNOptimization(OWBaseWidget):
                 if validProjectionFile:
                     for attr in projAttrs: attrs.remove(attr)
                     attrs = projAttrs + attrs
-            print attrs[:20]
         self.setStatusBarText("")
         return attrs
 
