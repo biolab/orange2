@@ -36,7 +36,7 @@ WRAPPER(DomainContingency)
 WRAPPER(ExampleGenerator)
 WRAPPER(Distribution)
 WRAPPER(MeasureAttribute)
-WRAPPER(ExamplePointerTable)
+WRAPPER(ExampleTable)
 
 
 class TMapIntValue : public TTransformValue {
@@ -187,15 +187,15 @@ public:
 
 
 /* The following classes assumge the the given ExampleGenerator has
-   fixed examples and return ExamplePointerTable.
+   fixed examples and return ExampleTable with references.
    If the splitter returns non-zero newWeight, weight meta-attribute
    must be removed by the caller (when not needed any more).
 
    There are two methods -- single-pass split and one-by-one split.
    'singlePass' determines which of the two is implemented.
-   In single-pass split, operator returns a vector of TExamplePointerTables.
+   In single-pass split, operator returns a vector of TExampleTables.
    In one-by-one split, caller should specify a branch index and
-   TExamplePointerTable with the corresponding examples are returned.
+   TExampleTable with the corresponding examples are returned.
 */
 WRAPPER(TreeNode)
 
@@ -207,7 +207,7 @@ public:
   virtual PExampleGeneratorList operator()(PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights) =0;
 
 protected:
-  static PExampleGeneratorList prepareGeneratorList(int size, PDomain domain, vector<TExamplePointerTable *> &);
+  static PExampleGeneratorList prepareGeneratorList(int size, PDomain domain, vector<TExampleTable *> &);
   static bool getBranchIndices(PTreeNode node, PExampleGenerator generator, vector<int> &indices);
 };
 

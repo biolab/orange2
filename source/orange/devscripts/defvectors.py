@@ -43,6 +43,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("Classifier", "lib_kernel.cpp"),
    ("DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
    ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
+   normalList("ValueFilter", "lib_components.cpp"),
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
    normalList("TreeNode", "lib_learner.cpp")

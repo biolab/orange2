@@ -36,20 +36,18 @@ public:
   TExample **examples;
   TExample **_Last, **_EndSpace;
   PRandomGenerator randomGenerator; //P random generator used by randomExample
+  PExampleGenerator lock; //PR the real owner of examples
+  bool ownsExamples; //PR if false, examples in this table are references to examples in another table
 
   // Iterates through examples of basevector
   #define baseITERATE(x) ITERATE(vector<TExample>, x, examples)
 
-  TExampleTable(PDomain);
-  TExampleTable(PExampleGenerator orig);
-  TExampleTable(PDomain, PExampleGenerator orig);
+  TExampleTable(PDomain, bool owns = true);
+  TExampleTable(PExampleGenerator orig, bool owns = true); // also copies examples
+  TExampleTable(PDomain, PExampleGenerator orig); // owns = true (cannot change domain of references); copies examples
+  TExampleTable(PExampleGenerator lock, int); // owns = false; pass anything for int; this constructor locks, but does not copy
   ~TExampleTable();
 
-protected:
-  TExampleTable(PDomain, PExampleGenerator alock, int); // You can pass NULL here; this would still lock the examples
-  TExampleTable(PExampleGenerator orig, int); // This int only tells that we want lock; it is not used in constructor
-  bool ownsPointers;
-  PExampleGenerator lock;
 
 public:
   /* ExampleTable has some vector-like behaviour  */
@@ -112,21 +110,7 @@ public:
 };
 
 
-/* Here for compatibility; it calls ExampleTable's constructor, telling it
-   that it should not own pointers. */
-class TExamplePointerTable : public TExampleTable {
-public:
-  __REGISTER_CLASS
-
-  TExamplePointerTable(PDomain);
-  TExamplePointerTable(PExampleGenerator orig);
-
-  // This doesn't copy examples - the second argument serves only for locking
-  TExamplePointerTable(PDomain, PExampleGenerator lock);
-};
-
-
-/* Returns example generator on which TExamplePointerTable can be used.
+/* Returns example generator which can be referenced.
    Function simply stores examples into TExampleTable if needed */
 inline PExampleGenerator fixedExamples(PExampleGenerator gen)
 { return (&*gen->begin()==&*gen->begin()) ? gen : PExampleGenerator(mlnew TExampleTable(gen)); }

@@ -427,7 +427,7 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     PyObject *pycandidates = PYNULL;
     PClassifier nodeClassifier;
 
-    if (!PyArg_ParseTuple(args, "O&|iO&O&O&O:TreeSplitConstructor.call", &pt_ExampleGenerator, &gen, &weightID, &ccn_DomainContingency, &dcont, &ccn_Distribution, &apriori, &pycandidates, &ccn_Classifier, &nodeClassifier))
+    if (!PyArg_ParseTuple(args, "O&|iO&O&O&O:TreeSplitConstructor.call", pt_ExampleGenerator, &gen, &weightID, ccn_DomainContingency, &dcont, ccn_Distribution, &apriori, &pycandidates, ccn_Classifier, &nodeClassifier))
       return PYNULL;
 
     vector<bool> candidates;
@@ -483,7 +483,7 @@ PyObject *TreeExampleSplitter_call(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator gen;
     int weightID = 0;
 
-    if (!PyArg_ParseTuple(args, "O&O&|i:TreeExampleSplitter.call", &cc_TreeNode, &node, &pt_ExampleGenerator, &gen, &weightID))
+    if (!PyArg_ParseTuple(args, "O&O&|i:TreeExampleSplitter.call", cc_TreeNode, &node, pt_ExampleGenerator, &gen, &weightID))
       return PYNULL;
 
     vector<int> newWeights;

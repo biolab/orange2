@@ -114,7 +114,7 @@ PExampleDistVector TExampleDistBySorting::operator()(PExampleGenerator gen, TVar
 
   PDomain boundDomain = mlnew TDomain(PVariable(), aboundSet);
 
-  TExamplePointerTable sorted(gen);
+  TExampleTable sorted(gen, false);
   sorted.sort(bound);
 
   PExampleDistVector edv = mlnew TExampleDistVector();

@@ -39,20 +39,24 @@ DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList")
 
 // Sets the negate field (default is false)
 TFilter::TFilter(bool anegate, PDomain dom) 
-  : negate(anegate), domain(dom)
-  {}
+: negate(anegate),
+  domain(dom)
+{}
 
 void TFilter::reset()
 {}
 
 // Sets the maxrand field to RAND_MAX*ap
 TFilter_random::TFilter_random(const float ap, bool aneg, PDomain dom)
-  : TFilter(aneg, dom), prob(ap) 
-  {};
+: TFilter(aneg, dom),
+  prob(ap) 
+{};
 
 // Chooses an example (returns true) if rand()<maxrand; example is ignored
 bool TFilter_random::operator()(const TExample &)
-  { return (LOCAL_OR_GLOBAL_RANDOM.randfloat()<prob)!=negate; }
+{
+  return (LOCAL_OR_GLOBAL_RANDOM.randfloat()<prob)!=negate;
+}
 
 
 
@@ -66,9 +70,10 @@ bool TFilter_hasSpecial::operator()(const TExample &exam)
 { int i=0, Nv;
   if (domain) {
     TExample example(domain, exam);
-    for(Nv=domain->variables->size(); (i<Nv) && !example[i].isSpecial(); i++);
+    for(Nv = domain->variables->size(); (i<Nv) && !example[i].isSpecial(); i++);
   }
-  else for(Nv=exam.domain->variables->size(); (i<Nv) && !exam[i].isSpecial(); i++);
+  else
+    for(Nv = exam.domain->variables->size(); (i<Nv) && !exam[i].isSpecial(); i++);
 
   return ((i==Nv)==negate);
 }
@@ -123,13 +128,13 @@ int TValueFilter_continuous::operator()(const TExample &example) const
 
 TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs)
 : TValueFilter(pos, accs),
-  acceptableValues(bl)
+  values(bl)
 {}
 
 
 TValueFilter_discrete::TValueFilter_discrete(const int &pos, PVariable var, const int &accs)
 : TValueFilter(pos, accs),
-  acceptableValues(mlnew TValueList(var))
+  values(mlnew TValueList(var))
 {}
 
 
@@ -138,7 +143,7 @@ int TValueFilter_discrete::operator()(const TExample &example) const
   if (val.isSpecial())
     return acceptSpecial;
 
-  const_PITERATE(TValueList, vi, acceptableValues)
+  const_PITERATE(TValueList, vi, values)
     if ((*vi).intV == val.intV)
       return 1;
 
@@ -146,38 +151,43 @@ int TValueFilter_discrete::operator()(const TExample &example) const
 }
 
 
-TFilter_Values::TFilter_Values(bool anAnd, bool aneg, PDomain dom)
+TFilter_values::TFilter_values(bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  values(mlnew TValueFilterList()),
-  doAnd(anAnd)
+  conditions(mlnew TValueFilterList()),
+  conjunction(anAnd)
 {}
 
 
-TFilter_Values::TFilter_Values(PValueFilterList v, bool anAnd, bool aneg, PDomain dom)
+TFilter_values::TFilter_values(PValueFilterList v, bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  values(v),
-  doAnd(anAnd)
+  conditions(v),
+  conjunction(anAnd)
 {}
 
 
-bool TFilter_Values::operator()(const TExample &exam)
+bool TFilter_values::operator()(const TExample &exam)
 { checkProperty(domain);
-  checkProperty(values);
-  if (values->size() > domain->variables->size())
-    raiseError("invalid size of 'values'");
+  checkProperty(conditions);
 
-  TExample example(domain, exam);
+  TExample *example;
+  PExample wex;
+  if (domain) {
+    example = mlnew TExample(domain, exam);
+    wex = example;
+  }
+  else
+    example = const_cast<TExample *>(&exam);
 
-  PITERATE(TValueFilterList, fi, values) {
-    const int r = (*fi)->call(example);
-    if ((r==0) && doAnd)
+  PITERATE(TValueFilterList, fi, conditions) {
+    const int r = (*fi)->call(*example);
+    if ((r==0) && conjunction)
       return negate;
-    if ((r==1) && !doAnd)
+    if ((r==1) && !conjunction)
       return !negate; // if this one is OK, we should return true if negate=false and vice versa
   }
 
-  // If we've come this far; if doAnd==true, all were OK; doAnd==false, none were OK
-  return doAnd!=negate;
+  // If we've come this far; if conjunction==true, all were OK; conjunction==false, none were OK
+  return conjunction!=negate;
 }
 
 
@@ -204,37 +214,3 @@ TFilter_compatibleExample::TFilter_compatibleExample(PExample anexample, bool an
 /// Chooses an examples (not) compatible with the 'example'
 bool TFilter_compatibleExample::operator()(const TExample &other)
 { return example->compatible(TExample(domain, other))!=negate; }
-
-
-
-
-TFilter_index::TFilter_index()
-: value(-1),
-  position((long *)NULL)
-{}
-
-
-/// Constructor; sets the vector of indices and value
-TFilter_index::TFilter_index(TFoldIndices &anind, int aval, bool aneg, PDomain dom)
-: TFilter(aneg, dom),
-  indices(anind),
-  value(aval)
-{ reset(); }
-
-
-/// Returns (*position==value) and increases position.
-bool TFilter_index::operator()(const TExample &)
-{ if (!indices->size())
-    return negate;
-
-  bool res=(*(position++)==value)!=negate;
-  if (position==indices->end())
-    reset();
-  return res; 
-};
-
-
-/// Resets position to the beginning of the filter
-void TFilter_index::reset()
-{ position=indices->begin(); }
-

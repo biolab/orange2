@@ -68,7 +68,9 @@ public:
   TDistribution(PVariable var);
 
   // Creates either TDiscDistribution or TContDistribution
-  static PDistribution create(PVariable);
+  static TDistribution *create(PVariable);
+  static TDistribution *fromGenerator(PExampleGenerator gen, const int &position, const int &weightID);
+  static TDistribution *fromGenerator(PExampleGenerator gen, PVariable, const int &weightID);
 
   /* Derived classes must define those */
 
@@ -107,7 +109,7 @@ public:
   virtual float var() const;
   virtual float percentile(const float &) const;
   virtual float error() const;
-  virtual float p(const float &) const;
+  virtual float density(const float &) const;
 
   /* The below methods may be redefined (they are not implemented in TDistribution) */
 
@@ -158,6 +160,8 @@ public:
   TDiscDistribution(PVariable);
   TDiscDistribution(PDistribution);
   TDiscDistribution(PDiscDistribution);
+  TDiscDistribution(PExampleGenerator, const int &position, const int &weightID = 0);
+  TDiscDistribution(PExampleGenerator, PVariable var, const int &weightID = 0);
 
   TDistribution &operator +=(const TDistribution &);
   TDistribution &operator -=(const TDistribution &);
@@ -208,6 +212,8 @@ public:
   TContDistribution();
   TContDistribution(const map<float, float> &);
   TContDistribution(PVariable);
+  TContDistribution(PExampleGenerator, const int &position, const int &weightID = 0);
+  TContDistribution(PExampleGenerator, PVariable var, const int &weightID = 0);
 
   TDistribution &operator +=(const TDistribution &other);
   TDistribution &operator -=(const TDistribution &other);
@@ -219,7 +225,7 @@ public:
   virtual const float &atfloat (const float &v) const;
   virtual void  addfloat(const float &f, const float &w = 1.0);
   virtual void  setfloat(const float &v, const float &w);
-  virtual float p(const float &) const;
+  virtual float density(const float &) const;
 
   virtual float average() const;
   virtual float dev() const;
@@ -243,7 +249,7 @@ public:
   float mean; //P mu
   float sigma; //P sigma
   
-  TGaussianDistribution(const float &mean = 0.0, const float &sigma = 1.0);
+  TGaussianDistribution(const float &mean = 0.0, const float &sigma = 1.0, const float &anabs = 1.0);
   TGaussianDistribution(PDistribution);
 
   virtual float average() const;
@@ -256,7 +262,7 @@ public:
   virtual float highestProb() const;
   virtual float randomFloat() const;
 
-  virtual float p(const float &) const;
+  virtual float density(const float &) const;
   virtual bool  noDeviation() const;
 };
 

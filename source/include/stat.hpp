@@ -1122,7 +1122,7 @@ T gasdev(const T &mean, const T &dev)
 }
 
 template<class T, class RF>
-T gasdev(const T &mean, const T &dev, RF randfunc)
+T gasdev(const T &mean, const T &dev, RF &randfunc)
 { float r, v1, v2;
   do {
     v1=randfunc(-1.0, 1.0);

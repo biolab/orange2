@@ -50,8 +50,10 @@ bool convertFromPythonExisting(PyObject *lst, TExample &example)
   if (PyOrExample_Check(lst)) {
     const TExample &orex = PyExample_AS_ExampleReference(lst);
     if (orex.domain != dom)
-      PYERROR(PyExc_TypeError, "invalid argument type: given example is from wrong domain", PYNULL);
-    example = orex;
+      dom->convert(example, orex);
+    else
+      example = orex;
+    return true;
   }
 
   if (!PyList_Check(lst)) {

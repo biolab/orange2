@@ -241,13 +241,13 @@ public:
   TValue eventValue; //P event (fail) value
   int method; //P weighting method
   float maxTime; //P maximal time
-  bool noComplementaryExamples; //P if true (default), no examples with the opposite class will be added
+  bool addComplementary; //P if true (default is false), complementary examples are added for censored examples
 
   TPreprocessor_addCensorWeight();
   TPreprocessor_addCensorWeight(PVariable, PVariable, const TValue & = TValue(), const int & = km, const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 
-  void addExample(TExampleTable *table, const int &weightID, const TExample &example, const float &weight, const int &complementary);
+  void addExample(TExampleTable *table, const int &weightID, const TExample &example, const float &weight, const int &complementary, const float &compWeight=0.0);
 };
 
 

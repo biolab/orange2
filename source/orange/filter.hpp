@@ -121,7 +121,7 @@ class TValueFilter_discrete : public TValueFilter {
 public:
   __REGISTER_CLASS
 
-  PValueList acceptableValues; //P acceptable values
+  PValueList values; //P acceptable values
 
   TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1);
   TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1);
@@ -134,22 +134,22 @@ VWRAPPER(ValueFilterList)
 
 
 /// With given probability selects examples for which any of the given attribute has some of the given values 
-class TFilter_Values : public TFilter {
+class TFilter_values : public TFilter {
 public:
   __REGISTER_CLASS
 
-  PValueFilterList values; //P a list of filters
+  PValueFilterList conditions; //P a list of filters
 
-  /*  If doAnd == true, example is chosen if no values are rejected
-      If doAnd == false, example is chosen if at least one value is accepted
+  /*  If conjunction == true, example is chosen if no values are rejected
+      If conjunction == false, example is chosen if at least one value is accepted
       The above rules apply also when no values could be tested (think how :)
       
       negate is applied to whole expression, not to individual terms */
 
-  bool doAnd; //P if true, filter computes conjunction, otherwise disjunction
+  bool conjunction; //P if true, filter computes conjunction, otherwise disjunction
 
-  TFilter_Values(bool anAnd=true, bool aneg = false, PDomain =PDomain());
-  TFilter_Values(PValueFilterList, bool anAnd, bool=false, PDomain =PDomain());
+  TFilter_values(bool anAnd=true, bool aneg = false, PDomain =PDomain());
+  TFilter_values(PValueFilterList, bool anAnd, bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
 };
 
@@ -176,29 +176,5 @@ public:
   TFilter_compatibleExample(PExample, bool=false);
   virtual bool operator()(const TExample &);
 };
-
-
-/*  Selects example for which the element of the given table equals specified value.
-    Each element in the table should correspond to one example which will be passed
-    to operator(), in the same order. Therefore, size of table should equal number of
-    invokations of the operator. If, however, table of indices is too small, it is
-    reused from the beginning. */
-class TFilter_index : public TFilter {
-public:
-  __REGISTER_CLASS
-
-  PLongList indices; //P indices
-  int value; //P selected value
-
-  /// Temporary position in table of indices
-  vector<FOLDINDEXTYPE>::iterator position;
-  
-  TFilter_index();
-  TFilter_index(TFoldIndices &, int aval, bool=false, PDomain =PDomain());
-  virtual bool operator()(const TExample &);
-  virtual void reset();
-};
-
-WRAPPER(Filter_index)
 
 #endif

@@ -895,13 +895,53 @@ BASED_ON(ExampleGenerator, Orange)
 
 
 int pt_ExampleGenerator(PyObject *args, void *egen)
-{ *(PExampleGenerator *)(egen) = PyOrExampleGenerator_Check(args) ? PyOrange_AsExampleGenerator(args)
+{ 
+  *(PExampleGenerator *)(egen) = PyOrExampleGenerator_Check(args) ? PyOrange_AsExampleGenerator(args)
                                                                   : PExampleGenerator(readListOfExamples(args));
 
   if (!*(PExampleGenerator *)(egen))
     PYERROR(PyExc_TypeError, "invalid example generator", 0)
   else
     return 1;
+}
+
+
+static PDomain ptd_domain;
+
+int ptdf_ExampleGenerator(PyObject *args, void *egen)
+{ 
+  egen = NULL;
+
+  try {
+    if (PyOrExampleGenerator_Check(args)) {
+      PExampleGenerator gen = PyOrange_AsExampleGenerator(args);
+      if (gen->domain == ptd_domain)
+        *(PExampleGenerator *)(egen) = gen;
+      else
+        *(PExampleGenerator *)(egen) = mlnew TExampleTable(ptd_domain, gen);
+    }
+    else
+      *(PExampleGenerator *)(egen) = PExampleGenerator(readListOfExamples(args, ptd_domain));
+
+    ptd_domain = PDomain();
+
+    if (!*(PExampleGenerator *)(egen))
+      PYERROR(PyExc_TypeError, "invalid example generator", 0)
+    else
+      return 1;
+  }
+
+  catch (...) {
+    ptd_domain = PDomain();
+    throw;
+  }
+}
+
+
+converter ptd_ExampleGenerator(PDomain domain)
+{ 
+  ptd_domain = domain;
+  return ptdf_ExampleGenerator;
 }
 
 
@@ -998,8 +1038,12 @@ inline PPreprocessor pp_sameValues(PyObject *dict, PDomain dom)
   return vfm ? mlnew TPreprocessor_take(vfm) : PPreprocessor();
 }
 
-inline PFilter filter_sameValues(PyObject *dict, PDomain domain)
-{ return TPreprocessor_take::constructFilter(sameValuesMap(dict, domain), domain); }
+inline PFilter filter_sameValues(PyObject *dict, PDomain domain, PyObject *kwds = PYNULL)
+{ PFilter filter = TPreprocessor_take::constructFilter(sameValuesMap(dict, domain), domain); 
+  PyObject *pyneg = kwds ? PyDict_GetItemString(kwds, "negate") : NULL;
+  filter->negate = pyneg && PyObject_IsTrue(pyneg);
+  return filter;
+}
 
 PyObject *applyPreprocessor(PPreprocessor preprocessor, PExampleGenerator gen, bool weightGiven, int weightID)
 { if (!preprocessor)
@@ -1015,40 +1059,48 @@ PyObject *applyPreprocessor(PPreprocessor preprocessor, PExampleGenerator gen, b
 PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, int weightID);
 
 PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
+/* This function is a spaghetti for compatibility reasons. Most of its functionality
+   has been moved to specialized functions (changeDomain, filter). The only two
+   functions that 'select' should be used for is selection of examples by vector
+   of bools or indices (LongList) */
 { 
   PyTRY
     long weightID = 0;
     CAST_TO(TExampleGenerator, eg);
     PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
 
-    /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
+    /* ***** SELECTION BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
+    /* Deprecated: use method 'filter' instead */
     if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
       return applyPreprocessor(pp_sameValues(keywords, eg->domain), weg, false, 0);
     }
 
+
     PyObject *mplier;
     if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
-      PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
+      PyObject *pyneg = keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate = pyneg && PyObject_IsTrue(pyneg);
       bool weightGiven = (PyTuple_Size(args)==2);
 
       /* ***** SELECTION BY VECTOR OF BOOLS ****** */
       if (PyList_Check(mplier) && PyList_Size(mplier) && PyInt_Check(PyList_GetItem(mplier, 0))) {
-        int nole=PyList_Size(mplier);
+        int nole = PyList_Size(mplier);
         
-        TExampleTable *newTable=mlnew TExampleTable(eg->domain);
+        TExampleTable *newTable = mlnew TExampleTable(eg->domain);
         PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
-        int i=0;
+        int i = 0;
 
-        TExampleIterator ei=eg->begin();
-        for(;ei; ++ei) {
+        TExampleIterator ei = eg->begin();
+        for(; ei; ++ei) {
           if (i==nole)
             break;
           PyObject *lel = PyList_GetItem(mplier, i++);
+
           if (!PyInt_Check(lel))
             break;
 
-          else if (negate != (weightGiven ? (int(PyInt_AsLong(lel))==weightID) : (PyObject_IsTrue(lel)!=0)))
+          int val = PyInt_AsLong(lel);
+          if (negate != (weightGiven ? (val==weightID) : (val!=0)))
             newTable->addExample(*ei);
         }
 
@@ -1081,6 +1133,7 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
       PyErr_Clear();
 
       /* ***** CHANGING DOMAIN ***** */
+      /* Deprecated: use method 'translate' instead. */
       if (PyOrDomain_Check(mplier)) {
         PyObject *wrappedGen=WrapOrange(PExampleTable(mlnew TExampleTable(PyOrange_AsDomain(mplier), weg)));
         return weightGiven ? Py_BuildValue("Ni", wrappedGen, weightID) : wrappedGen;
@@ -1088,6 +1141,7 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
 
       /* ***** SELECTION BY VECTOR OF NAMES, INDICES AND VARIABLES ****** */
+      /* Deprecated: use method 'translate' instead. */
       TVarList attributes;
       if (varListFromDomain(mplier, eg->domain, attributes, true, false)) {
         PDomain newDomain;
@@ -1108,11 +1162,13 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
 
 
       /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
+      /* Deprecated: use method 'filter' instead. */
       if (PyDict_Check(mplier))
         return applyFilter(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID);
 
 
       /* ***** PREPROCESSING ***** */
+      /* Deprecated: call preprocessor instead. */
       if (PyOrPreprocessor_Check(mplier)) {
         PExampleGenerator res;
         int newWeight;
@@ -1127,17 +1183,121 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
       }
 
       /* ***** APPLY FILTER ***** */
+      /* Deprecated: use method 'filter' instead. */
       else if (PyOrFilter_Check(mplier))
         return applyFilter(PyOrange_AsFilter(mplier), weg, weightGiven, weightID);
     }
-    PYERROR(PyExc_TypeError, "ExampleGenerator.select failed, tried:\n"
-                             "- example selector (list of ints) of correct length\n"
-                             "- list of attributes (names, indices, Variables)\n"
-                             "- values of attributes (as keyword parameters)\n"
-                             "- Preprocessor, Domain, Filter", PYNULL);
+    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
   PyCATCH
 }
 
+
+PyObject *ExampleGenerator_filter(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+{
+  PyTRY
+    CAST_TO(TExampleGenerator, eg);
+    PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
+
+    if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
+      return applyFilter(filter_sameValues(keywords, eg->domain, keywords), weg, false, 0);
+    }
+
+    if (PyTuple_Size(args)==1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+
+      if (PyDict_Check(arg))
+        return applyFilter(filter_sameValues(arg, eg->domain, keywords), weg, false, 0);
+
+      if (PyOrFilter_Check(arg))
+          return applyFilter(PyOrange_AsFilter(arg), weg, false, 0);
+    }
+
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filter expects a list of conditions or orange.Filter", PYNULL)
+  PyCATCH
+}
+
+
+PyObject *ExampleGenerator_translate(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "translate(domain | list-of-attributes) -> ExampleTable")
+{
+  PyTRY
+    CAST_TO(TExampleGenerator, eg);
+    PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
+
+    PDomain domain;
+    if (PyArg_ParseTuple(args, "O&", cc_Domain, &domain))
+      return WrapOrange(PExampleTable(mlnew TExampleTable(domain, weg)));
+
+    PyObject *pargs, *guard = NULL;
+    if (args && (PyTuple_Size(args)==1))
+      pargs = guard = PyTuple_GET_ITEM(args, 0);
+    else
+      pargs = args;
+
+    /* ***** SELECTION BY VECTOR OF NAMES, INDICES AND VARIABLES ****** */
+    TVarList attributes;
+    if (varListFromDomain(pargs, eg->domain, attributes, true, false)) {
+      PDomain newDomain;
+      TVarList::iterator vi, ve;
+      for(vi = attributes.begin(), ve = attributes.end(); (vi!=ve) && (*vi!=eg->domain->classVar); vi++);
+      if (vi==ve)
+        newDomain = mlnew TDomain(PVariable(), attributes);
+      else {
+        attributes.erase(vi);
+        newDomain = mlnew TDomain(eg->domain->classVar, attributes);
+      }
+
+      Py_XDECREF(guard);
+      return WrapOrange(PExampleTable(mlnew TExampleTable(newDomain, weg)));
+    }
+
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.translate expects a list of attributes or orange.Domain", PYNULL)
+ PyCATCH
+}
+
+
+PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference)
+{ PyTRY
+    if (!PyList_Check(pylist))
+      PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
+    
+    vector<int> indices;
+    int i, sze = PyList_Size(pylist);
+    for(i = 0; i<sze; i++) {
+      PyObject *lel = PyList_GetItem(pylist, i);
+      if (!PyInt_Check(lel))
+        PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
+      indices.push_back(int(PyInt_AsLong(lel)));
+    }
+    sort(indices.begin(), indices.end());
+
+    CAST_TO(TExampleGenerator, eg);
+    TExampleTable *newTable = mlnew TExampleTable(eg->domain, !reference);
+    PExampleGenerator newGen(newTable);
+
+    TExampleGenerator::iterator ei(eg->begin());
+    vector<int>::iterator ii(indices.begin()), iie(indices.end());
+    i = 0;
+    while(ei && (ii!=iie)) {
+      if (*ii == i) {
+        newTable->addExample(*ei);
+        ii++;
+      }
+      else {
+        i++;
+        ++ei;
+      }
+    }
+
+    if (ii!=iie)
+      PYERROR(PyExc_IndexError, "index out of range", PYNULL);
+
+    return WrapOrange(newGen);
+  PyCATCH
+}
+
+
+PyObject *ExampleGenerator_getitems(TPyOrange *self, PyObject *pylist)  PYARGS(METH_O, "(indices) -> ExampleTable")
+{ return multipleSelectLow(self, pylist, false); }
 
 PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::P_FromArguments(arg); }
 PyObject *ExampleGeneratorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_FromArguments(type, arg); }
@@ -1197,6 +1357,51 @@ TExampleTable *readListOfExamples(PyObject *args)
   PYERROR(PyExc_TypeError, "invalid type", NULL);
 }
 
+
+TExampleTable *readListOfExamples(PyObject *args, PDomain domain)
+{ if (PyList_Check(args)) {
+    int size=PyList_Size(args);
+    if (!size)
+      PYERROR(PyExc_TypeError, "can't construct a table from an empty list", (TExampleTable *)NULL);
+
+    TExampleTable *table = mlnew TExampleTable(domain);;
+ 
+    try {
+      for(int i=0; i<size; i++) {
+        PyObject *pex = PyList_GetItem(args, i);
+        if (PyOrExample_Check(pex))
+          table->addExample(PyExample_AS_ExampleReference(pex));
+        else {
+          TExample example(domain);
+          if (!convertFromPythonExisting(pex, example)) {
+            mldelete table;
+            PyObject *type, *value, *tracebk;
+            PyErr_Fetch(&type, &value, &tracebk);
+            if (type) {
+              //PyErr_Restore(type, value, tracebk);
+              const char *oldes = PyString_AsString(value);
+              PyErr_Format(type, "%s (at example %i)", oldes, i);
+              Py_DECREF(type);
+              Py_XDECREF(value);
+              Py_XDECREF(tracebk);
+              return NULL;
+            }
+          }
+          table->addExample(example);
+        }
+      }
+
+      return table;
+    }
+    catch (...) {
+      mldelete table;
+      throw;
+    }
+  }
+
+  PYERROR(PyExc_TypeError, "invalid arguments", NULL);
+}
+
 bool readBoolFlag(PyObject *keywords, char *flag)
 {
   PyObject *pyflag = keywords ? PyDict_GetItemString(keywords, flag) : PYNULL;
@@ -1207,39 +1412,44 @@ bool readBoolFlag(PyObject *keywords, char *flag)
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
-{ PyTRY
-    TExampleTable *res=NULL;
-    PDomain domain;
-    PExampleGenerator egen;
+{  
+  PyTRY
 
-    PyObject *args;
     char *filename = NULL;
-
     if (PyArg_ParseTuple(argstuple, "|s", &filename))
-      res = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore"));
-
-    else if (PyArg_ParseTuple(argstuple, "O", &args)) {
-      if (PyOrOrange_Check(args)) {
-        if (PyOrDomain_Check(args))
-          res = mlnew TExampleTable(PyOrange_AsDomain(args));
-
-        else if (PyOrExampleGenerator_Check(args))
-          res = mlnew TExampleTable(PyOrange_AsExampleGenerator(args));
-      }
-      else
-        res = readListOfExamples(args); // this will return an error if needed
-    }
-
-    else if (PyArg_ParseTuple(argstuple, "O&O&", cc_Domain, &domain, pt_ExampleGenerator, &egen)) {
-      res = mlnew TExampleTable(domain);
-      res->addExamples(egen);
-    }
-
-    if (!res)
-      PYERROR(PyExc_TypeError, "invalid type", PYNULL);
+      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore")), type);
 
     PyErr_Clear();
-    return WrapNewOrange(res, type);
+
+    PyObject *args;
+    if (PyArg_ParseTuple(argstuple, "O", &args)) {
+      if (PyOrOrange_Check(args)) {
+        if (PyOrDomain_Check(args))
+          return WrapNewOrange(mlnew TExampleTable(PyOrange_AsDomain(args)), type);
+
+        else if (PyOrExampleGenerator_Check(args))
+          return WrapNewOrange(mlnew TExampleTable(PyOrange_AsExampleGenerator(args)), type);
+      }
+      else {
+        TExampleTable *res = readListOfExamples(args);
+        return res ? WrapNewOrange(res, type) : PYNULL;
+      }
+    }
+
+    PyErr_Clear();
+
+    PDomain domain;
+    if (PyArg_ParseTuple(argstuple, "O&O", cc_Domain, &domain, &args)) {
+      if (PyOrExampleGenerator_Check(args))
+        return WrapNewOrange(mlnew TExampleTable(domain, PyOrange_AsExampleGenerator(args)), type);
+      else {
+        TExampleTable *res = readListOfExamples(args, domain);
+        return res ? WrapNewOrange(res, type) : PYNULL;
+      }
+    }
+
+    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
   PyCATCH
 }
 
@@ -1290,8 +1500,10 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_O, "(e
 { PyTRY
     CAST_TO(TExampleTable, table)
 
-    TExample example(table->domain);
+    if (!table->ownsExamples)
+      PYERROR(PyExc_TypeError, "tables that contain references to examples cannot append examples", PYNULL);
 
+    TExample example(table->domain);
     if (!convertFromPythonExisting(args, example))
       return PYNULL;
     
@@ -1300,25 +1512,27 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_O, "(e
   PyCATCH
 }
 
-PyObject *ExampleTable_extend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples) -> None")
+PyObject *ExampleTable_extend(PyObject *self, PyObject *args) PYARGS(METH_O, "(examples) -> None")
 { PyTRY 
     CAST_TO(TExampleTable, table)
 
-    PExampleGenerator egen = exampleGenFromArgs(args);
-    if (egen) {
-      // to prevent cycling in t.append(t)
-      TExampleTable tab(egen);
-      EITERATE(ei, tab)
-        table->addExample(*ei);
+    if (!table->ownsExamples)
+      PYERROR(PyExc_TypeError, "tables that contain references to examples cannot extend", PYNULL);
+
+    if (PyOrExampleGenerator_Check(args)) {
+      if (args==self)
+        table->addExamples(PyOrange_AsExampleGenerator(args));
+      else
+        table->addExamples(PyOrange_AsExampleGenerator(args));
       RETURN_NONE;
     }
 
     TExample example(table->domain);
     if (PyList_Check(args)) {
-      int size=PyList_Size(args);
+      int size = PyList_Size(args);
 
-      for(int i=0; i<size; i++) {
-        PyObject *pex=PyList_GetItem(args, i);
+      for(int i = 0; i<size; i++) {
+        PyObject *pex = PyList_GetItem(args, i);
         if (!convertFromPythonExisting(pex, example))
           return PYNULL;
 
@@ -1328,7 +1542,7 @@ PyObject *ExampleTable_extend(PyObject *self, PyObject *args) PYARGS(METH_VARARG
       RETURN_NONE;
     }
 
-    PYERROR(PyExc_TypeError, "invalid argument for ExampleTable.append", PYNULL);
+    PYERROR(PyExc_TypeError, "invalid argument for ExampleTable.extend", PYNULL);
   PyCATCH
 }
 
@@ -1337,19 +1551,26 @@ PyObject *ExampleTable_getitem_sq(TPyOrange *self, int idx)
 {
   PyTRY
     CAST_TO(TExampleTable, table);
-    if (idx<0) idx+=table->numberOfExamples();
+
+    if (idx<0)
+      idx += table->numberOfExamples();
+
     if ((idx<0) || (idx>=table->numberOfExamples()))
       PYERROR(PyExc_IndexError, "index out of range", PYNULL);
+
     // here we wrap a reference to example, so we must pass a self's wrapper
     return Example_FromExampleRef((*table)[idx], PyOrange_AsExampleTable(self));
   PyCATCH
 }
 
 
-int ExampleTable_setitem_sq(TPyOrange *self, int idx, TPyExample *pex)
+int ExampleTable_setitem_sq(TPyOrange *self, int idx, PyObject *pex)
 { 
   PyTRY
     CAST_TO_err(TExampleTable, table, -1);
+
+    if (pex && !table->ownsExamples)
+      PYERROR(PyExc_TypeError, "tables that contain references to examples and cannot overwrite examples", -1);
 
     if (idx>table->numberOfExamples())
       PYERROR(PyExc_IndexError, "index out of range", -1);
@@ -1359,11 +1580,18 @@ int ExampleTable_setitem_sq(TPyOrange *self, int idx, TPyExample *pex)
       return 0;
     }
 
-    if (!PyOrExample_Check(pex))
-      PYERROR(PyExc_TypeError, "invalid parameter type (Example expected)", -1)
+    if (PyOrExample_Check(pex)) {
+      (*table)[idx] = TExample(table->domain, PyExample_AS_ExampleReference(pex));
+      return 0;
+    }
 
-    (*table)[idx] = TExample(table->domain, PyExample_AS_ExampleReference(pex));
-    return 0;
+    TExample example(table->domain);
+    if (convertFromPythonExisting(pex, example)) {
+      (*table)[idx] = example;
+      return 0;
+    }
+
+    PYERROR(PyExc_TypeError, "invalid parameter type (Example expected)", -1)
   PyCATCH_1
 }
 
@@ -1400,6 +1628,9 @@ int ExampleTable_setslice(TPyOrange *self, int start, int stop, PyObject *args)
 { 
   PyTRY
     CAST_TO_err(TExampleTable, table, -1);
+    if (!table->ownsExamples)
+      PYERROR(PyExc_TypeError, "tables that contain references to examples cannot set slices", -1);
+
 
     if (stop>int(table->size()))
       stop = table->size();
@@ -1407,20 +1638,46 @@ int ExampleTable_setslice(TPyOrange *self, int start, int stop, PyObject *args)
     if (start>stop)
       PYERROR(PyExc_IndexError, "index out of range", -1);
 
-    // this must be checked separately since exampleGenFromParsedArgs does not
-    // (and cannot, due to unknown domain) read empty lists
-    if (PyList_Check(args) && !PyList_Size(args)) {
-      table->erase(start, stop);
-      return 0;
+    int inspoint = stop;
+
+    try {
+      if (PyOrExampleGenerator_Check(args)) {
+        if (args==(PyObject *)self) {
+          TExampleTable tab(PyOrange_AsExampleGenerator(args));
+          EITERATE(ei, tab)
+            table->insert(inspoint++, *ei);
+        }
+        else
+          PEITERATE(ei, PyOrange_AsExampleGenerator(args))
+            table->insert(inspoint++, *ei);
+      }
+
+      else {
+        TExample example(table->domain);
+        if (PyList_Check(args)) {
+          int size = PyList_Size(args);
+
+          for(int i = 0; i<size; i++) {
+            PyObject *pex = PyList_GetItem(args, i);
+            if (!convertFromPythonExisting(pex, example)) {
+              table->erase(stop, inspoint);
+              return -1;
+            }
+
+            table->insert(inspoint++, example);
+          }
+        }
+        else
+          PYERROR(PyExc_TypeError, "invalid argument for ExampleTable.__setslice__", -1);
+      }
+
+    }
+    catch (...) {
+      table->erase(stop, inspoint);
+      throw;
     }
 
-    PExampleGenerator egen = exampleGenFromParsedArgs(args);
-    if (!egen)
-      return -1;
-      
     table->erase(start, stop);
-    PEITERATE(ei, egen)
-      table->insert(start++, *ei);
 
     return 0;
   PyCATCH_1
@@ -1445,9 +1702,10 @@ PyObject *applyFilterL(PFilter filter, PExampleGenerator gen, bool, int)
 
 
 PyObject *applyFilterP(PFilter filter, PExampleGenerator gen, bool, int)
-{ if (!filter) return PYNULL;
-
-  TExamplePointerTable *newTable=mlnew TExamplePointerTable(gen->domain);
+{ if (!filter)
+    return PYNULL;
+  
+  TExampleTable *newTable = mlnew TExampleTable(gen->domain, false);
   PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
   filter->reset();
   PEITERATE(ei, gen)
@@ -1458,50 +1716,8 @@ PyObject *applyFilterP(PFilter filter, PExampleGenerator gen, bool, int)
 }
 
 
-PyObject *ExampleTable_multipleselect(TPyOrange *self, PyObject *args)  PYARGS(METH_VARARGS, "(indices) -> ExampleTable")
-{ PyTRY
-    CAST_TO(TExampleTable, eg);
-    PyObject *pylist;
-    if (   !PyArg_ParseTuple(args, "O", &pylist)
-        || !PyList_Check(pylist))
-      PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-    
-    TExampleTable *newTable=mlnew TExampleTable(eg->domain);
-    PExampleGenerator newGen(newTable);
-
-    for(int sze=PyList_Size(pylist), i=0; i<sze; i++) {
-      PyObject *lel=PyList_GetItem(pylist, i);
-      if (!PyInt_Check(lel))
-        PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-      newTable->addExample(eg->at(int(PyInt_AsLong(lel))));
-    }
-
-    return WrapOrange(newGen);
-  PyCATCH
-}
-
-
-PyObject *ExampleTable_multipleselectref(TPyOrange *self, PyObject *args)   PYARGS(METH_VARARGS, "(indices) -> ExamplePointerTable")
-{ PyTRY
-    CAST_TO(TExampleTable, eg);
-    PyObject *pylist;
-    if (   !PyArg_ParseTuple(args, "O", &pylist)
-        || !PyList_Check(pylist))
-      PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-    
-    TExamplePointerTable *newTable=mlnew TExamplePointerTable(eg->domain);
-    PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
-
-    for(int sze=PyList_Size(pylist), i=0; i<sze; i++) {
-      PyObject *lel=PyList_GetItem(pylist, i);
-      if (!PyInt_Check(lel))
-        PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-      newTable->addExample(eg->at(int(PyInt_AsLong(lel))));
-    }
-
-    return WrapOrange(newGen);
-  PyCATCH
-}
+PyObject *ExampleTable_getitemsref(TPyOrange *self, PyObject *pylist)   PYARGS(METH_O, "(indices) -> ExampleTable")
+{ return multipleSelectLow(self, pylist, true); }
 
 
 PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
@@ -1509,36 +1725,41 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
   PyTRY
     int weightID = 0;
     CAST_TO(TExampleTable, eg);
-    POrange lock = PyOrange_AS_Orange(self);
-    PExampleGenerator weg = PExampleGenerator(lock);
+    PExampleGenerator weg = PExampleGenerator(PyOrange_AS_Orange(self));
+    PExampleGenerator lock = eg->ownsExamples ? weg : eg->lock;
 
     /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
+    /* Deprecated: use 'filter' instead */
     if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
       return toList ? applyFilterL(filter_sameValues(keywords, eg->domain), weg, false, 0)
                     : applyFilterP(filter_sameValues(keywords, eg->domain), weg, false, 0);
     }
 
-    /* ***** SELECTION BY PYLIST ****** */
     PyObject *mplier;
     if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
-      PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
-      bool negate=pyneg && PyObject_IsTrue(pyneg);
+      PyObject *pyneg = keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
+      bool negate = pyneg && PyObject_IsTrue(pyneg);
       bool weightGiven = (PyTuple_Size(args)==2);
 
+      /* ***** SELECTION BY PYLIST ****** */
       if (PyList_Check(mplier)) {
-        if (PyList_Size(mplier)!=eg->numberOfExamples())
+        if (PyList_Size(mplier) != eg->numberOfExamples())
           PYERROR(PyExc_IndexError, "example selector of invalid length", PYNULL);
 
-        int i=0;
+        int i = 0;
         if (toList) {
-          PyObject *list=PyList_New(eg->numberOfExamples());
+          PyObject *list = PyList_New(0);
           EITERATE(ei, *eg) {
-            PyObject *lel=PyList_GetItem(mplier, i);
+            PyObject *lel = PyList_GetItem(mplier, i++);
             if (!PyInt_Check(lel))
               PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
-            else if (negate != (weightGiven ? (int(PyInt_AsLong(lel))==weightID) : (PyObject_IsTrue(lel)!=0)))
-              PyList_SetItem(list, i, Example_FromExampleRef(*ei, lock));
-            i++;
+
+            int val = PyInt_AsLong(lel);
+            if (negate != (weightGiven ? (val==weightID) : (val!=0))) {
+              PyObject *pyex = Example_FromExampleRef(*ei, lock);
+              PyList_Append(list, pyex);
+              Py_DECREF(pyex);
+            }
           }
 
           return list;
@@ -1546,14 +1767,16 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
         
         else { // !toList
 
-          TExamplePointerTable *newTable=mlnew TExamplePointerTable(eg->domain);
+          TExampleTable *newTable = mlnew TExampleTable(lock, 1); //locks to weg but does not copy
           PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
           EITERATE(ei, *eg) {
-            PyObject *lel=PyList_GetItem(mplier, i++);
+            PyObject *lel = PyList_GetItem(mplier, i++);
             if (!PyInt_Check(lel))
               PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
-            else if (negate != (weightGiven ? (int(PyInt_AsLong(lel))==weightID) : (PyObject_IsTrue(lel)!=0)))
+
+            int val = PyInt_AsLong(lel);
+            if (negate != (weightGiven ? (val==weightID) : (val!=0)))
               newTable->addExample(*ei);
           }
 
@@ -1568,23 +1791,25 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
           PYERROR(PyExc_IndexError, "select: invalid list size", PYNULL)
 
         TLongList::iterator lli(llist->begin()), lle(llist->end());
-        TExampleIterator ei=eg->begin();
+        TExampleIterator ei = eg->begin();
         
-        int i=0;
         if (toList) {
-          PyObject *list=PyList_New(eg->numberOfExamples());
-          for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : !!*lli))
-              PyList_SetItem(list, i++, Example_FromExampleRef(*ei, lock));
+          PyObject *list = PyList_New(0);
+          for(; ei && (lli!=lle); ++ei, lli++)
+            if (negate != (weightGiven ? (*lli==weightID) : !!*lli)) {
+              PyObject *pyex = Example_FromExampleRef(*ei, lock);
+              PyList_Append(list, pyex);
+              Py_DECREF(pyex);
+            }
           return list;
         }
 
         else { // !toList
-          TExamplePointerTable *newTable=mlnew TExamplePointerTable(eg->domain);
+          TExampleTable *newTable = mlnew TExampleTable(eg->domain, false);
           PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
           for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : !!*lli))
+            if (negate != (weightGiven ? (*lli==weightID) : (*lli!=0)))
               newTable->addExample(*ei);
 
           return WrapOrange(newGen);
@@ -1595,6 +1820,7 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
 
 
       /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
+      /* Deprecated: use method 'filter' instead. */
       if (PyDict_Check(mplier))
         return toList ? applyFilterL(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID)
                       : applyFilterP(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID);
@@ -1619,6 +1845,56 @@ PyObject *ExampleTable_selectlist(TPyOrange *self, PyObject *args, PyObject *key
 PyObject *ExampleTable_selectref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { PyTRY
     return ExampleTable_selectLow(self, args, keywords, false); 
+  PyCATCH
+}
+
+
+PyObject *ExampleTable_filterlist(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+{
+  PyTRY
+    CAST_TO(TExampleGenerator, eg);
+    PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
+
+    if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
+      return applyFilterL(filter_sameValues(keywords, eg->domain), weg, false, 0);
+    }
+
+    if (PyTuple_Size(args)==1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+
+      if (PyDict_Check(args))
+        return applyFilterL(filter_sameValues(args, eg->domain), weg, false, 0);
+
+      if (PyOrFilter_Check(args))
+          return applyFilterL(PyOrange_AsFilter(args), weg, false, 0);
+    }
+
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
+  PyCATCH
+}
+
+
+PyObject *ExampleTable_filterref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "(list-of-attribute-conditions | filter)")
+{
+  PyTRY
+    CAST_TO(TExampleGenerator, eg);
+    PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
+
+    if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
+      return applyFilterP(filter_sameValues(keywords, eg->domain), weg, false, 0);
+    }
+
+    if (PyTuple_Size(args)==1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+
+      if (PyDict_Check(args))
+        return applyFilterP(filter_sameValues(args, eg->domain), weg, false, 0);
+
+      if (PyOrFilter_Check(args))
+          return applyFilterP(PyOrange_AsFilter(args), weg, false, 0);
+    }
+
+    PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
   PyCATCH
 }
 
@@ -1743,240 +2019,18 @@ PyObject *ExampleTable_removeMetaAttribute(PyObject *self, PyObject *args) PYARG
 
 PyObject *ExampleTable_changeDomain(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(Domain) -> None")
 { PyTRY
+    CAST_TO(TExampleTable, table);
+    if (!table->ownsExamples)
+      PYERROR(PyExc_TypeError, "tables containing references to examples cannot change domain", PYNULL);
+
     PDomain domain;
     if (!PyArg_ParseTuple(args, "O&", cc_Domain, &domain))
       PYERROR(PyExc_AttributeError, "domain argument expected", PYNULL);
 
-    CAST_TO(TExampleTable, table);
     table->changeDomain(domain);
     RETURN_NONE;
   PyCATCH
 }
-
-
-/* ************ EXAMPLEREFTABLE ************ */
-
-
-PyObject *ExamplePointerTable_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ExampleTable, "(example-table | domain)")
-{ PyTRY
-    PyObject *table;
-    if (PyArg_ParseTuple(args, "O", &table))
-
-      if (PyOrExampleTable_Check(table))
-        return WrapNewOrange(mlnew TExamplePointerTable(PyOrange_AsExampleGenerator(table)), type);
-
-      if (PyOrDomain_Check(args))
-        return WrapNewOrange(mlnew TExamplePointerTable(PyOrange_AsDomain(table)), type);
-
-    PYERROR(PyExc_TypeError, "invalid parameters (ExampleTable or Domain expected)", PYNULL);
-  PyCATCH
-}
-
-
-PyObject *ExamplePointerTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples) -> None")
-{ PyTRY
-    CAST_TO(TExamplePointerTable, table)
-
-    PyObject *parsed;
-    if (   PyArg_ParseTuple(args, "O", &parsed)
-        && (PyOrExampleTable_Check(parsed) || PyOrExamplePointerTable_Check(parsed))) {
-
-      table->addExamples(PyOrange_AsExampleGenerator(parsed));
-      RETURN_NONE;
-    }
-
-    PYERROR(PyExc_TypeError, "ExamplePointerTable.append expects ExampleTable or ExamplePointerTable", PYNULL);
-  PyCATCH
-}
-
-
-int ExamplePointerTable_setitem_sq(TPyOrange *self, int idx, TPyExample *pex)
-{ 
-  PyTRY
-    CAST_TO_err(TExampleTable, table, -1);
-
-    if (idx>table->numberOfExamples())
-      PYERROR(PyExc_IndexError, "index out of range", -1);
-
-    if (!pex) {
-      table->erase(idx);
-      return 0;
-    }
-
-    PYERROR(PyExc_SystemError, "cannot set items", -1);
-  PyCATCH_1
-}
-
-
-
-PyObject *ExamplePointerTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
-{ 
-  PyTRY
-    int weightID = 0;
-    CAST_TO(TExamplePointerTable, eg);
-    POrange lock=PyOrange_AS_Orange(self);
-    PExampleGenerator weg = PExampleGenerator(lock);
-
-    /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS KEYWORDS ***** */
-    if (!PyTuple_Size(args) && NOT_EMPTY(keywords)) {
-      return toList ? applyFilterL(filter_sameValues(keywords, eg->domain), weg, false, 0)
-                    : applyFilterP(filter_sameValues(keywords, eg->domain), weg, false, 0);
-    }
-
-    PyObject *mplier;
-    if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
-      PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
-      bool negate=pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven = (PyTuple_Size(args)==2);
-
-      if (PyList_Check(mplier)) {
-        if (PyList_Size(mplier)!=eg->numberOfExamples())
-          PYERROR(PyExc_IndexError, "example selector of invalid length", PYNULL);
-
-        int i=0;
-        if (toList) {
-          PyObject *list=PyList_New(eg->numberOfExamples());
-          EITERATE(ei, *eg) {
-            PyObject *lel=PyList_GetItem(mplier, i);
-            if (!PyInt_Check(lel))
-              PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
-            else if (negate != (weightGiven ? (int(PyInt_AsLong(lel))==weightID) : (PyObject_IsTrue(lel)!=0)))
-              PyList_SetItem(list, i, Example_FromExampleRef(*ei, lock));
-            i++;
-          }
-
-          return list;
-        }
-        
-        else { // !toList
-
-          TExamplePointerTable *newTable=mlnew TExamplePointerTable(eg->domain);
-          PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
-
-          EITERATE(ei, *eg) {
-            PyObject *lel=PyList_GetItem(mplier, i++);
-            if (!PyInt_Check(lel))
-              PYERROR(PyExc_IndexError, "invalid objects in example selector", PYNULL)
-            else if (negate != (weightGiven ? (int(PyInt_AsLong(lel))==weightID) : (PyObject_IsTrue(lel)!=0)))
-              newTable->addExample(*ei);
-          }
-
-          return WrapOrange(newGen);
-        }
-      }
-
-      /* ***** SELECTION BY LONGLIST ****** */
-      else if (PyOrLongList_Check(mplier)) {
-        PLongList llist = PyOrange_AsLongList(mplier);
-        if (int(llist->size()) != eg->numberOfExamples())
-          PYERROR(PyExc_IndexError, "select: invalid list size", PYNULL)
-
-        TLongList::iterator lli(llist->begin()), lle(llist->end());
-        TExampleIterator ei=eg->begin();
-        
-        int i=0;
-        if (toList) {
-          PyObject *list=PyList_New(eg->numberOfExamples());
-          for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : !!*lli))
-              PyList_SetItem(list, i++, Example_FromExampleRef(*ei, lock));
-          return list;
-        }
-
-        else { // !toList
-          TExamplePointerTable *newTable=mlnew TExamplePointerTable(eg->domain);
-          PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
-
-          for(;ei && (lli!=lle); ++ei, lli++)
-            if (negate != (weightGiven ? (*lli==weightID) : !!*lli))
-              newTable->addExample(*ei);
-
-          return WrapOrange(newGen);
-        }
-      }
-
-    PyErr_Clear();
-
-    /* ***** SELECTING BY VALUES OF ATTRIBUTES GIVEN AS DICTIONARY ***** */
-    if (PyDict_Check(mplier))
-      return toList ? applyFilterL(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID)
-                    : applyFilterP(filter_sameValues(mplier, eg->domain), weg, weightGiven, weightID);
-
-    else if (PyOrFilter_Check(mplier))
-      return toList ? applyFilterL(PyOrange_AsFilter(mplier), weg, weightGiven, weightID)
-                    : applyFilterP(PyOrange_AsFilter(mplier), weg, weightGiven, weightID);
-  }
-
-  PYERROR(PyExc_TypeError, "invalid example selector type", PYNULL);
-  PyCATCH
-}
-
-PyObject *ExamplePointerTable_selectlist(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
-{ PyTRY
-    return ExamplePointerTable_selectLow(self, args, keywords, true); 
-  PyCATCH
-}
-
-PyObject *ExamplePointerTable_selectref(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
-{ PyTRY
-    return ExamplePointerTable_selectLow(self, args, keywords, false); 
-  PyCATCH
-}
-
-
-PyObject *ExamplePointerTable_multipleselect(TPyOrange *self, PyObject *args)  PYARGS(METH_VARARGS, "(indices) -> ExampleTable")
-{ PyTRY
-    CAST_TO(TExamplePointerTable, eg);
-    PyObject *pylist;
-    if (   !PyArg_ParseTuple(args, "O", &pylist)
-        || !PyList_Check(pylist))
-      PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-    
-    TExampleTable *newTable = mlnew TExampleTable(eg->domain);
-    PExampleGenerator newGen(newTable);
-
-    int noex = eg->numberOfExamples();
-    for(int sze=PyList_Size(pylist), i=0; i<sze; i++) {
-      PyObject *lel=PyList_GetItem(pylist, i);
-      if (!PyInt_Check(lel))
-        PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-      int r = int(PyInt_AsLong(lel));
-      if ((r<0) || (r>=noex))
-        PyErr_Format(PyExc_TypeError, "index %i out of range (0-%i)", r, noex-1);
-      newTable->addExample(eg->operator[](int(PyInt_AsLong(lel))));
-    }
-
-    return WrapOrange(newGen);
-  PyCATCH
-}
-
-
-PyObject *ExamplePointerTable_multipleselectref(TPyOrange *self, PyObject *args)  PYARGS(METH_VARARGS, "(indices) -> ExampleTable")
-{ PyTRY
-    CAST_TO(TExamplePointerTable, eg);
-    PyObject *pylist;
-    if (   !PyArg_ParseTuple(args, "O", &pylist)
-        || !PyList_Check(pylist))
-      PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-    
-    TExamplePointerTable *newTable = mlnew TExamplePointerTable(eg->domain);
-    PExampleGenerator newGen(newTable);
-
-    int noex = eg->numberOfExamples();
-    for(int sze=PyList_Size(pylist), i=0; i<sze; i++) {
-      PyObject *lel=PyList_GetItem(pylist, i);
-      if (!PyInt_Check(lel))
-        PYERROR(PyExc_TypeError, "a list of example indices expected", PYNULL);
-      int r = int(PyInt_AsLong(lel));
-      if ((r<0) || (r>=noex))
-        PyErr_Format(PyExc_TypeError, "index %i out of range (0-%i)", r, noex-1);
-      newTable->addExample(eg->operator[](int(PyInt_AsLong(lel))));
-    }
-
-    return WrapOrange(newGen);
-  PyCATCH
-}
-
 
 
 /* ************ TRANSFORMVALUE ************ */
@@ -2006,7 +2060,41 @@ PyObject *TransformValue_call(PyObject *self, PyObject *args, PyObject *keywords
 
 #include "distvars.hpp"
 
-BASED_ON(Distribution, SomeValue)
+PyObject *Distribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SomeValue, "(attribute[, examples[, weightID]])")
+{
+  PyTRY
+    PExampleGenerator gen;
+    PyObject *pyvar;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "O|O&i:Distribution.new", &pyvar, &pt_ExampleGenerator, &gen, &weightID))
+      return PYNULL;
+
+    TDistribution *dist;
+
+    if (!gen) {
+      if (PyOrVariable_Check(pyvar))
+        dist = TDistribution::create(PyOrange_AsVariable(pyvar));
+      else
+        raiseError("invalid arguments");
+    }
+    else {
+      if (PyOrVariable_Check(pyvar))
+        dist = TDistribution::fromGenerator(gen, PyOrange_AsVariable(pyvar), weightID);
+      else {
+        PVariable var = varFromArg_byDomain(pyvar, gen->domain, false);
+        if (!var)
+          return PYNULL;
+
+        dist = TDistribution::fromGenerator(gen, var, weightID);
+      }
+    }
+
+    /* We need to override the type (don't want to lie it's Distribution).
+       The exception is if another type is prescribed. */
+    return type==(PyTypeObject *)(&PyOrDistribution_Type) ? WrapOrange(dist) : WrapNewOrange(dist, type);
+  PyCATCH
+}
+
 
 PyObject *convertToPythonNative(const TDiscDistribution &disc)
 { int e = disc.size();
@@ -2042,6 +2130,13 @@ PyObject *convertToPythonNative(const TDistribution &dist, int)
   PYERROR(PyExc_TypeError, "cannot convert to native python object", PYNULL);
 }
 
+
+PyObject *Distribution_native(PyObject *self, PyObject *) PYARGS(0, "() -> list | dictionary")
+{ 
+  PyTRY
+    return convertToPythonNative(*PyOrange_AS_Orange(self).AS(TDistribution), 1);
+  PyCATCH
+}
 
 
 TDiscDistribution *getDiscDistribution(PyObject *self)
@@ -2233,98 +2328,6 @@ PyObject *Distribution_random(PyObject *self) PYARGS(0, "() -> Value")
 }
    
 
-PyObject *DiscDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value, weight) -> Value")
-{ PyTRY
-    CAST_TO(TDiscDistribution, dist)
-
-    PyObject *index;
-    float weight = 1.0;
-    if (!PyArg_ParseTuple(args, "O|f", &index, &weight))
-      PYERROR(PyExc_TypeError, "DiscDistribution.add: invalid arguments", PYNULL);
-
-    if (PyInt_Check(index)) {
-      dist->addint(int(PyInt_AsLong(index)), weight);
-      RETURN_NONE;
-    }
-
-    TValue val;
-    if (!dist->variable || !convertFromPython(index, val, dist->variable))
-      PYERROR(PyExc_TypeError, "DiscDistriubtion.add: cannot convert the arguments to a Value", PYNULL);
-
-    dist->add(val, weight);
-    RETURN_NONE;
-  PyCATCH;
-}
-
-
-PyObject *ContDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value, weight) -> Value")
-{ PyTRY
-    CAST_TO(TContDistribution, dist)
-
-    PyObject *index;
-    float weight = 1.0;
-    if (!PyArg_ParseTuple(args, "O|f", &index, &weight))
-      PYERROR(PyExc_TypeError, "DiscDistribution.add: invalid arguments", PYNULL);
-
-    if (PyNumber_Check(index)) {
-      dist->addfloat(PyNumber_AsFloat(index));
-      RETURN_NONE;
-    }
-
-    TValue val;
-    if (!convertFromPython(index, val, dist->variable))
-      PYERROR(PyExc_TypeError, "ContDistriubtion.add: invalid arguments", PYNULL);
-
-    dist->add(val, weight);
-    RETURN_NONE;
-  PyCATCH;
-}
-
-
-PyObject *ContDistribution_error(PyObject *self) PYARGS(0, "() -> float")
-{ PyTRY
-    TContDistribution *cont = getContDistribution(self);
-    if (!cont)
-      return PYNULL;
-    
-    return PyFloat_FromDouble(cont->error());
-  PyCATCH
-}
-
-
-PyObject *ContDistribution_average(PyObject *self) PYARGS(0, "() -> float")
-{ PyTRY
-    TContDistribution *cont = getContDistribution(self);
-    if (!cont)
-      return PYNULL;
-    
-    return PyFloat_FromDouble(cont->average());
-  PyCATCH
-}
-
-
-PyObject *ContDistribution_dev(PyObject *self) PYARGS(0, "() -> float")
-{ PyTRY
-    TContDistribution *cont = getContDistribution(self);
-    if (!cont)
-      return PYNULL;
-    
-    return PyFloat_FromDouble(cont->dev());
-  PyCATCH
-}
-
-
-PyObject *ContDistribution_var(PyObject *self) PYARGS(0, "() -> float")
-{ PyTRY
-    TContDistribution *cont = getContDistribution(self);
-    if (!cont)
-      return PYNULL;
-    
-    return PyFloat_FromDouble(cont->var());
-  PyCATCH
-}
-
-
 
 PDiscDistribution list2discdistr(PyObject *args, PyTypeObject *type = NULL)
 {
@@ -2451,6 +2454,43 @@ PyObject *DiscDistribution_items(PyObject *self) PYARGS(0, "() -> [(string, floa
 }
 
 
+PyObject *DiscDistribution_values(PyObject *self) PYARGS(0, "() -> list")
+{ PyTRY
+    TDiscDistribution *disc = getDiscDistribution(self);
+    if (!disc)
+      return PYNULL;
+
+    PyObject *nl = PyList_New(disc->size());
+    int i = 0;
+    const_PITERATE(TDiscDistribution, ci, disc)
+      PyList_SetItem(nl, i++, PyFloat_FromDouble(*ci));
+    return nl;
+  PyCATCH
+}
+    
+
+PyObject *DiscDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value, weight) -> Value")
+{ PyTRY
+    CAST_TO(TDiscDistribution, dist)
+
+    PyObject *index;
+    float weight = 1.0;
+    if (!PyArg_ParseTuple(args, "O|f", &index, &weight))
+      PYERROR(PyExc_TypeError, "DiscDistribution.add: invalid arguments", PYNULL);
+
+    if (PyInt_Check(index)) {
+      dist->addint(int(PyInt_AsLong(index)), weight);
+      RETURN_NONE;
+    }
+
+    TValue val;
+    if (!dist->variable || !convertFromPython(index, val, dist->variable))
+      PYERROR(PyExc_TypeError, "DiscDistriubtion.add: cannot convert the arguments to a Value", PYNULL);
+
+    dist->add(val, weight);
+    RETURN_NONE;
+  PyCATCH;
+}
 
 
 PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) BASED_ON(Distribution, "[dist of float:float] | DiscDistribution")
@@ -2540,19 +2580,175 @@ PyObject *ContDistribution_items(PyObject *self) PYARGS(0, "() -> [(string, floa
 }
 
 
-PyObject *ContDistribution_percentile(PyObject *self, PyObject *arg) PYARGS(METH_O, "(float) -> float")
+PyObject *ContDistribution_values(PyObject *self) PYARGS(0, "() -> list")
 { PyTRY
     TContDistribution *cont = getContDistribution(self);
     if (!cont)
       return PYNULL;
 
-    if (!PyFloat_Check(arg))
-      PYERROR(PyExc_TypeError, "float argument expected", PYNULL);
+    PyObject *nl = PyList_New(cont->size());
+    int i = 0;
+    const_PITERATE(TContDistribution, ci, cont)
+      PyList_SetItem(nl, i++, PyFloat_FromDouble((*ci).second));
+    return nl;
+  PyCATCH
+}
+    
 
-    return PyFloat_FromDouble(cont->percentile(float(PyFloat_AsDouble(arg))));
+PyObject *ContDistribution_percentile(PyObject *self, PyObject *arg) PYARGS(METH_VARARGS, "(int) -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+
+    float perc;
+    if (!PyArg_ParseTuple(arg, "f:ContDistribution.percentile", &perc))
+      return PYNULL;
+
+    return PyFloat_FromDouble(cont->percentile(perc));
   PyCATCH
 }
 
+
+PyObject *ContDistribution_add(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value, weight) -> Value")
+{ PyTRY
+    CAST_TO(TContDistribution, dist)
+
+    PyObject *index;
+    float weight = 1.0;
+    if (!PyArg_ParseTuple(args, "O|f", &index, &weight))
+      PYERROR(PyExc_TypeError, "DiscDistribution.add: invalid arguments", PYNULL);
+
+    if (PyNumber_Check(index)) {
+      dist->addfloat(PyNumber_AsFloat(index));
+      RETURN_NONE;
+    }
+
+    TValue val;
+    if (!convertFromPython(index, val, dist->variable))
+      PYERROR(PyExc_TypeError, "ContDistriubtion.add: invalid arguments", PYNULL);
+
+    dist->add(val, weight);
+    RETURN_NONE;
+  PyCATCH;
+}
+
+
+PyObject *ContDistribution_error(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+    
+    return PyFloat_FromDouble(cont->error());
+  PyCATCH
+}
+
+
+PyObject *ContDistribution_average(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+    
+    return PyFloat_FromDouble(cont->average());
+  PyCATCH
+}
+
+
+PyObject *ContDistribution_dev(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+    
+    return PyFloat_FromDouble(cont->dev());
+  PyCATCH
+}
+
+
+PyObject *ContDistribution_var(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    if (!cont)
+      return PYNULL;
+    
+    return PyFloat_FromDouble(cont->var());
+  PyCATCH
+}
+
+
+PyObject *ContDistribution_density(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x) -> float")
+{ PyTRY
+    TContDistribution *cont = getContDistribution(self);
+    float x;
+    if (!cont || !PyArg_ParseTuple(args, "f:ContDistribution.density", &x))
+      return PYNULL;
+    
+    return PyFloat_FromDouble(cont->density(x));
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma) | (distribution) | () -> distribution")
+{ PyTRY
+    float mean = 0.0, sigma = 1.0;
+
+    if (PyArg_ParseTuple(args, "|ff", &mean, &sigma))
+      return WrapNewOrange(mlnew TGaussianDistribution(mean, sigma), type);
+
+    PyErr_Clear();
+
+    PDistribution dist;
+    if (PyArg_ParseTuple(args, "O&", &cc_Distribution, &dist))
+      return WrapNewOrange(mlnew TGaussianDistribution(dist), type);
+
+    PYERROR(PyExc_TypeError, "GaussianDistribution expects mean and sigma, or distribution or nothing", PYNULL)
+
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_average(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).average());
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_error(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).error());
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_dev(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).dev());
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_var(PyObject *self) PYARGS(0, "() -> float")
+{ PyTRY
+    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).var());
+  PyCATCH
+}
+
+
+PyObject *GaussianDistribution_density(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(x) -> float")
+{ PyTRY
+    float x;
+    if (!PyArg_ParseTuple(args, "f:GaussianDistribution.density", &x))
+      return PYNULL;
+    
+    return PyFloat_FromDouble(SELF_AS(TGaussianDistribution).density(x));
+  PyCATCH
+}
+
+/* We redefine new (removed from below!) and add mapping methods
+*/
 
 PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weightID]) -> Distribution")
 { PyTRY
@@ -2564,21 +2760,6 @@ PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARAR
   PyCATCH
 }
 
-
-PyObject *GaussianDistribution_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Distribution, "(mean, sigma)")
-{ PyTRY
-    float mean = 0.0, sigma = 1.0;
-    if (args && PyTuple_Check(args) && PyTuple_Size(args))
-      if (!PyArg_ParseTuple(args, "ff", &mean, &sigma))
-        PYERROR(PyExc_TypeError, "GaussianDistribution expects mean and sigma, or nothing", PYNULL)
-
-    return WrapNewOrange(mlnew TGaussianDistribution(mean, sigma), type);
-  PyCATCH
-}
-
-
-/* We redefine new (removed from below!) and add mapping methods
-*/
 
 inline PDomainDistributions PDomainDistributions_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::P_FromArguments(arg); }
 inline PyObject *DomainDistributions_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_FromArguments(type, arg); }
@@ -2614,10 +2795,10 @@ PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *
     if (obj)
       if (obj!=Py_None)
         return obj;
-      else {
+      else
         Py_DECREF(obj);
-        PyErr_Clear();
-      }
+
+    PyErr_Clear();
 
     long weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);

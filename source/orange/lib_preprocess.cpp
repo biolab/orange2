@@ -241,7 +241,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
   if (var->varType == TValue::INTVAR) {
     TValueFilter_discrete *vfilter = mlnew TValueFilter_discrete(ILLEGAL_INT, var);
     PValueFilter wvfilter = vfilter;
-    TValueList &valueList = vfilter->acceptableValues.getReference();
+    TValueList &valueList = vfilter->values.getReference();
 
     if (PyTuple_Check(pyvalue) || PyList_Check(pyvalue)) {
       PyObject *iterator = PyObject_GetIter(pyvalue);

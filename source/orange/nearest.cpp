@@ -88,8 +88,8 @@ PExampleGenerator TFindNearest_BruteForce::operator()(const TExample &e, const f
   }
 
   PDomain dom = e.domain;
-  // This creates an ExamplePointerTable with a lock to 'examples'
-  TExamplePointerTable *ret = mlnew TExamplePointerTable(dom, examples);
+  // This creates an ExampleTable with a references to 'examples'
+  TExampleTable *ret = mlnew TExampleTable(examples, false);
   PExampleGenerator res = ret;
 
   if (k<=0.0)

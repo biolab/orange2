@@ -504,7 +504,7 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
     raiseError("class-less domain");
 
   PExampleGenerator gen = fixedExamples(ogen);
-  TExamplePointerTable examplePtrs(gen);
+  TExampleTable examplePtrs(gen, false);
   examplePtrs.sort();
 
   TClassifierByExampleTable *classifier = mlnew TClassifierByExampleTable(examplePtrs.domain);

@@ -280,9 +280,12 @@ TValue TClassifier::operator ()(const TExample &example, PEFMDataDescription dat
     Provided the data description for missing values it constructs the TExampleForMissing,
     calls the classDistribution(const TExample &) and returns the weighted class distributions. */
 PDistribution TClassifier::classDistribution(const TExample &example, PEFMDataDescription dataDes)
-{ TExampleForMissing exMissing(example, dataDes);
+{
+  TExampleForMissing exMissing(example, dataDes);
   exMissing.resetExample();
-  PDiscDistribution classDist = TDistribution::create(classVar);
+  TDistribution *classDist = TDistribution::create(classVar);
+  PDistribution res = classDist;
+
   do
     if (dataDes->missingWeight)
       classDist->operator += ((classDistribution(exMissing)->operator *= (exMissing[dataDes->missingWeight])));
@@ -290,7 +293,7 @@ PDistribution TClassifier::classDistribution(const TExample &example, PEFMDataDe
       classDist->operator += (classDistribution(exMissing).getReference());
   while (exMissing.nextExample());
  
-  return classDist;
+  return res;
 }
 
 
@@ -378,9 +381,13 @@ void TDefaultClassifier::predictionAndDistribution(const TExample &exam, TValue 
 
 
 TRandomClassifier::TRandomClassifier(PVariable acv)
-: TClassifier(acv),
-  probabilities(TDistribution::create(acv))
-{ if (probabilities)
+: TClassifier(acv)
+{
+  if (classVar->varType != TValue::INTVAR)
+    raiseError("discrete class expected (which '%s' is not)", classVar->name.c_str());
+
+  probabilities = dynamic_cast<TDiscDistribution *>(TDistribution::create(acv));
+  if (probabilities)
     // if distribution is discrete, it sets probabilities to 1/acv->noOfValues
     probabilities->normalize();
 }

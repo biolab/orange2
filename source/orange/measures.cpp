@@ -435,7 +435,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
       || (gen->numberOfExamples()!=prevGenerator->numberOfExamples())) {
 
     vector<TExampleTable *> tables;
-    TExamplePointerTable *examples = NULL;
+    TExampleTable *examples = NULL;
 
     TRandomGenerator rgen(gen->numberOfExamples());
 
@@ -445,14 +445,9 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
   
       if (gen->domain->classVar->varType==TValue::INTVAR) {
         // prepares tables of examples of different classes
-        bool pointersToExamples = gen.is_derived_from(TExampleTable);
- 
-        if (pointersToExamples)
-          for (int i = gen->domain->classVar->noOfValues(); i--; )
-            tables.push_back(mlnew TExampleTable(gen->domain));
-        else
-          for (int i = gen->domain->classVar->noOfValues(); i--; )
-            tables.push_back(mlnew TExamplePointerTable(gen->domain));
+        for (int i = gen->domain->classVar->noOfValues(); i--; )
+          // if gen is ExampleTable, our tables won't own examples (ie don't need to copy them)
+          tables.push_back(mlnew TExampleTable(gen->domain, !gen.is_derived_from(TExampleTable)));
 
         PEITERATE(ei, gen)
           if (!(*ei).getClass().isSpecial())
@@ -534,8 +529,7 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
  
         else {
           measures.clear();
-          bool pointersToExamples = gen.is_derived_from(TExampleTable);
-          examples = mlnew TExamplePointerTable(gen); // This will automatically store examples into ExampleTable if necessary
+          examples = mlnew TExampleTable(gen, !gen.is_derived_from(TExampleTable)); // This will automatically store examples into ExampleTable if necessary
 
           float minCl, maxCl;
           { TExampleIterator emi(examples->begin());

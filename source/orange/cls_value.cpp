@@ -380,6 +380,7 @@ const char *TPyValue2string(TPyValue *self)
     if (self->value.isSpecial())
       return ".";
 
+    pvs = (char *)realloc(pvs, 16);
     if (self->value.varType==TValue::FLOATVAR)
       sprintf(pvs, "%f", self->value.floatV);
     else if (self->value.varType==TValue::INTVAR)

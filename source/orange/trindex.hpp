@@ -30,13 +30,8 @@ using namespace std;
 
 WRAPPER(ExampleGenerator);
 
-/*  A component for TFilter_index. Basicaly, it is a vector of
-    chars with an additional field storing the maximum element.
-    Derived objects provide constructors for different example
-    selection methods. */
 
 // For compatibility ...
-#define FOLDINDEXTYPE long
 #define TFoldIndices TLongList
 #define PFoldIndices PLongList
 #define PRandomIndices PLongList

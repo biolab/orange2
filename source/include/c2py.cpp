@@ -40,9 +40,9 @@ PyObject *makeExceptionClass(char *name, char *docstr, PyObject *base)
 }
 
 
-bool setFilterWarnings(PyObject *filterFunction, char *action, char *moduleName, PyObject *warning)
+bool setFilterWarnings(PyObject *filterFunction, char *action, char *message, PyObject *warning, char *moduleName)
 {
-  PyObject *args = Py_BuildValue("ssO", action, moduleName, warning);
+  PyObject *args = Py_BuildValue("ssOs", action, message, warning, moduleName);
   PyObject *res = PyObject_CallObject(filterFunction, args);
   Py_DECREF(args);
   if (!res)

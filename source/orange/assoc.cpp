@@ -28,7 +28,6 @@
 #include "examplegen.hpp"
 #include "spec_gen.hpp"
 #include "table.hpp"
-#include "filter.hpp"
 
 #include "assoc.ppp"
 

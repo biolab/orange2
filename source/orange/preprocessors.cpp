@@ -133,7 +133,7 @@ PExampleGenerator TPreprocessor_drop::operator()(PExampleGenerator gen, const in
   }
 
   newWeight = weightID;
-  return filterExamples(mlnew TFilter_Values(wdropvalues, true, true, gen->domain), gen);
+  return filterExamples(mlnew TFilter_values(wdropvalues, true, true, gen->domain), gen);
 }
 
   
@@ -163,7 +163,7 @@ PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain d
     dropvalues->push_back(vf); // this wraps it!
     vf->position = domain->getVarNum((*vi).first);
   }
-  return mlnew TFilter_Values(wdropvalues, true, false, domain);
+  return mlnew TFilter_values(wdropvalues, true, false, domain);
 }
 
 
@@ -589,7 +589,7 @@ TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight()
   eventValue(),
   method(km),
   maxTime(0.0),
-  noComplementaryExamples(true)
+  addComplementary(false)
 {}
 
 
@@ -599,16 +599,19 @@ TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, PVari
   eventValue(ev),
   method(me),
   maxTime(0.0),
-  noComplementaryExamples(true)
+  addComplementary(false)
 {}
 
-void TPreprocessor_addCensorWeight::addExample(TExampleTable *table, const int &weightID, const TExample &example, const float &weight, const int &complementary)
-{ TExample ex = example;
-  table->addExample(ex);
+void TPreprocessor_addCensorWeight::addExample(TExampleTable *table, const int &weightID, const TExample &example, const float &weight, const int &complementary, const float &compWeight)
+{ 
+  TExample ex = example;
+
   ex.setMeta(weightID, TValue(weight));
-  if (complementary > 0) {
+  table->addExample(ex);
+
+  if ((complementary >= 0) && (compWeight>0.0)) {
     ex.setClass(TValue(complementary));
-    ex.setMeta(weightID, TValue(1-weight));
+    ex.setMeta(weightID, TValue(compWeight));
     table->addExample(ex);
   }
 }
@@ -636,11 +639,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     else
       raiseError("'outcomeVar' not set and the domain is class-less");
 
-  int complementary;
-  if (noComplementaryExamples && (gen->domain->getVar(outcomeIndex)->noOfValues() == 2))
-    complementary = eventValue.intV ? 0 : 1;
-  else
-    complementary = -1;
+  int complementary = addComplementary ? eventValue.intV : -1;
 
   checkProperty(timeVar);
   int timeIndex = gen->domain->getVarNum(timeVar, false);
@@ -693,9 +692,9 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     float KM_max = maxTime>0.0 ? KM->p(maxTime) : (*KM.AS(TContDistribution)->distribution.rbegin()).second;
 
     newWeight = getMetaID();
-    PEITERATE(ei, table) {
+    PEITERATE(ei, gen) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
-        addExample(table, newWeight, *ei, WEIGHT(*ei), complementary);
+        addExample(table, newWeight, *ei, WEIGHT(*ei), -1);
       else {
         const TValue &tme = (*ei)[timeIndex];
         if (tme.varType != TValue::FLOATVAR)
@@ -704,15 +703,20 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
           raiseError("invalid time (continuous value expected)");
         if (!tme.isSpecial()) {
           if (tme.floatV > maxTime)
-            addExample(table, newWeight, *ei, WEIGHT(*ei), complementary);
+            addExample(table, newWeight, *ei, WEIGHT(*ei), -1);
           else {
             float KM_t = KM->p(tme.floatV);
             if (method==km) {
-              if (KM_t>0)
-                addExample(table, newWeight, *ei, WEIGHT(*ei) * KM_max/KM_t, complementary);
+              if (KM_t>0) {
+                float origw = WEIGHT(*ei);
+                float fact = KM_max/KM_t;
+                addExample(table, newWeight, *ei, origw*fact, complementary, origw*(1-fact));
+              }
             }
-            else
-              addExample(table, newWeight, *ei, WEIGHT(*ei) * KM_t, complementary);
+            else {
+              float origw = WEIGHT(*ei);
+              addExample(table, newWeight, *ei, origw*KM_t, complementary, origw*(1-KM_t));
+            }
           }
         }
       }

@@ -73,6 +73,6 @@ public:
 #undef ULONGLONG_MAX
 
 PyObject *makeExceptionClass(char *name, char *docstr = NULL, PyObject *base = NULL);
-bool setFilterWarnings(PyObject *filterFunction, char *action, char *moduleName, PyObject *warning);
+bool setFilterWarnings(PyObject *filterFunction, char *action, char *message, PyObject *warning, char *moduleName);
 
 #endif

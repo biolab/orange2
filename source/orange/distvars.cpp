@@ -67,16 +67,47 @@ TDistribution::TDistribution(PVariable var)
 {}
 
 
-PDistribution TDistribution::create(PVariable var)
+TDistribution *TDistribution::create(PVariable var)
 { if (!var)
-    return PDistribution();
+    return NULL;
   if (var->varType==TValue::INTVAR)
     return mlnew TDiscDistribution(var);
   if (var->varType==TValue::FLOATVAR)
     return mlnew TContDistribution(var);
 
   ::raiseErrorWho("Distribution", "unknown value type");
-  return PDistribution(); // to make compiler happy
+  return NULL; // to make compiler happy
+}
+
+
+TDistribution *TDistribution::fromGenerator(PExampleGenerator gen, const int &position, const int &weightID)
+{
+  if (position >= gen->domain->variables->size())
+    ::raiseErrorWho("Distribution", "index %i out of range", position);
+
+  PVariable var = gen->domain->variables->at(position);
+
+  if (var->varType == TValue::INTVAR)
+    return mlnew TDiscDistribution(gen, position, weightID);
+
+  if (var->varType == TValue::FLOATVAR)
+    return mlnew TContDistribution(gen, position, weightID);
+
+  ::raiseErrorWho("Distribution", "unknown value type");
+  return NULL; // to make compiler happy
+}
+
+
+TDistribution *TDistribution::fromGenerator(PExampleGenerator gen, PVariable var, const int &weightID)
+{
+  if (var->varType == TValue::INTVAR)
+    return mlnew TDiscDistribution(gen, var, weightID);
+
+  if (var->varType == TValue::FLOATVAR)
+    return mlnew TContDistribution(gen, var, weightID);
+
+  ::raiseErrorWho("Distribution", "unknown value type");
+  return NULL; // to make compiler happy
 }
 
 
@@ -169,8 +200,8 @@ NOT_IMPLEMENTED("error()")
 float TDistribution::percentile(const float &) const
 NOT_IMPLEMENTED("percentile(float)")
 
-float TDistribution::p(const float &) const
-NOT_IMPLEMENTED("p(float)")
+float TDistribution::density(const float &) const
+NOT_IMPLEMENTED("density(float)")
 
 
 
@@ -289,7 +320,7 @@ float TDistribution::p(const TValue &val) const
       raiseError("undefined attribute value");
   }
   CHECKVALTYPE(val.varType);
-  return (val.varType==TValue::INTVAR) ? p(int(val)) : p(float(val));
+  return (val.varType==TValue::INTVAR) ? p(int(val)) : density(float(val));
 }
 
 
@@ -300,10 +331,10 @@ TDiscDistribution::TDiscDistribution()
 
 
 TDiscDistribution::TDiscDistribution(PVariable var) 
-: TDistribution(var), 
-  distribution(vector<float>(var->noOfValues(), 0.0))
+: TDistribution(var)
 { if (var->varType!=TValue::INTVAR)
      raiseError("attribute '%s' is not discrete", var->name.c_str());
+  distribution = vector<float>(var->noOfValues(), 0.0);
   supportsDiscrete = true;
 }
 
@@ -341,6 +372,47 @@ TDiscDistribution::TDiscDistribution(PDistribution other)
 TDiscDistribution::TDiscDistribution(PDiscDistribution other) 
 : TDistribution(other.getReference())
 { supportsDiscrete = true; }
+
+
+TDiscDistribution::TDiscDistribution(PExampleGenerator gen, const int &position, const int &weightID)
+{
+  supportsDiscrete = true;
+
+  if (position >= gen->domain->variables->size())
+    raiseError("index %i out of range", position);
+
+  variable = gen->domain->variables->at(position);
+  if (variable->varType != TValue::INTVAR)
+    raiseError("attribute '%s' is not discrete", variable->name.c_str());
+
+  distribution = vector<float>(variable->noOfValues(), 0.0);
+
+  PEITERATE(ei, gen)
+    add((*ei)[position], WEIGHT(*ei));
+}
+
+
+TDiscDistribution::TDiscDistribution(PExampleGenerator gen, PVariable var, const int &weightID)
+: TDistribution(var)
+{
+  supportsDiscrete = true;
+
+  if (variable->varType != TValue::INTVAR)
+    raiseError("attribute '%s' is not discrete", variable->name.c_str());
+
+  distribution = vector<float>(var->noOfValues(), 0.0);
+
+  int position = gen->domain->getVarNum(variable, false);
+  if (position != ILLEGAL_INT)
+    PEITERATE(ei, gen)
+      add((*ei)[position], WEIGHT(*ei));
+  else
+    if (variable->getValueFrom)
+      PEITERATE(ei, gen)
+        add((*ei)[variable], WEIGHT(*ei));
+    else
+      raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
+}
 
 
 const float &TDiscDistribution::atint(const int &v)
@@ -618,16 +690,30 @@ int TDiscDistribution::highestProbIntIndex() const
   int wins = 1;
   int best = 0;
   float bestP = operator[](0);
-  for(int i = 1, e = int(size()); --e; i++)
-    if (operator[](i) > bestP) {
+  int i, e;
+  long sum = 0;
+
+  for(i = 1, e = int(size()); --e; i++) {
+    const float &P = operator[](i);
+    sum += *(const long *)(&P);
+
+    if (P > bestP) {
       best = i;
-      bestP = operator[](i);
+      bestP = P;
       wins = 1;
     }
-    else if ((operator[](i)==bestP) && _globalRandom->randbool(++wins))
-      best = i;
+    else if (P==bestP)
+      wins++;
+  }
 
-  return best;
+  if (wins==1)
+    return best;
+
+  for(i = 0, wins = 1 + labs(sum>>23) % wins; wins; i++)
+    if (operator[](i)==bestP)
+      wins--;
+
+  return i-1;
 }
 
 
@@ -764,6 +850,43 @@ TContDistribution::TContDistribution(PVariable var)
 { if (var->varType!=TValue::FLOATVAR)
      raiseError("attribute '%s' is not continuous", var->name.c_str());
   supportsContinuous = true; 
+}
+
+
+TContDistribution::TContDistribution(PExampleGenerator gen, const int &position, const int &weightID)
+{
+  supportsContinuous = true;
+
+  if (position >= gen->domain->variables->size())
+    raiseError("index %i out of range", position);
+
+  variable = gen->domain->variables->at(position);
+  if (variable->varType != TValue::FLOATVAR)
+    raiseError("attribute '%s' is not continuous", variable->name.c_str());
+
+  PEITERATE(ei, gen)
+    add((*ei)[position], WEIGHT(*ei));
+}
+
+
+TContDistribution::TContDistribution(PExampleGenerator gen, PVariable var, const int &weightID)
+: TDistribution(var)
+{
+  supportsContinuous = true;
+
+  if (variable->varType != TValue::FLOATVAR)
+    raiseError("attribute '%s' is not continuous", variable->name.c_str());
+
+  int position = gen->domain->getVarNum(variable, false);
+  if (position != ILLEGAL_INT)
+    PEITERATE(ei, gen)
+      add((*ei)[position], WEIGHT(*ei));
+  else
+    if (variable->getValueFrom)
+      PEITERATE(ei, gen)
+        add((*ei)[variable], WEIGHT(*ei));
+    else
+      raiseError("attribute '%s' not in domain and cannot be computed", variable->name.c_str());
 }
 
 
@@ -913,7 +1036,7 @@ float TContDistribution::average() const
 
 
 float TContDistribution::dev() const
-{ if (abs<=2.0)
+{ if (abs<=1e-7)
     raiseError("cannot compute standard deviation (no values)");
   return sqrt((sum2-sum*sum/abs)/abs);
 }
@@ -988,7 +1111,7 @@ float TContDistribution::randomFloat() const
   return (*di).second;
 }
 
-float TContDistribution::p(const float &x) const
+float TContDistribution::density(const float &x) const
 { const_iterator rb = upper_bound(x);
   if (rb==end())
     return 0.0;
@@ -1004,16 +1127,24 @@ float TContDistribution::p(const float &x) const
 
 
 
-TGaussianDistribution::TGaussianDistribution(const float &amean, const float &asigma)
+TGaussianDistribution::TGaussianDistribution(const float &amean, const float &asigma, const float &anabs)
 : mean(amean),
   sigma(asigma)
-{}
+{
+  abs = anabs;
+  normalized = true;
+  supportsContinuous = true; 
+}
 
 
 TGaussianDistribution::TGaussianDistribution(PDistribution dist)
 : mean(dist->average()),
-  sigma(sqrt(dist->error()))
-{ normalized = true; }
+  sigma(sqrt(dist->dev()))
+{
+ abs = dist->abs;
+ normalized = true; 
+ supportsContinuous = true; 
+}
 
 
 
@@ -1034,7 +1165,7 @@ float TGaussianDistribution::error() const
   
 
 void TGaussianDistribution::normalize()
-{}
+{ abs = 1.0; }
 
 
 float TGaussianDistribution::highestProbFloatIndex() const
@@ -1044,15 +1175,15 @@ float TGaussianDistribution::highestProbFloatIndex() const
 #define pi 3.1415926535897931
 
 float TGaussianDistribution::highestProb() const
-{ return 1/(sigma * sqrt(2*pi)); }
+{ return abs * 1/(sigma * sqrt(2*pi)); }
 
 
 float TGaussianDistribution::randomFloat() const
 { return (float)gasdev((double)mean, (double)sigma, *_globalRandom); }
 
 
-float TGaussianDistribution::p(const float &x) const
-{ return exp(-sqr((x-mean)/sigma)) / (sigma*sqrt(2*pi)); }
+float TGaussianDistribution::density(const float &x) const
+{ return abs * exp(-sqr((x-mean)/2/sigma)) / (sigma*sqrt(2*pi)); }
 
 
 bool TGaussianDistribution::noDeviation() const
