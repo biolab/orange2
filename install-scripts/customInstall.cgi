@@ -48,7 +48,7 @@ else:
     os.mkdir(filedir)
 
     os.chdir("D:\\webMagix\\orange\\scripts")
-    args += ' /DORANGEDIR=d:\\webMagix\\orange\\minorRelease\\orange'
+    args += ' /DORANGEDIR=D:\\webMagix\\orange\\download2\\lastStable\\orange'
     args += ' /DCWD=%s' % os.getcwd()
     args += ' /DOUTFILENAME=d:\\webMagix\\orange\\download\\custom\\%s\\%s' % (filedir, filename)
     
