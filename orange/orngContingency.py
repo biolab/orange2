@@ -18,6 +18,7 @@
 
 
 import Numeric, orange
+from random import *
 
 _log2 = 1.0/Numeric.log(2)
 _log2e = Numeric.log(2)
