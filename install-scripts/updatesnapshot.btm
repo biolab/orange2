@@ -42,7 +42,7 @@ rem *** COMPILE NEW SNAPSHOT
 cdd %SCRIPTDIR
 python buildInstFileList.py %SNAPSHOTDIR snapshotfiles
 python removeCVS.py %SNAPSHOTDIR
-pause
+
 del %DOWNLOADDIR\orange-win-snap-*.exe
 nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 del snapshotfiles_*.inc

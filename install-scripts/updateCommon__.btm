@@ -67,4 +67,5 @@ rem set | grep  orange.*Version > %SCRIPTDIR\versions.set
 rem plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si ~/install-scripts/mac/macinstallation.sh %TAG %PLINK_MACINTOSH MACINTOSH 0
 
 cdd %SCRIPTDIR
+python whatsup.py
 updateSnapshot.btm
