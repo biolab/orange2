@@ -14,6 +14,8 @@
 # Notes: 
 #
 # ChangeLog:
+#   2005/04/04:
+#       * export for R (source(filename) is to be used for reading the data.frame within R)
 #   2005/03/10:
 #       * initial version
 #       * registration in orange (Janez)
@@ -193,6 +195,62 @@ def toC50(filename,table):
             f.write('%s,'%i)
         f.write('%s\n'%x[-1])
 
+def toR(filename,t):
+    if string.upper(filename[-2:]) == ".R":
+        filename = filename[:-2]
+    f = open(filename+'.R','w')
 
+    atyp = []
+    aord = []
+    labels = []
+    as = []
+    for a in t.domain.attributes:
+        as.append(a)
+    as.append(t.domain.classVar)
+    for a in as:
+        labels.append(str(a.name))
+        atyp.append(a.varType)
+        aord.append(a.ordered)
+
+    f.write('data <- data.frame(\n')
+    for i in xrange(len(labels)):
+        if atyp[i] == 2: # continuous
+            f.write('"%s" = c('%(labels[i]))
+            for j in xrange(len(t)):
+                if t[j][i].isSpecial():
+                    f.write('NA')
+                else:
+                    f.write(str(t[j][i]))
+                if (j == len(t)-1):
+                    f.write(')')
+                else:
+                    f.write(',')
+        elif atyp[i] == 1: # discrete
+            if aord[i]: # ordered
+                f.write('"%s" = ordered(levels=c('%(labels[i]))
+                for j in xrange(len(as[i].values)):
+                    f.write('"%s"'%(as[i].values[j]))
+                    if j == len(as[i].values)-1:
+                        f.write('),c(')
+                    else:
+                        f.write(',')
+            else:
+                f.write('"%s" = factor(c('%(labels[i]))
+            for j in xrange(len(t)):
+                if t[j][i].isSpecial():
+                    f.write('NA')
+                else:
+                    f.write('"%s"'%str(t[j][i]))
+                if (j == len(t)-1):
+                    f.write(')')
+                else:
+                    f.write(',')
+        else:
+            raise "Unknown attribute type."
+        if (i < len(labels)-1):
+            f.write(',\n')
+    f.write(')\n')
+
+orange.registerFileType("R", None, toR, ".R")
 orange.registerFileType("Weka", loadARFF, toARFF, ".arff")
 orange.registerFileType("C50", None, toC50, [".names", ".data", ".test"])
