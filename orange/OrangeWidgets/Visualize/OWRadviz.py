@@ -416,20 +416,35 @@ class OWRadviz(OWWidget):
             self.graph.repaint()
             self.recomputeEnergy()
 
-    def freeAttributes(self, iterations, steps):
+    def freeAttributes(self, iterations, steps, singleStep = False):
         attrList = self.getShownAttributeList()
         classes = [int(x.getclass()) for x in self.graph.rawdata]
         optimizer = self.lockToCircle and orangeom.optimizeAnchorsRadial or orangeom.optimizeAnchors
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
-        for i in range(iterations):
-            self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
-            self.energyLabel.setText("Energy: %.3f" % E)
-            self.energyLabel.repaint()
-            self.graph.updateData(attrList)
-            self.graph.repaint()
 
-    def singleStep(self): self.freeAttributes(1, 1)
+        if not singleStep:
+            minE = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+
+        # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
+        noChange = 0
+        while noChange < 5:
+            for i in range(iterations):
+                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
+                self.energyLabel.setText("Energy: %.3f" % E)
+                self.energyLabel.repaint()
+                self.graph.updateData(attrList)
+                self.graph.repaint()
+            if singleStep:
+                noChange = 5
+            else:
+                if E > minE*0.99:
+                    noChange += 1
+                else:
+                    minE = E
+                    noChange = 0
+
+    def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 100)
     def animate(self):   self.freeAttributes(10, 10)
     def slowAnimate(self):    self.freeAttributes(100, 1)
