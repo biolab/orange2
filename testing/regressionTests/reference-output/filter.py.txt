@@ -7,11 +7,25 @@ First five examples
 ['young', 'myope', 'yes', 'normal', 'hard']
 ['young', 'hypermetrope', 'no', 'reduced', 'none']
 
-Examples with unknown values
+Examples without unknown values
+['young', 'myope', 'yes', 'reduced', 'none']
+['young', 'myope', 'yes', 'normal', 'hard']
+['young', 'hypermetrope', 'no', 'reduced', 'none']
+
+Examples without unknown values, ignoring 'age'
+['?', 'myope', 'no', 'reduced', 'none']
+['young', 'myope', 'yes', 'reduced', 'none']
+['young', 'myope', 'yes', 'normal', 'hard']
+['young', 'hypermetrope', 'no', 'reduced', 'none']
+
+Examples with unknown values (ignoring age)
+['young', 'myope', 'no', 'normal', '?']
+
+Examples with unknown values (Filter_hasSpecial)
 ['?', 'myope', 'no', 'reduced', 'none']
 ['young', 'myope', 'no', 'normal', '?']
 
-Examples with no unknown values
+Examples with no unknown values (Filter_hasSpecial)
 ['young', 'myope', 'yes', 'reduced', 'none']
 ['young', 'myope', 'yes', 'normal', 'hard']
 ['young', 'hypermetrope', 'no', 'reduced', 'none']
