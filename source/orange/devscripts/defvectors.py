@@ -41,6 +41,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("Distribution", "lib_kernel.cpp"),
    normalList("ExampleGenerator", "lib_kernel.cpp"),
    normalList("Classifier", "lib_kernel.cpp"),
+   
    ("DomainBasicAttrStat", "BasicAttrStat",    "PDomainBasicAttrStat", "TDomainBasicAttrStat", "PBasicAttrStat",       "lib_components.cpp"),
    ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
    normalList("ValueFilter", "lib_components.cpp"),
