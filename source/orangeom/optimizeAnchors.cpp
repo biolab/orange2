@@ -32,9 +32,10 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
     int nAttrs = PyList_Size(anchors);
     int nExamples = PyList_Size(scaledData);
-    int i, ii, u, v;
+    int i, u, v;
     int maxcl;
 
+    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
     TPoint *anci, *anc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *ance = anc + nAttrs;
     TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
     TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
@@ -45,10 +46,11 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
     int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
 
-    for(anci = anc, aii = attrIndices, lli = ll, i = 0; i < nAttrs; i++, anci++, aii++, lli++) {
+    for(anci = anc, aii = attrIndices, lli = ll, radi = rad, i = 0; i < nAttrs; i++, anci++, aii++, lli++, radi++) {
       *lli = NULL;
       PyArg_ParseTuple(PyList_GetItem(anchors, i), "dd|O", &anci->x, &anci->y, lli);
       *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
+      *radi = sqrt(sqr(anci->x) + sqr(anci->y));
     }
 
     maxcl = 0;
@@ -59,10 +61,10 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
       PyObject *ex = PyList_GetItem(scaledData, i);
       *sumi = 0.0;
-      for(aii = attrIndices; aii < aie; aii++) {
+      for(aii = attrIndices, radi = rad; aii < aie; aii++, radi++) {
         const double p = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
         *Xi++ = p;
-        *sumi += p;
+        *sumi += p * *radi;
       }
       if (*sumi == 0.0)
         *sumi = 1.0;
@@ -190,6 +192,156 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       
     free(anc);
     free(danc);
+    free(pts);
+    free(ll);
+    free(classes);
+    free(X);
+    free(sum);
+    free(K);
+    free(aii);
+    free(rad);
+
+    return anchors;
+      
+  PyCATCH;
+}
+
+
+
+PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0]) -> new-anchors")
+{
+  PyTRY
+    PyObject *scaledData;
+    PyObject *pyclasses;
+    PyObject *anchors;
+    PyObject *pyattrIndices;
+    double attractG = 1.0, repelG = -1.0;
+    int steps = 1;
+
+    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps))
+      return NULL;
+
+    if (!PyList_Check(scaledData) || !PyList_Check(pyclasses) || !PyList_Check(anchors))
+      PYERROR(PyExc_TypeError, "scaled data, classes and anchors should be given a lists", PYNULL);
+
+    int nAttrs = PyList_Size(anchors);
+    int nExamples = PyList_Size(scaledData);
+    int i, ii, u, v;
+    int maxcl;
+
+    TPoint *anci, *anc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *ance = anc + nAttrs;
+    double *dphii, *dphi = (double *)malloc(nAttrs * sizeof(double)), *dphie = dphi + nAttrs;
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
+    PyObject **lli, **ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
+    int *classesi, *classes = (int *)malloc(nExamples * sizeof(int)), *classese = classes + nExamples;
+    double *Xi, *X = (double *)malloc(nExamples * nAttrs * sizeof(double));
+    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
+    TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
+    int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
+
+    for(anci = anc, aii = attrIndices, lli = ll, i = 0; i < nAttrs; i++, anci++, aii++, lli++) {
+      *lli = NULL;
+      PyArg_ParseTuple(PyList_GetItem(anchors, i), "dd|O", &anci->x, &anci->y, lli);
+      *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
+    }
+
+    maxcl = 0;
+    for(sumi = sum, classesi = classes, Xi = X, i = 0; i < nExamples;
+        sumi++,     classesi++,                 i++) {
+      *classesi = PyInt_AsLong(PyList_GetItem(pyclasses, i));
+      tomax(maxcl, *classesi);
+
+      PyObject *ex = PyList_GetItem(scaledData, i);
+      *sumi = 0.0;
+      for(aii = attrIndices; aii < aie; aii++) {
+        const double p = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+        *Xi++ = p;
+        *sumi += p;
+      }
+      if (*sumi == 0.0)
+        *sumi = 1.0;
+    }
+
+
+    while (steps--) {
+      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
+        ptsi->x = ptsi->y = 0.0;
+        for(anci = anc; anci != ance; anci++, Xi++) {
+          ptsi->x += *Xi * anci->x;
+          ptsi->y += *Xi * anci->y;
+        }
+        ptsi->x /= *sumi;
+        ptsi->y /= *sumi;
+      }
+
+
+/* XXX   TO OPTIMIZE:
+       - use pointers instead of indexing
+       - sort the examples by classes so you don't have to compare them all the time
+       - if attractive force are 0, you can gain some time by checking only the examples from different classes
+*/
+                     
+      for(Ki = K; Ki != Ke; Ki++)
+        Ki->x = Ki-> y = 0.0;
+
+      for(dphii = dphi; dphii != dphie; dphii++)
+        *dphii = 0.0;
+
+      for(u = 0; u < nExamples; u++) {
+        for(v = u+1; v < nExamples; v++) {
+          const double duv = classes[u] == classes[v] ? attractG : repelG;
+          if (duv == 0.0)
+            continue;
+
+          const double dx = pts[u].x - pts[v].x;
+          const double dy = pts[u].y - pts[u].x;
+          double ruv = sqr(dx) + sqr(dy);
+          if (ruv < 1e-15)
+            ruv = 1e-15;
+
+          //const double druv = duv / exp(0.3 * log(ruv));
+          //const double druv = duv / sqrt(ruv);
+          const double druv = duv / ruv;
+
+          const double Kefx = dx * druv;
+          K[u].x += Kefx;
+          K[v].x -= Kefx;
+
+          const double Kefy = dy * druv;
+          K[u].y += Kefy;
+          K[v].y -= Kefy;
+        }
+
+        K[u].x /= sum[u];
+        K[u].y /= sum[u];
+
+        double *Xu = X + u * nAttrs;
+        for(i = 0; i < nAttrs; i++, Xu++)
+          dphi[i] -= *Xu/sum[u] * (K[u].y * anci[i].x - K[u].x * anci[i].y);
+      }
+
+
+  // Scale the changes - normalize the jumps
+      double scaling = 1e10;
+      for(dphii = dphi; dphii != dphie ; dphii++) {
+        if (*dphii * scaling > 0.1)
+          scaling = 0.1 / *dphii;
+      }
+
+  // Move anchors
+      for(anci = anc, dphii = dphi; dphii != dphie; dphii++, anci++) {
+        double tphi = atan2(anci->y, anci->x) + *dphii;
+        anci->x = cos(tphi);
+        anci->y = sin(tphi);
+      }
+    }
+
+    anchors = PyList_New(nAttrs);
+    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
+      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
+      
+    free(anc);
+    free(dphi);
     free(pts);
     free(ll);
     free(classes);
