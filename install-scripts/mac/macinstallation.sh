@@ -3,8 +3,8 @@ cd ~/install-scripts/mac
 
 ##cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs login
 
-if [ $# -ne 4 ]; then
-        echo "parameters not given: CVStag DMGfile VARname INCLUDEgenomics"
+if [ $# -ne 5 ]; then
+        echo "parameters not given: CVStag DMGfile VARname INCLUDEgenomics COMPILEORANGE"
         exit 1
 fi
 
@@ -12,14 +12,16 @@ TAG=$1
 DMGFILE=$2
 VARNAME=$3
 INCGENOMICS=$4
+COMPILEORANGE=$5
 
 echo Tag: $TAG
 echo DMGFILE: $DMGFILE
 echo VARNAME: $VARNAME
 echo INCGENOMICS: $INCGENOMICS
+echo COMPILE ORANGE: $COMPILEORANGE
 echo
 
-COMPILEORANGE=1
+# COMPILEORANGE=1
 COMPILECRS=0
 
 ## check out orange source and compile orange
@@ -82,14 +84,15 @@ rm tmp.dmg
 ## copy file to estelle and change version
 ~/mount_estelle
 # remember name of old file
-OLDDMGFILE=`grep MACINTOSH_SNAPSHOT ~/estelleDownload/filenames.set | awk -F\= '{print $2}'`
+OLDDMGFILE=`grep $VARNAME\= ~/estelleDownload/filenames.set | awk -F\= '{print $2}'`
 # change name to new filename
-grep -v $VARNAME ~/estelleDownload/filenames.set > filenames.new.set
+grep -v $VARNAME\= ~/estelleDownload/filenames.set > filenames.new.set
 echo $VARNAME=$DMGFILE >> filenames.new.set
+# first remove old file (in case same name as new)
+rm ~/estelleDownload/$OLDDMGFILE
 cp $DMGFILE ~/estelleDownload
 cp filenames.new.set ~/estelleDownload/filenames.set
 # remove old file
-rm ~/estelleDownload/$OLDDMGFILE
 rm *.dmg
 
 ~/umount_estelle
