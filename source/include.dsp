@@ -95,6 +95,10 @@ SOURCE=.\include\common.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\crc32.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\lcomb.cpp
 # End Source File
 # Begin Source File
