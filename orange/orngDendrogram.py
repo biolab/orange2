@@ -25,6 +25,9 @@
 #   2003/09/18:
 #       - coloring, line width
 #       - dissimilarity matrix visualization
+#   2004/02/16:
+#       - latent variable visualization
+#       - black&white dissimilarity matrix
 
 
 import orngCluster
@@ -51,8 +54,12 @@ def _colorize1(cc):
     cblu =  1 - pow(redfunc(cc+0.1),2) - bluefunc(cc-0.15)
     return piddle.Color(cred,cgre,cblu)
 
+def _blackwhite(cc):
+    v = 1.0-(1.0/cc)
+    return piddle.Color(v,v,v)
+
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -75,13 +82,19 @@ class DendrogramPlot:
         for s in labels:
             maxlabel = max(maxlabel,tcanvas.stringWidth(s))
 
+        if canvas == None:
+            canvas = piddlePIL.PILCanvas(size=(width,height))
+
+        if len(matr)>0:
+            block = lineskip/2-1
+        else:
+            block = 0
+
         if color_mode:
             _colorize = _colorize1 # gregor
         else:
             _colorize = _colorize0 # aleks
 
-        if canvas == None:
-            canvas = piddlePIL.PILCanvas(size=(width,height))
 
         ### EXTRACT THE DENDROGRAM ###
         
@@ -99,43 +112,77 @@ class DendrogramPlot:
         xpositions.append("sentry")
         ypositions.append("sentry")
         p = self.n
+        # bottom-up construction
         height = 0.0
+        displacement = 0.0
         for i in range(self.n-1):
-                height += self.height[i]
-                if len(cluster_colors) == self.n-1:
-                    coloV = _colorize(cluster_colors[i][0])
-                    coloH = _colorize(cluster_colors[i][1])
-                else:
-                    # no color information
-                    coloH = coloV = piddle.black
-                vlines.append((height,ypositions[p+self.merging[i][0]],ypositions[p+self.merging[i][1]],coloV))
-                avg = 0.0
-                for j in self.merging[i]:
-                    # record text origins
-                    v = ypositions[p+j]
-                    if j < 0:
-                        origins[-1-j] = height
-                        attcolors[-1-j] = coloH
-                    else:
-                        # create the cluster lines
-                        hlines.append((v,xpositions[p+j],height,coloH))
-                    avg += v             
-                # recompute the average height of new cluster
-                ypositions.append(0.5*avg)
-                xpositions.append(height)
+            if len(cluster_colors) == self.n-1:
+                coloV = _colorize(cluster_colors[i][0])
+                coloH = _colorize(cluster_colors[i][1])
+            else:
+                # no color information
+                coloH = coloV = piddle.black
+            # obtain the height
+            if incremental_height:
+                nheight = min(xpositions[p+self.merging[i][0]],xpositions[p+self.merging[i][1]])
+                nheight -= self.height[i]
+                displacement = min(displacement,nheight)
+            else:
+                height -= self.height[i]
+                nheight = height
 
-        ### DRAWING ###
+            vlines.append((nheight,ypositions[p+self.merging[i][0]],ypositions[p+self.merging[i][1]],coloV))
+            avg = 0.0
+            for j in self.merging[i]:
+                # record text origins
+                v = ypositions[p+j]
+                if j < 0:
+                    origins[-1-j] = nheight
+                    attcolors[-1-j] = coloH
+                else:
+                    # create the cluster lines
+                    hlines.append((v,xpositions[p+j],nheight,coloH))
+                avg += v             
+            # recompute the average height of new cluster
+            ypositions.append(0.5*avg)
+            xpositions.append(nheight)            
+        #print displacement
+        ### DRAWING ###            
                 
         offset = width-maxlabel-hook-2*margin
-        hs = (offset-margin)/height         # height scaling
+        if len(matr)>0:
+            offset -= 2*(len(matr[0])+1)*block # correct the right-hand side
+        hs = (offset-margin)/(height-displacement)         # height scaling
+        if incremental_height:
+            hs = -hs
         halfline = canvas.fontAscent()/2.0
+
+        # print line-guides
+        if g_lines and len(matr)==len(labels):
+            colo = piddle.Color(0.9,0.9,0.9)
+            y = margin
+            s = len(matr[0])
+            sx1 = width-margin-block            
+            sx2 = width-margin-2*(len(matr[0]))*block-block
+            canvas.drawLine(sx1,y-block-1,sx2,y-block-1,colo,width=0.2)
+            for i in range(len(labels)):
+                idx = self.order[i]-1
+                x1 = offset+hook-hs*(origins[idx])+tcanvas.stringWidth(labels[idx])+4
+                x2 = width-margin-block
+                canvas.drawLine(x1,y,x2,y,colo,width=0.2)
+                canvas.drawLine(x1,y,x2,y,colo,width=0.2)
+                canvas.drawLine(sx1,y+block+1,sx2,y+block+1,colo,width=0.2)
+                y += lineskip
+            for i in range(len(matr[0])+1):
+                x = width-margin-2*i*block-block
+                canvas.drawLine(x,margin-block,x,y-lineskip+block+1,colo,width=0.2)
 
         # print names
         y = margin
         for i in range(len(labels)):
             # self.order identifies the label at a particular row
             idx = self.order[i]-1
-            x = offset-hs*origins[idx]
+            x = offset-hs*(origins[idx])
             canvas.drawString(labels[idx], hook+x, y+halfline)
             # draw the hook
             canvas.drawLine(x,y,x+hook*0.8,y,attcolors[idx],width=line_width)
@@ -143,10 +190,26 @@ class DendrogramPlot:
 
         # print lines
         for (y,x1,x2,colo) in hlines:
-            canvas.drawLine(offset-x1*hs,y,offset-x2*hs,y,colo,width=line_width)
+            canvas.drawLine(offset-(x1)*hs,y,offset-(x2)*hs,y,colo,width=line_width)
         vlines.reverse() # smaller clusters are more interesting
         for (x,y1,y2,colo) in vlines:
-            canvas.drawLine(offset-x*hs,y1,offset-x*hs,y2,colo,width=line_width)
+            canvas.drawLine(offset-(x)*hs,y1,offset-(x)*hs,y2,colo,width=line_width)
+
+        ### MATRIX RENDERING ###
+        if len(matr)==len(labels):
+            y = margin
+            for i in range(len(labels)):
+#                print labels[i],matr[i]
+                idx = self.order[i]-1
+                mm = matr[idx]
+                for j in range(len(mm)):
+                    # self.order identifies the label at a particular row
+                    x = width-margin-2*(len(mm)-j)*block
+                    v = 1-mm[j]
+                    #if v < 254.0/255.0:
+                    colo = piddle.Color(v,v,v)
+                    canvas.drawRect(x-block+1,y-block,x+block-1,y+block,edgeColor=colo,fillColor=colo)
+                y += lineskip
             
         canvas.flush()
         return canvas
@@ -176,10 +239,12 @@ class DendrogramPlot:
             canvas = piddlePIL.PILCanvas(size=(width,height))
 
 
-        if color_mode:
+        if color_mode==1:
             _colorize = _colorize1 # gregor
-        else:
+        elif color_mode==0:
             _colorize = _colorize0 # aleks
+        else:
+            _colorize = _blackwhite
 
         ### DRAWING ###
                 
@@ -261,4 +326,3 @@ if __name__== "__main__":
     canvas = c.matrix(labels,dissx,att_colors = gains)
     canvas.getImage().save("m_zoo.png")
     ViewImage(canvas.getImage())
-    

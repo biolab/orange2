@@ -29,7 +29,7 @@
 #       added p-value estimates
 
 import orange
-import orngContingency
+import orngContingency, Numeric
 import warnings, math, string, copy
 
 def _nicefloat(f,sig):
@@ -124,6 +124,7 @@ class InteractionMatrix:
         NA = len(t.domain.attributes)
         
         self.names = []
+        self.labelname = t.domain.classVar.name
         self.gains = []
         self.freqs = []
         self.way2 = {}
@@ -189,6 +190,7 @@ class InteractionMatrix:
         for i in range(NA):
             self.attlist.append((self.gains[i],i))
         self.attlist.sort()
+        self.NA = NA
 
     def dump(self):
         NA = len(self.names)
@@ -328,7 +330,7 @@ class InteractionMatrix:
         f.write("}\n")
         
     def exportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, print_bits = 0, significant_digits = 2, show_gains = 1, color_coding = 0, color_gains = 0, jaccard=0, noclass=0):
-        NA = len(self.names)
+        NA = self.NA
 
         ### BEAUTIFY THE LABELS ###
 
@@ -460,13 +462,10 @@ class InteractionMatrix:
 
 
 
-    def depExportGraph(self, f, n_int=1, print_bits = 1, black_white = 0, significant_digits = 2, pretty_names = 1, postscript=1, spanning_tree = 1, TAN=1, source=-1, labelled=1):
-        NA = len(self.names)
+    def depExportGraph(self, f, n_int=1, print_bits = 1, black_white = 0, undirected = 1, significant_digits = 2, pretty_names = 1, pcutoff=-1, postscript=1, spanning_tree = 1, TAN=1, source=-1, labelled=1,jaccard=1,filter=[],diagonal=0,pvlabel=0):
+        NA = self.NA
 
         ### SELECTION OF INTERACTIONS AND ATTRIBUTES ###
-
-        # prevent crashes
-        n_int = min(n_int,NA)
 
         links = []
         maxlink = -1e6
@@ -479,10 +478,13 @@ class InteractionMatrix:
                     ej = self.ents[(j,)]
                     if TAN:
                         # I(A;B|C)
-                        v = self.way3[(j,i,-1)].InteractionInformation()
-                        v += self.way2[(j,i)].InteractionInformation()
+                        v = self.way3[(i,j,-1)].InteractionInformation()
+                        v += self.way2[(i,j)].InteractionInformation()
                     else:
-                        v = self.way2[(j,i)].InteractionInformation() # I(A;B) chow-liu, mutual information 
+                        if jaccard:
+                            v = self.way2[(i,j)].JaccardInformation() # I(A;B) chow-liu, mutual information
+                        else:
+                            v = self.way2[(i,j)].InteractionInformation() # I(A;B) chow-liu, mutual information
                     if ei > ej:
                         lmm.append((abs(v),v,ej,(j,i)))
                     else:
@@ -510,16 +512,41 @@ class InteractionMatrix:
                 n -= 1
         else:
             # select the top
+            lmm = []
             for i in range(NA):
-                e = self.ents[(i,)]
-                if e > 0.0:
-                    lmm = []
-                    for j in range(NA):
-                        if i != j:
-                            lmm.append((self.ents[(j,)]+e-self.ents[(i,j)],(i,j)))
-                    lmm.sort()
-                    maxlink = max(lmm[-1][0],maxlink)
-                    links += [(v,p,e) for (v,p) in lmm[-n_int:]]
+                if filter==[] or self.names[i] in filter:
+                    for j in range(i):
+                        if filter==[] or self.names[j] in filter:
+                            ii = max(i,j)
+                            jj = min(i,j)
+                            if jaccard and pcutoff < 0.0:
+                                if self.ents[(jj,ii)] == 0.0:
+                                    v = 1.0
+                                else:
+                                    v = self.way2[(jj,ii)].JaccardInformation()
+                                lmm.append((v,(i,j)))
+                            else:
+                                v = self.way2[(jj,ii)].InteractionInformation()
+                                if pcutoff >= 0.0:
+                                    xt = self.way2[(jj,ii)]
+                                    dof = 1.0
+                                    dof *= len(xt.values[0])-1
+                                    dof *= len(xt.values[1])-1
+                                    pv = orngContingency.getPvalueDOF(v,xt,dof)
+                                    if pv <= pcutoff:
+                                        v = 1-pv
+                                        lmm.append((v,(i,j)))
+                                else:
+                                    lmm.append((v,(i,j)))
+            lmm.sort()
+            maxlink = max(lmm[-1][0],maxlink)
+            links += [(v,p,1.0) for (v,p) in lmm[-n_int:]]
+
+        # mark vertices
+        mv = [0 for x in range(NA)]
+        for (v,(i,j),e) in links:
+            mv[i] = 1
+            mv[j] = 1
 
         # output the attributes
         f.write("digraph G {\n")
@@ -530,21 +557,23 @@ class InteractionMatrix:
             shap = 'box'
 
         for n in range(NA):
-            if source != -1 and not type(source)==type(1):
-                # find the name
-                if string.upper(self.names[n])==string.upper(source):
-                    source = n
-            t = '%s'%self.names[n]
-            if pretty_names:
-                t = string.replace(t,"ED_","")
-                t = string.replace(t,"D_","")
-                t = string.replace(t,"M_","")
-                t = string.replace(t," ","\\n")
-                t = string.replace(t,"-","\\n")
-                t = string.replace(t,"_","\\n")
-            if print_bits:
-                t = "{%s|%s}"%(t,_nicefloat(self.ents[(n)],significant_digits))
-            f.write("\tnode [ shape=%s, label = \"%s\"] %d;\n"%(shap,t,n))
+            if mv[n]:
+                if source != -1 and not type(source)==type(1):
+                    # find the name
+                    if string.upper(self.names[n])==string.upper(source):
+                        source = n
+                t = '%s'%self.names[n]
+                if pretty_names:
+                    t = string.replace(t,"ED_","")
+                    t = string.replace(t,"D_","")
+                    t = string.replace(t,"M_","")
+                    t = string.replace(t," ","\\n")
+                    t = string.replace(t,"-","\\n")
+                    t = string.replace(t,"_","\\n")
+                if print_bits:
+                    #t = "{%s|%s}"%(t,_nicefloat(self.ents[(n,)],significant_digits))
+                    t = "{%s|%s}"%(t,_nicefloat(self.way2[(n,-1)].total,significant_digits))
+                f.write("\tnode [ shape=%s, label = \"%s\"] %d;\n"%(shap,t,n))
 
         if source != -1:
             # redirect all links
@@ -577,9 +606,20 @@ class InteractionMatrix:
                     l = 0.3+0.7*perc/100.0
                     style += 'color="0.5 %f %f",'%(l,1-l) # adjust saturation
                 if labelled:
-                    style += 'label=\"%s%%\",'%_nicefloat(100.0*c,significant_digits)
-                if source == -1:
-                    f.write("\t%d -> %d [%sweight=%d];\n"%(j,i,style,(perc/30+1)))
+                    if diagonal:
+                        ct = self.way2[(min(i,j),max(i,j))]
+                        (ni,nj) = Numeric.shape(ct.m)
+                        cc = 0.0
+                        if ni==nj:
+                            for x in range(ni):
+                                cc += ct.m[x,x]
+                        style += 'label=\"%s%%\",'%_nicefloat(100.0*cc/ct.total,significant_digits)
+                    elif pvlabel and pcutoff >= 0.0:
+                        style += 'label=\"%e\",'%(1-v)
+                    else:
+                        style += 'label=\"%s%%\",'%_nicefloat(100.0*c,significant_digits)
+                if source == -1 or undirected:
+                    f.write("\t%d -> %d [%sweight=%d,dir=none];\n"%(j,i,style,(perc/30+1)))
                 else:
                     if age[i] > age[j]:
                         f.write("\t%d -> %d [%sweight=%d];\n"%(j,i,style,(perc/30+1)))
@@ -587,8 +627,8 @@ class InteractionMatrix:
                         f.write("\t%d -> %d [%sweight=%d];\n"%(i,j,style,(perc/30+1)))
         f.write("}\n")
 
-    def depExportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, jaccard = 1, color_coding = 0, verbose=0):
-        NA = len(self.names)
+    def depExportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, jaccard = 1, color_coding = 0, verbose=0, include_label=0):
+        NA = self.NA
 
         ### BEAUTIFY THE LABELS ###
 
@@ -600,13 +640,22 @@ class InteractionMatrix:
                 t = string.replace(t,"D_","")
                 t = string.replace(t,"M_","")
             labels.append(t)
+        if include_label:
+            labels.append(self.labelname)
 
         ### CREATE THE DISSIMILARITY MATRIX ###
 
         if color_coding:
             maxx = -1
-            for x in range(1,NA):
-                for y in range(x):
+            pett = range(1,NA)
+            if include_label:
+                pett.append(-1)
+            for x in pett:
+                if x == -1:
+                    sett = range(NA)
+                else:
+                    sett = range(x)
+                for y in sett:
                     t = self.corr[(y,x)]
                     if jaccard:
                         l = self.ents[(y,x)]
@@ -619,16 +668,27 @@ class InteractionMatrix:
                 else:
                     print 'maximum intersection is %f bits.'%maxx
         diss = []        
-        for x in range(1,NA):
+        pett = range(1,NA)
+        if include_label:
+            pett.append(-1)
+        for x in pett:
+            if x == -1:
+                sett = range(NA)
+            else:
+                sett = range(x)
             newl = []
-            for y in range(x):
+            for y in sett:
                 t = self.corr[(y,x)]
                 if jaccard:
                     l = self.ents[(x,)]+self.ents[(y,)]-t
                     if l > 1e-6:
                         t /= l
                 if color_coding:
-                    t = 0.5*(1-t/maxx)
+                    #t = 0.5*(1-t/maxx)
+                    if jaccard:
+                        t = (1-t)*0.5
+                    else:
+                        t = 0.5*(1-t/maxx)
                 else:
                     if t*truncation > 1:
                         t = 1.0 / t
@@ -658,6 +718,8 @@ class InteractionMatrix:
                 for y in b[1]:
                     xx = max(x,y)
                     yy = min(x,y)
+                    if xx == self.NA:
+                        xx = -1
                     t = self.corr[(yy,xx)]
                     l = self.ents[(xx,)]+self.ents[(yy,)]-t
                     if l > 1e-6:

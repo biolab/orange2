@@ -134,7 +134,7 @@ class BasicSVMLearner(orange.Learner):
           model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking)
           #print model
       else:
-          assert(len(puredata.domain.classVar.values)==len(self.weights))
+          assert(len(puredata.domain.classVar.values)==len(self.classweights))
           cvals = [data.domain.classVar(i) for i in data.domain.classVar.values]
           labels = translate.transformClass(cvals)
           model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking,len(self.classweights), self.classweights, labels)

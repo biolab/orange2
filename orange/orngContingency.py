@@ -30,7 +30,10 @@ def Flatten(m):
     
 def Probabilities(m):
     t = Numeric.sum(Flatten(m))
-    return m/t
+    if t == 0:
+        return 0
+    else:
+        return m/t
 
 def Entropy(m):
     v = Flatten(m)
@@ -306,3 +309,7 @@ def get2Int(t,a,b):
 def getPvalue(lim,table):
     import statisticsc
     return 1-statisticsc.chi_squared(table.dof,2.0*lim*table.total*_log2e)
+
+def getPvalueDOF(lim,table,dof):
+    import statisticsc
+    return 1-statisticsc.chi_squared(dof,2.0*lim*table.total*_log2e)
