@@ -11,6 +11,8 @@ file_open = "./icons/open.png"
 file_save = "./icons/save.png"
 file_print = "./icons/print.png"
 file_exit = "./icons/exit.png"
+move_left = "./icons/moveleft.png"
+move_right = "./icons/moveright.png"
 
 """
 file_open = [

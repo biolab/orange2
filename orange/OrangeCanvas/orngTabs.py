@@ -5,15 +5,41 @@
 from qt import *
 import os.path
 from string import strip
-import orngDoc, orngOutput
+import orngDoc, orngOutput, orngResources
 from xml.dom.minidom import Document, parse
 
 TRUE  = 1
 FALSE = 0 
 
+class DirectionButton(QToolButton):
+	def __init__(self, parent, leftDirection = 1, useLargeIcons = 0):
+		apply(QToolButton.__init__,(self, parent))
+		self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+		self.parent = parent
+		self.leftDirection = leftDirection		# is direction to left or right
+		self.connect( self, SIGNAL( 'clicked()' ), self.clicked)
+		self.setAutoRepeat(1)
+
+		if self.leftDirection: 	self.setPixmap(QPixmap(orngResources.move_left))
+		else:					self.setPixmap(QPixmap(orngResources.move_right))
+		
+		if useLargeIcons == 1:
+			self.setUsesBigPixmap(TRUE)
+			self.setMaximumSize(40, 80)
+			self.setMinimumSize(40, 80)
+		else:
+			self.setMaximumSize(24, 48)
+			self.setMinimumSize(24, 48)
+	
+	def clicked(self):
+		if self.leftDirection:  self.parent.moveWidgetsToLeft()
+		else:					self.parent.moveWidgetsToRight()
+
+
 class WidgetButton(QToolButton):
 	def __init__(self, *args):
 		apply(QToolButton.__init__,(self,)+ args)
+		self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
 	def setValue(self, name, fileName, inList, outList, icon, description, priority, canvasDlg, useLargeIcons):
 		self.name = name
@@ -65,11 +91,36 @@ class WidgetButton(QToolButton):
 			QMessageBox.information(self,'Qrange Canvas','Unable to add widget instance to Output window. Please select a document window first.',QMessageBox.Ok)
 
 class WidgetTab(QWidget):
-	def __init__(self, *args):
+	def __init__(self, useLargeIcons = 0, *args):
 		apply(QWidget.__init__,(self,)+ args)
 		self.HItemBox = QHBoxLayout(self)
-		#self.setMaximumHeight(60)
 		self.widgets = []
+		self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+		self.widgetIndex = 0
+		self.left  = DirectionButton(self, 1, useLargeIcons = useLargeIcons)
+		self.right = DirectionButton(self, 0, useLargeIcons = useLargeIcons)
+		self.HItemBox.addWidget(self.left)
+		self.HItemBox.addWidget(self.right)
+		
+		self.frameSpace = QFrame(self);  self.frameSpace.setMinimumWidth(10); self.frameSpace.setMaximumWidth(10)
+		self.HItemBox.addWidget(self.frameSpace)
+
+	# hide the first widget on the left
+	def moveWidgetsToLeft(self):
+		self.widgetIndex = max(0, self.widgetIndex-1)
+		while self.widgetIndex > 0 and isinstance(self.widgets[self.widgetIndex], QFrame):
+			self.widgetIndex -= 1
+		
+		self.updateLeftRightButtons()
+
+	# show the first hidden widget on the left
+	def moveWidgetsToRight(self):
+		self.widgetIndex = min(self.widgetIndex+1, len(self.widgets)-1)
+
+		while self.widgetIndex < len(self.widgets)-2 and isinstance(self.widgets[self.widgetIndex], QFrame):
+			self.widgetIndex += 1
+		
+		self.updateLeftRightButtons()
 
 	def addWidget(self, widget):
 		self.HItemBox.addWidget(widget)
@@ -77,6 +128,42 @@ class WidgetTab(QWidget):
 
 	def finishedAdding(self):
 		self.HItemBox.addStretch(10)
+
+	# update new layout
+	def updateLeftRightButtons(self):
+		widgetsWidth = 0
+		for i in range(self.widgetIndex, len(self.widgets)):
+			widgetsWidth += self.widgets[i].width()
+		windowWidth = self.width() - 2*self.left.width() - 20
+		
+		while self.widgetIndex > 0 and windowWidth > widgetsWidth + self.widgets[self.widgetIndex-1].width():
+			widgetsWidth += self.widgets[self.widgetIndex-1].width()
+			self.widgetIndex -= 1
+			
+		while isinstance(self.widgets[self.widgetIndex], QFrame) and self.widgetIndex < len(self.widgets):
+			self.widgetIndex += 1
+
+		for widget in self.widgets[:self.widgetIndex]:
+			widget.hide()
+		for widget in self.widgets[self.widgetIndex:]:
+			widget.show()
+		
+		if widgetsWidth < windowWidth + 2*self.left.width() + 20 and self.widgetIndex == 0:
+			self.left.hide(); self.right.hide(); self.frameSpace.hide()
+		else:
+			self.left.show(); self.right.show(); self.frameSpace.show()
+			
+		if widgetsWidth < windowWidth: self.right.setEnabled(0)
+		else:	self.right.setEnabled(1)
+
+		if self.widgetIndex > 0: self.left.setEnabled(1)
+		else: self.left.setEnabled(0)
+
+		self.HItemBox.invalidate()
+
+	def resizeEvent(self, e):
+		self.updateLeftRightButtons()
+
 
 class WidgetTabs(QTabWidget):
 	def __init__(self, *args):
@@ -86,9 +173,10 @@ class WidgetTabs(QTabWidget):
 		self.allWidgets = []
 		self.useLargeIcons = FALSE
 		self.tabDict = {}
+		self.setMinimumWidth(10)	# this way the < and > button will show if tab dialog is too small
 
 	def insertWidgetTab(self, name):
-		tab = WidgetTab(self, name)
+		tab = WidgetTab(self.useLargeIcons, self, name)
 		self.tabs.append(tab)
 		self.insertTab(tab, name)
 		self.tabDict[name] = tab
@@ -119,6 +207,7 @@ class WidgetTabs(QTabWidget):
 				self.removePage(self.tabs[i])
 				self.tabs.remove(self.tabs[i])
 
+		
 	# add all widgets inside the category to the tab
 	def addWidgetCategory(self, category):
 		strCategory = str(category.getAttribute("name"))
@@ -184,9 +273,10 @@ class WidgetTabs(QTabWidget):
 			if exIndex != priorityList[i] / 1000:
 				for k in range(priorityList[i]/1000 - exIndex):
 					frame = QFrame(tab)
-					frame.setMinimumWidth(20)
-					frame.setMaximumWidth(20)
+					frame.setMinimumWidth(10)
+					frame.setMaximumWidth(10)
 					tab.addWidget(frame)
+					#tab.HItemBox.addSpacing(10)
 				exIndex = priorityList[i] / 1000
 			tab.addWidget(button)
 			self.allWidgets.append(button)
