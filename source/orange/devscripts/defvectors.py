@@ -46,7 +46,8 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    normalList("ValueFilter", "lib_components.cpp"),
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
-   normalList("TreeNode", "lib_learner.cpp")
+   normalList("TreeNode", "lib_learner.cpp"),
+   normalList("C45TreeNode", "lib_learner.cpp")
    ]:
   outf.write("**** This goes to '%s' ****\n" % goesto)
   outf.write(definition.replace("$pyname$", pyname)
@@ -76,12 +77,12 @@ coutf.write("""\
 """)
 
 for (pyname, pyelementname, wrappedlistname, listname, elementname) in \
-  [("BoolList",         "bool",   "PBoolList",         "TBoolList",         "bool"),
-   ("IntList",          "int",    "PIntList",          "TIntList",          "int"),
-   ("FloatList",        "float",  "PFloatList",        "TFloatList",        "float"),
-   ("StringList",       "string", "PStringList",       "TStringList",       "string"),
-   ("LongList",         "int",    "PLongList",         "TLongList",         "long"),
-   ("_Filter_index",     "int",    "PFilter_index",     "TFilter_index",     "FOLDINDEXTYPE"),
+  [("BoolList",         "bool",     "PBoolList",         "TBoolList",         "bool"),
+   ("IntList",          "int",      "PIntList",          "TIntList",          "int"),
+   ("FloatList",        "float",    "PFloatList",        "TFloatList",        "float"),
+   ("StringList",       "string",   "PStringList",       "TStringList",       "string"),
+   ("LongList",         "int",      "PLongList",         "TLongList",         "long"),
+   ("_Filter_index",     "int",     "PFilter_index",     "TFilter_index",     "FOLDINDEXTYPE"),
    ]:
   if (pyname[0]=="_"):
     pyname = pyname[1:]

@@ -42,6 +42,7 @@
 
 TkNNLearner::TkNNLearner(const float &ak, PExamplesDistanceConstructor edc)
 : k(ak),
+  rankWeight(true),
   distanceConstructor(edc)
 {}
 
