@@ -10,7 +10,7 @@ import orange
 from string import *
 import cPickle
 from OWTools import *
-from OWAboutX import *
+from OWAbout import *
 from orngSignalManager import *
 import time
 
@@ -58,14 +58,15 @@ class OWBaseWidget(QDialog):
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
-        fullIcon = self.widgetDir + "icons/" + icon
-        logo = self.widgetDir + "icons/" + logo
+        iconName = self.widgetDir + "icons/" + icon
+        defaultWidgetIcon = self.widgetDir + "icons/OrangeWidgetsIcon.png"
+        logo = self.widgetDir + "icons/OrangeWidgetsLogo.png"
 
         self.title = title.replace("&","")          # used for ini file
         self.captionTitle=title.replace("&","")     # used for widget caption
 
         # if we want the widget to show the title then the title must start with "Qt"
-        if self.captionTitle[:2].upper != "QT":
+        if self.captionTitle[:2].upper() != "QT":
             self.captionTitle = "Qt " + self.captionTitle
 
         apply(QDialog.__init__, (self, parent, title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize))
@@ -93,9 +94,9 @@ class OWBaseWidget(QDialog):
         #the title
         self.setCaption(self.captionTitle)
         
-
         #about box
-        self.about=OWAboutX(title,description,fullIcon,logo)
+        self.about = OWAboutX(title, description, iconName, defaultWidgetIcon, logo)
+        
         self.buttonBackground=QVBox(self)
         if wantSettings: self.settingsButton=QPushButton("&Settings",self.buttonBackground)
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
@@ -103,7 +104,7 @@ class OWBaseWidget(QDialog):
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
-    def setIcon(self, iconName):
+    def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
             QDialog.setIcon(self, QPixmap(iconName))
         elif os.path.exists(self.widgetDir + iconName):
@@ -344,7 +345,8 @@ class OWBaseWidget(QDialog):
         self.progressBarHandler = handler
 
     def __setattr__(self, name, value):
-        self.__dict__[name] = value
+        if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
+        else:                               self.__dict__[name] = value             # for windows platform
         if hasattr(self, "controledAttributes"):
             for attrname, func in self.controledAttributes:
                 if attrname == name:
