@@ -562,6 +562,31 @@ PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 }
 
 
+PyObject *Domain_addmetas(TPyOrange *self, PyObject *arg) PYARGS(METH_O, "{id: descriptor, id: descriptor, ...} -> None")
+{ PyTRY
+    CAST_TO(TDomain, domain);
+
+    if (!PyDict_Check(arg)) 
+      PYERROR(PyExc_AttributeError, "Domain.addmetas expects a dictionary with id's and descriptors", PYNULL);
+    
+    int pos=0;
+    PyObject *pykey, *pyvalue;
+    while (PyDict_Next(arg, &pos, &pykey, &pyvalue)) {
+      if (!PyOrVariable_Check(pyvalue)) {
+        PyErr_Format(PyExc_TypeError, "Domain.addmetas: dictionary value at position '%i' should be 'Variable', not '%s'", pos-1, pyvalue->ob_type->tp_name);
+        return PYNULL;
+      }
+      if (!PyInt_Check(pykey) || (PyInt_AsLong(pykey)>=0))
+        PYERROR(PyExc_TypeError, "Domain.addmetas: dictionary keys should be meta-ids (negative integers)", PYNULL);
+
+      domain->metas.push_back(TMetaDescriptor((int)PyInt_AsLong(pykey), PyOrange_AsVariable(pyvalue)));
+    }
+    domain->domainHasChanged();
+    RETURN_NONE;
+  PyCATCH
+}
+
+
 bool removeMeta(PyObject *rar, TMetaVector &metas)
 { TMetaVector::iterator mvi(metas.begin()), mve(metas.end());
 
