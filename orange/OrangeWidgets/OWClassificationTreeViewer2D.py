@@ -526,6 +526,8 @@ class OWClassificationTreeViewer2D(OWWidget):
 ##        self.Popup.setText('Drawing tree, please wait...')
 ##        self.Popup.show()
         self.buildTree2D()
+        self.refresh()
+
 ##        self.Popup.hide()
 
     def target(self, target):

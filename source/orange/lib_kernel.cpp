@@ -2576,7 +2576,7 @@ PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
 { PyTRY {
 
     if (!PyTuple_Size(targs))
-      return WrapOrange(mlnew TContDistribution());
+      return WrapNewOrange(mlnew TContDistribution(), type);
 
     if (PyTuple_Size(targs) == 1) {
       PyObject *args = PyTuple_GetItem(targs, 0);
@@ -2589,7 +2589,7 @@ PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
         while (PyDict_Next(args, &pos, &key, &value)) {
           PyObject *flt = PyNumber_Float(key);
           if (!flt) {
-            PyErr_Format(PyExc_TypeError, "invalid element at index %i (float expected)", pos);
+            PyErr_Format(PyExc_TypeError, "invalid key at index %i (float expected)", pos);
             return false;
           }
           float ind = (float) PyFloat_AsDouble(flt);
@@ -2597,21 +2597,24 @@ PyObject *ContDistribution_new(PyTypeObject *type, PyObject *targs, PyObject *) 
 
           flt = PyNumber_Float(value);
           if (!flt) {
-            PyErr_Format(PyExc_TypeError, "invalid element at index %i (float expected)", pos);
+            PyErr_Format(PyExc_TypeError, "invalid value at index %i (float expected)", pos);
             return false;
           }
 
           udist->addfloat(ind, (float)PyFloat_AsDouble(flt));
           Py_DECREF(flt);
-
-          return WrapOrange(cont);
         }
+
+        return WrapOrange(cont);
       }
 
       else if (PyOrDistribution_Check(args)) {
         Py_INCREF(args);
         return args;
       }
+
+      else if (PyOrFloatVariable_Check(args))
+        return WrapNewOrange(mlnew TContDistribution(PyOrange_AsVariable(args)), type);
     }
 
     PYERROR(PyExc_TypeError, "invalid arguments for distribution constructor", PYNULL);

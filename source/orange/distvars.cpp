@@ -1113,8 +1113,19 @@ float TContDistribution::error() const
 
 
 float TContDistribution::percentile(const float &perc) const
-{ if ((perc<0) || (perc>99))
+{ if ((perc<0) || (perc>100))
     raiseError("invalid percentile");
+
+  if (!size())
+    raiseError("empty distribution");
+
+  if (perc==0.0)
+    return (*begin()).first;
+  
+  if (perc==100.0) {
+    const_iterator li(end());
+    return (*--li).first;
+  }
 
   float togo = abs*perc/100.0;
   const_iterator ths(begin()), prev, ee(end());

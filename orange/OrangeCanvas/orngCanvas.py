@@ -29,10 +29,10 @@ class OrangeCanvasDlg(QMainWindow):
 		self.setCaption("Qt Orange Canvas")
 
 		# if widget path not registered -> register
-		self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
-		self.picsDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/"
+		self.widgetDir = "../OrangeWidgets/"
+		self.picsDir = "../OrangeWidgets/icons/"
 		self.defaultPic = self.picsDir + "Unknown.png"
-		self.canvasDir = sys.prefix + "/lib/site-packages/Orange/OrangeCanvas/"
+		self.canvasDir = "../OrangeCanvas/"
 		self.registryFileName = self.canvasDir + "widgetregistry.xml"
 		
 

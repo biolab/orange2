@@ -18,9 +18,14 @@ class OrangeData:
     def setVariables(self):
         self.table = orange.ExampleTable(self.tab)
         self.originalNumInstances = len(self.table)
-        self.data = orange.Filter_hasClassValue(self.table)
-        self.dc = orange.DomainContingency(self.table)
-        self.outcome = self.data.domain.classVar
+        if self.table.domain.classVar:
+                self.data = orange.Filter_hasClassValue(self.table)
+                self.outcome = self.data.domain.classVar
+                self.dc = orange.DomainContingency(self.table)
+        else:
+                self.data = self.table
+                self.outcome = None
+                self.dc = None
         self.targetValIndx = 0
         try:
             self.targetVal = self.getOutcomeValues()[0]
@@ -35,7 +40,10 @@ class OrangeData:
         else: return var.values.native()
         
     def getOutcomeName(self):
-        return self.outcome.name
+        if self.outcome:
+        	return self.outcome.name
+        else:
+        	return ""
         
     def setOutcomeByName(self, name):
         attributes = self.tab.domain.attributes.native()

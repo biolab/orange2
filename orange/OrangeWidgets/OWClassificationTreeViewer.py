@@ -220,6 +220,8 @@ tree in a hierarchical list view.
     # signal processing
     def viewSelectionChanged(self, item):
         data = OrangeData(self.nodeClassDict[item].examples)
+        if not hasattr(data, "title"):
+            data.title = ""
         self.send("data",data)
         self.send("cdata", data)
 
