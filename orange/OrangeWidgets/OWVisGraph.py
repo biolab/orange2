@@ -36,13 +36,11 @@ def addToList(list, val, ind, maxLen):
 
 
 class SelectionCurve(QwtPlotCurve):
-    def __init__(self, parent, name = ""):
+    def __init__(self, parent, name = "", pen = Qt.SolidLine ):
         QwtPlotCurve.__init__(self, parent, name)
         self.pointArrayValid = 0
         self.setStyle(QwtCurve.Lines)
-        self.setPen(QPen(QColor(128,128,128), 1, Qt.DotLine))
-        #self.canvas = QCanvas(2000, 2000)   # we need canvas for QCanvasLine
-
+        self.setPen(QPen(QColor(128,128,128), 1, pen))
         
     def addPoint(self, xPoint, yPoint):
         xVals = []
@@ -200,13 +198,11 @@ class OWVisGraph(OWGraph):
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
 
-    def enableAllAxisAutoScale(self):
-        self.setAxisAutoScale(QwtPlot.xBottom)
-        self.setAxisAutoScale(QwtPlot.yLeft)
-
-    def disableAllAxisAutoScale(self):
-        self.setAxisScale(QwtPlot.xBottom, self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.xBottom).majStep() )
-        self.setAxisScale(QwtPlot.yLeft, self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound(), self.axisScale(QwtPlot.yLeft).majStep() )
+    def updateZoom(self):
+        if self.zoomState == (): return
+        (xmin, xmax, ymin, ymax) = self.zoomState
+        self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+        self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
 
     def activateZooming(self):
         self.state = ZOOMING
@@ -232,7 +228,7 @@ class OWVisGraph(OWGraph):
             curve = self.selectionCurveKeyList[0]
             self.removeCurve(curve)
             self.selectionCurveKeyList.remove(curve)
-        self.enableAllAxisAutoScale()
+        self.updateZoom()
         self.replot()
         if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
 
@@ -601,23 +597,22 @@ class OWVisGraph(OWGraph):
     def onMousePressed(self, e):
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
-        self.xpos = self.invTransform(QwtPlot.xBottom, e.x())   # save one edge of rectangle
-        self.ypos = self.invTransform(QwtPlot.yLeft, e.y())
-            
+        self.zoomState = (self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
+        self.updateZoom()
+        self.xpos = e.x()
+        self.ypos = e.y()
+
+        # ####
+        # ZOOM
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
-            self.enableOutline(1)                            # enable drawing a rectangle when the mouse is moved
-            self.setOutlinePen(QPen(Qt.black))
-            self.setOutlineStyle(Qwt.Rect)      # draw a rectangle
-            if self.zoomStack == []:
-                self.zoomState = ( self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(),
-                                   self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
+            self.tempSelectionCurve = SelectionCurve(self, pen = Qt.DashLine)
+            self.zoomKey = self.insertCurve(self.tempSelectionCurve)
+            if self.state == ZOOMING and self.zoomStack == []:
+                self.zoomState = ( self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
 
         # ####
         # SELECT RECTANGLE
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
-            self.disableAllAxisAutoScale()
-            self.xpos = self.invTransform(QwtPlot.xBottom, e.x())   # save one edge of rectangle
-            self.ypos = self.invTransform(QwtPlot.yLeft, e.y())
             self.tempSelectionCurve = SelectionCurve(self)
             key = self.insertCurve(self.tempSelectionCurve)
             self.selectionCurveKeyList.append(key)
@@ -626,15 +621,15 @@ class OWVisGraph(OWGraph):
         # SELECT POLYGON
         elif e.button() == Qt.LeftButton and self.state == SELECT_POLYGON:
             if self.tempSelectionCurve == None:
-                self.disableAllAxisAutoScale()
                 self.tempSelectionCurve = SelectionCurve(self)
                 key = self.insertCurve(self.tempSelectionCurve)
                 self.selectionCurveKeyList.append(key)
-                self.tempSelectionCurve.addPoint(self.xpos, self.ypos)
-            self.tempSelectionCurve.addPoint(self.xpos,self.ypos)
+                self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
+            self.tempSelectionCurve.addPoint(self.invTransform(QwtPlot.xBottom, self.xpos), self.invTransform(QwtPlot.yLeft, self.ypos))
+
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
                 self.tempSelectionCurve = None
-                self.enableAllAxisAutoScale()
+                self.updateZoom()
                 self.replot()
                 if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
                 
@@ -652,9 +647,17 @@ class OWVisGraph(OWGraph):
             text = self.tips.maybeTip(xTransf, yTransf)
             self.statusBar.message(text)
 
-        if self.state == SELECT_RECTANGLE and self.tempSelectionCurve != None:
-            xData = [self.xpos, self.xpos, xTransf, xTransf, self.xpos]
-            yData = [self.ypos, yTransf, yTransf, self.ypos, self.ypos]
+        if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
+            x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
+            y1 = self.invTransform(QwtPlot.yLeft, self.ypos)
+            x2 = xTransf
+            if self.state == SELECT_RECTANGLE: y2 = yTransf
+            else:
+                if e.y() > self.ypos: y = self.ypos + (abs(self.xpos - e.x()) * self.height()/self.width())
+                else:                 y = self.ypos - (abs(self.xpos - e.x()) * self.height()/self.width())
+                y2 = self.invTransform(QwtPlot.yLeft, y)
+            xData = [x1, x1, x2, x2, x1]
+            yData = [y1, y2, y2, y1, y1]
             self.tempSelectionCurve.setData(xData, yData)
             self.replot()
 
@@ -668,27 +671,28 @@ class OWVisGraph(OWGraph):
     def onMouseReleased(self, e):
         self.mouseCurrentlyPressed = 0
         self.mouseCurrentButton = 0
+
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
-            x = self.invTransform(QwtPlot.xBottom, e.x())   # save one edge of rectangle
-            y = self.invTransform(QwtPlot.yLeft, e.y())
-            xmin = min(self.xpos, x)
-            xmax = max(self.xpos, x)
-            ymin = min(self.ypos, y)
-            ymax = ymin + ((xmax-xmin)*self.height())/self.width()  # compute the last value so that the picture remains its w/h ratio
+            xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
+            ymin = min(self.ypos, e.y());  ymax = ymin + ((xmax-xmin) * self.height()/self.width())
+
+            xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
+            ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
             
-            self.setOutlineStyle(Qwt.Cross)
             if xmin == xmax or ymin == ymax: return
             self.blankClick = 0
             self.zoomStack.append(self.zoomState)
             self.zoomState = (xmin, xmax, ymin, ymax)
-            self.enableOutline(0)
             self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
             self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            self.removeCurve(self.zoomKey)
+            self.tempSelectionCurve = None
             
-        elif Qt.RightButton == e.button() and self.state == ZOOMING:
+        elif e.button() == Qt.RightButton and self.state == ZOOMING:
             if len(self.zoomStack):
                 xmin, xmax, ymin, ymax = self.zoomStack.pop()
+                self.zoomState = (xmin, xmax, ymin, ymax)
                 self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
                 self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
             else:
@@ -703,7 +707,6 @@ class OWVisGraph(OWGraph):
         elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
             if self.tempSelectionCurve:
                 self.tempSelectionCurve = None
-                self.enableAllAxisAutoScale()
                 if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
        
 
