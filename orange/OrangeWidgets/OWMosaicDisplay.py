@@ -375,6 +375,7 @@ class OWMosaicDisplay(OWWidget):
         rect = QCanvasRectangle(x0, y0, x1-x0, y1-y0, self.canvas)
         rect.setZ(-10)
         rect.show()
+        pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
         self.rects.append(rect)
         return rect
 
