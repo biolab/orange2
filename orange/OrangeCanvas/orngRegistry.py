@@ -9,6 +9,9 @@ class WidgetsToXML:
 
     # read all installed widgets, build a registry and store widgets.pth with directory names in python dir
     def ParseWidgetRoot(self, widgetDirName, canvasDir):
+        widgetDirName = os.path.realpath(widgetDirName)
+        canvasDir = os.path.realpath(canvasDir)
+        
         # create xml document
         doc = Document()
         canvas = doc.createElement("orangecanvas")
@@ -17,7 +20,7 @@ class WidgetsToXML:
         canvas.appendChild(categories)
 
         # open widgets.pth
-        widgetDirList = open(sys.prefix + "\\widgets.pth", "wt")
+        widgetDirList = open(os.path.join(sys.prefix, "widgets.pth"), "wt")
         
         for filename in os.listdir(widgetDirName):
             full_filename = os.path.join(widgetDirName, filename)
@@ -32,7 +35,7 @@ class WidgetsToXML:
         widgetDirList.close()
         
         xmlText = doc.toprettyxml()
-        file = open(canvasDir + "widgetregistry.xml", "wt")
+        file = open(os.path.join(canvasDir, "widgetregistry.xml"), "wt")
         file.write(xmlText)
         file.flush()
         file.close()
@@ -149,6 +152,6 @@ class WidgetsToXML:
 
 if __name__=="__main__":
     parse = WidgetsToXML()
-    canvasDir = sys.prefix + "./"
-    widgetDir = sys.prefix + "../orangeWidgets/"
+    canvasDir = "."
+    widgetDir = "../orangeWidgets"
     parse.ParseWidgetRoot(widgetDir, canvasDir)

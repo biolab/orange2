@@ -21,7 +21,8 @@ class SignalManager:
     # add widget to list
     def addWidget(self, widget):
         if widget not in self.widgets:
-            self.widgets.insert(0, widget)
+            #self.widgets.insert(0, widget)
+            self.widgets.append(widget)
 
     # remove widget from list
     def removeWidget(self, widget):
@@ -82,13 +83,17 @@ class SignalManager:
             widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
 
         # update topology
-        currentIndex = self.widgets.index(widgetTo)+1
-        for i in range(self.widgets.index(widgetTo)+1, self.widgets.index(widgetFrom)+1):
-            if self.existsPath(self.widgets[i], widgetTo):
-                widget = self.widgets[i]
-                self.widgets.remove(widget)
-                self.widgets.insert(self.widgets.index(widgetTo), widget)
-    
+        #currentIndex = self.widgets.index(widgetTo)+1
+        #for i in range(self.widgets.index(widgetTo)+1, self.widgets.index(widgetFrom)+1):
+        #    if self.existsPath(self.widgets[i], widgetTo):
+        #        widget = self.widgets[i]
+        #        self.widgets.remove(widget)
+        #        self.widgets.insert(self.widgets.index(widgetTo), widget)
+
+        if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
+            self.widgets.remove(widgetTo)
+            self.widgets.insert(self.widgets.index(widgetFrom)+1, widgetTo)
+
         return 1
 
 

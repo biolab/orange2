@@ -2,9 +2,7 @@
 # Description:
 #	document class - main operations (save, load, ...)
 #
-import sys
-import os, os.path
-import string
+import sys, os, os.path, string, traceback
 from qt import *
 from qtcanvas import *
 from xml.dom.minidom import Document, parse
@@ -228,29 +226,31 @@ class SchemaDoc(QMainWindow):
         
     # ####################################
     # add new widget
-    def addWidget(self, widget):
-        newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
-        x = self.canvasView.contentsX() + 10
-        for w in self.widgets:
-            x = max(w.x() + 90, x)
-            x = x/10*10
-        y = 150
+    def addWidget(self, widget, x= -1, y=-1, caption = ""):
+        try:
+            newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
+            return None
+        
+        if x==-1 or y==-1:
+            x = self.canvasView.contentsX() + 10
+            for w in self.widgets:
+                x = max(w.x() + 90, x)
+                x = x/10*10
+            y = 150
         newwidget.setCoords(x,y)
         newwidget.setViewPos(self.canvasView.contentsX(), self.canvasView.contentsY())
 
-        list = []
-        for item in self.widgets:
-            if item.widget.name == widget.name:
-                list.append(item.caption)
+        if caption == "": caption = newwidget.caption
+        
+        if self.getWidgetByCaption(caption):
+            i = 2
+            while self.getWidgetByCaption(caption + " (" + str(i) + ")"): i+=1
+            caption = caption + " (" + str(i) + ")"
+        newwidget.updateText(caption)
 
-        i = 2; found = 0
-        if len(list) > 0:
-            while not found:
-                if newwidget.caption + " (" + str(i) + ")" not in list:
-                    found = 1
-                    newwidget.updateText(newwidget.caption + " (" + str(i) + ")")
-                else: i += 1
-                
         self.signalManager.addWidget(newwidget.instance)
         newwidget.show()
         newwidget.updateTooltip()
@@ -295,6 +295,13 @@ class SchemaDoc(QMainWindow):
         self.canvas.update()
         self.enableSave(TRUE)
 
+    # return a new widget instance of a widget with filename "widgetName"
+    def addWidgetByFileName(self, widgetName, x, y, caption):
+        for widget in self.canvasDlg.tabs.allWidgets:
+            if widget.getFileName() == widgetName:
+                return self.addWidget(widget, x, y, caption)
+        return None
+
     # return the widget instance that has caption "widgetName"
     def getWidgetByCaption(self, widgetName):
         for widget in self.widgets:
@@ -302,13 +309,6 @@ class SchemaDoc(QMainWindow):
                 return widget
         return None
                     
-    # return a new widget instance of a widget with name "widgetName"
-    def addWidgetByCaption(self, widgetName):
-        for widget in self.canvasDlg.tabs.allWidgets:
-            if widget.fileName == widgetName:
-                return self.addWidget(widget)
-        return None
-
     def getWidgetCaption(self, widgetInstance):
         for widget in self.widgets:
             if widget.instance == widgetInstance:
@@ -341,14 +341,14 @@ class SchemaDoc(QMainWindow):
             self.save()
 
     def saveDocumentAs(self):
-        qname = QFileDialog.getSaveFileName( self.documentpath + "/" + self.documentname, "Orange Widget Scripts (*.ows)", self, "", "Save File")
-        if qname.isEmpty():
-            return
+        qname = QFileDialog.getSaveFileName( os.path.join(self.documentpath, self.documentname), "Orange Widget Scripts (*.ows)", self, "", "Save File")
         name = str(qname)
-        if len(name) < 4 or name[-4] != ".":
-            name = name + ".ows"
-        self.documentpath = os.path.dirname(name)
-        self.documentname = os.path.basename(name)
+        if os.path.splitext(name)[0] == "": return
+        if os.path.splitext(name)[1] == "": name = name + ".ows"
+
+        (self.documentpath, self.documentname) = os.path.split(name)
+        (self.applicationpath, self.applicationname) = os.path.split(name)
+        self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
         self.setCaption(self.documentname)
         self.documentnameValid = TRUE
         self.save()        
@@ -386,14 +386,14 @@ class SchemaDoc(QMainWindow):
             lines.appendChild(temp)
 
         xmlText = doc.toprettyxml()
-        file = open(self.documentpath + "/" + self.documentname, "wt")
+        file = open(os.path.join(self.documentpath, self.documentname), "wt")
         file.write(xmlText)
         file.flush()
         file.close()
         doc.unlink()
 
-        self.saveWidgetSettings(self.documentpath + "/" + self.documentname[:-3] + "sav")
-        self.canvasDlg.addToRecentMenu(self.documentpath + "/" + self.documentname)        
+        self.saveWidgetSettings(os.path.join(self.documentpath, os.path.splitext(self.documentname)[0]) + ".sav")
+        self.canvasDlg.addToRecentMenu(os.path.join(self.documentpath, self.documentname))        
 
     def saveWidgetSettings(self, filename):
         list = {}
@@ -406,25 +406,24 @@ class SchemaDoc(QMainWindow):
 
     def loadWidgetSettings(self, filename):
         if not os.path.exists(filename):
+            print "Unable to load settings file. File ", filename, " does not exist."
             return
 
         file = open(filename, "r")
         list = cPickle.load(file)
         for widget in self.widgets:
-            str = list[widget.caption]
-            if str != None:
-                widget.instance.loadSettingsStr(str)
-            widget.instance.activateLoadedSettings()
+            if widget.caption in list:
+                widget.instance.loadSettingsStr(list[widget.caption])
+                widget.instance.activateLoadedSettings()
 
         file.close()
 
     # ####################################                    
     # load a scheme with name "filename"
     def loadDocument(self, filename):
-            
         if not os.path.exists(filename):
             self.close()
-            QMessageBox.critical(self,'Qrange Canvas','Unable to find file \"'+ filename,  QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.critical(self,'Qrange Canvas','Unable to find file "'+ filename,  QMessageBox.Ok + QMessageBox.Default)
             return
 
         # ##################
@@ -439,14 +438,9 @@ class SchemaDoc(QMainWindow):
         widgetList = widgets.getElementsByTagName("widget")
         for widget in widgetList:
             name = widget.getAttribute("widgetName")
-            tempWidget = self.addWidgetByCaption(name)
-            if (tempWidget != None):
-                xPos = int(widget.getAttribute("xPos"))
-                yPos = int(widget.getAttribute("yPos"))
-                tempWidget.setCoords(xPos, yPos)
-                tempWidget.caption = widget.getAttribute("caption")
-            else:
-                QMessageBox.information(self,'Qrange Canvas','Unable to find widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
+            tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"))
+            if not tempWidget:
+                QMessageBox.information(self,'Qrange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
 
         # ##################
         #read lines                        
@@ -465,19 +459,17 @@ class SchemaDoc(QMainWindow):
             signalList = eval(signals)
             for (outName, inName) in signalList:
                 self.addLink(outWidget, inWidget, outName, inName, Enabled)
-            #self.resetActiveSignals(outWidget, inWidget, signalList, Enabled)
-            #line = self.getLine(outWidget, inWidget)
-            #if line:
-            #    line.setEnabled(Enabled)
 
         self.canvas.update()
         self.enableSave(FALSE)
-        self.documentpath = os.path.dirname(filename)
-        self.documentname = os.path.basename(filename)
+        (self.documentpath, self.documentname) = os.path.split(filename)
+        (self.applicationpath, self.applicationname) = os.path.split(filename)
+        self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
         self.setCaption(self.documentname)
         self.documentnameValid = TRUE
-
-        self.loadWidgetSettings(self.documentpath + "/" + self.documentname[:-3] + "sav")
+    
+        settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
+        self.loadWidgetSettings(settingsFile)
 
     # ###########################################
     # save document as application
@@ -485,10 +477,11 @@ class SchemaDoc(QMainWindow):
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
         appName = os.path.splitext(self.applicationname)[0] + ".py"
-        qname = QFileDialog.getSaveFileName( self.applicationpath + "/" + self.applicationname , "Orange Scripts (*.py)", self, "", "Save File as Application")
+        qname = QFileDialog.getSaveFileName( os.path.join(self.applicationpath, appName) , "Orange Scripts (*.py)", self, "", "Save File as Application")
         if qname.isEmpty(): return
 
         saveDlg = saveApplicationDlg(None, "", TRUE)
+
         # add widget captions
         for instance in self.signalManager.widgets:
             widget = None
@@ -500,12 +493,10 @@ class SchemaDoc(QMainWindow):
             return
 
         shownWidgetList = saveDlg.shownWidgetList
+        hiddenWidgetList = saveDlg.hiddenWidgetList
         
-        appName = os.path.splitext(str(qname))[0] + ".py"
-        self.applicationname = appName
-        (dir, fileName) = os.path.split(appName)
-        self.applicationpath = dir
-        fileName = os.path.splitext(fileName)[0]
+        (self.applicationpath, self.applicationname) = os.path.split(str(qname))
+        fileName = os.path.splitext(self.applicationname)[0]
 
         #format string with file content
         t = "    "  # instead of tab
@@ -522,6 +513,7 @@ class SchemaDoc(QMainWindow):
         progressHandlers = ""
 
         sepCount = 1
+        # gui for shown widgets
         for widgetName in shownWidgetList:
             if widgetName != "[Separator]":
                 widget = None
@@ -534,8 +526,8 @@ class SchemaDoc(QMainWindow):
                 name = name.replace(")", "")
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
-                manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
+                manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
                 buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
@@ -546,7 +538,30 @@ class SchemaDoc(QMainWindow):
             else:
                 buttons += "frameSpace%s = QFrame(self);  frameSpace%s.setMinimumHeight(10); frameSpace%s.setMaximumHeight(10)\n" % (str(sepCount), str(sepCount), str(sepCount)) +t+t
                 sepCount += 1
-            
+
+        instancesT += "\n" +t+t + "# create instances of hidden widgets\n" +t+t
+        instancesB += "\n" +t+t + "# create instances of hidden widgets\n" +t+t
+        
+        # gui for hidden widgets
+        for widgetName in hiddenWidgetList:
+            widget = None
+            for i in range(len(self.widgets)):
+                if self.widgets[i].caption == widgetName: widget = self.widgets[i]
+
+            name = widget.caption
+            name = name.replace(" ", "_")
+            name = name.replace("(", "")
+            name = name.replace(")", "")
+            imports += "from %s import *\n" % (widget.widget.getFileName())
+            instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
+            manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
+            instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
+            tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
+            progressHandlers += "self.ow%s.progressBarSetHandler(self.progressHandler)\n" % (name) +t+t
+            loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
+            loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
+            saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
+        
         for line in self.lines:
             if not line.getEnabled(): continue
 
@@ -656,13 +671,13 @@ ow.saveSettings()
             whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
-        fileApp = open(appName, "wt")
+        fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
         fileApp.write(whole)
         fileApp.flush()
         fileApp.close()
 
         # save settings
-        self.saveWidgetSettings(os.path.splitext(appName)[0] + ".sav")
+        self.saveWidgetSettings(os.path.join(self.applicationpath, fileName) + ".sav")
         
         
 

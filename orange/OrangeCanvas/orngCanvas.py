@@ -298,13 +298,19 @@ class OrangeCanvasDlg(QMainWindow):
 		
 
 	def readRecentFiles(self):
+		self.menuRecent.clear()
 		if not self.settings.has_key("RecentFiles"): return
 		recentDocs = self.settings["RecentFiles"]
-		self.menuRecent.clear()
 
+		# remove missing recent files
+		for i in range(len(recentDocs)-1,-1,-1):
+			if not os.path.exists(recentDocs[i]):
+				recentDocs.remove(recentDocs[i])
+
+		self.settings["RecentFiles"] = recentDocs
+		
 		for i in range(len(recentDocs)):
-			name = recentDocs[i]
-			shortName = os.path.basename(name)
+			shortName = os.path.basename(recentDocs[i])
 			self.menuRecent.insertItem(shortName, eval("self.menuItemRecent"+str(i+1)))
 
 	def openRecentFile(self, index):

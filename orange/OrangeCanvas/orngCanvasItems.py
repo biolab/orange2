@@ -4,9 +4,7 @@
 #
 from qt import *
 from qtcanvas import *
-import os
-import sys
-import traceback
+import os, sys
 TRUE  = 1
 FALSE = 0
 
@@ -245,8 +243,8 @@ class CanvasWidget(QCanvasRectangle):
             self.image = QPixmap(defaultPic)
 
         self.imageEdge = None
-        if os.path.isfile(canvasDlg.picsDir + "WidgetEdge.png"):
-            self.imageEdge = QPixmap(canvasDlg.picsDir + "WidgetEdge.png")
+        if os.path.exists(os.path.join(canvasDlg.picsDir,"WidgetEdge.png")):
+            self.imageEdge = QPixmap(os.path.join(canvasDlg.picsDir,"WidgetEdge.png"))
             
         self.setSize(68, 68)
         self.selected = FALSE

@@ -591,6 +591,7 @@ class saveApplicationDlg(QDialog):
         apply(QDialog.__init__,(self,) + args)
         self.setCaption("Qt Set widget order")
         self.shownWidgetList = []
+        self.hiddenWidgetList = []
 
         self.topLayout = QVBoxLayout( self, 10 )
 
@@ -636,9 +637,12 @@ class saveApplicationDlg(QDialog):
 
     def accept(self):
         self.shownWidgetList = []
+        self.hiddenWidgetList = []
         for i in range(self.tab.numRows()):
             if self.tab.cellWidget(i, 0).isChecked():
                 self.shownWidgetList.append(self.tab.text(i, 1))
+            elif self.tab.text(i,1) != "[Separator]":
+                self.hiddenWidgetList.append(self.tab.text(i,1))
         QDialog.accept(self)        
         
 
