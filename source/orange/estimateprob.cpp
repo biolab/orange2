@@ -571,7 +571,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     float Sxx = w * x * x * num;
     TDistribution *Syy = CLONE(TDistribution, y);
     PDistribution wSyy = Syy;
-    //*Syy *= y;
+    *Syy *= w;
 
     TDistribution *Sxy = CLONE(TDistribution, y);
     PDistribution wSxy = Sxy;
@@ -646,13 +646,20 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     vector<float>::iterator syi(((TDiscDistribution *)(Sy))->distribution.begin()); 
     vector<float>::iterator sye(((TDiscDistribution *)(Sy))->distribution.end()); 
     for (; syi!=sye; syi++) {
-      if (*syi > 0.9)
+      if (*syi > 0.9) {
+        Sy->abs -= *syi;
         *syi = 1/(1+exp(-10*((*syi)-0.9)*log(9)-log(9)));
-      if (*syi < 0.1)
+        Sy->abs += *syi;
+      }
+      if (*syi < 0.1) {
+        Sy->abs -= *syi;
         *syi = 1/(1+exp(10*(0.1-(*syi))*log(9)+log(9)));
+        Sy->abs += *syi;
+      }
     }
 
     Sy->cases = cases;
+    Sy->normalize();
     (*cont->continuous)[refx] = (wSy);
  
     // now for the variance
