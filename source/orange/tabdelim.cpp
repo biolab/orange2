@@ -852,7 +852,9 @@ string escSpaces(const string &s)
       res += *si;
   return res;
 }
-    
+
+extern TOrangeType PyOrPythonVariable_Type;
+
 void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
 {
   TEnumVariable *enumv;
@@ -876,7 +878,7 @@ void printVarType(FILE *file, PVariable var, bool listDiscreteValues)
   else if (var.is_derived_from(TStringVariable))
     fprintf(file, "string");
   else if (var.is_derived_from(TPythonVariable)) {
-    if (typeid(*var.counter->ptr) == typeid(TPythonVariable))
+    if (var.counter->ob_type == (PyTypeObject *)&PyOrPythonVariable_Type)
       fprintf(file, "python");
     else {
       PyObject *pyclassname = PyObject_GetAttrString((PyObject *)(var.counter)->ob_type, "__name__");
