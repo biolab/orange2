@@ -57,7 +57,6 @@ def createNoDiscDomain(domain, data):
                 # create classifier
                 vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
                 vals.append("?")
-                #print (vals)
                 cl = orange.ClassifierByLookupTable(newVar, at, vals)                
                 newVar.getValueFrom=cl
 
@@ -144,8 +143,6 @@ class LogRegLearnerClass:
 
         learner = orange.LogRegLearner()
         learner.imputerConstructor = imputer
-##        for i in imputer(examples)(examples):
-##            print i
             
         if self.fitter:
             learner.fitter = self.fitter
@@ -158,7 +155,10 @@ class LogRegLearnerClass:
             if isinstance(lr.getValueFrom, orange.ClassifierFromVar) and isinstance(lr.getValueFrom.transformer, orange.Discrete2Continuous):
                 lr = lr.getValueFrom.variable
             attributes = examples.domain.attributes[:]
-            attributes.remove(lr)
+            if lr in attributes:
+                attributes.remove(lr)
+            else:
+                attributes.remove(lr.getValueFrom.variable)
             examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
             lr = learner.fitModel(examples, weight)
         return lr
