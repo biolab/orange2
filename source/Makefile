@@ -1,5 +1,15 @@
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
+PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
+
+DESTDIR = $(PYTHONSITEPKGS)/orange
+DOCDIR = /usr/local/doc/orange
+SCRIPTDIR = /usr/local/bin
+INSTALL = install
+INSTALL_DATA = $(INSTALL) -m 644
+INSTALL_SCRIPT = $(INSTALL)
+INSTALL_SHARED = $(INSTALL) -m 555
+INSTALL_DIR = $(INSTALL) -d -m 755
 
 COMPILEOPTIONS=-fPIC -w -DLINUX -O3
 LINKOPTIONS=-shared -lstdc++
@@ -13,7 +23,7 @@ obj/%.o :
 	g++ $(COMPILEOPTIONS) -c $< -o $@
 
 
-all	: dirs ../orange.so ../corn.so ../statc.so
+all	: dirs ../orange.so ../corn.so ../statc.so orange.pth
             
 include makefile.deps
 
@@ -29,11 +39,64 @@ dirs:
 ../statc.so:	$(STATC_OBJECTS)
 	gcc $(STATC_OBJECTS) $(LINKOPTIONS) -o ../statc.so
 
-install:	all
-	@echo Put \"export PYTHONPATH=$(subst /source,,$(shell pwd))\"
-	@echo in your profile or create a file
-	@echo $(PYTHONLIB)/site-packages/orange.pth
-	@echo containg \"$(subst /source,,$(shell pwd))\"
+orange.pth:
+	@echo "orange" > orange.pth
+	@echo "orange\\OrangeWidgets" >> orange.pth
+	@echo "orange\\OrangeCanvas" >> orange.pth
+
+canvas:
+	@echo "exec `which python` $(DESTDIR)/OrangeCanvas/orngCanvas.py" > canvas
+
+install: all orange.pth canvas bininstall docinstall
+
+bininstall:
+	python -c "import compileall; compileall.compile_dir('..')"
+	$(INSTALL_DIR) $(DESTDIR)
+	@for i in OrangeCanvas OrangeWidgets GUIApplications; \
+	do \
+		if test ! -d $(DESTDIR)/$$i; then \
+			echo "Creating directory $(DESTDIR)/$$i"; \
+			$(INSTALL_DIR) $(DESTDIR)/$$i; \
+		else	true; \
+		fi; \
+		cd ../$$i; \
+		for s in `find . -type d`; \
+		do \
+			if test ! -d $(DESTDIR)/$$i/$$s; then \
+				echo "Creating subdirectory $(DESTDIR)/$$i/$$s"; \
+				$(INSTALL_DIR) $(DESTDIR)/$$i/$$s; \
+			else	true; \
+			fi; \
+		done; \
+		for f in `find . -type f -name '*.py' -o -name '*.pyc'`; \
+		do \
+			$(INSTALL_DATA) $$f $(DESTDIR)/$$i/$$f; \
+		done; \
+	done
+	$(INSTALL_DATA) ../*.py $(DESTDIR)
+	$(INSTALL_DATA) ../*.pyc $(DESTDIR)
+	$(INSTALL_DATA) ../COPYING $(DESTDIR)
+	$(INSTALL_SHARED) ../*.so $(DESTDIR)
+	$(INSTALL_DATA) orange.pth $(PYTHONSITEPKGS)
+	$(INSTALL_SCRIPT) canvas $(SCRIPTDIR)
+	cd $(DESTDIR)/OrangeCanvas; \
+	python xmlParse.py
+
+docinstall:
+	@cd ../doc; \
+	$(INSTALL_DIR) $(DOCDIR); \
+	for s in `find . -type d`; \
+	do \
+		if test ! -d $(DOCDIR)/$$s; then \
+			echo "Creating subdirectory $(DOCDIR)/$$s"; \
+			$(INSTALL_DIR) $(DOCDIR)/$$s; \
+		else	true; \
+		fi; \
+	done; \
+	for f in `find . -type f`; \
+	do \
+		$(INSTALL_DATA) $$f $(DOCDIR)/$$f; \
+	done
 
 clean:
-	rm -f obj/* ../*.so orange/ppp/* orange/px/*
+	rm -f obj/* ../*.so orange/ppp/* orange/px/* orange.pth canvas
