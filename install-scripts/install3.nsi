@@ -20,7 +20,7 @@ UninstallIcon orange.ico
 	!define INCLUDEDATASETS
 	!define INCLUDEGENOMICS
 !else
-!ifdef STANDARD
+!ifdef STANDARD		; orange (*.py *.pyd) and doc only
   !ifndef OUTFILENAME
 		OutFile "Orange-standard.exe"
 	!endif
@@ -54,20 +54,11 @@ Page directory
 Page components
 Page instfiles
 
-!ifdef INCLUDEPYTHONWIN | INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
+!ifdef INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
 
 	ComponentText "Components" "Select components to install" "(The Python stuff that you already have is hidden)"
 
 	Subsection /e "!" SSPYTHON
-
-	!ifdef INCLUDEPYTHONWIN
-		Section "PythonWin" SECPYTHONWIN
-			SetOutPath $DESKTOP
-			File various\win32all-159.exe
-			StrCpy $PythonOnDesktop 1
-			ExecWait "$DESKTOP\win32all-159.exe"
-		SectionEnd
-	!endif
 
 	!ifdef INCLUDEPYQT
 		Section "PyQt" SECPYQT
@@ -87,6 +78,7 @@ Page instfiles
 		Section "Numeric Python" SECNUMERIC
 			SetOutPath $PythonDir\lib\site-packages
 			File /r numeric
+			File various\Numeric.pth
 		SectionEnd
 	!endif
 
@@ -101,7 +93,6 @@ Page instfiles
 	Section "Qt 2.2 non-commercial" SECQT
 		SetOutPath $SYSDIR
 		File various\qt-mt230nc.dll
-		RegDLL "qt-mt230nc.dll"
 
 		SetOutPath $INSTDIR
 		File various\QT-LICENSE.txt
@@ -116,8 +107,10 @@ Section "Orange Modules"
 	
 	SetOutPath $INSTDIR\OrangeWidgets
 	File /r ${ORANGEDIR}\OrangeWidgets\*.py
+	File /r ${ORANGEDIR}\OrangeWidgets\*.png
 	SetOutPath $INSTDIR\OrangeCanvas
 	File /r ${ORANGEDIR}\OrangeCanvas\*.py
+	File /r ${ORANGEDIR}\OrangeCanvas\*.png
 SectionEnd
 
 
@@ -125,8 +118,10 @@ SectionEnd
 Section "Genomic Data"
 	SetOutPath $INSTDIR\OrangeWidgets\Genomics
 	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\GO
-	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotations
-	File /r "${ORANGEDIR}\OrangeWidgets\Genomics\Genome Maps"
+	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotation
+	File /r "${ORANGEDIR}\OrangeWidgets\Genomics\Genome Map"
+	SetOutPath "$INSTDIR\OrangeWidgets\OrangeCanvas"
+	File various\bi-visprog\*
 SectionEnd
 !endif
 	
@@ -136,18 +131,19 @@ SectionEnd
 
 	!ifdef INCLUDESCRIPTDOC
 		Section "Scripting Documentation"
-			!cd ${ORANGEDIR}
+			!cd ${ORANGEDIR}\doc
+			SetOutPath $INSTDIR\doc
+			File /r ofb
+			File /r modules
+			File /r reference
+			File style.css
 			SetOutPath $INSTDIR
-			File /r doc\ofb
-			File /r doc\modules
-			File /r doc\reference
-			File doc\style.css
-			!cd ${CWD}
-			!echo "CHANGING TO ${CWD}"
-			CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py"
+                        CreateDirectory "$SMPROGRAMS\Orange"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 			CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
+			!cd ${CWD}
+			!echo "CHANGING TO ${CWD}"
 		SectionEnd
 	!endif
   
@@ -169,25 +165,29 @@ SectionEnd
 !endif
 
 Section ""
+	SetOutPath $INSTDIR
 	CreateDirectory "$SMPROGRAMS\Orange"
+	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
+	CreateShortCut "$DESKTOP\Orange.lnk" "$SMPROGRAMS\Orange" "" $INSTDIR\uninst.exe 0
+	SetOutPath $INSTDIR\OrangeCanvas
+	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.py"
 
-	WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR"
+	WriteRegStr HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 	WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
 
 	WriteUninstaller "$INSTDIR\uninst.exe"
 SectionEnd  
 
-
 Section Uninstall
 	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n(This won't remove any 3rd party software possibly installed with Orange, such as Python or Qt)?$\r$\n$\r$\nMake sure you have not left any of your files in Orange's directories!" IDNO abort
-	UnregDLL "qt-mt230nc.dll"
 	RmDir /R "$INSTDIR"
 	RmDir /R "$SMPROGRAMS\Orange"
 	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
 	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
-	MessageBox MB_OK "Orange has been succesfully removed from your system.$\nYou may now continue without rebooting your machine."
+	Delete "$DESKTOP\Orange.lnk"
+	MessageBox MB_OK "Orange has been succesfully removed from your system.$\r$\nPython and other applications need to be removed separately.$\r$\n$\r$\nYou may now continue without rebooting your machine."
   abort:
 SectionEnd
 
@@ -201,7 +201,7 @@ SectionEnd
 !macroend
 
 
-!ifdef INCLUDEPYTHONWIN | INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
+!ifdef INCLUDEPYQT | INCLUDEPYQWT | INCLUDENUMERIC
 	!macro DisEnSection SECTION
 			!insertMacro HideSection ${SECTION}
 		${Else}
@@ -230,7 +230,7 @@ Function .onGUIInit
 
 			ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
 			${If} $PythonDir S== ""
-				MessageBox MB_OK "Python installation failed."
+				MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
 				Quit
 			${EndIf}
 			
@@ -245,13 +245,6 @@ Function .onGUIInit
 		!endif
 	${Else}
 		; we have Python already - let's check the modules
-
-		!ifdef INCLUDEPYTHONWIN
-			ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
-			${If} $8 S!= ""
-				!insertMacro DisEnSection ${SECPYTHONWIN}
-			${EndIf}
-		!endif
 
 		!ifdef INCLUDEPYQT
 			${If} ${FileExists} $PythonDir\lib\site-packages\qt.py
@@ -272,11 +265,31 @@ Function .onGUIInit
 		!endif
 		
 	${EndIf}
+
+
+	!ifdef INCLUDEPYTHONWIN
+		ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
+		${If} $8 S== ""
+			MessageBox MB_YESNO "Do you want to install PythonWin?$\r$\n(recommended if you plan programming scripts)" IDNO dontinstallpythonwin
+			SetOutPath $DESKTOP
+			File various\win32all-159.exe
+			StrCpy $PythonOnDesktop 1
+			ExecWait "$DESKTOP\win32all-159.exe"
+
+			ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
+			${If} $8 S== ""
+				MessageBox MB_OK "PythonWin installation failed.$\r$\nOrange installation will now resume."
+			${EndIf}
+
+		${EndIf}
+	    dontinstallpythonwin:
+	!endif
+
 	
 	!ifdef INCLUDEQT
-		RegDLL "qt-mt230nc.dll"
-		IfErrors 0 +1
+		${If} ${FileExists} "$SYSDIR\qt-mt230nc.dll"
 			!insertMacro HideSection ${SECQT}
+		${EndIf}
 	!endif
 	
 	StrCpy $INSTDIR $PythonDir\lib\site-packages\orange

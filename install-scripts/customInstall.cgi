@@ -25,22 +25,22 @@ print 'Content-type: text/html\n\n<html><HEAD><LINK REL=StyleSheet HREF="style.c
 print '<P>&nbsp;</P>' * 5
 print '<HR>'
 
-if flags == 0x1ff:
+if flags == 0x1ff and 0:
     print '<P>You have chosen the standard Orange installation with Python.</P>'
-    print '<P>Click <a href="Orange-complete.exe">here</a> to get it.'
+    print '<P>Click <a href="../download2/Orange-complete.exe">here</a> to get it.'
 
 elif flags == 0x80:
     print '<P>You have chosen the standard Orange installation.</P>'
-    print '<P>Click <a href="Orange-standard.exe">here</a> for download.'
+    print '<P>Click <a href="../download2/Orange-standard.exe">here</a> for download.'
 
 else:
     import os, time
     
-    os.chdir("D:\\webMagix\\orange\\download")
-    filedir = ("custom-%i" + ("-%2.2i" * 5)) % time.localtime()[:6]
+    os.chdir("D:\\webMagix\\orange\\download\\custom")
+    filedir = ("%i" + ("-%2.2i" * 5)) % time.localtime()[:6]
     if os.path.exists(filedir):
         app = 1
-        while os.path.exists(filedir + "%i" % app):
+        while os.path.exists(filedir + "-%i" % app):
             app += 1
         filedir += "%i" % app
     filename = "Orange-custom.exe"
@@ -50,14 +50,14 @@ else:
     os.chdir("D:\\webMagix\\orange\\scripts")
     args += ' /DORANGEDIR=d:\\webMagix\\orange\\recentversion\\orange'
     args += ' /DCWD=%s' % os.getcwd()
-    args += ' /DOUTFILENAME=d:\\webMagix\\orange\\download\\%s\\%s' % (filedir, filename)
+    args += ' /DOUTFILENAME=d:\\webMagix\\orange\\download\\custom\\%s\\%s' % (filedir, filename)
     
     args += ' install3.nsi'
 #    os.spawnv(os.P_WAIT, "C:\\Program Files\\NSIS\\makensis.exe", [args])
     if os.system('"C:\Program Files\NSIS\makensis.exe"' + args):
     	print "<P>Error generating installation program; system administrator will be notified.</P>"
     else:
-    	print '<P>Your installation file is ready for <a href="//magix.fri.uni-lj.si/orange/download/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
+    	print '<P>Your installation file is ready for <a href="//magix.fri.uni-lj.si/orange/download/custom/%s/%s">download</a>.</P><P>(The file will disappear in approximately two hours.)' % (filedir, filename)
 #    print flags, '<P>%s</P>' % args
 
 print '<P><HR></CENTER>'
