@@ -155,7 +155,7 @@ class OWMosaicDisplay(OWWidget):
         if data:
             self.data = orange.Preprocessor_dropMissing(data)
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-                self.colorPalette = OWGraphTools.ColorPaletteHSV(len(data.domain.classVar.values))
+                self.colorPalette = OWGraphTools.ColorPaletteBrewer(len(data.domain.classVar.values))
             
         self.initCombos(self.data)
         

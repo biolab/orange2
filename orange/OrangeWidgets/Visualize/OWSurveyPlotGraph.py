@@ -27,7 +27,6 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.attrLabels = labels        
         self.length = len(labels)
         indices = []
-        xs = []
         #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
 
 
@@ -64,19 +63,20 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.updateLayout()
 
         classNameIndex = -1
-        if self.rawdata.domain.classVar: classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        if self.rawdata.domain.classVar:
+            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
+            colors = ColorPaletteBrewer(len(classValDict))
         
-        xs = range(self.length)
-        count = len(self.rawdata)
-        pos = 0
+        y = 0
         self.yDataIndices = []
         
-        for i in range(count):
+        for i in range(len(self.rawdata)):
             if validData[i] == 0: continue
             
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
-            if classNameIndex >= 0: newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
+            if classNameIndex != -1: newColor = colors[classValDict[self.rawdata[i].getclass().value]]
                 
             curve.color = newColor
             curve.penColor = newColor
@@ -84,21 +84,20 @@ class OWSurveyPlotGraph(OWVisGraph):
             for j in range(self.length):
                 width = self.noJitteringScaledData[indices[j]][i] * 0.45
                 xData += [j-width, j+width]
-                yData += [pos, pos+1]
+                yData += [y, y+1]
 
             ##########
-            pos += 1
-            self.yDataIndices.append(pos)
+            y += 1
+            self.yDataIndices.append(y)
 
             ckey = self.insertCurve(curve)
             self.setCurveStyle(ckey, QwtCurve.UserCurve)
             self.setCurveData(ckey, xData, yData)
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
-            colors = ColorPaletteHSV(len(varValues))
-            for ind in range(len(varValues)):
-                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colors.getColor(ind), colors.getColor(ind), self.pointWidth, enableLegend = 1)
+            classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            for ind in range(len(classValues)):
+                self.addCurve(self.rawdata.domain.classVar.name + "=" + classValues[ind], colors[ind], colors[ind], self.pointWidth, enableLegend = 1)
 
            
 
