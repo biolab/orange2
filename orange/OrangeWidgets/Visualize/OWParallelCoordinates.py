@@ -95,6 +95,7 @@ class OWParallelCoordinates(OWWidget):
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
+        self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.flipAttribute)
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
@@ -252,6 +253,11 @@ class OWParallelCoordinates(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
+    def flipAttribute(self, item):
+        self.graph.flipAttribute(str(item.text()))
+        self.updateGraph()
+        
+
     # #####################
 
     def updateGraph(self, *args):
@@ -298,6 +304,7 @@ class OWParallelCoordinates(OWWidget):
                 else:
                     corr = OWVisAttrSelection.computeCorrelation(self.data, attrs[i], attrs[i+1])
                     self.correlationDict[attrs[i] + "-" + attrs[i+1]] = corr
+                if corr and (self.graph.attributeFlipInfo[attrs[i]] + self.graph.attributeFlipInfo[attrs[i+1]]) % 2 == 1: corr = 0.0 - corr
                 if corr != None: labels.append("%2.3f" % (corr))
                 else: labels.append("")
         elif self.middleLabels == "VizRank":
