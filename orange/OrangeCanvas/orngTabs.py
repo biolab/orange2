@@ -260,7 +260,6 @@ class WidgetTabs(QTabWidget):
 			iconName = widget.getAttribute("icon")
 			
 			# it's a complicated way to get to the widget description
-			descNode= widget.getElementsByTagName("description")[0]
 			description = ""
 			for node in widget.childNodes:
 				if node.nodeType == node.TEXT_NODE:

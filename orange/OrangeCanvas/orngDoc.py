@@ -437,7 +437,7 @@ class SchemaDoc(QMainWindow):
         self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
         settingsFile = os.path.join(self.documentpath, os.path.splitext(self.documentname)[0] + ".sav")
 
-        settingsList = None
+        settingsList = []
         if os.path.exists(settingsFile):
             file = open(settingsFile, "rt")
             settingsList = cPickle.load(file)
