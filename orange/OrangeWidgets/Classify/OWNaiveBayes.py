@@ -87,6 +87,9 @@ class OWNaiveBayes(OWWidget):
         self.resize(150,100)
         self.setLearner()                   # this just sets the learner, no data yet
 
+    def activateLoadedSettings(self):
+        self.setLearner()
+
     # setup the bayesian learner
     def setLearner(self):
         if self.m < 0:
