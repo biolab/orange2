@@ -166,13 +166,13 @@ public:
 };
 
 
-class TMeasureAttribute_retis : public TMeasureAttribute {
+class TMeasureAttribute_MSE : public TMeasureAttribute {
 public:
     __REGISTER_CLASS
 
     float m; //P m for m-estimate
 
-    TMeasureAttribute_retis();
+    TMeasureAttribute_MSE();
     virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
 };
 

@@ -615,13 +615,13 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
 
 
 
-TMeasureAttribute_retis::TMeasureAttribute_retis()
+TMeasureAttribute_MSE::TMeasureAttribute_MSE()
 : TMeasureAttribute(Contingency_Class, false, true),
   m(0)
 {}
 
 
-float TMeasureAttribute_retis::operator()(PContingency cont, PDistribution classDistribution, PDistribution apriorClass)
+float TMeasureAttribute_MSE::operator()(PContingency cont, PDistribution classDistribution, PDistribution apriorClass)
 {
   if (cont->innerVariable->varType!=TValue::FLOATVAR)
     raiseError("cannot evaluate attribute in domain with discrete classes");

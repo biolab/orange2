@@ -60,7 +60,7 @@ PTreeStopCriteria defaultStop;
 
 void tdidt_cpp_gcUnsafeInitialization()
 { PMeasureAttribute defaultDiscreteMeasure = mlnew TMeasureAttribute_gainRatio;
-  PMeasureAttribute defaultContinuousMeasure = mlnew TMeasureAttribute_retis;
+  PMeasureAttribute defaultContinuousMeasure = mlnew TMeasureAttribute_MSE;
 
   defaultDiscreteTreeSplitConstructor 
     = mlnew TTreeSplitConstructor_Combined(
@@ -105,7 +105,7 @@ TTreeLearner::TTreeLearner()
   storeDistributions(true),
   storeContingencies(true),
   storeNodeClassifier(true),
-  maxDepth(-1)
+  maxDepth(100)
 {}
 
 

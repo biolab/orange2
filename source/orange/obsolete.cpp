@@ -25,3 +25,4 @@
 
 
 PYCONSTANT(MeasureAttribute_splitGain, (PyObject *)&PyOrMeasureAttribute_gainRatio_Type)
+PYCONSTANT(MeasureAttribute_retis, (PyObject *)&PyOrMeasureAttribute_MSE_Type)

@@ -1383,7 +1383,7 @@ C_CALL(MeasureAttribute_gainRatio, MeasureAttribute, "(estimate=) | (attr, examp
 C_CALL(MeasureAttribute_gainRatioA, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_cheapestClass, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_relief, MeasureAttribute, "(estimate=, m=, k=) | (attr, examples[, apriori] [,weightID]) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_retis, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_Tretis, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
 
 
