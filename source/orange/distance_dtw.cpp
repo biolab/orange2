@@ -195,7 +195,9 @@ void TExamplesDistance_DTW::initMatrix(const vector<float> &p, const vector<floa
 		if ((*iter_q) < minq ) minq = (*iter_q);
 		if ((*iter_q) > maxq ) maxq = (*iter_q);
 	}
-	const float maxDiff = _MAX<float>(fabs(maxp-minq),fabs(maxq-minp));
+	
+      const float m1 = fabs(maxp-minq), m2 = fabs(maxq-minp);
+      const float maxDiff = m1 > m2 ? m1 : m2;
 	//printf("minp:%5.5f maxp:%5.5f minq:%5.5f maxq:%5.5f maxDiff:%5.5f\n", minp,maxp,minq,maxq,maxDiff);
 	// build matrix, calculate dist2
 	float diff;

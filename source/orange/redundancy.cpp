@@ -429,7 +429,7 @@ PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, 
 {
   TEnumVariable *evar = var.AS(TEnumVariable);
   if (!evar)
-    raiseError("'%s' is not a discrete attribute", var->name);
+    raiseError("'%s' is not a discrete attribute", var->name.c_str());
 
   TDiscDistribution dist(gen, var, weightID);
   TDiscDistribution::const_iterator dvi, dve;
