@@ -9,7 +9,7 @@ from string import strip
 import sys
 from orngCanvasItems import *
 from qttable import *
-from orngSignalManager import ExampleTable, ExampleTableWithClass
+#from orngSignalManager import ExampleTable, ExampleTableWithClass
 #from orngSignalManager import *
 
 TRUE  = 1
