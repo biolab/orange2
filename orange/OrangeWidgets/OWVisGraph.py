@@ -417,16 +417,10 @@ class OWVisGraph(OWGraph):
     def getExampleText(self, data, example):
         text = ""
         for i in range(len(data.domain)):
-            if data.domain[i].varType == orange.VarTypes.Discrete:
-                if example[i].isSpecial():
-                    text = "%s%s = ?; " % (text, data.domain[i].name)
-                else:
-                    text = "%s%s = %s; " % (text, data.domain[i].name, str(example[i].value))
+            if example[i].isSpecial():
+                text += "%s = ?; " % (data.domain[i].name)
             else:
-                if example[i].isSpecial():
-                    text = "%s%s = ?; " % (text, data.domain[i].name)
-                else:
-                    text = "%s%s = %.3f; " % (text, data.domain[i].name, example[i].value)
+                text += "%s = %s; " % (data.domain[i].name, str(example[i]))
         return text
 
     # ####################################################################
@@ -436,16 +430,10 @@ class OWVisGraph(OWGraph):
         try:
             for i in range(len(indices)):
                 index = indices[i]
-                if data.domain[index].varType == orange.VarTypes.Discrete:
-                    if example[index].isSpecial():
-                        text = "%s%s = ?; " % (text, data.domain[index].name)
-                    else:
-                        text = "%s%s = %s; " % (text, data.domain[index].name, str(example[index].value))
+                if example[index].isSpecial():
+                    text += "%s = ?; " % (data.domain[index].name)
                 else:
-                    if example[i].isSpecial():
-                        text = "%s%s = ?; " % (text, data.domain[index].name)
-                    else:
-                        text = "%s%s = %.3f; " % (text, data.domain[index].name, example[index].value)
+                    text += "%s = %s; " % (data.domain[index].name, str(example[index]))
         except:
             text = ""
         return text
