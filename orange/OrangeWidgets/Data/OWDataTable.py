@@ -43,7 +43,10 @@ class OWDataTable(OWWidget):
         if not data:
             self.table.hide()
         else:
+            self.progressBarInit()
             self.set_table()
+            self.progressBarFinished()
+
 
     def set_table(self):
         if self.data==None:
@@ -74,16 +77,21 @@ class OWDataTable(OWWidget):
                 self.header.setLabel(j+col, m.name)
 
         # set the contents of the table (values of attributes)
-        for i in range(len(self.data)):
+        instances = len(self.data)
+        for i in range(instances):
+            self.progressBarSet(i*50/instances)
             for j in range(len(self.data.domain.attributes)):
                 self.table.setText(i, j, str(self.data[i][j].native()))
         col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
-            for i in range(len(self.data)):
+            self.progressBarSet(50+i*20/instances)
+            for i in range(instances):
                 OWGUI.tableItem(self.table, i, col, self.data[i].getclass().native(), background=QColor(160,160,160))
             col += 1
+        mlen = len(metas)
         for (j,m) in enumerate(metas):
-            for i in range(len(self.data)):
+            self.progressBarSet(70+j*30/mlen)
+            for i in range(instances):
 ##                print str(self.data[i][m])
                 OWGUI.tableItem(self.table, i, j+col, str(self.data[i][m]), background=QColor(220,220,220))
 
