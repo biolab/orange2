@@ -174,7 +174,7 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
 
   double nPoints = 0;
   for(from = points.begin(); from != highedge; nPoints += (*(from++)).w);
-  double needpoints = nPoints * windowProp;
+  double needpoints = windowProp <= 1.0 ? nPoints * windowProp : windowProp;
 
   bool stopWindow = needpoints >= nPoints;
   if (stopWindow) {
@@ -195,9 +195,9 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
       //   (note that the last point included is to-1, so this one must be >= refx)
       for(; (to != highedge) && (refx > (*(to-1)).x); needpoints -= (*(to++)).w);
       // adjust the bottom end as high as it goes but so that the window still covers at least needpoints points
-      for(; (from != to) && ((*to).x - refx < (*from).x - refx) && (needpoints + (*from).w < 0); needpoints += (*(from++)).w);
+      for(; (from != to) && ((*to).x - refx < refx - (*from).x) && (needpoints + (*from).w < 0); needpoints += (*(from++)).w);
 
-      while ((to!=highedge) && ((*to).x - refx < (*from).x - refx)) {
+      while ((to!=highedge) && ((*to).x - refx < refx - (*from).x)) {
         // 'to' is not at the high edge and to's point is closer that from's, so include it
         needpoints -= (*(to++)).w;
         // adjust the bottom end as high as it goes but so that the window still covers at least needpoints points
@@ -209,8 +209,8 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
 
  
     /* Determine the window half-width */
-    double h = (refx - (*from).x);
-    double h2 = (*(to-1)).x - refx;
+    double h = abs(refx - (*from).x);
+    const double h2 = abs((*(to-1)).x - refx);
     if (h2 > h)
       h = h2;
 
@@ -245,14 +245,18 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
       Swxx += w * w * x * x;
     }
 
-    if (n==0)
+    if (n==0) {
       result.push_back(pair<double, double>(Sy, 0));
+      continue;
+    }
 
     const double mu_x = Sx / n;
     const double mu_y = Sy / n;
     const double sigma_x2 = (Sxx - mu_x * Sx) / n;
-    if (sigma_x2 < 1e-20)
+    if (sigma_x2 < 1e-20) {
       result.push_back(pair<double, double>(Sy, 0));
+      continue;
+    }
 
     const double sigma_y2 = (Syy - mu_y * Sy) / n;
     const double sigma_xy = (Sxy - Sx * Sy / n) / n;
