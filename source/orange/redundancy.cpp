@@ -384,7 +384,7 @@ PDomain TRemoveNonexistentValues::operator()(PExampleGenerator gen, PVarList sus
           enewVar->values = PStringList(mlnew TStringList(nonull, ""));
           PVariable newVar(enewVar);
 
-          TClassifierByLookupTable *cblt = mlnew TClassifierByLookupTable(newVar, *vi);
+          TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(newVar, *vi);
           int cnt = 0;
           TIdList::iterator vali = (*vi).AS(TEnumVariable)->values->begin();
           vector<TValue>::iterator lvi(cblt->lookupTable->begin());

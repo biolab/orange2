@@ -2999,7 +2999,6 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
     }
 
     PExampleGenerator egen;
-
     PyObject *pyweight = NULL;
     if (!PyArg_ParseTuple(targs, "O&|O", pt_ExampleGenerator, &egen, &pyweight)) {
       PyErr_Clear();
@@ -3168,6 +3167,45 @@ C_CALL(LookupLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
 C_NAMED(ClassifierByExampleTable, ClassifierFD, "([examples=])")
 
 
+PyObject *LookupLearner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(examples) -> Classifier | (classVar, attributes, examples) -> Classifier")
+{ PyTRY
+
+    PyObject *pyclassVar;
+    PyObject *pyvarList;
+    PExampleGenerator egen;
+    PyObject *pyweight = NULL;
+    if (PyArg_ParseTuple(targs, "OOO&|O", &pyclassVar, &pyvarList, pt_ExampleGenerator, &egen, &pyweight)) {
+
+      int weight;
+      if (!pyweight || (pyweight == Py_None))
+        weight = 0;
+      else if (PyInt_Check(pyweight))
+        weight = (int)PyInt_AsLong(pyweight);
+      else {
+        PVariable var = varFromArg_byDomain(pyweight, egen->domain);
+        if (!var) 
+          PYERROR(PyExc_TypeError, "invalid or unknown weight attribute", PYNULL);
+
+        weight = egen->domain->getVarNum(var);
+      }
+
+      PVariable classVar = varFromArg_byDomain(pyclassVar, egen->domain);
+      TVarList varList;
+      if (!varListFromDomain(pyvarList, egen->domain, varList, true))
+        return PYNULL;
+      PDomain newdomain = mlnew TDomain(egen->domain->classVar, varList);
+      PExampleTable etable = mlnew TExampleTable(newdomain, egen);
+      PClassifier cbet = TLookupLearner()(etable, weight);
+      cbet->classVar = classVar;
+      return WrapOrange(cbet);
+    }
+
+    PyErr_Clear();
+    return Learner_call(self, targs, keywords);
+      
+  PyCATCH
+}
+
 PyObject *ClassifierByExampleTable_boundset(PyObject *self) PYARGS(0, "() -> variables")
 { PyTRY
     TVarList &attributes=SELF_AS(TClassifierByExampleTable).domain->attributes.getReference();
@@ -3179,22 +3217,25 @@ PyObject *ClassifierByExampleTable_boundset(PyObject *self) PYARGS(0, "() -> var
 }
 
 
-PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, descriptor)")
-{ PyTRY
-    PVariable vcl, vvl;
-    if (!PyArg_ParseTuple(args, "O&O&", cc_Variable, &vcl, cc_Variable, &vvl))
-      PYERROR(PyExc_TypeError, "invalid parameter; two variables expected", PYNULL);
+PyObject *ClassifierByExampleTable_get_variables(PyObject *self)
+{ return ClassifierByExampleTable_boundset(self); }
+  
 
-    return WrapNewOrange(mlnew TClassifierByLookupTable(vcl, vvl), type);
+PyObject *ClassifierByLookupTable_boundset(PyObject *self) PYARGS(0, "() -> (variables)")
+{ PyTRY
+    TVarList vlist;
+    SELF_AS(TClassifierByLookupTable).giveBoundSet(vlist);
+    PyObject *res = PyTuple_New(vlist.size());
+    int i = 0;
+    const_ITERATE(TVarList, vi, vlist)
+      PyTuple_SetItem(res, i++, WrapOrange(*vi));
+    return res;
   PyCATCH
 }
 
 
-PyObject *ClassifierByLookupTable_boundset(PyObject *self) PYARGS(0, "() -> variable")
-{ PyTRY
-    return Py_BuildValue("(N)", WrapOrange(SELF_AS(TClassifierByLookupTable).variable));
-  PyCATCH
-}
+PyObject *ClassifierByLookupTable_get_variables(PyObject *self)
+{ return ClassifierByLookupTable_boundset(self); }
 
 
 PyObject *ClassifierByLookupTable_getindex(PyObject *self, PyObject *pyexample) PYARGS(METH_O, "(example) -> int")
@@ -3207,63 +3248,110 @@ PyObject *ClassifierByLookupTable_getindex(PyObject *self, PyObject *pyexample) 
 }
 
 
+PValueList PValueList_FromArguments(PyObject *arg, PVariable var = PVariable());
 
-PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, desc0, desc1)")
+/* Finishes up the initialization. If anything goes wrong, it deallocates the classifier */
+bool initializeTables(PyObject *pyvlist, PyObject *pydlist, TClassifierByLookupTable *cblt)
+{
+  try {
+    PValueList tvlist;
+    PDistributionList tdlist; 
+
+    if (pyvlist && (pyvlist != Py_None)) {
+      tvlist = PValueList_FromArguments(pyvlist, cblt->classVar);
+      if (!tvlist) {
+        mldelete cblt;
+        return false;
+      }
+      if (tvlist->size() != cblt->lookupTable->size()) {
+        mldelete cblt;
+        PYERROR(PyExc_AttributeError, "invalid size for 'lookup' list", false);
+      }
+    }
+
+    if (pydlist && (pydlist != Py_None)) {
+      tdlist = PDistributionList_FromArguments(pydlist);
+      if (!tdlist) {
+        mldelete cblt;
+        return false;
+      }
+      if (tdlist->size() != cblt->distributions->size()) {
+        mldelete cblt;
+        PYERROR(PyExc_AttributeError, "invalid size for 'distributions' list", false);
+      }
+    }
+
+    cblt->lookupTable = tvlist;
+    cblt->distributions = tdlist;
+  }
+
+  catch (...) {
+    mldelete cblt;
+    throw;
+  }
+
+  return true;
+}
+
+
+PyObject *ClassifierByLookupTable1_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, descriptor)")
+{ PyTRY
+    PVariable vcl, vvl;
+    PyObject *pyvlist = PYNULL;
+    PyObject *pydlist = PYNULL;
+    if (!PyArg_ParseTuple(args, "O&O&|OO", cc_Variable, &vcl, cc_Variable, &vvl, &pyvlist, &pydlist))
+      PYERROR(PyExc_TypeError, "invalid parameter; two variables and, optionally, ValueList an DistributionList expected", PYNULL);
+
+    TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(vcl, vvl);
+    return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
+  PyCATCH
+}
+
+
+PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, desc0, desc1)")
 { PyTRY
     PVariable vcl, vvl1, vvl2;
-    if (!PyArg_ParseTuple(args, "O&O&O&", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2))
+    PyObject *pyvlist = PYNULL;
+    PyObject *pydlist = PYNULL;
+    if (!PyArg_ParseTuple(args, "O&O&O&|OO", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2, &pyvlist, &pydlist))
       PYERROR(PyExc_TypeError, "invalid parameter; three variables expected", PYNULL);
 
-    return WrapNewOrange(mlnew TClassifierByLookupTable2(vcl, vvl1, vvl2), type);
+    TClassifierByLookupTable2 *cblt = mlnew TClassifierByLookupTable2(vcl, vvl1, vvl2);
+    return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
   PyCATCH
 }
 
 
-PyObject *ClassifierByLookupTable2_boundset(PyObject *self) PYARGS(0, "() -> [variable1, variable2]")
-{ PyTRY
-    return Py_BuildValue("(NN)", WrapOrange(SELF_AS(TClassifierByLookupTable2).variable1),
-                                WrapOrange(SELF_AS(TClassifierByLookupTable2).variable2));
-  PyCATCH
-}
-
-
-PyObject *ClassifierByLookupTable2_getindex(PyObject *self, PyObject *pyexample) PYARGS(METH_O, "(example) -> int")
-{ PyTRY
-    if (!PyOrExample_Check(pyexample))
-      PYERROR(PyExc_TypeError, "invalid arguments; an example expected", PYNULL);
-
-    return PyInt_FromLong(long(SELF_AS(TClassifierByLookupTable2).getIndex(PyExample_AS_ExampleReference(pyexample))));
-  PyCATCH
-}
-
-
-PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, desc0, desc1, desc2)")
+PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ClassifierByLookupTable, "(class-descriptor, desc0, desc1, desc2)")
 { PyTRY
     PVariable vcl, vvl1, vvl2, vvl3;
-    if (!PyArg_ParseTuple(args, "O&O&O&O&", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2, cc_Variable, &vvl3))
+    PyObject *pyvlist = PYNULL;
+    PyObject *pydlist = PYNULL;
+    if (!PyArg_ParseTuple(args, "O&O&O&O&|OO", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2, cc_Variable, &vvl3, &pyvlist, &pydlist))
       PYERROR(PyExc_TypeError, "invalid parameter; four variables expected", PYNULL);
 
-    return WrapNewOrange(mlnew TClassifierByLookupTable3(vcl, vvl1, vvl2, vvl3), type);
+    TClassifierByLookupTable3 *cblt = mlnew TClassifierByLookupTable3(vcl, vvl1, vvl2, vvl3);
+    return initializeTables(pyvlist, pydlist, cblt) ? WrapNewOrange(cblt, type) : PYNULL;
   PyCATCH
 }
 
 
-PyObject *ClassifierByLookupTable3_boundset(PyObject *self) PYARGS(0, "() -> [variable1, variable2, variable3]")
-{ PyTRY
-    return Py_BuildValue("(NNN)", WrapOrange(SELF_AS(TClassifierByLookupTable3).variable1),
-                                  WrapOrange(SELF_AS(TClassifierByLookupTable3).variable2),
-                                  WrapOrange(SELF_AS(TClassifierByLookupTable3).variable3));
-  PyCATCH
+PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Classifier, "(class-descriptor, descriptor)")
+{ 
+  static newfunc constructors[] = {ClassifierByLookupTable1_new, ClassifierByLookupTable2_new, ClassifierByLookupTable3_new};
+  static TOrangeType *types[] = {&PyOrClassifierByLookupTable1_Type, &PyOrClassifierByLookupTable2_Type, &PyOrClassifierByLookupTable3_Type};
+  if (!args)
+    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  int i = 0, e = PyTuple_Size(args);
+  for(; (i<e) && PyOrVariable_Check(PyTuple_GET_ITEM(args, i)); i++);
+
+  if ((i<2) || (i>4) || (e-i > 2))
+    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+
+  return constructors[i-2](type == (PyTypeObject *)(&PyOrClassifierByLookupTable_Type) ? (PyTypeObject *)(types[i-2]) : type, args, kwds);
 }
 
 
-PyObject *ClassifierByLookupTable3_getindex(PyObject *self, PyObject *pyexample) PYARGS(METH_O, "(example) -> int")
-{ PyTRY
-    if (!PyOrExample_Check(pyexample))
-      PYERROR(PyExc_TypeError, "invalid arguments; an example expected", PYNULL);
-
-    return PyInt_FromLong(long(SELF_AS(TClassifierByLookupTable3).getIndex(PyExample_AS_ExampleReference(pyexample))));
-  PyCATCH
-}
 
 #include "lib_kernel.px"

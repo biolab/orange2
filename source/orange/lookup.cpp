@@ -39,28 +39,35 @@ inline TValue getValue(const TExample &ex, const int &varIndex, PVariable variab
 { return (varIndex==ILLEGAL_INT) ? variable->computeValue(ex) : ex[varIndex]; }
 
 
-TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PVariable avar)
+TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PValueList vlist)
 : TClassifier(aclass, false), // we want TClassifier::classDistribution to call operator() when there are no distributions
-  variable(avar), 
-  lookupTable(mlnew TValueList(avar->noOfValues()+1, aclass->DK(), aclass)),
-  distributions(mlnew TDistributionList()),
-  lastDomainVersion(-1)
-{ for(int i = avar->noOfValues()+1; i--; )
+  lookupTable(vlist),
+  distributions(mlnew TDistributionList())
+{ 
+  PVariable avar = lookupTable->variable;
+  for(int i = avar->noOfValues()+1; i--; )
     distributions->push_back(TDistribution::create(aclass));
 }
 
 
-void TClassifierByLookupTable::setLastDomain(PDomain domain)
-{ lastVarIndex = domain->getVarNum(variable);
+TClassifierByLookupTable1::TClassifierByLookupTable1(PVariable aclass, PVariable avar)
+: TClassifierByLookupTable(aclass, mlnew TValueList(avar->noOfValues()+1, aclass->DK(), aclass)), 
+  variable1(avar), 
+  lastDomainVersion(-1)
+{}
+
+
+void TClassifierByLookupTable1::setLastDomain(PDomain domain)
+{ lastVarIndex = domain->getVarNum(variable1);
   lastDomainVersion = domain->version;
 }
 
 
-int TClassifierByLookupTable::getIndex(const TExample &ex, TExample *conv)
+int TClassifierByLookupTable1::getIndex(const TExample &ex, TExample *conv)
 { if (lastDomainVersion!=ex.domain->version) 
     setLastDomain(ex.domain);
   
-  TValue val = getValue(ex, lastVarIndex, variable);
+  TValue val = getValue(ex, lastVarIndex, variable1);
   
   if (val.isSpecial()) {
     if (conv)
@@ -72,32 +79,32 @@ int TClassifierByLookupTable::getIndex(const TExample &ex, TExample *conv)
 }
 
 
-TValue TClassifierByLookupTable::operator()(const TExample &ex)
+TValue TClassifierByLookupTable1::operator()(const TExample &ex)
 { if (lastDomainVersion!=ex.domain->version)
     setLastDomain(ex.domain);
 
-  TValue val=getValue(ex, lastVarIndex, variable);
+  TValue val = getValue(ex, lastVarIndex, variable1);
   return (val.isSpecial() || (val.intV>=int(lookupTable->size())))
     ? lookupTable->back()
     : lookupTable->operator[](val.intV);
 }
 
 
-PDistribution TClassifierByLookupTable::classDistribution(const TExample &ex)
+PDistribution TClassifierByLookupTable1::classDistribution(const TExample &ex)
 { if (!distributions)
     return TClassifier::classDistribution(ex);
 
   if (lastDomainVersion!=ex.domain->version)
     setLastDomain(ex.domain);
 
-  TValue val=getValue(ex, lastVarIndex, variable);
+  TValue val = getValue(ex, lastVarIndex, variable1);
   return (val.isSpecial() || (val.intV>=int(distributions->size())))
     ? CLONE(TDistribution, distributions->back())
     : CLONE(TDistribution, distributions->operator[](val.intV));
 }
 
 
-void TClassifierByLookupTable::predictionAndDistribution(const TExample &ex, TValue &value, PDistribution &dist)
+void TClassifierByLookupTable1::predictionAndDistribution(const TExample &ex, TValue &value, PDistribution &dist)
 { if (!distributions) {
     TClassifier::predictionAndDistribution(ex, value, dist);
     return;
@@ -106,7 +113,7 @@ void TClassifierByLookupTable::predictionAndDistribution(const TExample &ex, TVa
   if (lastDomainVersion!=ex.domain->version)
     setLastDomain(ex.domain);
 
-  TValue val=getValue(ex, lastVarIndex, variable);
+  TValue val = getValue(ex, lastVarIndex, variable1);
   if (val.isSpecial() || (val.intV>=int(lookupTable->size()))) {
     value = lookupTable->back();
     dist = CLONE(TDistribution, distributions->back());
@@ -124,7 +131,7 @@ void TClassifierByLookupTable::predictionAndDistribution(const TExample &ex, TVa
    Otherwise, it computes the distribution of classes and stores the majority into empty
    elements of the lookup table.
 */
-void TClassifierByLookupTable::replaceDKs(TDiscDistribution &valDistribution)
+void TClassifierByLookupTable1::replaceDKs(TDiscDistribution &valDistribution)
 { TDiscDistribution sum(classVar), *classes = mlnew TDiscDistribution(classVar);
   PDistribution wclasses = PDistribution(classes);
   if (distributions) {
@@ -183,20 +190,18 @@ void TClassifierByLookupTable::replaceDKs(TDiscDistribution &valDistribution)
 }
 
 
-void TClassifierByLookupTable::giveBoundSet(TVarList &boundSet)
-{ boundSet=TVarList(1, variable); }
+void TClassifierByLookupTable1::giveBoundSet(TVarList &boundSet)
+{ boundSet=TVarList(1, variable1); }
 
 
 
 
 TClassifierByLookupTable2::TClassifierByLookupTable2(PVariable aclass, PVariable avar1, PVariable avar2, PEFMDataDescription adata)
-: TClassifier(aclass, false),  // we want TClassifier::classDistribution to call operator() when there are no distributions
+: TClassifierByLookupTable(aclass, mlnew TValueList((avar1->noOfValues()) * (avar2->noOfValues()), aclass->DK(), aclass)), 
   variable1(avar1),
   variable2(avar2),
   noOfValues1(avar1->noOfValues()),
   noOfValues2(avar2->noOfValues()),
-  lookupTable(mlnew TValueList((avar1->noOfValues()) * (avar2->noOfValues()), aclass->DK(), aclass)),
-  distributions(mlnew TDistributionList()),
   dataDescription(adata),
   lastDomainVersion(-1)
 { if (!adata) {
@@ -205,8 +210,6 @@ TClassifierByLookupTable2::TClassifierByLookupTable2(PVariable aclass, PVariable
     attributes.push_back(variable2);
     dataDescription=mlnew TEFMDataDescription(mlnew TDomain(PVariable(), attributes)); 
   }
-  for(int i=lookupTable->size(); i--; )
-    distributions->push_back(TDistribution::create(aclass));
 }
 
 
@@ -335,15 +338,13 @@ void TClassifierByLookupTable2::giveBoundSet(TVarList &boundSet)
 
 
 TClassifierByLookupTable3::TClassifierByLookupTable3(PVariable aclass, PVariable avar1, PVariable avar2, PVariable avar3, PEFMDataDescription adata)
-: TClassifier(aclass, false), // we want TClassifier::classDistribution to call operator() when there are no distributions
+: TClassifierByLookupTable(aclass, mlnew TValueList((avar1->noOfValues()) * (avar2->noOfValues()) * (avar3->noOfValues()), aclass->DK(), aclass)),
   variable1(avar1),
   variable2(avar2),
   variable3(avar3),
   noOfValues1(avar1->noOfValues()),
   noOfValues2(avar2->noOfValues()),
   noOfValues3(avar3->noOfValues()),
-  lookupTable(mlnew TValueList((avar1->noOfValues()) * (avar2->noOfValues()) * (avar3->noOfValues()), aclass->DK(), aclass)),
-  distributions(mlnew TDistributionList()),
   dataDescription(adata),
   lastDomainVersion(-1)
 { if (!adata) {
@@ -351,10 +352,8 @@ TClassifierByLookupTable3::TClassifierByLookupTable3(PVariable aclass, PVariable
     attributes.push_back(variable1);
     attributes.push_back(variable2);
     attributes.push_back(variable3);
-    dataDescription=mlnew TEFMDataDescription(mlnew TDomain(PVariable(), attributes)); 
+    dataDescription = mlnew TEFMDataDescription(mlnew TDomain(PVariable(), attributes)); 
   }
-  for(int i=lookupTable->size(); i--; )
-    distributions->push_back(TDistribution::create(aclass));
 }
 
 
@@ -527,11 +526,13 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
       for(diff = attrs; diff && (*(bii++)==*(bbii++)); diff--);
     } while (!diff);
 
-    TExample ex = *bi;
-    ex.setClass(tcv.highestProbValue(ex));
-    ex.getClass().svalV = classDist;
+    if (classDist->abs > 0.0) {
+      TExample ex = *bi;
+      ex.setClass(tcv.highestProbValue(ex));
+      ex.getClass().svalV = classDist;
 
-    classifier->sortedExamples->addExample(ex);
+      classifier->sortedExamples->addExample(ex);
+    }
     bi = bbi;
   }
 
@@ -669,9 +670,11 @@ void TClassifierByExampleTable::predictionAndDistribution(const TExample &exam, 
 
 
 void TClassifierByExampleTable::afterSet(const string &name)
-{ if (name=="examples") {
-    domain=sortedExamples->domain; 
-    classVar=sortedExamples->domain->classVar;
+{ if (name=="sortedExamples") {
+    domain = sortedExamples->domain; 
+    classVar = sortedExamples->domain->classVar;
+    domainWithoutClass = CLONE(TDomain, domain);
+    domainWithoutClass->removeClass();
   }
 }
 

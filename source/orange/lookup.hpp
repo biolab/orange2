@@ -34,13 +34,25 @@ class TExampleTable;
 
 class TClassifierByLookupTable : public TClassifier {
 public:
+  __REGISTER_ABSTRACT_CLASS
+
+  TClassifierByLookupTable(PVariable, PValueList);
+
+  PValueList lookupTable; //PR a list of class values, one for each attribute value
+  PDistributionList distributions; //PR a list of class distributions, one for each attribute value
+
+  virtual int getIndex(const TExample &ex, TExample *conv=NULL) = 0;
+  virtual void giveBoundSet(TVarList &boundSet) = 0;
+};
+
+
+class TClassifierByLookupTable1 : public TClassifierByLookupTable {
+public:
   __REGISTER_CLASS
 
-  PVariable variable; //P attribute used for classification
-  PValueList lookupTable; //P a list of class values, one for each attribute value
-  PDistributionList distributions; //P a list of class distributions, one for each attribute value
+  PVariable variable1; //PR attribute used for classification
 
-  TClassifierByLookupTable(PVariable aclass, PVariable avar);
+  TClassifierByLookupTable1(PVariable aclass, PVariable avar);
 
   virtual TValue operator()(const TExample &);
   virtual PDistribution classDistribution(const TExample &);
@@ -59,16 +71,14 @@ private:
 
 WRAPPER(ProbabilityEstimator);
 
-class TClassifierByLookupTable2 : public TClassifier {
+class TClassifierByLookupTable2 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
-  PVariable variable1; //P the first attribute used for classification
-  PVariable variable2; //P the second attribute used for classification
-  int noOfValues1; //P number of values of the first attribute
-  int noOfValues2; //P number of values of the second attribute
-  PValueList lookupTable; //P a list of class values, on for each combination of attribute values
-  PDistributionList distributions; //P a list of class distributions, on for each combination of attributes' values
+  PVariable variable1; //PR the first attribute used for classification
+  PVariable variable2; //PR the second attribute used for classification
+  int noOfValues1; //PR number of values of the first attribute
+  int noOfValues2; //PR number of values of the second attribute
   PEFMDataDescription dataDescription; //P data description
 
   TClassifierByLookupTable2(PVariable aclass, PVariable, PVariable, PEFMDataDescription =PEFMDataDescription());
@@ -88,18 +98,16 @@ private:
 };
 
 
-class TClassifierByLookupTable3 : public TClassifier {
+class TClassifierByLookupTable3 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
-  PVariable variable1; //P the first attribute used for classification
-  PVariable variable2; //P the second attribute used for classification
-  PVariable variable3; //P the third attribute used for classification
-  int noOfValues1; //P number of values of the first attribute
-  int noOfValues2; //P number of values of the second attribute
-  int noOfValues3; //P number of values of the third attribute
-  PValueList lookupTable; //P a list of class values, on for each combination of attribute values
-  PDistributionList distributions; //P a list of class distributions, on for each combination of attributes' values
+  PVariable variable1; //PR the first attribute used for classification
+  PVariable variable2; //PR the second attribute used for classification
+  PVariable variable3; //PR the third attribute used for classification
+  int noOfValues1; //PR number of values of the first attribute
+  int noOfValues2; //PR number of values of the second attribute
+  int noOfValues3; //PR number of values of the third attribute
   PEFMDataDescription dataDescription; //P data description
 
   TClassifierByLookupTable3(PVariable aclass, PVariable, PVariable, PVariable, PEFMDataDescription =PEFMDataDescription());
@@ -142,8 +150,7 @@ class TClassifierByExampleTable : public TClassifierFD {
 public:
   __REGISTER_CLASS
 
-  PDomain domainWithoutClass; //PR a domain (of sortedExamples) but without the class value
-  PExampleTable sortedExamples; //PR a table of examples
+  PExampleTable sortedExamples; //P a table of examples
   PClassifier classifierForUnknown;  //P a classifier for unknown cases
 
   TClassifierByExampleTable(PDomain dom = PDomain());
@@ -157,6 +164,9 @@ public:
   
   PDistribution classDistributionLow(TExample **low, TExample **high);
   void getExampleRange(const TExample &exam, TExample **&low, TExample **&high);
+
+protected:
+  PDomain domainWithoutClass;
 };
 
 

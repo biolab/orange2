@@ -384,6 +384,18 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
   PyTRY
     if (propertyDescription) {
       if (propertyDescription->readOnly) {
+        /* Property might be marked as readOnly, but have a specialized set function.
+           The following code is pasted from PyObject_GenericSetAttr.
+           If I'd call it here and the attribute is really read-only, PyObject_GenericSetAttr
+           would blatantly store it in the dictionary. */
+        PyObject *descr = _PyType_Lookup(self->ob_type, pyname);
+	      PyObject *f = PYNULL;
+	      if (descr != NULL && PyType_HasFeature(descr->ob_type, Py_TPFLAGS_HAVE_CLASS)) {
+		      descrsetfunc f = descr->ob_type->tp_descr_set;
+		      if (f != NULL && PyDescr_IsData(descr))
+			      return f(descr, (PyObject *)self, args);
+        }
+
         PyErr_Format(PyExc_TypeError, "%s.%s: read-only attribute", self->ob_type->tp_name, name);
         return -1;
       }

@@ -176,7 +176,7 @@ PClassifier TGeneralExampleClustering::classifier(const float &cut, const int &c
 
   // *** ONE BOUND VARIABLE ***  
   if (attributes->size()==1) {
-    TClassifierByLookupTable *cblt=mlnew TClassifierByLookupTable(classVar, attributes->front());
+    TClassifierByLookupTable1 *cblt=mlnew TClassifierByLookupTable1(classVar, attributes->front());
     PClassifier wcblt = cblt;
     int cluster = 0;
     TDiscDistribution classDist;
