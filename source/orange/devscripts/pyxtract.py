@@ -1082,7 +1082,7 @@ def printV1NoNL(str="", tup=()):
         
 
 args=["lib_kernel.cpp", "lib_components.cpp", "lib_preprocess.cpp", "lib_learner.cpp", "lib_io.cpp", "lib_vectors.cpp",
-      "cls_example.cpp", "cls_value.cpp", "cls_orange.cpp",
+      "cls_example.cpp", "cls_value.cpp", "cls_orange.cpp", "cls_misc.cpp",
       "functions.cpp", "obsolete.cpp",
       "-m" # "-r" if you want to recreate all files
       #, "-x", "names2.xml"
