@@ -88,10 +88,11 @@ class OWAttributeStatistics(OWWidget):
             self.canvasview.hide()
         else:
             self.attributes.clear()
-            if hasattr(data, "table"):
-                self.dataset = data.table
-            else:
-                self.dataset = data
+            # we do a trick here, and make a new domain that includes the class var, if one exists
+            # this for a reason to change any of the code, plus to be able to use such functions
+            # as DomainDistributions
+            newdomain = orange.Domain(data.domain.attributes+[data.domain.classVar],0)
+            self.dataset = orange.ExampleTable(newdomain, data)
             self.dist = orange.DomainDistributions(self.dataset)
             for a in self.dataset.domain.attributes:
                 self.attributes.insertItem(a.name)
