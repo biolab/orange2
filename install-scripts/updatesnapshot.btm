@@ -2,6 +2,7 @@ call updateSetConstants__.btm
 
 set DOCUMENTATION=orange-doc-snap-%daystr.zip
 set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
+set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr.exe
 set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
 
 set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
@@ -27,6 +28,7 @@ rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
 del /qsyfx orange
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD genomics
 cd orange
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD source
 
@@ -48,14 +50,17 @@ python buildInstFileList.py %SNAPSHOTDIR snapshotfiles
 python removeCVS.py %SNAPSHOTDIR
 
 del %DOWNLOADDIR\orange-win-snap-*.exe
-nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+del %DOWNLOADDIR\orange-win-genomics-snap-*.exe
+
+nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 rem del snapshotfiles_*.inc
 
 pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
 cdd %SNAPSHOTDIR
-winrar a -r "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
-winrar a "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/*.py orange/COPYING
+winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
+winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING
 popd
 
 cdd %SNAPSHOTDIR
