@@ -1,9 +1,9 @@
 """
 <name>Scatterplot</name>
 <description>Shows data using scatterplot</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/ScatterPlot.png</icon>
-<priority>3100</priority>
+<priority>100</priority>
 """
 # ScatterPlot.py
 #

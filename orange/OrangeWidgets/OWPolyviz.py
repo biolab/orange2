@@ -1,9 +1,9 @@
 """
 <name>Polyviz</name>
 <description>Shows data using Polyviz visualization method</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/Polyviz.png</icon>
-<priority>3140</priority>
+<priority>1150</priority>
 """
 # Polyviz.py
 #

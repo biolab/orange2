@@ -16,8 +16,7 @@ class OWSieveMultigramGraph(OWVisGraph):
         self.pearsonMinRes = 2
         self.pearsonMaxRes = 10
 
-    def setSettings(self, maxLineWidth, independenceKvoc, pearsonMinRes, pearsonMaxRes):
-        self.independenceKvoc = independenceKvoc
+    def setSettings(self, maxLineWidth, pearsonMinRes, pearsonMaxRes):
         self.maxLineWidth = maxLineWidth
         self.pearsonMaxRes = pearsonMaxRes
         self.pearsonMinRes = pearsonMinRes
@@ -25,7 +24,7 @@ class OWSieveMultigramGraph(OWVisGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, data, labels, probabilities, criteria, statusBar):
+    def updateData(self, data, labels, probabilities, statusBar):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
@@ -42,15 +41,15 @@ class OWSieveMultigramGraph(OWVisGraph):
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setTickLength(1, 1, 0)
         
-        self.setAxisScale(QwtPlot.xBottom, -1.15, 1.15, 1)
-        self.setAxisScale(QwtPlot.yLeft, -1.15, 1.15, 1)
+        self.setAxisScale(QwtPlot.xBottom, -1.25, 1.25, 1)
+        self.setAxisScale(QwtPlot.yLeft, -1.25, 1.25, 1)
 
         length = len(labels)
         indices = []
         xs = []
 
         attrNameList = []
-        for attr in data.domain.attributes: attrNameList.append(attr.name)
+        for attr in data.domain: attrNameList.append(attr.name)
     
         ###########
         # create a table of indices that stores the sequence of variable indices
@@ -82,17 +81,19 @@ class OWSieveMultigramGraph(OWVisGraph):
         ###########
         # draw text at lines
         for i in range(length):
-            # attribute name
+            # print attribute name
             mkey = self.insertMarker(labels[i])
-            self.marker(mkey).setXValue(0.57*(anchors[0][i]+anchors[0][(i+1)%length]))
-            self.marker(mkey).setYValue(0.57*(anchors[1][i]+anchors[1][(i+1)%length]))
+            self.marker(mkey).setXValue(0.6*(anchors[0][i]+anchors[0][(i+1)%length]))
+            self.marker(mkey).setYValue(0.6*(anchors[1][i]+anchors[1][(i+1)%length]))
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+
 
             if data.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
                 values = data.domain[labels[i]].values
                 count = len(values)
-                k = 1.07
+                k = 1.08
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
                     mkey = self.insertMarker(values[j])
@@ -103,7 +104,6 @@ class OWSieveMultigramGraph(OWVisGraph):
         # -----------------------------------------------------------
         #  create data lines
         # -----------------------------------------------------------
-
         for attrXindex in range(len(labels)):
             attrXName = labels[attrXindex]
 
@@ -127,54 +127,18 @@ class OWSieveMultigramGraph(OWVisGraph):
                         attrYDataAnchorX = anchors[0][attrYindex]*(1-val) + anchors[0][(attrYindex+1)%length]*val
                         attrYDataAnchorY = anchors[1][attrYindex]*(1-val) + anchors[1][(attrYindex+1)%length]*val
 
-                        #if criteria == "Attribute independence": self.addLineIndependent([attrXDataAnchorX, attrYDataAnchorX], [attrXDataAnchorY, attrYDataAnchorY], countX, countY, actual, sum)
-                        #elif criteria == "Attribute independence (Pearson residuals)":
                         self.addLinePearson([attrXDataAnchorX, attrYDataAnchorX], [attrXDataAnchorY, attrYDataAnchorY], countX, countY, actual, sum)
 
-    """                        
-    def addLineIndependent(self, xDataList, yDataList, countX, countY, actual, sum):
-        independentProb = float(countX*countY)/float(sum*sum)
-        m = 2.
-        actualProb = (independentProb*m + actual)/float(sum+m)
-        print countX, "\t", countY, "\t", actualProb, "\t", independentProb, "\t", sum
-        #actualProb = float(actual)/float(sum)
 
-        #print countX, countY, actual
-        if (countX*countY < 5) and (actual < 5): return   # in case we have too little examples we don't estimate the deviation from independence
-
-        # compute 2 constants
-        constA = -205.0 / float(self.independenceKvoc)
-        constB = 255 - constA
-
-        # set color
-        if actualProb > independentProb:
-            pen = QPen(QColor(0,0,255))
-            b = 255
-            if independentProb == 0: r = g = constA*actualProb*sum+ 255
-            else:                r = g = constA*actualProb/independentProb + 255 - constA   # if actual/independent = 10 --> r=g=255; actual==independent --> r=g=0
-            r = g = max(r, 50)   # if actual/independent > 10 --> r=g=50     -- we don't go under 50
-            penWidth = int(min((actualProb/independentProb)*(self.maxLineWidth/options.independenceKvoc), self.maxLineWidth))
-        else:
-            pen = QPen(QColor(255,0,0))
-            r = 255
-            if actualProb == 0: g = b = constA*independentProb*sum + 255  
-            else:           g = b = constA*independentProb/actualProb + 255 - constA   # if independent/actual= 10 --> g=b=255; actual==independent --> r=g=0
-            g = b = max(g, 50)  # if actual/independent > 10 --> b=g=50     -- we don't go under 50
-            penWidth = int(min((independentProb/actualProb)*(self.maxLineWidth/options.independenceKvoc), self.maxLineWidth))
-        color = QColor(r,g,b)
-
-        #print penWidth
-        key = self.addCurve('line', color, color, 0, QwtCurve.Lines, symbol = QwtSymbol.None)
-        pen = QPen(color, penWidth)
-        self.setCurvePen(key, pen)
-        self.setCurveData(key, xDataList, yDataList)
-        
-    """
     def addLinePearson(self, xDataList, yDataList, countX, countY, actual, sum):
         expected = float(countX*countY)/float(sum)
-        pearson = (actual - expected) / sqrt(expected)
+        if actual == expected == 0: return
+        elif expected == 0:     # if expected == 0 we have to solve division by zero. In reverse example (when actual == 0) pearson = -expected/sqrt(expected)
+            pearson = actual/sqrt(actual)
+        else:
+            pearson = (actual - expected) / sqrt(expected)
 
-        if pearson > -self.pearsonMinRes and pearson < self.pearsonMinRes: return # we don't want to draw white lines
+        if abs(pearson) < self.pearsonMinRes: return # we don't want to draw white lines
         
         if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
             intPearson = min(floor(pearson), self.pearsonMaxRes)

@@ -1,9 +1,9 @@
 """
 <name>Mosaic Display</name>
 <description>Show mosaic display</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/MosaicDisplay.png</icon>
-<priority>4110</priority>
+<priority>4200</priority>
 """
 # OWMosaicDisplay.py
 #

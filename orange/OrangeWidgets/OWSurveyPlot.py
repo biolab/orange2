@@ -1,9 +1,9 @@
 """
 <name>Survey Plot</name>
 <description>Shows data using survey plot visualization method</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/SurveyPlot.png</icon>
-<priority>3120</priority>
+<priority>2200</priority>
 """
 # OWSurveyPlot.py
 #

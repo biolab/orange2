@@ -1,9 +1,9 @@
 """
 <name>Sieve multigram</name>
 <description>Shows sieve multigram</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/SieveMultigram.png</icon>
-<priority>3150</priority>
+<priority>4150</priority>
 """
 # Polyviz.py
 #
@@ -23,7 +23,7 @@ from orngCI import FeatureByCartesianProduct
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWSieveMultigram(OWWidget):
-    settingsList = ["independenceKvoc", "maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
+    settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve Multigram", "Show sieve multigram", TRUE, TRUE)
@@ -35,7 +35,6 @@ class OWSieveMultigram(OWWidget):
 
         #load settings
         self.maxLineWidth = 3
-        self.independenceKvoc = 3
         self.pearsonMinRes = 2
         self.pearsonMaxRes = 10
         
@@ -43,7 +42,6 @@ class OWSieveMultigram(OWWidget):
         self.options = OWSieveMultigramOptions()
         self.loadSettings()
         self.connect(self.options.lineCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        self.connect(self.options.kvocCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.options.pearsonMaxResCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.options.applyButton, SIGNAL("clicked()"), self.updateGraph)
 
@@ -55,11 +53,6 @@ class OWSieveMultigram(OWWidget):
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
 
-        self.shownCriteriaGroup = QVGroupBox(self.controlArea)
-        self.shownCriteriaGroup.setTitle("Shown criteria")
-        self.criteriaCombo = QComboBox(self.shownCriteriaGroup)
-        self.connect(self.criteriaCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        
         self.statusBar.message("")
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -67,6 +60,9 @@ class OWSieveMultigram(OWWidget):
         # graph main tmp variables
         self.addInput("cdata")
         self.addInput("selection")
+
+        self.interestingButton =QPushButton("Find interesting attr.", self.space)
+        self.connect(self.interestingButton, SIGNAL("clicked()"),self.interestingSubsetSelection) 
 
         #add controls to self.controlArea widget
         self.shownAttribsGroup = QVGroupBox(self.space)
@@ -102,15 +98,7 @@ class OWSieveMultigram(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        # criteria combo values
-        self.criteriaCombo.insertItem("Attribute independence")
-        self.criteriaCombo.insertItem("Attribute independence (Pearson residuals)")
-        self.criteriaCombo.insertItem("Attribute interactions")
-        self.criteriaCombo.setCurrentItem(1)
-
         # set loaded options settings
-        index = self.options.kvocNums.index(self.independenceKvoc)
-        self.options.kvocCombo.setCurrentItem(index)
         self.options.lineCombo.setCurrentItem(self.maxLineWidth-1)        
         index = self.options.pearsonMaxNums.index(self.pearsonMaxRes)
         self.options.pearsonMaxResCombo.setCurrentItem(index)
@@ -170,7 +158,7 @@ class OWSieveMultigram(OWWidget):
         self.hiddenAttribsLB.clear()
         if data == None: return
 
-        for attr in data.domain.attributes:
+        for attr in data.domain:
             if attr.varType == orange.VarTypes.Discrete:
                 self.shownAttribsLB.insertItem(attr.name)
         
@@ -200,13 +188,46 @@ class OWSieveMultigram(OWWidget):
 
     def updateGraph(self):
         self.maxLineWidth = int(str(self.options.lineCombo.currentText()))
-        self.independenceKvoc = float(str(self.options.kvocCombo.currentText()))
         self.pearsonMaxRes = int(str(self.options.pearsonMaxResCombo.currentText()))
         self.pearsonMinRes = float(str(self.options.minResidualEdit.text()))
-        self.graph.setSettings(self.maxLineWidth, self.independenceKvoc, self.pearsonMinRes, self.pearsonMaxRes)
+        self.graph.setSettings(self.maxLineWidth, self.pearsonMinRes, self.pearsonMaxRes)
         
-        self.graph.updateData(self.data, self.getShownAttributeList(), self.probabilities, self.criteriaCombo.currentText(), self.statusBar)
+        self.graph.updateData(self.data, self.getShownAttributeList(), self.probabilities, self.statusBar)
         self.graph.update()
+
+    def interestingSubsetSelection(self):
+        labels = self.getShownAttributeList()
+        interestingList = []
+        data = self.data
+
+        # create a list of interesting attributes        
+        for attrXindex in range(len(labels)):
+            attrXName = labels[attrXindex]
+
+            for attrYindex in range(attrXindex+1, len(labels)):
+                attrYName = labels[attrYindex]
+
+                for valXindex in range(len(data.domain[attrXName].values)):
+                    valX = data.domain[attrXName].values[valXindex]
+
+                    for valYindex in range(len(data.domain[attrYName].values)):
+                        valY = data.domain[attrYName].values[valYindex]
+
+                        ((nameX, countX),(nameY, countY), actual, sum) = self.probabilities['%s+%s:%s+%s' %(attrXName, valX, attrYName, valY)]
+                        expected = float(countX*countY)/float(sum)
+                        if actual == expected == 0: continue
+                        elif expected == 0: pearson = actual/sqrt(actual)
+                        else:               pearson = (actual - expected) / sqrt(expected)
+                        if abs(pearson) > self.pearsonMinRes and attrXName not in interestingList: interestingList.append(attrXName)
+                        if abs(pearson) > self.pearsonMinRes and attrYName not in interestingList: interestingList.append(attrYName)                     
+
+        # remove attributes that are not in interestingList from visible attribute list
+        for attr in labels:
+            if attr not in interestingList:
+                index = self.shownAttribsLB.index(self.shownAttribsLB.findItem(attr))
+                self.shownAttribsLB.removeItem(index)
+                self.hiddenAttribsLB.insertItem(attr)
+        self.updateGraph()
 
     def computeProbabilities(self):
         self.probabilities = {}
@@ -215,8 +236,11 @@ class OWSieveMultigram(OWWidget):
         self.statusBar.message("Please wait. Computing...")
         total = len(self.data)
         conts = {}
-        dc = orange.DomainContingency(self.data)
-        for i in range(len(self.data.domain.attributes)):
+        dc = []
+        for i in range(len(self.data.domain)):
+            dc.append(orange.ContingencyAttrAttr(self.data.domain[i], self.data.domain[i], self.data))
+            
+        for i in range(len(self.data.domain)):
             if self.data.domain[i].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
             
             cont = dc[i]   # distribution of X attribute
@@ -224,14 +248,16 @@ class OWSieveMultigram(OWWidget):
             # compute contingency of x attribute
             for key in cont.keys():
                 sum = 0
-                for val in cont[key]: sum += val
+                try:
+                    for val in cont[key]: sum += val
+                except: pass
                 vals.append(sum)
             conts[self.data.domain[i].name] = (cont, vals)
 
-        for attrX in range(len(self.data.domain.attributes)):
+        for attrX in range(len(self.data.domain)):
             if self.data.domain[attrX].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
 
-            for attrY in range(attrX, len(self.data.domain.attributes)):
+            for attrY in range(attrX, len(self.data.domain)):
                 if self.data.domain[attrY].varType == orange.VarTypes.Continuous: continue  # we can only check discrete attributes
 
                 (contX, valsX) = conts[self.data.domain[attrX].name]
@@ -249,7 +275,9 @@ class OWSieveMultigram(OWWidget):
                         valy = valsY[j]
 
                         actualCount = 0
-                        for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actualCount += val
+                        try:
+                            for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actualCount += val
+                        except: pass
                         self.probabilities['%s+%s:%s+%s' %(self.data.domain[attrX].name, contX.keys()[i], self.data.domain[attrY].name, contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualCount, total)
                         self.probabilities['%s+%s:%s+%s' %(self.data.domain[attrY].name, contY.keys()[j], self.data.domain[attrX].name, contX.keys()[i])] = ((contY.keys()[j], valy), (contX.keys()[i], valx), actualCount, total)
         self.statusBar.message("")
@@ -268,7 +296,7 @@ class OWSieveMultigram(OWWidget):
         for attr in list:
             self.shownAttribsLB.insertItem(attr)
 
-        for attr in self.data.domain.attributes:
+        for attr in self.data.domain:
             if attr.name not in list:
                 self.hiddenAttribsLB.insertItem(attr.name)
 

@@ -1,9 +1,9 @@
 """
 <name>Scatterplot matrix</name>
 <description>Show all possible projections of the data</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/ScatterPlotMatrix.png</icon>
-<priority>3190</priority>
+<priority>120</priority>
 """
 # ScatterPlotMatrix.py
 #

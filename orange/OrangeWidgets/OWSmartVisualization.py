@@ -1,9 +1,9 @@
 """
 <name>Smart visualization</name>
 <description>Show "interesting" projections of the data</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/SmartVisualization.png</icon>
-<priority>3200</priority>
+<priority>200</priority>
 """
 # SmartVisualization.py
 #

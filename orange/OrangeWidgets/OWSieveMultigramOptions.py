@@ -6,8 +6,6 @@ from OWOptions import *
 from OWTools import *
 
 class OWSieveMultigramOptions(OWOptions):
-    kvocList = ['1.5','2','3','5','10','20']
-    kvocNums = [1.5,   2,  3,  5,  10,  20]
     pearsonMaxList = ['4','6','8','10','12']
     pearsonMaxNums = [ 4,  6,  8,  10,  12]
     
@@ -17,13 +15,6 @@ class OWSieveMultigramOptions(OWOptions):
         self.lineGroup = QVGroupBox(self.top)
         self.lineGroup.setTitle("Max line width")
         self.lineCombo = QComboBox(self.lineGroup)
-
-        self.independenceGroup = QVGroupBox(self.top)
-        self.independenceGroup.setTitle("Attribute Independence")
-        self.hbox = QHBox(self.independenceGroup, "kvocient")
-        self.kvocLabel = QLabel('Max deviation quotient', self.hbox)
-        self.kvocCombo = QComboBox(self.hbox)
-        QToolTip.add(self.hbox, "What is maximum expected ratio between p(x,y) and p(x)*p(y). Greater the ratio, brighter the colors.")
 
         self.pearsonGroup = QVGroupBox(self.top)
         self.pearsonGroup.setTitle("Attribute independence (Pearson residuals)")
@@ -43,9 +34,6 @@ class OWSieveMultigramOptions(OWOptions):
         self.initSettings()        
 
     def initSettings(self):
-        # quotien combo box values        
-        for item in self.kvocList: self.kvocCombo.insertItem(item)
-
         # line width combo values
         for i in range(1,10): self.lineCombo.insertItem(str(i))
 

@@ -1,9 +1,9 @@
 """
 <name>Scatterplot3D</name>
 <description>Shows data using scatterplot</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/ScatterPlot.png</icon>
-<priority>3100</priority>
+<priority>110</priority>
 """
 # ScatterPlot.py
 #

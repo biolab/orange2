@@ -149,11 +149,12 @@ class OWPolyvizGraph(OWVisGraph):
         # ##########
         # draw text at lines
         for i in range(length):
-            # attribute name
+            # print attribute name
             mkey = self.insertMarker(labels[i])
             self.marker(mkey).setXValue(0.6*(anchors[0][i]+anchors[0][(i+1)%length]))
             self.marker(mkey).setYValue(0.6*(anchors[1][i]+anchors[1][(i+1)%length]))
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
 
             if self.rawdata.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values

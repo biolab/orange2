@@ -1,9 +1,9 @@
 """
 <name>Radviz</name>
 <description>Shows data using radviz visualization method</description>
-<category>Classification</category>
+<category>Visualization</category>
 <icon>icons/Radviz.png</icon>
-<priority>3130</priority>
+<priority>1100</priority>
 """
 # Radviz.py
 #
