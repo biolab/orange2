@@ -4,6 +4,7 @@
 from OWVisGraph import *
 import time
 from orngCI import FeatureByCartesianProduct
+import OWkNNOptimization
 
 class QwtPlotCurvePieChart(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
@@ -445,14 +446,20 @@ class OWScatterPlotGraph(OWVisGraph):
 
         # it is better to use scaled data - in case of ordinal discrete attributes we take into account that the attribute is ordinal.
         # create a dataset with scaled data
-        contVars = []
-        for attr in self.rawdata.domain.attributes:
-            contVars.append(orange.FloatVariable(attr.name))
+        contVars = [orange.FloatVariable(attr.name) for attr in self.rawdata.domain.attributes]
         contDomain = orange.Domain(contVars + [self.rawdata.domain.classVar])
         fullData = orange.ExampleTable(contDomain)
         attrCount = len(self.rawdata.domain.attributes)
         for i in range(len(self.rawdata)):
             fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
+
+        # if we want to use heuristics, we first discretize all attributes
+        if self.kNNOptimization.evaluationAlgorithm == OWkNNOptimization.ALGORITHM_HEURISTIC:
+            attrs = []
+            for i in range(len(fullData.domain.attributes)):
+                attrs.append(orange.EquiDistDiscretization(fullData.domain[i], fullData, numberOfIntervals = OWkNNOptimization.NUMBER_OF_INTERVALS))
+            for attr in attrs: attr.name = attr.name[2:]    # remove the "D_" in front of the attribute name
+            fullData = fullData.select(attrs + [fullData.domain.classVar])
         
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         for (val, attr1, attr2) in projections:

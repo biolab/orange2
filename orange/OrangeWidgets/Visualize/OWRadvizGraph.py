@@ -9,14 +9,14 @@ from math import *
 from OWkNNOptimization import *
 
 
-# ####################################################################
-# get a list of all different permutations
-def getPermutationList(elements, tempPerm, currList):
+# build a list (in currList) of different permutations of elements in list of elements
+# elements contains a list of indices [1,2..., n]
+def buildPermutationIndexList(elements, tempPerm, currList):
     for i in range(len(elements)):
         el =  elements[i]
         elements.remove(el)
         tempPerm.append(el)
-        getPermutationList(elements, tempPerm, currList)
+        buildPermutationIndexList(elements, tempPerm, currList)
 
         elements.insert(i, el)
         tempPerm.pop()
@@ -36,7 +36,7 @@ def getPermutationList(elements, tempPerm, currList):
             temp.insert(0, el)
             if str(temp) in currList: return
         currList[str(tempPerm)] = copy(tempPerm)
-    
+
 # factoriela
 def fact(i):
         ret = 1
@@ -507,6 +507,9 @@ class OWRadvizGraph(OWVisGraph):
     def getOptimalSeparation(self, attributes, minLength, maxLength, addResultFunct):
         dataSize = len(self.rawdata)
 
+        # replace attribute names with indices in domain - faster searching
+        attributes = [(val, self.attributeNames.index(name)) for (val, name) in attributes]
+
         # variables and domain for the table
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
@@ -520,6 +523,13 @@ class OWRadvizGraph(OWVisGraph):
 
         self.radvizWidget.progressBarInit()
 
+        # build list of indices for permutations of different number of attributes
+        permutationIndices = {}
+        for i in range(3, maxLength+1):
+            indices = {}
+            buildPermutationIndexList(range(0, i), [], indices)
+            permutationIndices[i] = indices
+
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
                 combinations = self.createCombinations([0.0], u, attributes[:z], [])
@@ -531,15 +541,11 @@ class OWRadvizGraph(OWVisGraph):
                 
                 for attrList in combinations:
                     attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
-                    indices = [self.attributeNames.index(attr) for attr in attrs]
-
-                    indPermutations = {}
-                    getPermutationList(indices, [], indPermutations)
-
+                    permIndices = permutationIndices[len(attrs)]
                     permutationIndex = 0 # current permutation index
                     
-                    validData = self.getValidList(indices)
-                    selectedData = Numeric.take(self.noJitteringScaledData, indices)
+                    validData = self.getValidList(attrs)
+                    selectedData = Numeric.take(self.noJitteringScaledData, attrs)
                     sum_i = Numeric.add.reduce(selectedData)
 
                     # test if there are zeros in sum_i
@@ -551,14 +557,17 @@ class OWRadvizGraph(OWVisGraph):
                     count = sum(validData)
                     if count < self.kNNOptimization.minExamples:
                         print "Not enough examples (%s) in example table. Ignoring permutation." % (str(count))
-                        self.triedPossibilities += len(indPermutations.keys())
+                        self.triedPossibilities += len(permIndices.keys())
                         self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
                         continue
 
                     tempList = []
 
                     # for every permutation compute how good it separates different classes            
-                    for permutation in indPermutations.values():
+                    #for permutation in indPermutations.values():
+                    print "Evaluating %d projection(s)...." % (len(permIndices.keys()))
+                    for ind in permIndices.values():
+                        permutation = [attrs[val] for val in ind]
                         if self.kNNOptimization.isOptimizationCanceled(): return
                         permutationIndex += 1
                         table = orange.ExampleTable(domain)
@@ -572,16 +581,21 @@ class OWRadvizGraph(OWVisGraph):
                             table.append([x_positions[i], y_positions[i], self.rawdata[i].getclass()])
 
                         accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                        if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, len(indPermutations.values()), text, accuracy)
-                        else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, len(indPermutations.values()), accuracy) 
                         
                         # save the permutation
                         tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
                         if not self.kNNOptimization.onlyOnePerSubset:
                             addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation])
+                            if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, len(permIndices.values()), text, accuracy)
+                            else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, len(permIndices.values()), accuracy) 
 
                         self.triedPossibilities += 1
-                        self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                        if len(permIndices) >100 and self.triedPossibilities % 20 == 0:
+                            qApp.processEvents()        # allow processing of other events
+                            if self.kNNOptimization.isOptimizationCanceled(): return
+                            
+
+                    self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
 
                     if self.kNNOptimization.onlyOnePerSubset:
                         # return only the best attribute placements
@@ -589,15 +603,16 @@ class OWRadvizGraph(OWVisGraph):
                         else: funct = min
                         (acc, other_results, lenTable, attrList) = funct(tempList)
                         addResultFunct(acc, other_results, lenTable, attrList)
+                        if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "Best permutation accuracy: %2.2f%%" % (acc)
+                        else:                                                           print "Best permutation MSE: %2.2f" % (acc) 
 
-   
 
 if __name__== "__main__":
     #Draw a simple graph
     import os
     a = QApplication(sys.argv)        
     graph = OWRadvizGraph(None)
-    fname = r"..\..\datasets\brown\brown-normalized.tab"
+    fname = r"..\..\datasets\microarray\brown\brown-normalized.tab"
     if os.path.exists(fname):
         table = orange.ExampleTable(fname)
         attrs = [attr.name for attr in table.domain.attributes]

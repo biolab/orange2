@@ -32,6 +32,8 @@ OTHER_DISTRIBUTION = 2
 ALGORITHM_KNN = 0
 ALGORITHM_HEURISTIC = 1
 
+NUMBER_OF_INTERVALS = 6  # number of intervals to use when discretizing 
+
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
@@ -51,7 +53,7 @@ class kNNOptimization(OWBaseWidget):
     kNeighboursList = [str(x) for x in kNeighboursNums]
 
     def __init__(self,parent=None, graph = None):
-        OWBaseWidget.__init__(self, parent, "Optimization Dialog", FALSE)
+        OWBaseWidget.__init__(self, parent, "Optimization Dialog")
 
         self.setCaption("Qt VizRank Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
@@ -316,8 +318,7 @@ class kNNOptimization(OWBaseWidget):
         # add class values
         for i in range(len(data.domain.classVar.values)):
             self.classesList.insertItem(data.domain.classVar.values[i])
-            self.classesList.setSelected(i, 1)
-            self.selectedClasses.append(i)
+        self.classesList.selectAll(1)
 
         # compute class distribution for all data
         self.dataDistribution = orange.Distribution(data.domain.classVar, data)
@@ -517,7 +518,6 @@ class kNNOptimization(OWBaseWidget):
             selectedClasses = eval(line)
             for i in range(len(self.rawdata.domain.classVar.values)):
                 self.classesList.setSelected(i, i in selectedClasses)
-            self.selectedClasses = self.getSelectedClassValues()                
             line = file.readline()[:-1];
         else:
             QMessageBox.critical(None,'Old version of projection file','This file was saved with an older version of Optimization Dialog. The new version of dialog offers \nsome additional functionality and therefore you have to compute the projection quality again.',QMessageBox.Ok)
@@ -537,7 +537,9 @@ class kNNOptimization(OWBaseWidget):
     # ###########################
     # kNNEvaluate - compute classification accuracy or brier score for data in table in percents
     def kNNComputeAccuracy(self, table):
+        # ###############################
         # select a subset of the data if necessary
+        # ###############################
         percentDataUsed = int(str(self.percentDataUsedCombo.currentText()))
         if percentDataUsed != 100:
             indices = orange.MakeRandomIndices2(table, 1.0-float(percentDataUsed)/100.0)
@@ -548,36 +550,27 @@ class kNNOptimization(OWBaseWidget):
         prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
         
         # ###############################
-        # if we want to use very fast heuristic
+        # do we want to use very fast heuristic
         # ###############################
         if self.evaluationAlgorithm == ALGORITHM_HEURISTIC:
-            domainStat = orange.DomainBasicAttrStat(testTable)
-            minX = domainStat[0].min; maxX = domainStat[0].max
-            minY = domainStat[1].min; maxY = domainStat[1].max
-            diffX = maxX - minX
-            diffY = maxY - minY
-            classes = [0 for i in range(len(prediction))]
+            # if input attributes are continuous (may be discrete for evaluating scatterplots, where we dicretize the whole domain...)
+            if testTable.domain[0].varType == orange.VarTypes.Continuous and testTable.domain[1].varType == orange.VarTypes.Continuous:
+                discX = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
+                discY = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
+                testTable = testTable.select([discX, discY, testTable.domain.classVar])
 
-            from copy import deepcopy
-            ys = [deepcopy(classes) for i in range(10)]
-            table = [deepcopy(ys) for i in range(10)]
+            # create a new attribute that is a cartesian product of the two visualized attributes
+            nattr = orange.EnumVariable(values=['i' for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
+            nattr.getValueFrom = orange.ClassifierByLookupTable2(nattr, testTable.domain[0], testTable.domain[1])
+            for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS): nattr.getValueFrom.lookupTable[i] = i
+            
+            for dist in orange.ContingencyAttrClass(nattr, testTable):
+                dist = list(dist)
+                if sum(dist) == 0: continue
+                m = max(dist)
+                prediction[dist.index(m)] += m * m / float(sum(dist))
 
-            # place each example in the correct cell of the table
-            for example in testTable:
-                x = int((example[0].value - minX)*10.0 / diffX)
-                y = int((example[1].value - minY)*10.0 / diffY)
-                if x > 9: x = 9
-                if y > 9: y = 9
-                table[x][y][int(example.getclass())] += 1
-
-            for x in range(10):
-                for y in range(10):
-                    s = sum(table[x][y])
-                    if s == 0: continue
-                    m = max(table[x][y])
-                    prediction[table[x][y].index(m)] += m * m/float(s)  # each example that belongs to the majority class adds the probability of correct classification
-
-            for i in range(len(prediction)): prediction[i] *= 100.0     # turn prediction array into percents
+            prediction = [val*100.0 for val in prediction]             # turn prediction array into percents
             acc = sum(prediction) / float(len(testTable))               # compute accuracy for all classes
             val = 0.0; s = 0.0
             for index in self.selectedClasses:                          # compute accuracy for selected classes
@@ -586,9 +579,8 @@ class kNNOptimization(OWBaseWidget):
             return val/float(s), (acc, prediction, list(currentClassDistribution))
         
         # ###############################
-        # we want to use k nearest neighbor algorithm
+        # or we want to use k nearest neighbor algorithm
         # ###############################
-        
         knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
         results = apply(testingMethods[self.testingMethod], [[knn], testTable])
         
@@ -597,7 +589,7 @@ class kNNOptimization(OWBaseWidget):
             if self.qualityMeasure == AVERAGE_CORRECT:
                 for res in results.results:
                     prediction[res.actualClass] += res.probabilities[0][res.actualClass]
-                for i in range(len(prediction)): prediction[i] *= 100.0
+                prediction = [val*100.0 for val in prediction]
 
             elif self.qualityMeasure == BRIER_SCORE:
                 #return orngStat.BrierScore(results)[0], results
@@ -626,12 +618,10 @@ class kNNOptimization(OWBaseWidget):
 
             return val/float(s), (acc, prediction, list(currentClassDistribution))
             
-            
+        # for continuous class we can't compute brier score and classification accuracy
         else:
-            # for continuous class we can't compute brier score and classification accuracy
             val = 0.0
-            for res in results.results:
-                val += res.probabilities[0].density(res.actualClass)
+            for res in results.results:  val += res.probabilities[0].density(res.actualClass)
             val/= float(len(results.results))
             return 100.0*val, (100.0*val)
 
