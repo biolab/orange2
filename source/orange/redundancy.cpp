@@ -420,7 +420,12 @@ PDomain TRemoveNonexistentValues::operator()(PExampleGenerator gen, PVarList sus
 }
 */
 
-PVariable TRemoveNonexistingValues::operator()(PVariable var, PExampleGenerator gen, const int &weightID)
+TRemoveUnusedValues::TRemoveUnusedValues(bool rov)
+: removeOneValued(rov)
+{}
+
+
+PVariable TRemoveUnusedValues::operator()(PVariable var, PExampleGenerator gen, const int &weightID)
 {
   TEnumVariable *evar = var.AS(TEnumVariable);
   if (!evar)
@@ -434,7 +439,7 @@ PVariable TRemoveNonexistingValues::operator()(PVariable var, PExampleGenerator 
     if (*dvi > 1e-20)
       nonull++;
 
-  if (!nonull)
+  if (!nonull || (removeOneValued && (nonull==1)))
     return PVariable();
 
   if (nonull==int(evar->values->size()))

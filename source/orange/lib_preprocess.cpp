@@ -143,7 +143,7 @@ C_CALL(RemoveRedundantByQuality, RemoveRedundant, "([examples[, weightID][, susp
 C_CALL(RemoveRedundantOneValue, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 // C _ C A L L (RemoveNonexistentValues, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 
-C_CALL3(RemoveNonexistingValues, RemoveNonexistingValues, Orange, "([attribute, examples[, weightId]]) -/-> attribute")
+C_CALL3(RemoveUnusedValues, RemoveUnusedValues, Orange, "([attribute, examples[, weightId]]) -/-> attribute")
 
 PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples[, weightID][, suspicious]) -/-> Domain")
 {
@@ -166,7 +166,7 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 }
 
 
-PyObject *RemoveNonexistingValues_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weightId]) -> attribute")
+PyObject *RemoveUnusedValues_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weightId]) -> attribute")
 {
   PyTRY
     SETATTRIBUTES
@@ -174,10 +174,10 @@ PyObject *RemoveNonexistingValues_call(PyObject *self, PyObject *args, PyObject 
     PExampleGenerator egen;
     PVariable var;
     int weightID = 0;
-    if (!PyArg_ParseTuple(args, "O&O&|O&:RemoveNonexistingValues.call", cc_Variable, &var, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID))
+    if (!PyArg_ParseTuple(args, "O&O&|O&:RemoveUnusedValues.call", cc_Variable, &var, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID))
       return PYNULL;
 
-    return WrapOrange(SELF_AS(TRemoveNonexistingValues)(var, egen, weightID));
+    return WrapOrange(SELF_AS(TRemoveUnusedValues)(var, egen, weightID));
   PyCATCH
 }
 

@@ -84,10 +84,13 @@ public:
 };
 */
 
-class TRemoveNonexistingValues : public TOrange {
+class TRemoveUnusedValues : public TOrange {
 public:
   __REGISTER_CLASS
 
+  TRemoveUnusedValues(bool = false);
+
+  bool removeOneValued; //P if true (default is false), one valued attributes are also removed
   virtual PVariable operator()(PVariable, PExampleGenerator, const int &);
 };
 
