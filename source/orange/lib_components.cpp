@@ -444,11 +444,13 @@ PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
       return &cont->discrete->at(ind);
   }
   else if (cont->outerVariable->varType==TValue::FLOATVAR) {
-    float ind = numeric_limits<float>::quiet_NaN();
+    float ind;
     if (!PyNumber_ToFloat(index, ind)) {
       TValue val;
       if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial())
         ind = float(val);
+      else
+        PYERROR(PyExc_IndexError, "invalid index type (float expected)", NULL);
     }
 
     TDistributionMap::iterator mi=cont->continuous->find(ind);

@@ -2547,7 +2547,7 @@ float *Distribution_getItemRef(PyObject *self, PyObject *index, float *float_idx
 
   TContDistribution *cont = PyOrange_AS_Orange(self).AS(TContDistribution);
   if (cont) {
-    float ind = numeric_limits<float>::quiet_NaN();
+    float ind;
     if (PyNumber_ToFloat(index, ind)) {
       if (float_idx)
         *float_idx = ind;
@@ -2559,10 +2559,9 @@ float *Distribution_getItemRef(PyObject *self, PyObject *index, float *float_idx
         if (float_idx)
           *float_idx = ind;
       }
+      else
+        PYERROR(PyExc_IndexError, "invalid index type (float expected)", NULL);
     }
-
-    if (ind == numeric_limits<float>::quiet_NaN())
-      PYERROR(PyExc_IndexError, "invalid index for distribution", (float *)NULL);
 
     TContDistribution::iterator mi=cont->find(ind);
     if (mi!=cont->end())
@@ -3311,15 +3310,14 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
       PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);
 
     // Here for compatibility with obsolete scripts
-    if (PyTuple_Size(targs)==1) {
-      PyObject **odict = _PyObject_GetDictPtr(self);
-      if (*odict) {
-        PyObject *pyweight = PyDict_GetItemString(*odict, "weight");
+/*    if (PyTuple_Size(targs)==1) {
+      if (((TPyOrange *)self)->orange_dict) {
+        PyObject *pyweight = PyDict_GetItemString(((TPyOrange *)self)->orange_dict, "weight");
         if (pyweight && PyInt_Check(pyweight))
           weight = (int)PyInt_AsLong(pyweight);
       }
     }
-
+*/
     PClassifier classfr = SELF_AS(TLearner)(egen, weight);
     if (!classfr)
       PYERROR(PyExc_SystemError, "learning failed", PYNULL);
