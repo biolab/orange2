@@ -1,0 +1,18 @@
+Inner variable:  e
+Outer variable:  y
+
+Class variable:  y
+Attribute:       e
+
+Distributions:
+  p(.|0) = <0.000, 0.333, 0.333, 0.333>
+  p(.|1) = <0.500, 0.167, 0.167, 0.167>
+
+Probabilities for e='1'
+  p(1|0) = 0.000
+  p(1|1) = 0.500
+
+Distributions from a matrix computed manually:
+  p(.|0) = <0.000, 0.333, 0.333, 0.333>
+  p(.|1) = <0.500, 0.167, 0.167, 0.167>
+

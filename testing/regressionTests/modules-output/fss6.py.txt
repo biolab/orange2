@@ -1,0 +1,25 @@
+Before feature subset selection (14 attributes):
+0.123 marital-status
+0.108 relationship
+0.080 education
+0.059 occupation
+0.023 education-num
+0.015 sex
+0.008 hours-per-week
+0.007 age
+0.007 workclass
+0.007 race
+0.006 capital-gain
+0.004 capital-loss
+0.001 fnlwgt
+0.001 native-country
+
+After feature subset selection with margin 0.010 (8 attributes):
+0.118 marital-status
+0.105 relationship
+0.086 education
+0.052 occupation
+0.023 education-num
+0.018 sex
+0.013 workclass
+0.011 age

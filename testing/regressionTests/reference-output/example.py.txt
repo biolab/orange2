@@ -1,0 +1,17 @@
+age <young, pre-presbyopic, presbyopic>
+prescription <myope, hypermetrope>
+astigmatic <no, yes>
+tear_rate <reduced, normal>
+lenses <none, soft, hard>
+['?', '?', '?', '?', '?']
+['young', 'myope', 'yes', 'reduced', 'soft']
+['young', 'myope', 'yes', 'reduced', 'soft']
+['young', 'soft']
+young
+young
+young
+['young', 'myope', 'no', 'reduced', 'none']
+['pre-presbyopic', 'myope', 'no', 'reduced', 'none']
+[<orange.Value 'age'='pre-presbyopic'>, <orange.Value 'prescription'='myope'>, <orange.Value 'astigmatic'='no'>, <orange.Value 'tear_rate'='reduced'>, <orange.Value 'lenses'='none'>]
+['pre-presbyopic', 'myope', 'no', 'reduced', 'none']
+[<orange.Value 'age'='pre-presbyopic'>, <orange.Value 'prescription'='myope'>, <orange.Value 'astigmatic'='no'>, <orange.Value 'tear_rate'='reduced'>, <orange.Value 'lenses'='none'>]

@@ -1,0 +1,49 @@
+Names:  ['mS#name', 'C#age', 'D#gender', 'D#race', 'cC#total', 'mS#SSN']
+IDs of meta attributes:  [-2, -3]
+Is new?  True
+
+Names:  ['mS#SSN', 'mS#name', 'C#age', 'D#gender', 'D#race', 'cC#total']
+IDs of meta attributes:  [-3, -2]
+Is new?  False
+
+Names:  ['mS#SSN', 'D#gender', 'C#race', 'cC#total']
+IDs of meta attributes:  [-3]
+Is new?  True
+Is 'SSN' same? True
+Is 'gender' same? True
+Is 'race' same? False
+Is 'total' same? False
+
+Names:  ['mS#SSN', 'C#race', 'D#gender', 'cC#total']
+IDs of meta attributes:  [-3]
+Is new?  True
+Is 'SSN' same? True
+Is 'race' same? False
+Is 'gender' same? True
+Is 'total' same? True
+
+Names:  ['mS#name', 'C#age', 'D#gender', 'D#race', 'cC#total']
+Is new?  True
+
+Names:  ['mS#SSN', 'mS#name', 'D#race', 'C#age', 'D#gender', 'cC#total']
+Is new?  True
+
+Names:  ['mS#SSN', 'mS#name', 'C#age', 'C#gender', 'D#race', 'cC#total']
+IDs of meta attributes:  [-7, -8]
+Is new?  True
+
+I constructed two same domains, but without storing the first.
+Is the second new?  True
+
+I've stored the second and constructed the third without looking for old domains.
+Is the third new?  True
+
+Finally, I've constructed the fourth domain, without masking anything.
+Is it new?  False
+
+Which one is it equal to? third
+(1, [])
+(1, [])
+(1, [])
+(1, [])
+(0, [])

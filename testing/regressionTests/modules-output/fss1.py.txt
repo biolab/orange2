@@ -1,0 +1,9 @@
+Relevance estimate for first three attributes:
+0.385 physician-fee-freeze
+0.166 synfuels-corporation-cutback
+0.157 el-salvador-aid
+
+Best 3 attributes:
+physician-fee-freeze
+synfuels-corporation-cutback
+el-salvador-aid

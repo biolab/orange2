@@ -1,0 +1,59 @@
+Removing 50% of class values: ? soft none ? none ? ? hard ? soft ? ? ? soft none none ? none none hard ? ? ? none
+Removing examples with unknown class values: soft none none hard soft soft none none none none hard none
+
+
+Removing 20% of values of 'age' and 50% of astigmatism:
+['young', 'myope', '~', 'reduced', 'none']
+['young', 'myope', 'no', 'normal', 'soft']
+['young', 'myope', 'yes', 'reduced', 'none']
+['young', 'myope', '~', 'normal', 'hard']
+['young', 'hypermetrope', 'no', 'reduced', 'none']
+['young', 'hypermetrope', '~', 'normal', 'soft']
+['young', 'hypermetrope', '~', 'reduced', 'none']
+['young', 'hypermetrope', 'yes', 'normal', 'hard']
+['pre-presbyopic', 'myope', '~', 'reduced', 'none']
+['~', 'myope', 'no', 'normal', 'soft']
+['pre-presbyopic', 'myope', '~', 'reduced', 'none']
+['pre-presbyopic', 'myope', '~', 'normal', 'hard']
+['pre-presbyopic', 'hypermetrope', '~', 'reduced', 'none']
+['pre-presbyopic', 'hypermetrope', 'no', 'normal', 'soft']
+['pre-presbyopic', 'hypermetrope', 'yes', 'reduced', 'none']
+['~', 'hypermetrope', 'yes', 'normal', 'none']
+['~', 'myope', '~', 'reduced', 'none']
+['presbyopic', 'myope', 'no', 'normal', 'none']
+['presbyopic', 'myope', 'yes', 'reduced', 'none']
+['presbyopic', 'myope', 'yes', 'normal', 'hard']
+['~', 'hypermetrope', '~', 'reduced', 'none']
+['~', 'hypermetrope', '~', 'normal', 'soft']
+['presbyopic', 'hypermetrope', '~', 'reduced', 'none']
+['presbyopic', 'hypermetrope', 'yes', 'normal', 'none']
+
+
+Removing examples with unknown values
+['young', 'myope', 'no', 'normal', 'soft']
+['young', 'myope', 'yes', 'reduced', 'none']
+['young', 'hypermetrope', 'no', 'reduced', 'none']
+['young', 'hypermetrope', 'yes', 'normal', 'hard']
+['pre-presbyopic', 'hypermetrope', 'no', 'normal', 'soft']
+['pre-presbyopic', 'hypermetrope', 'yes', 'reduced', 'none']
+['presbyopic', 'myope', 'no', 'normal', 'none']
+['presbyopic', 'myope', 'yes', 'reduced', 'none']
+['presbyopic', 'myope', 'yes', 'normal', 'hard']
+['presbyopic', 'hypermetrope', 'yes', 'normal', 'none']
+
+
+Selecting examples with unknown values
+['young', 'myope', '~', 'reduced', 'none']
+['young', 'myope', '~', 'normal', 'hard']
+['young', 'hypermetrope', '~', 'normal', 'soft']
+['young', 'hypermetrope', '~', 'reduced', 'none']
+['pre-presbyopic', 'myope', '~', 'reduced', 'none']
+['~', 'myope', 'no', 'normal', 'soft']
+['pre-presbyopic', 'myope', '~', 'reduced', 'none']
+['pre-presbyopic', 'myope', '~', 'normal', 'hard']
+['pre-presbyopic', 'hypermetrope', '~', 'reduced', 'none']
+['~', 'hypermetrope', 'yes', 'normal', 'none']
+['~', 'myope', '~', 'reduced', 'none']
+['~', 'hypermetrope', '~', 'reduced', 'none']
+['~', 'hypermetrope', '~', 'normal', 'soft']
+['presbyopic', 'hypermetrope', '~', 'reduced', 'none']

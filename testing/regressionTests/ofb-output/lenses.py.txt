@@ -1,0 +1,8 @@
+Attributes: age prescription astigmatic tear_rate
+Class: lenses
+First 5 data items:
+['young', 'myope', 'no', 'reduced', 'none']
+['young', 'myope', 'no', 'normal', 'soft']
+['young', 'myope', 'yes', 'reduced', 'none']
+['young', 'myope', 'yes', 'normal', 'hard']
+['young', 'hypermetrope', 'no', 'reduced', 'none']

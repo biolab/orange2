@@ -1,0 +1,23 @@
+Information gain of 'astigmatic': 0.3770
+Information gain of 'tear_rate': 0.5488
+Information gain of the first attribute: 0.0394
+
+*** A set of more exhaustive tests for different way of passing arguments to MeasureAttribute ***
+                                          age   prescription     astigmatic      tear_rate
+Computing information gain directly from examples
+        - by attribute number:         0.0394         0.0395         0.3770         0.5488
+          - by attribute name:         0.0394         0.0395         0.3770         0.5488
+    - by attribute descriptor:         0.0394         0.0395         0.3770         0.5488
+
+Computing information gain from DomainContingency
+        - by attribute number:         0.0394         0.0395         0.3770         0.5488
+          - by attribute name:         0.0394         0.0395         0.3770         0.5488
+    - by attribute descriptor:         0.0394         0.0395         0.3770         0.5488
+
+Computing information gain from DomainContingency
+        - by attribute number:         0.0394         0.0395         0.3770         0.5488
+          - by attribute name:         0.0394         0.0395         0.3770         0.5488
+    - by attribute descriptor:         0.0394         0.0395         0.3770         0.5488
+
+Information gain of Cartesian product of astigmatic and tear_rate: 0.9340
+Information gain for a random meta attribute: 0.0273

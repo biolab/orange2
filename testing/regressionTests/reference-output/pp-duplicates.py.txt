@@ -1,0 +1,42 @@
+
+
+Preprocessor_removeDuplicates
+
+Before removal
+
+['myope', 'no', 'reduced', 'none']
+['myope', 'no', 'normal', 'soft']
+['myope', 'yes', 'reduced', 'none']
+['myope', 'yes', 'normal', 'hard']
+['hypermetrope', 'no', 'reduced', 'none']
+['hypermetrope', 'no', 'normal', 'soft']
+['hypermetrope', 'yes', 'reduced', 'none']
+['hypermetrope', 'yes', 'normal', 'hard']
+['myope', 'no', 'reduced', 'none']
+['myope', 'no', 'normal', 'soft']
+['myope', 'yes', 'reduced', 'none']
+['myope', 'yes', 'normal', 'hard']
+['hypermetrope', 'no', 'reduced', 'none']
+['hypermetrope', 'no', 'normal', 'soft']
+['hypermetrope', 'yes', 'reduced', 'none']
+['hypermetrope', 'yes', 'normal', 'none']
+['myope', 'no', 'reduced', 'none']
+['myope', 'no', 'normal', 'none']
+['myope', 'yes', 'reduced', 'none']
+['myope', 'yes', 'normal', 'hard']
+['hypermetrope', 'no', 'reduced', 'none']
+['hypermetrope', 'no', 'normal', 'soft']
+['hypermetrope', 'yes', 'reduced', 'none']
+['hypermetrope', 'yes', 'normal', 'none']
+After removal
+
+['myope', 'no', 'reduced', 'none'], {"#":3.000}
+['myope', 'no', 'normal', 'soft'], {"#":2.000}
+['myope', 'yes', 'reduced', 'none'], {"#":3.000}
+['myope', 'yes', 'normal', 'hard'], {"#":3.000}
+['hypermetrope', 'no', 'reduced', 'none'], {"#":3.000}
+['hypermetrope', 'no', 'normal', 'soft'], {"#":3.000}
+['hypermetrope', 'yes', 'reduced', 'none'], {"#":3.000}
+['hypermetrope', 'yes', 'normal', 'hard'], {"#":1.000}
+['hypermetrope', 'yes', 'normal', 'none'], {"#":2.000}
+['myope', 'no', 'normal', 'none'], {"#":1.000}

@@ -1,0 +1,6 @@
+           attribute    min    max    avg
+        sepal length  4.300  7.900  5.843
+         sepal width  2.000  4.400  3.054
+        petal length  1.000  6.900  3.759
+         petal width  0.100  2.500  1.199
+5.84333467484

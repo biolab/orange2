@@ -1,0 +1,9 @@
+
+petal width (33.33%) <0.800: Iris-setosa (100.0%)
+petal width (33.33%) >=0.800: 
+|   petal width (50.0%) <1.750: 
+|   |   petal length (90.74%) <4.950: 
+|   |   petal length (90.74%) >=4.950: 
+|   petal width (50.0%) >=1.750: 
+|   |   petal length (97.82%) <4.950: 
+|   |   petal length (97.82%) >=4.950: 

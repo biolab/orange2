@@ -1,0 +1,80 @@
+orange.Domain(["Na", "Mg"], domain)
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'Na'>
+
+orange.Domain(["Na", "Mg"], 1, domain)
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'Na'>
+
+orange.Domain(["Na", "Mg"], 0, domain)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain(["Na", "Mg"], domain.variables)
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'Na'>
+
+orange.Domain(["Na", "Mg"], 1, domain.variables)
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'Na'>
+
+orange.Domain(["Na", "Mg"], 0, domain.variables)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], "Mg"], 0, domain.variables)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], "Mg"], 0, domain)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], "Mg"], 0, domain.variables)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], domain["Mg"]], 0)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], domain["Mg"]], 1)
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'Na'>
+
+orange.Domain([domain["Na"], domain["Mg"]], None)
+  classVar: None
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain([domain["Na"], domain["Mg"]], orange.EnumVariable("something completely different"))
+  classVar: EnumVariable 'something completely different'
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg'>
+
+orange.Domain(domain)
+  classVar: FloatVariable 'y'
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe'>
+
+orange.Domain(domain, 0)
+  classVar: None
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe', FloatVariable 'y'>
+
+orange.Domain(domain, 1)
+  classVar: FloatVariable 'y'
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe'>
+
+orange.Domain(domain, "Mg")
+  classVar: FloatVariable 'Mg'
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe', FloatVariable 'y'>
+
+orange.Domain(domain, domain[0])
+  classVar: FloatVariable 'RI'
+  attributes: <FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe', FloatVariable 'y'>
+
+orange.Domain(domain, None)
+  classVar: None
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe', FloatVariable 'y'>
+
+orange.Domain(domain, orange.FloatVariable("nothing completely different"))
+  classVar: FloatVariable 'nothing completely different'
+  attributes: <FloatVariable 'RI', FloatVariable 'Na', FloatVariable 'Mg', FloatVariable 'Al', FloatVariable 'Si', FloatVariable 'K', FloatVariable 'Ca', FloatVariable 'Ba', FloatVariable 'Fe', FloatVariable 'y'>
+
