@@ -107,8 +107,9 @@ class OptimizationDialog(OWBaseWidget):
 
         self.evaluateButton = QPushButton("Evaluate current projection", self.evaluateBox)
         self.hbox7 = QHBox(self.evaluateBox)
-        self.showKNNCorrectButton = QPushButton('Show kNN correct', self.hbox7)
-        self.showKNNWrongButton = QPushButton('Show kNN wrong', self.hbox7) 
+        self.showKNNCorrectButton = QPushButton('kNN correct', self.hbox7)
+        self.showKNNWrongButton = QPushButton('kNN wrong', self.hbox7)
+        self.showKNNResetButton = QPushButton('<-', self.hbox7) 
         
         
         #self.resize(200, 500)
@@ -173,10 +174,6 @@ class OptimizationDialog(OWBaseWidget):
             (accuracy2, tableLen2, list2, strList2) = self.optimizedListFull[i]
             if accuracy2 == accuracy and tableLen2 == tableLen and list2 == list and strList2 == strList:
                 return
-            elif accuracy2 < accuracy:
-                self.optimizedListFull.insert(i, (accuracy, tableLen, list, strList))
-                return
-        
         self.optimizedListFull.append((accuracy, tableLen, list, strList))
 
     # check result list and update list with number of attributes

@@ -145,7 +145,8 @@ class OWPolyviz(OWWidget):
 
         self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
-        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)        
+        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
+        self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)        
 
         
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
@@ -189,6 +190,7 @@ class OWPolyviz(OWWidget):
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
         self.showContinuousCB.setChecked(self.showContinuous)
         self.showLegendCB.setChecked(self.showLegend)
@@ -208,14 +210,17 @@ class OWPolyviz(OWWidget):
 
     def evaluateCurrentProjection(self):
         acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
-        QMessageBox.information( None, "Polyviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete:
+            QMessageBox.information( None, "Polyviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        else:
+            QMessageBox.information( None, "Polyviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
 
     def showKNNCorect(self):
-        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
+        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 1)
         self.repaint()
 
     def showKNNWrong(self):
-        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 0)
+        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse, showKNNModel = 1, showCorrect = 0)
         self.repaint()
         
 
@@ -251,10 +256,11 @@ class OWPolyviz(OWWidget):
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
         if self.data != None:
+            """
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-
+            """
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if self.tryReverse.isChecked() == 1: reverseList = None
             else: reverseList = self.attributeReverse
@@ -273,10 +279,13 @@ class OWPolyviz(OWWidget):
                
             if fullList == []: return
 
+            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            else: funct = min
+
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
             for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
-                (accuracy, tableLen, list, reverse) = max(fullList)
+                (accuracy, tableLen, list, reverse) = funct(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
 
@@ -288,10 +297,11 @@ class OWPolyviz(OWWidget):
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data != None:
+            """
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-
+            """
             text = str(self.optimizationDlg.maxLenCombo.currentText())
 
             if text == "ALL": maxLen = len(self.getShownAttributeList())
@@ -311,10 +321,13 @@ class OWPolyviz(OWWidget):
                 fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, maxLen, maxResultsLen, progressBar = self.progressBar)
             else:
                 fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, maxLen, maxResultsLen, progressBar = self.progressBar)
+
+            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            else: funct = min
             
             # fill the "interesting visualizations" list box
             for i in range(len(fullList)):
-                (accuracy, tableLen, list, reverse) = max(fullList)
+                (accuracy, tableLen, list, reverse) = funct(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
 

@@ -7,6 +7,7 @@ from OWVisGraph import *
 from copy import copy
 import time
 from operator import add
+from math import *
 
 # ####################################################################
 # get a list of all different permutations
@@ -405,18 +406,28 @@ class OWRadvizGraph(OWVisGraph):
     
         #################
         if self.showKNNModel == 1:
-            classValues = list(self.rawdata.domain[self.className].values)
+            vals = []
             knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
+            if self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
+                classValues = list(self.rawdata.domain[self.className].values)
+                for j in range(len(table)):
+                    out = knn(table[j], orange.GetProbabilities)
+                    prob = out[table[j].getclass()]
+                    if self.showCorrect == 1: prob = 1.0 - prob
+                    vals.append(prob)
+            else:
+                for j in range(len(table)):
+                    vals.append(pow(table[j][2].value - knn(table[j]), 2))
+                maxError = max(vals)
+                if self.showCorrect == 1:
+                    vals = [val/maxError for val in vals]
+                else:
+                    vals = [1.0 - val/maxError for val in vals]
 
             for j in range(len(table)):
-                out = knn(table[j], orange.GetProbabilities)
-                prob = out[table[j].getclass()]
-                if self.showCorrect == 1:
-                    prob = 1.0 - prob
-                    newColor = QColor(prob*255, prob*255, prob*255)
-                else:
-                    newColor = QColor(prob*255, prob*255, prob*255)
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                newColor = QColor(55+vals[j]*200, 55+vals[j]*200, 55+vals[j]*200)
+                key = self.addCurve(str(j), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                
         # we add computed data in curveData as curves and show it
         elif self.className == "(One color)" or self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
             for i in range(valLen):
@@ -506,7 +517,6 @@ class OWRadvizGraph(OWVisGraph):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValsCount = len(self.rawdata.domain[self.className].values)
 
         # create anchor for every attribute
         anchors = [[],[]]
@@ -554,35 +564,36 @@ class OWRadvizGraph(OWVisGraph):
             example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
             table.append(example)
 
-        # use knn on every example and compute its accuracy
-        classValues = list(self.rawdata.domain[self.className].values)
-        knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
-
         tempPermValue = 0.0        
-        for j in range(len(table)):
-            out = knn(table[j], orange.GetProbabilities)
-            index = classValues.index(table[j][2].value)
-            tempPermValue += out[index]
-            #if out[index] >= 1.0/len(classValues): tempPermValue += 1
-
-        print "k = %3.d, Accuracy: %2.2f%%" % (self.kNeighbours, tempPermValue*100.0/float(len(table)) )
-
-        return tempPermValue*100.0/float(len(table))
-
-
+        knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
+        
+        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+            # use knn on every example and compute its accuracy
+            classValues = list(self.rawdata.domain[self.className].values)
+            for j in range(len(table)):
+                index = classValues.index(table[j][2].value)
+                tempPermValue += knn(table[j], orange.GetProbabilities)[index]
+            print "k = %3.d, Accuracy: %2.2f%%" % (self.kNeighbours, tempPermValue*100.0/float(len(table)) )
+            return tempPermValue*100.0/float(len(table))
+        else:
+            for j in range(len(table)):
+                tempPermValue += pow(table[j][2].value - knn(table[j]), 2)
+            tempPermValue /= float(len(table))
+            print "k = %3.d, MSE: %2.2f" % (self.kNeighbours, tempPermValue)
+            return tempPermValue
+                
 
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getOptimalSeparation(self, attrList, printTime = 1, progressBar = None):
-        if self.className == "(One color)" or self.rawdata.domain[self.className].varType == orange.VarTypes.Continuous:
-            print "incorrect class name for computing optimal ordering"
+        if self.className == "(One color)":
+            print "Unable to compute optimal ordering. Please select class attribute first."
             return []
 
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValsCount = len(self.rawdata.domain[self.className].values)
 
         # create anchor for every attribute
         anchors = [[],[]]
@@ -671,28 +682,33 @@ class OWRadvizGraph(OWVisGraph):
                 example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
                 table.append(example)
 
-
-            # use knn on every example and compute its accuracy
-            classValues = list(self.rawdata.domain[self.className].values)
-            knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
-
+            tempPermValue = 0.0
             experiments = 0            
+            knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
             selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
-            for j in range(len(table)):
+            
+            if table.domain.classVar.varType == orange.VarTypes.Discrete:
                 if selection[j] == 0: continue
-                out = knn(table[j], orange.GetProbabilities)
-                index = classValues.index(table[j][2].value)
-                tempPermValue += out[table[j].getclass()]
-                #if out[index] >= 1.0/len(classValues): tempPermValue += 1
-                experiments += 1
-
-            print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(experiments) )
+                classValues = list(self.rawdata.domain[self.className].values)
+                for j in range(len(table)):
+                    index = classValues.index(table[j][2].value)
+                    tempPermValue += knn(table[j], orange.GetProbabilities)[index]
+                    experiments += 1
+                tempPermValue = tempPermValue*100.0/float(experiments)
+                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(experiments) )
+            else:
+                for j in range(len(table)):
+                    if selection[j] == 0: continue
+                    tempPermValue += pow(table[j][2].value - knn(table[j]), 2)
+                    experiments += 1
+                tempPermValue /= float(experiments)
+                print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, tempPermValue) 
 
             # save the permutation
             tempList = []
             for i in permutation:
                 tempList.append(self.attributeNames[i])
-            fullList.append((tempPermValue*100.0/float(experiments), len(table), tempList))
+            fullList.append((tempPermValue, len(table), tempList))
 
         if printTime:
             secs = time.time() - t
@@ -744,13 +760,14 @@ class OWRadvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
+        if self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete: funct = max
+        else: funct = min
         for i in range(min(maxResultsLen, len(full))):
-            item = max(full)
+            item = funct(full)
             shortList.append(item)
             full.remove(item)
 
         return shortList
-            
 
 
 if __name__== "__main__":

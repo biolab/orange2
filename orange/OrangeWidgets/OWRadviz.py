@@ -151,6 +151,7 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
+        self.connect(self.optimizationDlg.showKNNResetButton, SIGNAL("clicked()"), self.updateGraph)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -221,7 +222,10 @@ class OWRadviz(OWWidget):
 
     def evaluateCurrentProjection(self):
         acc = self.graph.getProjectionQuality(self.getShownAttributeList())
-        QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete:
+            QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+        else:
+            QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
@@ -264,10 +268,11 @@ class OWRadviz(OWWidget):
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
         if self.data != None:
+            """
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-
+            """
             self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if text == "ALL":
@@ -286,10 +291,12 @@ class OWRadviz(OWWidget):
                 
             if len(fullList) == 0: return
 
+            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            else: funct = min
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
             for i in range(len(fullList)):
-                (accuracy, tableLen, list) = max(fullList)
+                (accuracy, tableLen, list) = funct(fullList)
                 self.optimizationDlg.insertItem(accuracy, tableLen, list)  
                 fullList.remove((accuracy, tableLen, list))
                 
@@ -302,10 +309,11 @@ class OWRadviz(OWWidget):
     # find optimal separation for all possible subsets of shown attributes
     def optimizeAllSubsetSeparation(self):
         if self.data != None:
+            """
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-
+            """
             text = str(self.optimizationDlg.maxLenCombo.currentText())
             if text == "ALL":
                 maxLen = len(self.getShownAttributeList())
@@ -324,11 +332,13 @@ class OWRadviz(OWWidget):
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
             fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), maxLen, maxResultsLen, self.progressBar)
             if len(fullList) == 0: return
-            
+
+            if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
+            else: funct = min
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
             for i in range(min(maxResultsLen, len(fullList))):
-                (accuracy, itemCount, list) = max(fullList)
+                (accuracy, itemCount, list) = funct(fullList)
                 self.optimizationDlg.insertItem(accuracy, itemCount, list)
                 fullList.remove((accuracy, itemCount, list))
                 
