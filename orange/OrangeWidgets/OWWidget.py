@@ -33,8 +33,9 @@ class OWWidget(QWidget):
             logo - the logo file
             parent - parent of the widget if needed
         """
-        icon = sys.prefix + "/lib/site-packages/orange/orngWidgets/pics/" + icon
-        logo = sys.prefix + "/lib/site-packages/orange/orngWidgets/pics/" + logo
+        icon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
+        logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
+        self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.title=title.replace("&","")
         QWidget.__init__(self,parent)
         #list of all active connections to this widget
@@ -222,7 +223,7 @@ class OWWidget(QWidget):
         """
         if hasattr(self, "settingsList"):
             if file==None:
-                file=self.title+".ini"
+                file = self.widgetDir + self.title + ".ini"
             if type(file) == str:
                 if os.path.exists(file):
                     file = open(file, "r")
@@ -240,7 +241,7 @@ class OWWidget(QWidget):
         if hasattr(self, "settingsList"):
             settings = dict([(name, getattr(self, name)) for name in self.settingsList])
             if file==None:
-                file=self.title+".ini"                
+                file = self.widgetDir + self.title + ".ini"                
             if type(file) == str:
                 file = open(file, "w")
                 cPickle.dump(settings, file)
