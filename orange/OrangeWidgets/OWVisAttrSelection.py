@@ -75,6 +75,7 @@ def getFunctionalList(data):
 # #### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING Fisher discriminant analysis
 # ##########################################################################################
 
+# #################################################################################
 # class that measures correlation between continuous class value and continuous attribute
 class MeasureCorrelation:
     def __init__(self):
@@ -93,6 +94,7 @@ class MeasureCorrelation:
         return val
         
 
+# #################################################################################
 # fisher discriminant implemented to be used as orange.MeasureAttribute
 class MeasureFisherDiscriminant:
     def __init__(self):
@@ -137,14 +139,22 @@ class MeasureFisherDiscriminant:
 
         return self.attrInfo[data.domain[attr].name]
 
-# signal to noise
+# #################################################################################
+# signal to noise measure implemented as orange.MeasureAttribute
 class S2NMeasure:
     def __init__(self):
         self.dataset = None
         self.attrInfo = {}
+        self.data = None
 
     def __call__(self, attr, data):
-        if self.attrInfo == {}:
+        # if the data changed clear the attribute values
+        if data != self.data:
+            self.attrInfo = {}
+            self.data = data
+
+        # if the table has no missing values we can use a fast method to compute signal to noise
+        if self.attrInfo == {} and len(data) == len(orange.Preprocessor_dropMissing(data)):
             arr = data.toNumeric("ac")[0]
             arr = Numeric.transpose(arr)
             clsIndex = len(arr)-1
@@ -164,9 +174,27 @@ class S2NMeasure:
                 
                 self.attrInfo[data.domain.attributes[i].name] = sum(ts)/float(len(data.domain.classVar.values))
 
+        # missing values.... have to copy value by value
+        elif not self.attrInfo.has_key(attr):
+            mis = []; stds = []; ts = []
+            
+            arrs = [[] for v in range(len(data.domain.classVar.values))]
+            for i in range(len(data)):
+                if data[i].getclass().isSpecial() or data[i][attr].isSpecial(): continue
+                arrs[int(data[i][data.domain.classVar])].append(data[i][attr].value)
+
+            for i in range(len(arrs)):
+                mis.append(statc.mean(arrs[i]))
+                stds.append(statc.std(arrs[i]))
+
+            for i in range(len(data.domain.classVar.values)):
+                for j in range(i+1, len(data.domain.classVar.values)):
+                    t = (mis[i] - mis[j]) / (stds[i] + stds[j])
+                    ts.append(abs(t))
+
+            self.attrInfo[attr] = sum(ts)/float(len(data.domain.classVar.values))
+
         return self.attrInfo[data.domain[attr].name]
-
-
 
 
 # used by kNN optimization to evaluate attributes
@@ -283,6 +311,7 @@ def computeCorrelationInsideClasses(data, attr1, attr2):
     corr /= sum(lengths)
     return corr, corrs, lengths
 
+# compute correlation between two continuous attributes
 def computeCorrelation(data, attr1, attr2):
     if data.domain[attr1].varType != orange.VarTypes.Continuous: return None
     if data.domain[attr2].varType != orange.VarTypes.Continuous: return None
