@@ -137,6 +137,7 @@ class OWInteractionGraph(OWWidget):
             self.updateNewData(self.originalData)
             
         self.mergeAttributes = b
+        self.showInteractionRects(self.data)
         
 
     def showImportantAttrs(self, b):
@@ -186,37 +187,7 @@ class OWInteractionGraph(OWWidget):
 
         elif ev.button() == QMouseEvent.RightButton and name == "interactions":
             if not self.mergeAttributes == 1: return
-            """
-            found = 0; i = 0
-            while not found and i < len(self.interactionRects):
-                (rect1, rect2, rect3, text1, text2, tooltipRect, tooltipText) = self.interactionRects[i]
-                if self.clickInside(tooltipRect, ev.pos()) == 1:
-                    attr1 = str(text1.text()); attr2 = str(text2.text())
-                    found = 1
-                i+=1
-            if not found: return
 
-            if self.rest != None:
-                data = self.rest
-            else:
-                data = self.discData
-            (cart, profit) = FeatureByCartesianProduct(data, [self.discData.domain[attr1], self.discData.domain[attr2]])
-            contData = data.select([cart, self.discData.domain.classVar])
-            cont = orange.DomainContingency(contData)
-            todoList = []   # list of attribute pair values that have instances with more than one class value
-            for val in cont[0].keys():
-                contList = list(cont[0][val])
-                if not len(contList) <=  contList.count(0.0) + 1:    # if not all cases belong to the same class then this cases need to be classified by different attribute pair
-                    todoList.append(val)
-
-
-            newData = data.select(list(self.data.domain) + [cart])
-            self.rest = newData.select({cart.name:todoList})
-            
-            print "intervals = %d, non clear values = %d" % (len(cart.values), len(todoList))
-            print "entropy left = %f" % (float(len(self.rest)) / float(self.dataSize))
-            self.cdata(self.rest)
-            """
             found = 0; i = 0
             while not found and i < len(self.interactionRects):
                 (rect1, rect2, rect3, text1, text2, tooltipRect, tooltipText) = self.interactionRects[i]
@@ -228,8 +199,9 @@ class OWInteractionGraph(OWWidget):
 
             data = self.interactionMatrix.discData
             (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attr1], data.domain[attr2]])
-            if cart in data.domain: return
-            
+            if cart in data.domain: return  # if this attribute already in domain return
+
+            """            
             contData = data.select([cart, data.domain.classVar])
             cont = orange.DomainContingency(contData)
             todoList = []   # list of attribute pair values that have instances with more than one class value
@@ -237,13 +209,38 @@ class OWInteractionGraph(OWWidget):
                 contList = list(cont[0][val])
                 if not len(contList) <=  contList.count(0.0) + 1:    # if not all cases belong to the same class then this cases need to be classified by different attribute pair
                     todoList.append(val)
-
-
+            """
+            """
             newData = data.select(list(data.domain) + [cart])
-            rest = newData.select({cart.name:todoList})
+            dd = orange.DomainDistributions(newData)
+            i=0; index = 0
+            count = len(cart.values)
+            while index < count:
+                if dd[cart][index] == 0.0:
+                    cart.getValueFrom.lookupTable[i] = "?"
+                    del cart.values[i]
+                    for j in range(i+1, len(cart.values)+1):
+                        cart.getValueFrom.lookupTable[j] -= 1
+                else:
+                    i+= 1
+                index += 1
+            """
+            tempData = data.select(list(data.domain) + [cart])
+            dd = orange.DomainDistributions(tempData)
+            vals = []
+            for i in range(len(cart.values)):
+                if dd[cart][i] != 0.0:
+                    vals.append(cart.values[i])
+
+            newVar = orange.EnumVariable(cart.name, values = vals)
+            newData = data.select(list(data.domain) + [newVar])
+            for i in range(len(newData)):
+                newData[i][newVar] = tempData[i][cart]
+
+            #rest = newData.select({cart.name:todoList})
             
-            print "intervals = %d, non clear values = %d" % (len(cart.values), len(todoList))
-            print "entropy left = %f" % (float(len(rest)) / float(self.dataSize))
+            #print "intervals = %d, non clear values = %d" % (len(cart.values), len(todoList))
+            #print "entropy left = %f" % (float(len(rest)) / float(self.dataSize))
             self.updateNewData(newData)
 
 
@@ -307,12 +304,14 @@ class OWInteractionGraph(OWWidget):
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
         (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
+        
         textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
         pipePngIn.close()
         pipePlainIn.close()
         pipePngOut.close()
         pipePlainOut.close()
+        os.remove('interaction.dot')
 
         # if the output from the pipe was empty, then the software isn't installed correctly
         if len(textPng) == 0:
@@ -400,7 +399,8 @@ class OWInteractionGraph(OWWidget):
         xOff = 0        
         for ((total, (gain1, gain2, attrIndex1, attrIndex2))) in self.interactionList:
             if not self.showInteractionPair(attrIndex1, attrIndex2): continue
-            text = QCanvasText(data.domain[attrIndex1].name, self.canvasL)
+            if gain1 > gain2: text = QCanvasText(data.domain[attrIndex1].name, self.canvasL)
+            else:             text = QCanvasText(data.domain[attrIndex2].name, self.canvasL)
             rect = text.boundingRect()
             if xOff < rect.width():
                 xOff = rect.width()
@@ -452,8 +452,9 @@ class OWInteractionGraph(OWWidget):
                 x3 = ceil(xOff + xscale*(total-gain2))
             x4 = ceil(xOff + xscale*total)
 
-            rect1 = QCanvasRectangle(x1, rectsYOff, x2-x1+1, rectHeight, self.canvasL)
             rect2 = QCanvasRectangle(x2, rectsYOff,   x3-x2+1, rectHeight, self.canvasL)
+            rect1 = QCanvasRectangle(x1, rectsYOff, x2-x1+1, rectHeight, self.canvasL)
+            
             rect3 = QCanvasRectangle(x3, rectsYOff, x4-x3, rectHeight, self.canvasL)
             if interaction < 0.0:
                 #color = QColor(255, 128, 128)
@@ -609,6 +610,12 @@ class OWInteractionGraph(OWWidget):
     def getAttrVisible(self, name):
         for i in range(self.hiddenAttribsLB.count()):
             if str(self.hiddenAttribsLB.text(i)) == name: return 0
+
+        if self.mergeAttributes == 1:
+            names = name.split("-")
+            for i in range(self.hiddenAttribsLB.count()):
+                if str(self.hiddenAttribsLB.text(i)) in names: return 0
+            
         for i in range(self.shownAttribsLB.count()):
             if str(self.shownAttribsLB.text(i)) == name: return 1
         return 1
