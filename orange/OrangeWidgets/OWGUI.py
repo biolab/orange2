@@ -68,6 +68,12 @@ def checkWithSpin(widget, master, text, min, max, checked, value, posttext = Non
 
     return wa, wb
 
+def button(widget, master, text, callback, disabled=0):
+    btn = QPushButton(text, widget)
+    btn.setDisabled(disabled)
+    master.connect(btn, SIGNAL("clicked()"), callback)
+    return btn
+
 class ValueCallback:
     def __init__(self, widget, attribute, f = None):
         self.widget = widget
