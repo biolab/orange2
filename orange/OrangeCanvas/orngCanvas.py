@@ -154,7 +154,8 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuFile.insertSeparator()
 		self.menuFile.insertItem( "Recent Files", self.menuRecent)
 		self.menuFile.insertSeparator()
-		self.menuFile.insertItem( "E&xit",  qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
+		#self.menuFile.insertItem( "E&xit",  qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
+		self.menuFile.insertItem( "E&xit",  self.close, Qt.CTRL+Qt.Key_Q )
 
 		self.menuEdit = QPopupMenu( self )
 		self.menuEdit.insertItem( "Cut",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
@@ -566,7 +567,7 @@ class OrangeCanvasDlg(QMainWindow):
 	# EVENTS
 	#######################
 
-	def closeEvent(self,ce):
+	def closeEvent(self, ce):
 		for win in self.workspace.windowList():
 			win.close()
 
