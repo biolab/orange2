@@ -107,6 +107,10 @@ class OWInteractionGraph(OWWidget):
         
         self.selectionButton = QPushButton("Show selection", self.space)
 
+        QToolTip.add(self.selectionButton, "Sends 'selection' signal to any successor visualization widgets.\nThis signal contains a list of selected attributes to visualize.")
+        QToolTip.add(self.mergeAttributesCB, "Enable or disable attribute merging. If enabled, you can merge \ntwo attributes with right mouse click inside attribute rectangle.\nMerged attribute is then built as cartesian product of corresponding attribute pair\nand added to the list of possible attributes")
+
+
         self.saveLCanvas = QPushButton("Save left canvas", self.space)
         self.saveRCanvas = QPushButton("Save right canvas", self.space)
         self.connect(self.saveLCanvas, SIGNAL("clicked()"), self.saveToFileLCanvas)
@@ -124,17 +128,9 @@ class OWInteractionGraph(OWWidget):
         self.activateLoadedSettings()
 
     def mergeAttributesEvent(self, b):
-        """
-        if b == 1:
-            self.importantInteractionsCB.setEnabled(0)
-        else:
-            self.importantInteractionsCB.setEnabled(1)
-
-            self.updateNewData(self.originalData)
-        """ 
         self.mergeAttributes = b
-        if b == 1:
-            self.showInteractionRects(self.data)
+        if b == 0:
+            self.updateNewData(self.originalData)
         
 
     def showImportantInteractions(self, b):
