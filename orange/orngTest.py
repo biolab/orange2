@@ -362,11 +362,7 @@ def learnAndTestOnTestData(learners, learnset, testset, testResults=None, iterat
             learnset, testset = pp[1](learnset, testset)
             
     classifiers = [learner(learnset, learnweight) for learner in learners]
-    if storeclassifiers:
-        testResults.classifiers.append(classifiers)
-    return testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
-
-    classifiers = [learner(learnset, learnweight) for learner in learners]        
+    for i in range(len(learners)): classifiers[i].name = learners[i].name
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testOnData(classifiers, (testset, testweight), testResults, iterationNumber)
@@ -397,6 +393,7 @@ def learnAndTestOnLearnData(learners, learnset, testResults=None, iterationNumbe
         testset = learnset    
 
     classifiers = [learner(learnset, learnweight) for learner in learners]
+    for i in range(len(learners)): classifiers[i].name = learners[i].name
     if storeclassifiers:
         testResults.classifiers.append(classifiers)
     return testOnData(classifiers, (testset, learnweight), testResults, iterationNumber)
@@ -420,4 +417,3 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
         testResults.results.append(te)
         
     return testResults
-
