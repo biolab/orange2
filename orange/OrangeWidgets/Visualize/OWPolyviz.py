@@ -22,7 +22,6 @@ import OWToolbars
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    #spreadType=["none","uniform","triangle","beta"]
     settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
@@ -249,27 +248,38 @@ class OWPolyviz(OWWidget):
 
             
         if self.graph.totalPossibilities > 200000:
-            self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+            self.warning("There are %s possible polyviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
             
         self.optimizationDlg.disableControls()
 
-        self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
+        try:
+            self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
 
     # ################################################################################################
     # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
-    def optimizeGivenProjectionClick(self):
+    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1, maxProjLen = -1):
+        if numOfBestAttrs == -1:
+            if self.data and len(self.data.domain.attributes) > 1000:
+                (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
+                if not ok: return
+                numOfBestAttrs = int(str(text))
+            else: numOfBestAttrs = 10000
+        
         self.optimizationDlg.disableControls()
         acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)[0]
         # try to find a better separation than the one that is currently shown
         if self.rotateAttributes:
             attrs = self.getShownAttributeList()
             reverse = [self.attributeReverse[attr] for attr in attrs]
-            self.graph.optimizeGivenProjection(attrs, reverse, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+            self.graph.optimizeGivenProjection(attrs, reverse, acc, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult)
         else:
-            self.graph.optimizeGivenProjection(self.getShownAttributeList(), None, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+            self.graph.optimizeGivenProjection(self.getShownAttributeList(), None, acc, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1, maxProjectionLen = maxProjLen)
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
 
@@ -398,7 +408,7 @@ class OWPolyviz(OWWidget):
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
-    def cdata(self, data):
+    def cdata(self, data, keepMinMaxVals = 0):
         if data:
             name = ""
             if hasattr(data, "name"): name = data.name
@@ -409,7 +419,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         exData = self.data
         self.data = data
-        self.graph.setData(self.data)
+        self.graph.setData(self.data, keepMinMaxVals)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same
             self.shownAttribsLB.clear()

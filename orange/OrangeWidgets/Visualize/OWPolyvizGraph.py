@@ -107,9 +107,9 @@ class OWPolyvizGraph(OWVisGraph):
     #
     # if we use globalScaling we must also create a copy of localy scaled data
     #
-    def setData(self, data):
+    def setData(self, data, keepMinMaxVals = 0):
         # first call the original function to scale data
-        OWVisGraph.setData(self, data)
+        OWVisGraph.setData(self, data, keepMinMaxVals)
         if data == None: return
 
         for index in range(len(data.domain)):
@@ -202,7 +202,8 @@ class OWPolyvizGraph(OWVisGraph):
 
             else:
                 # min and max value
-                names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
+                #names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
+                names = ["%.1f" % (0.0), "%.1f" % (1.0)]
                 if attributeReverse[labels[i]] == 1: names.reverse()
                 self.addMarker(names[0],0.95*self.XAnchor[i]+0.15*self.XAnchor[(i+1)%length], 0.95*self.YAnchor[i]+0.15*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
                 self.addMarker(names[1], 0.15*self.XAnchor[i]+0.95*self.XAnchor[(i+1)%length], 0.15*self.YAnchor[i]+0.95*self.YAnchor[(i+1)%length], Qt.AlignHCenter + Qt.AlignVCenter)
@@ -571,7 +572,7 @@ class OWPolyvizGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
-
+    """
     def createCombinations(self, currCombination, count, attrList, combinations):
         if count > attrList: return combinations
 
@@ -586,6 +587,32 @@ class OWPolyvizGraph(OWVisGraph):
 
         combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
         return combinations
+    """
+
+    def createCombinations(self, attrList, count):
+        if count > len(attrList): return []
+        answer = []
+        indices = range(count)
+        indices[-1] = indices[-1] - 1
+        while 1:
+            limit = len(attrList) - 1
+            i = count - 1
+            while i >= 0 and indices[i] == limit:
+                i = i - 1
+                limit = limit - 1
+            if i < 0: break
+
+            val = indices[i]
+            for i in xrange( i, count ):
+                val = val + 1
+
+                indices[i] = val
+            temp = []
+            for i in indices:
+                temp.append( attrList[i] )
+            answer.append( temp )
+        return answer
+    
 
     def createAttrReverseList(self, attrLen):
         res = [[]]
@@ -614,10 +641,8 @@ class OWPolyvizGraph(OWVisGraph):
         for z in range(minLength-1, len(attributes)):
             for u in range(minLength-1, maxLength):
                 attrListLength = u+1
-                
-                combinations = self.createCombinations([0.0], u, attributes[:z], [])
-                combinations.sort()
-                combinations.reverse()
+
+                combinations = self.createCombinations(attributes[:z], u)
 
                 if attrReverseDict == None:
                     if not allAttrReverse.has_key(attrListLength):
@@ -628,7 +653,7 @@ class OWPolyvizGraph(OWVisGraph):
                 YAnchors = anchorList[u+1-minLength][1]
                 
                 for attrList in combinations:
-                    attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
+                    attrs = attrList + [attributes[z]] # remove the value of this attribute subset
                     indices = [self.attributeNameIndex[attr] for attr in attrs]
 
                     indPermutations = {}
@@ -644,12 +669,6 @@ class OWPolyvizGraph(OWVisGraph):
                     classList = Numeric.compress(validData, classListFull)
                     selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, indices))
                     sum_i = self._getSum_i(selectedData)
-
-                    if len(selectedData[0]) < self.kNNOptimization.minExamples:
-                        print "Not enough examples (%s) in example table. Ignoring permutation." % (str(len(selectedData[0])))
-                        self.triedPossibilities += len(indPermutations.keys())
-                        self.polyvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                        continue                    
 
                     tempList = []
 
@@ -688,13 +707,13 @@ class OWPolyvizGraph(OWVisGraph):
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
 
-    def optimizeGivenProjection(self, projection, attrReverseList, accuracy, attributes, addResultFunct):
+    def optimizeGivenProjection(self, projection, attrReverseList, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
         dataSize = len(self.rawdata)
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
-        attributes = [(val, self.attributeNameIndex[name]) for (val, name) in attributes]
+        attributes = [self.attributeNameIndex[name] for name in attributes]
         lenOfAttributes = len(attributes)
         projection = [self.attributeNameIndex[name] for name in projection]
 
@@ -702,14 +721,18 @@ class OWPolyvizGraph(OWVisGraph):
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        allAttrReverse = {}
+        print restartWhenImproved
         
         optimizedProjection = 1
         while optimizedProjection:
             optimizedProjection = 0
+            significantImprovement = 0
             
             # in the first step try to find a better projection by substituting an existent attribute with a new one
             # in the second step try to find a better projection by adding a new attribute to the circle
             for iteration in range(2):
+                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
                 if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
                 strTotalAtts = createStringFromNumber(lenOfAttributes)
                 listOfCanditates = []
@@ -719,8 +742,9 @@ class OWPolyvizGraph(OWVisGraph):
                         allAttrReverse[len(projection) + iteration] = self.createAttrReverseList(len(projection) + iteration)
                     attrReverse = allAttrReverse[len(projection) + iteration]
                     
-                for (attrIndex, (val, attr)) in enumerate(attributes):
+                for (attrIndex, attr) in enumerate(attributes):
                     if attr in projection: continue
+                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
 
                     if attrReverseList != None:
                         projections = [(copy(projection), copy(attrReverseList)) for i in range(len(projection))]
@@ -773,6 +797,7 @@ class OWPolyvizGraph(OWVisGraph):
                         self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
                         optimizedProjection = 1
                         listOfCanditates.append((acc, attrList, reverse))
+                        if max(acc, accuracy)/min(acc, accuracy) > 1.01: significantImprovement = 1
                     else:
                         self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
                         if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
