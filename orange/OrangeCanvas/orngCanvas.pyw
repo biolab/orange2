@@ -619,9 +619,9 @@ class OrangeCanvasDlg(QMainWindow):
             return
         elif text == "\n": return
         text = str(text)
-        text = text.replace("<nobr>", "")
-        text = text.replace("</nobr>", "")
-        text = text.replace("<br>", "")
+        text = text.replace("<nobr>", ""); text = text.replace("</nobr>", "")
+        text = text.replace("<b>", ""); text = text.replace("</b>", "")
+        text = text.replace("<br>", ""); text = text.replace("&nbsp", "")
         self.statusBar.message(QString("Last event: " + str(text)))
         
     #######################

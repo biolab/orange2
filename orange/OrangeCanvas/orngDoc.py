@@ -467,6 +467,7 @@ class SchemaDoc(QMainWindow):
                     if tempWidget.caption in settingsList:
                         tempWidget.instance.loadSettingsStr(settingsList[tempWidget.caption])
                         tempWidget.instance.activateLoadedSettings()
+                qApp.processEvents()
 
             # ##################
             #read lines                        
@@ -485,6 +486,7 @@ class SchemaDoc(QMainWindow):
                 signalList = eval(signals)
                 for (outName, inName) in signalList:
                     self.addLink(outWidget, inWidget, outName, inName, Enabled)
+                qApp.processEvents()
 
             self.canvas.update()
             self.enableSave(FALSE)

@@ -265,10 +265,13 @@ class SignalManager:
 
 
     def processNewSignals(self, firstWidget):
+        if len(self.widgets) == 0: return
+        if self.signalProcessingInProgress: return
+        
         self.addEvent("process new signals from " + firstWidget.title)
         
-        if self.signalProcessingInProgress: return
-        if firstWidget not in self.widgets: return # we may have windows that are not widgets
+        if firstWidget not in self.widgets:
+            firstWidget = self.widgets[0]   # if some window that is not a widget started some processing we have to process new signals from the first widget
 
         # start propagating
         self.signalProcessingInProgress = 1

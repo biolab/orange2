@@ -269,12 +269,11 @@ class SchemaView(QCanvasView):
             self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
             
         elif self.bLineDragging:
-            self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
+            if self.tempLine: self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
 
         elif self.bMultipleSelection:
             rect = QRect(min (self.moving_start.x(), ev.pos().x()), min (self.moving_start.y(), ev.pos().y()), abs(self.moving_start.x() - ev.pos().x()), abs(self.moving_start.y() - ev.pos().y()))
-            if self.tempRect != None:
-                self.tempRect.hide()
+            if self.tempRect: self.tempRect.hide()
 
             self.tempRect = QCanvasRectangle(rect, self.doc.canvas)
             self.tempRect.show()
@@ -328,7 +327,7 @@ class SchemaView(QCanvasView):
             item = self.findFirstItemType(items, orngCanvasItems.CanvasWidget)
 
             # we must check if we have really conected some output to input
-            if item!= None and item != self.tempWidget:
+            if self.tempWidget and self.tempLine and item and item != self.tempWidget:
                 if self.tempWidget.mouseInsideLeftChannel(self.tempLine.startPoint()):
                     outWidget = item
                     inWidget  = self.tempWidget
@@ -353,8 +352,7 @@ class SchemaView(QCanvasView):
                 self.tempLine = None
 
         elif self.bMultipleSelection:
-            if self.tempRect != None:
-                self.tempRect.hide()
+            if self.tempRect: self.tempRect.hide()
                 
         self.canvas().update()
         self.bMouseDown = FALSE
@@ -366,10 +364,10 @@ class SchemaView(QCanvasView):
         activeItems = self.canvas().collisions(rect)    
         widget = self.findFirstItemType(activeItems, orngCanvasItems.CanvasWidget)
         line   = self.findFirstItemType(activeItems, orngCanvasItems.CanvasLine)
-        if widget != None:
+        if widget:
             self.tempWidget = widget
             self.openActiveWidget()
-        elif line != None:
+        elif line:
             if self.doc.signalManager.signalProcessingInProgress:
                 QMessageBox.information( None, "Orange Canvas", "Unable to modify signals while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
                 return
