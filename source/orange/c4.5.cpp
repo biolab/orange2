@@ -33,7 +33,6 @@ DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
 
 bool c45Loaded = false;
 
-typedef void *getDataFunc();
 typedef void *learnFunc(char gainRatio, char subset, char batch, char probThresh,
                        int trials, int minObjs, int window, int increment, float cf, char prune);
 typedef void garbageFunc();
@@ -64,6 +63,7 @@ struct {
 
 learnFunc *c45learn;
 garbageFunc *c45garbage;
+void *pc45data;
 
 extern PyObject *orangeModule;
 
@@ -72,107 +72,32 @@ extern PyObject *orangeModule;
 #undef IGNORE
 #endif
 
-#ifdef _MSC_VER
-
-#define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
-#include <windows.h>
+const char *dynloadC45(char buf[], char *bp);
 
 void loadC45()
 {
-  char buf[512], *bp = buf;
-  
+  char buf[512], *bp;
+
   PyObject *orangeDirName = PyDict_GetItemString(PyModule_GetDict(orangeModule), "__file__");
   if (orangeDirName) {
     char *odn = PyString_AsString(orangeDirName);
     if (strlen(odn) <= 500) {
       strcpy(buf, odn);
       bp = buf + strlen(buf);
-      while ((bp!=buf) && (*bp!='\\'))
+      while ((bp!=buf) && (*bp!='\\') && (*bp !='/'))
         bp--;
     } 
     else
       raiseErrorWho("C45Loader", "cannot load c45.dll (pathname too long)");
   }
 
-  #ifdef _DEBUG
-  strcpy(bp, "\\c45_d.dll");
-  #else
-  strcpy(bp, "\\c45.dll");
-  #endif
+  const char *err = dynloadC45(buf, bp);
+  if (err)
+    raiseErrorWho("C45Loader", err);
 
-  HINSTANCE c45Dll = LoadLibrary(buf);
-  if (!c45Dll)
-    raiseErrorWho("C45Loader", "cannot load c45.dll");
-
-  char funcname[258];
-  
-   PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45Data");
-  void *p = GetProcAddress(c45Dll, funcname);
-
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "learn");
-  c45learn = (learnFunc *)(GetProcAddress(c45Dll, funcname));
-
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "guarded_collect");
-  c45garbage = (garbageFunc *)(GetProcAddress(c45Dll, funcname));
- 
-  if (!p || !c45learn || !c45garbage)
-    raiseErrorWho("C45Loader", "c45.dll is invalid");
-
-  memcpy(&c45data, p, sizeof(c45data));
+  memcpy(&c45data, pc45data, sizeof(c45data));
   c45Loaded = true;
 }
-
-#else
-#ifdef LINUX
-
-#include <dlfcn.h>
-
-void loadC45()
-{ 
-  char buf[512], *bp = buf;
-  
-  PyObject *orangeDirName = PyDict_GetItemString(PyModule_GetDict(orangeModule), "__file__");
-  if (orangeDirName) {
-    char *odn = PyString_AsString(orangeDirName);
-    if (strlen(odn) <= 500) {
-      strcpy(buf, odn);
-      bp = buf + strlen(buf);
-      while ((bp!=buf) && (*bp!='/'))
-        bp--;
-    } 
-    else
-      raiseErrorWho("C45Loader", "cannot load c45.so (pathname too long)");
-  }
-
-  #ifdef _DEBUG
-  strcpy(bp, "/c45_d.so");
-  #else
-  strcpy(bp, "/c45.so");
-  #endif
-
-  void *handle = dlopen(buf, PyThreadState_Get()->interp->dlopenflags /*dlopenflags*/);
-  if (handle == NULL)
-    raiseErrorWho("C45Loader", dlerror());
-  
-//  getDataFunc *p = (getDataFunc *) dlsym(handle, "_Z10getc45Datav");
-  void *p = dlsym(handle, "c45Data");
-  c45learn = (learnFunc *) dlsym(handle, "learn");
-  c45garbage = (garbageFunc *) dlsym(handle, "guarded_collect");
-  
-  if (!p || !c45learn || !c45garbage)
-    raiseErrorWho("C45Loader", "c45.so is invalid (required functions are not found)");
-
-  memcpy(&c45data, p, sizeof(c45data));
-  c45Loaded = true;
-}
-
-#else
-
-void loadC45()
-{ raiseErrorWho("C45Loader", "c45 is not supported on this platform"); }
-
-#endif
-#endif
 
 #define MaxAtt (*c45data.rMaxAtt)
 #define MaxClass (*c45data.rMaxClass)

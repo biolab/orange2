@@ -26,7 +26,7 @@ ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
 
 INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
-		-I$(PYTHONINCLUDE) -I$(LOGREGD)
+		-I$(PYTHONINCLUDE) -I/Developer/Headers/FlatCarbon
 
 ############
 # Paths for extensions
@@ -68,8 +68,8 @@ include makefile.deps
 dirs:
 	-@mkdir -p $(ODIR) $(BINDIR) > /dev/null
 
-$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ODIR)/c45.a $(ODIR)/logreg.a $(ORANGE_OBJECTS)
-	gcc -W1,-F. -bundle -framework Python \
+$(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ORANGE_OBJECTS)
+	gcc -W1,-F. -bundle -framework Python -framework CoreServices \
                 $(ORANGE_OBJECTS) $(LNKSTL) -o $(BINDIR)/orange.so 
 
 $(BINDIR)/corn.so:	$(CORN_OBJECTS)
