@@ -65,6 +65,7 @@ class OWPolyviz(OWWidget):
 
         # graph main tmp variables
         self.addInput("cdata")
+        self.addInput("selection")
 
         #connect settingsbutton to show options
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
@@ -341,6 +342,27 @@ class OWPolyviz(OWWidget):
             return
         
         self.setShownAttributeList(self.data)
+        self.updateGraph()
+    #################################################
+
+    ####### SELECTION signal ################################
+    # receive info about which attributes to show
+    def selection(self, list):
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+
+        if self.data == None: return
+
+        if self.data.domain.classVar.name not in list:
+            self.hiddenAttribsLB.insertItem(self.data.domain.classVar.name)
+            
+        for attr in list:
+            self.shownAttribsLB.insertItem(attr)
+
+        for attr in self.data.domain.attributes:
+            if attr.name not in list:
+                self.hiddenAttribsLB.insertItem(attr.name)
+
         self.updateGraph()
     #################################################
 

@@ -52,6 +52,7 @@ class OWSurveyPlot(OWWidget):
 
         # graph main tmp variables
         self.addInput("cdata")
+        self.addInput("selection")
 
         self.selClass = QVGroupBox(self.controlArea)
         self.selClass.setTitle("Class attribute")
@@ -333,6 +334,27 @@ class OWSurveyPlot(OWWidget):
         
         self.setShownAttributeList(self.data)
         self.sortingClick()
+    #################################################
+
+    ####### SELECTION signal ################################
+    # receive info about which attributes to show
+    def selection(self, list):
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+
+        if self.data == None: return
+
+        if self.data.domain.classVar.name not in list:
+            self.shownAttribsLB.insertItem(self.data.domain.classVar.name)
+            
+        for attr in list:
+            self.shownAttribsLB.insertItem(attr)
+
+        for attr in self.data.domain.attributes:
+            if attr.name not in list:
+                self.hiddenAttribsLB.insertItem(attr.name)
+
+        self.updateGraph()
     #################################################
 
 #test widget appearance

@@ -65,6 +65,7 @@ class OWParallelCoordinates(OWWidget):
 
         # graph main tmp variables
         self.addInput("cdata")
+        self.addInput("selection")
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -327,6 +328,30 @@ class OWParallelCoordinates(OWWidget):
         self.setShownAttributeList(self.data)
         self.updateGraph()
     #################################################
+
+    
+    ####### SELECTION ################################
+    # receive a list of attributes we wish to show
+    def selection(self, list):
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+
+        if self.data == None: return
+
+        if self.data.domain.classVar.name not in list:
+            self.shownAttribsLB.insertItem(self.data.domain.classVar.name)
+
+        for attr in list:
+            self.shownAttribsLB.insertItem(attr)
+
+        for attr in self.data.domain:
+            if attr.name not in list:
+                self.hiddenAttribsLB.insertItem(attr.name)
+            
+        self.updateGraph()
+    #################################################
+
+        
 
 #test widget appearance
 if __name__=="__main__":
