@@ -22,8 +22,8 @@ CAN_LIE_NEAR = 1
 BEST_GROUPS = 0
 BEST_GROUPS_IN_EACH_CLASS = 1
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
-discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
+contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
+discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
 VALUE = 0
 CLUSTER = 1
@@ -695,7 +695,7 @@ class ClusterOptimization(OWBaseWidget):
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
-        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"])
+        OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
         self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster." )
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTimeIndex", "Time for evaluating projections (minutes): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument count ")
@@ -939,10 +939,8 @@ class ClusterOptimization(OWBaseWidget):
         self.resultList.clear()
         self.shownResults = []
         self.selectedClasses = self.getSelectedClassValues()
+
         i = 0
-        print "updating", self.selectedClasses
-        
-    
         while self.resultList.count() < self.resultListLen and i < len(self.allResults):
             if self.attrLenDict[len(self.allResults[i][ATTR_LIST])] != 1: i+=1; continue
             if type(self.allResults[i][CLASS]) == dict and -1 not in self.selectedClasses: i+=1; continue
