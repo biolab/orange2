@@ -282,7 +282,7 @@ class SchemaDoc(QMainWindow):
     # ###########################################
     # save document as application
     # ###########################################
-    def saveDocumentAsApp(self):
+    def saveDocumentAsApp(self, asTabs = 1):
         # get filename
         appName = self.filename
         if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
@@ -300,18 +300,25 @@ class SchemaDoc(QMainWindow):
         #format string with file content
         t = "    "  # instead of tab
         imports = "import sys\nimport os\n"
-        instances = "# create widget instances\n" +t+t
+        instancesT = "# create widget instances\n" +t+t
+        instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
-        links = ""
+        links = "# add widget signals\n"+t+t
         save = ""
+        buttons = "# create widget buttons\n"+t+t
+        buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
         for widget in self.widgets:
             name = widget.caption
             name = name.replace(" ", "_")
             name = name.replace("(", "")
             name = name.replace(")", "")
-            imports = imports + "from " + widget.widget.fileName + " import *\n"
-            instances = instances + "self.ow" + name + " = " + widget.widget.fileName + "(self.tabs)\n"+t+t
-            tabs = tabs + "self.tabs.insertTab (self.ow" + name + ",\"" + widget.caption + "\")\n"+t+t
+            imports += "from " + widget.widget.fileName + " import *\n"
+            instancesT += "self.ow" + name + " = " + widget.widget.fileName + "(self.tabs)\n"+t+t
+            instancesB += "self.ow" + name + " = " + widget.widget.fileName + "()\n"+t+t
+            tabs += "self.tabs.insertTab (self.ow" + name + ",\"" + widget.caption + "\")\n"+t+t
+            buttons += "owButton" + name + " = QPushButton(\"" + widget.caption + "\", self)\n"+t+t
+            buttonsConnect += "self.connect( owButton" + name + ",SIGNAL(\"clicked()\"), self.ow" + name + ".show)\n"+t+t
+            save += "self.ow" + name + ".saveSettings()\n"+t+t
             
             for line in widget.inLines:
                 name2 = line.outWidget.caption
@@ -321,7 +328,7 @@ class SchemaDoc(QMainWindow):
                 for signal in line.signals:
                     links = links + "self.ow" + name + ".link(self.ow" + name2 + ", \"" + signal + "\")\n"+t+t
 
-            save = "self.ow" + name + ".saveSettings()\n"+t+t
+        buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"),a,SLOT(\"quit()\"))\n"+t+t
 
         classname = os.path.basename(appName)[:-3]
         classname = classname.replace(" ", "_")
@@ -331,22 +338,29 @@ class SchemaDoc(QMainWindow):
         QVBox.__init__(self,parent)
         self.setCaption("Orange Widgets Panes")
         self.setIcon(QPixmap("OrangeWidgetsIcon.gif"))
+        self.bottom=QHBox(self)"""
+
+        if asTabs == 1:
+            classinit += """
         self.tabs = QTabWidget(self, 'tabWidget')
-        self.bottom=QHBox(self)
-        self.resize(640,480)
-        exitButton=QPushButton("E&xit",self.bottom)"""
+        self.resize(640,480)"""
+        
 
         finish = """
 a=QApplication(sys.argv)
 ow=""" + classname + """()
 a.setMainWidget(ow)
-QObject.connect(a, SIGNAL('lastWindowClosed()'),ow.exit) 
+QObject.connect(a, SIGNAL('aboutToQuit()'),ow.exit) 
 ow.show()
 a.exec_loop()"""
 
         if save != "":
             save = t+"def exit(self):\n" +t+t+ save
-        whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instances + "\n\n"+t+t + tabs + "\n\n"+t+t + links + "\n\n" + save + "\n\n" + finish
+
+        if asTabs:
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + "\n\n"+t+t + tabs + "\n\n"+t+t + links + "\n\n" + save + "\n\n" + finish
+        else:
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t + buttons + "\n\n" +t+t+ buttonsConnect + "\n\n" +t+t + links + "\n\n" + save + "\n\n" + finish
         
         #save app
         fileApp = open(appName, "wt")

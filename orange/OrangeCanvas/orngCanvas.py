@@ -96,7 +96,8 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuFile.insertSeparator()
 		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
 		self.menuFile.insertItem( "&Save As..", self.menuItemSaveAs)
-		self.menuFile.insertItem( "&Save As Application", self.menuItemSaveAsApp)
+		self.menuFile.insertItem( "&Save As Application (Tabs)", self.menuItemSaveAsAppTabs)
+		self.menuFile.insertItem( "&Save As Application (Buttons)", self.menuItemSaveAsAppButtons)
 		self.menuFile.insertSeparator()
 		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
 		self.menuFile.insertSeparator()
@@ -175,9 +176,13 @@ class OrangeCanvasDlg(QMainWindow):
 		win = self.workspace.activeWindow()
 		win.saveDocumentAs()
 
-	def menuItemSaveAsApp(self):
+	def menuItemSaveAsAppButtons(self):
 		win = self.workspace.activeWindow()
-		win.saveDocumentAsApp()
+		win.saveDocumentAsApp(asTabs = 0)
+
+	def menuItemSaveAsAppTabs(self):
+		win = self.workspace.activeWindow()
+		win.saveDocumentAsApp(asTabs = 1)	
 
 	def menuItemPrinter(self):
 		win = self.workspace.activeWindow()
