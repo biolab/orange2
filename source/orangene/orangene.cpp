@@ -178,10 +178,10 @@ PyObject *HeatmapList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None")
 PyObject *HeatmapList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, &PyOrHeatmap_Type>::_sort(self, args); }
 
 
-bool initExceptions()
+bool initorangeneExceptions()
 { return true; }
 
-void gcUnsafeStaticInitialization()
+void gcorangeneUnsafeStaticInitialization()
 {}
 
 #include "px/initialization.px"
