@@ -63,6 +63,7 @@ class OWScatterPlot(OWWidget):
 
         # graph main tmp variables
         self.addInput("cdata")
+        self.addInput("view")
 
         self.setOptions()        
         
@@ -288,6 +289,7 @@ class OWScatterPlot(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         if data == None:
+            self.data = None
             self.repaint()
             return
         
@@ -295,9 +297,36 @@ class OWScatterPlot(OWWidget):
         self.initAttrValues()
         self.graph.setData(self.data)
         self.updateGraph()
-        
-        
+       
     #################################################
+
+    ####### VIEW ################################
+    # receive information about which attributes we want to show on x and y axis
+    def view(self, (attr1, attr2)):
+        if self.data == None:
+            return
+
+        ind1 = 0; ind2 = 0; classInd = 0
+        for i in range(self.attrX.count()):
+            if str(self.attrX.text(i)) == attr1: ind1 = i
+            if str(self.attrX.text(i)) == attr2: ind2 = i
+
+        for i in range(self.attrColor.count()):
+            if str(self.attrColor.text(i)) == self.data.domain.classVar.name: classInd = i
+
+        if ind1 == ind2 == classInd == 0:
+            print "no valid attributes found"
+            return    # something isn't right
+
+        self.attrX.setCurrentItem(ind1)
+        self.attrY.setCurrentItem(ind2)
+        self.attrColorCB.setChecked(1)
+        self.attrColor.setCurrentItem(classInd)
+        self.attrShapeCB.setChecked(0)
+        self.attrSizeShapeCB.setChecked(0)
+        self.updateGraph()       
+    #################################################
+
 
 #test widget appearance
 if __name__=="__main__":

@@ -15,8 +15,9 @@ class OWScatterPlotGraph(OWVisGraph):
         OWVisGraph.__init__(self, parent, name)
 
         self.jitterContinuous = 0
-        
         self.enabledLegend = 0
+        self.showFilledSymbols = 1
+        self.showAttributeValues = 1
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
@@ -26,6 +27,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
     def setShowFilledSymbols(self, filled):
         self.showFilledSymbols = filled
+
+    def setShowAttributeValues(self, show):
+        self.showAttributeValues = show
         
     #
     # scale data at index index to the interval 0 - 1
@@ -90,7 +94,7 @@ class OWScatterPlotGraph(OWVisGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, showColorLegend, statusBar):
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None):
         self.clear()
         self.enableLegend(0)
         self.statusBar = statusBar
@@ -118,6 +122,20 @@ class OWScatterPlotGraph(OWVisGraph):
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
+
+        if self.showAttributeValues == 0:
+            self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
+            self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+            scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
+            scaleDraw.setTickLength(1, 1, 0)
+            scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
+            scaleDraw.setTickLength(1, 1, 0)
+        else:
+            scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
+            scaleDraw.setTickLength(1, 1, 3)
+            scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
+            scaleDraw.setTickLength(1, 1, 3)
+            
         
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":

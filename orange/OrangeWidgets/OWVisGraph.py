@@ -28,6 +28,7 @@ class OWVisGraph(OWGraph):
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
 
+        self.blankClick = 0
         self.noneSymbol = QwtSymbol()
         self.noneSymbol.setStyle(QwtSymbol.None)
         self.tips = DynamicToolTipFloat()
@@ -281,6 +282,7 @@ class OWVisGraph(OWGraph):
             self.zooming = 0
         # fake a mouse move to show the cursor position
         self.onMouseMoved(e)
+        self.event(e)
 
     # onMousePressed()
 
@@ -297,6 +299,7 @@ class OWVisGraph(OWGraph):
             ymax = self.invTransform(QwtPlot.yLeft, ymax)
             if xmin == xmax or ymin == ymax:
                 return
+            self.blankClick = 0
             self.zoomStack.append(self.zoomState)
             self.zoomState = (xmin, xmax, ymin, ymax)
             self.enableOutline(0)
@@ -304,13 +307,13 @@ class OWVisGraph(OWGraph):
             if len(self.zoomStack):
                 xmin, xmax, ymin, ymax = self.zoomStack.pop()
             else:
+                self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
                 return
 
         self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
         self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
         self.replot()
-
-
+        self.event(e)
 
     def onMouseMoved(self, e):
         x = e.x()
@@ -333,3 +336,4 @@ class OWVisGraph(OWGraph):
             text = self.tips.maybeTip(fx,fy)
             self.statusBar.message(text)
         #print "fx = " + str(fx) + " ; fy = " + str(fy) + " ; text = " + text
+        self.event(e)
