@@ -424,7 +424,8 @@ int  TFloatVariable::noOfValues() const
 
 inline int getNumberOfDecimals(const char *vals)
 {
-  for(const char *valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')) && (*valsi!='.'); valsi++);
+  const char *valsi;
+  for(valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')) && (*valsi!='.'); valsi++);
   if (!*valsi)
     return -1;
 
