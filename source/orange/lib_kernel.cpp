@@ -1611,6 +1611,10 @@ bool readBoolFlag(PyObject *keywords, char *flag)
   return pyflag && PyObject_IsTrue(pyflag);
 }
 
+bool hasFlag(PyObject *keywords, char *flag)
+{
+  return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
+}
 
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore")
 
@@ -1619,8 +1623,10 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
   PyTRY
 
     char *filename = NULL;
-    if (PyArg_ParseTuple(argstuple, "|s", &filename))
-      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore")), type);
+    if (PyArg_ParseTuple(argstuple, "|s", &filename)) {
+      bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
+      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore")), type);
+    }
 
     PyErr_Clear();
 
