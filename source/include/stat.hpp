@@ -48,9 +48,10 @@ using namespace std;
 
 /* *********** AUXILIARY FUNCTIONS ************/
 
+#if _MSC_VER && _MSC_VER < 1300
 inline double abs(double x)
 { return fabs(x); }
-
+#endif
 
 template<class T>
 inline T sqr(const T &x) { return x*x; }
