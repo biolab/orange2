@@ -849,10 +849,10 @@ def computeLiftCurve(res, classIndex=-1):
         for (f, (thisNeg, thisPos)) in plist:
             TP += thisPos
             FP += thisNeg
-            curve.append( ((TP+FP)/(P + N), TP/P, (f, FP/N)) )
+            curve.append( ((TP+FP)/(P + N), TP, (f, FP/N)) )
         results.append(curve)
 
-    return results
+    return P, N, results
 ###
 
 class CDT:
