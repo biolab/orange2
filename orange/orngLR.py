@@ -109,14 +109,14 @@ def hasDiscreteValues(domain):
             return 1
     return 0
 
-def LogisticLearner(examples = None, weightID=0, **kwds):
-    lr = LogisticLearnerClass(**kwds)
+def LogRegLearner(examples = None, weightID=0, **kwds):
+    lr = LogRegLearnerClass(**kwds)
     if examples:
         return lr(examples, weightID)
     else:
         return lr
 
-class LogisticLearnerClass:
+class LogRegLearnerClass:
     def __init__(self, removeSingular=0, **kwds):
         self.__dict__ = kwds
         print removeSingular
@@ -132,7 +132,7 @@ class LogisticLearnerClass:
         print " n data = " + str(len(nexamples))
         print self.removeSingular
         print examples.domain
-        learner = orange.LogisticLearner()
+        learner = orange.LogRegLearner()
 
         #if self.fitter:
             #learner.fitter = self.fitter
@@ -162,8 +162,8 @@ class Univariate_LogRegLearner_Class:
 
     def __call__(self, examples):
         examples = createFullNoDiscTable(examples)
-        classifiers = map(lambda x: LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(x, examples.domain.classVar)))), examples.domain.attributes)
-        maj_classifier = LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(examples.domain.classVar))))
+        classifiers = map(lambda x: LogRegLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(x, examples.domain.classVar)))), examples.domain.attributes)
+        maj_classifier = LogRegLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(examples.domain.classVar))))
         beta = [maj_classifier.beta[0]] + [x.beta[1] for x in classifiers]
         beta_se = [maj_classifier.beta_se[0]] + [x.beta_se[1] for x in classifiers]
         P = [maj_classifier.P[0]] + [x.P[1] for x in classifiers]
@@ -187,7 +187,7 @@ class Univariate_LogRegClassifier:
 
 
 ######################################
-#### Fitters for logistic learner ####
+#### Fitters for logistic regression (logreg) learner ####
 ######################################
 
 def Pr(x, betas):
@@ -197,7 +197,7 @@ def Pr(x, betas):
 def lh(x,y,betas):
     return 0
 
-class simpleFitter(orange.LogisticFitter):
+class simpleFitter(orange.LogRegFitter):
     def __init__(self, penalty=0):
         self.penalty = penalty
     def __call__(self, data, weight=0):
@@ -306,7 +306,7 @@ class StepWiseFSS_class:
     tempDomain = orange.Domain(attr,examples.domain.classVar)
     tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
 
-    ll_Old = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+    ll_Old = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
     length_Old = len(tempData)
 
     stop = 0
@@ -326,7 +326,7 @@ class StepWiseFSS_class:
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
                 # domain, calculate P for LL improvement.
                 tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
-                ll_Delete = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+                ll_Delete = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
                 length_Delete = len(tempData)
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
                 length_Avg = (length_Delete + length_Old)/2.0
@@ -376,7 +376,7 @@ class StepWiseFSS_class:
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
             # domain, calculate P for LL improvement.
             tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
-            ll_New = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
+            ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
 
             length_New = len(tempData) # get number of examples in tempData to normalize likelihood
 
