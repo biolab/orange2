@@ -223,13 +223,23 @@ class OWParallelCoordinates(OWWidget):
     # set attribute list
     def setShownAttributeList(self, data):
         self.shownAttribsLB.clear()
-        
+
         if self.attrOrder == "None":
             for item in data.domain:
                 self.shownAttribsLB.insertItem(item.name)
             return
-        elif self.attrOrder == "RelieF":
+
+        self.shownAttribsLB.insertItem(data.domain.classVar.name)
+                
+        if self.attrOrder == "RelieF":
             measure = orange.MeasureAttribute_relief(k=20, m=50)
+            newAttrs = orngFSS.attMeasure(data, measure)
+            for item in newAttrs:
+                if float(item[1]) > 0.01:
+                    self.shownAttribsLB.insertItem(item[0])
+                else:
+                    self.hiddenAttribsLB.insertItem(item[0])
+                
         elif self.attrOrder == "GainRatio":
             measure = orange.MeasureAttribute_gainRatio()
         elif self.attrOrder == 'Gini':
@@ -237,11 +247,7 @@ class OWParallelCoordinates(OWWidget):
         else:
             print "Incorrect value for attribute order"
             return
-
-        self.shownAttribsLB.insertItem(data.domain.classVar.name)
-        newAttrs = orngFSS.attMeasure(data, measure)
-        for item in newAttrs:
-            self.shownAttribsLB.insertItem(item[0])
+        
         
     def getShownAttributeList (self):
         list = []

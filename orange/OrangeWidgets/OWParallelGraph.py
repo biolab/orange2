@@ -21,7 +21,7 @@ class subBarQwtPlotCurve(QwtPlotCurve):
         p.setBackgroundMode(Qt.OpaqueMode)
         p.setBackgroundColor(self.color)
         p.setBrush(self.color)
-        p.setPen(self.color)
+        p.setPen(Qt.black)
         if t < 0: t = self.dataSize() - 1
         if divmod(f, 2)[1] != 0: f -= 1
         if divmod(t, 2)[1] == 0:  t += 1
@@ -48,7 +48,7 @@ class DiscreteAxisScaleDraw(QwtScaleDraw):
 class OWParallelGraph(QwtPlot):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
-        QwtPlot.__init__(self, parent, name)
+        QwtPlot.__init__(self, 10007, parent, name)
         self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
         self.scaledData = []
@@ -226,12 +226,6 @@ class OWParallelGraph(QwtPlot):
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
-        # draw vertical lines that represent attributes
-        for i in range(len(labels)):
-            newCurveKey = self.insertCurve(labels[i])
-            self.axesKeys.append(newCurveKey)
-            self.setCurveData(newCurveKey, [i,i], [0,1])
-        
         length = len(labels)
         indices = []
         xs = []
@@ -262,6 +256,12 @@ class OWParallelGraph(QwtPlot):
             for index in indices:
                 ys.append(self.scaledData[index][i])
             self.setCurveData(newCurveKey, xs, ys)
+
+        # draw vertical lines that represent attributes
+        for i in range(len(labels)):
+            newCurveKey = self.insertCurve(labels[i])
+            self.axesKeys.append(newCurveKey)
+            self.setCurveData(newCurveKey, [i,i], [0,1])
 
         # do we want to show distributions with discrete attributes
         if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.data.domain[className].varType == orange.VarTypes.Discrete:
