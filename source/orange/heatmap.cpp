@@ -314,7 +314,8 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     if (!haveBase) {
       if (!nClasses)
         classBoundaries.push_back(0);
-      classBoundaries.push_back(floatMap.size());
+      for(; pcl<nClasses; pcl++)
+        classBoundaries.push_back(floatMap.size());
     }
   }
   catch (...) {
