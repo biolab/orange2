@@ -27,6 +27,8 @@ class OWScatterPlotGraph(OWGraph):
         self.scaledData = []
         self.scaledDataAttributes = []
         self.jitteringType = 'none'
+        self.jitterContinuous = 0
+        self.jitterSize = 1
         self.graphCanvasColor = str(Qt.white.name())
 
         self.enableGridX(FALSE)
@@ -45,7 +47,12 @@ class OWScatterPlotGraph(OWGraph):
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
-    
+
+    def setJitterContinuous(self, enable):
+        self.jitterContinuous = enable
+
+    def setJitterSize(self, size):
+        self.jitterSize = size
     #
     # scale data at index index to the interval 0 - 1
     #
@@ -130,8 +137,8 @@ class OWScatterPlotGraph(OWGraph):
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
         
-        self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.05*xVar, xVarMax + 0.05*xVar, 1)
-        self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.05*yVar, yVarMax + 0.05*yVar, 1)
+        self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0), 1)
+        self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
 
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
@@ -173,11 +180,19 @@ class OWScatterPlotGraph(OWGraph):
 
         self.curveKeys = []
         for i in range(len(self.rawdata)):
-            if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(0.01 * xVar)
-            else:              x = self.rawdata[i][xAttr].value + self.rndCorrection(0.01 * xVar)
+            if discreteX == 1:
+                x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+            elif self.jitterContinuous == 1:
+                x = self.rawdata[i][xAttr].value + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+            else:
+                x = self.rawdata[i][xAttr].value
 
-            if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(0.01 * yVar)
-            else:              y = self.rawdata[i][yAttr].value + self.rndCorrection(0.01 * yVar)
+            if discreteY == 1:
+                y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+            elif self.jitterContinuous == 1:
+                y = self.rawdata[i][yAttr].value + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+            else:
+                y = self.rawdata[i][yAttr].value
 
             newColor = QColor(0,0,0)
             if colorIndex != -1:
@@ -197,6 +212,7 @@ class OWScatterPlotGraph(OWGraph):
             self.setCurveData(newCurveKey, [x], [y])
             self.curveKeys.append(newCurveKey)
 
+        # show legend if necessary
         self.enableLegend(0)
         if self.enabledLegend == 1:
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:

@@ -337,7 +337,6 @@ class SchemaDoc(QMainWindow):
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
         self.setCaption("Orange Widgets Panes")
-        self.setIcon(QPixmap("OrangeWidgetsIcon.gif"))
         self.bottom=QHBox(self)"""
 
         if asTabs == 1:

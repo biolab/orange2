@@ -33,7 +33,7 @@ class OWWidget(QWidget):
             logo - the logo file
             parent - parent of the widget if needed
         """
-        icon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
+        fullIcon = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + icon
         logo = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/icons/" + logo
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.title=title.replace("&","")
@@ -52,9 +52,9 @@ class OWWidget(QWidget):
         self.enabled=TRUE
         #the title
         self.setCaption(self.title)
-        self.setIcon(QPixmap(icon))
+        self.setIcon(QPixmap(fullIcon))
         #about box
-        self.about=OWAboutX(title,description,icon,logo)
+        self.about=OWAboutX(title,description,fullIcon,logo)
         self.buttonBackground=QVBox(self)
         self.aboutButton=QPushButton("&About",self.buttonBackground)
         if wantSettings:

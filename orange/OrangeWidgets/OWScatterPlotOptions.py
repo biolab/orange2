@@ -23,13 +23,21 @@ class OWScatterPlotOptions(OWOptions):
 
         #####
         # jittering
-        self.spreadButtons = QVButtonGroup("Jittering type", self.top)
-        QToolTip.add(self.spreadButtons, "Selected the type of jittering for discrete variables")
-        self.spreadButtons.setExclusive(TRUE)
-        self.spreadNone = QRadioButton('none', self.spreadButtons)
-        self.spreadUniform = QRadioButton('uniform', self.spreadButtons)
-        self.spreadTriangle = QRadioButton('triangle', self.spreadButtons)
-        self.spreadBeta = QRadioButton('beta', self.spreadButtons)
+        self.jitteringButtons = QVButtonGroup("Jittering type", self.top)
+        QToolTip.add(self.jitteringButtons, "Selected the type of jittering for discrete variables")
+        self.jitteringButtons.setExclusive(TRUE)
+        self.spreadNone = QRadioButton('none', self.jitteringButtons)
+        self.spreadUniform = QRadioButton('uniform', self.jitteringButtons)
+        self.spreadTriangle = QRadioButton('triangle', self.jitteringButtons)
+        self.spreadBeta = QRadioButton('beta', self.jitteringButtons)
+
+        self.jitteringOptionsBG = QVButtonGroup("Jittering options", self.top)
+
+        self.hbox = QHBox(self.jitteringOptionsBG, "jittering size")
+        self.jitterLabel = QLabel('Jittering size (% of size)', self.hbox)
+        self.jitterSize = QComboBox(self.hbox)
+
+        self.jitterContinuous = QCheckBox('jitter continuous attributes', self.jitteringOptionsBG)        
 
 
         #####

@@ -26,9 +26,11 @@ import orngCI
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "jitteringType", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
+        self.jitterSizeList = ['0.1','0.5','1','2','5','10']
+        self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10]
         OWWidget.__init__(self,
         parent,
         "ScatterPlot",
@@ -44,6 +46,8 @@ class OWScatterPlot(OWWidget):
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
         self.showLegend = 0
+        self.jitterContinuous = 0
+        self.jitterSize = 1
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
 
@@ -70,12 +74,14 @@ class OWScatterPlot(OWWidget):
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)        
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
-        self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
+        self.connect(self.options.jitteringButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.gSetXaxisCB, SIGNAL("toggled(bool)"), self.updateSettings)
         self.connect(self.options.gSetYaxisCB, SIGNAL("toggled(bool)"), self.updateSettings)
         self.connect(self.options.gSetVgridCB, SIGNAL("toggled(bool)"), self.setVGrid)
         self.connect(self.options.gSetHgridCB, SIGNAL("toggled(bool)"), self.setHGrid)
         self.connect(self.options.gSetLegendCB, SIGNAL("toggled(bool)"), self.updateSettings)
+        self.connect(self.options.jitterContinuous, SIGNAL("toggled(bool)"), self.updateSettings)
+        self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options, PYSIGNAL("gridColorChange(QColor &)"), self.setGridColor)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
@@ -112,7 +118,7 @@ class OWScatterPlot(OWWidget):
     # OPTIONS
     # #########################
     def setOptions(self):
-        self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
+        self.options.jitteringButtons.setButton(self.spreadType.index(self.jitteringType))
         self.options.gSetXaxisCB.setChecked(self.showXAxisTitle)
         self.options.gSetYaxisCB.setChecked(self.showYAxisTitle)
         self.options.gSetVgridCB.setChecked(self.showVerticalGridlines)
@@ -120,6 +126,11 @@ class OWScatterPlot(OWWidget):
         self.options.gSetLegendCB.setChecked(self.showLegend)
         self.options.gSetGridColor.setNamedColor(str(self.graphGridColor))
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
+
+        self.options.jitterContinuous.setChecked(self.jitterContinuous)
+        for i in range(len(self.jitterSizeList)):
+            self.options.jitterSize.insertItem(self.jitterSizeList[i])
+        self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
 
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
@@ -133,6 +144,8 @@ class OWScatterPlot(OWWidget):
         self.graph.setGridColor(self.options.gSetGridColor)
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setPointWidth(self.pointWidth)
+        self.graph.setJitterContinuous(self.jitterContinuous)
+        self.graph.setJitterSize(self.jitterSize)
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -144,6 +157,12 @@ class OWScatterPlot(OWWidget):
         self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
+        self.updateGraph()
+
+    # jittering options
+    def setJitteringSize(self, n):
+        self.jitterSize = self.jitterSizeNums[n]
+        self.graph.setJitterSize(self.jitterSize)
         self.updateGraph()
 
     def setCanvasColor(self, c):
@@ -209,7 +228,8 @@ class OWScatterPlot(OWWidget):
         if len(contList) >= 2:
             self.setText(self.attrY, contList[1])
             
-        self.setText(self.attrColor, self.data.domain.classVar)
+        self.setText(self.attrColor, self.data.domain.classVar.name)
+        self.attrColorCB.setChecked(1)
         self.setText(self.attrShape, "(One shape)")
         self.setText(self.attrSizeShape, "(One size)")
         
@@ -222,15 +242,20 @@ class OWScatterPlot(OWWidget):
 
     def updateSettings(self):
         self.showXAxisTitle = self.options.gSetXaxisCB.isOn()
-        self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.showYAxisTitle = self.options.gSetYaxisCB.isOn()
-        self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.showVerticalGridlines = self.options.gSetVgridCB.isOn()
-        self.graph.enableGridXB(self.showVerticalGridlines)
         self.showHorizontalGridlines = self.options.gSetHgridCB.isOn()
-        self.graph.enableGridYL(self.showHorizontalGridlines)
         self.showLegend = self.options.gSetLegendCB.isOn()
+        self.jitterContinuous = self.options.jitterContinuous.isOn()
+        self.jitterSize = self.jitterSizeNums[self.jitterSizeList.index(str(self.options.jitterSize.currentText()))]
+        
+        self.graph.setShowXaxisTitle(self.showXAxisTitle)
+        self.graph.setShowYLaxisTitle(self.showYAxisTitle)
+        self.graph.enableGridXB(self.showVerticalGridlines)
+        self.graph.enableGridYL(self.showHorizontalGridlines)
         self.graph.enableGraphLegend(self.showLegend)
+        self.graph.setJitterContinuous(self.jitterContinuous)
+        self.graph.setJitterSize(self.jitterSize)
 
         if self.data != None:
             self.updateGraph()
