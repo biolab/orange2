@@ -132,7 +132,7 @@ def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.
         master.connect(slider, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
 
 import math
-def qwtHSlider(widget, master, value, box=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
+def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
     init = getattr(master, value)
     if box:
         sliderBox = QHButtonGroup(box, widget)
@@ -140,6 +140,10 @@ def qwtHSlider(widget, master, value, box=None, minValue=1, maxValue=10, step=0.
         sliderBox = widget
 
     hb = QHBox(sliderBox)
+    if label:
+        lbl = QLabel(label, hb)
+        if labelWidth:
+            lbl.setFixedSize(labelWidth, lbl.sizeHint().height())
     if ticks:
         slider = qwt.QwtSlider(hb, "", Qt.Horizontal, qwt.QwtSlider.Bottom, qwt.QwtSlider.BgSlot)
     else:
@@ -158,22 +162,24 @@ def qwtHSlider(widget, master, value, box=None, minValue=1, maxValue=10, step=0.
         
     format = "%s%d.%df" % ("%", precision+3, precision)
     
-    label = QLabel(hb)
-    label.setText(format % minValue)
-    width1 = label.sizeHint().width()
-    label.setText(format % maxValue)
-    width2 = label.sizeHint().width()
-    label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    label.setText(format % init)
+    lbl = QLabel(hb)
+    lbl.setText(format % minValue)
+    width1 = lbl.sizeHint().width()
+    lbl.setText(format % maxValue)
+    width2 = lbl.sizeHint().width()
+    lbl.setFixedSize(max(width1, width2), lbl.sizeHint().height())
+    lbl.setText(format % init)
 
     if logarithmic:    
         master.connect(slider, SIGNAL("valueChanged(double)"), ValueCallback(master, value, f=lambda x: 10**x))
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, label, format=format, f=lambda x: 10**x))
+        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format, f=lambda x: 10**x))
     else:
         master.connect(slider, SIGNAL("valueChanged(double)"), ValueCallback(master, value))
-        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, label, format=format))
+        master.connect(slider, SIGNAL("valueChanged(double)"), SetLabelCallback(master, lbl, format=format))
     if callback:
         master.connect(slider, SIGNAL("valueChanged(double)"), FunctionCallback(master, callback))
+    slider.box = hb
+    return slider
 
 def comboBox(widget, master, value, label=None, items=None, tooltip=None, callback=None):
     box = QHGroupBox(label, widget)
