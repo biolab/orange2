@@ -94,7 +94,9 @@ bool readCostMatrix(PyObject *arg, TCostMatrix *&matrix)
   if (!iter)
     PYERROR(PyExc_TypeError, "sequence expected", false);
 
-  for(int i = 0; i<dim; i++) {
+  int i, j;
+
+  for(i = 0; i<dim; i++) {
     PyObject *item = PyIter_Next(iter);
     if (!item) {
       PyErr_Format(PyExc_TypeError, "matrix is too short (%i rows expected)", dim);
@@ -109,7 +111,7 @@ bool readCostMatrix(PyObject *arg, TCostMatrix *&matrix)
       break;
     }
 
-    for(int j = 0; j<dim; j++) {
+    for(j = 0; j<dim; j++) {
       PyObject *subitem = PyIter_Next(subiter);
       if (!subitem) {
         PyErr_Format(PyExc_TypeError, "element %i is too short (sequence with %i elements expected)", i, dim);
