@@ -227,7 +227,7 @@ void addNoise(const int &index, const float &proportion, TMakeRandomIndicesN &mr
   TLongList::const_iterator ri(rind->begin());
   PEITERATE(ei, table) {
     if (*ri < nvals)
-        (*ei)[index] = TValue(*ri);
+        (*ei)[index] = TValue(int(*ri));
     ri++;
   }
 }

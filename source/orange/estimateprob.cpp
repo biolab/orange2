@@ -107,11 +107,20 @@ PProbabilityEstimator TProbabilityEstimatorConstructor_Laplace::operator()(PDist
   
   TDiscDistribution *ddist = pefd->probabilities.AS(TDiscDistribution);
   if (ddist) {
+    const float &abs = ddist->abs;
+    const float &cases = ddist->cases;
+    const float div = ddist->cases + ddist->noOfElements();
     int i = 0;
-    float absk = ddist->abs + ddist->noOfElements();
-    if (absk)
-      PITERATE(TDiscDistribution, di, ddist)
-        ddist->setint(i++, (*di+1.0)/absk);
+    if (div) {
+      if (cases == abs)
+        PITERATE(TDiscDistribution, di, ddist)
+          ddist->setint(i++, (*di + 1.0) / div);
+      else
+        PITERATE(TDiscDistribution, di, ddist)
+          ddist->setint(i++, (*di * cases + abs) / div);
+    }
+    else
+      pefd->probabilities->normalize();
   }
   else
     pefd->probabilities->normalize();

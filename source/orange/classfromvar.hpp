@@ -41,6 +41,11 @@ public:
   TClassifierFromVar(const TClassifierFromVar &);
 
   virtual TValue operator ()(const TExample &);
+
+protected:
+  int lastDomainVersion;
+  PVariable lastWhichVar;
+  int position;
 };
 
 

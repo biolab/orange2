@@ -187,6 +187,8 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
           *result /= distribution;
         }
       }
+
+      result->normalize();
     }
     if (dciOK)
       dci++;
@@ -202,9 +204,6 @@ PDistribution TBayesClassifier::classDistribution(const TExample &origexam)
     for(TDiscDistribution::iterator di(result->begin()), de(result->end()); di != de; di++)
       *di = (*di==numeric_limits<float>::infinity()) ? 1.0 : 0.0;
   }
-  else
-    if (normalizePredictions)
-      result->normalize();
 
   return wresult;
 }

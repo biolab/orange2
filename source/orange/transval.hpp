@@ -32,7 +32,7 @@ WRAPPER(TransformValue);
     the transformed value without replacing the original. Transformations can be chained. */
 class TTransformValue : public TOrange {
 public:
-  __REGISTER_CLASS
+  __REGISTER_ABSTRACT_CLASS
 
   PTransformValue subTransform; //P transformation executed prior to this
 
@@ -41,7 +41,7 @@ public:
 
   TValue operator()(const TValue &val);
 
-  virtual void transform(TValue &val);
+  virtual void transform(TValue &val) =0;
 };
 
 #endif

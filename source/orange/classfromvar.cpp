@@ -40,24 +40,24 @@ inline TValue processValue(PTransformValue &transformer, const TValue &val, cons
     else
       return val;
   }
-  if (transformer)
-    return transformer->call(val);
-  else
-    return val;
+
+  return transformer ? transformer->call(val) : val;
 }
 
 
 TClassifierFromVar::TClassifierFromVar(PVariable acv, PDistribution dun)
 : TClassifier(acv),
   whichVar(acv),
-  distributionForUnknown(dun)
+  distributionForUnknown(dun),
+  lastDomainVersion(-1)
 {}
 
 
 TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDistribution dun)
 : TClassifier(acv),
   whichVar(awhichVar),
-  distributionForUnknown(dun)
+  distributionForUnknown(dun),
+  lastDomainVersion(-1)
 {}
 
 
@@ -65,19 +65,28 @@ TClassifierFromVar::TClassifierFromVar(const TClassifierFromVar &old)
 : TClassifier(old),
   whichVar(old.whichVar),
   transformer(old.transformer),
-  distributionForUnknown(old.distributionForUnknown)
+  distributionForUnknown(old.distributionForUnknown),
+  lastDomainVersion(-1)
 {};
 
 
 TValue TClassifierFromVar::operator ()(const TExample &example)
-{ checkProperty(whichVar);
+{ 
+  if ((lastDomainVersion != example.domain->version) || (lastWhichVar != whichVar)) {
+    checkProperty(whichVar);
 
-  TExample::const_iterator val = example.begin();
+    lastDomainVersion = -1;
+    lastWhichVar = whichVar;
+    position = 0;
 
-  TVarList::const_iterator vi(example.domain->variables->begin()), ei(example.domain->variables->end());
-  for(; (vi!=ei) && (*vi!=whichVar); vi++, val++);
-  if (vi!=ei)
-    return processValue(transformer, *val, distributionForUnknown);
+    TVarList::const_iterator vi(example.domain->variables->begin()), ei(example.domain->variables->end());
+    for(; (vi!=ei) && (*vi!=whichVar); vi++, position++);
+    if (vi==ei)
+      position = -1;
+  }
+
+  if (position>=0)
+    return processValue(transformer, example[position], distributionForUnknown);
 
   TMetaVector::const_iterator mi(example.domain->metas.begin()), me(example.domain->metas.end());
   for( ; (mi!=me) && ((*mi).variable!=whichVar); mi++);

@@ -36,6 +36,14 @@ public:
 };
 
 
+#include "transval.hpp"
+class TTransformValue_Python : public TTransformValue {
+public:
+  __REGISTER_CLASS
+  void transform(TValue &);
+};
+
+
 #include "measures.hpp"
 class TMeasureAttribute_Python : public TMeasureAttribute {
 public:

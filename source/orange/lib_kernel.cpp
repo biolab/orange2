@@ -2079,11 +2079,23 @@ PyObject *ExampleTable_changeDomain(TPyOrange *self, PyObject *args) PYARGS(METH
 /* ************ TRANSFORMVALUE ************ */
 
 #include "transval.hpp"
-C_NAMED(TransformValue, Orange, "([subTransform=])")
+BASED_ON(TransformValue, Orange)
+
+PyObject *TransformValue_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrTransformValue_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TTransformValue_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TTransformValue_Python(), type);
+}
 
 
 PyObject *TransformValue_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(value) -> Value")
 { PyTRY
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrTransformValue_Type) {
+      PyErr_Format(PyExc_SystemError, "TransformValue.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
     SETATTRIBUTES
 
     CAST_TO(TTransformValue, tv)

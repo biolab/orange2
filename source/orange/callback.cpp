@@ -86,6 +86,18 @@ bool TFilter_Python::operator()(const TExample &ex)
 }
 
 
+void TTransformValue_Python::transform(TValue &val)
+{
+  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(N)", Value_FromValue(val)));
+
+  PVariable var;
+  bool succ = convertFromPython(result, val, var);
+  Py_DECREF(result);
+
+  if (!succ)
+    raiseError("TransformValue.__call__'s result cannot be converted to a Value");
+}
+
 
 TMeasureAttribute_Python::TMeasureAttribute_Python()
 : TMeasureAttribute(TMeasureAttribute::DomainContingency, true, true)

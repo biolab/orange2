@@ -109,6 +109,10 @@ SOURCE=.\include\primes.c
 
 SOURCE=.\include\statexceptions.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\include\strings.cpp
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -140,6 +144,10 @@ SOURCE=.\include\statexceptions.hpp
 # Begin Source File
 
 SOURCE=.\include\stladdon.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\strings.hpp
 # End Source File
 # End Group
 # End Target
