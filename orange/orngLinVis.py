@@ -326,7 +326,10 @@ class _parseSVM(_parseLR):
         
         beta = classifier.model["rho"][0]
         svs = classifier.model["SV"]
-        xcoeffs = [0.0]*(len(svs[0])-1)
+        ll = -1
+        for i in xrange(classifier.model["total_sv"]):
+            ll = max(ll,svs[i][-1][0])
+        xcoeffs = [0.0]*(ll)
         for i in xrange(classifier.model["total_sv"]):
             csv = svs[i]
             coef = csv[0][0]
