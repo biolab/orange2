@@ -511,7 +511,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
         from --;
 
     /* Extend the interval; we set from to highedge when it would go beyond lowedge, to indicate that only to can be modified now */
-    while (needpoints) {
+    while (needpoints>0) {
       if ((to == highedge) || ((from != highedge) && (refx - (*from).first < (*to).first - refx))) {
         if (from == lowedge)
           from = highedge;
