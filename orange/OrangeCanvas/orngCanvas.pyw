@@ -549,6 +549,7 @@ class OrangeCanvasDlg(QMainWindow):
         #dlg.catchExceptionCB.setChecked(self.settings["catchException"])
         dlg.focusOnCatchExceptionCB.setChecked(self.settings["focusOnCatchException"])
         dlg.printExceptionInStatusBarCB.setChecked(self.settings["printExceptionInStatusBar"])
+        dlg.showSignalNamesCB.setChecked(self.settings["showSignalNames"])
         #dlg.catchOutputCB.setChecked(self.settings["catchOutput"])
         dlg.focusOnCatchOutputCB.setChecked(self.settings["focusOnCatchOutput"])
         dlg.printOutputInStatusBarCB.setChecked(self.settings["printOutputInStatusBar"])
@@ -596,6 +597,15 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["writeLogFile"] = dlg.writeLogFileCB.isChecked()
             self.settings["canvasHeight"] = int(str(dlg.heightEdit.text()))
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
+            self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
+
+            # update tooltips for lines in all documents
+            show = dlg.showSignalNamesCB.isChecked()
+            for doc in self.workspace.getDocumentList():
+                for line in doc.lines:
+                    line.showSignalNames = show
+                    line.updateTooltip()
+                
             #self.output.catchException(self.settings["catchException"])
             #self.output.catchOutput(self.settings["catchOutput"])
             self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
@@ -648,6 +658,7 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("focusOnCatchOutput"): self.settings["focusOnCatchOutput"] = 0
         if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 1
         if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
+        if not self.settings.has_key("showSignalNames"): self.settings["showSignalNames"] = 0
                 
 
     # Saves settings to this widget's .ini file

@@ -78,6 +78,14 @@ class CanvasLine(QCanvasLine):
         self.setPoints(outPoint.x(), outPoint.y(), inPoint.x(), inPoint.y())
         self.setPen(QPen(QColor("green"), 5, Qt.SolidLine))
         self.tooltipRects = []
+
+        self.showSignalNames = canvasDlg.settings["showSignalNames"]
+        self.text = QCanvasText("", canvas)
+        self.text.setZ(-5)
+        self.text.show()
+        self.text.show()
+        self.text.setTextFlags(Qt.AlignHCenter + Qt.AlignBottom)
+        self.text.setColor(QColor(100,100,100))
         
     def remove(self):
         self.hide()
@@ -177,6 +185,7 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY-1), QPoint(endX, endY-1))
             painter.setPen(QPen(QColor(self.colors[2]), 2*fact, lineStyle))
             painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
+
         
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
@@ -185,6 +194,7 @@ class CanvasLine(QCanvasLine):
         x2 = self.inWidget.x() + 2
         y2 = self.inWidget.y() + 26
         self.setPoints(x1, y1, x2, y2)
+        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+10)/2.0)
         self.updateTooltip()
 
     # redraw the line
@@ -204,8 +214,7 @@ class CanvasLine(QCanvasLine):
         p2 = self.endPoint()
 
         string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
-        for i in range(len(self.signals)):
-            (outSignal, inSignal) = self.signals[i]
+        for (outSignal, inSignal) in self.signals:
             string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
 
         xDiff = p2.x() - p1.x()
@@ -221,6 +230,13 @@ class CanvasLine(QCanvasLine):
             self.tooltipRects.append(rect)
             QToolTip.add(self.view, rect, string)
 
+        # print the text with the signals
+        caption = ""
+        if self.showSignalNames:
+            for (outSignal, inSignal) in self.signals:
+                caption += outSignal + "\n"
+        self.text.setText(caption)
+        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+10)/2.0)
 
     # we need this to separate line objects and widget objects
     def rtti(self):

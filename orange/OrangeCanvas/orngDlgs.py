@@ -435,6 +435,7 @@ class CanvasOptionsDlg(QDialog):
         self.snapToGridCB = QCheckBox("Snap widgets to grid", GeneralTab)
         self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", GeneralTab)
+        self.showSignalNamesCB = QCheckBox("Show signal names between widgets", GeneralTab)
 
         canvasSizeBox = QVGroupBox(GeneralTab)
         canvasSizeBox.setTitle("Orange Canvas size")
