@@ -216,8 +216,6 @@ public:
 
 WRAPPER(ExampleTable);
 
-#define UNKNOWN_F -1e30f
-
 THeatmap::THeatmap(const int &h, const int &w, PExampleTable ex)
 : cells(new float [h*w]),
   averages(new float [h]),

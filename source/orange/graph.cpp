@@ -161,8 +161,18 @@ void TGraphAsMatrix::getNeighbours(const int &v, vector<int> &neighbours)
 void TGraphAsMatrix::getNeighboursFrom(const int &v, vector<int> &neighbours)
 {
   GN_INIT
+  getNeighboursFrom_Single(v, neighbours);
   int v2 = 0, ne;
   for(float *swe, *weights = edges + nEdgeTypes * v * nVertices; v2 < nVertices; weights += nEdgeTypes, v2++)
+    CHECK_NONEMPTY(weights)
+}
+
+
+void TGraphAsMatrix::getNeighboursFrom_Single(const int &v, vector<int> &neighbours)
+{
+  neighbours.clear();
+  int v2 = 0, ne;
+  for(float *swe, *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)); v2 <= v; weights += nEdgeTypes, v2++)
     CHECK_NONEMPTY(weights)
 }
 
@@ -219,6 +229,15 @@ void TGraphAsMatrix::getNeighboursFrom(const int &v, const int &edgeType, vector
   GN_INIT_EDGETYPE
   int v2 = 0;
   for(float *weights = edges + nEdgeTypes * v * nVertices + edgeType; v2 < nVertices; weights += nEdgeTypes, v2++)
+    CHECK_EDGE(weights)
+}
+
+
+void TGraphAsMatrix::getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &neighbours)
+{
+  neighbours.clear();
+  int v2 = 0;
+  for(float *weights = edges + nEdgeTypes * (directed ? (v * nVertices) : ((v*(v+1)) >> 1)) + edgeType; v2 <=v; weights += nEdgeTypes, v2++)
     CHECK_EDGE(weights)
 }
 
@@ -378,6 +397,13 @@ void TGraphAsList::getNeighbours(const int &v, vector<int> &neighbours)
 void TGraphAsList::getNeighboursFrom(const int &v, vector<int> &neighbours)
 {
   GN_INIT
+  getNeighboursFrom_Single(v, neighbours);
+}
+
+
+void TGraphAsList::getNeighboursFrom_Single(const int &v, vector<int> &neighbours)
+{
+  neighbours.clear();
   for(TEdge *e = edges[v]; e; e = e->next)
     neighbours.push_back(e->vertex);
 }
@@ -437,6 +463,13 @@ void TGraphAsList::getNeighbours(const int &v, const int &edgeType, vector<int> 
 void TGraphAsList::getNeighboursFrom(const int &v, const int &edgeType, vector<int> &neighbours)
 {
   GN_INIT_EDGETYPE
+  getNeighboursFrom_Single(v, edgeType, neighbours);
+}
+
+
+void TGraphAsList::getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &neighbours)
+{
+  neighbours.clear();
   for(TEdge *e = edges[v]; e; e = e->next)
     CHECK_EDGE(e, e->vertex)
 }
@@ -906,6 +939,13 @@ void TGraphAsTree::getNeighbours(const int &v, vector<int> &neighbours)
 void TGraphAsTree::getNeighboursFrom(const int &v, vector<int> &neighbours)
 {
   GN_INIT
+  getNeighboursFrom_Single(v, neighbours);
+}
+
+
+void TGraphAsTree::getNeighboursFrom_Single(const int &v, vector<int> &neighbours)
+{
+  neighbours.clear();
   if (edges[v])
     getNeighbours_fromTree(edges[v], neighbours);
 }
@@ -989,7 +1029,13 @@ void TGraphAsTree::getNeighbours(const int &v, const int &edgeType, vector<int> 
 void TGraphAsTree::getNeighboursFrom(const int &v, const int &edgeType, vector<int> &neighbours)
 {
   GN_INIT_EDGETYPE
+  getNeighboursFrom_Single(v, edgeType, neighbours);
+}
 
+
+void TGraphAsTree::getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &neighbours)
+{
+  neighbours.clear();
   if (edges[v])
     getNeighbours_fromTree(edges[v], edgeType, neighbours);
 }

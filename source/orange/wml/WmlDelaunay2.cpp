@@ -634,20 +634,6 @@ void Delaunay2<Real>::ComputeInscribedCenter (const Vector2<Real>& rkV0,
 }
 //----------------------------------------------------------------------------
 
-template <class Real>
-void Delaunay2<Real>::ComputeClassBoundaries ()
-{
-	m_iBoundaryEdgeQuantity = 0;
-    m_aiBoundaryEdge = new Edge[3*m_iTriangleQuantity];
-	for (i=0; i < GetEdgeQuantity(); i++)
-	{
-		if m_akEdge[i].m_aiVertex[0] <> m_akEdge[i].m_aiVertex[1]
-		{
-			m_aiBoundaryEdge[m_iBoundaryEdgeQuantity] = i
-		}
-	}
-}
-
 //----------------------------------------------------------------------------
 // explicit instantiation
 //----------------------------------------------------------------------------

@@ -49,8 +49,6 @@ public:
     Real GetYMax () const;
     Real GetYRange () const;
 
-	void ComputeClassBoundaries();
-
 
     // edges
     class WML_ITEM Edge
@@ -66,8 +64,6 @@ public:
     int GetEdgeQuantity () const;
     const Edge& GetEdge (int i) const;
     const Edge* GetEdges () const;
-
-	const Edge* 
 
 
     // triangles
@@ -128,11 +124,6 @@ protected:
     // edges
     int m_iEdgeQuantity;
     Edge* m_akEdge;
-	
-	// edges that connect points with different class values
-	int m_iBoundaryEdgeQuantity;
-	Edge* m_aiBoundaryEdge;
-	
 
     // triangles
     int m_iTriangleQuantity;

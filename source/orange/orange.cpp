@@ -40,6 +40,7 @@ void gcUnsafeStaticInitialization()
 
 #include "Python.h"
 #include "module.hpp"
+#include "stladdon.hpp"
 
 extern PyMethodDef orangeFunctions[];
 void addConstants(PyObject *);
@@ -96,6 +97,8 @@ extern "C" EXPORT_DLL void initorange()
   PyModule_AddObject(orangeModule, "CompatibilityWarning", PyExc_OrangeCompatibilityWarning);
 
   PyModule_AddObject(orangeModule, "_orangeClasses", PyCObject_FromVoidPtr((void *)orangeClasses, NULL));
+
+  PyModule_AddObject(orangeModule, "Illegal_Float", PyFloat_FromDouble(ILLEGAL_FLOAT));
 }
 
 

@@ -110,6 +110,8 @@ public:
   void sort();
   void sort(vector<int> &sortOrder);
 
+  void sortPointers();
+  
   virtual void addMetaAttribute(const int &id, const TValue &value);
   virtual void copyMetaAttribute(const int &id, const int &source, TValue &defaultVal);
   virtual void removeMetaAttribute(const int &id);

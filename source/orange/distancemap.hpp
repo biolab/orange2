@@ -28,8 +28,6 @@
 
 WRAPPER(DistanceMatrix)
 
-#define UNKNOWN_F -1e30f
-
 class TDistanceMap : public TOrange {
 public:
   __REGISTER_CLASS

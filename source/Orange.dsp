@@ -562,6 +562,10 @@ SOURCE=.\orange\root.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\rulelearner.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\spec_contingency.cpp
 # End Source File
 # Begin Source File
@@ -632,6 +636,10 @@ SOURCE=.\orange\transdomain.cpp
 # Begin Source File
 
 SOURCE=.\orange\transval.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\triangulate.cpp
 # End Source File
 # Begin Source File
 
@@ -964,6 +972,10 @@ SOURCE=.\orange\retisinter.hpp
 # Begin Source File
 
 SOURCE=.\orange\root.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\rulelearner.hpp
 # End Source File
 # Begin Source File
 
@@ -1380,6 +1392,74 @@ SOURCE=.\orange\px\obsolete.px
 # Begin Source File
 
 SOURCE=.\orange\px\timestamp
+# End Source File
+# End Group
+# Begin Group "wml"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlDelaunay2a.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector3.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector3.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlWinSystem.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlWinSystem.h
 # End Source File
 # End Group
 # End Target

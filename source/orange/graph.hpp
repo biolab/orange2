@@ -53,6 +53,9 @@ public:
   virtual void getNeighbours(const int &v, const int &edgeType, vector<int> &) = 0;
   virtual void getNeighboursFrom(const int &v, const int &edgeType, vector<int> &) = 0;
   virtual void getNeighboursTo(const int &v, const int &edgeType, vector<int> &) = 0;
+
+  virtual void getNeighboursFrom_Single(const int &v, vector<int> &) = 0;
+  virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &) = 0;
 };
 
 WRAPPER(Graph)
@@ -79,6 +82,8 @@ public:
   virtual void getNeighboursFrom(const int &v, const int &edgeType, vector<int> &);
   virtual void getNeighboursTo(const int &v, const int &edgeType, vector<int> &);
 
+  virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
+  virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
   float *findEdge(const int &v1, const int &v2);
   void getNeighbours_Undirected(const int &v, vector<int> &neighbours);
@@ -117,6 +122,8 @@ public:
   virtual void getNeighboursFrom(const int &v, const int &edgeType, vector<int> &);
   virtual void getNeighboursTo(const int &v, const int &edgeType, vector<int> &);
 
+  virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
+  virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
   TEdge *createEdge(TEdge *next, const int &vertex);
   bool findEdgePtr(const int &v1, const int &v2, TEdge **&, int &subvert);
@@ -155,6 +162,9 @@ public:
   virtual void getNeighbours(const int &v, const int &edgeType, vector<int> &);
   virtual void getNeighboursFrom(const int &v, const int &edgeType, vector<int> &);
   virtual void getNeighboursTo(const int &v, const int &edgeType, vector<int> &);
+
+  virtual void getNeighboursFrom_Single(const int &v, vector<int> &);
+  virtual void getNeighboursFrom_Single(const int &v, const int &edgeType, vector<int> &);
 
   float *getEdge(TEdge *node, const int &subvert);
   TEdge *createEdge(const int &vertex);
