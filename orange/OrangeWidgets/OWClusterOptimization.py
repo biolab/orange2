@@ -1,6 +1,6 @@
 from OWBaseWidget import *
 import os
-import orange, orngTest, orangeom
+import orange, orangeom, orngTest
 from copy import copy
 from math import sqrt
 import OWGUI, OWDlgs
@@ -794,7 +794,7 @@ class ClusterOptimization(OWBaseWidget):
     # ##############################################################
     # ##############################################################
     def evaluateClusters(self, data):
-        graph = orangeom.triangulate(data,3)
+        graph = orangeom.triangulate(data,0,1,3)
         graph.returnIndices = 1
         computeDistances(graph)
         removeEdgesToDifferentClasses(graph, -3)    # None
