@@ -237,10 +237,7 @@ class CanvasWidget(QCanvasRectangle):
 		self.canvas = canvas
 		self.view = view
 		self.canvasDlg = canvasDlg
-		if os.path.isfile(widget.getIconName()):
-			self.image = QPixmap(widget.getIconName())
-		else:
-			self.image = QPixmap(defaultPic)
+		self.image = QPixmap(widget.getFullIconName())
 
 		self.imageEdge = None
 		if os.path.exists(os.path.join(canvasDlg.picsDir,"WidgetEdge.png")):
@@ -272,6 +269,11 @@ class CanvasWidget(QCanvasRectangle):
 		code = compile(widget.getFileName() + "." + widget.getFileName() + "()", ".", "eval")
 		self.instance = eval(code)
 		self.instance.progressBarSetHandler(self.view.progressBarHandler)   # set progress bar event handler
+		if os.path.exists(widget.getIconName()):
+			self.instance.setIcon(widget.getIconName())
+		elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):
+			self.instance.setIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
+		else: self.instance.setIcon(defaultPic)
 
 		self.text = QCanvasText(self.caption, canvas)
 		self.text.show()

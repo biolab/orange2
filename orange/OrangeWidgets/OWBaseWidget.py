@@ -58,7 +58,7 @@ class OWBaseWidget(QDialog):
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
-        fullIcon = self.widgetDir + "icons/" + icon 
+        fullIcon = self.widgetDir + "icons/" + icon
         logo = self.widgetDir + "icons/" + logo
 
         self.title = title.replace("&","")          # used for ini file
@@ -82,7 +82,7 @@ class OWBaseWidget(QDialog):
         self.linksOut = {}       # signalName: (signalData, id)
         self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
-        self.callbackDeposit = []       # deposit for handlers that synchronize GUI control value and the value of member variable
+        self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
 
     
@@ -92,7 +92,7 @@ class OWBaseWidget(QDialog):
 
         #the title
         self.setCaption(self.captionTitle)
-        self.setIcon(QPixmap(fullIcon))
+        
 
         #about box
         self.about=OWAboutX(title,description,fullIcon,logo)
@@ -103,6 +103,15 @@ class OWBaseWidget(QDialog):
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
+    def setIcon(self, iconName):
+        if os.path.exists(iconName):
+            QDialog.setIcon(self, QPixmap(iconName))
+        elif os.path.exists(self.widgetDir + iconName):
+            QDialog.setIcon(self, QPixmap(self.widgetDir + iconName))
+        elif os.path.exists(self.widgetDir + "icons/" + iconName):
+            QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/" + iconName))
+        elif os.path.exists(self.widgetDir + "icons/Unknown.png"):
+            QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/Unknown.png"))
 
     def setCaptionTitle(self, caption):
         self.captionTitle = caption     # we have to save caption title in case progressbar will change it

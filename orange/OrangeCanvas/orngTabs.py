@@ -71,7 +71,7 @@ class WidgetButton(QToolButton):
 		self.canvasDlg = canvasDlg
 		self.setTextLabel(name, FALSE)
 		
-		self.setIconSet(QIconSet(QPixmap(str(self.widgetTabs.widgetInfo[nameKey]["iconName"]))))
+		self.setIconSet(QIconSet(QPixmap(self.getFullIconName())))
 		
 		if useLargeIcons == 1:
 			self.setUsesTextLabel (TRUE)
@@ -84,6 +84,16 @@ class WidgetButton(QToolButton):
 
 	def getFileName(self):
 		return str(self.widgetTabs.widgetInfo[self.nameKey]["fileName"])
+
+	def getFullIconName(self):
+		name = self.getIconName()
+		if os.path.exists(os.path.join(self.canvasDlg.picsDir, name)):
+			return os.path.join(canvasDlg.picsDir, name)
+		elif os.path.exists(os.path.join(self.canvasDlg.widgetDir, name)):
+			return os.path.join(self.canvasDlg.widgetDir, name)
+		else:
+			return self.canvasDlg.defaultPic
+		
 
 	def getIconName(self):
 		return str(self.widgetTabs.widgetInfo[self.nameKey]["iconName"])
@@ -247,18 +257,7 @@ class WidgetTabs(QTabWidget):
 			inList = eval(widget.getAttribute("in"))
 			outList = eval(widget.getAttribute("out"))
 			priority = int(widget.getAttribute("priority"))
-
-			icon = widget.getAttribute("icon")
-			iconName = icon
-			if (icon != ""):
-				if os.path.isfile(self.widgetDir + str(category.getAttribute("name")) + icon):
-					iconName = self.widgetDir + str(category.getAttribute("name")) + icon
-				elif os.path.isfile(self.picsDir + icon):
-					iconName = self.picsDir + icon			
-				elif os.path.isfile(self.widgetDir + icon):
-					iconName = self.widgetDir + icon
-				else:
-					iconName = self.defaultPic
+			iconName = widget.getAttribute("icon")
 			
 			# it's a complicated way to get to the widget description
 			descNode= widget.getElementsByTagName("description")[0]

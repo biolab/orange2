@@ -524,6 +524,7 @@ if os.path.exists(widgetDir):
         links = "#load settings before we connect widgets\n" +t+t+ "self.loadSettings()\n\n" +t+t + "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
+        icons = "# set icons\n"+t+t
         manager = ""
         loadSett = ""
         saveSett = ""
@@ -544,6 +545,7 @@ if os.path.exists(widgetDir):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
+                icons += "self.ow%s.setIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
@@ -685,7 +687,7 @@ ow.saveSettings()
         if asTabs:
             whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t+ captions + "\n"+t+t+ progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
