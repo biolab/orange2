@@ -76,10 +76,10 @@ class OWParallelGraph(OWVisGraph):
 
         classNameIndex = -1
         if self.rawdata.domain.classVar:
-            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         
         length = len(attributes)
-        indices = [self.attributeNames.index(label) for label in attributes]
+        indices = [self.attributeNameIndex[label] for label in attributes]
         xs = range(length)
         dataSize = len(self.scaledData[0])
         continuousClass = (self.rawdata.domain.classVar != None and self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
@@ -141,7 +141,7 @@ class OWParallelGraph(OWVisGraph):
         # draw the data
         # ############################################
         
-        validData = self.getValidList(indices + [self.attributeNames.index(self.rawdata.domain.classVar.name)])
+        validData = self.getValidList(indices + [self.attributeNameIndex[self.rawdata.domain.classVar.name]])
         #validData = [1] * dataSize
         for i in range(dataSize):
             if not validData[i]:
@@ -317,7 +317,7 @@ class OWParallelGraph(OWVisGraph):
     # SHOW DISTRIBUTION BAR GRAPH
     def showDistributionValues(self, targetValue, validData, indices, dataStop, colorPalette):
         # get index of class         
-        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
 
         # create color table            
         count = len(self.rawdata.domain.classVar.values)

@@ -161,12 +161,12 @@ class OWPolyvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
         # store indices to shown attributes
-        indices = [self.attributeNames.index(label) for label in labels]
+        indices = [self.attributeNameIndex[label] for label in labels]
 
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
-        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
             valLen = len(self.rawdata.domain.classVar.values)
             classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
@@ -281,10 +281,11 @@ class OWPolyvizGraph(OWVisGraph):
 
         # CONTINUOUS class 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
+            colors = ColorPaletteHSV()
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = QColor(0,0,0)
-                if self.useDifferentColors: newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
+                if self.useDifferentColors: newColor.setHsv(self.noJitteringScaledData[classNameIndex][i] * colors.maxHueVal, 255, 255)
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
 
@@ -440,9 +441,9 @@ class OWPolyvizGraph(OWVisGraph):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(self.shownAttributes[i])]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[self.shownAttributes[i]]]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(self.shownAttributes[i])][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[self.shownAttributes[i]]][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
@@ -461,7 +462,7 @@ class OWPolyvizGraph(OWVisGraph):
                     text = self.getShortExampleText(self.rawdata, self.rawdata[index], labels)
 
                 elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                    for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNames.index(label)][index])
+                    for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNameIndex[label]][index])
 
                     # show values of meta attributes
                     if len(self.rawdata.domain.getmetas()) != 0:
@@ -523,7 +524,7 @@ class OWPolyvizGraph(OWVisGraph):
     # create x-y projection of attributes in attrList
     def createProjection(self, attrList, attributeReverse, validData = None, sums = None, scaleFactor = 1.0):
         # store indices to shown attributes
-        indices = [self.attributeNames.index(label) for label in attrList]
+        indices = [self.attributeNameIndex[label] for label in attrList]
         length = len(attrList)
         dataSize = len(self.rawdata)
 
@@ -625,7 +626,7 @@ class OWPolyvizGraph(OWVisGraph):
                 
                 for attrList in combinations:
                     attrs = attrList[1:] + [attributes[z][1]] # remove the value of this attribute subset
-                    indices = [self.attributeNames.index(attr) for attr in attrs]
+                    indices = [self.attributeNameIndex[attr] for attr in attrs]
 
                     indPermutations = {}
                     getPermutationList(indices, [], indPermutations, attrReverseDict == None)
@@ -634,7 +635,7 @@ class OWPolyvizGraph(OWVisGraph):
                     if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes
                         temp = [0] * len(self.rawdata.domain)
                         for val in attrReverseDict.keys():
-                            temp[self.attributeNames.index(val)] = attrReverseDict[val]
+                            temp[self.attributeNameIndex[val]] = attrReverseDict[val]
                         attrReverse.append(temp)
                     else:
                         attrReverse = self.generateAttrReverseLists(attrs, self.attributeNames,[[0]*len(self.rawdata.domain)])

@@ -37,7 +37,7 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
-            index = self.attributeNames.index(label)
+            index = self.attributeNameIndex[label]
             indices.append(index)
 
         validData = [1] * len(self.rawdata)
@@ -64,7 +64,7 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         classNameIndex = -1
         if self.rawdata.domain.classVar:
-            classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+            classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 classValDict = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar)
                 colors = ColorPaletteBrewer(len(classValDict))
