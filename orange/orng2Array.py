@@ -382,7 +382,7 @@ class Cubizer:
         if spec:
             list[self.idx] = self.missing
             list[self.idx+1] = self.missing
-            list[self.idx+3] = self.missing
+            list[self.idx+2] = self.missing
         else:
             list[self.idx] = (float(value)-self.disp)*self.mult
             list[self.idx+1] = (list[self.idx]**2)*self.correction2
