@@ -46,6 +46,7 @@ class kNNOptimization(OWBaseWidget):
 		self.testingMethod = 0
 		self.optimizationType = 0
 		self.attributeCountIndex = 0
+		self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
 		self.onlyOnePerSubset = 1	# used in radviz and polyviz
 		self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
 		self.parentName = "Projection"
@@ -56,7 +57,6 @@ class kNNOptimization(OWBaseWidget):
 		self.attrLenDict = {}
 
 		self.loadSettings()
-		self.useLeaveOneOut = 1
 
 		self.optimizationSettingsBox = OWGUI.widgetBox(self, " Optimization Settings ")
 		self.optimizationBox = OWGUI.widgetBox(self, " Find interesting projections... ")
@@ -206,7 +206,8 @@ class kNNOptimization(OWBaseWidget):
 			for item in attrList[1:]:
 				strList = strList + ", " + item
 
-		self.allResults.insert(index, (accuracy, lenTable, attrList, strList))
+		if index < self.maxResultListLen:
+			self.allResults.insert(index, (accuracy, lenTable, attrList, strList))
 		if index < self.resultListLen:
 			self.resultList.insertItem("(%.2f, %d) - %s"%(accuracy, lenTable, strList), index)
 			self.shownResults.insert(index, (accuracy, lenTable, attrList, strList))
@@ -427,12 +428,14 @@ class kNNOptimization(OWBaseWidget):
 
 	def disableControls(self):
 		self.optimizationSettingsBox.setEnabled(0)
+		self.optimizationBox.setEnabled(0)
 		self.manageResultsBox.setEnabled(0)
 		self.evaluateBox.setEnabled(0)
 		self.measureCombo.setEnabled(0)
 
 	def enableControls(self):	
 		self.optimizationSettingsBox.setEnabled(1)
+		self.optimizationBox.setEnabled(1)
 		self.manageResultsBox.setEnabled(1)
 		self.evaluateBox.setEnabled(1)
 		self.measureCombo.setEnabled(1)
