@@ -51,7 +51,7 @@ class kNNOptimization(OWBaseWidget):
     kNeighboursList = [str(x) for x in kNeighboursNums]
 
     def __init__(self,parent=None, graph = None):
-        OWBaseWidget.__init__(self, parent, "Optimization Dialog", "Find interesting projections of data", FALSE, FALSE, FALSE)
+        OWBaseWidget.__init__(self, parent, "Optimization Dialog", FALSE)
 
         self.setCaption("Qt VizRank Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 

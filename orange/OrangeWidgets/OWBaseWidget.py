@@ -33,28 +33,17 @@ class OWBaseWidget(QDialog):
     self,
     parent = None,
     title="Qt Orange BaseWidget",
-    description="This a base for OWWidget. It encorporates saving, loading settings and signal processing.",
-    wantSettings=FALSE,
-    wantGraph = FALSE, 
-    wantAbout = FALSE,
-    icon="OrangeWidgetsIcon.png",
-    logo="OrangeWidgetsLogo.png",
+    wantGraph = FALSE,
     modal=FALSE
     ):
         """
         Initialization
         Parameters: 
             title - The title of the\ widget, including a "&" (for shortcut in about box)
-            description - self explanatory
-            wantSettings - display settings button or not
-            icon - the icon file
-            logo - the logo file
+            wantGraph - displays a save graph button or not
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
-        iconName = self.widgetDir + "icons/" + icon
-        defaultWidgetIcon = self.widgetDir + "icons/OrangeWidgetsIcon.png"
-        logo = self.widgetDir + "icons/OrangeWidgetsLogo.png"
 
         self.title = title.replace("&","")          # used for ini file
         self.captionTitle=title.replace("&","")     # used for widget caption
@@ -88,14 +77,7 @@ class OWBaseWidget(QDialog):
         self.setCaption(self.captionTitle)
         
         self.buttonBackground=QVBox(self)
-        if wantSettings: self.settingsButton=QPushButton("&Settings",self.buttonBackground)
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
-
-        #about box
-        if wantAbout:
-            self.about = OWAboutX(title, description, iconName, defaultWidgetIcon, logo)
-            self.aboutButton=QPushButton("&About",self.buttonBackground)
-            self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):

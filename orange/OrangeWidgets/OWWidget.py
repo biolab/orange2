@@ -7,30 +7,15 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__(
-    self,
-    parent=None,
-    title="Qt Orange Widget",
-    description="This a general Orange Widget\n from which all the other Orange Widgets are derived.",
-    wantSettings=FALSE,
-    wantGraph=FALSE,
-    wantAbout=FALSE,
-    icon="OrangeWidgetsIcon.png",
-    logo="OrangeWidgetsLogo.png",
-    ):
+    def __init__( self, parent=None, title="Qt Orange Widget", wantGraph=FALSE):
         """
         Initialization
         Parameters: 
             title - The title of the\ widget, including a "&" (for shortcut in about box)
-            description - self explanatory
-            wantSettings - display settings button or not
             wantGraph - displays a save graph button or not
-            icon - the icon file
-            logo - the logo file
-            parent - parent of the widget if needed
         """
 
-        apply(OWBaseWidget.__init__, (self, parent, title, description, wantSettings, wantGraph, wantAbout, icon, logo))
+        apply(OWBaseWidget.__init__, (self, parent, title, wantGraph))
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)

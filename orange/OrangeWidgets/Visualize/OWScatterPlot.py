@@ -1,7 +1,6 @@
 """
 <name>Scatterplot</name>
 <description>Shows data using scatterplot</description>
-<category>Visualization</category>
 <icon>icons/ScatterPlot.png</icon>
 <priority>100</priority>
 """
@@ -27,7 +26,7 @@ class OWScatterPlot(OWWidget):
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
     def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", FALSE, TRUE)
+        OWWidget.__init__(self, parent, "ScatterPlot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
