@@ -360,7 +360,8 @@ class OWSieveDiagram(OWWidget):
             currY = yOff
             width = int(float(sqareSize * valsX[i])/float(total))
 
-            for j in range(len(valsY)):
+            #for j in range(len(valsY)):
+            for j in range(len(valsY)-1, -1, -1):   # this way we sort y values correctly
                 ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
                 if valsY[j] == 0: continue
                 height = int(float(sqareSize * valsY[j])/float(total))

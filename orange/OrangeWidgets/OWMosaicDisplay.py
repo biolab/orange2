@@ -16,6 +16,7 @@ from qtcanvas import *
 import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
+from copy import copy
 
 
 ###########################################################################################
@@ -227,7 +228,7 @@ class OWMosaicDisplay(OWWidget):
         self.addText(attrList[1], x0-30, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
         currPos = 0
         tempData = data.select({attrList[0]:values[0][0]})
-        for val in values[1]:
+        for val in list(values[1])[::-1]:
             tempData2 = tempData.select({attrList[1]:val})
             perc = float(len(tempData2))/float(len(tempData))
             self.addText(str(val), x0-10, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 1)
@@ -259,7 +260,7 @@ class OWMosaicDisplay(OWWidget):
         currPos = 0
         height2 = height * float(len(tempData1))/float(len(tempData0)) - self.cellspace*(len(values[3])-1)
         if len(tempData2) == 0: print "Error: Division by zero"; return
-        for val in values[3]:
+        for val in list(values[3])[::-1]:
             tempData3 = tempData2.select({attrList[3]:val})
             perc = float(len(tempData3))/float(len(tempData2)) #* (float(len(tempData1))/float(len(tempData0)))
             self.addText(str(val), x1+10, y0 + currPos + height2*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 1)
@@ -273,7 +274,8 @@ class OWMosaicDisplay(OWWidget):
             return
         attr = attrList[0]
         edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
-        vals = self.data.domain[attr].values
+        if bHorizontal: vals = self.data.domain[attr].values
+        else:           vals = list(self.data.domain[attr].values)[::-1]
         currPos = 0
         if bHorizontal: whole = (x1-x0)-edge*(len(vals)-1)  # we remove the space needed for separating different attr. values
         else:           whole = (y1-y0)-edge*(len(vals)-1)
@@ -317,7 +319,7 @@ class OWMosaicDisplay(OWWidget):
     ##################################################
     def saveToFileCanvas(self):
         size = self.canvas.size()
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG);;Windows Bitmap (.BMP);;Graphics Interchange Format (.GIF)", None, "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)

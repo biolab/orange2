@@ -22,7 +22,10 @@ class OrangeData:
         self.dc = orange.DomainContingency(self.table)
         self.outcome = self.data.domain.classVar
         self.targetValIndx = 0
-        self.targetVal = self.getOutcomeValues()[0]
+        try:
+            self.targetVal = self.getOutcomeValues()[0]
+        except:
+            pass
 
     def getOutcomeValues(self): return self.data.domain.classVar.values.native()
 

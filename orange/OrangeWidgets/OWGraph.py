@@ -10,6 +10,7 @@ from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
+from OWBaseWidget import *
 
 class subBarQwtPlotCurve(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
@@ -133,9 +134,18 @@ class HiddenScaleDraw(QwtScaleDraw):
     def label(self, value):
         return QString.null
 
-class OWChooseImageSizeDlg(QDialog):
+class OWChooseImageSizeDlg(OWBaseWidget):
+    settingsList = ["selectedSize", "customX", "customY", "saveAllSizes"]
     def __init__(self,*args):
-        apply(QDialog.__init__,(self,) + args)
+        OWBaseWidget.__init__(self, None, "Image size", "Set size of output image", TRUE, FALSE, FALSE, modal = TRUE)
+        
+        self.selectedSize = 0
+        self.customX = 400
+        self.customY = 400
+        self.saveAllSizes = 0
+
+        self.loadSettings()
+        
         self.space=QVBox(self)
         self.grid=QGridLayout(self)
         self.grid.addWidget(self.space,0,0)
@@ -155,11 +165,34 @@ class OWChooseImageSizeDlg(QDialog):
         self.customHeight = QLabel('Height:', self.boxY)
         self.ySize = QLineEdit(self.boxY)
         self.sizeOriginal.setChecked(1)
-
+        self.allSizes = QCheckBox("Save all sizes", self.group)
+        
+        
         self.okButton = QPushButton("OK", self.space)
         self.cancelButton = QPushButton("Cancel", self.space)
         self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
+
+                
+        if self.saveAllSizes == 1: self.allSizes.setChecked(1)
+
+        if self.selectedSize == 0: self.sizeOriginal.setChecked(1)
+        elif self.selectedSize == 1: self.size400.setChecked(1)
+        elif self.selectedSize == 2: self.size600.setChecked(1)
+        elif self.selectedSize == 3: self.size600.setChecked(1)
+        self.xSize.setText(str(self.customX))
+        self.ySize.setText(str(self.customY))
+
+    def accept(self):
+        if self.sizeOriginal.isChecked(): self.selectedSize = 0
+        elif self.size400.isChecked(): self.selectedSize = 1
+        elif self.size600.isChecked(): self.selectedSize = 2
+        elif self.size800.isChecked(): self.selectedSize = 3
+        self.customX = int(str(self.xSize.text()))
+        self.customY = int(str(self.ySize.text()))
+        self.saveAllSizes = self.allSizes.isChecked()
+        self.saveSettings()
+        QDialog.accept(self)
 
 
 
@@ -206,6 +239,10 @@ class OWGraph(QwtPlot):
         self.showYRaxisTitle = FALSE
         self.YRaxisTitle = None
 
+    # call to update dictionary with settings
+    def updateSettings(self, **settings):
+        self.__dict__.update(settings)
+
     def saveToFile(self):
         sizeDlg = OWChooseImageSizeDlg(self, "", TRUE)
         sizeDlg.exec_loop()
@@ -229,7 +266,20 @@ class OWGraph(QwtPlot):
         	ext = "PNG"  	# if no format was specified, we choose png
         	fileName = fileName + ".png"
         ext = ext.upper()
-        self.saveToFileDirect(fileName, ext, size)
+
+
+        if not sizeDlg.allSizes.isChecked():
+            self.saveToFileDirect(fileName, ext, size)
+        else:
+            dirName, shortFileName = os.path.split(fileName)
+            if not os.path.isdir(dirName + "\\400\\"): os.mkdir(dirName + "\\400\\")
+            if not os.path.isdir(dirName + "\\600\\"): os.mkdir(dirName + "\\600\\")
+            if not os.path.isdir(dirName + "\\800\\"): os.mkdir(dirName + "\\800\\")
+            if not os.path.isdir(dirName + "\\Original\\"): os.mkdir(dirName + "\\Original\\")
+            self.saveToFileDirect(dirName + "\\400\\" + shortFileName, ext, QSize(400,400))
+            self.saveToFileDirect(dirName + "\\600\\" + shortFileName, ext, QSize(600,600))
+            self.saveToFileDirect(dirName + "\\800\\" + shortFileName, ext, QSize(800,800))
+            self.saveToFileDirect(dirName + "\\Original\\" + shortFileName, ext, self.size())
         
     def saveToFileDirect(self, fileName, ext, size = QSize()):
         if size.isEmpty():
@@ -299,7 +349,7 @@ class OWGraph(QwtPlot):
         self.repaint()
 
     def updateToolTips(self):
-        "Updates the tool tips"
+        pass
 #        self.dynamicToolTip.addToolTip(self.yRight, self.tipRight)
 #        self.dynamicToolTip.addToolTip(self.yLeft, self.tipLeft)
 #        self.dynamicToolTip.addToolTip(self.xBottom, self.tipBottom)
@@ -440,7 +490,9 @@ class OWGraph(QwtPlot):
 
 if __name__== "__main__":
     #Draw a simple graph
-    a = QApplication(sys.argv)        
+    a = QApplication(sys.argv)
+    c = OWChooseImageSizeDlg()
+    """
     c = OWGraph()
     c.setXlabels(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
     c.setYLlabels(None)
@@ -471,8 +523,9 @@ if __name__== "__main__":
     symbol = QwtSymbol(QwtSymbol.None, QBrush(QColor("black")), QPen(QColor("black")), QSize(1, 1))
     #legend.appendItem("test 1", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0)
     #legend.insertItem("test 2", symbol, QPen(QColor("black"), 1, Qt.SolidLine), 0, 1)
-
+    """
+    
     a.setMainWidget(c)
     c.show()
-    c.saveToFile()
+    #c.saveToFile()
     a.exec_loop()

@@ -35,7 +35,8 @@ class OWWidget(OWBaseWidget):
             parent - parent of the widget if needed
         """
 
-        OWBaseWidget.__init__(self, parent, title, description, wantSettings, wantGraph, 1, icon, logo)
+        apply(OWBaseWidget.__init__, (self, parent, title, description, wantSettings, wantGraph, 1, icon, logo))
+        #OWBaseWidget.__init__(self, parent, )
 
         self.mainArea=QWidget(self)
 #        self.mainArea.setBackgroundColor(Qt.white)

@@ -48,41 +48,6 @@ def fact(i):
 def combinations(select, total):
     return fact(total)/ (fact(total-select)*fact(select))
 
-"""
-class QwtPlotCurvePolyviz(QwtPlotCurve):
-    def __init__(self, parent = None, text = None):
-        QwtPlotCurve.__init__(self, parent, text)
-        self.color = Qt.black
-        self.penColor = Qt.black
-
-    def draw(self, p, xMap, yMap, indexFrom, indexTo):
-        # save ex settings
-        back = p.backgroundMode()
-        pen = p.pen()
-        brush = p.brush()
-        
-        p.setBackgroundMode(Qt.OpaqueMode)
-        p.setBackgroundColor(self.color)
-        p.setBrush(self.color)
-        p.setPen(self.penColor)
-        
-
-        if indexTo < 0: indexTo = self.dataSize() - 1
-        if divmod(indexFrom, 2)[1] != 0: indexFrom -= 1
-        if divmod(indexTo, 2)[1] == 0:  indexTo += 1
-        for i in range(indexFrom, indexTo+1, 2):
-            px1 = xMap.transform(self.x(i))
-            py1 = yMap.transform(self.y(i))
-            px2 = xMap.transform(self.x(i+1))
-            py2 = yMap.transform(self.y(i+1))
-            p.drawLine(px1, py1, (px2 - px1), (py2 - py1))
-
-        # restore ex settings
-        p.setBackgroundMode(back)
-        p.setPen(pen)
-        p.setBrush(brush)
-"""
-    
 
 ###########################################################################################
 ##### CLASS : OWPolyvizGRAPH
@@ -100,18 +65,17 @@ class OWPolyvizGraph(OWVisGraph):
         self.minExamples = 0
         self.enhancedTooltips = 1
 
-        self.exLabelData = [[],[]] 	# form: [[labels],[indices]]
-        self.exAnchorData =[]	# form: [(anchor1x, anchor1y, label1),(anchor2x, anchor2y, label2), ...]
         self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
         self.validData = []
+        self.kNeighbours = 1
+        self.statusBar = None
+        self.showLegend = 1
 
     def setEnhancedTooltips(self, enhanced):
         self.enhancedTooltips = enhanced
         self.dataMap = {}
-        self.exLabelData = [[],[]]
-        self.exAnchorData = []
 
     def setLineLength(self, len):
         self.lineLength = len*0.05
@@ -156,12 +120,16 @@ class OWPolyvizGraph(OWVisGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, className, attributeReverse, statusBar):
+    def updateData(self, labels, attributeReverse, **args):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
+    
+        # initial var values
+        self.showKNNModel = 0
+        self.showCorrect = 1
+        self.__dict__.update(args)
 
-        self.statusBar = statusBar        
 
         # we must have at least 3 attributes to be able to show anything
         if len(labels) < 3: return
@@ -176,54 +144,75 @@ class OWPolyvizGraph(OWVisGraph):
         scaleDraw.setOptions(0) 
         scaleDraw.setTickLength(0, 0, 0)
         
-        self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
+        if self.showLegend: self.setAxisScale(QwtPlot.xBottom, -1.20, 1.25, 1)
+        else:               self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
         length = len(labels)
         dataSize = len(self.rawdata)
-        classNameIndex = self.attributeNames.index(className)
-        classIsDiscrete = 0
-        if self.rawdata.domain[className].varType == orange.VarTypes.Discrete: classIsDiscrete = 1
-        xs = []
         self.dataMap = {}
+        indices = []
+        self.anchorData = []
+        polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
+        classIsDiscrete = 0
+        classNameIndex = -1
+        
+        for label in labels:
+            index = self.attributeNames.index(label)
+            indices.append(index)
 
-        if self.exLabelData[0] != labels:
-            # ##########
-            # create a table of indices that stores the sequence of variable indices
-            indices = []
-            for label in labels:
-                index = self.attributeNames.index(label)
-                indices.append(index)
+        # ##########
+        # create anchor for every attribute
+        for i in range(length):
+            x1 = math.cos(2*math.pi * float(i) / float(length)); strX1 = "%.4f" % (x1)
+            y1 = math.sin(2*math.pi * float(i) / float(length)); strY1 = "%.4f" % (y1)
+            x2 = math.cos(2*math.pi * float(i+1) / float(length)); strX2 = "%.4f" % (x2)
+            y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
+            self.anchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
+        
+        
+        # if we don't want coloring
+        if self.className == "(One color)" or self.showKNNModel:      
+            valLen = 1
+            if self.showKNNModel == 1:
+                # variables and domain for the table
+                domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain[self.className]])
+                table = orange.ExampleTable(domain)
+            
+            for i in range(len(labels)):
+                polyvizLineCoordsX.append([[]])
+                polyvizLineCoordsY.append([[]])                
 
-            self.exLabelData = [labels, indices]
-            self.exAnchorData = []
-
-            # ##########
-            # create anchor for every attribute
-            for i in range(length):
-                x1 = math.cos(2*math.pi * float(i) / float(length)); strX1 = "%.4f" % (x1)
-                y1 = math.sin(2*math.pi * float(i) / float(length)); strY1 = "%.4f" % (y1)
-                x2 = math.cos(2*math.pi * float(i+1) / float(length)); strX2 = "%.4f" % (x2)
-                y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
-                self.exAnchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
-
-            self.validData = [1] * dataSize
-            for i in range(dataSize):
-                for j in range(length):
-                    if self.scaledData[indices[j]][i] == "?": self.validData[i] = 0
+        # if we have a discrete class
+        elif self.rawdata.domain[self.className].varType == orange.VarTypes.Discrete:
+            classIsDiscrete = 1
+            classNameIndex = self.attributeNames.index(self.className)
+            valLen = len(self.rawdata.domain[self.className].values)
+            classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
+            for i in range(len(labels)):
+                tempX = []; tempY = []
+                for j in range(len(classValueIndices)):
+                    tempX.append([]); tempY.append([])
+                polyvizLineCoordsX.append(tempX)
+                polyvizLineCoordsY.append(tempY)
         else:
-            indices = self.exLabelData[1]
+            valLen = 0
+            classNameIndex = self.attributeNames.index(self.className)
+            
+        # ######################
+        # compute valid data examples
+        self.validData = [1] * dataSize
+        for i in range(dataSize):
+            for j in range(length):
+                if self.scaledData[indices[j]][i] == "?": self.validData[i] = 0
+                if classNameIndex >= 0 and self.scaledData[classNameIndex][i] == "?": self.validData[i] = 0
 
 
         # ##########
         # draw text at lines
         for i in range(length):
             # print attribute name
-            mkey = self.insertMarker(labels[i])
-            self.marker(mkey).setXValue(0.6*(self.exAnchorData[i][0]+ self.exAnchorData[i][2]))
-            self.marker(mkey).setYValue(0.6*(self.exAnchorData[i][1]+ self.exAnchorData[i][3]))
-            self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
-            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+            self.addMarker(labels[i], 0.6*(self.anchorData[i][0]+ self.anchorData[i][2]), 0.6*(self.anchorData[i][1]+ self.anchorData[i][3]), Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
 
             if self.rawdata.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
@@ -232,49 +221,18 @@ class OWPolyvizGraph(OWVisGraph):
                 k = 1.08
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
-                    mkey = self.insertMarker(values[j])
                     if attributeReverse[labels[i]] == 0:
-                        self.marker(mkey).setXValue(k*(1-pos)*self.exAnchorData[i][0]+k*pos*self.exAnchorData[i][2])
-                        self.marker(mkey).setYValue(k*(1-pos)*self.exAnchorData[i][1]+k*pos*self.exAnchorData[i][3])
+                        self.addMarker(values[j], k*(1-pos)*self.anchorData[i][0]+k*pos*self.anchorData[i][2], k*(1-pos)*self.anchorData[i][1]+k*pos*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
                     else:
-                        self.marker(mkey).setXValue(k*pos*self.exAnchorData[i][0]+k*(1-pos)*self.exAnchorData[i][2])
-                        self.marker(mkey).setYValue(k*pos*self.exAnchorData[i][1]+k*(1-pos)*self.exAnchorData[i][3])
-                    self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+                        self.addMarker(values[j], k*pos*self.anchorData[i][0]+k*(1-pos)*self.anchorData[i][2], k*pos*self.anchorData[i][1]+k*(1-pos)*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
+
             else:
-                # min value
+                # min and max value
                 names = ["%.3f" % (self.attrLocalValues[labels[i]][0]), "%.3f" % (self.attrLocalValues[labels[i]][1])]
                 if attributeReverse[labels[i]] == 1: names.reverse()
-                mkey = self.insertMarker(names[0])
-                self.marker(mkey).setXValue(0.95*self.exAnchorData[i][0]+0.15*self.exAnchorData[i][2])
-                self.marker(mkey).setYValue(0.95*self.exAnchorData[i][1]+0.15*self.exAnchorData[i][3])
-                self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
-                # max value
-                mkey = self.insertMarker(names[1])
-                self.marker(mkey).setXValue(0.15*self.exAnchorData[i][0]+0.95*self.exAnchorData[i][2])
-                self.marker(mkey).setYValue(0.15*self.exAnchorData[i][1]+0.95*self.exAnchorData[i][3])
-                self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
+                self.addMarker(names[0],0.95*self.anchorData[i][0]+0.15*self.anchorData[i][2], 0.95*self.anchorData[i][1]+0.15*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
+                self.addMarker(names[1], 0.15*self.anchorData[i][0]+0.95*self.anchorData[i][2], 0.15*self.anchorData[i][1]+0.95*self.anchorData[i][3], Qt.AlignHCenter + Qt.AlignVCenter)
 
-
-        # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
-        polyvizLineCoordsX = []; polyvizLineCoordsY = []
-        
-        # if we don't want coloring
-        if className == "(One color)":      
-            valLen = 1
-            for i in range(len(labels)):
-                polyvizLineCoordsX.append([])
-                polyvizLineCoordsY.append([])                
-
-        # if we have a discrete class
-        elif classIsDiscrete:    
-            valLen = len(self.rawdata.domain[className].values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, className)
-            for i in range(len(labels)):
-                tempX = []; tempY = []
-                for j in range(len(classValueIndices)):
-                    tempX.append([]); tempY.append([])
-                polyvizLineCoordsX.append(tempX)
-                polyvizLineCoordsY.append(tempY)
 
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
@@ -297,8 +255,8 @@ class OWPolyvizGraph(OWVisGraph):
                 index = indices[j]
                 val = self.noJitteringScaledData[index][i]
                 if attributeReverse[labels[j]] == 1: val = 1-val
-                xDataAnchor = self.exAnchorData[j][0]*(1-val) + self.exAnchorData[j][2]*val
-                yDataAnchor = self.exAnchorData[j][1]*(1-val) + self.exAnchorData[j][3]*val
+                xDataAnchor = self.anchorData[j][0]*(1-val) + self.anchorData[j][2]*val
+                yDataAnchor = self.anchorData[j][1]*(1-val) + self.anchorData[j][3]*val
                 x_i += xDataAnchor * (self.scaledData[index][i] / sum[i])
                 y_i += yDataAnchor * (self.scaledData[index][i] / sum[i])
                 xDataAnchors.append(xDataAnchor)
@@ -311,17 +269,19 @@ class OWPolyvizGraph(OWVisGraph):
 
             # #########
             # we add a tooltip for this point
-            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [className])
+            text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.className])
             r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             self.tips.addToolTip(r, text)
 
             lineColor = QColor(0,0,0)
-            if valLen == 1:
+            if self.showKNNModel == 1:
+                table.append(orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]]))
+            elif valLen == 1:
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
                 lineColor.setHsv(0, 255, 255)
             elif classIsDiscrete:
-                index = classValueIndices[self.rawdata[i][className].value]
+                index = classValueIndices[self.rawdata[i][self.className].value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
                 lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
@@ -343,16 +303,19 @@ class OWPolyvizGraph(OWVisGraph):
                     lineX2 = (1.0 - kvoc)*xDataAnchors[j] + kvoc * lineX1
                     lineY2 = (1.0 - kvoc)*yDataAnchors[j] + kvoc * lineY1
 
-                if valLen == 1:
+
+                if self.showKNNModel:
+                    polyvizLineCoordsX[j][0] += [xDataAnchors[j], lineX2]
+                    polyvizLineCoordsY[j][0] += [yDataAnchors[j], lineY2]
+                elif valLen == 1:
                     polyvizLineCoordsX[j][0] += [xDataAnchors[j], lineX2, xDataAnchors[j]]
                     polyvizLineCoordsY[j][0] += [yDataAnchors[j], lineY2, yDataAnchors[j]]
                 elif classIsDiscrete:
-                    index = classValueIndices[self.rawdata[i][className].value]
+                    index = classValueIndices[self.rawdata[i][self.className].value]
                     polyvizLineCoordsX[j][index] += [xDataAnchors[j], lineX2, xDataAnchors[j]]
                     polyvizLineCoordsY[j][index] += [yDataAnchors[j], lineY2, yDataAnchors[j]]
                 else:
-                    key = self.addCurve('line' + str(i), lineColor, lineColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None)
-                    self.setCurveData(key, [xDataAnchors[j], x_j], [yDataAnchors[j], y_j])
+                    self.addCurve('line' + str(i), lineColor, lineColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = [xDataAnchors[j], lineX2], yData = [yDataAnchors[j], lineY2])
 
 
             if self.enhancedTooltips == 1:
@@ -364,61 +327,78 @@ class OWPolyvizGraph(OWVisGraph):
                 self.dataMap[dictValue].append((x_i, y_i, xDataAnchors, yDataAnchors, lineColor, data))
              
 
-        if valLen == 1 or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
+        if self.showKNNModel:
+            classValues = list(self.rawdata.domain[self.className].values)
+            knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
+
+            for j in range(len(table)):
+                out = knn(table[j], orange.GetProbabilities)
+                prob = out[table[j].getclass()]
+                if self.showCorrect == 1:
+                    prob = 1.0 - prob
+                    newColor = QColor(prob*255, prob*255, prob*255)
+                else:
+                    newColor = QColor(prob*255, prob*255, prob*255)
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                for i in range(len(polyvizLineCoordsX)):
+                    self.addCurve('line' + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
+                    
+        if valLen == 1 or classIsDiscrete:
             # create data curves for dots
             for i in range(valLen):
                 newColor = QColor()
                 newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
-                self.setCurveData(key, curveData[i][0], curveData[i][1])
+                self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = curveData[i][0], yData = curveData[i][1])
                 for j in range(len(labels)):
-                    key = self.addCurve("lines" + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None)
-                    self.setCurveData(key, polyvizLineCoordsX[j][i], polyvizLineCoordsY[j][i])
+                    self.addCurve("lines" + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[j][i], yData = polyvizLineCoordsY[j][i])
             
         else:
             for i in range(len(contData)):
                 newColor = QColor()
                 newColor.setHsv(contData[i][2], 255, 255)
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
-                self.setCurveData(key, [contData[i][0]], [contData[i][1]])
+                self.addCurve(str(i), newColor, newColor, self.pointWidth, xData = [contData[i][0]], yData = [contData[i][1]])
 
         
         # ##########
         # draw polygon
-        xData = []; yData = []
+        xdata = []; ydata = []
         for i in range(len(labels)+1):
-            x = math.cos(2*math.pi * float(i) / float(len(labels)))
-            y = math.sin(2*math.pi * float(i) / float(len(labels)))
-            xData.append(x)
-            yData.append(y)
-        newCurveKey = self.insertCurve("polygon")
-        newColor = QColor()
-        newColor.setRgb(0, 0, 0)
-        self.setCurveStyle(newCurveKey, QwtCurve.Lines)
+            xdata.append(math.cos(2*math.pi * float(i) / float(len(labels))))
+            ydata.append(math.sin(2*math.pi * float(i) / float(len(labels))))
+
+        newCurveKey = self.addCurve("polygon", QColor(0,0,0), QColor(0,0,0), 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata, yData = ydata)
         pen = self.curve(newCurveKey).pen(); pen.setWidth(2); self.curve(newCurveKey).setPen(pen)
-        self.setCurveData(newCurveKey, xData, yData)
         
 
         #################
         # draw the legend
-        if className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            mkey = self.insertMarker(className)
-            self.marker(mkey).setXValue(0.87)
-            self.marker(mkey).setYValue(1.06)
-            self.marker(mkey).setLabelAlignment(Qt.AlignLeft)
-            
-            classVariableValues = self.getVariableValuesSorted(self.rawdata, className)
-            for index in range(len(classVariableValues)):
-                newColor = QColor()
-                if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
-                else:                                                   newColor.setHsv((index*360)/len(classVariableValues), 255, 255)
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
-                y = 1.0 - index * 0.05
-                self.setCurveData(key, [0.95, 0.95], [y, y])
-                mkey = self.insertMarker(classVariableValues[index])
-                self.marker(mkey).setXValue(0.90)
-                self.marker(mkey).setYValue(y)
-                self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
+        if self.className != "(One color)" and self.showLegend:
+            # show legend for discrete class
+            if classIsDiscrete:
+                self.addMarker(self.className, 0.87, 1.06, Qt.AlignLeft)
+                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.className)
+                for index in range(len(classVariableValues)):
+                    newColor = QColor()
+                    if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
+                    else:                                                   newColor.setHsv((index*360)/len(classVariableValues), 255, 255)
+                    y = 1.0 - index * 0.05
+                    self.addCurve(str(i), newColor, newColor, self.pointWidth, xData= [0.95, 0.95], yData = [y, y])
+                    self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
+            # show legend for continuous class
+            else:
+                x0 = 1.20; x1 = 1.24
+                for i in range(1000):
+                    y = -1.0 + i*2.0/1000.0
+                    newCurveKey = self.insertCurve(str(i))
+                    newColor = QColor()
+                    newColor.setHsv(float(i*self.MAX_HUE_VAL)/1000.0, 255, 255)
+                    self.setCurvePen(newCurveKey, QPen(newColor))
+                    self.setCurveData(newCurveKey, [x0,x1], [y,y])
+
+                # add markers for min and max value of color attribute
+                [minVal, maxVal] = self.attrValues[self.className]
+                self.addMarker("%s = %.3f" % (self.className, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %.3f" % (self.className, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
 
     ##########################
@@ -443,22 +423,16 @@ class OWPolyvizGraph(OWVisGraph):
            
             if dist < 0.05:
                 x_i = nearestPoint[0]; y_i = nearestPoint[1]; xAnchors = nearestPoint[2]; yAnchors = nearestPoint[3]; color = nearestPoint[4]; data = nearestPoint[5]
-                for i in range(len(self.exAnchorData)):
-                    (xAnchor1, yAnchor1, xAnchor2, yAnchor2, label) = self.exAnchorData[i]
+                for i in range(len(self.anchorData)):
+                    (xAnchor1, yAnchor1, xAnchor2, yAnchor2, label) = self.anchorData[i]
 
                     # draw lines
-                    key = self.addCurve("Tooltip curve", color, color, 1)
-                    self.setCurveStyle(key, QwtCurve.Lines)
+                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, xData = [x_i, xAnchors[i]], yData = [y_i, yAnchors[i]])
                     self.tooltipCurveKeys.append(key)
-                    self.setCurveData(key, [x_i, xAnchors[i]], [y_i, yAnchors[i]])
-
+                    
                     # draw text
-                    marker = self.insertMarker(str(data[self.attributeNames.index(label)].value))
+                    marker = self.addMarker(str(data[self.attributeNames.index(label)].value),(x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     self.tooltipMarkers.append(marker)
-                    self.marker(marker).setXValue((x_i + xAnchors[i])/2.0)
-                    self.marker(marker).setYValue((y_i + yAnchors[i])/2.0)
-                    self.marker(marker).setLabelAlignment(Qt.AlignVCenter + Qt.AlignHCenter)
-                    font = self.marker(marker).font(); font.setBold(1); self.marker(marker).setFont(font)
 
         OWVisGraph.onMouseMoved(self, e)
         self.update()
@@ -476,12 +450,12 @@ class OWPolyvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getProjectionQuality(self, attrList, className, kNeighbours):
+    def getProjectionQuality(self, attrList, attributeReverse):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValsCount = len(self.rawdata.domain[className].values)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, className)
+        classValsCount = len(self.rawdata.domain[self.className].values)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
 
         # create a table of indices that stores the sequence of variable indices        
         indices = [];
@@ -490,7 +464,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
 
         # which data items have all values valid
         validData = [1] * dataSize
@@ -519,39 +493,39 @@ class OWPolyvizGraph(OWVisGraph):
             x_i = 0.0; y_i = 0.0
             for j in range(attrListLength):
                 val = self.noJitteringScaledData[indices[j]][i]
+                if attributeReverse[attrList[j]] == 1: val = 1-val
                 xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%attrListLength]*val
                 yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%attrListLength]*val
                 x_i += xDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
                 y_i += yDataAnchor * (self.noJitteringScaledData[indices[j]][i] / sum[i])
                
-            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
+            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
             table.append(example)
 
-        classValues = list(self.rawdata.domain[className].values)
-        knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+        classValues = list(self.rawdata.domain[self.className].values)
+        knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
         for j in range(len(table)):
             out = knn(table[j], orange.GetProbabilities)
             index = classValues.index(table[j][2].value)
             tempPermValue += out[index]
 
-        print "k = %3.d, Accuracy: %2.2f%%" % (kNeighbours, tempPermValue*100.0/float(len(table)))
+        print "k = %3.d, Accuracy: %2.2f%%" % (self.kNeighbours, tempPermValue*100.0/float(len(table)))
         return tempPermValue*100.0/float(len(table))
-
     
         
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalSeparation(self, attrList, attrReverseDict, className, kNeighbours, printTime = 1, progressBar = None):
-        if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
+    def getOptimalSeparation(self, attrList, attrReverseDict, printTime = 1, progressBar = None):
+        if self.className == "(One color)" or self.rawdata.domain[self.className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering. A discrete class must be selected."
             return attrList
 
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValsCount = len(self.rawdata.domain[className].values)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, className)
+        classValsCount = len(self.rawdata.domain[self.className].values)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, self.className)
 
         # create a table of indices that stores the sequence of variable indices        
         indices = [];
@@ -592,7 +566,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         xVar = orange.FloatVariable("xVar")
         yVar = orange.FloatVariable("yVar")
-        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[self.className]])
 
         # which data items have all values valid
         validData = [1] * dataSize
@@ -649,13 +623,13 @@ class OWPolyvizGraph(OWVisGraph):
                         x_i += xDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
                         y_i += yDataAnchor * (selectedGlobScaledData[index][i] / sum[i])
                        
-                    example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
+                    example = orange.Example(domain, [x_i, y_i, self.rawdata[i][self.className]])
                     table.append(example)
 
                 experiments = 0
                 selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
-                classValues = list(self.rawdata.domain[className].values)
-                knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+                classValues = list(self.rawdata.domain[self.className].values)
+                knn = orange.kNNLearner(table, k=self.kNeighbours, rankWeight = 0)
                 for j in range(len(table)):
                     if selection[j] == 0: continue
                     out = knn(table[j], orange.GetProbabilities)
@@ -678,19 +652,19 @@ class OWPolyvizGraph(OWVisGraph):
 
         return fullList
                 
-    def getOptimalSubsetSeparation(self, attrList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
+    def getOptimalSubsetSeparation(self, attrList, attrReverseDict, numOfAttr, maxResultsLen, progressBar = None):
         full = []
         
-        totalPossibilities = 0
+        self.totalPossibilities = 0
         for i in range(numOfAttr, 2, -1):
-            totalPossibilities += combinations(i, len(attrList))
+            self.totalPossibilities += combinations(i, len(attrList))
 
         if progressBar:
-            progressBar.setTotalSteps(totalPossibilities)
+            progressBar.setTotalSteps(self.totalPossibilities)
             progressBar.setProgress(0)
                 
         for i in range(numOfAttr, 2, -1):
-            full1 = self.getOptimalExactSeparation(attrList, [], attrReverseDict, className, kNeighbours, i, maxResultsLen, progressBar)
+            full1 = self.getOptimalExactSeparation(attrList, [], attrReverseDict, i, maxResultsLen, progressBar)
             full = full + full1
             """
             while len(full) > maxResultsLen:
@@ -699,7 +673,7 @@ class OWPolyvizGraph(OWVisGraph):
             """
         return full
 
-    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar = None):
+    def getOptimalExactSeparation(self, attrList, subsetList, attrReverseDict, numOfAttr, maxResultsLen, progressBar = None):
         if attrList == [] or numOfAttr == 0:
             if len(subsetList) < 3 or numOfAttr != 0: return []
             if progressBar:
@@ -712,12 +686,12 @@ class OWPolyvizGraph(OWVisGraph):
                 restSecs = totalExpectedSecs - secs
                 print "Used time: %d:%02d:%02d, Remaining time: %d:%02d:%02d (total experiments: %d, rest: %d)" %(secs /3600, (secs-((secs/3600)*3600))/60, secs%60, restSecs /3600, (restSecs-((restSecs/3600)*3600))/60, restSecs%60, self.totalPossibilities, self.totalPossibilities-self.triedPossibilities)
             self.triedPossibilities += 1
-            return self.getOptimalSeparation(subsetList, attrReverseDict, className, kNeighbours, printTime = 0)
+            return self.getOptimalSeparation(subsetList, attrReverseDict, printTime = 0)
 
-        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, className, kNeighbours, numOfAttr, maxResultsLen, progressBar)
+        full1 = self.getOptimalExactSeparation(attrList[1:], subsetList, attrReverseDict, numOfAttr, maxResultsLen, progressBar)
         subsetList2 = copy(subsetList)
         subsetList2.insert(0, attrList[0])
-        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, className, kNeighbours, numOfAttr-1, maxResultsLen, progressBar)
+        full2 = self.getOptimalExactSeparation(attrList[1:], subsetList2, attrReverseDict, numOfAttr-1, maxResultsLen, progressBar)
 
         # find max values in booth lists
         full = full1 + full2

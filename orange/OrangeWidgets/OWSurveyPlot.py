@@ -21,14 +21,13 @@ import OWVisAttrSelection
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", TRUE, TRUE)
-
-        
+        self.resize(700,700)
 
         #set default settings
         self.attrDiscOrder = "RelieF"
@@ -36,6 +35,7 @@ class OWSurveyPlot(OWWidget):
         self.GraphCanvasColor = str(Qt.white.name())
         self.data = None
         self.globalValueScaling = 0
+        self.showContinuous = 0
 
         #load settings
         self.loadSettings()
@@ -123,6 +123,7 @@ class OWSurveyPlot(OWWidget):
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.showContinuousCB.setChecked(self.showContinuous)
         
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
@@ -221,7 +222,9 @@ class OWSurveyPlot(OWWidget):
     # set combo box values with attributes that can be used for coloring the data
     def setClassCombo(self):
         exText = str(self.classCombo.currentText())
+        self.showContinuous = self.showContinuousCB.isOn()
         self.classCombo.clear()
+        
         if self.data == None:
             return
 
@@ -229,7 +232,7 @@ class OWSurveyPlot(OWWidget):
         self.classCombo.insertItem('(One color)')
         for i in range(len(self.data.domain)):
             attr = self.data.domain[i]
-            if attr.varType == orange.VarTypes.Discrete or self.showContinuousCB.isOn() == 1:
+            if attr.varType == orange.VarTypes.Discrete or self.showContinuous:
                 self.classCombo.insertItem(attr.name)
 
         for i in range(self.classCombo.count()):

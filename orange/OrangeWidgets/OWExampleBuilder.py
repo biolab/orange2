@@ -105,14 +105,17 @@ class OWExampleBuilder(OWWidget):
             randCode.append(code)
 
         code = compile(str(self.textBox.text()), ".", "exec")
-        for i in range(int(str(self.num.text()))):
+        count = int(str(self.num.text()))
+        while len(self.data) < count:
             # get new random data values
             for c in randCode: exec(c)
-            
+
+            validExample = 1
             exec(code)
             exampleCode = compile("example = orange.Example(domain," + execList + ")", ".", "single")
             exec(exampleCode)
-            self.data.append(example)
+            if validExample:
+                self.data.append(example)
 
         odata = OrangeData(self.data)
         self.send("cdata", odata)

@@ -15,53 +15,79 @@ from OData import *
 from random import *
 
 class OWSubsetGenerator(OWWidget):
-    settingsList=[]
+    settingsList=["applyGenerateExact"]
     def __init__(self,parent=None):
         OWWidget.__init__(self,parent,"&SubsetGenerator",
         "Create exaple table subset",
-        FALSE)
+        wantSettings = FALSE, wantGraph = FALSE)
         "Constructor"
         #get settings from the ini file, if they exist
-        self.loadSettings()
-
+        self.applyGenerateExact = 1 # we remember the last kind of generate
+        
         self.data = None
-        self.addInput("data")
         self.addInput("cdata")
-        self.addOutput("data")
         self.addOutput("cdata")
+
+        self.loadSettings()        
         
         #GUI
         self.space.hide()
         self.controlArea.hide()
-        #self.grid.deleteAllItems()
-        #self.box = QVGroupBox(self)
-        self.PercentBox = QVGroupBox("Percent of data", self)
+        self.BigHbox1 = QHBox(self)
+        self.dummyLabel1 = QLabel("  ", self.BigHbox1)
+        self.percentRB = QRadioButton("  ", self.BigHbox1)
+        self.PercentBox = QVGroupBox("Percent of data", self.BigHbox1)
         self.hbox1 = QHBox(self.PercentBox, "percent")
         self.percentSlider = QSlider(1, 100, 10, 50, QSlider.Horizontal, self.hbox1)
         self.percentSlider.setTickmarks(QSlider.Below)
         self.percentLCD = QLCDNumber(3, self.hbox1)
         self.connect(self.percentSlider, SIGNAL("valueChanged(int)"), self.percentLCD, SLOT("display(int)"))
         self.percentLCD.display(50)
-        self.generatePercentButton = QPushButton('Generate', self.hbox1)
-        self.connect(self.generatePercentButton, SIGNAL("clicked()"), self.generatePercent)
-
-        
-        self.countBox = QVGroupBox("Exact table length", self)
+                
+        self.BigHbox2 = QHBox(self)
+        self.dummyLabel2 = QLabel("  ", self.BigHbox2)
+        self.exactRB = QRadioButton("  ", self.BigHbox2)
+        self.countBox = QVGroupBox("Exact table length", self.BigHbox2)
         self.hbox2 = QHBox(self.countBox, "exact")
         self.exactCaption = QLabel('Number of examples: ', self.hbox2)
         self.exactEdit = QLineEdit(self.hbox2)
-        self.generateExactButton = QPushButton('Generate', self.hbox2)
+
         self.exactEdit.setText("100")
-        self.connect(self.generateExactButton, SIGNAL("clicked()"), self.generateExact)
+        self.generateButton = QPushButton('Generate', self)
 
-        self.grid.addWidget(self.PercentBox, 0,0)
-        self.grid.addWidget(self.countBox, 1,0)
-        self.resize(300,100)
+        self.connect(self.percentRB, SIGNAL("toggled(bool)"), self.percentRBActivated)
+        self.connect(self.exactRB, SIGNAL("toggled(bool)"), self.exactRBActivated)
+        self.connect(self.generateButton, SIGNAL("clicked()"), self.generate)
 
+
+        #self.grid.addWidget(self.PercentBox, 0,0)
+        self.grid.addWidget(self.BigHbox1, 0,0)
+        self.grid.addWidget(self.BigHbox2, 1,0)
+        self.grid.addWidget(self.generateButton, 2,0)
+        
+        self.resize(200,200)
+        self.activateLoadedSettings()
+
+    def percentRBActivated(self, b):
+        print b
+        self.percentRB.setChecked(b)
+        self.exactRB.setChecked(not b)
+        #self.generate()
+
+    def exactRBActivated(self, b):
+        self.percentRB.setChecked(not b)
+        self.exactRB.setChecked(b)
+        #self.generate()
+
+    def generate(self):
+        self.applyGenerateExact = self.exactRB.isChecked()
+        if self.data == None: return
+
+        if self.applyGenerateExact: self.generateExact()
+        else:                       self.generatePercent()
 
 
     def generateExact(self):
-        if self.data == None: return
         dataLen = float(str(self.exactEdit.text()))
         
         selection = orange.MakeRandomIndices2(self.data, 1.0-float(dataLen/len(self.data)))
@@ -72,10 +98,8 @@ class OWSubsetGenerator(OWWidget):
 
         odata = OrangeData(table)
         self.send("cdata", odata)
-        self.send("data", odata)
 
     def generatePercent(self):
-        if self.data == None: return
         dataLen = float(self.percentLCD.intValue())
         
         selection = orange.MakeRandomIndices2(self.data, 1.0-float(dataLen/100.0))
@@ -86,17 +110,16 @@ class OWSubsetGenerator(OWWidget):
 
         odata = OrangeData(table)
         self.send("cdata", odata)
-        self.send("data", odata)
 
     def cdata(self, data):
         self.data = data.data
+        self.generate()
 
 
-    def saveSettings(self, file = None):
-        pass
-    
     def activateLoadedSettings(self):
-        pass
+        print self.applyGenerateExact
+        self.exactRB.setChecked(self.applyGenerateExact)
+        self.percentRB.setChecked(not self.applyGenerateExact)
         
 if __name__ == "__main__":
     a=QApplication(sys.argv)

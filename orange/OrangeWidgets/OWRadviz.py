@@ -24,7 +24,7 @@ from qt import *
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor", "showLegend", "showContinuous"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -48,6 +48,8 @@ class OWRadviz(OWWidget):
         self.jitterSize = 1
         self.kNeighbours = 1
         self.scaleFactor = 1.0
+        self.showLegend = 1
+        self.showContinuous = 0
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -65,6 +67,7 @@ class OWRadviz(OWWidget):
         self.box.addWidget(self.graph)
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
+        self.graph.updateSettings(statusBar = self.statusBar)
         
         self.statusBar.message("")
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -97,8 +100,11 @@ class OWRadviz(OWWidget):
         
 
         self.classCombo = QComboBox(self.selClass)
-        self.showContinuousCB = QCheckBox('show continuous', self.selClass)
-        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
+        self.hbox = QHBox(self.selClass)
+        self.showContinuousCB = QCheckBox('show continuous', self.hbox)
+        self.showLegendCB = QCheckBox('show legend', self.hbox)
+        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setShowContinuous)
+        self.connect(self.showLegendCB, SIGNAL("clicked()"), self.setShowLegend)
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -136,7 +142,7 @@ class OWRadviz(OWWidget):
         self.currentFileIndex = 1
             
         #connect controls to appropriate functions
-        self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
+        self.connect(self.classCombo, SIGNAL('activated(const QString &)'), self.updateGraph)
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
         self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
@@ -158,20 +164,17 @@ class OWRadviz(OWWidget):
         self.resize(900, 700)
 
     def saveProjectionAsTab(self):
-        self.graph.saveProjectionAsTabData(self.getShownAttributeList(), str(self.classCombo.currentText()), "tabData" + str(self.currentFileIndex)+".tab")
+        self.graph.saveProjectionAsTabData(self.getShownAttributeList(), "tabData" + str(self.currentFileIndex)+".tab")
         self.currentFileIndex+=1
 
 
     def drawGnuplot(self):
-        self.graph.drawGnuplot(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        self.graph.drawGnuplot(self.getShownAttributeList())
 
     def saveGnuplot(self):
-        self.graph.saveGnuplot(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        self.graph.saveGnuplot(self.getShownAttributeList())
 
-    def evaluateCurrentProjection(self):
-        acc = self.graph.getProjectionQuality(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
-        QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
-   
+ 
     # #########################
     # OPTIONS
     # #########################
@@ -198,7 +201,12 @@ class OWRadviz(OWWidget):
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
+        self.showContinuousCB.setChecked(self.showContinuous)
+        self.showLegendCB.setChecked(self.showLegend)
+
+        self.graph.updateSettings(showLegend = self.showLegend)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)        
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -207,66 +215,39 @@ class OWRadviz(OWWidget):
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setScaleFactor(self.scaleFactor)
 
-    def setScaleFactor(self, n):
-        self.scaleFactor = float(self.scaleFactorList[n])
-        self.graph.setScaleFactor(self.scaleFactor)
-        self.updateGraph()
+    # #########################
+    # KNN OPTIMIZATION BUTTON EVENTS
+    # #########################
 
-    def setPointWidth(self, n):
-        self.pointWidth = n
-        self.graph.setPointWidth(n)
-        self.updateGraph()
+    def evaluateCurrentProjection(self):
+        acc = self.graph.getProjectionQuality(self.getShownAttributeList())
+        QMessageBox.information( None, "Radviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
         
-    # jittering options
-    def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.graph.setJitteringOption(self.spreadType[n])
-        self.graph.setData(self.data)
-        self.updateGraph()
-
-    def setUseEnhancedTooltips(self):
-        self.enhancedTooltips = self.options.useEnhancedTooltips.isChecked()
-        self.graph.setEnhancedTooltips(self.enhancedTooltips)
-        self.updateGraph()
-
-    # jittering options
-    def setJitteringSize(self, n):
-        self.jitterSize = self.jitterSizeNums[n]
-        self.graph.setJitterSize(self.jitterSize)
-        self.graph.setData(self.data)
-        self.updateGraph()
-
     def setKNeighbours(self, n):
         self.kNeighbours = self.kNeighboursNums[n]
         self.optimizationDlg.kValue = self.kNeighbours
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
 
-    # continuous attribute ordering
-    def setAttrContOrderType(self, n):
-        self.attrContOrder = self.attributeContOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
+    def showKNNCorect(self):
+        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
+        self.graph.update()
+        self.repaint()
 
-    # discrete attribute ordering
-    def setAttrDiscOrderType(self, n):
-        self.attrDiscOrder = self.attributeDiscOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
+    def showKNNWrong(self):
+        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 0)
+        self.graph.update()
+        self.repaint()
 
     def testCurrentProjections(self):
         kList = [3,5,10,15,20,30,50,70,100,150,200]
         #kList = [60]
-        className = str(self.classCombo.currentText())
         results = []
-
         for i in range(self.optimizationDlg.interestingList.count()):
         #for i in range(1):
             (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
             sumAcc = 0.0
             print "Experiment %2.d - %s" % (i, str(list))
-            for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
+            for k in kList: sumAcc += self.graph.getProjectionQuality(list, kNeighbours = k)
             results.append((sumAcc/float(len(kList)), tableLen, list))
 
         self.optimizationDlg.clear()
@@ -290,7 +271,7 @@ class OWRadviz(OWWidget):
             self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if text == "ALL":
-                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
+                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), progressBar = self.progressBar)
             else:
                 select = int(text)
                 total = len(self.getShownAttributeList())
@@ -301,7 +282,7 @@ class OWRadviz(OWWidget):
                 self.graph.triedPossibilities = 0
                 self.graph.startTime = time.time()
                 self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
-                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], str(self.classCombo.currentText()), self.kNeighbours, int(text), int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], int(text), int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
                 
             if len(fullList) == 0: return
 
@@ -339,17 +320,14 @@ class OWRadviz(OWWidget):
                 table.append(possible)
                 total += possible
 
-            self.graph.possibleSubsetsTable = table
-            self.graph.totalPossibleSubsets = total
-            self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
-            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
+            self.graph.updateSettings(possibleSubsetsTable = table, totalPossibleSubsets = total, minExamples = int(str(self.optimizationDlg.minTableLenEdit.text())), percentDataUsed = self.optimizationDlg.percentDataUsed)
             maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
-            fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, self.progressBar)
+            fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), maxLen, maxResultsLen, self.progressBar)
             if len(fullList) == 0: return
             
             # fill the "interesting visualizations" list box
             #self.optimizationDlg.clear()
-            for i in range(len(fullList)):
+            for i in range(min(maxResultsLen, len(fullList))):
                 (accuracy, itemCount, list) = max(fullList)
                 self.optimizationDlg.insertItem(accuracy, itemCount, list)
                 fullList.remove((accuracy, itemCount, list))
@@ -357,6 +335,41 @@ class OWRadviz(OWWidget):
             self.optimizationDlg.updateNewResults()
             self.optimizationDlg.save("temp.proj")
             self.optimizationDlg.interestingList.setCurrentItem(0)
+
+
+    # #########################
+    # RADVIZ EVENTS
+    # #########################
+                
+    def setScaleFactor(self, n):
+        self.scaleFactor = float(self.scaleFactorList[n])
+        self.graph.setScaleFactor(self.scaleFactor)
+        self.updateGraph()
+
+    def setPointWidth(self, n):
+        self.pointWidth = n
+        self.graph.setPointWidth(n)
+        self.updateGraph()
+        
+    # jittering options
+    def setSpreadType(self, n):
+        self.jitteringType = self.spreadType[n]
+        self.graph.setJitteringOption(self.spreadType[n])
+        self.graph.setData(self.data)
+        self.updateGraph()
+
+    def setUseEnhancedTooltips(self):
+        self.enhancedTooltips = self.options.useEnhancedTooltips.isChecked()
+        self.graph.setEnhancedTooltips(self.enhancedTooltips)
+        self.updateGraph()
+
+    # jittering options
+    def setJitteringSize(self, n):
+        self.jitterSize = self.jitterSizeNums[n]
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
+
 
 
     # ####################################
@@ -380,6 +393,21 @@ class OWRadviz(OWWidget):
         for attr in list: self.shownAttribsLB.insertItem(attr)
         for attr in self.data.domain:
             if attr.name not in list: self.hiddenAttribsLB.insertItem(attr.name)
+        self.updateGraph()
+
+
+    # continuous attribute ordering
+    def setAttrContOrderType(self, n):
+        self.attrContOrder = self.attributeContOrder[n]
+        if self.data != None:
+            self.setShownAttributeList(self.data)
+        self.updateGraph()
+
+    # discrete attribute ordering
+    def setAttrDiscOrderType(self, n):
+        self.attrDiscOrder = self.attributeDiscOrder[n]
+        if self.data != None:
+            self.setShownAttributeList(self.data)
         self.updateGraph()
 
         
@@ -452,20 +480,21 @@ class OWRadviz(OWWidget):
 
     # #####################
 
-    def showKNNCorect(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar,  showKNNModel = 1, kNeighbours = self.kNeighbours, showCorrect = 1)
-        self.graph.update()
-        self.repaint()
-
-    def showKNNWrong(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar,  showKNNModel = 1, kNeighbours = self.kNeighbours, showCorrect = 0)
-        self.graph.update()
-        self.repaint()
-
     def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)
+        self.graph.updateSettings(className = str(self.classCombo.currentText()))
+        self.graph.updateData(self.getShownAttributeList())
         self.graph.update()
         self.repaint()
+
+    def setShowContinuous(self):
+        self.showContinuous = self.showContinuousCB.isChecked()
+        self.setClassCombo()
+        self.updateGraph()
+
+    def setShowLegend(self):
+        self.showLegend = self.showLegendCB.isChecked()
+        self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
 
     # set combo box values with attributes that can be used for coloring the data
     def setClassCombo(self):
@@ -490,6 +519,7 @@ class OWRadviz(OWWidget):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
+        self.classCombo.setCurrentItem(0)
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############

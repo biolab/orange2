@@ -376,6 +376,8 @@ class OWScatterPlot(OWWidget):
             self.attrY.insertItem(attr.name)
             self.attrColor.insertItem(attr.name)
             self.attrSizeShape.insertItem(attr.name)
+            if attr.varType == orange.VarTypes.Discrete:
+                self.attrShape.insertItem(attr.name)
 
 
         self.attrX.setCurrentItem(0)

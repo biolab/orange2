@@ -23,7 +23,7 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -33,9 +33,8 @@ class OWParallelCoordinates(OWWidget):
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100]
     
     def __init__(self,parent=None):
-        
-        
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", TRUE, TRUE)
+        self.resize(700,700)
 
         #set default settings
         self.attrDiscOrder = "RelieF"
@@ -54,6 +53,7 @@ class OWParallelCoordinates(OWWidget):
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
         self.globalValueScaling = 0
+        self.showContinuous = 0
 
         #load settings
         self.loadSettings()
@@ -163,6 +163,8 @@ class OWParallelCoordinates(OWWidget):
         for i in range(len(self.linesDistanceList)):
             self.options.linesDistance.insertItem(self.linesDistanceList[i])
         self.options.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
+
+        self.showContinuousCB.setChecked(self.showContinuous)
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
@@ -318,7 +320,9 @@ class OWParallelCoordinates(OWWidget):
     # set combo box values with attributes that can be used for coloring the data
     def setClassCombo(self):
         exText = str(self.classCombo.currentText())
+        self.showContinuous = self.showContinuousCB.isOn()
         self.classCombo.clear()
+        
         if self.data == None:
             return
 
@@ -326,7 +330,7 @@ class OWParallelCoordinates(OWWidget):
         self.classCombo.insertItem('(One color)')
         for i in range(len(self.data.domain)):
             attr = self.data.domain[i]
-            if attr.varType == orange.VarTypes.Discrete or self.showContinuousCB.isOn() == 1:
+            if attr.varType == orange.VarTypes.Discrete or self.showContinuous:
                 self.classCombo.insertItem(attr.name)
 
         for i in range(self.classCombo.count()):

@@ -86,17 +86,16 @@ class OWScatterPlotGraph(OWVisGraph):
         self.removeTooltips()
         self.statusBar = statusBar
         toolTipList = [xAttr, yAttr]
-        if shapeAttr != "": toolTipList.append(shapeAttr)
-        if sizeShapeAttr != "": toolTipList.append(sizeShapeAttr)
+        if shapeAttr != "" and shapeAttr != "(One shape)": toolTipList.append(shapeAttr)
+        if sizeShapeAttr != "" and sizeShapeAttr != "(One size)": toolTipList.append(sizeShapeAttr)
 
         (xVarMin, xVarMax) = self.attrValues[xAttr]
         (yVarMin, yVarMax) = self.attrValues[yAttr]
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
         
-        MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
-        MIN_SHAPE_SIZE = 10
-        MAX_SHAPE_DIFF = 10
+        MIN_SHAPE_SIZE = 5
+        MAX_SHAPE_DIFF = 12
 
         if len(self.scaledData) == 0: self.updateLayout(); return
 
@@ -132,7 +131,6 @@ class OWScatterPlotGraph(OWVisGraph):
         
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
-            if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: MAX_HUE_VAL = 360
             colorIndex = self.attributeNames.index(colorAttr)
             
         shapeIndex = -1
@@ -197,6 +195,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.curve(key).percentOfTotalData = float(tempSum) / float(sum)
                     self.tooltipData.append((tooltipText, i, j))
 
+        # show normal scatterplot with dots
         else:
             self.curveKeys = []
             for i in range(len(self.rawdata)):
@@ -218,8 +217,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
                 newColor = QColor(0,0,0)
                 if colorIndex != -1:
-                    #newColor.setHsv(self.scaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
-                    newColor.setHsv(self.coloringScaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
+                    newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
                     
                 symbol = shapeList[0]
                 if shapeIndex != -1:
@@ -232,8 +230,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 newCurveKey = self.insertCurve(str(i))
 
                 symbolBrush = QBrush(QBrush.NoBrush)
-                if self.showFilledSymbols == 1:
-                    symbolBrush = QBrush(newColor)
+                if self.showFilledSymbols == 1: symbolBrush = QBrush(newColor)
                 newSymbol = QwtSymbol(symbol, symbolBrush, QPen(newColor), QSize(size, size))
                 self.setCurveSymbol(newCurveKey, newSymbol)
                 self.setCurveData(newCurveKey, [x], [y])
@@ -254,7 +251,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 varValues = self.getVariableValuesSorted(self.rawdata, colorIndex)
                 for ind in range(len(self.rawdata.domain[colorIndex].values)):
                     newColor = QColor()
-                    newColor.setHsv(self.colorHueValues[ind] * MAX_HUE_VAL, 255, 255)
+                    newColor.setHsv(self.colorHueValues[ind] * 360, 255, 255)
                     self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
 
             if shapeIndex != -1 and self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
@@ -270,19 +267,27 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), MIN_SHAPE_SIZE + round(ind*MAX_SHAPE_DIFF/len(varValues)), enableLegend = 1)
 
 
-        if colorAttr != "" and showColorLegend == 1 and self.showDistributions == 0:
+        if colorAttr != "" and showColorLegend == 1 and self.showDistributions == 0 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
+            x0 = xVarMax + xVar/100
+            x1 = x0 + xVar/20
             for i in range(1000):
-                x0 = xVarMax + xVar/100
-                x1 = x0 + xVar/20
                 y = yVarMin + i*yVar/1000
                 newCurveKey = self.insertCurve(str(i))
                 newColor = QColor()
-                newColor.setHsv(float(i*MAX_HUE_VAL)/1000.0, 255, 255)
+                newColor.setHsv(float(i*self.MAX_HUE_VAL)/1000.0, 255, 255)
                 self.setCurvePen(newCurveKey, QPen(newColor))
                 self.setCurveData(newCurveKey, [x0,x1], [y,y])
-        # -----------------------------------------------------------
-        # -----------------------------------------------------------
+
+            # add markers for min and max value of color attribute
+            (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
+            self.addMarker("%s = %.3f" % (colorAttr, colorVarMin), x1 + xVar/50, yVarMin + yVar*0.04, Qt.AlignRight)
+            self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x1 + xVar/50, yVarMin + yVar*0.96, Qt.AlignRight)
+
+        
         self.addTooltips()
+
+    # -----------------------------------------------------------
+    # -----------------------------------------------------------
 
 
     # compute how good is a specific projection with given xAttr and yAttr

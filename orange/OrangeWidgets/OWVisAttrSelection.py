@@ -7,17 +7,17 @@ import orngCI
 ##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING Oblivious decision graphs
 ###########################################################################################
 def replaceAttributes(index1, index2, merged, data):
-    attrs = list(data.domain.attributes)
+    attrs = list(data.domain)
     attrs.remove(data.domain[index1])
     attrs.remove(data.domain[index2])
-    return data.select([merged] + attrs + [data.domain.classVar])
+    domain = orange.Domain(attrs+ [merged])
+    return data.select(domain)
 
 
 def getFunctionalList(data):
     bestQual = -10000000
-    bestAttrs = []
+    bestAttr = -1
     testAttrs = []
-    outList = []
 
     dataShort = orange.Preprocessor_dropMissing(data)
     # remove continuous attributes from data
@@ -30,38 +30,37 @@ def getFunctionalList(data):
     remover = orngCI.AttributeRedundanciesRemover(noMinimization = 1)
     newData = remover(discData, weight = 0)
 
-    # ####
-    # compute the best attribute combination
-    # ####
-    for i in range(len(newData.domain.attributes)):
-        if newData.domain.attributes[i].varType != orange.VarTypes.Discrete: continue
-        testAttrs.append(newData.domain.attributes[i].name)
-        for j in range(i+1, len(newData.domain.attributes)):
-            if newData.domain.attributes[j].varType != orange.VarTypes.Discrete: continue
-            vals, qual = orngCI.FeatureByMinComplexity(newData, [newData.domain.attributes[i], newData.domain.attributes[j]])
-            if qual > bestQual:
-                bestQual = qual
-                bestAttrs = [newData.domain.attributes[i].name, newData.domain.attributes[j].name, vals]
+    for attr in newData.domain.attributes: testAttrs.append(attr.name)
 
-    if bestAttrs == []: return []
-    outList.append(bestAttrs[0])
-    outList.append(bestAttrs[1])
-    newData = replaceAttributes(bestAttrs[0], bestAttrs[1], bestAttrs[2], newData)
-    testAttrs.remove(bestAttrs[0])
-    testAttrs.remove(bestAttrs[1])
+    # compute the best attribute combination
+    for i in range(len(newData.domain.attributes)):
+        vals, qual = orngCI.FeatureByMinComplexity(newData, [newData.domain.attributes[i], newData.domain.classVar])
+        if qual > bestQual:
+            bestQual = qual
+            bestAttr = newData.domain.attributes[i].name
+            mergedVals = vals
+            mergedVals.name = newData.domain.classVar.name
+
+    if bestAttr == -1: return []
+    outList = [bestAttr]
+    newData = replaceAttributes(bestAttr, newData.domain.classVar, mergedVals, newData)
+    testAttrs.remove(bestAttr)
     
     while (testAttrs != []):
         bestQual = -10000000
         for attrName in testAttrs:
-            vals, qual = orngCI.FeatureByMinComplexity(newData, [newData.domain[0], attrName])
+            vals, qual = orngCI.FeatureByMinComplexity(newData, [mergedVals, attrName])
             if qual > bestQual:
                 bestqual = qual
-                bestAttrs = [0, attrName, vals]
-        newData = replaceAttributes(0, bestAttrs[1], bestAttrs[2], newData)
-        outList.append(bestAttrs[1])
-        testAttrs.remove(bestAttrs[1])
+                bestAttr = attrName
 
-    outList.reverse()
+        vals, qual = orngCI.FeatureByMinComplexity(newData, [mergedVals, bestAttr])
+        mergedVals = vals
+        mergedVals.name = newData.domain.classVar.name
+        newData = replaceAttributes(bestAttr, newData.domain.classVar, mergedVals, newData)
+        outList.append(bestAttr)
+        testAttrs.remove(bestAttr)
+
     # new attributes have "'" at the end of their names. we have to remove that in ored to identify them in the old domain
     for index in range(len(outList)):
         if outList[index][-1] == "'": outList[index] = outList[index][:-1]

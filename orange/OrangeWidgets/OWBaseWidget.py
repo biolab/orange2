@@ -11,7 +11,7 @@ import cPickle
 from OWTools import *
 from OWAboutX import *
 
-class OWBaseWidget(QWidget):
+class OWBaseWidget(QDialog):
     def __init__(
     self,
     parent=None,
@@ -22,6 +22,7 @@ class OWBaseWidget(QWidget):
     wantAbout = TRUE,
     icon="OrangeWidgetsIcon.png",
     logo="OrangeWidgetsLogo.png",
+    modal=FALSE
     ):
         """
         Initialization
@@ -41,8 +42,9 @@ class OWBaseWidget(QWidget):
         # if we want the widget to show the title then the title must start with "Qt"
         if self.captionTitle[:2].upper != "QT":
             self.captionTitle = "Qt " + self.captionTitle
-            
-        QWidget.__init__(self,parent)
+
+        apply(QDialog.__init__, (self, parent, title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize))
+
         #list of all active connections to this widget
         self.connections=[]
         #list of inputs - should list all the channels that can be received

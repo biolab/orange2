@@ -39,6 +39,7 @@ class OWVisGraph(OWGraph):
         "Constructs the graph"
         OWGraph.__init__(self, parent, name)
 
+        self.MAX_HUE_VAL = 280              # max hue value used in coloring continuous data values. because red is at 0 and 360, we shorten the range
         self.rawdata = []                   # input data
         self.scaledData = []                # scaled data to the interval 0-1
         self.noJitteringScaledData = []
@@ -128,11 +129,12 @@ class OWVisGraph(OWGraph):
                 diff = max - min
                 values = [min, max]
 
+                max_hue = self.MAX_HUE_VAL / 360.0
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: original.append("?"); coloring.append("?"); continue
                     val = (data[i][attr].value - min) / diff
                     original.append(val)
-                    coloring.append(val * 0.85)        # we make color palette smaller, because red is in the begining and ending of hsv
+                    coloring.append(val * max_hue)        # we make color palette smaller, because red is in the begining and ending of hsv
                 noJittering = original
                 
             self.scaledData.append(original)
@@ -220,9 +222,10 @@ class OWVisGraph(OWGraph):
             values = [min, max]
 
             if forColoring == 1:
+                hue = self.MAX_HUE_VAL /360.0
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    temp.append((data[i][attr].value - min)*0.85 / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
+                    temp.append((data[i][attr].value - min)*hue / diff)        # we make color palette smaller, because red is in the begining and ending of hsv
             else:
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: temp.append("?"); continue
@@ -340,6 +343,16 @@ class OWVisGraph(OWGraph):
             
         return newCurveKey
 
+    def addMarker(self, name, x, y, alignment = -1, bold = 0):
+        mkey = self.insertMarker(name)
+        self.marker(mkey).setXValue(x)
+        self.marker(mkey).setYValue(y)
+        if alignment != -1:
+            self.marker(mkey).setLabelAlignment(alignment)
+        if bold:
+            font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
+        return mkey
+
     # ####################################################################
     # return string with attribute names and their values for example example
     def getExampleText(self, data, example):
@@ -362,17 +375,20 @@ class OWVisGraph(OWGraph):
     def getShortExampleText(self, data, example, indices):
         text = ""
         for i in range(len(indices)):
-            index = indices[i]
-            if data.domain[index].varType == orange.VarTypes.Discrete:
-                if example[index].isSpecial():
-                    text = "%s%s = ?; " % (text, data.domain[index].name)
+            try:
+                index = indices[i]
+                if data.domain[index].varType == orange.VarTypes.Discrete:
+                    if example[index].isSpecial():
+                        text = "%s%s = ?; " % (text, data.domain[index].name)
+                    else:
+                        text = "%s%s = %s; " % (text, data.domain[index].name, str(example[index].value))
                 else:
-                    text = "%s%s = %s; " % (text, data.domain[index].name, str(example[index].value))
-            else:
-                if example[i].isSpecial():
-                    text = "%s%s = ?; " % (text, data.domain[index].name)
-                else:
-                    text = "%s%s = %.3f; " % (text, data.domain[index].name, example[index].value)
+                    if example[i].isSpecial():
+                        text = "%s%s = ?; " % (text, data.domain[index].name)
+                    else:
+                        text = "%s%s = %.3f; " % (text, data.domain[index].name, example[index].value)
+            except:
+                pass
         return text
 
     # ###############################################

@@ -23,7 +23,7 @@ from OWVisTools import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor", "showLegend", "showContinuous"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -49,6 +49,8 @@ class OWPolyviz(OWWidget):
         self.jitterSize = 1
         self.kNeighbours = 1
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
+        self.showLegend = 1
+        self.showContinuous = 0
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -66,6 +68,7 @@ class OWPolyviz(OWWidget):
         self.box.addWidget(self.graph)
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
+        self.graph.updateSettings(statusBar = self.statusBar)
         
         self.statusBar.message("")
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -98,8 +101,12 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
         self.classCombo = QComboBox(self.selClass)
-        self.showContinuousCB = QCheckBox('show continuous', self.selClass)
-        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
+        self.hbox = QHBox(self.selClass)
+        self.showContinuousCB = QCheckBox('show continuous', self.hbox)
+        self.showLegendCB = QCheckBox('show legend', self.hbox)
+        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setShowContinuous)
+        self.connect(self.showLegendCB, SIGNAL("clicked()"), self.setShowLegend)
+        
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -136,6 +143,10 @@ class OWPolyviz(OWWidget):
         self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
         self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
 
+        self.connect(self.optimizationDlg.evaluateButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
+        self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
+        self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)        
+
         
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
 
@@ -149,47 +160,6 @@ class OWPolyviz(OWWidget):
         self.activateLoadedSettings()
 
         self.resize(900, 700)
-
-
-    def testCurrentProjections(self):
-        kList = [3,5,10,15,20,30,50,70,100,150,200]
-        #kList = [60]
-        className = str(self.classCombo.currentText())
-        results = []
-        
-        #for i in range(min(300, self.optimizationDlg.interestingList.count())):
-        for i in range(self.optimizationDlg.interestingList.count()):
-            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
-            sumAcc = 0.0
-            print "Experiment %2.d - %s" % (i, str(list))
-            for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
-            results.append((sumAcc/float(len(kList)), tableLen, list))
-
-        self.optimizationDlg.clear()
-        while results != []:
-            (accuracy, tableLen, list) = max(results)
-            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
-            results.remove((accuracy, tableLen, list))
-
-        self.optimizationDlg.updateNewResults()
-        self.optimizationDlg.save("temp.proj")
-        self.optimizationDlg.interestingList.setCurrentItem(0)
-
-
-    def reverseSelectedAttribute(self, item):
-        text = str(item.text())
-        name = text[:-2]
-        self.attributeReverse[name] = not self.attributeReverse[name]
-
-        for i in range(self.shownAttribsLB.count()):
-            if str(self.shownAttribsLB.item(i).text()) == str(item.text()):
-                self.shownAttribsLB.removeItem(i)
-                if self.attributeReverse[name] == 1:    self.shownAttribsLB.insertItem(name + ' -', i)
-                else:                                   self.shownAttribsLB.insertItem(name + ' +', i)
-                self.shownAttribsLB.setCurrentItem(i)
-                self.updateGraph()
-                return
-        
 
 
     # #########################
@@ -220,6 +190,10 @@ class OWPolyviz(OWWidget):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
 
+        self.showContinuousCB.setChecked(self.showContinuous)
+        self.showLegendCB.setChecked(self.showLegend)
+
+        self.graph.updateSettings(showLegend = self.showLegend)
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -228,6 +202,153 @@ class OWPolyviz(OWWidget):
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setScaleFactor(self.scaleFactor)
 
+    # #########################
+    # KNN OPTIMIZATION BUTTON EVENTS
+    # #########################
+
+    def evaluateCurrentProjection(self):
+        acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)
+        QMessageBox.information( None, "Polyviz", 'Accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+
+    def showKNNCorect(self):
+        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 1)
+        self.repaint()
+
+    def showKNNWrong(self):
+        self.graph.updateData(self.getShownAttributeList(), showKNNModel = 1, showCorrect = 0)
+        self.repaint()
+        
+
+    def testCurrentProjections(self):
+        kList = [3,5,10,15,20,30,50,70,100,150,200]
+        results = []
+        
+        #for i in range(min(300, self.optimizationDlg.interestingList.count())):
+        for i in range(self.optimizationDlg.interestingList.count()):
+            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
+            sumAcc = 0.0
+            print "Experiment %2.d - %s" % (i, str(list))
+            for k in kList: sumAcc += self.graph.getProjectionQuality(list, kNeighbours = k)
+            results.append((sumAcc/float(len(kList)), tableLen, list))
+
+        self.optimizationDlg.clear()
+        while results != []:
+            (accuracy, tableLen, list) = max(results)
+            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
+            results.remove((accuracy, tableLen, list))
+
+        self.optimizationDlg.updateNewResults()
+        self.optimizationDlg.save("temp.proj")
+        self.optimizationDlg.interestingList.setCurrentItem(0)
+
+
+    def setKNeighbours(self, n):
+        self.kNeighbours = self.kNeighboursNums[n]
+        self.optimizationDlg.kValue = self.kNeighbours
+        self.graph.updateSettings(kNeighbours = self.kNeighbours)
+
+    # ####################################
+    # find optimal class separation for shown attributes
+    def optimizeSeparation(self):
+        if self.data != None:
+            if len(self.getShownAttributeList()) > 7:
+                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                if res != 0: return
+
+            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
+            if self.tryReverse.isChecked() == 1: reverseList = None
+            else: reverseList = self.attributeReverse
+
+            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
+            if text == "ALL":
+                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList, progressBar = self.progressBar)
+            else:
+                select = int(text)
+                total = len(self.getShownAttributeList())
+                combin = combinations(select, total)
+                self.progressBar.setTotalSteps(combin)
+                self.progressBar.setProgress(0)
+                self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time(), minExamples = int(str(self.optimizationDlg.minTableLenEdit.text())))
+                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, select, int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
+               
+            if fullList == []: return
+
+            # fill the "interesting visualizations" list box
+            #self.optimizationDlg.clear()
+            for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
+                (accuracy, tableLen, list, reverse) = max(fullList)
+                fullList.remove((accuracy, tableLen, list, reverse))
+                self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
+
+            self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
+            self.showSelectedAttributes()
+
+    # #############################################
+    # find optimal separation for all possible subsets of shown attributes
+    def optimizeAllSubsetSeparation(self):
+        if self.data != None:
+            if len(self.getShownAttributeList()) > 7:
+                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                if res != 0: return
+
+            text = str(self.optimizationDlg.maxLenCombo.currentText())
+
+            if text == "ALL": maxLen = len(self.getShownAttributeList())
+            else:             maxLen = int(text)
+
+            # compute the number of possible subsets so that when computing we can give a feedback on the progress
+            allVisible = len(self.getShownAttributeList())
+            table = []; total = 0
+            for i in range(2,maxLen+1):
+                possible = fact(allVisible) / (fact(i) * fact(allVisible-i))
+                table.append(possible)
+                total += possible
+
+            self.graph.updateSettings(possibleSubsetsTable = table, totalPossibleSubsets = total, percentDataUsed = self.optimizationDlg.percentDataUsed, minExamples = int(str(self.optimizationDlg.minTableLenEdit.text())))
+            maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
+            if self.tryReverse.isChecked() == 1:
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, maxLen, maxResultsLen, progressBar = self.progressBar)
+            else:
+                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, maxLen, maxResultsLen, progressBar = self.progressBar)
+            
+            # fill the "interesting visualizations" list box
+            for i in range(len(fullList)):
+                (accuracy, tableLen, list, reverse) = max(fullList)
+                fullList.remove((accuracy, tableLen, list, reverse))
+                self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
+
+            self.optimizationDlg.updateNewResults()
+            self.optimizationDlg.save("temp.proj")
+    
+    def interestingProjectionsAddItem(self, accuracy, tableLen, attrList, reverse):
+        strList = "["
+        for i in range(len(attrList)):
+            if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
+                strList += attrList[i] + "-, "
+            else:
+                strList += attrList[i] + "+, "
+        strList = strList[:-2] + "]"
+        self.optimizationDlg.insertItem(accuracy, tableLen, attrList, strList)
+        
+
+    # #########################
+    # POLYVIZ EVENTS
+    # #########################
+    def reverseSelectedAttribute(self, item):
+        text = str(item.text())
+        name = text[:-2]
+        self.attributeReverse[name] = not self.attributeReverse[name]
+
+        for i in range(self.shownAttribsLB.count()):
+            if str(self.shownAttribsLB.item(i).text()) == str(item.text()):
+                self.shownAttribsLB.removeItem(i)
+                if self.attributeReverse[name] == 1:    self.shownAttribsLB.insertItem(name + ' -', i)
+                else:                                   self.shownAttribsLB.insertItem(name + ' +', i)
+                self.shownAttribsLB.setCurrentItem(i)
+                self.updateGraph()
+                return
+        
 
     def setScaleFactor(self, n):
         self.scaleFactor = float(self.scaleFactorList[n])
@@ -264,10 +385,6 @@ class OWPolyviz(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setKNeighbours(self, n):
-        self.kNeighbours = self.kNeighboursNums[n]
-        self.optimizationDlg.kValue = self.kNeighbours
-
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
         self.attrContOrder = self.attributeContOrder[n]
@@ -282,97 +399,7 @@ class OWPolyviz(OWWidget):
             self.setShownAttributeList(self.data)
         self.updateGraph()
 
-    # ####################################
-    # find optimal class separation for shown attributes
-    def optimizeSeparation(self):
-        if self.data != None:
-            if len(self.getShownAttributeList()) > 7:
-                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
-                if res != 0: return
-
-            text = str(self.optimizationDlg.exactlyLenCombo.currentText())
-            if self.tryReverse.isChecked() == 1: reverseList = None
-            else: reverseList = self.attributeReverse
-
-            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
-            if text == "ALL":
-                fullList = self.graph.getOptimalSeparation(self.getShownAttributeList(), reverseList, str(self.classCombo.currentText()), self.kNeighbours, progressBar = self.progressBar)
-            else:
-                select = int(text)
-                total = len(self.getShownAttributeList())
-                combin = combinations(select, total)
-                self.progressBar.setTotalSteps(combin)
-                self.progressBar.setProgress(0)
-                self.graph.totalPossibilities = combin
-                self.graph.triedPossibilities = 0
-                self.graph.startTime = time.time()
-                self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
-                fullList = self.graph.getOptimalExactSeparation(self.getShownAttributeList(), [], reverseList, str(self.classCombo.currentText()), self.kNeighbours, select, int(str(self.optimizationDlg.resultListCombo.currentText())), progressBar = self.progressBar)
-               
-            if fullList == []: return
-
-            # fill the "interesting visualizations" list box
-            #self.optimizationDlg.clear()
-            for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
-                (accuracy, tableLen, list, reverse) = max(fullList)
-                fullList.remove((accuracy, tableLen, list, reverse))
-                self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
-
-            self.optimizationDlg.updateNewResults()
-            self.optimizationDlg.save("temp.proj")
-            self.showSelectedAttributes()
-
-    # #############################################
-    # find optimal separation for all possible subsets of shown attributes
-    def optimizeAllSubsetSeparation(self):
-        if self.data != None:
-            if len(self.getShownAttributeList()) > 7:
-                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
-                if res != 0: return
-
-            text = str(self.optimizationDlg.maxLenCombo.currentText())
-
-            if text == "ALL": maxLen = len(self.getShownAttributeList())
-            else:             maxLen = int(text)
-
-            # compute the number of possible subsets so that when computing we can give a feedback on the progress
-            allVisible = len(self.getShownAttributeList())
-            table = []; total = 0
-            for i in range(2,maxLen+1):
-                possible = fact(allVisible) / (fact(i) * fact(allVisible-i))
-                table.append(possible)
-                total += possible
-
-            self.graph.possibleSubsetsTable = table
-            self.graph.totalPossibleSubsets = total
-            self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
-            self.graph.minExamples = int(str(self.optimizationDlg.minTableLenEdit.text()))
-            maxResultsLen = int(str(self.optimizationDlg.resultListCombo.currentText()))
-            if self.tryReverse.isChecked() == 1:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), None, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, progressBar = self.progressBar)
-            else:
-                fullList = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), self.attributeReverse, str(self.classCombo.currentText()), self.kNeighbours, maxLen, maxResultsLen, progressBar = self.progressBar)
-            
-            # fill the "interesting visualizations" list box
-            #self.optimizationDlg.clear()
-            for i in range(min(len(fullList), maxResultsLen)):
-                (accuracy, tableLen, list, reverse) = max(fullList)
-                fullList.remove((accuracy, tableLen, list, reverse))
-                self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
-
-            self.optimizationDlg.updateNewResults()
-            self.optimizationDlg.save("temp.proj")
     
-    def interestingProjectionsAddItem(self, accuracy, tableLen, attrList, reverse):
-        strList = "["
-        for i in range(len(attrList)):
-            if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
-                strList += attrList[i] + "-, "
-            else:
-                strList += attrList[i] + "+, "
-        strList = strList[:-2] + "]"
-        self.optimizationDlg.insertItem(accuracy, tableLen, attrList, strList)
-
     #update status on progress bar - gets called by OWPolyvizGraph
     def updateProgress(self, current, total):
         self.progressBar.setTotalSteps(total)
@@ -483,9 +510,21 @@ class OWPolyviz(OWWidget):
     # #####################
 
     def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.attributeReverse, self.statusBar)
+        self.graph.updateSettings(className = str(self.classCombo.currentText()))
+        self.graph.updateData(self.getShownAttributeList(), self.attributeReverse)
         #self.graph.update()
         self.repaint()
+
+    def setShowContinuous(self):
+        self.showContinuous = self.showContinuousCB.isChecked()
+        self.setClassCombo()
+        self.updateGraph()
+
+    def setShowLegend(self):
+        self.showLegend = self.showLegendCB.isChecked()
+        self.graph.updateSettings(showLegend = self.showLegend)
+        self.updateGraph()
+
 
     # set combo box values with attributes that can be used for coloring the data
     def setClassCombo(self):
