@@ -181,10 +181,10 @@ class OWLiftCurve(OWROC):
         self.loadSettings()
 
         # GUI
-        self.missClassificationCostQVB = QVGroupBox(self)
-        self.missClassificationCostQVB.hide()
+##        self.missClassificationCostQVB = QVGroupBox(self)
+##        self.missClassificationCostQVB.hide()
         self.grid.expand(3, 3)
-        self.grid.addMultiCellWidget(self.missClassificationCostQVB,0,3,2,2)
+##        self.grid.addMultiCellWidget(self.missClassificationCostQVB,0,3,2,2)
 
         self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
 ##        self.graphsGridLayoutQGL.setResizeMode(QGridLayout.Fixed)
@@ -195,11 +195,14 @@ class OWLiftCurve(OWROC):
         # inputs
         # data and graph temp variables
         self.addInput("results")
+        self.addInput("target")
 
         # temp variables
         self.dres = None
         self.classifierColor = None
         self.numberOfClasses  = 0
+        self.targetClass = 0
+        self.clPerformanceControls = []
         self.numberOfClassifiers = 0
         self.numberOfIterations = 0
         self.graphs = []
@@ -224,13 +227,13 @@ class OWLiftCurve(OWROC):
         self.splitQS.setOrientation(Qt.Vertical)
 
         ## class selection (classQLB)
-        self.classQVGB = QVGroupBox(self.splitQS)
-        self.classQVGB.setTitle("Classes")
-        self.classQLB = QListBox(self.classQVGB)
-        self.classQLB.setSelectionMode(QListBox.Multi)
-        self.unselectAllClassedQLB = QPushButton("(Un)select all", self.classQVGB)
-        self.connect(self.unselectAllClassedQLB, SIGNAL("clicked()"), self.SUAclassQLB)
-        self.connect(self.classQLB, SIGNAL("selectionChanged()"), self.classSelectionChange)
+##        self.classQVGB = QVGroupBox(self.splitQS)
+##        self.classQVGB.setTitle("Classes")
+##        self.classQLB = QListBox(self.classQVGB)
+##        self.classQLB.setSelectionMode(QListBox.Multi)
+##        self.unselectAllClassedQLB = QPushButton("(Un)select all", self.classQVGB)
+##        self.connect(self.unselectAllClassedQLB, SIGNAL("clicked()"), self.SUAclassQLB)
+##        self.connect(self.classQLB, SIGNAL("selectionChanged()"), self.classSelectionChange)
 
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = QVGroupBox(self.splitQS)
@@ -257,6 +260,7 @@ class OWLiftCurve(OWROC):
         self.performanceQVGB = QVGroupBox(self.space)
         self.performanceQVGB.setTitle("Performance line")
         self.showPerformanceAnalysisQCB = QCheckBox("Enable", self.performanceQVGB)
+        self.missClassificationCostQVB = QVBox(self.performanceQVGB)
         self.connect(self.showPerformanceAnalysisQCB, SIGNAL("stateChanged(int)"), self.setShowPerformanceAnalysis)
         self.showPerformanceAnalysisQCB.setChecked(0)
 
@@ -307,7 +311,7 @@ class OWLiftCurve(OWROC):
     def results(self, dres):
         self.dres = dres
 
-        self.classQLB.clear()
+##        self.classQLB.clear()
         self.classifiersQLB.clear()
         self.testSetsQLB.clear()
         self.removeGraphs()
@@ -317,10 +321,11 @@ class OWLiftCurve(OWROC):
             ## classQLB
             self.numberOfClasses = len(self.dres.classValues)
             self.graphs = []
+
             for i in range(self.numberOfClasses):
                 graph = singleClassLiftCurveGraph(self.mainArea, "", self.dres.classValues[i])
                 self.graphs.append( graph )
-            self.classSelectionChange()
+            self.target(self.targetClass)
 
             ## classifiersQLB
             self.classifierColor = []
@@ -342,8 +347,8 @@ class OWLiftCurve(OWROC):
 
             ## update graphics
             ## classQLB
-            self.classQLB.insertStrList(self.dres.classValues)
-            self.classQLB.selectAll(1)  ##or: if numberOfClasses > 0: self.classQLB.setSelected(0, 1)
+##            self.classQLB.insertStrList(self.dres.classValues)
+##            self.classQLB.selectAll(1)  ##or: if numberOfClasses > 0: self.classQLB.setSelected(0, 1)
 
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
@@ -375,4 +380,5 @@ if __name__ == "__main__":
     owdm.show()
     a.exec_loop()
     owdm.saveSettings()
+
 
