@@ -2171,7 +2171,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
   PyTRY
 
     char *filename = NULL;
-    if (PyArg_ParseTuple(argstuple, "|s", &filename)) {
+    if (PyArg_ParseTuple(argstuple, "s", &filename)) {
       PyObject *res;
       
       res = loadDataByPython(type, filename, argstuple, keywords, false);
