@@ -651,11 +651,7 @@ class OWVisGraph(OWGraph):
             x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
             y1 = self.invTransform(QwtPlot.yLeft, self.ypos)
             x2 = xTransf
-            if self.state == SELECT_RECTANGLE: y2 = yTransf
-            else:
-                if e.y() > self.ypos: y = self.ypos + (abs(self.xpos - e.x()) * self.height()/self.width())
-                else:                 y = self.ypos - (abs(self.xpos - e.x()) * self.height()/self.width())
-                y2 = self.invTransform(QwtPlot.yLeft, y)
+            y2 = yTransf
             xData = [x1, x1, x2, x2, x1]
             yData = [y1, y2, y2, y1, y1]
             self.tempSelectionCurve.setData(xData, yData)
@@ -675,15 +671,16 @@ class OWVisGraph(OWGraph):
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
             xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
-            ymin = min(self.ypos, e.y());  ymax = ymin + ((xmax-xmin) * self.height()/self.width())
+            ymin = min(self.ypos, e.y());  ymax = max(self.ypos, e.y())
+            
+            self.removeCurve(self.zoomKey)
+            self.tempSelectionCurve = None
+
+            if xmin == xmax or ymin == ymax: return
 
             xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
             ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
-
-            self.removeCurve(self.zoomKey)
-            self.tempSelectionCurve = None
             
-            if xmin == xmax or ymin == ymax: return
             self.blankClick = 0
             self.zoomStack.append(self.zoomState)
             self.zoomState = (xmin, xmax, ymin, ymax)
