@@ -118,10 +118,10 @@ class OWKMeans(OWWidget):
         self.send("Classified Examples", self.cdata)
         
     def dataset(self, data):
-        self.data = orange.Preprocessor_dropMissing(data)
         if not data:
             pass
         else:
+            self.data = orange.Preprocessor_dropMissing(data)
             self.cluster()
 
 ##################################################################################################
