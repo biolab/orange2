@@ -120,7 +120,7 @@ class OWVisGraph(OWGraph):
                     if data[i][index].isSpecial() == 1: original.append("?"); noJittering.append("?"); coloring.append("?"); continue
                     val = variableValueIndices[data[i][index].value]
                     noJittering.append( (1.0 + 2.0 * val)/ countx2 )
-                    original.append( ((1.0 + 2.0 * val)/ countx2) + self.rndCorrection(self.jitterSize/count100))
+                    original.append( ((1.0 + 2.0 * val)/ countx2) + ((1+val)/count) * self.rndCorrection(self.jitterSize/count100))
                     if count < len(self.colorHueValues): coloring.append(self.colorHueValues[val])
                     else:                                coloring.append( val / float(count) )
 
