@@ -22,7 +22,7 @@ import OWToolbars
 class OWParallelCoordinates(OWWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
     #spreadType=["none","uniform","triangle","beta"]
-    attributeContOrder = ["None","RelieF","Correlation"]
+    attributeContOrder = ["None","RelieF","Correlation", "Fisher discriminant"]
     attributeDiscOrder = ["None","RelieF","GainRatio", "Oblivious decision graphs"]
     jitterSizeList = ['0', '2','5','10', '15', '20', '30']
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -34,7 +34,7 @@ class OWParallelCoordinates(OWWidget):
         self.resize(700,700)
 
         self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute selection", list)]
     
         #set default settings
         self.attrDiscOrder = "None"
@@ -71,7 +71,7 @@ class OWParallelCoordinates(OWWidget):
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWParallelGraph(self.mainArea)
+        self.graph = OWParallelGraph(self, self.mainArea)
         self.slider = QSlider(QSlider.Horizontal, self.mainArea)
         self.sliderRange = 0
         self.slider.setRange(0, 0)
@@ -297,6 +297,9 @@ class OWParallelCoordinates(OWWidget):
                 self.send("Example Distribution", merged.select(attrs))
             else:           self.send("Example Distribution", None)
 
+    def sendAttributeSelection(self, attrs):
+        self.send("Attribute selection", attrs)
+
 
     # ####################
     # LIST BOX FUNCTIONS
@@ -386,7 +389,7 @@ class OWParallelCoordinates(OWWidget):
 
         if data == None: return
         
-        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+        shown, hidden = OWVisAttrSelection.selectAttributes(data, self.graph, self.attrContOrder, self.attrDiscOrder)
         if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
             self.shownAttribsLB.insertItem(data.domain.classVar.name)
         for attr in shown:
@@ -507,6 +510,7 @@ class OWParallelCoordinatesOptions(QVGroupBox):
         self.attrContNone = QRadioButton('None', self.attrContButtons)
         self.attrContRelieF = QRadioButton('RelieF', self.attrContButtons)
         self.attrCorrelation = QRadioButton('Correlation', self.attrContButtons)
+        self.attrFisher = QRadioButton('Fisher discriminant', self.attrContButtons)
 
         # ####
         # discrete attribute ordering

@@ -9,13 +9,18 @@ from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
+from LinearAlgebra import *
 from statc import pearsonr
 
+
+
+
 class OWParallelGraph(OWVisGraph):
-    def __init__(self, parent = None, name = None):
+    def __init__(self, parallelDlg, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
 
+        self.parallelDlg = parallelDlg
         self.showDistributions = 0
         self.hidePureExamples = 1
         self.showCorrelations = 1
@@ -83,12 +88,10 @@ class OWParallelGraph(OWVisGraph):
         xs = []
 
         # create a table of indices that stores the sequence of variable indices
-        for label in labels:
-            index = self.attributeNames.index(label)
-            indices.append(index)
+        for label in labels: indices.append(self.attributeNames.index(label))
 
         xs = range(length)
-        dataSize = len(self.scaledData[0])        
+        dataSize = len(self.scaledData[0])
 
         #############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
@@ -100,8 +103,7 @@ class OWParallelGraph(OWVisGraph):
             # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
                 self.metaid = orange.newmetaid()
-                metavar = orange.IntVariable("ItemIndex")
-                self.rawdata.domain.addmeta(self.metaid, metavar)
+                self.rawdata.domain.addmeta(self.metaid, orange.IntVariable("ItemIndex"))
                 for i in range(dataSize): self.rawdata[i].setmeta(self.metaid, i)
 
             for i in range(length):
@@ -113,28 +115,24 @@ class OWParallelGraph(OWVisGraph):
 
                     ind = 0
                     while ind < len(tempData):
-                        index = int(tempData[ind].getmeta(self.metaid))
-                        if dataStop[index] == lastIndex:
+                        if dataStop[int(tempData[ind].getmeta(self.metaid))] == lastIndex:
                             val = tempData[ind][classNameIndex]
                             break
                         ind += 1
                         
                     # do all instances belong to the same class?
                     while ind < len(tempData):
-                        index = int(tempData[ind].getmeta(self.metaid))
-                        if dataStop[index] != lastIndex: ind += 1; continue
+                        if dataStop[int(tempData[ind].getmeta(self.metaid))] != lastIndex: ind += 1; continue
                         if val != tempData[ind][classNameIndex]: break
                         ind += 1
 
 
-                    #print attr, attrVal, ind, len(tempData)
                     # if all examples belong to one class we repair the meta variable values
                     if ind >= len(tempData):
-                        val = indices[i]
                         for item in tempData:
                             index = int(item.getmeta(self.metaid))
                             if dataStop[index] == lastIndex:
-                                dataStop[index] = val
+                                dataStop[index] = indices[i]
 
         # first create all curves
         if targetValue != None:
@@ -185,8 +183,7 @@ class OWParallelGraph(OWVisGraph):
             self.showDistributionValues(targetValue, self.rawdata, indices, dataStop)
             
         curve = subBarQwtPlotCurve(self)
-        newColor = QColor(0, 0, 0)
-        curve.color = newColor
+        curve.color = QColor(0, 0, 0)
         curve.setBrush(QBrush(QBrush.NoBrush))
         ckey = self.insertCurve(curve)
         self.setCurveStyle(ckey, QwtCurve.UserCurve)
@@ -222,11 +219,13 @@ class OWParallelGraph(OWVisGraph):
                     attrVals = self.getVariableValuesSorted(self.rawdata, labels[i])
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
-                        mkey = self.insertMarker(attrVals[pos])
+                        # show a rectangle behind the marker
+                        mkey = self.insertMarker(nonTransparentMarker(QColor(255,255,255), self))
+                        self.marker(mkey).setLabel(attrVals[pos])
                         font = self.marker(mkey).font(); font.setBold(1); self.marker(mkey).setFont(font)
                         self.marker(mkey).setXValue(i)
                         self.marker(mkey).setYValue(float(1+2*pos)/float(2*valsLen))
-                        self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignHCenter)
+                        self.marker(mkey).setLabelAlignment(Qt.AlignRight + Qt.AlignVCenter)
                     
         ###################################################
         # show correlations
@@ -248,6 +247,7 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey1).setYValue(1.0)
                 self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
+        # show the legend
         if self.enabledLegend == 1 and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             varValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             for ind in range(len(varValues)):
@@ -384,6 +384,14 @@ class OWParallelGraph(OWVisGraph):
             QToolTip.remove(self, rect)
         self.toolRects = []
 
+
+    # if user clicked between two lines send signal that 
+    def staticMouseClick(self, e):
+        if self.parallelDlg:
+            x1 = int(self.invTransform(QwtPlot.xBottom, e.x()))
+            axis = self.axisScaleDraw(QwtPlot.xBottom)
+            self.parallelDlg.sendAttributeSelection([str(axis.label(x1)), str(axis.label(x1+1))])
+
     def updateLayout(self):
         OWVisGraph.updateLayout(self)
         self.removeTooltips()
@@ -445,12 +453,4 @@ class OWParallelGraph(OWVisGraph):
         return (selected, unselected, merged)
 
     
-if __name__== "__main__":
-    #Draw a simple graph
-    a = QApplication(sys.argv)        
-    c = OWParallelGraph()
-    c.setCoordinateAxes(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
-        
-    a.setMainWidget(c)
-    c.show()
-    a.exec_loop()
+    
