@@ -266,7 +266,7 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, co
 
   int *spec = new int[nColumns];
   
-  for(classNo = 0; classNo < ncl; classNo++, fmi++) {
+  for(classNo = 0; classNo < ncl; classNo++, fmi++, ami++) {
     const int classBegin = classBoundaries[classNo];
     const int classEnd = classBoundaries[classNo+1];
 

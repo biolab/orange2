@@ -90,6 +90,7 @@ public:
   __REGISTER_ABSTRACT_CLASS
 
   PFloatList normalizers; //P normalizing factors for attributes
+  PFloatList bases; //P lowest values for attributes
   int domainVersion; //P version of domain on which the ranges were computed
 
   TExamplesDistance_Normalized();

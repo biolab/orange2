@@ -169,7 +169,7 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
   if (domainVersion>=0
         ? (domainVersion != e1.domain->version)
         : ((normalizers->size() > e1.domain->variables->size()) || (normalizers->size()< e1.domain->attributes->size())))
-    raiseError("examples are from wrong domain");
+    raiseError("examples are from a wrong domain");
 
   difs = vector<float>(normalizers->size(), 0.0);
   vector<float>::iterator di(difs.begin());
@@ -191,6 +191,30 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
 }
 
 
+/*
+void TExampleDistance_Normalized::getNormalized(const TExample &e1, vector<float> &normalized)
+{
+  checkProperty(normalizers);
+  checkProperty(bases);
+
+  if (  domainVersion>=0
+        ? (domainVersion != e1.domain->version)
+        : ((normalizers->size() > e1.domain->variables->size()) || (normalizers->size()< e1.domain->attributes->size())))
+    raiseError("example is from a wrong domain");
+
+  normalized.clear();
+  TExample::const_iterator ei(examples.begin());
+  for(TFloatList::const_iterator normi(normalizers->begin()), norme(normalizers->end()), basi(bases.begin()); normi!=norme; ei++, normi++, basi++) {
+    if ((*ei).isSpecial())
+      normalized.push_back(numeric_limits<float>::quiet_NaN);
+    else
+      if ((*si>0) && ((*ei).varType == TValue::FLOATVAR))
+        push_back(((*ei).floatV - *basi) / *normi);
+      else
+        push_back(-1.0);
+  }
+}
+*/
 
 /*TExamplesDistanceConstructor_Maximal::TExamplesDistanceConstructor_Maximal()
 {}
