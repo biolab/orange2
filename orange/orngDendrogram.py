@@ -14,8 +14,10 @@
 #   which outputs a piddle canvas with the image of the dendrogram.
 #
 # ChangeLog:
-#
-#
+#   2003/05/13:
+#       - line_size
+#   2003/07/18:
+#       - support for other canvases 
 # 
 
 
@@ -24,25 +26,31 @@ import Tkinter, ImageTk
 import piddlePIL
 
 class DendrogramPlot:
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40):
-        canvas = piddlePIL.PILCanvas()
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, canvas = None):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
 
         ## ADJUST DIMENSIONS ###        
 
+        if canvas == None:
+            tcanvas = piddlePIL.PILCanvas()
+        else:
+            tcanvas = canvas
+
         if height==None:
             # compute the height
-            lineskip = int(2.0*canvas.fontHeight()+1)
-            height = int(2.0*margin + lineskip*(len(labels)-1) + canvas.fontHeight()+1)
+            lineskip = int(line_size*tcanvas.fontHeight()+1)
+            height = int(2.0*margin + lineskip*(len(labels)-1) + tcanvas.fontHeight()+1)
         else:
             # compute lineskip
-            lineskip = (height - 2.0*margin - canvas.fontHeight()) / (len(labels)-1)
-        canvas = piddlePIL.PILCanvas(size=(width,height))
+            lineskip = (height - 2.0*margin - tcanvas.fontHeight()) / (len(labels)-1)
         maxlabel = 0.0
         for s in labels:
-            maxlabel = max(maxlabel,canvas.stringWidth(s))
+            maxlabel = max(maxlabel,tcanvas.stringWidth(s))
+
+        if canvas == None:
+            canvas = piddlePIL.PILCanvas(size=(width,height))
 
         ### EXTRACT THE DENDROGRAM ###
         
