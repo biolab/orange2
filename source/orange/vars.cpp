@@ -50,7 +50,7 @@ TPropertyDescription TAttributedFloatList_properties[] = {
 };
 
 size_t const TAttributedFloatList_components[] = { 0};
-TClassDescription TAttributedFloatList::st_classDescription = { "TAttributedFloatList", &typeid(TAttributedFloatList), &TOrange::st_classDescription, TAttributedFloatList_properties, TAttributedFloatList_components };
+TClassDescription TAttributedFloatList::st_classDescription("TAttributedFloatList", &typeid(TAttributedFloatList), &TOrange::st_classDescription, TAttributedFloatList_properties, TAttributedFloatList_components);
 TClassDescription const *TAttributedFloatList::classDescription() const { return &TAttributedFloatList::st_classDescription; }
 TOrange *TAttributedFloatList::clone() const { return mlnew TAttributedFloatList(*this); }
 
@@ -61,7 +61,7 @@ TPropertyDescription TAttributedBoolList_properties[] = {
 };
 
 size_t const TAttributedBoolList_components[] = { 0};
-TClassDescription TAttributedBoolList::st_classDescription = { "TAttributedBoolList", &typeid(TAttributedBoolList), &TOrange::st_classDescription, TAttributedBoolList_properties, TAttributedBoolList_components };
+TClassDescription TAttributedBoolList::st_classDescription("TAttributedBoolList", &typeid(TAttributedBoolList), &TOrange::st_classDescription, TAttributedBoolList_properties, TAttributedBoolList_components);
 TClassDescription const *TAttributedBoolList::classDescription() const { return &TAttributedBoolList::st_classDescription; }
 TOrange *TAttributedBoolList::clone() const { return mlnew TAttributedBoolList(*this); }
 
@@ -73,7 +73,7 @@ TPropertyDescription TValueList_properties[] = {
 };
 
 size_t const TValueList_components[] = { 0};
-TClassDescription TValueList::st_classDescription = { "TValueList", &typeid(TValueList), &TOrange::st_classDescription, TValueList_properties, TValueList_components };
+TClassDescription TValueList::st_classDescription("TValueList", &typeid(TValueList), &TOrange::st_classDescription, TValueList_properties, TValueList_components);
 TClassDescription const *TValueList::classDescription() const { return &TValueList::st_classDescription; }
 TOrange *TValueList::clone() const { return mlnew TValueList(*this); }
 
