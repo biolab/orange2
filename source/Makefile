@@ -5,7 +5,7 @@ ORANGEHOME= ..
 
 SOURCEDIR = $(ORANGEHOME)/source
 ODIR = /tmp/orange
-BINDIR = $(ORANGEHOME)/bin
+BINDIR = $(ORANGEHOME)/modules
 
 ORANGEDIR  = $(SOURCEDIR)/orange
 INCLUDEDIR = $(SOURCEDIR)/include
@@ -18,7 +18,7 @@ PXDIR = $(ORANGEDIR)/px
 
 EXTERNALDIR = $(ORANGEHOME)/source/external
 
-# Below is used for determining directory with Python.h.
+# Lines below determine the directory with Python.h.
 # If this does not work, find Python.h yourself and enter
 # the directory below.
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
@@ -95,18 +95,21 @@ $(BINDIR)/statc.so:	$(STATC_OBJECTS)
 
 $(ODIR)/c45.a:	$(C45_OBJECTS)
 	ar r $(ODIR)/c45.a $(C45_OBJECTS)
+	rm $(C45D)/*.o
 
 
 install:	all
 	-mkdir -p $(PYTHONLIB)
-	$(warning If this fails, re-run 'make install' as root, or just set 'export PYTHONPATH=$(subst source,bin,$(shell pwd))')
+	$(warning If this fails, re-run 'make install' as root, or just set 'export PYTHONPATH=$(subst source,modules,$(shell pwd))')
 	mv $(BINDIR)/*.so $(PYTHONLIB)
 
 dist:
 	cd .. ; \
-	tar -czf orange07.tgz source copying building \
-		external/c45/rand_free.c external/c45/C45.dsp external/c45/directory_for_c45_files \
-		--exclude *.ncb --exclude *.plg --exclude *.ppp --exclude *.px --exclude *.bak --exclude *.opt --exclude stamp
+        sh ../dedos ; \
+	tar -czf orange07.tgz source doc modules copying building \
+		--exclude *.ncb --exclude *.plg --exclude *.ppp --exclude *.px --exclude *.bak --exclude *.opt --exclude stamp --exclude cvs --exclude *.so --exclude *.pyd \
+                --exclude OrangeCanvas --exclude GUIApplications --exclude OrangeWidgets --exclude external/*.c --exclude external/*.i ; \
+  	cd source
 
 
 clean:

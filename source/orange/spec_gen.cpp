@@ -303,7 +303,8 @@ TExampleIterator TGaussianNoiseGenerator::changeExample(const TExampleIterator &
           else
             raiseError("attribute with id %i is not continuous", (*pi).first);
 
-        val = TValue(gasdev(float(val), (*pi).second, genrandfloat_11(randomGenerator ? randomGenerator : globalRandom)));
+        genrandfloat_11 rg(randomGenerator ? randomGenerator : globalRandom);
+        val = TValue(gasdev(float(val), (*pi).second, rg));
     }
   }
   return it;
