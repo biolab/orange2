@@ -65,6 +65,31 @@ def createNoDiscDomain(domain):
             attributes.append(at)
     attributes.append(domain.classVar)
     return orange.Domain(attributes)
+
+def createFullNoDiscDomain(domain):
+    attributes = []
+    #iterate through domain
+    for at in domain.attributes:
+        #if att is discrete, create (numOfValues)-1 new ones and set getValueFrom
+        if at.varType == orange.VarTypes.Discrete:
+            for ival in range(len(at.values)):
+                # create attribute
+                newVar = orange.FloatVariable(at.name+"="+at.values[ival])
+                
+                # create classifier
+                vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
+                vals.append("?")
+                #print (vals)
+                cl = orange.ClassifierByLookupTable(newVar, at, vals)                
+                newVar.getValueFrom=cl
+
+                # append newVariable                
+                attributes.append(newVar)
+        else:
+            # add original attribute
+            attributes.append(at)
+    attributes.append(domain.classVar)
+    return orange.Domain(attributes)
                 
 # returns data set without discrete values. 
 def createNoDiscTable(olddata):
@@ -72,6 +97,11 @@ def createNoDiscTable(olddata):
     #print newdomain
     return olddata.select(newdomain)
 
+def createFullNoDiscTable(olddata):
+    newdomain = createFullNoDiscDomain(olddata.domain)
+    #print newdomain
+    return olddata.select(newdomain)
+    
 
 def hasDiscreteValues(domain):
     for at in domain.attributes:
@@ -131,7 +161,7 @@ class Univariate_LogRegLearner_Class:
         self.__dict__ = kwds
 
     def __call__(self, examples):
-        examples = createNoDiscTable(examples)
+        examples = createFullNoDiscTable(examples)
         classifiers = map(lambda x: LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(x, examples.domain.classVar)))), examples.domain.attributes)
         maj_classifier = LogisticLearner(orange.Preprocessor_dropMissing(examples.select(orange.Domain(examples.domain.classVar))))
         beta = [maj_classifier.beta[0]] + [x.beta[1] for x in classifiers]
