@@ -108,7 +108,7 @@ bool TVariable::special2str(const TValue &val, string &str) const
 
 
 
-bool TVariable::str2val_try(const string &valname, TValue &valu) const
+bool TVariable::str2val_try(const string &valname, TValue &valu)
 { try {
     str2val(valname, valu);
     return true;
@@ -234,7 +234,7 @@ void TEnumVariable::str2val_add(const string &valname, TValue &valu)
 }
 
 
-void TEnumVariable::str2val(const string &valname, TValue &valu) const
+void TEnumVariable::str2val(const string &valname, TValue &valu)
 {
   TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
   if (vi!=values->end())
@@ -245,7 +245,7 @@ void TEnumVariable::str2val(const string &valname, TValue &valu) const
 
 
 
-bool TEnumVariable::str2val_try(const string &valname, TValue &valu) const
+bool TEnumVariable::str2val_try(const string &valname, TValue &valu)
 {
   TStringList::const_iterator vi = find(values->begin(), values->end(), valname);
   if (vi!=values->end()) {
@@ -330,7 +330,7 @@ int TIntVariable::noOfValues() const
 
 
 
-void TIntVariable::str2val(const string &valname, TValue &valu) const
+void TIntVariable::str2val(const string &valname, TValue &valu)
 { if (str2special(valname, valu))
     return ;
 
@@ -344,7 +344,7 @@ void TIntVariable::str2val(const string &valname, TValue &valu) const
 }
 
 
-bool TIntVariable::str2val_try(const string &valname, TValue &valu) const
+bool TIntVariable::str2val_try(const string &valname, TValue &valu)
 { if (str2special(valname, valu))
     return true;
 
@@ -373,7 +373,9 @@ TFloatVariable::TFloatVariable()
 : TVariable(TValue::FLOATVAR, true),
   startValue(-1.0),
   endValue(0.0),
-  stepValue(-1.0)
+  stepValue(-1.0),
+  numberOfDecimals(3),
+  adjustDecimals(2)
 {}
 
 
@@ -381,7 +383,9 @@ TFloatVariable::TFloatVariable(const string &aname)
 : TVariable(aname, TValue::FLOATVAR, true),
   startValue(-1.0),
   endValue(0.0),
-  stepValue(-1.0)
+  stepValue(-1.0),
+  numberOfDecimals(3),
+  adjustDecimals(2)
 {}
 
 
@@ -418,30 +422,73 @@ int  TFloatVariable::noOfValues() const
 { return stepValue>0 ? int((endValue-startValue)/stepValue) : -1; }
 
 
-void TFloatVariable::str2val(const string &valname, TValue &valu) const
+inline int getNumberOfDecimals(const char *vals)
+{
+  for(const char *valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')) && (*valsi!='.'); valsi++);
+  if (!*valsi)
+    return -1;
+
+  for(; *valsi && (*valsi!='.'); valsi++);
+  if (!*valsi)
+    return 0;
+
+  int decimals = 0;
+  for(valsi++; *valsi && (*valsi>='0') && (*valsi<='9'); valsi++, decimals++);
+  return decimals;
+}
+
+
+void TFloatVariable::str2val(const string &valname, TValue &valu)
 { if (str2special(valname, valu))
     return;
 
+  const char *vals = valname.c_str();
   float f;
-  if (!sscanf(valname.c_str(), "%f", &f))
+  if (!sscanf(vals, "%f", &f))
     raiseError("invalid argument (a number expected)");
   if ((startValue<=endValue) && (stepValue>0) && ((f<startValue) || (f>endValue)))
     raiseError("value %5.3f out of range %5.3f-%5.3f", f, startValue, endValue);
 
   valu = TValue(f);
+
+  int decimals;
+  switch (adjustDecimals) {
+    case 2:
+      numberOfDecimals = getNumberOfDecimals(vals);
+      adjustDecimals = 1;
+      break;
+    case 1:
+      decimals = getNumberOfDecimals(vals);
+      if (decimals > numberOfDecimals)
+        numberOfDecimals = decimals;
+  }
 }
 
 
-bool TFloatVariable::str2val_try(const string &valname, TValue &valu) const
+bool TFloatVariable::str2val_try(const string &valname, TValue &valu)
 { if (str2special(valname, valu))
     return true;
 
+  const char *vals = valname.c_str();
   float f;
-  int ssr = sscanf(valname.c_str(), "%f", &f);
+  int ssr = sscanf(vals, "%f", &f);
   if (!ssr || (ssr==EOF) || ((startValue<=endValue) && (stepValue>0) && ((f<startValue) || (f>endValue))))
     return false;
 
   valu = TValue(f);
+
+  int decimals;
+  switch (adjustDecimals) {
+    case 2:
+      numberOfDecimals = getNumberOfDecimals(vals);
+      adjustDecimals = 1;
+      break;
+    case 1:
+      decimals = getNumberOfDecimals(vals);
+      if (decimals > numberOfDecimals)
+        numberOfDecimals = decimals;
+  }
+
   return true;
 }
 
@@ -451,7 +498,7 @@ void TFloatVariable::val2str(const TValue &valu, string &vname) const
     special2str(valu, vname);
   else {
     char buf[64];
-    sprintf(buf, "%f", valu.floatV);
+    sprintf(buf, "%.*f", numberOfDecimals, valu.floatV);
     vname = buf;
   }
 }

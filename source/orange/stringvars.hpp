@@ -63,7 +63,7 @@ public:
 
   virtual int  noOfValues() const;
 
-  virtual void str2val(const string &valname, TValue &valu) const;
+  virtual void str2val(const string &valname, TValue &valu);
   virtual void val2str(const TValue &valu, string &vname) const;
 };
 

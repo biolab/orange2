@@ -107,7 +107,7 @@ int TStringVariable::noOfValues() const
 { return -1; }
 
 
-void TStringVariable::str2val(const string &valname, TValue &valu) const
+void TStringVariable::str2val(const string &valname, TValue &valu)
 { valu = TValue(mlnew TStringValue(valname)); }
 
 

@@ -79,8 +79,8 @@ public:
   bool special2str(const TValue &val, string &str) const;
 
   virtual void val2str(const TValue &val, string &str) const =0;
-  virtual void str2val(const string &valname, TValue &valu) const =0;
-  virtual bool str2val_try(const string &valname, TValue &valu) const;
+  virtual void str2val(const string &valname, TValue &valu) =0;
+  virtual bool str2val_try(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
 
   virtual bool   firstValue(TValue &val) const =0;
@@ -122,8 +122,8 @@ public:
   virtual int  noOfValues() const;
 
   virtual void val2str(const TValue &val, string &str) const;
-  virtual void str2val(const string &valname, TValue &valu) const;
-  virtual bool str2val_try(const string &valname, TValue &valu) const;
+  virtual void str2val(const string &valname, TValue &valu);
+  virtual bool str2val_try(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
 };
 
@@ -146,8 +146,8 @@ public:
   virtual int noOfValues() const;
 
   virtual void val2str(const TValue &val, string &str) const;
-  virtual void str2val(const string &valname, TValue &valu) const;
-  virtual bool str2val_try(const string &valname, TValue &valu) const;
+  virtual void str2val(const string &valname, TValue &valu);
+  virtual bool str2val_try(const string &valname, TValue &valu);
 };
 
 
@@ -160,6 +160,9 @@ public:
   float endValue;   //P highest value
   float stepValue;  //P step
   
+  int numberOfDecimals; //P number of digits after decimal point
+  int adjustDecimals; //P adjust number of decimals according to the values converted (0 - no, 1 - yes, 2 - yes, but haven't seen any yet)
+
   TFloatVariable();
   TFloatVariable(const string &aname);
 
@@ -170,8 +173,8 @@ public:
   virtual int  noOfValues() const;
  
   virtual void val2str(const TValue &val, string &str) const;
-  virtual void str2val(const string &valname, TValue &valu) const;
-  virtual bool str2val_try(const string &valname, TValue &valu) const;
+  virtual void str2val(const string &valname, TValue &valu);
+  virtual bool str2val_try(const string &valname, TValue &valu);
 };
 
 #endif
