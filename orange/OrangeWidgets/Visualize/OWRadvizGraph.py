@@ -155,10 +155,9 @@ class OWRadvizGraph(OWVisGraph):
 
         if self.showAnchors:
             if self.hideRadius > 0:
-                rad = self.hideRadius / 10
-                xdata = [x*rad for x in xdata]
-                ydata = [y*rad for y in ydata]
-                self.addCurve("hidecircle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata + [xdata[0]], yData = ydata + [ydata[0]])
+                xdata = self.createXAnchors(100)*(self.hideRadius / 10)
+                ydata = self.createYAnchors(100)*(self.hideRadius / 10)
+                self.addCurve("hidecircle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
                 
             # draw dots at anchors
             shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
