@@ -20,7 +20,7 @@ class OWDataDomain(OWWidget):
     ## Class initialization ####################################################################################################################################
     ############################################################################################################################################################
     def __init__(self,parent = None):
-        OWWidget.__init__(self, parent, "Data Domain", "Attribute selection and data domain construction") #initialize base class
+        OWWidget.__init__(self, parent, "Data Domain") #initialize base class
 
         buttonSize = QSize(40, 30)
         upDownButtonSize = QSize(37,30)
@@ -33,8 +33,8 @@ class OWDataDomain(OWWidget):
         self.metaButtonLeft = False        
         
         # set channels
-        self.inputs = [("InputData", ExampleTable, self.onDataInput, 1)]
-        self.outputs = [("OutputData", ExampleTable),("OutputDataWithClass", ExampleTableWithClass)]
+        self.inputs = [("InputData", ExampleTable, self.onDataInput)]
+        self.outputs = [("OutputData", ExampleTable), ("OutputDataWithClass", ExampleTableWithClass)]
 
         self.space.setMinimumSize(QSize(650,500))
         self.hbox = QHBox(self.space)

@@ -2,7 +2,6 @@
 <name>Rank</name>
 <description>Rank is an Orange Widget that shows ranking of attributes 
 by their relevance for particular classification.</description>
-<category>Classification</category>
 <icon>icons/Rank.png</icon>
 <priority>200</priority>
 """
@@ -18,29 +17,13 @@ by their relevance for particular classification.</description>
 
 from qttable import *
 from OWWidget import *
-# from OWRankGraph import * #if using a graph
-
-#class myTableItem(QTableItem):
-#    def __init__(self,table,et,text):
-#        QTableItem.init(table,et,text)
-#    def key(self)
-#        return what?
 
 class OWRank(OWWidget):
     settingsList=["Precision","ReliefK","ReliefN","DiscretizationMethod","DisplayReliefF","DisplayInfoGain","DisplayGainRatio","DisplayGini"]
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "Rank",
-        """Rank is an Orange Widget that
-shows ranking of attributes 
-by their relevance for particular classification
-
-""",
-        TRUE,
-        FALSE)
-
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        OWWidget.__init__(self, parent, "Rank")
+        
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
         self.outputs = [] 
         
         #set default settings

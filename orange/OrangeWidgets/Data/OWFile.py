@@ -1,7 +1,6 @@
 """
 <name>File</name>
 <description>The File Widget is used for selecting and opening data files.</description>
-<category>Data</category>
 <icon>icons/File.png</icon>
 <priority>10</priority>
 """
@@ -16,13 +15,10 @@ from OWWidget import *
 import OWGUI, string, os.path
 
 class OWFile(OWWidget):
-    settingsList=["recentFiles","selectedFileName"]
+    settingsList=["recentFiles", "selectedFileName"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self,parent,"&File Widget",
-        "The File Widget is an Orange Widget\nused for selecting and opening data files.",
-        FALSE)
-        "Constructor"
+        OWWidget.__init__(self, parent, "File Widget")
 
         self.inputs = []
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]

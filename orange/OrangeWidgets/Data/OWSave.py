@@ -1,7 +1,6 @@
 """
 <name>Save</name>
 <description>The Widget for saving the data into a file.</description>
-<category>Data</category>
 <icon>icons/Save.png</icon>
 <priority>11</priority>
 """
@@ -19,12 +18,9 @@ class OWSave(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self,parent,"&Save Widget",
-        "The Save Widget is an Orange Widget\nfor saving the data into files.",
-        FALSE)
-        "Constructor"
+        OWWidget.__init__(self, parent, "Save Widget")
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = []
     
         self.recentFiles=[]

@@ -5,7 +5,6 @@
 """
 <name>Select Attributes</name>
 <description>Manual attribute selection and attribute grouping</description>
-<category>Data</category>
 <icon>icons/SelectAttributes.png</icon>
 <priority>1090</priority>
 """
@@ -24,14 +23,10 @@ class OWSelectAttributes(OWWidget):
     #settingsList = []
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent,
-                          "Select Attributes",
-                          "Manual selection of attributes,\n"+
-                            "and grouping of attributes into attribute sets.\n"+
-                            "Attribute groups are then used for attribute selection.")
+        OWWidget.__init__(self, parent, "Select Attributes")
 
         # seet channells
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Examples", ExampleTable)]
 
         # set default settings

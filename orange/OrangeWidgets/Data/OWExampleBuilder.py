@@ -1,7 +1,6 @@
 """
 <name>Example Builder</name>
 <description>Create example table.</description>
-<category>Other</category>
 <icon>icons/EBuilder.png</icon>
 <priority>2000</priority>
 """
@@ -18,11 +17,7 @@ class OWExampleBuilder(OWWidget):
     settingsList=["codeStr", "domainStr", "numStr"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self,parent,"&ExampleBuilder",
-        "Builds example table",
-        FALSE)
-        "Constructor"
-        #get settings from the ini file, if they exist
+        OWWidget.__init__(self,parent, "ExampleBuilder")
 
         self.inputs = []
         self.outputs = [("Classified Examples", ExampleTableWithClass)]

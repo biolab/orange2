@@ -2,7 +2,6 @@
 <name>Outcome</name>
 <description>Enables selecting the target outcome from all the possible outcomes in the data.
 It also provides some basic data statistics.</description>
-<category>Data</category>
 <icon>icons/Outcome.png</icon>
 <priority>20</priority>
 """
@@ -18,17 +17,9 @@ class OWOutcome(OWWidget):
     settingsList = []
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        'O&utcome Widget',
-"""The Outcome Widget is an Orange Widget
-for selecting the target outcome
-from all the possible outcomes in the data.
-It also provides some basic data statistics.""",
-        FALSE
-        )
-
-        self.inputs = [("Examples", ExampleTable, self.examples, 1)]
+        OWWidget.__init__(self, parent, 'Outcome Widget')
+        
+        self.inputs = [("Examples", ExampleTable, self.examples)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("target", int)]
         
         #GUI       

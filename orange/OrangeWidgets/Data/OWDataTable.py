@@ -1,7 +1,6 @@
 """
 <name>Data Table</name>
 <description>DataTable shows the data set in a spreadsheet.</description>
-<category>Data</category>
 <icon>icons/DataTable.png</icon>
 <priority>500</priority>
 """
@@ -23,9 +22,9 @@ class OWDataTable(OWWidget):
     settingsList = []
 
     def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Data Table", "DataTable shows the data set in a spreadsheet.\n")
+        OWWidget.__init__(self, parent, "Data Table")
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = []
         
         self.data = None

@@ -6,7 +6,6 @@ to be classified. The three methods for categorization
 this widget can use are: entropy-based discretization (finds most approapriate
 cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency intervals
 (intervals contain about the same number of instances), and equal-width intervals.</description>
-<category>Data</category>
 <icon>icons/Categorize.png</icon>
 <priority>1100</priority>
 """
@@ -27,20 +26,9 @@ class OWCategorize(OWWidget):
     settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "Categorize",
-        """Categorize treats all coninuously-valued attribute in a table
-and categorizes them using the same method. The data in the table needs
-to be classified. The three methods for categorization
-this widget can use are: entropy-based discretization (finds most approapriate
-cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency intervals
-(intervals contain about the same number of instances), and equal-width intervals.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, "Categorize")
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]
         self.dataset=None
 
