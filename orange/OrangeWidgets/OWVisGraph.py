@@ -334,9 +334,11 @@ class OWVisGraph(OWGraph):
             return (d[example[index].value]*2 + 1) / float(2*len(d))
         else:
             [min, max] = self.attrValues[example.domain[index].name]
-            if example[index] < min:   return 0
-            elif example[index] > max: return 1
-            else: return (example[index] - min) / float(max - min)
+            #if example[index] < min:   return 0
+            #elif example[index] > max: return 1
+            #else: return (example[index] - min) / float(max - min)
+            # warning: returned value can be outside 0-1 interval!!!
+            return (example[index] - min) / float(max - min)
         
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
