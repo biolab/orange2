@@ -82,7 +82,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
 	wa.setText(str(getattr(master,value)))
 	if tooltip: QToolTip.add(wa, tooltip)
 	if validator: wa.setValidator(validator)
-	master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, valueType))
+	master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallbackLineEdit(wa, master, value, valueType))
 	master.controledAttributes.append((value, CallFront_lineEdit(wa)))
 	if callback:
 		master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
@@ -293,6 +293,24 @@ class ValueCallback:
 			else: 	   setattr(self.widget, self.attribute, value)
 		except:
 			print "invalid value ", value, type(value)
+
+class ValueCallbackLineEdit:
+	def __init__(self, control, widget, attribute, f = None):
+		self.control = control
+		self.widget = widget
+		self.attribute = attribute
+		self.f = f
+		widget.callbackDeposit.append(self)
+
+	def __call__(self, value):
+		if isinstance(value, QString): value = str(value)
+		try:
+			pos = self.control.cursorPosition()
+			if self.f: setattr(self.widget, self.attribute, self.f(value))
+			else: 	   setattr(self.widget, self.attribute, value)
+			self.control.setCursorPosition(pos)
+		except:
+			print "invalid value ", value, type(value)			
 
 class SetLabelCallback:
 	def __init__(self, widget, label, format = "%5.2f", f = None):
