@@ -266,35 +266,36 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 				names.append(data.domain[i].name)
 		classIndex = list(data.domain).index(data.domain.classVar)
 		if classIndex in indices: indices.remove(classIndex)
-
-		attrs = fisherDiscriminant(data, graph.noJitteringScaledData, indices, classIndex)
-		tempW = [0] * len(indices)
-		#f = open("E:\\temp.txt", "wt")
-		#for name in names: f.write(name + "\t")
-		#f.write("\n")
-		for (key1, key2, w) in attrs:
-			for i in range(len(w)):
-				#f.write("%.3f\t" % w[i])
-				tempW[i] += abs(w[i])
+		
+		if indices != []:
+			attrs = fisherDiscriminant(data, graph.noJitteringScaledData, indices, classIndex)
+			tempW = [0] * len(indices)
+			#f = open("E:\\temp.txt", "wt")
+			#for name in names: f.write(name + "\t")
 			#f.write("\n")
-		#f.close()
+			for (key1, key2, w) in attrs:
+				for i in range(len(w)):
+					#f.write("%.3f\t" % w[i])
+					tempW[i] += abs(w[i])
+				#f.write("\n")
+			#f.close()
 
-		# normalize tempW
-		sumW = float(sum(tempW))
-		for i in range(len(tempW)):
-			tempW[i] = tempW[i] / sumW
+			# normalize tempW
+			sumW = float(sum(tempW))
+			for i in range(len(tempW)):
+				tempW[i] = tempW[i] / sumW
 
-		suma = 0
-		print tempW
-		while suma < 0.9:
-			index = tempW.index(max(tempW))
-			print names[index], tempW[index]
-			suma += tempW[index]
-			shown.append(names[index])
-			names.remove(names[index])
-			tempW.remove(tempW[index])
+			suma = 0
+			print tempW
+			while suma < 0.9:
+				index = tempW.index(max(tempW))
+				print names[index], tempW[index]
+				suma += tempW[index]
+				shown.append(names[index])
+				names.remove(names[index])
+				tempW.remove(tempW[index])
 
-		for name in names: hidden.append(name)
+			for name in names: hidden.append(name)
 	else:
 		print "Incorrect value for attribute order"
 

@@ -11,23 +11,20 @@
 # 
 
 from OWWidget import *
-from random import betavariate 
 from OWParallelGraph import *
 import OWVisAttrSelection 
-import OWToolbars    
+import OWToolbars
+import OWGUI
 
 ###########################################################################################
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
     settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
-    #spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation", "Fisher discriminant"]
     attributeDiscOrder = ["None","RelieF","GainRatio", "Oblivious decision graphs"]
-    jitterSizeList = ['0', '2','5','10', '15', '20', '30']
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
-    linesDistanceList = ['20', '30', '40', '50', '60', '70', '80', '100']
-    linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100]
+    linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE)
@@ -37,26 +34,24 @@ class OWParallelCoordinates(OWWidget):
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute selection", list)]
     
         #set default settings
-        self.attrDiscOrder = "None"
-        self.attrContOrder = "None"
-        #self.jitteringType = "uniform"
-        self.GraphCanvasColor = str(Qt.white.name())
+        self.data = None
+
+        self.jitterSize = 10
+        self.linesDistance = 40
+        
         self.showDistributions = 1
         self.showAttrValues = 1
         self.hidePureExamples = 1
         self.showCorrelations = 1
-        self.GraphGridColor = str(Qt.black.name())
-        self.data = None
-        self.jitterSize = 10
-        self.linesDistance = 40
-        self.ShowVerticalGridlines = TRUE
-        self.ShowHorizontalGridlines = TRUE
+        
         self.globalValueScaling = 0
         self.useSplines = 0
         self.lineTracking = 0
         self.showLegend = 1
         self.autoSendSelection = 0
         self.sendShownAttributes = 1
+        self.attrDiscOrder = "None"
+        self.attrContOrder = "None"
         self.graphCanvasColor = str(Qt.white.name())
 
         #load settings
@@ -65,7 +60,7 @@ class OWParallelCoordinates(OWWidget):
         #GUI
         self.tabs = QTabWidget(self.space, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
-        self.SettingsTab = OWParallelCoordinatesOptions(self, "Settings")
+        self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
@@ -118,164 +113,59 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderValueChanged)
+        self.connect(self.slider, SIGNAL("valueChanged(int)"), self.updateGraph)
 
         # ####################################
         # SETTINGS functionality
-        self.connect(self.SettingsTab.showDistributions, SIGNAL("toggled(bool)"), self.setDistributions)
-        self.connect(self.SettingsTab.showAttrValues, SIGNAL("toggled(bool)"), self.setAttrValues)
-        self.connect(self.SettingsTab.hidePureExamples, SIGNAL("toggled(bool)"), self.setHidePureExamples)
-        self.connect(self.SettingsTab.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
-        self.connect(self.SettingsTab.showLegend, SIGNAL("toggled(bool)"), self.setLegend)
-        self.connect(self.SettingsTab.useSplines, SIGNAL("toggled(bool)"), self.setUseSplines)
-        self.connect(self.SettingsTab.lineTracking, SIGNAL("toggled(bool)"), self.setLineTracking)
-        self.connect(self.SettingsTab.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
-        self.connect(self.SettingsTab.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
-        self.connect(self.SettingsTab.linesDistance, SIGNAL("activated(int)"), self.setLinesDistance)
-        self.connect(self.SettingsTab.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
-        self.connect(self.SettingsTab.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
-        #self.connect(self.SettingsTab.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
-        self.connect(self.SettingsTab.autoSendSelection, SIGNAL("clicked()"), self.setAutoSendSelection)
-        self.connect(self.SettingsTab.sendShownAttributes, SIGNAL("clicked()"), self.setSendShownAttributes)
+        # jittering options
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "jitterSize", 'Jittering size (% of size):  ', box = " Jittering options ", callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+
+        # attribute axis distance
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "linesDistance", 'Minimum distance: ', box = " Attribute axis distance ", callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
+        
+        # ####
+        # visual settings
+        box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setDistributions)
+        OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.setAttrValues)
+        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.setHidePureExamples)
+        OWGUI.checkBox(box, self, 'showCorrelations', 'Show correlations between attributes', callback = self.setShowCorrelations)
+        OWGUI.checkBox(box, self, 'useSplines', 'Show lines using splines', callback = self.setUseSplines)
+        OWGUI.checkBox(box, self, 'lineTracking', 'Enable line tracking', callback = self.setLineTracking)
+        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setLegend)
+        OWGUI.checkBox(box, self, 'globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
+        
+        
+        box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        OWGUI.checkBox(box2, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(box2, self, 'sendShownAttributes', 'Send only shown attributes')
+        
+        # continuous attribute ordering
+        OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+        OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
+
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
         
-
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
+        self.resize(900, 700)
 
-
-    def resizeEvent(self, e):
-        self.isResizing = 1
-        #self.updateGraph() # had to comment this otherwise qt dll throws weird exception (since zooming and selection was added)
-
-    def sliderValueChanged(self, val):
-        self.updateGraph()
 
     # #########################
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        #self.SettingsTab.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
-        self.SettingsTab.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
-        self.SettingsTab.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
-        self.SettingsTab.showDistributions.setChecked(self.showDistributions)
-        self.SettingsTab.showAttrValues.setChecked(self.showAttrValues)
-        self.SettingsTab.hidePureExamples.setChecked(self.hidePureExamples)
-        self.SettingsTab.showLegend.setChecked(self.showLegend)
-        self.SettingsTab.showCorrelations.setChecked(self.showCorrelations)
-        self.SettingsTab.useSplines.setChecked(self.useSplines)
-        self.SettingsTab.globalValueScaling.setChecked(self.globalValueScaling)
-        self.SettingsTab.lineTracking.setChecked(self.lineTracking)
-        self.SettingsTab.autoSendSelection.setChecked(self.autoSendSelection)
-        self.SettingsTab.sendShownAttributes.setChecked(self.sendShownAttributes)
-        self.setAutoSendSelection() # update send button state
-        
-        self.SettingsTab.jitterSize.clear()
-        for i in range(len(self.jitterSizeList)):
-            self.SettingsTab.jitterSize.insertItem(self.jitterSizeList[i])
-        self.SettingsTab.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
-        self.SettingsTab.linesDistance.clear()
-        for i in range(len(self.linesDistanceList)):
-            self.SettingsTab.linesDistance.insertItem(self.linesDistanceList[i])
-        self.SettingsTab.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
-
         self.graph.updateSettings(enabledLegend = self.showLegend)
         self.graph.updateSettings(useSplines = self.useSplines)
-        #self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowDistributions(self.showDistributions)
         self.graph.setShowAttrValues(self.showAttrValues)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
         self.graph.updateSettings(lineTracking = self.lineTracking)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
-
-    """
-    # jittering options
-    def setSpreadType(self, n):
-        self.jitteringType = self.spreadType[n]
-        self.graph.setJitteringOption(self.spreadType[n])
-        self.graph.setData(self.data)
-        self.updateGraph()
-    """
-
-    # minimum lines distance
-    def setLinesDistance(self, n):
-        self.linesDistance = self.linesDistanceNums[n]
-        self.updateGraph()
-
-    # jittering options
-    def setJitteringSize(self, n):
-        self.jitterSize = self.jitterSizeNums[n]
-        self.graph.setJitterSize(self.jitterSize)
-        self.graph.setData(self.data)
-        self.updateGraph()
-
-    def setDistributions(self, b):
-        self.showDistributions = b
-        self.graph.updateSettings(showDistributions = b)
-        self.updateGraph()
-
-    def setAttrValues(self, b):
-        self.showAttrValues = b
-        self.graph.setShowAttrValues(b)
-        self.updateGraph()
-
-    def setHidePureExamples(self, b):
-        self.hidePureExamples = b
-        self.graph.setHidePureExamples(b)
-        self.updateGraph()
-        
-    def setShowCorrelations(self, b):
-        self.showCorrelations = b
-        self.graph.setShowCorrelations(b)
-        self.updateGraph()
-
-    def setUseSplines(self, b):
-        self.useSplines = b
-        self.graph.updateSettings(useSplines = b)
-        self.updateGraph()
-
-    def setLegend(self, b):
-        self.showLegend = b
-        self.graph.updateSettings(enabledLegend = self.showLegend)
-        self.updateGraph()
-
-    def setLineTracking(self, b):
-        self.lineTracking = b
-        self.graph.updateSettings(lineTracking = b)
-
-    def setGlobalValueScaling(self, b):
-        self.globalValueScaling = b
-        self.graph.setGlobalValueScaling(self.globalValueScaling)
-        self.graph.setData(self.data)
-        if self.globalValueScaling:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.updateGraph()
-
-    # continuous attribute ordering
-    def setAttrContOrderType(self, n):
-        self.attrContOrder = self.attributeContOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
-    # discrete attribute ordering
-    def setAttrDiscOrderType(self, n):
-        self.attrDiscOrder = self.attributeDiscOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
-    def setAutoSendSelection(self):
-        self.autoSendSelection = self.SettingsTab.autoSendSelection.isChecked()
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-            
-    def setSendShownAttributes(self):
-        self.sendShownAttributes = self.SettingsTab.sendShownAttributes.isChecked()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -337,7 +227,6 @@ class OWParallelCoordinates(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -350,21 +239,18 @@ class OWParallelCoordinates(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        #self.graph.replot()
 
     # #####################
 
     def updateGraph(self, *args):
-        graphWidth = self.width()-230
         attrs = self.getShownAttributeList()
-        maxAttrs = graphWidth / self.linesDistance
+        maxAttrs = self.mainArea.width() / self.linesDistance
         if len(attrs) > maxAttrs:
             rest = len(attrs) - maxAttrs
             if self.sliderRange != rest:
                 self.slider.setRange(0, rest)
                 self.sliderRange = rest
             elif self.isResizing:
-                print "is resizing = 1"
                 self.isResizing = 0
                 return  # if we resized widget and it doesn't change the number of attributes that are shown then we return
         else:
@@ -378,7 +264,7 @@ class OWParallelCoordinates(OWWidget):
         self.graph.updateData(attrs[start:start+maxAttrs], targetVal)
         self.slider.repaint()
         self.graph.update()
-        #self.repaint()
+        #self.graph.repaint()
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############
@@ -404,7 +290,11 @@ class OWParallelCoordinates(OWWidget):
             list.append(str(self.shownAttribsLB.text(i)))
         return list
     ##############################################
-    
+
+    # had to override standart show to call updateGraph. otherwise self.mainArea.width() gives incorrect value    
+    def show(self):
+        OWWidget.show(self)
+        self.updateGraph()
     
     ####### DATA ################################
     # receive new data and update all fields
@@ -448,92 +338,70 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
     #################################################
 
-class OWParallelCoordinatesOptions(QVGroupBox):
-    def __init__(self,parent = None, name = None):
-        QVGroupBox.__init__(self, parent, name)
-        self.parent = parent
 
-        """
-        # ####
-        # jittering
-        self.spreadButtons = QVButtonGroup("Jittering type", self)
-        QToolTip.add(self.spreadButtons, "Selected the type of jittering for discrete variables")
-        self.spreadButtons.setExclusive(TRUE)
-        self.spreadNone = QRadioButton('none', self.spreadButtons)
-        self.spreadUniform = QRadioButton('uniform', self.spreadButtons)
-        self.spreadTriangle = QRadioButton('triangle', self.spreadButtons)
-        self.spreadBeta = QRadioButton('beta', self.spreadButtons)
-        """
+    def resizeEvent(self, e):
+        self.isResizing = 1
+        # self.updateGraph()  # had to comment, otherwise python throws an exception
 
-        # #####
-        # jittering options
-        self.jitteringOptionsBG = QVButtonGroup("Jittering options", self)
-        QToolTip.add(self.jitteringOptionsBG, "Percents of a discrete value to be jittered")
-        self.hbox = QHBox(self.jitteringOptionsBG, "Jittering size")
-        self.jitterLabel = QLabel('Jittering size (% of size)  ', self.hbox)
-        self.jitterSize = QComboBox(self.hbox)
+    # jittering options
+    def setJitteringSize(self):
+        self.graph.setJitterSize(self.jitterSize)
+        self.graph.setData(self.data)
+        self.updateGraph()
 
-        # ####
-        # attribute axis options
-        self.linesDistanceOptionsBG = QVButtonGroup("Attribute axis distance", self)
-        QToolTip.add(self.linesDistanceOptionsBG, "What is the minimum distance between two adjecent attribute axis")
-        self.hbox2 = QHBox(self.linesDistanceOptionsBG, "Minimum distance")
-        self.linesLabel = QLabel('Minimum distance (pixels)  ', self.hbox2)
-        self.linesDistance = QComboBox(self.hbox2)        
+    def setDistributions(self):
+        self.graph.updateSettings(showDistributions = self.showDistributions)
+        self.updateGraph()
 
-        # ####
-        # visual settings
-        self.visualSettings = QVButtonGroup("Visual settings", self)
-        self.showDistributions = QCheckBox("Show distributions", self.visualSettings)
-        self.showAttrValues = QCheckBox("Show attribute values", self.visualSettings)
-        self.hidePureExamples = QCheckBox("Hide pure examples", self.visualSettings)
-        self.showCorrelations = QCheckBox("Show correlations between attributes", self.visualSettings)      # show correlations
-        self.useSplines = QCheckBox("Show lines using splines", self.visualSettings)      # show correlations
-        self.lineTracking = QCheckBox("Enable line tracking", self.visualSettings)      # show nearest line in bold
-        self.showLegend = QCheckBox('Show legend', self.visualSettings)
+    def setAttrValues(self):
+        self.graph.setShowAttrValues(self.showAttrValues)
+        self.updateGraph()
 
-        self.sendingSelectionsBG = QVButtonGroup("Sending selections", self)
-        self.autoSendSelection = QCheckBox("Auto send selected data", self.sendingSelectionsBG)
-        self.sendShownAttributes = QCheckBox("Send only shown attributes", self.sendingSelectionsBG)        
-
-        # ####
-        # attribute value scaling
-        self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self)
-        self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
-
-        # ####        
-        # continuous attribute ordering
-        self.attrContButtons = QVButtonGroup("Continuous attribute ordering", self)
-        QToolTip.add(self.attrContButtons, "Select the measure for continuous attribute ordering")
-        self.attrContButtons.setExclusive(TRUE)
+    def setHidePureExamples(self):
+        self.graph.setHidePureExamples(self.hidePureExamples)
+        self.updateGraph()
         
-        self.attrContNone = QRadioButton('None', self.attrContButtons)
-        self.attrContRelieF = QRadioButton('RelieF', self.attrContButtons)
-        self.attrCorrelation = QRadioButton('Correlation', self.attrContButtons)
-        self.attrFisher = QRadioButton('Fisher discriminant', self.attrContButtons)
+    def setShowCorrelations(self):
+        self.graph.setShowCorrelations(self.showCorrelations)
+        self.updateGraph()
 
-        # ####
-        # discrete attribute ordering
-        self.attrDiscButtons = QVButtonGroup("Discrete attribute ordering", self)
-        QToolTip.add(self.attrDiscButtons, "Select the measure for discrete attribute ordering")
-        self.attrDiscButtons.setExclusive(TRUE)
+    def setUseSplines(self):
+        self.graph.updateSettings(useSplines = self.useSplines)
+        self.updateGraph()
 
-        self.attrDiscNone = QRadioButton('None', self.attrDiscButtons)
-        self.attrDiscRelieF = QRadioButton('RelieF', self.attrDiscButtons)
-        self.attrDiscGainRatio = QRadioButton('GainRatio', self.attrDiscButtons)
-        #self.attrDiscGini = QRadioButton('Gini', self.attrDiscButtons)
-        self.attrDiscFD   = QRadioButton('Oblivious decision graphs', self.attrDiscButtons)
+    def setLegend(self):
+        self.graph.updateSettings(enabledLegend = self.showLegend)
+        self.updateGraph()
 
-        # ####
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+    def setLineTracking(self):
+        self.graph.updateSettings(lineTracking = self.lineTracking)
 
+    def setGlobalValueScaling(self):
+        self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.setData(self.data)
+        if self.globalValueScaling:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.updateGraph()
+
+    # continuous attribute ordering
+    def updateShownAttributeList(self):
+        if self.data != None:
+            self.setShownAttributeList(self.data)
+        self.updateGraph()
+
+    def setAutoSendSelection(self):
+        if self.autoSendSelection:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
+            self.sendSelections()
+        else:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
+            
 
     def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
         if newColor.isValid():
-            self.parent.graphCanvasColor = str(newColor.name())
-            self.parent.graph.setCanvasColor(QColor(newColor))
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
 
    
 
