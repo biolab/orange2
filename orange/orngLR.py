@@ -267,11 +267,7 @@ class StepWiseFSS_class:
     self.numAttr = numAttr
   def __call__(self, examples):
     attr = []
-    # TODO: kako v enem koraku premaknes vse v remain_attr?
-        
-    remain_attr = []
-    for at in examples.domain.attributes:
-        remain_attr.append(at)
+    remain_attr = examples.domain.attributes[:]
 
     print self.addCrit
     print self.deleteCrit
@@ -296,23 +292,17 @@ class StepWiseFSS_class:
             for at in attr:
                 # check all attribute whether its presence enough increases LL?
 
-                # TU SPET, KAKO KOPIRAS?
-                tempAttr = []
-                for at_tmp in attr:
-                    if at_tmp != at:
-                        tempAttr.append(at_tmp)
-
-                
+                tempAttr = filter(lambda x: x!=at, attr)
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
                 # domain, calculate P for LL improvement.
                 tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 ll_Delete = getLikelihood(orange.LogisticFitter_Cholesky(), tempData)
                 length_Delete = len(tempData)
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
-                length_Avg = (length_Delete + length_Old)/2
+                length_Avg = (length_Delete + length_Old)/2.0
 
 
-                G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old);
+                G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old)
 
                 print tempDomain
                 print G
