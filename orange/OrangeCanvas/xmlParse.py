@@ -31,8 +31,8 @@ class WidgetsToXML:
         # we put widgets that are in the root dir of widget directory to category "Unsorted"
         widgetDirList.write(os.path.realpath(widgetDirName) + "\n")
         self.ParseDirectory(doc, categories, widgetDirName, "Unsorted")
-        #widgetDirList.flush()
-        #widgetDirList.close()
+        widgetDirList.flush()
+        widgetDirList.close()
         
         xmlText = doc.toprettyxml()
         file = open(canvasDir + "widgetregistry.xml", "wt")
@@ -44,7 +44,7 @@ class WidgetsToXML:
     # parse all widgets in directory widgetDirName\categoryName into new category named categoryName
     def ParseDirectory(self, doc, categories, full_dirname, categoryName):
         if sys.path.count(full_dirname) == 0:       # add directory to orange path
-            sys.path.append(full_dirname)
+            sys.path.append(full_dirname)          # this doesn't save the path when you close the canvas, so we have to save also to widgets.pth
         
         for filename in os.listdir(full_dirname):
             full_filename = os.path.join(full_dirname, filename)
