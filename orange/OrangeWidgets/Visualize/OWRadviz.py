@@ -21,7 +21,6 @@ import OWGUI
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    #spreadType=["none","uniform","triangle","beta"]
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
@@ -265,15 +264,19 @@ class OWRadviz(OWWidget):
 
         startTime = time.time()
         self.graph.startTime = time.time()
+        try:
+            self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
-        self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
     
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(possibilities, secs/60, secs%60)
+        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections:  %d\nUsed time: %d min, %d sec" %(self.graph.triedPossibilities, possibilities, secs/60, secs%60)        
 
 
     # send signals with selected and unselected examples as two datasets
