@@ -167,9 +167,9 @@ def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdg
             if merged[k] == merged[k+1]:
                 if graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex: sameClassPoints.append(merged[k])
                 elif graph[i, merged[k]][VALUE] == graph[j, merged[k]][VALUE] == differentClassValue: otherClassPoints.append(merged[k])
-                elif graph[i,k][VALUE] == tooDistantValue:
-                    for n in graph.getNeighbours(k):
-                        if graph[k,n][VALUE] == differentClassValue: otherClassPoints.append(n)
+                elif graph[i,merged[k]][VALUE] == tooDistantValue or graph[j,merged[k]][VALUE] == tooDistantValue:
+                    for n in graph.getNeighbours(merged[k]):
+                        if graph[merged[k],n][VALUE] == differentClassValue and n not in otherClassPoints: otherClassPoints.append(n)
                 k+=1
             k+=1
         outer = 1; outer2 = 0
@@ -389,6 +389,19 @@ def pointInsideCluster(data, closure, xTest, yTest):
             if x > 0: count += 1
     return count % 2 
         
+
+def computeAverageDistance(graph, verticesDict):
+    ave_distDict = {}
+    for key in verticesDict.keys():
+        xAve = sum([graph.objects[i][0] for i in verticesDict[key]]) / len(verticesDict[key])
+        yAve = sum([graph.objects[i][1] for i in verticesDict[key]]) / len(verticesDict[key])
+        distArray = []
+        for v in verticesDict[key]:
+            d = sqrt((graph.objects[v][0]-xAve)*(graph.objects[v][0]-xAve) + (graph.objects[v][1]-yAve)*(graph.objects[v][1]-yAve))
+            distArray.append(d)
+        ave_distDict[key] = sum(distArray) / float(max(1, len(distArray)))
+    return ave_distDict
+
 
 class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
@@ -618,6 +631,7 @@ class ClusterOptimization(OWBaseWidget):
         fixDeletedEdges(graph, edgesDict, clusterDict, 0, 1, -1)  # None             # restore edges that were deleted with computeAlphaShapes and did not result breaking the cluster
         closureDict = computeClosure(graph, edgesDict, 1, 1, 2, -3, -4)
         removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, -2)
+        #removeClosureTriangles
         removeSingleLines(graph, edgesDict, clusterDict, verticesDict, 1, -1)   # None
         edgesDict, clusterDict, verticesDict, count = enumerateClusters(graph, 1)     # reevaluate clusters - now some clusters might have disappeared
         removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, -1)
@@ -626,18 +640,29 @@ class ClusterOptimization(OWBaseWidget):
         polygonVerticesDict = verticesDict  # compute which points lie in which cluster
         #polygonVerticesDict = getVerticesInPolygons(verticesDict)  # compute which points lie in which cluster
 
+        # compute areas of all found clusters
         areaDict = computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, 2)
 
+        # computer the average distance of a point inside a cluster to the center of the cluster - alternative to computing area of cluster
+        aveDistDict = computeAverageDistance(graph, polygonVerticesDict)
+
+        # create a list of vertices that lie on the boundary of all clusters - used to determine the distance to the examples with different class
+        allOtherClass = []
+        for key in otherClassDict.keys():
+            allOtherClass += otherClassDict[key]
+        allOtherClass.sort()
+        for i in range(len(allOtherClass)-1)[::-1]:
+            if allOtherClass[i] == allOtherClass[i+1]: allOtherClass.remove(allOtherClass[i])
         
         valueDict = {}
         otherDict = {}
         for key in closureDict.keys():
             if polygonVerticesDict[key] < 6: continue            # if the cluster has less than 6 points ignore it
             points = len(polygonVerticesDict[key]) - len(closureDict[key])    # number of points in the interior
-            if points < 3: continue     # happens when there are two or more polygons that are connected in only one point
-            #print "vertices ", polygonVerticesDict[key]
-            #print "closure ", closureDict[key]
-        
+            if points < 2: continue                     # ignore clusters that don't have at least 2 points in the interior of the cluster
+            points += len(closureDict[key])/float(2)     # points on the edge only contribute with 1/2 of the value - punishment for very complex boundaries
+            if points < 5: continue                     # ignore too small clusters
+            
             index = -1
             for bigKey in bigPolygonVerticesDict.keys():
                 if polygonVerticesDict[key][0] in bigPolygonVerticesDict[bigKey]:
@@ -648,25 +673,40 @@ class ClusterOptimization(OWBaseWidget):
                 xAve = sum([graph.objects[i][0] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
                 yAve = sum([graph.objects[i][1] for i in polygonVerticesDict[key]]) / len(polygonVerticesDict[key])
                 diffClass = []
-                for v in otherClassDict[index]:
+                for v in allOtherClass:
+                    if graph.objects[v].getclass() == graph.objects[i].getclass(): continue # ignore examples with the same class value
                     d = sqrt((graph.objects[v][0]-xAve)*(graph.objects[v][0]-xAve) + (graph.objects[v][1]-yAve)*(graph.objects[v][1]-yAve))
                     diffClass.append(d)
                 diffClass.sort()
-                diffClass = [i*i for i in diffClass[:5]]
-                dist = sum(diffClass) / float(max(1, len(diffClass)))
+                #diffClass = [i*i for i in diffClass[:3]]
+                dist = sum(diffClass[:3]) / float(len(diffClass[:3]))
             
             else:
                 print "index is -1"
                 continue
 
             points = sqrt(points)       # make a smaller effect of the number of points
+            
+
+            """
+            # one way of computing the value
             area = areaDict[key]
             area = sqrt(area)
             area = sqrt(area)
             if area > 0: value = points * dist / area
             else: value = 0
+            """
+
+            # another way of computing value
+            #value = points * dist / aveDistDict[key]
+
+            # and another
+            value = points * dist 
+            
             valueDict[key] = value
-            otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, area)
+            
+            #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, area)
+            otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, aveDistDict[key])
         
 
         #return graph, {}, closureDict, polygonVerticesDict, {}
