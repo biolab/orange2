@@ -24,6 +24,7 @@
 #include <queue>
 #include "module.hpp"
 #include "errors.hpp"
+#include "symmatrix.hpp"
 
 #include "distancemap.ppp"
 
@@ -149,7 +150,7 @@ unsigned char *TDistanceMap::distancemap2string(const int &cellWidth, const int 
 void getPercentileInterval(float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 
 void TDistanceMap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max)
-{ getPercentileInterval(cells, dim*dim, lowperc, highperc, min, max); }
+{ ::getPercentileInterval(cells, dim*dim, lowperc, highperc, min, max); }
 
 
 float TDistanceMap::getCellIntensity(const int &y, const int &x) const
@@ -165,7 +166,7 @@ float TDistanceMap::getCellIntensity(const int &y, const int &x) const
 
 
 
-TDistanceMapConstructor::TDistanceMapConstructor(PDistanceMatrix m)
+TDistanceMapConstructor::TDistanceMapConstructor(PSymMatrix m)
 : distanceMatrix(m)
 {}
 
@@ -178,7 +179,7 @@ void computeSqueezedIndices(const int &n, const float &squeeze, vector<int> &ind
   while(ind<n) {
     float toThis = (1.0 - inThis) / squeeze;
     ind += floor(toThis);
-    push_back(ind);
+    indices.push_back(ind);
     inThis = fmod(inThis, toThis);
   }
 }
@@ -189,17 +190,17 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
   abslow = 1e30f;
   
   
-  int nLines = int(floor(0.5 + distanceMatrix->dim * unadjustedSqueeze));
+  int nLines = int(floor(0.5 + order->size() * unadjustedSqueeze));
   if (!nLines)
     nLines++;
-  const float squeeze = float(nLines) / distanceMatrix->dim;
+  const float squeeze = float(nLines) / order->size();
   
-
-  PDistanceMap dm = mlnew TDistanceMap;  
-  squeezedIndices = dm->elementIndices.getReference();
+  vector<int> &squeezedIndices = dm->elementIndices->__orvector;
   computeSqueezedIndices(nLines, squeeze, squeezedIndices);
 
-  vector<int>::const_iterator sii(squeezedIndices.begin()), sie(squeezedIndices.end());
+  nLines = squeezedIndices.size() - 1;
+
+  PDistanceMap dm = mlnew TDistanceMap(nLines);
 
   float *ri, *fmi = dm->cells;
   int *si, *spec = new int[nLines];
@@ -208,6 +209,11 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
 
   float inThisRow = 0;
   int xpoint;
+
+  for(vector<int>::const_iterator squeezei(squeezedIndices.begin()), squeezen(squezeu+1), squeezee(squeezedIndices.end());
+      squeezen != squeezee;
+      squeezei++, squeezen++,
+      fmi += n)
 
   for(int line = 0; line<nLines; cnt--; inThisRow-=1.0, ami++, fmi+=nLines) {
     for(xpoint = nColumns, ri = fmi, si = spec; xpoint--; *(ri++) = 0.0, *(si++) = 0);

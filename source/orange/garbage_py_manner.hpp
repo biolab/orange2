@@ -480,6 +480,13 @@ public:
   }
 
 
+  inline T &getReference()
+  { if (!counter)
+       raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
+    return *counter->ptr;
+  }
+
+
   template<class U>
   bool dynamic_cast_to(U *&ptr)
   { return ( (ptr = counter ? dynamic_cast<U *>(counter->ptr) : NULL) != NULL); }

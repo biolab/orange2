@@ -24,6 +24,7 @@
 #define __DISTANCEMAP_HPP
 
 #include "root.hpp"
+#include "orvector.hpp"
 
 WRAPPER(DistanceMatrix)
 
@@ -49,6 +50,7 @@ public:
 
 
 WRAPPER(SymMatrix)
+WRAPPER(DistanceMap)
 
 WRAPPER(DistanceMapConstructor)
 
@@ -57,6 +59,7 @@ public:
   __REGISTER_CLASS
 
   PSymMatrix distanceMatrix;
+  PIntList order;
 
   TDistanceMapConstructor(PSymMatrix);
 

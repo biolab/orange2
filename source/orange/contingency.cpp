@@ -195,7 +195,7 @@ PDistribution TContingency::operator [](const string &i)
 PDistribution const TContingency::operator [](const string &i) const // same, but calls 'const' version of operators[]
 { TValue val;
   checkProperty(outerVariable);
-  const_cast<TVariable &>(outerVariable.getReference()).str2val(i, val);
+  outerVariable.getReference().str2val(i, val);
   return operator[](val);
 }
 
