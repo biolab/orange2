@@ -3,7 +3,7 @@
 <description>None.</description>
 <category>Evaluation</category>
 <icon>icons\CalibrationPlot.png</icon>
-<priority>1020</priority>
+<priority>1030</priority>
 """
 
 from OData import *
