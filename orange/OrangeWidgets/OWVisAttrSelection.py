@@ -358,18 +358,15 @@ def fixIntersectingPairs(proj, projVal, attrInfo):
             for j in range(i+2, len(projVal)-1):
                 if changed: continue
                 val1, exists1 = getAttributePairValue(proj[i], proj[j], attrInfo)
-                print proj, i, j, len(projVal)
                 val2, exists2 = getAttributePairValue(proj[i+1], proj[j+1], attrInfo)
                 if exists1 and exists2 and (val1 + val2 > projVal[i] + projVal[j]):
                     projVal[i] = val1
                     projVal[j] = val2
-                    print i, j, proj[i:j]
                     rev = proj[i:j]
                     rev.reverse()
                     tempProj = proj[:i] + rev + proj[j:]
                     proj = tempProj
                     changed = 1     # we rotated the projection. start checking from the begining
-                    print "changed"
     return proj, projVal
 
 # return value for attribute pair (val, attr1, attr2) if exists. if not, return 0
