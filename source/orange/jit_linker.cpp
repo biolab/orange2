@@ -62,7 +62,7 @@ int jit_link(const char *dllname, TJitLink *functions, TDefaultFunc deffunc)
 	    *function->address = deffunc;
 
     if (jitDll) {
-	    dlfree(jitDll);
+	    dlclose(jitDll);
       return -1;
     }
     else
