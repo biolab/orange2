@@ -30,6 +30,7 @@ class OutputWindow(QMainWindow):
 		self.focusOnCatchOutput  = 0
 		self.printOutput = 1
 		self.printException = 1
+		#self.printExtraOutput = 0
 		
 		#sys.excepthook = self.exceptionHandler
 		#sys.stdout = self
@@ -66,6 +67,11 @@ class OutputWindow(QMainWindow):
 		self.textOutput.setText("")
 	
 	def write(self, text):
+		# is this some extra info for debuging
+		#if len(text) > 7 and text[0:7] == "<extra>":
+		#	if not self.printExtraOutput: return
+		#	text = text[7:]
+			
 		text = text.replace("<", "[")	# since this is rich text control, we have to replace special characters
 		text = text.replace(">", "]")
 

@@ -8,6 +8,8 @@ from copy import copy
 from string import strip
 import sys
 from orngCanvasItems import *
+from qttable import *
+
 
 TRUE  = 1
 FALSE = 0
@@ -269,25 +271,21 @@ class SignalDialog(QDialog):
         Layout1.setSpacing(6)
         Layout1.setMargin(0)
 
-        self.buttonHelp = QPushButton(LayoutWidget,'buttonHelp')
-        self.buttonHelp.setText(self.tr("&Help"))
+        self.buttonHelp = QPushButton("&Help", LayoutWidget)
         self.buttonHelp.setAutoDefault(1)
         Layout1.addWidget(self.buttonHelp)
         spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
         Layout1.addItem(spacer)
 
-        self.buttonClearAll = QPushButton(LayoutWidget,'ClearAll')
-        self.buttonClearAll.setText(self.tr("Clear &All"))
+        self.buttonClearAll = QPushButton("Clear &All", LayoutWidget)
         Layout1.addWidget(self.buttonClearAll)
 
-        self.buttonOk = QPushButton(LayoutWidget,'buttonOk')
-        self.buttonOk.setText(self.tr("&OK"))
+        self.buttonOk = QPushButton("&OK", LayoutWidget)
         self.buttonOk.setAutoDefault(1)
         self.buttonOk.setDefault(1)
         Layout1.addWidget(self.buttonOk)
 
-        self.buttonCancel = QPushButton(LayoutWidget,'buttonCancel')
-        self.buttonCancel.setText(self.tr("&Cancel"))
+        self.buttonCancel = QPushButton("&Cancel", LayoutWidget)
         self.buttonCancel.setAutoDefault(1)
         Layout1.addWidget(self.buttonCancel)
 
@@ -584,6 +582,94 @@ class PreferencesDlg(QDialog):
         self.canvasDlg.settings["Channels"] = self.channels
         self.accept()
         return
+
+
+class saveApplicationDlg(QDialog):
+    def __init__(self, *args):
+        apply(QDialog.__init__,(self,) + args)
+        self.setCaption("Qt Set widget order")
+        self.shownWidgetList = []
+
+        self.topLayout = QVBoxLayout( self, 10 )
+
+        self.grid = QGridLayout( 2, 1 )
+        self.topLayout.addLayout( self.grid, 10 )
+
+        self.tab = QTable(self)
+        self.tab.setSelectionMode(QTable.Single )
+        self.tab.setRowMovingEnabled(1)
+        self.grid.addWidget(self.tab, 1,1)
+        
+        self.tab.setNumCols(2)
+        self.tabHH = self.tab.horizontalHeader()
+        self.tabHH.setLabel(0, 'Show')
+        self.tabHH.setLabel(1, 'Widget Name')
+        self.tabHH.resizeSection(0, 50)
+        self.tabHH.resizeSection(1, 170)
+
+        LayoutWidget = QWidget(self,'Layout1')
+        LayoutWidget.setGeometry(QRect(200,240,476,33))
+        self.grid.addWidget(LayoutWidget, 2,1)
+        Layout1 = QHBoxLayout(LayoutWidget)
+        Layout1.setSpacing(6)
+        Layout1.setMargin(0)
+
+        self.insertSeparatorButton = QPushButton('Add separator', LayoutWidget)
+        self.connect(self.insertSeparatorButton, SIGNAL("clicked()"), self.insertSeparator)
+        Layout1.addWidget(self.insertSeparatorButton)
+
+        spacer = QSpacerItem(20,20,QSizePolicy.Expanding,QSizePolicy.Minimum)
+        Layout1.addItem(spacer)
+
+        self.okButton = QPushButton('&OK', LayoutWidget)
+        Layout1.addWidget(self.okButton)
+        self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
+
+        self.buttonCancel = QPushButton("&Cancel", LayoutWidget)
+        self.buttonCancel.setAutoDefault(1)
+        Layout1.addWidget(self.buttonCancel)
+        self.connect(self.buttonCancel, SIGNAL('clicked()'), self, SLOT('reject()'))
+
+        self.resize(200,250)
+
+    def accept(self):
+        self.shownWidgetList = []
+        for i in range(self.tab.numRows()):
+            if self.tab.cellWidget(i, 0).isChecked():
+                self.shownWidgetList.append(self.tab.text(i, 1))
+        QDialog.accept(self)        
+        
+
+    def insertSeparator(self):
+        curr = max(0, self.findSelected())
+        self.insertWidgetName("[Separator]", curr)
+
+
+    def insertWidgetName(self, name, index = -1):
+        if index == -1: index = self.tab.numRows()
+        self.tab.setNumRows(self.tab.numRows()+1)
+        for i in range(self.tab.numRows()-1, index-1, -1):
+            self.swapCells(i, i+1)
+        check = QCheckBox(self.tab)
+        check.setChecked(1)
+        self.tab.setCellWidget(index, 0, check)
+        self.tab.setText(index, 1, name)
+        #self.tab.adjustColumn(1)
+        
+        
+    def swapCells(self, row1, row2):
+        self.tab.swapCells( row1,0, row2, 0)
+        self.tab.swapCells( row1,1, row2, 1)
+        self.tab.updateCell(row1,0)
+        self.tab.updateCell(row1,1)
+        self.tab.updateCell(row2,0)
+        self.tab.updateCell(row2,1)
+
+    def findSelected(self):
+        for i in range(self.tab.numRows()):
+            if self.tab.isSelected(i, 0) or self.tab.isSelected(i, 1): return i
+        return -1 
+
 
 if __name__=="__main__":
     app = QApplication(sys.argv) 

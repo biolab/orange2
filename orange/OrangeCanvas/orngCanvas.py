@@ -3,15 +3,9 @@
 #	main file, that creates the MDI environment
 
 from qt import *
-import sys
-import os
-import orngTabs
-import orngDoc
-import orngDlgs
-import orngOutput
-import orngResources
-import xmlParse
-import cPickle
+import sys, os, cPickle
+import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
+
 
 TRUE  = 1
 FALSE = 0
@@ -27,7 +21,11 @@ class OrangeCanvasDlg(QMainWindow):
 
 		# if widget path not registered -> register
 		self.widgetDir = os.path.realpath("../OrangeWidgets") + "/"
+		if not os.path.exists(self.widgetDir): print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
+
 		self.picsDir = os.path.realpath("../OrangeWidgets/icons") + "/"
+		if not os.path.exists(self.picsDir): print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
+		
 		self.canvasDir = os.path.realpath("./") + "/"
 
 		self.defaultPic = self.picsDir + "Unknown.png"
@@ -114,7 +112,7 @@ class OrangeCanvasDlg(QMainWindow):
 			
 		# if registry still doesn't exist then something is very wrong...
 		if not os.path.exists(self.registryFileName):
-			QMessageBox.critical( None, "Orange Canvas", "Unable to create widget registry. Exiting...", QMessageBox.Ok, QMessageBox.Cancel)
+			QMessageBox.critical( None, "Orange Canvas", "Unable to locate widget registry. Exiting...", QMessageBox.Ok, QMessageBox.Cancel)
 			self.quit()
 
 		if self.settings.has_key("WidgetTabs"):
@@ -204,6 +202,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuWindow.insertItem( "Output Window", self.menuOutput)
 		self.menuOutput.insertItem("Show Output Window", self.menuItemShowOutputWindow)
 		self.menuOutput.insertItem("Clear Output Window", self.menuItemClearOutputWindow)
+		self.menuOutput.insertSeparator()
 		self.menuOutput.insertItem("Save Output Text", self.menuItemSaveOutputWindow)
 		self.menuWindow.insertSeparator()
 
@@ -410,7 +409,6 @@ class OrangeCanvasDlg(QMainWindow):
 
 		file = open(name, "wt")
 		file.write(text)
-		file.flush()
 		file.close()
 
 
