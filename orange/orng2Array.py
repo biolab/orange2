@@ -3,6 +3,13 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
+# CVS Status: $Id$
+#
+# Version 1.9 (17/11/2003)
+#   - Dummy picks the most frequent value to be the default
+#   - added standardization
+#   - fixed a bug in binarization
+#
 # Version 1.8 (10/7/2003)
 #   - support for domain disparity
 #
@@ -20,7 +27,7 @@
 #     MDS for this.
 #
 
-import orange, warnings
+import orange, warnings, math
 
 #
 # MAPPERS translate orange domains into primitive python arrays used by the
@@ -105,6 +112,9 @@ class Scalizer:
             self.mult = 2.0/(self.max-self.min)
             self.disp = (self.min+self.max)/2.0
 
+    def activate(self):
+        pass
+
     def prepareLR(self):
         self.missing = (self.min+self.max)/2
         self.mult = 1
@@ -127,6 +137,75 @@ class Scalizer:
     def inverse(self,list):
         return self.attr((list[self.idx]/self.mult)+self.disp)
         
+
+class Standardizer:
+    def __init__(self,idx,attr,isclass=0):
+        self.avg = 0.0
+        self.stddev = 0.0
+        self.idx = idx
+        self.nidx = idx+1
+        self.attr= attr
+        self.values = []
+        self.isclass = isclass
+
+    def learn(self,value):
+        try:
+            spec = value.isSpecial()
+        except:
+            spec = 0
+        if not spec:
+            value = float(value)
+            self.values.append(value)
+            self.avg += value
+
+    def activate(self):
+        pass
+
+    def status(self):
+        print "standardizer: "
+        print "\tattr:",self.attr
+        print "\tidx: ",self.idx
+        print "\tmin: ",self.min
+        print "\tmax: ",self.max
+            
+    def prep(self):
+        self.avg /= len(self.values)
+        for x in self.values:
+            t = x-self.avg
+            self.stddev += t*t
+        self.stddev /= len(self.values)-1
+        self.stddev = math.sqrt(self.stddev)
+        self.mult = 1.0/self.stddev
+        self.disp = self.avg
+
+    def prepareSVM(self):
+        self.prep()
+        if self.isclass == 1:
+            self.missing = 3.14159   # a special value!
+        else:
+            self.missing = (0,1)
+
+    def prepareLR(self):
+        self.prep()
+        
+    def apply(self,ex,list):
+        (value,spec) = _getattr(ex,self.attr)
+        if spec:
+            list[self.idx] = self.missing
+        else:
+            list[self.idx] = (float(value)-self.disp)*self.mult
+        return
+
+    def description(self):
+        if self.disp==0.0 and self.mult==1.0:
+            return ['%s'%(self.attr.name)]
+        else:
+            return ['(%s-%f)*%f'%(self.attr.name,self.disp,self.mult)]
+
+    def inverse(self,list):
+        return self.attr((list[self.idx]/self.mult)+self.disp)
+
+
 class Ordinalizer:
     def __init__(self,idx,attr,isclass=0):
         self.idx = idx
@@ -148,6 +227,9 @@ class Ordinalizer:
     def learn(self,value):
         return
             
+    def activate(self):
+        pass
+
     def prepareSVM(self):
         if self.isclass==1:
             # keep all classes integer, because libsvm does rounding!!!
@@ -225,15 +307,18 @@ class Binarizer:
         self.max = 1.0
         self.missing = 1.0/(self.nidx-self.idx)
         return
+
+    def activate(self):
+        pass
     
     def apply(self,ex,list):
         (value,spec) = _getattr(ex,self.attr)
         if spec:
             for i in range(self.idx,self.nidx):
-                list[self.idx] = self.missing
+                list[i] = self.missing
         else:
             for i in range(self.idx,self.nidx):
-                list[self.idx] = self.min
+                list[i] = self.min
             list[self.idx+int(value)] = self.max
 
     def description(self):
@@ -254,12 +339,29 @@ class Dummy:
     def __init__(self,idx,attr):
         self.idx = idx
         self.nidx = idx+len(attr.values)-1
+        self.counts = [0]*len(attr.values)
         self.attr = attr
         return
 
     def learn(self,value):
+        if not value.isSpecial():
+            self.counts[int(value)] += 1
         return
-            
+
+    def activate(self):
+        # identify the most frequent one
+        i = 0
+        maxx = max(self.counts)
+        self.maxi = -1
+        self.lut = [-1]*len(self.counts)
+        for x in range(len(self.counts)):
+            if self.counts[x]==maxx and self.maxi < 0:
+                self.maxi = x
+            else:
+                self.lut[x] = i
+                i += 1
+        
+                
     def status(self):
         print "dummy: "
         print "\tattr:",self.attr
@@ -275,7 +377,7 @@ class Dummy:
     def prepareLR(self):
         self.min = 0.0
         self.max = 1.0
-        self.missing = 1.0/(1+self.nidx-self.idx)
+        self.missing = 0.0
         return
     
     def apply(self,ex,list):
@@ -287,11 +389,16 @@ class Dummy:
         else:
             for i in range(self.idx,self.nidx):
                 list[self.idx] = self.min
-            if int(value) < len(self.attr.values)-1:
-                list[self.idx+int(value)] = self.max
+            i = self.lut[int(value)]
+            if i != -1:
+                list[self.idx+i] = self.max
 
     def description(self):
-        return ['%s=%s'%(self.attr.name,v) for v in self.attr.values][:-1]
+        d = []
+        for x in range(len(self.attr.values)):
+            if self.lut[x] != -1:
+                d.append('%s=%s'%(self.attr.name,self.attr.values[x]))
+        return d 
 
     def inverse(self,list):
         best = self.nidx
@@ -309,7 +416,7 @@ class DomainTranslation:
         # 1: always binarize
         # 2: binarize if more values than 2, else dummy
         self.mode = mode
-		
+
     def analyse(self,examples,weight=0):
         # attributes
         self.trans = []
@@ -318,7 +425,7 @@ class DomainTranslation:
         for i in examples.domain.attributes:
             if i.varType == 2:
                 # continuous
-                t = Scalizer(idx,i)
+                t = Standardizer(idx,i)
             else:
                 if i.varType == 1:
                     
@@ -351,6 +458,10 @@ class DomainTranslation:
             for i in range(len(self.trans)):
                 self.trans[i].learn(j[i])
             self.cv.learn(j.getclass())
+
+        # do the final preparations
+        for i in range(len(self.trans)):
+            self.trans[i].activate()
 
     def prepareLR(self):
         # preparation

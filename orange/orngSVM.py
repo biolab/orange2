@@ -7,6 +7,11 @@
 #           http://www.csie.ntu.edu.tw/~cjlin/papers/libsvm.ps.gz
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
+# CVS Status: $Id$ 
+#
+# Version 1.8 (18/11/2003)
+#   - added error checking, updated to libsvm 2.5
+#
 # Version 1.7 (11/08/2002)
 #   - Assertion error was resulting because Orange incorrectly compared the
 #     attribute values as returned from .getclass() and the values array in
@@ -37,7 +42,7 @@ class BasicSVMLearner:
       # ONE_CLASS: only one class -- is something in or out
       # epsilon-SVR: epsilon-regression
       # epsilon-SVR: nu-regression
-      self.type = 0
+      self.type = -1
 
       # kernel type: (LINEAR=0, POLY, RBF, SIGMOID=3)
       # linear: x[i].x[j]
@@ -86,16 +91,35 @@ class BasicSVMLearner:
       # for discrete class
       assert(data.domain.classVar.varType == 1 or data.domain.classVar.varType == 2)
       type = self.type
-      if data.domain.classVar.varType == 2: # continuous class
-        type = 3 # regression
-      else: # discrete class
-        if type == 3: # if using regression
-          type = 0 # switch to classification
+      if type == -1:
+        if data.domain.classVar.varType == 2: # continuous class
+          type = 3 # regression
+        else: # discrete class
+          type = 0 # classification
+
+      # do error checking
+      assert(type in [0,1,2,3,4])
+      assert(self.kernel in [0,1,2,3])
+      assert(self.cache_size > 0)
+      assert(self.eps > 0)
+      assert(self.nu <= 1.0 and self.nu >= 0.0)
+      assert(self.p >= 0.0)
+      assert(self.shrinking in [0,1])        
+      if type == 1:
+        counts = [0]*len(data.domain.classVar.values)
+        for x in data:
+          counts[int(x.getclass())] += 1
+        for i in range(1,len(counts)):
+          for j in range(i):
+            if self.nu*(counts[i]+counts[j]) > 2*min(counts[i],counts[j]):
+              raise "Infeasible nu value."
+
       puredata = orange.Filter_hasClassValue(data)
       translate = orng2Array.DomainTranslation(self.translation_mode)
       translate.analyse(puredata)
       translate.prepareSVM()
       mdata = translate.transform(puredata)
+
       if len(self.classweights)==0:
           #import pickle
           #r = (mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking)
@@ -114,7 +138,6 @@ class BasicSVMLearner:
       (model, translate) = self.getmodel(data)
       return BasicSVMClassifier(model,translate)
 
-
 class BasicSVMClassifier:
   def __init__(self, model, translate):
       self.name = "SVM Classifier Wrap"
@@ -127,8 +150,7 @@ class BasicSVMClassifier:
       assert(self.model['nr_class'] <= 2) # this should work only with 2-class problems
       if self.model['nr_class'] == 2:
         td = self.translate.extransform(example)
-        margin = orngCRS.SVMClassifyM(self.cmodel,td)
-        return margin
+        margin = -orngCRS.SVMClassifyM(self.cmodel,td)
       else:
         # it can happen that there is a single class
         return 0.0
@@ -142,10 +164,7 @@ class BasicSVMClassifier:
           # do not return and PD when we're dealing with regression, or one-class
           return v
       p = [0.0]*len(self.translate.cv.attr.values)
-      for i in range(len(self.translate.cv.attr.values)):
-          if int(v) == i:
-              p[i] = 1.0
-              break
+      p[int(v)] = 1.0
       if format == orange.GetBoth:
           return (v,p)
       if format == orange.GetProbabilities:

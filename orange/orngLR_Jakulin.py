@@ -9,6 +9,7 @@
 #       and Alan Miller's F90 logistic regression code
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
+# CVS Status: $Id$
 #
 # Version 1.7 (11/08/2002)
 #   - Support for new Orange (RandomIndices)
@@ -81,20 +82,39 @@ class BLogisticClassifier:
         # returns the actual probability which is not to be fudged with
         return self.__call__(example)
 
+    def description(self,attnames,classname,classv):
+        print 'Logistic Regression Report'
+        print '=========================='
+        print '\chi^2',self.chisq
+        print 'deviance',self.devnce
+        print 'NDF',self.ndf
+        print
+        print 'Base outcome:',classname[0],'=',classv
+        assert(len(attnames)==len(self.beta)-1)
+        print 'beta_0:',self.beta[0],'+-',self.se_beta[0]
+        for i in range(len(attnames)):
+            print attnames[i],self.beta[i+1],'+-',self.se_beta[i+1]
+
     def __call__(self,example):
         # logistic regression
         sum = self.beta[0]
         for i in range(len(self.beta)-1):
             sum = sum + example[i]*self.beta[i+1]
-        sum = math.exp(sum)
-        p = sum/(1.0+sum) # probability that the class is 1
-        if p < 0.5:
-            return (0,1-p)
+        # print sum, example
+        if sum > 10000:
+            return (1,1.0)
+        elif sum < -10000:
+            return (0,1.0)
         else:
-            return (1,p)
+            sum = math.exp(sum)
+            p = sum/(1.0+sum) # probability that the class is 1
+            if p < 0.5:
+                return (0,1-p)
+            else:
+                return (1,p)
 
 
-class BDiscriminantClassifier:
+class BDiscriminantClassifier(BLogisticClassifier):
     def __init__(self, model, examples):
         (self.chisq,self.devnce,self.ndf,self.beta,
         self.se_beta,self.fit,self.stdres,
@@ -105,13 +125,17 @@ class BDiscriminantClassifier:
         for i in self.beta[1:]:
             if abs(i) > 1e-6:
                 sum *= abs(i)
+        if sum > 1e100:
+            sum = max(self.beta[1:])
+        if sum < 1e-6:
+            sum = 1e-6
         scale = math.sqrt(sum)
-        self.beta = [x/scale for x in self.beta]
+        self.nbeta = [x/scale for x in self.beta]
 
     def getmargin(self,example):
-        sum = self.beta[0]
-        for i in range(len(self.beta)-1):
-            sum = sum + example[i]*self.beta[i+1]
+        sum = self.nbeta[0]
+        for i in range(len(self.nbeta)-1):
+            sum = sum + example[i]*self.nbeta[i+1]
         return sum
 
     def __call__(self, example):
@@ -191,6 +215,13 @@ class RobustBLogisticClassifierWrap:
                 maskv.append(example[i])
         return maskv
 
+    def description(self,variablenames,n):
+        maskv = []
+        for i in range(len(variablenames[0])):
+            if self.mask[i] == 0:
+                maskv.append(variablenames[0][i])
+        self.classifier.description(maskv,variablenames[1],n)
+
     def getmargin(self, example):
         return self.classifier.getmargin(self.translate(example))
 
@@ -229,11 +260,15 @@ class BasicLogisticClassifier:
     def __init__(self, classifier, translator):
         self.classifier = classifier
         self.translator = translator
+        self.name = 'Basic Logistic Classifier'        
 
     def getmargin(self,example):
         tex = self.translator.extransform(example)
         r = self.classifier.getmargin(tex)
         return r
+
+    def description(self):
+        self.classifier.description(self.translator.description(),self.translator.cv.attr.values[1])
 
     def __call__(self, example, format = orange.GetValue):
         tex = self.translator.extransform(example)
@@ -246,13 +281,122 @@ class BasicLogisticClassifier:
                 p[i] = r[1]
                 p[1-i] = 1-r[1]
                 break
-        assert(p[0]+p[1]==1.0)
         if format == orange.GetValue:
             return v
         if format == orange.GetBoth:
             return (v,p)
         if format == orange.GetProbabilities:
             return p
+
+
+#
+# A margin-based Bayesian learner
+#
+class BasicBayesLearner:
+    def _safeRatio(self,a,b):
+        if a*10000.0 < b:
+            return -10
+        elif b*10000.0 < a:
+            return 10
+        else:
+            return math.log(a)-math.log(b)
+
+    def _process(self,classifier,examples):
+        # todo todo - support for loess
+        beta = self._safeRatio(classifier.distribution[1],classifier.distribution[0])
+        coeffs = []
+        for i in range(len(examples.domain.attributes)):
+            for j in range(len(examples.domain.attributes[i].values)):
+                p1 = classifier.conditionalDistributions[i][j][1]
+                p0 = classifier.conditionalDistributions[i][j][0]
+                coeffs.append(self._safeRatio(p1,p0)-beta)
+        return (beta, coeffs)
+
+    
+    def __init__(self):
+        self.translation_mode = 1 # binarization
+
+    def __call__(self, examples, weight = 0):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            raise "BasicBayes learner only works with binary discrete class."
+        for attr in examples.domain.attributes:
+            if not(attr.varType == 1):
+                raise "BasicBayes learner does not work with continuous attributes."
+        translate = orng2Array.DomainTranslation(self.translation_mode)
+        translate.analyse(examples, weight)
+        translate.prepareLR()
+        (beta, coeffs) = self._process(orange.BayesLearner(examples), examples)
+        return BasicBayesClassifier(beta,coeffs,translate)
+
+
+class BasicBayesClassifier:
+    def __init__(self, beta, coeffs, translator):
+        self.beta = beta
+        self.coeffs = coeffs
+        self.translator = translator
+        self.name = 'Basic Bayes Classifier'        
+
+    def getmargin(self,example):
+        tex = self.translator.extransform(example)
+        sum = self.beta
+        for i in xrange(len(self.coeffs)):
+            sum += tex[i]*self.coeffs[i]
+        return -sum
+
+    def __call__(self, example, format = orange.GetValue):
+        sum = self.getmargin(example)
+
+        # print sum, example
+        if sum > 10000:
+            r = (1,1.0)
+        elif sum < -10000:
+            r = (0,1.0)
+        else:
+            sum = math.exp(sum)
+            p = sum/(1.0+sum) # probability that the class is 1
+            if p < 0.5:
+                r = (0,1-p)
+            else:
+                r = (1,p)
+
+        v = self.translator.getClass(r[0])
+        p = [0.0,0.0]
+        for i in range(2):
+            if int(v) == i:
+                p[i] = r[1]
+                p[1-i] = 1-r[1]
+                break
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
+
+
+class BasicCalibrationLearner:
+    def __init__(self, discr = orange.EntropyDiscretization(), learnr = orange.BayesLearner()):
+        self.disc = discr
+        self.learner = learnr
+
+    def __call__(self, examples):
+        if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
+            raise "BasicCalibration learner only works with binary discrete class."
+        if len(examples.domain.attributes) > 1 or examples.domain.attributes[0].varType != 2:
+            raise "BasicCalibration learner only works with a single numerical attribute."
+
+        new_a = self.disc(examples.domain.attributes[0],examples)
+        data = examples.select([new_a, examples.domain.classVar])
+        c = self.learner(data)
+
+        return BasicCalibrationClassifier(c)
+
+class BasicCalibrationClassifier:
+    def __init__(self, classifier):
+        self.classifier = classifier
+
+    def __call__(self, example, format = orange.GetValue):
+        return self.classifier(example,format)
         
 #
 # Margin Probability Wrap
@@ -270,10 +414,11 @@ class BasicLogisticClassifier:
 # class distributions. 
 #
 class MarginMetaLearner:
-    def __init__(self, learner, folds = 10, metalearner = BasicLogisticLearner()):
+    def __init__(self, learner, folds = 10, replications = 1, metalearner = BasicLogisticLearner()):
         self.learner = learner
         self.folds = 10
         self.metalearner = metalearner
+        self.replications = replications
         
     def __call__(self, examples, weight = 0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
@@ -284,29 +429,35 @@ class MarginMetaLearner:
         mistakes = orange.ExampleTable(estdomain)
         if weight != 0:
             mistakes.addMetaAttribute(1)
-            
-        # perform 10 fold CV, and create a new dataset
-        try:
-            selection = orange.MakeRandomIndicesCV(examples, self.folds) # orange 2.2
-        except:
-            selection = orange.RandomIndicesSCVGen(examples, self.folds) # orange 2.1
-        for fold in range(self.folds):
-          learn_data = examples.selectref(selection, fold, negate=1)
-          test_data  = examples.selectref(selection, fold)
 
-          if weight!=0:
-              classifier = self.learner(learn_data, weight=weight)
-          else:
-              classifier = self.learner(learn_data)
-          for ex in test_data:
-              margin = classifier.getmargin(ex)
-              if type(margin)==type(1.0) or type(margin)==type(1):
-                  # ignore those examples which are handled with
-                  # the actual probability distribution
-                  mistake = orange.Example(estdomain,[float(margin), ex.getclass()])
-                  if weight!=0:
-                      mistake.setmeta(ex.getMetaAttribute(weight),1)
-                  mistakes.append(mistake)
+        for replication in range(self.replications):
+            # perform 10 fold CV, and create a new dataset
+            try:
+                selection = orange.MakeRandomIndicesCV(examples, self.folds) # orange 2.2
+            except:
+                selection = orange.RandomIndicesCVGen(examples, self.folds) # orange 2.1
+            for fold in range(self.folds):
+              if self.folds != 1: # no folds
+                  learn_data = examples.selectref(selection, fold, negate=1)
+                  test_data  = examples.selectref(selection, fold)
+              else:
+                  learn_data = selection
+                  test_data  = selection
+                  
+
+              if weight!=0:
+                  classifier = self.learner(learn_data, weight=weight)
+              else:
+                  classifier = self.learner(learn_data)
+              for ex in test_data:
+                  margin = classifier.getmargin(ex)
+                  if type(margin)==type(1.0) or type(margin)==type(1):
+                      # ignore those examples which are handled with
+                      # the actual probability distribution
+                      mistake = orange.Example(estdomain,[float(margin), ex.getclass()])
+                      if weight!=0:
+                          mistake.setmeta(ex.getMetaAttribute(weight),1)
+                      mistakes.append(mistake)
 
         if len(mistakes) < 1:
             # nothing to learn from
@@ -314,7 +465,8 @@ class MarginMetaLearner:
                 return self.learner(examples)
             else:
                 return self.learner(examples,weight)
-        
+        for x in mistakes:
+            print x
         if weight != 0:
             # learn a classifier to estimate the probabilities from margins
             # learn a classifier for the whole training set
@@ -334,6 +486,7 @@ class MarginMetaClassifier:
         self.domain = domain
         self.estdomain = estdomain
         self.cv = self.estdomain.classVar(0)
+        self.name = 'MarginMetaClassifier'        
 
     def __call__(self, example, format = orange.GetValue):
         r = self.classifier.getmargin(example)
@@ -352,4 +505,3 @@ class MarginMetaClassifier:
         if format == orange.GetProbabilities:
             return p
         
-
