@@ -270,7 +270,7 @@ class updateOrangeDlg(QMainWindow):
 
             if not os.path.exists(fname):
                 if self.updateMissingFilesCB.isChecked():
-                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "updating missing file")
+                    updatedFiles += self.updatefile(fname, location, version, "", "updating missing file")
                 else:
                     self.addText("Skipping missing file %s" % (fname))
                 continue
