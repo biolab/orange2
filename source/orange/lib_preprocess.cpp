@@ -220,29 +220,8 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
 }
 
 
-// modified setitem to accept intervals/names of values
+
 typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
-INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
-
-PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg) { return TMM_VariableFilterMap::P_FromArguments(arg); }
-PyObject *VariableFilterMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFilterMap::_FromArguments(type, arg); }
-PyObject *VariableFilterMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFilterMap::_new(type, arg, kwds); }
-PyObject *VariableFilterMap_str(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
-PyObject *VariableFilterMap_repr(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
-PyObject *VariableFilterMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_getitem(self, key); }
-int       VariableFilterMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFilterMap::_setitem(self, key, value); }
-int       VariableFilterMap_len(TPyOrange *self) { return TMM_VariableFilterMap::_len(self); }
-int       VariableFilterMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_contains(self, key); }
-
-PyObject *VariableFilterMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFilterMap::_has_key(self, key); }
-PyObject *VariableFilterMap_get(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_get(self, args); }
-PyObject *VariableFilterMap_setdefault(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_setdefault(self, args); }
-PyObject *VariableFilterMap_clear(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> None") { return TMM_VariableFilterMap::_clear(self); }
-PyObject *VariableFilterMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> keys") { return TMM_VariableFilterMap::_keys(self); }
-PyObject *VariableFilterMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFilterMap::_values(self); }
-PyObject *VariableFilterMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFilterMap::_items(self); }
-PyObject *VariableFilterMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFilterMap::_update(self, args); }
-
 
 int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObject *pyvalue)
 {
@@ -297,7 +276,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
 }
 
 
-TMM_VariableFilterMap::_setitemlow(TVariableFilterMap *aMap, PyObject *pykey, PyObject *pyvalue)
+int TMM_VariableFilterMap::_setitemlow(TVariableFilterMap *aMap, PyObject *pykey, PyObject *pyvalue)
 { PyTRY
     PVariable var;
     return TMM_VariableFilterMap::_keyFromPython(pykey, var) ? VariableFilterMap_setitemlow(aMap, var, pyvalue) : -1;
@@ -309,14 +288,14 @@ PyObject *TMM_VariableFilterMap::_setdefault(TPyOrange *self, PyObject *args)
 { PyObject *pykey;
   PyObject *deflt = Py_None;
   if (!PyArg_ParseTuple(args, "O|O:get", &pykey, &deflt))
-		return PYNULL;
-
-  CAST_TO(_MapType, aMap)
+    return PYNULL;
 
   PVariable var;
   if (!TMM_VariableFilterMap::_keyFromPython(pykey, var))
     return PYNULL;
 
+  TVariableFilterMap *aMap = const_cast<TVariableFilterMap *>(PyOrange_AsVariableFilterMap(self).getUnwrappedPtr());
+  
   iterator fi = aMap->find(var);
   if (fi==aMap->end()) {
     if (VariableFilterMap_setitemlow(aMap, var, deflt)<0)
@@ -329,6 +308,28 @@ PyObject *TMM_VariableFilterMap::_setdefault(TPyOrange *self, PyObject *args)
 
   return convertValueToPython((*fi).second);
 }
+
+// modified setitem to accept intervals/names of values
+INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
+
+PVariableFilterMap PVariableFilterMap_FromArguments(PyObject *arg) { return TMM_VariableFilterMap::P_FromArguments(arg); }
+PyObject *VariableFilterMap_FromArguments(PyTypeObject *type, PyObject *arg) { return TMM_VariableFilterMap::_FromArguments(type, arg); }
+PyObject *VariableFilterMap_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(items)") { return TMM_VariableFilterMap::_new(type, arg, kwds); }
+PyObject *VariableFilterMap_str(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
+PyObject *VariableFilterMap_repr(TPyOrange *self) { return TMM_VariableFilterMap::_str(self); }
+PyObject *VariableFilterMap_getitem(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_getitem(self, key); }
+int       VariableFilterMap_setitem(TPyOrange *self, PyObject *key, PyObject *value) { return TMM_VariableFilterMap::_setitem(self, key, value); }
+int       VariableFilterMap_len(TPyOrange *self) { return TMM_VariableFilterMap::_len(self); }
+int       VariableFilterMap_contains(TPyOrange *self, PyObject *key) { return TMM_VariableFilterMap::_contains(self, key); }
+
+PyObject *VariableFilterMap_has_key(TPyOrange *self, PyObject *key) PYARGS(METH_O, "(key) -> None") { return TMM_VariableFilterMap::_has_key(self, key); }
+PyObject *VariableFilterMap_get(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_get(self, args); }
+PyObject *VariableFilterMap_setdefault(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(key[, default]) -> value") { return TMM_VariableFilterMap::_setdefault(self, args); }
+PyObject *VariableFilterMap_clear(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> None") { return TMM_VariableFilterMap::_clear(self); }
+PyObject *VariableFilterMap_keys(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> keys") { return TMM_VariableFilterMap::_keys(self); }
+PyObject *VariableFilterMap_values(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> values") { return TMM_VariableFilterMap::_values(self); }
+PyObject *VariableFilterMap_items(TPyOrange *self, PyObject *args) PYARGS(METH_NOARGS, "() -> items") { return TMM_VariableFilterMap::_items(self); }
+PyObject *VariableFilterMap_update(TPyOrange *self, PyObject *args) PYARGS(METH_O, "(items) -> None") { return TMM_VariableFilterMap::_update(self, args); }
 
 
 typedef MapMethods<PVariableFloatMap, TVariableFloatMap, PVariable, float> TMM_VariableFloatMap;

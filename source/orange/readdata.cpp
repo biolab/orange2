@@ -24,9 +24,9 @@
 #include <fstream>
 
 #ifdef _MSC_VER
-#include <direct.h>
+  #include <direct.h>
 #else
-#include <unistd.h>
+  #include <unistd.h>
 #endif
 
 #include "stladdon.hpp"
@@ -43,6 +43,10 @@
 
 #include <string.h>
 
+#ifdef _MSC_VER
+  TExampleTable *readExcelFile(char *, PVarList);
+#endif
+
 bool fileExists(const string &s) {
   FILE *f = fopen(s.c_str(), "rt");
   if (!f)
@@ -53,7 +57,7 @@ bool fileExists(const string &s) {
 }
 
 
-typedef enum {UNKNOWN, TXT, TAB, C45, RETIS, ASSISTANT} TFileFormats;
+typedef enum {UNKNOWN, TXT, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
 WRAPPER(ExampleTable);
 
@@ -114,6 +118,11 @@ TExampleTable *readData(char *filename, PVarList knownVars)
       return mlnew TExampleTable(gen);
     }
 
+    #ifdef _MSC_VER
+    if (!strcmp(ext, ".xls"))
+      return readExcelFile(filename, knownVars);
+    #endif
+
     raiseError("unknown file format for file '%s'", filename);    
   }
 
@@ -153,6 +162,9 @@ TExampleTable *readData(char *filename, PVarList knownVars)
   CHECKFF(".tab", TAB);
   CHECKFF(".names", C45);
   CHECKFF(".rdo", RETIS);
+  #ifdef _MSC_VER
+  CHECKFF(".xls", EXCEL);
+  #endif
 
   #undef CHECKFF
 
@@ -201,10 +213,15 @@ TExampleTable *readData(char *filename, PVarList knownVars)
     }
 
     case ASSISTANT: {
-      PDomain domain = mlnew TAssistantDomain(string(filename, stem) + "asdo" + string(stem)+".dat");
+      PDomain domain = mlnew TAssistantDomain(string(filename, stem) + "asdo" + string(stem)+".dat", knownVars);
       PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat", domain);
       return mlnew TExampleTable(gen);
     }
+
+    #ifdef _MSC_VER
+    case EXCEL:
+      return readExcelFile(filename, knownVars);
+    #endif
 
     default:
       raiseError("unknown file format for file '%s'", filename);

@@ -509,6 +509,10 @@ SOURCE=.\orange\examples.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\excel.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\filegen.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"

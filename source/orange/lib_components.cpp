@@ -797,7 +797,7 @@ C_CALL(ExamplesDistanceConstructor_Relief, ExamplesDistanceConstructor, "([examp
 
 
 
-PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs) PYARGS(METH_VARARGS, "([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
+PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs) PYDOC("([examples, weightID][, DomainDistributions][, DomainBasicAttrStat]) -/-> ExamplesDistance")
 { PyTRY
 
     PyObject *args[4] = {PYNULL, PYNULL, PYNULL, PYNULL};
@@ -805,7 +805,7 @@ PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs) PYAR
     int weightID = 0;
     PDomainDistributions dist;
     PDomainBasicAttrStat bstat;
-    if (!PyArg_ParseTuple(uargs, "|OOOO:ExamplesDistanceConstructor.call", args[0], args[1], args[2], args[3]))
+    if (!PyArg_ParseTuple(uargs, "|OOOO:ExamplesDistanceConstructor.call", args+0, args+1, args+2, args+3))
       return PYNULL;
 
     PyObject **argp = args, **argc = args;
@@ -1220,7 +1220,7 @@ PyObject *ProbabilityEstimatorConstructor_call(PyObject *self, PyObject *uargs) 
     PDistribution dist, apriori;
     PExampleGenerator gen;
     int weightID = 0;
-    if (!PyArg_ParseTuple(uargs, "|OOOO:ProbabilityEstimatorConstructor.call", args[0], args[1], args[2], args[3]))
+    if (!PyArg_ParseTuple(uargs, "|OOOO:ProbabilityEstimatorConstructor.call", args+0, args+1, args+2, args+3))
       return PYNULL;
 
     PyObject **argp = args, **argc = args;
