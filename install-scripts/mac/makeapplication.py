@@ -4,7 +4,7 @@ import bundlebuilder
 
 bundlebuilder.buildapp(
     name='Orange.app',     # what to build                                 
-    mainprogram='orange/OrangeCanvas/orngCanvas.py',      # your app's main()                             
+    mainprogram='orange/OrangeCanvas/orngCanvas.pyw',      # your app's main()                             
     argv_emulation=0,           # drag&dropped filenames show up in sys.argv    
     iconfile='orange.icns',      # file containing your app's icons              
     standalone=1,               # make this app self contained.                 

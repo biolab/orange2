@@ -20,6 +20,8 @@ echo VARNAME: $VARNAME
 echo INCGENOMICS: $INCGENOMICS
 echo COMPILE ORANGE: $COMPILEORANGE
 echo
+gcc -v
+echo
 
 # COMPILEORANGE=1
 COMPILECRS=0
@@ -31,7 +33,9 @@ if [ $COMPILEORANGE == 1 ]; then
   cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f source
   cd source
   python makedep.py
-  make -f Makefile.mac
+  if ! make -f Makefile.mac; then
+    exit 1
+  fi
   cd ..
 fi
 mv *.so compiledOrange
@@ -69,7 +73,9 @@ rm orange/*.pyd ## no need for windows files
 cp compiledOrange/*.so orange
 PYTHONPATH=.
 rm -Rf build
-python makeapplication.py --resource=orange build
+if ! python makeapplication.py --resource=orange build; then
+  exit 1
+fi
 
 ## create image file and copy the compiled application into it
 rm tmp.dmg
@@ -81,6 +87,7 @@ cp -R build/Orange.app /Volumes/Orange
 hdiutil unmount /Volumes/Orange
 ## hdiutil resize tmp.dmg -size min
 hdiutil convert -format UDZO tmp.dmg -o $DMGFILE
+## hdiutil unmount tmp.dmg
 rm tmp.dmg
 
 ## copy file to estelle and change version
