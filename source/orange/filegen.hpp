@@ -105,12 +105,12 @@ protected:
 #define stringVarType 6
 
 /* Creates a variable with given name and type. */
-PVariable createVariable(const string &name, const int &varType);
+PVariable createVariable(const string &name, const int &varType, PStringList values);
 
 /* Tries to find a variable the given name and type in knownVars or metaVector.
    Any of these (or both) can be omitted. If the variable is found in metaVector,
    the id is set as well; if not, id is set to 0. If the variable is not found,
    a new one is created unless dontCreateNew is set to false. */
-PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
+PVariable makeVariable(const string &name, unsigned char varType, PStringList values, int &id, PVarList knownVars, const TMetaVector * = NULL, bool dontCreateNew = false, bool preferMetas = false);
 
 #endif

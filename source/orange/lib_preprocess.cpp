@@ -195,7 +195,7 @@ C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfInte
 
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, KM, TPreprocessor_addCensorWeight::km)
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Linear, TPreprocessor_addCensorWeight::linear)
-PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Relative, TPreprocessor_addCensorWeight::relative)
+PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Bayes, TPreprocessor_addCensorWeight::bayes)
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
 { 

@@ -2646,8 +2646,8 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
 
     if (!PyArg_ParseTuple(targs, "O&|i", pt_ExampleGenerator, &egen, &weight)) {
       PyErr_Clear();
-      if (!PyArg_ParseTuple(targs, "(O&|i):Learner.__call__", pt_ExampleGenerator, &egen, &weight))
-        return PYNULL;
+      if (!PyArg_ParseTuple(targs, "(O&|i)", pt_ExampleGenerator, &egen, &weight))
+        PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weightID expected", PYNULL);
     }
 
     if (weight == -1) {

@@ -156,6 +156,9 @@ class _TOrangeVector : public TOrange
       : __orvector(i_X)
       {}
 
+    ~_TOrangeVector()
+      {}
+
     static TClassDescription st_classDescription;
 
     virtual TClassDescription const *classDescription() const

@@ -246,7 +246,7 @@ PDomain TFileExampleGenerator::prepareDomain(const TAttributeDescriptions *attri
   TVarList attrList;
   int foo;
   const_PITERATE(TAttributeDescriptions, ai, attributes)
-    attrList.push_back(makeVariable((*ai).name, (*ai).varType, foo, knownVars, knownMetas, false, false));
+    attrList.push_back(makeVariable((*ai).name, (*ai).varType, (*ai).values, foo, knownVars, knownMetas, false, false));
 
   PDomain newDomain;
 
@@ -261,7 +261,7 @@ PDomain TFileExampleGenerator::prepareDomain(const TAttributeDescriptions *attri
   if (metas)
     const_PITERATE(TAttributeDescriptions, mi, metas) {
       int id;
-      PVariable var = makeVariable((*mi).name, (*mi).varType, id, knownVars, knownMetas, false, true);
+      PVariable var = makeVariable((*mi).name, (*mi).varType, (*mi).values, id, knownVars, knownMetas, false, true);
       if (!id)
         id = getMetaID();
       newDomain->metas.push_back(TMetaDescriptor(id, var));
@@ -274,10 +274,10 @@ PDomain TFileExampleGenerator::prepareDomain(const TAttributeDescriptions *attri
 }
 
 
-PVariable createVariable(const string &name, const int &varType)
+PVariable createVariable(const string &name, const int &varType, PStringList values)
 {
   switch (varType) {
-    case TValue::INTVAR:  return mlnew TEnumVariable(name);
+    case TValue::INTVAR:  return mlnew TEnumVariable(name, values ? values : PStringList(mlnew TStringList()));
     case TValue::FLOATVAR: return mlnew TFloatVariable(name);
     case stringVarType: return mlnew TStringVariable(name);
   }
@@ -289,7 +289,7 @@ PVariable createVariable(const string &name, const int &varType)
 }
 
 
-PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
+PVariable makeVariable(const string &name, unsigned char varType, PStringList values, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
 { if (!preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==name)
@@ -322,5 +322,5 @@ PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarL
   
   id = 0;
 
-  return dontCreateNew ? PVariable() : createVariable(name, varType);
+  return dontCreateNew ? PVariable() : createVariable(name, varType, values);
 }

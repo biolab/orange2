@@ -20,8 +20,11 @@
 */
 
 
-#define DEFINE_TOrangeMap_classDescription(_Key,_Value,_Kior,_Vior, _NAME) \
-  TClassDescription TOrangeMap<_Key,_Value,_Kior,_Vior>::st_classDescription = { _NAME, &typeid(TOrangeMap<_Key,_Value,_Kior,_Vior>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
+/* _ClassName should be TOrangeMap_, TOrangeMap_K, TOrangeMap_V or TOrangeMap_KV.
+   K and V stand for key and value, and should be present if the key (value) is
+   an Orange object. */
+#define DEFINE_TOrangeMap_classDescription(_ClassName,_Key,_Value, _NAME) \
+  TClassDescription _ClassName<_Key,_Value>::st_classDescription = { _NAME, &typeid(_ClassName<_Key,_Value>), &TOrange::st_classDescription, TOrange_properties, TOrange_components };
 
 
 #ifndef __ORMAP_HPP
@@ -32,7 +35,7 @@
 #include "root.hpp"
 #include "stladdon.hpp"
 
-template<class K, class V, bool key_is_orange, bool value_is_orange>
+template<class K, class V>
 class TOrangeMap : public TOrange
 { public:
     MAP_INTERFACE(K, V, __ormap);
@@ -44,21 +47,31 @@ class TOrangeMap : public TOrange
       : __ormap(X)
       {}
 
-    int traverse(visitproc visit, void *arg) const
-    { TRAVERSE(TOrange::traverse);
-      if (key_is_orange || value_is_orange)
-        for(const_iterator be=begin(), ee=end(); be!=ee; be++) {
-          if (key_is_orange)
-            PVISIT((*be).first);
-          if (value_is_orange)
-            PVISIT((*be).first);
-        }
-      return 0;
-    }
-
     int dropReferences()
     { DROPREFERENCES(TOrange::dropReferences);
       clear();
+      return 0;
+    }
+};
+
+
+template<class K, class V>
+class TOrangeMap_ : public TOrangeMap<K, V>
+{ public:
+    static TClassDescription st_classDescription;
+
+    virtual TClassDescription const *classDescription() const
+      { return &st_classDescription; }
+};
+
+
+template<class K, class V>
+class TOrangeMap_K : public TOrangeMap<K, V>
+{ public:
+    int traverse(visitproc visit, void *arg) const
+    { TRAVERSE(TOrange::traverse);
+      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
+        PVISIT((*be).first);
       return 0;
     }
 
@@ -68,6 +81,44 @@ class TOrangeMap : public TOrange
       { return &st_classDescription; }
 };
 
+
+template<class K, class V>
+class TOrangeMap_V : public TOrangeMap<K, V>
+{ public:
+    int traverse(visitproc visit, void *arg) const
+    { TRAVERSE(TOrange::traverse);
+      for(const_iterator be=begin(), ee=end(); be!=ee; be++)
+        if (value_is_orange)
+          PVISIT((*be).second);
+      return 0;
+    }
+
+    static TClassDescription st_classDescription;
+
+    virtual TClassDescription const *classDescription() const
+      { return &st_classDescription; }
+};
+
+
+template<class K, class V>
+class TOrangeMap_KV : public TOrangeMap<K, V>
+{ public:
+    MAP_INTERFACE(K, V, __ormap);
+
+    int traverse(visitproc visit, void *arg) const
+    { TRAVERSE(TOrange::traverse);
+      for(const_iterator be=begin(), ee=end(); be!=ee; be++) {
+        PVISIT((*be).first);
+        PVISIT((*be).second);
+      }
+      return 0;
+    }
+
+    static TClassDescription st_classDescription;
+
+    virtual TClassDescription const *classDescription() const
+      { return &st_classDescription; }
+};
 
 #define MWRAPPER(x) typedef GCPtr< T##x > P##x;
 

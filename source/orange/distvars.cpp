@@ -650,7 +650,7 @@ int TDiscDistribution::highestProbIntIndex(const long &random) const
   if (wins==1)
     return best;
 
-  for(i = 0, wins = 1 + random % wins; wins; i++);
+  for(i = 0, wins = 1 + random % wins; wins; i++)
     if (operator[](i)==bestP)
       wins--;
 

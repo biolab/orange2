@@ -478,27 +478,25 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
             else
               targs = Py_BuildValue("(O)", args);
 
-            if (propertyPyType->tp_new) {
-              PyObject *obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict);
+            PyObject *obj = propertyPyType->tp_new(propertyPyType, targs, emptyDict);
+            if (obj) {
+              if (   propertyPyType->tp_init != NULL
+		              && propertyPyType->tp_init(obj, targs, emptyDict) < 0) {
+			          Py_DECREF(obj);
+			          obj = NULL;
+		          }
+
+              Py_DECREF(emptyDict);
+              Py_DECREF(targs);
+
               if (obj) {
-                if (   propertyPyType->tp_init != NULL
-		                && propertyPyType->tp_init(obj, targs, emptyDict) < 0) {
-			            Py_DECREF(obj);
-			            obj = NULL;
-		            }
-
-                Py_DECREF(emptyDict);
-                Py_DECREF(targs);
-
-                if (obj) {
-                  self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
-                  return 0;
-                }
+                self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
+                return 0;
               }
-              else {
-                Py_DECREF(emptyDict);
-                Py_DECREF(targs);
-              }
+            }
+            else {
+              Py_DECREF(emptyDict);
+              Py_DECREF(targs);
             }
           }
 

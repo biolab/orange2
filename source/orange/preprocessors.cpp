@@ -42,8 +42,8 @@
 #include <string>
 #include "preprocessors.ppp"
 
-DEFINE_TOrangeMap_classDescription(PVariable, PValueFilter, true, true, "VariableFilterMap")
-DEFINE_TOrangeMap_classDescription(PVariable, float, true, false, "VariableFloatMap")
+DEFINE_TOrangeMap_classDescription(TOrangeMap_KV, PVariable, PValueFilter, "VariableFilterMap")
+DEFINE_TOrangeMap_classDescription(TOrangeMap_K, PVariable, float, "VariableFloatMap")
 
 #ifdef _MSC_VER
   #pragma warning (disable : 4100) // unreferenced local parameter (macros name all arguments)
@@ -560,6 +560,7 @@ PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen
 
 
 PDistribution kaplanMeier(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID);
+PDistribution bayesSurvival(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID, const float &maxTime);
 
 TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight()
 : outcomeVar(),
@@ -647,8 +648,12 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     }
   }
 
-  else if (method == km) {
-    PDistribution KM = kaplanMeier(gen, outcomeIndex, eventValue, timeIndex, weightID);
+  else if ((method == km) || (method == bayes)) {
+    if ((km==bayes) && (maxTime<=0.0))
+      raiseError("'maxTime' should be set when 'method' is 'Bayes'");
+      
+    PDistribution KM = (method == km) ? kaplanMeier(gen, outcomeIndex, eventValue, timeIndex, weightID)
+                                      : bayesSurvival(gen, outcomeIndex, eventValue, timeIndex, weightID, maxTime);
 
     float KM_max = maxTime>0.0 ? KM->p(maxTime) : (*KM.AS(TContDistribution)->distribution.rbegin()).second;
 
@@ -670,7 +675,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
           else {
             float KM_t = KM->p(tme.floatV);
             if (KM_t>0) // it shouldn't be 0 here - at least this example DID survive; but let's play it safe
-              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * KM_max/KM_t));
+              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * method == km ? (KM_max/KM_t) : KM_t));
           }
         }
       }

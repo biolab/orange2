@@ -334,7 +334,7 @@ TDefaultClassifier::TDefaultClassifier(PVariable acv)
 
 TDefaultClassifier::TDefaultClassifier(PVariable acv, PDistribution defDis)
 : TClassifier(acv, true),
-  defaultVal(defDis ? defDis->highestProbValue() : TValue()),
+  defaultVal(),
   defaultDistribution(defDis)
 {}
 
@@ -353,16 +353,24 @@ TDefaultClassifier::TDefaultClassifier(const TDefaultClassifier &old)
 {}
 
 
-TValue TDefaultClassifier::operator ()(const TExample &)
-{ return defaultVal; }
+TValue TDefaultClassifier::operator ()(const TExample &exam)
+{ if (defaultVal.isSpecial())
+    return defaultDistribution->supportsContinuous ? TValue(defaultDistribution->average()) : defaultDistribution->highestProbValue(exam);
+
+  return defaultVal;
+}
 
 
 PDistribution TDefaultClassifier::classDistribution(const TExample &)
 { return CLONE(TDistribution, defaultDistribution); }
 
 
-void TDefaultClassifier::predictionAndDistribution(const TExample &, TValue &val, PDistribution &dist)
-{ val = defaultVal;
+void TDefaultClassifier::predictionAndDistribution(const TExample &exam, TValue &val, PDistribution &dist)
+{ if (defaultVal.isSpecial())
+    val = defaultDistribution->supportsContinuous ? TValue(defaultDistribution->average()) : defaultDistribution->highestProbValue(exam);
+  else
+    val = defaultVal;
+
   dist = CLONE(TDistribution, defaultDistribution);
 }
 

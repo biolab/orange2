@@ -54,7 +54,9 @@ PClassifier TMajorityLearner::operator()(PExampleGenerator ogen, const int &weig
   else
     classDistr->normalize();
 
-  return mlnew TDefaultClassifier(ogen->domain->classVar, classDistr);
+  return mlnew TDefaultClassifier(ogen->domain->classVar,
+                                  classDistr->supportsContinuous ? TValue(classDistr->average()) : classDistr->highestProbValue(classDistr->cases),
+                                  classDistr);
 }
 
   

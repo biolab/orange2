@@ -50,7 +50,7 @@ protected:
 
 WRAPPER(Preprocessor);
 
-#define TVariableFilterMap TOrangeMap<PVariable, PValueFilter, true, true>
+#define TVariableFilterMap TOrangeMap_KV<PVariable, PValueFilter>
 MWRAPPER(VariableFilterMap)
 
 
@@ -136,7 +136,7 @@ public:
 };
 
 
-#define TVariableFloatMap TOrangeMap<PVariable, float, true, false>
+#define TVariableFloatMap TOrangeMap_K<PVariable, float>
 MWRAPPER(VariableFloatMap)
 
 class TPreprocessor_addNoise : public TPreprocessor {
@@ -234,7 +234,7 @@ class TPreprocessor_addCensorWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  enum {linear, km, relative};
+  enum {linear, km, bayes};
 
   PVariable outcomeVar; //P outcome variable
   PVariable timeVar; //P time variable
