@@ -1449,7 +1449,7 @@ PyTypeObject PyOrange_DictProxy_Type = {
 	0,  /* tp_init */
 	PyType_GenericAlloc,
 	0,  /* tp_new */
-	PyObject_GC_Del,
+	_PyObject_GC_Del,
 };
 
 
@@ -1581,6 +1581,14 @@ static PyObject *PyOrange_DictProxyIter_iternext(TPyOrange_DictyProxyIter *di)
 }
 
 
+// Could use Python's, but it only appeared in 2.3
+// We can remove this when we stop caring about 2.2 users
+PyObject *PyObject_MySelfIter(PyObject *obj)
+{
+	Py_INCREF(obj);
+	return obj;
+}
+
 PyTypeObject PyOrange_DictProxyIter_Type = {
 	PyObject_HEAD_INIT(&PyType_Type)
 	0,					/* ob_size */
@@ -1609,7 +1617,7 @@ PyTypeObject PyOrange_DictProxyIter_Type = {
  	0,					/* tp_clear */
 	0,					/* tp_richcompare */
 	0,					/* tp_weaklistoffset */
-	PyObject_SelfIter,			/* tp_iter */
+	PyObject_MySelfIter,			/* tp_iter */
 	(iternextfunc)PyOrange_DictProxyIter_iternext,	/* tp_iternext */
 	0,					/* tp_methods */
 	0,					/* tp_members */
