@@ -94,7 +94,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
 
 		self.show()
-		
+
 		# create new schema
 		win = self.menuItemNewSchema()
 		win.showMaximized()
@@ -154,7 +154,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuFile.insertItem( "&Save As Application (Tabs)", self.menuItemSaveAsAppTabs)
 		self.menuFile.insertItem( "&Save As Application (Buttons)", self.menuItemSaveAsAppButtons)
 		self.menuFile.insertSeparator()
-		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
+		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
 		self.menuFile.insertSeparator()
 		self.menuFile.insertItem( "Recent Files", self.menuRecent)
 		self.menuFile.insertSeparator()
@@ -282,23 +282,17 @@ class OrangeCanvasDlg(QMainWindow):
 			win.saveDocumentAsApp(asTabs = 1)	
 
 	def menuItemPrinter(self):
+		try:
+			import OWDlgs
+		except:
+			print "Missing file OWDlgs.py. This file should be in widget directory. Unable to print/save image."
+			return
 		win = self.workspace.activeWindow()
 		if not isinstance(win, orngDoc.SchemaDoc):
 			return
-		if self.printer.setup(self):
-			self.statusBar.message('Printing...')
-			p = QPainter()
-			p.begin(self.printer)
-			p.scale(10,10)
-			p.setFont(QFont('Times',1, QFont.Normal))
-
-			for line in win.lines:
-				line.printShape(p)
-				
-			for item in win.widgets:
-				item.printShape(p)
-			p.end()
-			self.statusBar.message('')
+		sizeDlg = OWDlgs.OWChooseImageSizeDlg(win.canvas)
+		sizeDlg.exec_loop()
+		
 
 	def readRecentFiles(self):
 		if not self.settings.has_key("RecentFiles"): return
