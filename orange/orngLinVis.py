@@ -177,7 +177,7 @@ class _parseNB(_parse):
                         ac = tm
                     m[i][offsets[j]+k] = ac
 
-        return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
+        return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)), 0)
 
 class _parseLR(_parse):
     def getDescriptors(self, translator, examples, buckets):
@@ -318,7 +318,7 @@ class _parseLR(_parse):
 
         m = self.getExamples(examples,tex,len(basis),classifier,lookup,nlookup,contins, coeff_names)
 
-        return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
+        return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)),0)
 
 
 class _parseSVM(_parseLR):
@@ -347,9 +347,12 @@ class _parseSVM(_parseLR):
                 xcoeffs[j-1] += coef*v
 
         ## reverse the betas if the labels got switched
-        #if classifier.model["label"][0] == 0:
-        #    beta = -beta
-        #    xcoeffs = [-x for x in xcoeffs]
+        if classifier.model["label"][0] == 0:
+            beta = -beta
+            xcoeffs = [-x for x in xcoeffs]
+            flip = 1
+        else:
+            flip = 0
 
         (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names, tr_values)
 
@@ -359,19 +362,23 @@ class _parseSVM(_parseLR):
  
         m = self.getExamples(examples,tex,len(basis),classifier,lookup,nlookup,contins, coeff_names)
         
-        return (beta, coeffs, coeff_names, basis, m, _treshold)
+        return (beta, coeffs, coeff_names, basis, m, _treshold, flip)
 
 
 class _marginConverter:
-    def __init__(self,coeff,estdomain,estimator):
+    def __init__(self,coeff,estdomain,estimator,flip):
         self.coeff = coeff
         self.estdomain = estdomain
         self.cv = self.estdomain.classVar(0)
         self.estimator = estimator
+        self.flip = flip
 
     def __call__(self, r):
         # got a margin
-        ex = orange.Example(self.estdomain,[r*self.coeff,self.cv]) # need a dummy class value
+        if self.flip:
+            ex = orange.Example(self.estdomain,[r*self.coeff,self.cv]) # need a dummy class value
+        else:
+            ex = orange.Example(self.estdomain,[-r*self.coeff,self.cv]) # need a dummy class value
         p = self.estimator(ex,orange.GetProbabilities)
         return p[1]
 
@@ -381,8 +388,8 @@ class _parseMargin(_parse):
         self.marginc = marginc
 
     def __call__(self,classifier,examples, buckets):
-        (beta, coeffs, coeff_names, basis, m, _probfunc) = self.parser(classifier.classifier,examples, buckets)
-        return (beta, coeffs, coeff_names, basis, m, _marginConverter(self.marginc.coeff, self.marginc.estdomain, self.marginc.estimator))
+        (beta, coeffs, coeff_names, basis, m, _probfunc, flip) = self.parser(classifier.classifier,examples, buckets)
+        return (beta, coeffs, coeff_names, basis, m, _marginConverter(self.marginc.coeff, self.marginc.estdomain, self.marginc.estimator, flip), 0)
         
 
 class Visualizer:
@@ -413,7 +420,7 @@ class Visualizer:
         # acquire the linear model
         parser = self.findParser(classifier)
 
-        (beta, coeffs, coeff_names, basis, m, probfunc) = parser(classifier,examples, buckets)
+        (beta, coeffs, coeff_names, basis, m, probfunc, flip) = parser(classifier,examples, buckets)
         #print "examples:"
         #print m
         #print "basis:"
@@ -558,9 +565,9 @@ if __name__== "__main__":
                 j += 1
         print "beta:",-m.beta
 
-    t = orange.ExampleTable('c:/proj/domains/d_pima.tab') # discrete
+    t = orange.ExampleTable('c:/proj/domains/voting.tab') # discrete
     #t = orange.ExampleTable('c_cmc.tab') # continuous
-    
+
     print "NAIVE BAYES"
     print "==========="
     bl = orange.BayesLearner()
