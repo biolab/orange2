@@ -248,7 +248,7 @@ char *TTabDelimExampleGenerator::mayBeTabFile(const string &stem)
 
   // if there is no flags line, it is not .tab
   while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv)==-1));
-  if (atoms.empty()) {
+  if (feof(fei.file)) {
     char *res = mlnew char[128];
     res = strcpy(res, "file has only two lines");
     return res;
@@ -816,18 +816,21 @@ int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces
 // ********* Output ********* //
 
 
+#define PUTDELIM { if (ho) putc(delim, file); else ho = true; }
+
 void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
 { TVarList::const_iterator vi(ex.domain->variables->begin()), ve(ex.domain->variables->end());
   TExample::const_iterator ri(ex.begin());
   string st;
-  (*(vi++))->val2str(*(ri++), st);
-  fprintf(file, "%s", st.c_str());
+  bool ho = false;
   for(; vi!=ve; vi++, ri++) {
+    PUTDELIM;
     (*vi)->val2str(*ri, st);
-    fprintf(file, "%c%s", delim, st.c_str());
+    fprintf(file, st.c_str());
   }
 
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
+    PUTDELIM;
     (*mi).variable->val2str(ex[(*mi).id], st);
     fprintf(file, "%c%s", delim, st.c_str());
   }
@@ -879,57 +882,52 @@ void printVarType(FILE *file, PVariable var)
 
 void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
 { 
-  char delims[2] = {delim, 0};
   TVarList::const_iterator vi, vb(dom->variables->begin()), ve(dom->variables->end());
   TMetaVector::const_iterator mi, mb(dom->metas.begin()), me(dom->metas.end());
 
+  bool ho = false;
   // First line: attribute names
   for(vi = vb; vi!=ve; vi++) {
-    if (vi!=vb)
-      fprintf(file, "%c%s", delim, (*vi)->name.c_str());
-    else
-      fprintf(file, "%s", (*vi)->name.c_str());
+    PUTDELIM;
+    fprintf(file, "%s", (*vi)->name.c_str());
   }
   for(mi = mb; mi!=me; mi++) {
-    if (mi!=mb)
-      fprintf(file, "%c%s", delim, (*mi).variable->name.c_str());
-    else
-      fprintf(file, "%s", (*mi).variable->name.c_str());
-    }
+    PUTDELIM;
+    fprintf(file, "%s", (*mi).variable->name.c_str());
+  }
   fprintf(file, "\n");
 
   
   // Second line: types
+  ho = false;
   for(vi = vb; vi!=ve; vi++) {
-    if (vi!=vb)
-      fprintf(file, delims);
+    PUTDELIM;
     printVarType(file, *vi);
   }
   for(mi = mb; mi!=me; mi++) {
-    if (mi!=mb)
-      fprintf(file, delims);
+    PUTDELIM;
     printVarType(file, (*mi).variable);
   }
   fprintf(file, "\n");
 
 
   // Third line: "meta" and "-ordered"
+  ho = false;
   for(vb = vi = dom->attributes->begin(), ve = dom->attributes->end(); vi!=ve; vi++) {
-    if (vi!=vb)
-      fprintf(file, delims);
+    PUTDELIM;
     if (((*vi)->varType == TValue::INTVAR) && (*vi)->ordered)
       fprintf(file, "-ordered");
   }
+  PUTDELIM;
   if (dom->classVar)
-    fprintf(file, "%cclass", delim);
+    fprintf(file, "class");
   for(mi = mb; mi!=me; mi++) {
-    if (mi!=mb)
-      fprintf(file, delims);
-      fprintf(file, "meta");
-      if ((*mi).variable->ordered)
-        fprintf(file, " -ordered");
-   }
-   fprintf(file, "\n");
+    PUTDELIM;
+    fprintf(file, "meta");
+    if ((*mi).variable->ordered)
+      fprintf(file, " -ordered");
+ }
+ fprintf(file, "\n");
 }
 
 
@@ -979,17 +977,21 @@ bool tabDelim_checkNeedsD(PVariable var)
 
 void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
 {
-  char delims[2] = {delim, 0};
-
-  int notFirst = 0;
-  const_PITERATE(TVarList, vi, dom->attributes)
-    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
+  bool ho = false;
+  const_PITERATE(TVarList, vi, dom->attributes) {
+    PUTDELIM;
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
+  }
   
-  if (dom->classVar)
-    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
+  if (dom->classVar) {
+    PUTDELIM;
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
+  }
 
-  const_ITERATE(TMetaVector, mi, dom->metas)
-    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+  const_ITERATE(TMetaVector, mi, dom->metas) {
+    PUTDELIM;
+    fprintf(file, "%s%s", (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+  }
 
   fprintf(file, "\n");
 }

@@ -700,12 +700,12 @@ PyObject *Example_native(TPyExample *pex, PyObject *args, PyObject *keyws) PYARG
       PYERROR(PyExc_TypeError, "invalid arguments (no arguments or an integer expected)", PYNULL);
 
     bool tuples = false;
-    PyObject *pytuples = PyDict_GetItemString(keyws, "tuple");
+    PyObject *pytuples = keyws ? PyDict_GetItemString(keyws, "tuple") : PYNULL;
     tuples = pytuples && (PyObject_IsTrue(pytuples) != 0);
 
-    PyObject *forDC = PyDict_GetItemString(keyws, "substituteDC");
-    PyObject *forDK = PyDict_GetItemString(keyws, "substituteDK");
-    PyObject *forSpecial = PyDict_GetItemString(keyws, "substituteOther");
+    PyObject *forDC = keyws ? PyDict_GetItemString(keyws, "substituteDC") : PYNULL;
+    PyObject *forDK = keyws ? PyDict_GetItemString(keyws, "substituteDK") : PYNULL;
+    PyObject *forSpecial = keyws ? PyDict_GetItemString(keyws, "substituteOther") : PYNULL;
 
     return convertToPythonNative(PyExample_AS_ExampleReference(pex), natvt, tuples, forDK, forDC, forSpecial);
   PyCATCH

@@ -85,7 +85,7 @@ PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
 TDomainContinuizer *constructDefaultLRContinuizer()
 { 
   TDomainContinuizer *def = mlnew TDomainContinuizer();
-  def->zeroBased = false;
+  def->zeroBased = true;
   def->normalizeContinuous = false;
   def->multinomialTreatment = TDomainContinuizer::FrequentIsBase;
   def->classTreatment = TDomainContinuizer::Ignore;

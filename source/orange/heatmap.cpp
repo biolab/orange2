@@ -381,11 +381,13 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     lineAverages.reserve(nRows);
         
     int pcl = -1;
-    if (!haveBase && nClasses)
-      while(pcl < classes.front()) {
+    if (!haveBase && nClasses) {
+      int cd = classes[sortIndices.front()];
+      while(pcl < cd) {
         classBoundaries.push_back(0);
         pcl++;
       }
+    }
 
     ITERATE(vector<int>, si, sortIndices) {
       esorted.addExample(etable[*si]);
