@@ -10,6 +10,7 @@ if [ "$1" == "clean" ]; then
 fi
 echo
 
+rm -Rf source
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f source
 
 START_WD=`pwd`
@@ -17,6 +18,7 @@ rm orange.so statc.so corn.so
 cd source 
 if ! make; then 
 	echo -e "\n\nERROR compiling"
+	exit 1
 else
 	echo -e "\n\nOrange compiled successfully"
 fi
