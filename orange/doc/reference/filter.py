@@ -19,17 +19,32 @@ data70 = randomfilter(data)
 print len(data), len(data70)
 
 data2 = data[:5]
-data2[0][0] = "?"
+data2[0]["age"] = "?"
 data2[1].setclass("?")
 print "First five examples"
 for ex in data2:
     print ex
 
-print "\nExamples with unknown values"
+print "\nExamples without unknown values"
+f = orange.Filter_isDefined(domain = data.domain)
+for ex in f(data2):
+    print ex
+
+print "\nExamples without unknown values, ignoring 'age'"
+f.check["age"] = 0
+for ex in f(data2):
+    print ex
+
+print "\nExamples with unknown values (ignoring age)"
+for ex in f(data2, negate=1):
+    print ex
+
+
+print "\nExamples with unknown values (Filter_hasSpecial)"
 for ex in orange.Filter_hasSpecial(data2):
     print ex
 
-print "\nExamples with no unknown values"
+print "\nExamples with no unknown values (Filter_hasSpecial)"
 for ex in orange.Filter_hasSpecial(data2, negate=1):
     print ex
 

@@ -14,7 +14,8 @@
 
 <P>All filters have two attributes.</P>
 
-<DL>
+<P class=section>Attributes</P>
+<DL class=attributes>
 <DT><CODE><B>negate</B></CODE></DT>
 <DD>Inverts filters decisions</DD>
 
@@ -60,11 +61,20 @@ data70 = randomfilter(data)
 </XMP>
 
 
-<H2>Filtering examples with unknown values</H2>
+<H2>Filtering examples with(out) unknown values</H2>
 
-<P><CODE>Filter_hasSpecial</CODE> selects examples with at least one unknown value, in any of attributes, including the class attribute. <CODE>Filter_hasClass</CODE> selects examples with defined class value. Use <CODE>negate</CODE> to invert the decisions if needed, as shown in the script below.</P>
+<P><CODE>Filter_isDefined</CODE> selects examples for which all attribute values are defined (known). By default, the filter checks all attributes; you can modify the list <CODE>check</CODE> to select the attributes to be checked. This filter never checks meta-attributes are not checked. (There is an obsolete filter <CODE>Filter_hasSpecial</CODE>, which does the opposite, that is, selects examples with at least one unknown value, in any of attributes, including the class attribute. <CODE>Filter_hasSpecial</CODE> always checks all attributes except meta-attributes.) <CODE>Filter_hasClass</CODE> selects examples with defined class value. You can use <CODE>negate</CODE> to invert the selection, as shown in the script below.</P>
 
-<p class="header"><a href="filter.py">part of filter.py</a>
+<P class=section>Attributes</P>
+<DL class=attributes>
+<DT>check</DT>
+<DD>A list of boolean elements specifying which attributes to check. Each element corresponds to an attribute in the domain. By default, <CODE>check</CODE> is <CODE>None</CODE>, meaning that all attributes are checked. The list is initialized to a list of <CODE>true</CODE>s when the filter's <CODE>domain</CODE> is set unless the list already exists. You can also set <CODE>check</CODE> manually, even without setting the <CODE>domain</CODE>. The list can be indexed by ordinary integers (<I>e.g.</I>, <CODE>check[0]</CODE>); if <CODE>domain</CODE> is set, you can also address the list by attribute names or descriptors.</DD>
+</DL>
+
+<P>As for all Orange objects, it is not recommended to modify the <CODE>domain</CODE> after it has been set once, unless you know exactly what you are doing. In this particular case, changing the domain would disrupt the correspondence between the domain attributes and the <CODE>check</CODE> list, causing unpredictable behaviour.</P>
+
+
+<p class="header">part of <a href="filter.py">filter.py</a>
 (uses <a href="lenses.tab">lenses.tab</a>)</p>
 <XMP class="code">
 data = orange.ExampleTable("lenses")
@@ -75,12 +85,18 @@ print "First five examples"
 for ex in data2:
     print ex
 
-print "\nExamples with unknown values"
-for ex in orange.Filter_hasSpecial(data2):
+print "\nExamples without unknown values"
+f = orange.Filter_isDefined(domain = data.domain)
+for ex in f(data2):
     print ex
 
-print "\nExamples with no unknown values"
-for ex in orange.Filter_hasSpecial(data2, negate=1):
+print "\nExamples without unknown values, ignoring 'age'"
+f.check["age"] = 0
+for ex in f(data2):
+    print ex
+
+print "\nExamples with unknown values (ignoring age)"
+for ex in f(data2, negate=1):
     print ex
 
 print "\nExamples with defined class"
