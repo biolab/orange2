@@ -24,13 +24,6 @@ EXTERNALDIR = $(ORANGEHOME)/source/external
 PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python'+sys.version[:3]")
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 
-C45D = $(EXTERNALDIR)/c45
-C45_OBJECTS = $(C45D)/besttree.o $(C45D)/build.o $(C45D)/classify.o $(C45D)/confmat.o \
-		$(C45D)/contin.o $(C45D)/discr.o $(C45D)/genlogs.o $(C45D)/getdata.o \
-		$(C45D)/getnames.o $(C45D)/getopt.o $(C45D)/info.o \
-		$(C45D)/prune.o $(C45D)/sort.o $(C45D)/st-thresh.o $(C45D)/stats.o \
-		$(C45D)/subset.o $(C45D)/trees.o $(C45D)/rand_free.o
-
 LOGREGD = $(EXTERNALDIR)/logreg
 LOGREG_OBJECTS = $(LOGREGD)/logreg.o $(LOGREGD)/lsq.o
 
@@ -39,9 +32,7 @@ ORANGE_SO = $(BINDIR)/orange.so $(BINDIR)/corn.so $(BINDIR)/statc.so
 
 INCLUDEPATH = -I$(PPPDIR) -I$(PXDIR) -I$(ORANGEDIR) \
 		-I$(INCLUDEDIR) -I$(CORNDIR) -I$(STATCDIR) \
-		-I$(EXTERNALDIR) -I$(PYTHONINCLUDE)
-
-LIBPATH = -L$(EXTERNALDIR)/c45
+		-I$(PYTHONINCLUDE) -I$(LOGREGD)
 
 ############
 # Paths for extensions
@@ -88,7 +79,7 @@ dirs:
 
 $(BINDIR)/orange.so: $(PPPDIR)/stamp $(PXDIR)/stamp $(ODIR)/c45.a $(ODIR)/logreg.a $(ORANGE_OBJECTS)
 	gcc -W1,-F. -bundle -framework Python \
-                $(ORANGE_OBJECTS) $(ODIR)/c45.a $(ODIR)/logreg.a $(LNKSTL) -o $(BINDIR)/orange.so 
+                $(ORANGE_OBJECTS) $(LNKSTL) -o $(BINDIR)/orange.so 
 
 $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 	gcc -W1,-F -bundle -framework Python \
@@ -97,13 +88,6 @@ $(BINDIR)/corn.so:	$(CORN_OBJECTS)
 $(BINDIR)/statc.so:	$(STATC_OBJECTS)
 	gcc -W1,-F -bundle -framework Python \
 	        $(STATC_OBJECTS) $(LNKSTL) -o $(BINDIR)/statc.so
-
-$(ODIR)/c45.a:	$(C45_OBJECTS)
-	ar r -s $(ODIR)/c45.a $(C45_OBJECTS)
-
-$(ODIR)/logreg.a: $(LOGREG_OBJECTS)
-	ar r -s $(ODIR)/logreg.a $(LOGREG_OBJECTS)
-	rm $(LOGREGD)/*.o
 
 install:	all
 	-mkdir -p $(PYTHONLIB)
