@@ -166,6 +166,9 @@ NOT_IMPLEMENTED("dev()")
 float TDistribution::error() const
 NOT_IMPLEMENTED("error()")
 
+float TDistribution::percentile(const float &) const
+NOT_IMPLEMENTED("percentile(float)")
+
 float TDistribution::p(const float &) const
 NOT_IMPLEMENTED("p(float)")
 
@@ -917,12 +920,36 @@ float TContDistribution::dev() const
   
 float TContDistribution::var() const
 { if (!abs)
-    raiseError("TContDistribution: cannot compute variance (no values)");
+    raiseError("cannot compute variance (no values)");
   return (sum2-sum*sum/abs)/abs;
 }
   
 float TContDistribution::error() const
 { return abs<=1.0 ? 0.0 : sqrt((sum2-sum*sum/abs)/(abs-1) / abs); }
+
+
+float TContDistribution::percentile(const float &perc) const
+{ if ((perc<0) || (perc>99))
+    raiseError("invalid percentile");
+
+  float togo = abs*perc/100.0;
+  const_iterator ths(begin()), prev, ee(end());
+
+  if (ths == ee)
+    raiseError("empty distribution");
+
+  while ((ths != ee) && (togo > 0)) {
+    togo -= (*prev).first;
+    prev = ths;
+    ths++;
+  }
+
+  if ((togo < 0) || (ths == ee))
+    return (*prev).first;
+
+  // togo==0.0 && ths!=ee
+  return ((*prev).first + (*ths).first) / 2.0;
+}
 
 
 void TContDistribution::normalize()

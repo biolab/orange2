@@ -105,6 +105,7 @@ public:
   virtual float average() const;
   virtual float dev() const;
   virtual float var() const;
+  virtual float percentile(const float &) const;
   virtual float error() const;
   virtual float p(const float &) const;
 
@@ -224,6 +225,7 @@ public:
   virtual float dev() const;
   virtual float var() const;
   virtual float error() const;
+  virtual float percentile(const float &) const;
   
   virtual void  normalize();
   virtual float highestProbFloatIndex() const;
