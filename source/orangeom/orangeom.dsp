@@ -164,6 +164,10 @@ SOURCE=.\wml\WmlVector3.inl
 # End Group
 # Begin Source File
 
+SOURCE=.\optimizeAnchors.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orangeom.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"

@@ -178,6 +178,7 @@ class OWRadviz(OWWidget):
         box = OWGUI.widgetBox(self.AnchorsTab, "Show Anchors")
         OWGUI.checkBox(box, self, 'showAnchors', 'Show anchors', callback = self.updateValues)
         OWGUI.qwtHSlider(box, self, "hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateValues)
+        self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attriubtes", callback = self.removeHidden)
         
 
         # ####################################
@@ -406,7 +407,9 @@ class OWRadviz(OWWidget):
         attrList = self.getShownAttributeList()
         classes = [int(x.getclass()) for x in self.graph.rawdata]
         for i in range(iterations):
-            self.graph.anchorData = orangeom.optimizeAnchors(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, self.attractG, -self.repelG, steps)
+            ai = self.graph.attributeNameIndex
+            attrIndices = [ai[label] for label in self.getShownAttributeList()]
+            self.graph.anchorData = orangeom.optimizeAnchors(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
             self.graph.updateData(attrList)
             self.graph.repaint()
 
@@ -414,6 +417,22 @@ class OWRadviz(OWWidget):
     def optimize(self):   self.freeAttributes(1, 100)
     def animate(self):   self.freeAttributes(10, 10)
     def slowAnimate(self):    self.freeAttributes(100, 1)
+
+    def removeHidden(self):
+        rad2 = (self.hideRadius/10)**2
+        rem = 0
+        newAnchorData = []
+        for i, t in enumerate(self.graph.anchorData):
+            if t[0]**2 + t[1]**2 < rad2:
+                self.shownAttribsLB.removeItem(i-rem)
+                self.hiddenAttribsLB.insertItem(t[2])
+                rem += 1
+            else:
+                newAnchorData.append(t)
+        self.graph.anchorData = newAnchorData
+        attrList = self.getShownAttributeList()
+        self.graph.updateData(attrList, 0)
+        self.graph.repaint()
         
     # ####################################
     # show selected interesting projection

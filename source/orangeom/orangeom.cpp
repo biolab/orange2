@@ -38,10 +38,10 @@
 
 /* dopolnjen komentar */
 
-bool initExceptions()
+bool initorangeomExceptions()
 { return true; }
 
-void gcUnsafeStaticInitialization()
+void gcorangeomUnsafeStaticInitialization()
 {}
 
 #include "px/initialization.px"
