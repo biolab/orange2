@@ -9,9 +9,9 @@ import OWGUI
 
 class OWDataSamplerB(OWWidget):
     settingsList = ['proportion', 'commitOnChange']
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, 'SampleDataB')
-        
+    def __init__(self, parent=None, signalManager=None):
+        OWWidget.__init__(self, parent, signalManager, 'SampleDataB')
+
         self.inputs = [("Data", ExampleTable, self.data)]
         self.outputs = [("Sampled Data", ExampleTable)]
 

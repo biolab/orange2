@@ -17,8 +17,8 @@ class OWLearningCurveC(OWWidget):
     settingsList = ["folds", "steps", "scoringF", "commitOnChange",
                     "graphPointSize", "graphDrawLines", "graphShowGrid"]
     
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, 'LearningCurveA')
+    def __init__(self, parent=None, signalManager=None):
+        OWWidget.__init__(self, parent, signalManager, 'LearningCurveC')
 
         self.inputs = [("Data", ExampleTable, self.dataset), ("Learner", orange.Learner, self.learner, 0)]
         
