@@ -23,6 +23,9 @@
 #ifdef _MSC_VER
   #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
   #include <windows.h>
+  #define EXPORT_DLL __declspec(dllexport)
+#else
+  #define EXPORT_DLL
 #endif
 
 void tdidt_cpp_gcUnsafeInitialization();
@@ -68,7 +71,7 @@ bool initExceptions()
 
 PyObject *orangeModule;
 
-extern "C" __declspec(dllexport) void initorange()
+extern "C" EXPORT_DLL void initorange()
 { 
   if (!initExceptions())
     return;

@@ -1,4 +1,4 @@
-#!/usr/bin/env/python
+#! /usr/bin/env python
 
 import os, re
 
@@ -75,7 +75,7 @@ for file in files:
 deplist = deps.items()
 deplist.sort(lambda x, y: cmp(x[0], y[0]))
 
-dont_compile = ["garbage_c_manner.cpp", "garbage_py_manner.cpp", "im_col_assess.cpp", "mlpyc45.cpp"]
+dont_compile = ["im_col_assess.cpp"]
 notorange = dont_compile+["corn.cpp", "statc.cpp"]
 
 makedepsfile=open("makefile.deps", "wt")

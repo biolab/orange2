@@ -26,7 +26,11 @@
 #include <map>
 using namespace std;
 
-#ifndef _MSC_VER
+
+#ifdef _MSC_VER
+ #pragma warning (disable : 4290)
+
+#else
 
 #include <cxxabi.h>
 
