@@ -20,6 +20,17 @@ import statc
 import os
 from re import *
 
+
+class IntGraphView(QCanvasView):
+    def __init__(self, parent, *args):
+        apply(QCanvasView.__init__,(self,) + args)
+        self.parent = parent
+
+    # mouse button was pressed
+    def contentsMousePressEvent(self, ev):
+        self.parent.mousePressed(ev)
+
+
 ###########################################################################################
 ##### WIDGET : Interaction graph
 ###########################################################################################
@@ -32,16 +43,14 @@ class OWInteractionGraph(OWWidget):
         #set default settings
         self.data = None
         self.interactionMatrix = None
-        self.rects = {}     # QRect rectangles
-        self.rectNames = {} # info about rectangle names (attributes)
-        self.rectIds   = {} 
-        self.lines = {}     # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
-        self.lineNames = {} # info about which rectangles are connected in form (rectName1, rectName2)
-        self.lineCaptionPos = {} # QPoint with info on position of line captions
+        self.rectIndices = {}   # QRect rectangles
+        self.rectNames   = {}   # info about rectangle names (attributes)
+        self.lines = []     # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
 
         self.addInput("cdata")
         self.addOutput("cdata")
-        self.addOutput("view")      # when user right clicks on one graph we can send information about this graph to a scatterplot
+        self.addOutput("view")      # when user clicks on a link label we can send information about this two attributes to a scatterplot
+        self.addOutput("selection") # when user clicks on "show selection" button we can send information about selected attributes
 
         #load settings
         self.loadSettings()
@@ -50,10 +59,9 @@ class OWInteractionGraph(OWWidget):
         #self.options = OWInteractionGraphOptions()
 
         self.canvas = QCanvas(2000,2000)
-        self.canvasView = QCanvasView(self.canvas, self.mainArea)
+        self.canvasView = IntGraphView(self, self.canvas, self.mainArea)
         
         self.canvasView.show()
-
 
         #GUI
         #add controls to self.controlArea widget
@@ -72,9 +80,12 @@ class OWInteractionGraph(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
+        self.selectionButton = QPushButton("Show selection", self.space)
+
         #connect controls to appropriate functions
-        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
-        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
+        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttributeClick)
+        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttributeClick)
+        self.connect(self.selectionButton, SIGNAL("clicked()"), self.selectionClick)
 
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -89,8 +100,12 @@ class OWInteractionGraph(OWWidget):
         #self.connect(self.convertGraphButton, SIGNAL("clicked()"), self.convertGraphMethod)
         #self.connect(self.applyButton, SIGNAL("clicked()"), self.applyMethod)
 
-    def applyMethod(self):
-        pass
+    def selectionClick(self):
+        if self.data == None: return
+        list = []
+        for i in range(self.shownAttribsLB.count()):
+            list.append(str(self.shownAttribsLB.text(i)))
+        self.send("selection", list)
 
     # we catch mouse release event so that we can send the "view" signal
     def onMouseReleased(self, e):
@@ -107,13 +122,13 @@ class OWInteractionGraph(OWWidget):
         self.interactionMatrix = orngInteract.InteractionMatrix(self.data)
 
         f = open('interaction.dot','w')
-        self.interactionMatrix.exportGraph(f, significant_digits=3)
+        self.interactionMatrix.exportGraph(f, significant_digits=3,positive_int=8,negative_int=8,absolute_int=0,url=1)
         f.flush()
         f.close()
 
         # execute dot and save otuput to pipes
         (pipePngOut, pipePngIn) = os.popen2("dot interaction.dot -Tpng", "b")
-        (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tplain", "t")
+        (pipePlainOut, pipePlainIn) = os.popen2("dot interaction.dot -Tismap", "t")
         textPng = pipePngIn.read()
         textPlainList = pipePlainIn.readlines()
         pipePngIn.close()
@@ -127,19 +142,19 @@ class OWInteractionGraph(OWWidget):
         width = canvasPixmap.width()
         height = canvasPixmap.height()
 
-        self.hideAllRects()        
+        # hide all rects
+        for rectInd in self.rectIndices.keys():
+            self.rectIndices[rectInd].hide()
 
         self.send("cdata", data)
         
         self.canvas.setTiles(pixmap, 1, 1, width, height)
         self.canvas.resize(width, height)
         
-        self.rects = {}     # QRect rectangles
-        self.rectNames = {} # info about rectangle names (attributes)
-        self.rectIds   = {} 
-        self.lines = {}     # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
-        self.lineNames = {} # info about which rectangles are connected in form (rectName1, rectName2)
-        self.lineCaptionPos = {} # QPoint with info on position of line captions
+        self.rectIndices = {}     # QRect rectangles
+        self.rectNames   = {} # info about rectangle names (attributes)
+        self.lines = []     # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
+
         
         self.parseGraphData(textPlainList, width, height)
         self.initLists(self.data)
@@ -150,75 +165,49 @@ class OWInteractionGraph(OWWidget):
         scale = 0
         w = 1; h = 1
         for line in textPlainList:
-            # GRAPH
-            if line[:5] == "graph":
+            if line[:9] == "rectangle":
                 list = line.split()
-                if len(list) != 4:
-                    print "error in input. read line = ", line
-                    continue
-                scale = float(list[1])
-                w = float(list[2])
-                h = float(list[3])
-            # NODE
-            elif line[:4] == "node":
-                list = line.split()
-                id = int(list[1])
-                x = float(list[2])
-                y = float(list[3])
-                xsize = float(list[4])
-                ysize = float(list[5])
-                m = match('"{([^\s]+)\|.+"', list[6])    # regular expression that will extract only node name
-                name = m.group(1)
-                name = name.replace("\\n", " ")
-                xLeft = round((x-(xsize/2.0)) * float(picWidth) / w)
-                yTop  = picHeight - round((y+(ysize/2.0)) * float(picHeight)/ h)
-                width = round(xsize * float(picWidth) / w)
-                height = round(ysize * float(picHeight) / h)
+                topLeftRectStr = list[1]
+                bottomRightRectStr = list[2]
+                attrIndex = list[3]
+                
+                isAttribute = 0     # does rectangle represent attribute
+                if attrIndex.find("-") < 0:
+                    isAttribute = 1
+                
+                topLeftRectStr = topLeftRectStr.replace("(","")
+                bottomRightRectStr = bottomRightRectStr.replace("(","")
+                topLeftRectStr = topLeftRectStr.replace(")","")
+                bottomRightRectStr = bottomRightRectStr.replace(")","")
+                
+                topLeftRectList = topLeftRectStr.split(",")
+                bottomRightRectList = bottomRightRectStr.split(",")
+                xLeft = int(topLeftRectList[0])
+                yTop = int(topLeftRectList[1])
+                width = int(bottomRightRectList[0]) - xLeft
+                height = int(bottomRightRectList[1]) - yTop
+
                 rect = QCanvasRectangle(xLeft, yTop, width, height, self.canvas)
-                rect.setPen(QPen(Qt.green))
+                pen = QPen(Qt.green)
+                pen.setWidth(4)
+                rect.setPen(pen)
                 rect.hide()
-                self.rects[id] = rect
-                self.rectNames[name] = id
-                self.rectIds[id] = name
-                #print "name = %s. xLeft = %d, yTop = %d, width = %d, height = %d (%d)" % (name, xLeft, yTop, width, height, x*picHeight/h)
-
-            # EDGE
-            elif line[:4] == "edge":
-                list = line.split()
-                rect1 = int(list[1])
-                rect2 = int(list[2])
-                rectName1 = self.rectIds[rect1]
-                rectName2 = self.rectIds[rect2]
-                count = int(list[3])
-                points = []
-                for i in range(count):
-                    x = round(float(list[4 + 2*i]) * float(picWidth)/w)
-                    y = picHeight - round(float(list[4 + 2*i +1]) * float(picHeight)/h)
-                    points.append(QPoint(x,y))
-                labelX = round(float(list[5 + 2*count]) * float(picWidth)/w)
-                labelY = round(float(list[5 + 2*count+1]) * float(picHeight)/h)
-                self.lines[(rectName1, rectName2)] = (QPoint(labelX, labelY), points)
-
-            # STOP
-            elif line[:4] == "stop":
-                return
-            else:
-                print "error in input. read line = ", line
-            
-       
+                
+                if isAttribute == 1:
+                    name = self.data.domain[int(attrIndex)].name
+                    self.rectIndices[int(attrIndex)] = rect
+                    self.rectNames[name] = rect
+                else:
+                    attrs = attrIndex.split("-")
+                    attr1 = self.data.domain[int(attrs[0])].name
+                    attr2 = self.data.domain[int(attrs[1])].name
+                    pen.setStyle(Qt.NoPen)
+                    rect.setPen(pen)
+                    self.lines.append((attr1, attr2, rect))
+    
     def resizeEvent(self, e):
         if self.canvasView != None:
             self.canvasView.resize(self.mainArea.size())
-
-    def hideAllRects(self):
-        for rectName in self.rects.keys():
-            self.rects[rectName].hide()
-            self.rects[rectName] = None
-
-    def setRectVisible(self, name, visible = 1):
-        if visible == 1: self.rects[self.rectNames[name]].show();
-        else:            self.rects[self.rectNames[name]].hide();
-        self.canvas.update()
 
     def initLists(self, data):
         self.shownAttribsLB.clear()
@@ -227,35 +216,84 @@ class OWInteractionGraph(OWWidget):
         if data == None: return
 
         for key in self.rectNames.keys():
-            self.shownAttribsLB.insertItem(key)
-        for key in self.rects.keys():
-            self.rects[key].show()
-        
+            self.setAttrVisible(key, 1)
+
+
+    #################################################
+    ### showing and hiding attributes
+    #################################################
+    def _showAttribute(self, name):
+        self.shownAttribsLB.insertItem(name)    # add to shown
+
+        count = self.hiddenAttribsLB.count()
+        for i in range(count-1, -1, -1):        # remove from hidden
+            if str(self.hiddenAttribsLB.text(i)) == name:
+                self.hiddenAttribsLB.removeItem(i)
+
+    def _hideAttribute(self, name):
+        self.hiddenAttribsLB.insertItem(name)    # add to hidden
+
+        count = self.shownAttribsLB.count()
+        for i in range(count-1, -1, -1):        # remove from shown
+            if str(self.shownAttribsLB.text(i)) == name:
+                self.shownAttribsLB.removeItem(i)
+
+    def setAttrVisible(self, name, visible = 1):
+        if visible == 1:
+            self.rectNames[name].show();
+            self._showAttribute(name)
+        else:
+            self.rectNames[name].hide();
+            self._hideAttribute(name)
+        self.canvas.update()
+
+    def getAttrVisible(self, name):
+        return self.rectNames[name].visible()
 
     #################################################
     # controls processing
     #################################################
-    def addAttribute(self):
+    def addAttributeClick(self):
         count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
-                self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
-                self.setRectVisible(str(text), 1)
+                name = str(self.hiddenAttribsLB.text(i))
+                self.setAttrVisible(name, 1)
 
-
-    def removeAttribute(self):
+    def removeAttributeClick(self):
         count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
-                self.setRectVisible(str(text), 0)
+                name = str(self.shownAttribsLB.text(i))
+                self.setAttrVisible(name, 0)
+    
 
+    def clickInside(self, rect, point):
+        x = point.x()
+        y = point.y()
+        
+        if rect.left() > x: return 0
+        if rect.right() < x: return 0
+        if rect.top() > y: return 0
+        if rect.bottom() < y: return 0
+
+        return 1
+        
+    
+    def mousePressed(self, ev):
+        if ev.button() == QMouseEvent.LeftButton:
+            for name in self.rectNames:
+                clicked = self.clickInside(self.rectNames[name].rect(), ev.pos())
+                if clicked == 1:
+                    self.setAttrVisible(name, not self.getAttrVisible(name))
+                    return
+            for (attr1, attr2, rect) in self.lines:
+                clicked = self.clickInside(rect.rect(), ev.pos())
+                if clicked == 1:
+                    self.send("view", (attr1, attr2))
+                    return
+
+                
 
 
 #test widget appearance
