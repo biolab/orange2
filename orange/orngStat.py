@@ -44,27 +44,6 @@ def splitByIterations(res):
     
 #### Statistics
 
-def CA(res, **argkw):
-    if type(res)==ConfusionMatrix:
-        div = nm.TP+nm.FN+nm.FP+nm.TN
-        checkNonZero(div)
-        return (nm.TP+nm.TN)/div
-        
-    else:
-        CAs = [0.0]*res.numberOfLearners
-
-        if argkw.get("unweighted", 0) or not res.weights:
-            for tex in res.results:
-                CAs = map(lambda res, cls: res+(cls==tex.actualClass), CAs, tex.classes)
-            totweight = gettotsize(res)
-        else:
-            for tex in res.results:
-                CAs = map(lambda res, cls: res+(cls==tex.actualClass and tex.weight), CAs, tex.classes)
-            totweight = gettotweight(res)
-
-        return [x/totweight for x in CAs]
-
-
 def ME(res, **argkw):
     MEs = [0.0]*res.numberOfLearners
 
@@ -101,13 +80,28 @@ def MSE(res, **argkw):
 def RMSE(res, **argkw):
     return [math.sqrt(x) for x in apply(MSE, (res, ), argkw)]
 
-def CA_se(res, **argkw):
+def CA(res, reportSE=0, **argkw):
     if res.numberOfIterations==1:
-        if argkw.get("unweighted", 0) or not res.weights:
-            totweight = gettotsize(res)
+        if type(res)==ConfusionMatrix:
+            div = nm.TP+nm.FN+nm.FP+nm.TN
+            checkNonZero(div)
+            ca = [(nm.TP+nm.TN)/div]
         else:
-            totweight = gettotweight(res)
-        return [(x, x*(1-x)/math.sqrt(totweight)) for x in apply(CA, (res,), argkw)]
+            CAs = [0.0]*res.numberOfLearners
+            if argkw.get("unweighted", 0) or not res.weights:
+                totweight = gettotsize(res)
+                for tex in res.results:
+                    CAs = map(lambda res, cls: res+(cls==tex.actualClass), CAs, tex.classes)
+            else:
+                totweight = gettotweight(res)
+                for tex in res.results:
+                    CAs = map(lambda res, cls: res+(cls==tex.actualClass and tex.weight), CAs, tex.classes)
+            ca = [x/totweight for x in CAs]
+            
+        if reportSE:
+            return [(x, x*(1-x)/math.sqrt(totweight)) for x in ca]
+        else:
+            return [x for x in ca]            
     else:
         CAsByFold = [[0.0]*res.numberOfIterations for i in range(res.numberOfLearners)]
         foldN = [0.0]*res.numberOfIterations
@@ -132,9 +126,10 @@ def CA_se(res, **argkw):
             newFolds.append(newF)
 
         checkNonZero(len(newFolds))
-        return [(statc.mean(cas), statc.sterr(cas)) for cas in newFolds]
-
-
+        if reportSE:
+            return [(statc.mean(cas), statc.sterr(cas)) for cas in newFolds]
+        else:
+            return [statc.mean(cas) for cas in newFolds]
 
 def AP(res, **argkw):
     APs=[0.0]*res.numberOfLearners
@@ -149,7 +144,7 @@ def AP(res, **argkw):
     return [AP/totweight for AP in APs]
 
 
-def BrierScore(res, **argkw):
+def BrierScore(res, reportSE=0, **argkw):
     # Computes an average (over examples) of sum_x(t(x) - p(x))^2, where
     #    x is class,
     #    t(x) is 0 for 'wrong' and 1 for 'correct' class
@@ -158,18 +153,51 @@ def BrierScore(res, **argkw):
     # correct one (c), we compute the sum as sum_x(p(x)^2) - 2*p(c) + 1
     # Since +1 is there for each example, it add 1 to the average
     # We skip the +1 inside the sum and add it just at the end of the function
-    MSEs=[0.0]*res.numberOfLearners
+
+    if res.numberOfIterations == 1:
+        MSEs=[0.0]*res.numberOfLearners
+        if argkw.get("unweighted", 0) or not res.weights:
+            for tex in res.results:
+                MSEs = map(lambda res, probs:
+                           res + reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
+            totweight = gettotsize(res)
+        else:
+            for tex in res.results:
+                MSEs = map(lambda res, probs:
+                           res + tex.weight*reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
+            totweight = gettotweight(res)
+        if reportSE:
+            return [(x/totweight+1.0, 0) for x in MSEs]  ## change this, not zero!!!
+        else:
+            return [x/totweight+1.0 for x in MSEs]
+
+    BSs = [[0.0]*res.numberOfLearners for i in range(res.numberOfIterations)]
+    foldN = [0.] * res.numberOfIterations
+
     if argkw.get("unweighted", 0) or not res.weights:
         for tex in res.results:
-            MSEs = map(lambda res, probs:
-                       res + reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
-        totweight = gettotsize(res)
+            BSs[tex.iterationNumber] = map(lambda rr, probs:
+                       rr + reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
+            foldN[tex.iterationNumber] += 1
     else:
         for tex in res.results:
-            MSEs = map(lambda res, probs:
-                       res + tex.weight*reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], MSEs, tex.probabilities)
-        totweight = gettotweight(res)
-    return [x/totweight+1.0 for x in MSEs]
+            BSs[tex.iterationNumber] = map(lambda res, probs:
+                       res + tex.weight*reduce(lambda s, pi: s+sqr(pi), probs, 0) - 2*probs[tex.actualClass], BSs[tex.iterationNumber], tex.probabilities)
+            foldN[tex.iterationNumber] += tex.weight
+
+    # divide BSs by number of cases per fold
+    nBSs = []
+    for lrn in range(res.numberOfLearners):
+        nBS = []
+        for fold in range(res.numberOfIterations):
+            if foldN[fold]>0.:
+                nBS.append(BSs[fold][lrn] / foldN[fold] + 1.0)
+        nBSs.append(nBS)
+
+    if reportSE:
+        return [(statc.mean(x), statc.sterr(x)) for x in nBSs]
+    else:
+        return [statc.mean(x) for x in nBSs]
 
 def BSS(res, **argkw):
     return [1-x/2 for x in apply(BrierScore, (res, ), argkw)]
@@ -250,7 +278,7 @@ def aprioriDistributions(res, **argkw):
     return [prob/totweight for prob in probs]
 
     
-def IS(res, apriori=None, **argkw):
+def xxIS(res, apriori=None, **argkw):
     if not apriori:
         apriori = aprioriDistributions(res)
     ISs = [0.0]*res.numberOfLearners
@@ -268,8 +296,61 @@ def IS(res, apriori=None, **argkw):
         totweight = gettotweight(res)
     return [IS/totweight for IS in ISs]
 
+def IS(res, apriori=None, reportSE=0, **argkw):
+    if not apriori:
+        apriori = aprioriDistributions(res)
 
+    if res.numberOfIterations==1:
+        ISs = [0.0]*res.numberOfLearners
+        if argkw.get("unweighted", 0) or not res.weights:
+            for tex in res.results:
+              for i in range(len(tex.probabilities)):
+                    cls = tex.actualClass
+                    ISs[i] += IS_ex(tex.probabilities[i][cls], apriori[cls])
+            totweight = gettotsize(res)
+        else:
+            for tex in res.results:
+              for i in range(len(tex.probabilities)):
+                    cls = tex.actualClass
+                    ISs[i] += IS_ex(tex.probabilities[i][cls], apriori[cls]) * tex.weight
+            totweight = gettotweight(res)
+        if reportSE:
+            return [(IS/totweight,0) for IS in ISs]
+        else:
+            return [IS/totweight for IS in ISs]
 
+        
+    ISs = [[0.0]*res.numberOfIterations for i in range(res.numberOfLearners)]
+    foldN = [0.] * res.numberOfIterations
+
+    # compute info scores for each fold    
+    if argkw.get("unweighted", 0) or not res.weights:
+        for tex in res.results:
+            for i in range(len(tex.probabilities)):
+                cls = tex.actualClass
+                ISs[i][tex.iterationNumber] += IS_ex(tex.probabilities[i][cls], apriori[cls])
+            foldN[tex.iterationNumber] += 1
+    else:
+        for tex in res.results:
+            for i in range(len(tex.probabilities)):
+                cls = tex.actualClass
+                ISs[i][tex.iterationNumber] += IS_ex(tex.probabilities[i][cls], apriori[cls]) * tex.weight
+            foldN[tex.iterationNumber] += tex.weight
+
+    # divide ISs by number of cases per fold
+    nISs = []
+    for lrn in range(res.numberOfLearners):
+        nIS = []
+        for fold in range(res.numberOfIterations):
+            if foldN[fold]>0.:
+                nIS.append(ISs[lrn][fold] / foldN[fold])
+        nISs.append(nIS)
+
+    checkNonZero(len(nISs))
+    if reportSE:
+        return [(statc.mean(x), statc.sterr(x)) for x in nISs]
+    else:
+        return [statc.mean(x) for x in nISs]
 
 def Friedman(res, statistics, **argkw):
     sums = None
