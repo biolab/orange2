@@ -19,16 +19,17 @@ def EuclDist(v1, v2):
         
 
 # add val to sorted list list. if len > maxLen delete last element
-def addToList(list, val, maxLen):
+def addToList(list, val, ind, maxLen):
     i = 0
     for i in range(len(list)):
-        if val < list[i]:
-            list.insert(i, val)
+        (val2, ind2) = list[i]
+        if val < val2:
+            list.insert(i, (val, ind))
             if len(list) > maxLen:
                 list.remove(list[maxLen])
             return
     if len(list) < maxLen:
-        list.insert(len(list), val)
+        list.insert(len(list), (val, ind))
 
 # get a list of all different permutations
 def getPermutationList(elements, tempPerm, currList):
@@ -72,6 +73,7 @@ class OWRadvizGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
+        self.kNeighbours = 1
 
     #
     # update shown data. Set labels, coloring by className ....
@@ -238,14 +240,10 @@ class OWRadvizGraph(OWVisGraph):
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getOptimalAttrOrder(self, attrList, className):
+    def getOptimalSeparation(self, attrList, className, kNeighbours):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
             return attrList
-
-        # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
-        selectedScaledData = []
-        for i in range(len(self.rawdata.domain)): selectedScaledData.append([])
 
         # define lenghts and variables
         attrListLength = len(attrList)
@@ -253,7 +251,24 @@ class OWRadvizGraph(OWVisGraph):
         classValsCount = len(self.rawdata.domain[className].values)
         attr = self.rawdata.domain[className]
 
-        # create a table of indices that stores the sequence of variable indices        
+        # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
+        selectedScaledData = []
+        for i in range(len(self.rawdata.domain)): selectedScaledData.append([])        
+
+        # if global value scaling is selected, compute min and max values
+        min = -1; max = -1; first = TRUE
+        if self.globalValueScaling == 1:
+            for attr in attrList:
+                if self.rawdata.domain[attr].varType == orange.VarTypes.Discrete: continue
+                (minVal, maxVal) = self.getMinMaxVal(self.rawdata, attr)
+                if first == TRUE:
+                    min = minVal; max = maxVal
+                    first = FALSE
+                else:
+                    if minVal < min: min = minVal
+                    if maxVal > max: max = maxVal
+
+        # compute scaled data
         indices = [];
         for label in attrList:
             index = self.scaledDataAttributes.index(label)
@@ -269,9 +284,6 @@ class OWRadvizGraph(OWVisGraph):
             anchors[0].append(float(strX))  # this might look stupid, but this way we get rid of rounding errors
             anchors[1].append(float(strY))
 
-        # we create a hash table of variable values and their indices
-        classValueIndices = self.getVariableValueIndices(self.rawdata, className)
-
         # store all sums
         sum_i=[]
         for i in range(dataSize):
@@ -285,12 +297,16 @@ class OWRadvizGraph(OWVisGraph):
         indPermutations = {}
         getPermutationList(indices, [], indPermutations)
 
-        bestPerm = []; bestPermValue = 10000000000  # we search for minimum bestPermValue
+        print "all permutations: ", str(len(indPermutations.values()))
+
+        bestPerm = []; bestPermValue = 0  # we search for maximum bestPermValue
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
             curveData = []
-            for i in range(classValsCount): curveData.append([ [] , [] ])   # we create classValsCount empty lists with sublists for x and y
-            
+            xData = []
+            yData = []
+            tempPermValue = 0
+           
             for i in range(dataSize):
                 # calculate projections
                 x_i = 0.0; y_i = 0.0
@@ -299,44 +315,75 @@ class OWRadvizGraph(OWVisGraph):
                     x_i = x_i + anchors[0][j]*(selectedScaledData[index][i] / sum_i[i])
                     y_i = y_i + anchors[1][j]*(selectedScaledData[index][i] / sum_i[i])
                 
-                curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
-                curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
-            
-            sumSameClass = 0.0; sumDiffClass = 0.0
-            K_NEIGHB = 5
-            for attrValInd in range(classValsCount):
-                # sum shortest distances for within class instances
-                for i1 in range(len(curveData[attrValInd])):
-                    sameClass = [];
-                    for i2 in range(len(curveData[attrValInd])):
-                        if i1 == i2: continue
-                        val = EuclDist([curveData[attrValInd][0][i1], curveData[attrValInd][1][i1]], [curveData[attrValInd][0][i2], curveData[attrValInd][1][i2]])
-                        addToList(sameClass, val, 1);
-                    for item in sameClass: sumSameClass += math.log(10*item)
+                #curveData.append([x_i, y_i])
+                xData.append(x_i)
+                yData.append(y_i)
 
-                # sum shortest distances between instances in different classes
-                for i1 in range(len(curveData[attrValInd])):
-                    diffClass = [];
-                    for attrValInd2 in range(classValsCount):
-                        if attrValInd == attrValInd2: continue
-                        for i2 in range(len(curveData[attrValInd2])):
-                            val = EuclDist([curveData[attrValInd][0][i1], curveData[attrValInd][1][i1]], [curveData[attrValInd2][0][i2], curveData[attrValInd2][1][i2]])
-                            addToList(diffClass, val, K_NEIGHB)
-                    for item in diffClass: sumDiffClass += math.log(10*item)
+            xVar = orange.FloatVariable("xVar")
+            yVar = orange.FloatVariable("yVar")
+            domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+            table = orange.ExampleTable(domain)
+            for i in range(len(xData)):
+                example = orange.Example(domain, [xData[i], yData[i], self.rawdata[i][className]])
+                table.append(example)
 
-            #if (sumSameClass / sumDiffClass) < bestPermValue:
-            if (1 / sumDiffClass) < bestPermValue:
-                #bestPermValue = sumSameClass / 5*sumDiffClass
-                bestPermValue = 1 / sumDiffClass
+            classValues = list(self.rawdata.domain[className].values)
+            knn = orange.kNNLearner(table, k = kNeighbours)
+            for i in range(len(table)):
+                out = knn(table[i], orange.GetProbabilities)
+                index = classValues.index(self.rawdata[i][className].value)
+                if knn(table[i]) == table[i][2]:
+                    tempPermValue += out[index]
+
+            """
+            #for every point we find k nearest neighbours and calculate major class value. If this value
+            # is the same as the tested value then ok, else we made a mistake.
+            # In all possible permutations we choose the one that made the least mistakes
+            for i1 in range(len(curveData)):
+                neighbours = []
+                for i2 in range(len(curveData)):
+                    if i1 == i2: continue
+                    val = EuclDist([curveData[i1][0], curveData[i1][1]], [curveData[i2][0], curveData[i2][1]])
+                    addToList(neighbours, val, i2, kNeighbours);
+
+                # calculate the major class
+                classes = [0]*classValsCount
+                for (val, ind) in neighbours:
+                    classes[self.rawdata.domain[className].values.index(self.rawdata[ind][className].value)]+=1
+                max = 0
+                for val in classes:
+                    if max < val: max = val
+                
+                #classes.sort(); classes.reverse()
+                if classes.count(max) == 1:
+                    if self.rawdata[i1][className].value == list(self.rawdata.domain[className].values)[classes.index(max)]: tempPermValue+=1
+                else:
+                    count = classes.count(max)
+                    ind = list(self.rawdata.domain[className].values).index(self.rawdata[i1][className].value)
+                    if classes[ind] == max: tempPermValue += 1.0/float(count)
+            """
+
+            #for ind in permutation:
+            #    print self.rawdata.domain[ind].name
+            print "permutation value :", str(tempPermValue)
+
+            if tempPermValue > bestPermValue:
+                bestPermValue = tempPermValue
                 bestPerm = permutation
-                print bestPermValue ," - " ,str(bestPerm)
-
+                                                   
         # return best permutation
         retList = []
         for i in bestPerm:
             retList.append(self.scaledDataAttributes[i])
-        return retList
+        return (retList, bestPermValue)
 
+    def getOptimalSubsetSeparation(self, attrList, subsetList, className, kNeighbours):
+        if attrList == []: return ([], 0)
+        (list1, v1) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
+        subsetList.insert(0, attrList[0])
+        (list2, v2) = self.getOptimalSubsetSeparation(attrList[1:], subsetList, className, kNeighbours)
+        if (v1 > v2): return (list1, v1)
+        else:         return (list2, v2)
     
 if __name__== "__main__":
     #Draw a simple graph

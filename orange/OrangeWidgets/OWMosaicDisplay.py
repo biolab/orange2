@@ -43,7 +43,7 @@ class OWMosaicDisplay(OWWidget):
 
         #load settings
         self.showLines = 1
-        self.kvoc = 2
+        self.cellspace = 6
         self.loadSettings()
 
         # add a settings dialog and initialize its values
@@ -87,116 +87,20 @@ class OWMosaicDisplay(OWWidget):
         self.showLinesCB = QCheckBox('Show lines', self.controlArea)
         self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
 
-        self.interestingGroupBox = QVGroupBox ("Interesting attribute pairs", self.space)
-        self.calculateButton =QPushButton("Calculate chi squares", self.interestingGroupBox)
-        self.connect(self.calculateButton, SIGNAL("clicked()"),self.calculatePairs)
-        self.interestingList = QListBox(self.interestingGroupBox)
-        self.connect(self.interestingList, SIGNAL("selectionChanged()"),self.showSelectedPair)
-
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
 
-        self.resize(800, 480)
+        #self.resize(800, 480)
 
         #connect controls to appropriate functions
         self.activateLoadedSettings()
 
-    ######################################################################
-    ######################################################################
-    ##   CALCULATING INTERESTING PAIRS
-
-    ###############################################################
-    # when clicked on a list box item, show selected attribute pair
-    def showSelectedPair(self):
-        if self.interestingList.count() == 0: return
-
-        index = self.interestingList.currentItem()
-        (chisquare, strName, xAttr, yAttr) = self.chisquares[index]
-        attrXName = self.data.domain[xAttr].name
-        attrYName = self.data.domain[yAttr].name
-        for i in range(self.attrX.count()):
-            if attrXName == str(self.attrX.text(i)): self.attrX.setCurrentItem(i)
-            if attrYName == str(self.attrY.text(i)): self.attrY.setCurrentItem(i)
-        self.updateData()
-
-    def calculatePairs(self):
-        self.chisquares = []
-        if self.data == None: return
-
-        self.statusBar.message("Please wait. Computing...")
-        total = len(self.data)
-        conts = {}
-        dc = orange.DomainContingency(self.data)
-        for i in range(len(self.data.domain.attributes)):
-            if self.data.domain[i].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
-
-            cont = dc[i]   # distribution of X attribute
-            vals = []
-            # compute contingency of x attribute
-            for key in cont.keys():
-                sum = 0
-                for val in cont[key]: sum += val
-                vals.append(sum)
-            conts[self.data.domain[i].name] = (cont, vals)
-
-        for attrX in range(len(self.data.domain.attributes)):
-            if self.data.domain[attrX].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
-
-            for attrY in range(attrX+1, len(self.data.domain.attributes)):
-                if self.data.domain[attrY].varType == orange.VarTypes.Continuous: continue  # we can only check discrete attributes
-
-                (contX, valsX) = conts[self.data.domain[attrX].name]
-                (contY, valsY) = conts[self.data.domain[attrY].name]
-
-                # create cartesian product of selected attributes and compute contingency 
-                (cart, profit) = FeatureByCartesianProduct(self.data, [self.data.domain[attrX], self.data.domain[attrY]])
-                tempData = self.data.select(list(self.data.domain) + [cart])
-                contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
-
-                # compute chi-square
-                chisquare = 0.0
-                for i in range(len(valsX)):
-                    valx = valsX[i]
-                    for j in range(len(valsY)):
-                        valy = valsY[j]
-
-                        actual = 0
-                        for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actual += val
-                        expected = float(valx * valy) / float(total)
-                        pearson2 = (actual - expected)*(actual - expected) / expected
-                        chisquare += pearson2
-                self.chisquares.append((chisquare, "%s - %s" % (self.data.domain[attrX].name, self.data.domain[attrY].name), attrX, attrY))
-
-        ########################
-        # populate list box with highest chisquares
-        self.chisquares.sort()
-        self.chisquares.reverse()
-        for (chisquare, attrs, x, y) in self.chisquares:
-            str = "%s (%.3f)" % (attrs, chisquare)
-            self.interestingList.insertItem(str)        
-
-        self.statusBar.message("")
-
-    ######################################################################
-    ######################################################################
-        
     def activateLoadedSettings(self):
         self.showLinesCB.setChecked(self.showLines)
 
-        """
-        # quotien combo box values        
-        for item in self.kvocList: self.kvocCombo.insertItem(item)
-        index = self.kvocNums.index(self.kvoc)
-        self.kvocCombo.setCurrentItem(index)
-        """
-
-        # criteria combo values
-        #self.criteriaCombo.insertItem("Attribute independence")
-        #self.criteriaCombo.insertItem("Attribute independence (Pearson residuals)")
-        #self.criteriaCombo.insertItem("Attribute interactions")
-        #self.criteriaCombo.setCurrentItem(0)
+        
         
     ##################################################
     # initialize combo boxes with discrete attributes
@@ -220,6 +124,8 @@ class OWMosaicDisplay(OWWidget):
         self.attr3.setCurrentItem(0)
         self.attr4.setCurrentItem(0)
 
+    ######################################################################
+    ##  when we resize the widget, we have to redraw the data
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
@@ -248,7 +154,6 @@ class OWMosaicDisplay(OWWidget):
     ## CDATA signal
     # receive new data and update all fields
     def cdata(self, data):
-        self.interestingList.clear()
         self.data = orange.Preprocessor_dropMissing(data.data)
         self.initCombos(self.data)
         self.updateData()
@@ -273,12 +178,20 @@ class OWMosaicDisplay(OWWidget):
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
         self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
 
-        # get text width of Y attribute name        
-        text = QCanvasText(self.data.domain[str(self.attr2.currentText())].name, self.canvas);
+        # get the maximum width of rectangle
+        text = QCanvasText(self.data.domain[attrList[1]].name, self.canvas);
         font = text.font(); font.setBold(1); text.setFont(font)
-        xOff = text.boundingRect().right() - text.boundingRect().left() + 25
+        width = text.boundingRect().right() - text.boundingRect().left() + 30 + 20
+        xOff = width
+        if len(attrList) == 4:
+            text = QCanvasText(self.data.domain[attrList[3]].name, self.canvas);
+            font = text.font(); font.setBold(1); text.setFont(font)
+            width += text.boundingRect().right() - text.boundingRect().left() + 30 + 20
+        
+        # get the maximum height of rectangle        
+        height = 90
         yOff = 40
-        squareSize = min(self.canvasView.size().width() - xOff - 30 - 30*(len(attrList)>3), self.canvasView.size().height() - yOff - 30 - 30*(len(attrList)>2))
+        squareSize = min(self.canvasView.size().width() - width, self.canvasView.size().height() - height)
         if squareSize < 0: return    # canvas is too small to draw rectangles
 
         self.legend = {}        # dictionary that tells us, for what attributes did we already show the legend
@@ -288,12 +201,18 @@ class OWMosaicDisplay(OWWidget):
        
         self.canvas.update()
 
+    ######################################################################
+    ## DRAW TEXT - draw legend for all attributes in attrList and their possible values
     def DrawText(self, data, attrList, (x0, x1), (y0, y1)):
         # save values for all attributes
         values = []
         for attr in attrList:
             vals = data.domain[attr].values
             values.append(vals)
+
+        width = x1-x0 - self.cellspace*len(attrList)*(len(values[0])-1)
+        height = y1-y0 - self.cellspace*(len(attrList)-1)*(len(values[1])-1)
+        #print x1-x0, width, y1-y0, height
         
         #calculate position of first attribute
         self.addText(attrList[0], x0+(x1-x0)/2, y1+30, Qt.AlignCenter, 1)
@@ -302,62 +221,75 @@ class OWMosaicDisplay(OWWidget):
             tempData = data.select({attrList[0]:val})
             perc = float(len(tempData))/float(len(data))
             self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y1 + 15, Qt.AlignCenter, 1)
-            currPos += perc*(x1-x0)
+            currPos += perc*width + self.cellspace*len(attrList)
 
         #calculate position of second attribute
-        self.addText(attrList[1], x0-30, y0+(y1-y0)/2, Qt.AlignRight, 1)
+        self.addText(attrList[1], x0-30, y0+(y1-y0)/2, Qt.AlignRight + Qt.AlignVCenter, 1)
         currPos = 0
         tempData = data.select({attrList[0]:values[0][0]})
         for val in values[1]:
             tempData2 = tempData.select({attrList[1]:val})
             perc = float(len(tempData2))/float(len(tempData))
-            self.addText(str(val), x0-10, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight, 1)
-            currPos += perc*(y1-y0)
+            self.addText(str(val), x0-10, y0+currPos+(y1-y0)*0.5*perc, Qt.AlignRight + Qt.AlignVCenter, 1)
+            currPos += perc*height + self.cellspace*(len(attrList)-1)
 
         if len(attrList) < 3: return
 
         #calculate position of third attribute
-        self.addText(attrList[2], x0 + (x1-x0)*float(len(tempData))/float(2*len(data)), y0 - 25, Qt.AlignCenter, 1)
+        self.addText(attrList[2], x0 + width*float(len(tempData))/float(2*len(data)), y0 - 25, Qt.AlignCenter, 1)
         currPos = 0
-        tempData = data.select({attrList[0]:values[0][0], attrList[1]:values[1][0]})
+        tempData2 = data.select({attrList[0]:values[0][0], attrList[1]:values[1][0]})
+        width2 = width*float(len(tempData))/float(len(data)) - (len(values[2])-1)*self.cellspace*(len(attrList)-2)
+        if len(tempData2) == 0: print "Error: Division by zero"; return
         for val in values[2]:
-            tempData2 = tempData.select({attrList[2]:val})
-            perc = float(len(tempData2))/float(len(data))
-            self.addText(str(val), x0+currPos+(x1-x0)*0.5*perc, y0 - 10, Qt.AlignCenter, 1)
-            currPos += perc*(x1-x0)
-        
+            tempData3 = tempData2.select({attrList[2]:val})
+            perc = (float(len(tempData3))/float(len(tempData2)))#*(float(len(tempData))/float(len(data)))
+            #print perc
+            self.addText(str(val), x0+currPos+width2*perc*0.5, y0 - 10, Qt.AlignCenter, 1)
+            currPos += perc*width2 + self.cellspace*(len(attrList)-2)
+
         if len(attrList) < 4: return
 
         #calculate position of fourth attribute
-        tempData = data.select({attrList[0]:values[0][len(values[0])-1], attrList[1]:values[1][0]})
-        self.addText(attrList[3], x1 + 30, (y1-y0)*float(len(tempData))/float(2*len(data)), Qt.AlignLeft, 1)
+        tempData0 = data.select({attrList[0]:values[0][len(values[0])-1]})
+        tempData1 = tempData0.select({attrList[1]:values[1][0]})
+        tempData2 = tempData1.select({attrList[2]:values[2][len(values[2])-1]})
+        if len(tempData0) == 0: print "Error: Division by zero"; return
+        self.addText(attrList[3], x1 + 30, y0+ float(height*len(tempData1))/float(2*len(tempData0)), Qt.AlignLeft + Qt.AlignVCenter, 1)
         currPos = 0
+        height2 = height * float(len(tempData1))/float(len(tempData0)) - self.cellspace*(len(values[3])-1)
+        if len(tempData2) == 0: print "Error: Division by zero"; return
         for val in values[3]:
-            tempData2 = tempData.select({attrList[3]:val})
-            perc = float(len(tempData2))/float(len(data))
-            self.addText(str(val), x1+10, y0 + currPos+ (y1-y0)*0.5*perc, Qt.AlignLeft, 1)
-            currPos += perc*(y1-y0)
+            tempData3 = tempData2.select({attrList[3]:val})
+            perc = float(len(tempData3))/float(len(tempData2)) #* (float(len(tempData1))/float(len(tempData0)))
+            self.addText(str(val), x1+10, y0 + currPos + height2*0.5*perc, Qt.AlignLeft + Qt.AlignVCenter, 1)
+            currPos += perc*height2 + self.cellspace
             
-    
+    ######################################################################
+    ##  DRAW DATA - draw rectangles for attributes in attrList inside rect (x0,x1), (y0,y1)
     def DrawData(self, data, attrList, (x0, x1), (y0, y1), bHorizontal):
-        if len(data) == 0: return
+        if len(data) == 0:
+            self.addRect(x0, x1, y0, y1)
+            return
         attr = attrList[0]
+        edge = len(attrList) * self.cellspace  # how much smaller rectangles do we draw
         vals = self.data.domain[attr].values
         currPos = 0
-        edge = len(attrList)*2  # how much smaller rectangles do we draw
-
+        if bHorizontal: whole = (x1-x0)-edge*(len(vals)-1)  # we remove the space needed for separating different attr. values
+        else:           whole = (y1-y0)-edge*(len(vals)-1)
+        
         for val in vals:
             tempData = data.select({attr:val})
             perc = float(len(tempData))/float(len(data))
             if bHorizontal:
-                size = (x1-x0)*perc;
-                if len(attrList) == 1:  self.addRect(x0+currPos+edge, x0+currPos+size-edge, y0, y1)
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos+edge, x0+currPos+size-edge), (y0, y1), not bHorizontal)
+                size = ceil(whole*perc);
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1)
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal)
             else:
-                size = (y1-y0)*perc
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos+edge, y0+currPos+size-edge)
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos+edge, y0+currPos+size-edge), not bHorizontal)
-            currPos += size
+                size = ceil(whole*perc)
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size)
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal)
+            currPos += size + edge
 
     # draws text with caption name at position x,y with alignment and style
     def addText(self, name, x, y, alignment, bold):
@@ -370,59 +302,17 @@ class OWMosaicDisplay(OWWidget):
 
     # draw a rectangle, set it to back and add it to rect list                
     def addRect(self, x0, x1, y0, y1):
-        if x0 > x1: return
-        if y0 > y1: return
+        if x0==x1: x1+=1
+        if y0==y1: y1+=1
         rect = QCanvasRectangle(x0, y0, x1-x0, y1-y0, self.canvas)
         rect.setZ(-10)
         rect.show()
-        pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
+        #pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
         self.rects.append(rect)
         return rect
 
    
-    #################################################
-    # add tooltips
-    def addTooltip(self, x,y,w,h, (xAttr, xVal), (yAttr, yVal), actual, sum, chisquare):
-        expected = float(xVal*yVal)/float(sum)
-        pearson = (actual - expected) / sqrt(expected)
-        tooltipText = """<b>X attribute</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><br><hr>
-                        <b>Y attribute</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><br><hr>
-                        <b>Number of examples (probabilities)</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)</b><br>
-                        <hr><b>Statistics:</b><br>Chi-square: <b>%.2f</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), expected, 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum), chisquare, pearson )
-        tipRect = QRect(x, y, w, h)
-        QToolTip.add(self.canvasView, tipRect, tooltipText)
-        self.tooltips.append(tipRect)
-
-    ##################################################
-    # add lines
-    def addLines(self, x,y,w,h, diff, pen):
-        if self.showLines == 0: return
-        if diff == 0: return
-        #if (xVal == 0) or (yVal == 0) or (actualProb == 0): return
-
-        # create lines
-        dist = 20   # original distance between two lines in pixels
-        dist = dist * diff
-        temp = dist
-        while (temp < w):
-            line = QCanvasLine(self.canvas)
-            line.setPoints(temp+x, y+1, temp+x, y+h-2)
-            line.setPen(pen)
-            line.show()
-            self.lines.append(line)
-            temp += dist
-
-        temp = dist
-        while (temp < h):
-            line = QCanvasLine(self.canvas)
-            line.setPoints(x+1, y+temp, x+w-2, y+temp)
-            line.setPen(pen)
-            line.show()
-            self.lines.append(line)
-            temp += dist
-
-
-    ##################################################
+     ##################################################
     ## SAVING GRAPHS
     ##################################################
     def saveToFileCanvas(self):
@@ -435,9 +325,10 @@ class OWMosaicDisplay(OWWidget):
         ext = ext.upper()
         
         buffer = QPixmap(size) # any size can do, now using the window size
+        #buffer = QPixmap(QSize(200,200)) # any size can do, now using the window size
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
-        self.canvasView.drawContents(painter, 0,0, size.width(), size.height())
+        self.canvasView.drawContents(painter, 0,0, buffer.rect().width(), buffer.rect().height())
         painter.end()
         buffer.save(fileName, ext)
 

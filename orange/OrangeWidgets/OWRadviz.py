@@ -29,9 +29,10 @@ class OWRadviz(OWWidget):
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
-    attributeOrdering  = ["Original", "Optimized class separation"]
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40']
+    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", TRUE, TRUE)
@@ -44,6 +45,7 @@ class OWRadviz(OWWidget):
         self.attrOrdering = "Original"
         self.globalValueScaling = 1
         self.jitterSize = 1
+        self.kNeighbours = 1
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -77,11 +79,11 @@ class OWRadviz(OWWidget):
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
-        self.connect(self.options.attrOrderingButtons, SIGNAL("clicked(int)"), self.setAttrOrdering)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
         self.selClass = QVGroupBox(self.controlArea)
+        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea)
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
@@ -98,6 +100,12 @@ class OWRadviz(OWWidget):
 
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+
+        self.optimizeSeparationButton = QPushButton('Optimize class separation', self.attrOrderingButtons)
+        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.attrOrderingButtons)
+        self.hbox2 = QHBox(self.attrOrderingButtons)
+        self.attrOrdLabel = QLabel('Number of neighbours (k):', self.hbox2)
+        self.attrKNeighbour = QComboBox(self.hbox2)
         
         self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
         #self.attrButtonGroup.setFrameStyle(QFrame.NoFrame)
@@ -110,6 +118,9 @@ class OWRadviz(OWWidget):
 
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
+        self.connect(self.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
+        self.connect(self.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
+        self.connect(self.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -130,13 +141,19 @@ class OWRadviz(OWWidget):
         self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
-        self.options.attrOrderingButtons.setButton(self.attributeOrdering.index(self.attrOrdering))
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+
+        # set items in jitter size combo
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
+
+        # set items in k neighbours combo
+        for i in range(len(self.kNeighboursList)):
+            self.attrKNeighbour.insertItem(self.kNeighboursList[i])
+        self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
         
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setPointWidth(self.pointWidth)
@@ -163,6 +180,10 @@ class OWRadviz(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
+    def setKNeighbours(self, n):
+        self.kNeighbours = self.kNeighboursNums[n]
+        #self.optimizeSeparation()
+
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
         self.attrContOrder = self.attributeContOrder[n]
@@ -177,23 +198,25 @@ class OWRadviz(OWWidget):
             self.setShownAttributeList(self.data)
         self.updateGraph()
 
-    def setAttrOrdering(self, n):
-        self.attrOrdering = self.attributeOrdering[n]
-        if self.attrOrdering == "Optimized class separation" and self.data != None:
-            list = self.graph.getOptimalAttrOrder(self.getShownAttributeList(), str(self.classCombo.currentText()))
+    def optimizeSeparation(self):
+        if self.data != None:
+            (list, value) = self.graph.getOptimalSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
             self.shownAttribsLB.clear()
             for item in list:
                 self.shownAttribsLB.insertItem(item)
-        elif self.data != None:
-            ex_list = self.getShownAttributeList()
+            self.updateGraph()
+
+    def optimizeAllSubsetSeparation(self):
+        if self.data != None:
+            (list,val) = self.graph.getOptimalSubsetSeparation(self.getShownAttributeList(), str(self.classCombo.currentText()), self.kNeighbours)
+            exshown = self.getShownAttributeList()
             self.shownAttribsLB.clear()
-            for attr in self.data.domain:
-                try:
-                    ind = ex_list.index(attr.name)
-                    self.shownAttribsLB.insertItem(attr.name)
-                except: pass
-                
-        self.updateGraph()
+            for item in list:
+                self.shownAttribsLB.insertItem(item)
+            for item in exshown:
+                if item not in list:
+                    self.hiddenAttribsLB.insertItem(item)
+            self.updateGraph()
         
     def setCanvasColor(self, c):
         self.graphCanvasColor = c
@@ -310,8 +333,6 @@ class OWRadviz(OWWidget):
         for attr in hidden:
             if attr == data.domain.classVar.name: continue
             self.hiddenAttribsLB.insertItem(attr)
-        
-        self.setAttrOrdering(self.attributeOrdering.index(self.attrOrdering))
         
     def getShownAttributeList (self):
         list = []

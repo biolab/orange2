@@ -39,12 +39,6 @@ class OWRadvizOptions(OWOptions):
         self.jitterLabel = QLabel('Jittering size (%)', self.hbox)
         self.jitterSize = QComboBox(self.hbox)
 
-        #####
-        # attribute ordering
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.top)
-        self.attrContNone = QRadioButton('Original', self.attrOrderingButtons)
-        self.attrContRelieF = QRadioButton('Optimized class separation', self.attrOrderingButtons)
-        self.attrOrderingButtons.setExclusive(TRUE)
 
         #####
         # attribute value scaling
