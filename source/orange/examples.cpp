@@ -101,7 +101,7 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
     if (val.isSpecial())
       val = srcval;
     else if (val!=srcval)
-      raiseError("ambiguous value of attribute '%s'", var->name);
+      raiseError("ambiguous value of attribute '%s'", var->name.c_str());
   }
 
   else {
@@ -111,7 +111,7 @@ void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
         val = srcval;
       else if (val!=srcval)
         if (var)
-          raiseError("ambiguous value for meta-attribute '%s'", var->name);
+          raiseError("ambiguous value for meta-attribute '%s'", var->name.c_str());
         else
           raiseError("ambiguous value for meta-attribute %i", position);
     }
