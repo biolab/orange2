@@ -134,9 +134,9 @@ class OWScatterPlot3D(OWWidget):
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
 
         self.options.jitterContinuous.setChecked(self.jitterContinuous)
+        self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
-        print self.jitterSize
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
 
         self.options.widthSlider.setValue(self.pointWidth)

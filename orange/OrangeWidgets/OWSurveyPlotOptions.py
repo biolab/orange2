@@ -17,6 +17,11 @@ class OWSurveyPlotOptions(OWOptions):
         # attribute value scaling
         self.attrValueScalingButtons = QVButtonGroup("Attribute value scaling", self.top)
         self.globalValueScaling = QCheckBox("Global Value Scaling", self.attrValueScalingButtons)
+
+        #####
+        # visual settings
+        self.visualSettingsButtons = QVButtonGroup("Visual settings", self.top)
+        self.exampleTracking = QCheckBox("Enable example tracking", self.visualSettingsButtons)
         
 
         #####        

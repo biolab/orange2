@@ -58,11 +58,14 @@ class OWVisGraph(OWGraph):
         self.zoomState = ()
         self.colorHueValues = [240, 0, 120, 60, 180, 300, 30, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
         self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
-
+        self.colorNonTargetValue = QColor(200,200,200)
+        self.colorTargetValue = QColor(0,0,255)
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
 
+        self.mouseCurrentlyPressed = 0
+        self.mouseCurrentButton = 0
         self.blankClick = 0
         self.noneSymbol = QwtSymbol()
         self.noneSymbol.setStyle(QwtSymbol.None)
@@ -73,7 +76,6 @@ class OWVisGraph(OWGraph):
         self.zoomStack = []
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
-
 
     #####################################################################
     #####################################################################
@@ -395,6 +397,8 @@ class OWVisGraph(OWGraph):
     # HANDLING MOUSE EVENTS
     # ###############################################
     def onMousePressed(self, e):
+        self.mouseCurrentlyPressed = 1
+        self.mouseCurrentButton = e.button()
         if Qt.LeftButton == e.button():
             # Python semantics: self.pos = e.pos() does not work; force a copy
             self.xpos = e.pos().x()
@@ -417,6 +421,8 @@ class OWVisGraph(OWGraph):
         self.event(e)
 
     def onMouseReleased(self, e):
+        self.mouseCurrentlyPressed = 0
+        self.mouseCurrentButton = 0
         if Qt.LeftButton == e.button():
             if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
             xmin = min(self.xpos, e.pos().x())

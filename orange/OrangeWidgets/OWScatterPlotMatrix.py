@@ -382,7 +382,7 @@ class OWScatterPlotMatrix(OWWidget):
         for attr in self.data.domain.attributes:
             self.shownAttribsLB.insertItem(attr.name)
 
-        self.createGraphs()
+        #self.createGraphs()
 
     #################################################
 

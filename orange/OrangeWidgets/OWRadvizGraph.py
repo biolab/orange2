@@ -186,7 +186,6 @@ class OWRadvizGraph(OWVisGraph):
         self.anchorData = []
 
 
-
     def saveProjectionAsTabData(self, labels, fileName):
         if len(self.scaledData) == 0 or len(labels) == 0: return
 
@@ -263,7 +262,7 @@ class OWRadvizGraph(OWVisGraph):
         self.__dict__.update(args)
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
-
+        
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
         scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
@@ -688,14 +687,14 @@ class OWRadvizGraph(OWVisGraph):
             selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
             
             if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                if selection[j] == 0: continue
                 classValues = list(self.rawdata.domain[self.className].values)
                 for j in range(len(table)):
+                    if selection[j] == 0: continue
                     index = classValues.index(table[j][2].value)
                     tempPermValue += knn(table[j], orange.GetProbabilities)[index]
                     experiments += 1
                 tempPermValue = tempPermValue*100.0/float(experiments)
-                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(experiments) )
+                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue)
             else:
                 for j in range(len(table)):
                     if selection[j] == 0: continue

@@ -655,7 +655,7 @@ class OWPolyvizGraph(OWVisGraph):
                         tempPermValue += knn(table[j], orange.GetProbabilities)[index]
                         experiments += 1
                     tempPermValue = tempPermValue*100.0/float(experiments)
-                    print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue*100.0/float(experiments) )
+                    print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, tempPermValue )
                 else:
                     for j in range(len(table)):
                         if selection[j] == 0: continue

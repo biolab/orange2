@@ -202,6 +202,8 @@ class OWGraph(QwtPlot):
         QwtPlot.__init__(self, parent, name)
         self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
+        self.lastSaveDirName = ""   # name of the directory where we saved the last picture
+
         self.setAutoReplot(FALSE)
         self.setAutoLegend(FALSE)
         self.setAxisAutoScale(QwtPlot.xBottom)
@@ -257,7 +259,7 @@ class OWGraph(QwtPlot):
             print "error"
             return
 
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
+        qfileName = QFileDialog.getSaveFileName(self.lastSaveDirName + "graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
@@ -268,10 +270,12 @@ class OWGraph(QwtPlot):
         ext = ext.upper()
 
 
+        dirName, shortFileName = os.path.split(fileName)
+        self.lastSaveDirName = dirName + "/"
+
         if not sizeDlg.allSizes.isChecked():
             self.saveToFileDirect(fileName, ext, size)
         else:
-            dirName, shortFileName = os.path.split(fileName)
             if not os.path.isdir(dirName + "\\400\\"): os.mkdir(dirName + "\\400\\")
             if not os.path.isdir(dirName + "\\600\\"): os.mkdir(dirName + "\\600\\")
             if not os.path.isdir(dirName + "\\800\\"): os.mkdir(dirName + "\\800\\")
@@ -282,10 +286,14 @@ class OWGraph(QwtPlot):
             self.saveToFileDirect(dirName + "\\Original\\" + shortFileName, ext, self.size())
         
     def saveToFileDirect(self, fileName, ext, size = QSize()):
-        if size.isEmpty():
-            buffer = QPixmap(self.size()) # any size can do, now using the window size
-        else:
-            buffer = QPixmap(size)
+        if os.path.exists(fileName):
+            res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
+            print res
+            if res == 0: return
+
+        print fileName
+        if size.isEmpty(): buffer = QPixmap(self.size()) # any size can do, now using the window size
+        else:              buffer = QPixmap(size)
         buffer = QPixmap(size)
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background

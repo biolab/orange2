@@ -24,8 +24,8 @@ class OWScatterPlot(OWWidget):
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "kNeighbours", "showDistributions"]
     spreadType=["none","uniform","triangle","beta"]
-    jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
-    jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
+    jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
+    jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
 
@@ -97,28 +97,22 @@ class OWScatterPlot(OWWidget):
         self.connect(self.showDistributionsCB, SIGNAL("clicked()"), self.setShowDistributions)
 
         self.attrColorGroup = QVButtonGroup("Coloring attribute", self.controlArea)
-        self.attrColorCB = QCheckBox('Enable coloring by', self.attrColorGroup)
         self.attrColorLegendCB = QCheckBox('Show color legend', self.attrColorGroup)
         self.attrColor = QComboBox(self.attrColorGroup)
-        self.connect(self.attrColorCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColorLegendCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColor, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         self.attrShapeGroup = QVButtonGroup("Shaping attribute", self.controlArea)
-        self.attrShapeCB = QCheckBox('Enable shaping by', self.attrShapeGroup)
         self.attrShape = QComboBox(self.attrShapeGroup)
-        self.connect(self.attrShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
         self.attrSizeGroup = QVButtonGroup("Sizing attribute", self.controlArea)
-        self.attrSizeShapeCB = QCheckBox('Enable sizing by', self.attrSizeGroup)
         self.attrSizeShape = QComboBox(self.attrSizeGroup)
-        self.connect(self.attrSizeShapeCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrSizeShape, SIGNAL('activated ( const QString & )'), self.updateGraph)        
 
 
         # optimization
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.controlArea) 
+        self.attrOrderingButtons = QVButtonGroup("Shown attributes", self.controlArea) 
         self.optimizationDlgButton = QPushButton('Optimization dialog', self.attrOrderingButtons)
         self.optimizationDlg = OptimizationDialog(None)
         self.optimizationDlg.parentName = "ScatterPlot"
@@ -167,11 +161,13 @@ class OWScatterPlot(OWWidget):
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
 
         self.options.jitterContinuous.setChecked(self.jitterContinuous)
+        self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
 
         # set items in k neighbours combo
+        self.optimizationDlg.attrKNeighbour.clear()
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
@@ -375,9 +371,9 @@ class OWScatterPlot(OWWidget):
         self.setText(self.attrX, list[0])
         self.setText(self.attrY, list[1])
         if len(list)>2: self.setText(self.attrShape, list[2])
-        else: self.attrShapeCB.setChecked(0)
+        else: self.setText(self.attrShape, "(One shape)")
         if len(list)>3: self.setText(self.attrSizeShape, list[3])
-        else: self.attrSizeShapeCB.setChecked(0)
+        else: self.setText(self.attrSizeShape, "(One size)")
         self.setText(self.attrColor, self.data.domain.classVar.name)        
         
         self.updateGraph()
@@ -417,7 +413,6 @@ class OWScatterPlot(OWWidget):
             self.attrY.setCurrentItem(0)
             
         self.setText(self.attrColor, self.data.domain.classVar.name)
-        self.attrColorCB.setChecked(1)
         self.setText(self.attrShape, "(One shape)")
         self.setText(self.attrSizeShape, "(One size)")
         
@@ -457,12 +452,9 @@ class OWScatterPlot(OWWidget):
         colorAttr = ""
         shapeAttr = ""
         sizeShapeAttr = ""
-        if self.attrColorCB.isOn():
-            colorAttr = str(self.attrColor.currentText())
-        if self.attrShapeCB.isOn():
-            shapeAttr = str(self.attrShape.currentText())
-        if self.attrSizeShapeCB.isOn():
-            sizeShapeAttr = str(self.attrSizeShape.currentText())
+        colorAttr = str(self.attrColor.currentText())
+        shapeAttr = str(self.attrShape.currentText())
+        sizeShapeAttr = str(self.attrSizeShape.currentText())
 
         self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn(), self.statusBar)
         self.graph.update()
@@ -472,6 +464,7 @@ class OWScatterPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        print "scatterplot cdata"
         if data == None:
             self.data = None
             self.repaint()
@@ -506,10 +499,7 @@ class OWScatterPlot(OWWidget):
 
         self.attrX.setCurrentItem(ind1)
         self.attrY.setCurrentItem(ind2)
-        self.attrColorCB.setChecked(1)
         self.attrColor.setCurrentItem(classInd)
-        self.attrShapeCB.setChecked(0)
-        self.attrSizeShapeCB.setChecked(0)
         self.updateGraph()       
     #################################################
 

@@ -23,7 +23,7 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines", "lineTracking"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -55,6 +55,7 @@ class OWParallelCoordinates(OWWidget):
         self.globalValueScaling = 0
         self.showContinuous = 0
         self.useSplines = 0
+        self.lineTracking = 1
 
         #load settings
         self.loadSettings()
@@ -88,6 +89,7 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options.hidePureExamples, SIGNAL("toggled(bool)"), self.setHidePureExamples)
         self.connect(self.options.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
         self.connect(self.options.useSplines, SIGNAL("toggled(bool)"), self.setUseSplines)
+        self.connect(self.options.lineTracking, SIGNAL("toggled(bool)"), self.setLineTracking)
         self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.linesDistance, SIGNAL("activated(int)"), self.setLinesDistance)
@@ -106,7 +108,10 @@ class OWParallelCoordinates(OWWidget):
 
         self.classCombo = QComboBox(self.selClass)
         self.showContinuousCB = QCheckBox('show continuous', self.selClass)
+        self.targetValueCombo = QComboBox(self.selClass)
+        self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classComboChange)
         self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
+        self.connect(self.targetValueCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -124,7 +129,7 @@ class OWParallelCoordinates(OWWidget):
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
         #connect controls to appropriate functions
-        self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
+        
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -160,9 +165,12 @@ class OWParallelCoordinates(OWWidget):
         self.options.showCorrelations.setChecked(self.showCorrelations)
         self.options.useSplines.setChecked(self.useSplines)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.options.lineTracking.setChecked(self.lineTracking)
+        self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
+        self.options.linesDistance.clear()
         for i in range(len(self.linesDistanceList)):
             self.options.linesDistance.insertItem(self.linesDistanceList[i])
         self.options.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
@@ -176,6 +184,7 @@ class OWParallelCoordinates(OWWidget):
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
+        self.graph.updateSettings(lineTracking = self.lineTracking)
 
     # jittering options
     def setSpreadType(self, n):
@@ -220,6 +229,10 @@ class OWParallelCoordinates(OWWidget):
         self.useSplines = b
         self.graph.updateSettings(useSplines = b)
         self.updateGraph()
+
+    def setLineTracking(self, b):
+        self.lineTracking = b
+        self.graph.updateSettings(lineTracking = b)
 
     def setGlobalValueScaling(self):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
@@ -321,7 +334,9 @@ class OWParallelCoordinates(OWWidget):
             maxAttrs = len(attrs)
 
         start = min(self.slider.value(), len(attrs)-maxAttrs)
-        self.graph.updateData(attrs[start:start+maxAttrs], str(self.classCombo.currentText()))
+        targetVal = self.targetValueCombo.currentText()
+        if targetVal == "(None)": targetVal = None
+        self.graph.updateData(attrs[start:start+maxAttrs], str(self.classCombo.currentText()), targetVal)
         self.slider.repaint()
         self.graph.update()
         self.repaint()
@@ -345,13 +360,26 @@ class OWParallelCoordinates(OWWidget):
         for i in range(self.classCombo.count()):
             if str(self.classCombo.text(i)) == exText:
                 self.classCombo.setCurrentItem(i)
+                self.classComboChange(self.classCombo.currentText())
                 return
 
         for i in range(self.classCombo.count()):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
-                return
+                self.classComboChange(self.classCombo.currentText())
+        
 
+    def classComboChange(self, className):
+        className = str(className)
+        self.targetValueCombo.clear()
+        self.targetValueCombo.insertItem("(None)")
+        if className == "(One color)": return
+        if self.data.domain[className].varType == orange.VarTypes.Discrete:
+            for val in self.data.domain[className].values:
+                self.targetValueCombo.insertItem(val)
+        self.targetValueCombo.setCurrentItem(0)
+        self.updateGraph()
+            
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list

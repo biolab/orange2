@@ -21,7 +21,7 @@ import OWVisAttrSelection
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "showContinuous", "exampleTracking"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
         
@@ -36,6 +36,7 @@ class OWSurveyPlot(OWWidget):
         self.data = None
         self.globalValueScaling = 0
         self.showContinuous = 0
+        self.exampleTracking = 1
 
         #load settings
         self.loadSettings()
@@ -63,7 +64,8 @@ class OWSurveyPlot(OWWidget):
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
-        self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
+        self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
+        self.connect(self.options.exampleTracking, SIGNAL("toggled(bool)"), self.setExampleTracking)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
@@ -123,10 +125,17 @@ class OWSurveyPlot(OWWidget):
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+        self.options.exampleTracking.setChecked(self.exampleTracking)
         self.showContinuousCB.setChecked(self.showContinuous)
         
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
+        self.graph.updateSettings(exampleTracking = self.exampleTracking)
+
+    # just tell the graph to hide the selected rectangle
+    def enterEvent(self, e):
+        self.graph.hideSelectedRectangle()
+        self.graph.replot()
 
     # continuous attribute ordering
     def setAttrContOrderType(self, n):
@@ -142,8 +151,8 @@ class OWSurveyPlot(OWWidget):
             self.setShownAttributeList(self.data)
         self.updateGraph()
 
-    def setGlobalValueScaling(self):
-        self.globalValueScaling = self.options.globalValueScaling.isChecked()
+    def setGlobalValueScaling(self, b):
+        self.globalValueScaling = b
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
 
@@ -152,6 +161,10 @@ class OWSurveyPlot(OWWidget):
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
 
         self.updateGraph()
+
+    def setExampleTracking(self, b):
+        self.exampleTracking = b
+        self.graph.updateSettings(exampleTracking = b)
         
     def setCanvasColor(self, c):
         self.GraphCanvasColor = c

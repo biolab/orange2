@@ -190,15 +190,18 @@ class OWRadviz(OWWidget):
         self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
 
         # set items in jitter size combo
+        self.options.jitterSize.clear()
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
 
+        self.options.scaleCombo.clear()
         for i in range(len(self.scaleFactorList)):
             self.options.scaleCombo.insertItem(self.scaleFactorList[i])
         self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
 
         # set items in k neighbours combo
+        self.optimizationDlg.attrKNeighbour.clear()
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.optimizationDlg.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kNeighbours))
@@ -561,6 +564,7 @@ class OWRadviz(OWWidget):
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
+        print "radviz cdata"
         self.optimizationDlg.clear()
         #self.data = orange.Preprocessor_dropMissing(data.data)
         self.data = data.data

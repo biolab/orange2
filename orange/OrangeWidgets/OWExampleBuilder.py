@@ -129,12 +129,18 @@ class OWExampleBuilder(OWWidget):
         if name[-4] != ".":
             name = name + ".tab"
         orange.saveTabDelimited(name, self.data)
+
+    def saveSettingsStr(self):
+        self.numStr = str(self.num.text())
+        self.domainStr = str(self.domain.text())
+        self.codeStr = str(self.textBox.text())
+        return OWWidget.saveSettingsStr(self)
         
     def saveSettings(self, file = None):
         self.numStr = str(self.num.text())
         self.domainStr = str(self.domain.text())
         self.codeStr = str(self.textBox.text())
-        OWWidget.saveSettings(self, file)
+        return OWWidget.saveSettings(self, file)
 
     def activateLoadedSettings(self):
         self.num.setText(self.numStr)

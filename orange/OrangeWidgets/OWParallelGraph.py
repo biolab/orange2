@@ -23,8 +23,8 @@ class OWParallelGraph(OWVisGraph):
         self.toolInfo = []
         self.toolRects = []
         self.useSplines = 0
+        self.lastSelectedKey = 0
         
-
     def setShowDistributions(self, showDistributions):
         self.showDistributions = showDistributions
 
@@ -44,12 +44,10 @@ class OWParallelGraph(OWVisGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, className):
+    def updateData(self, labels, className, targetValue):
         self.removeTooltips()
         self.removeCurves()
         self.removeMarkers()
-        self.axesKeys = []
-        self.curveKeys = []
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
@@ -131,13 +129,9 @@ class OWParallelGraph(OWVisGraph):
                             if dataStop[index] == lastIndex:
                                 dataStop[index] = val
 
-        """
-        # DEBUG
-        for i in range(dataSize):
-            #if self.rawdata[i]['y'] == 'D3':
-            print dataStop[i], self.rawdata[i][className]
-        print "-----------------------------------------------"
-        """
+        # first create all curves
+        if targetValue != None:
+            curves = [[],[]]
 
         #############################################
         # draw the data
@@ -148,25 +142,37 @@ class OWParallelGraph(OWVisGraph):
                 if self.scaledData[index][i] == "?": validData = 0; break;
             if not validData: continue
             
-            newCurveKey = self.insertCurve(str(i))
-            self.curveKeys.append(newCurveKey)
+            curve = QwtPlotCurve(self)
             newColor = QColor()
-            if classNameIndex != -1:
+            if targetValue != None:
+                if self.rawdata[i][classNameIndex].value == targetValue:
+                    newColor = self.colorTargetValue
+                    curves[1].append(curve)
+                else:
+                    newColor = self.colorNonTargetValue
+                    curves[0].append(curve)
+            elif classNameIndex != -1:
                 newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
-            self.setCurvePen(newCurveKey, QPen(newColor))
+                self.insertCurve(curve)
+            curve.setPen(QPen(newColor))
             ys = []
             for index in indices:
                 ys.append(self.scaledData[index][i])
                 if index == dataStop[i]: break
-            self.setCurveData(newCurveKey, xs, ys)
+            curve.setData(xs, ys)
             if self.useSplines:
-                self.setCurveStyle(newCurveKey, QwtCurve.Spline)
+                curve.setStyle(QwtCurve.Spline)
+
+        # now add all curves. First add the gray curves (they will be shown in the back) and then the blue (target value) curves (shown in front)
+        if targetValue != None:
+            for curve in curves[0]: self.insertCurve(curve)
+            for curve in curves[1]: self.insertCurve(curve)
 
 
         #############################################
         # do we want to show distributions with discrete attributes
         if self.showDistributions and className != "(One color)" and className != "" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            self.showDistributionValues(className, self.rawdata, indices, dataStop)
+            self.showDistributionValues(className, targetValue, self.rawdata, indices, dataStop)
             
 
         curve = subBarQwtPlotCurve(self)
@@ -182,8 +188,8 @@ class OWParallelGraph(OWVisGraph):
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
-            self.axesKeys.append(newCurveKey)
             self.setCurveData(newCurveKey, [i,i], [0,1])
+            pen = self.curve(newCurveKey).pen(); pen.setWidth(2); self.curve(newCurveKey).setPen(pen)
             if self.showAttrValues == 1:
                 attr = self.rawdata.domain[labels[i]]
                 if attr.varType == orange.VarTypes.Continuous:
@@ -232,7 +238,10 @@ class OWParallelGraph(OWVisGraph):
                 self.marker(mkey1).setYValue(1.0)
                 self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
 
-    def showDistributionValues(self, className, data, indices, dataStop):
+
+    # ##########################################
+    # SHOW DISTRIBUTION BAR GRAPH
+    def showDistributionValues(self, className, targetValue, data, indices, dataStop):
         # get index of class         
         classNameIndex = self.attributeNames.index(className)
 
@@ -308,9 +317,12 @@ class OWParallelGraph(OWVisGraph):
             for i in range(count):
                 curve = subBarQwtPlotCurve(self)
                 newColor = QColor()
-                #newColor.setHsv(colors[i]*360, 255, 255)
-                if count < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                else:                                newColor.setHsv(float(i)*360/float(count), 255, 255)
+                if targetValue != None:
+                    if classValueSorted[i] == targetValue: newColor = self.colorTargetValue
+                    else: newColor = self.colorNonTargetValue
+                else:
+                    if count < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
+                    else:                                newColor.setHsv(float(i)*360/float(count), 255, 255)
                 curve.color = newColor
                 xData = []; yData = []
                 for j in range(attrLen):
@@ -367,11 +379,27 @@ class OWParallelGraph(OWVisGraph):
     def updateTooltips(self):
         self.removeTooltips()
         self.addTooltips()
-    
+
+    # if we zoomed, we have to update tooltips    
     def onMouseReleased(self, e):
         OWVisGraph.onMouseReleased(self, e)
         self.updateTooltips()
-    
+
+    def onMouseMoved(self, e):
+        if self.mouseCurrentlyPressed: return
+        else:
+            if self.lastSelectedKey != 0:
+                pen = self.curvePen(self.lastSelectedKey)
+                pen.setWidth(1)
+                self.setCurvePen(self.lastSelectedKey, pen)
+            self.lastSelectedKey = 0
+            if not self.lineTracking: return
+            (key, foo1, x, y, foo2) = self.closestCurve(e.pos().x(), e.pos().y())
+            if key != 0:
+                pen = self.curvePen(key); pen.setWidth(3); self.setCurvePen(key, pen)
+                self.lastSelectedKey = key
+            OWVisGraph.onMouseMoved(self, e)
+            self.replot()
     
 if __name__== "__main__":
     #Draw a simple graph

@@ -142,12 +142,11 @@ def getCorrelationList(data):
         i+=1
 
     hiddenList = []
-    while i < len(correlations):
-        if member(mergedCorrs, correlations[i][1][0]) == -1:
+    for i in range(len(correlations)):
+        if member(mergedCorrs, correlations[i][1][0]) == -1 and dataNames[correlations[i][1][0]] not in hiddenList:
             hiddenList.append(dataNames[correlations[i][1][0]])
-        if member(mergedCorrs, correlations[i][1][1]) == -1:
+        if member(mergedCorrs, correlations[i][1][1]) == -1 and dataNames[correlations[i][1][1]] not in hiddenList:
             hiddenList.append(dataNames[correlations[i][1][1]])
-        i+=1
 
     shownList = []
     for i in range(len(mergedCorrs)):

@@ -101,8 +101,8 @@ class OWScatterPlotGraph(OWVisGraph):
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
         
-        MIN_SHAPE_SIZE = 5
-        MAX_SHAPE_DIFF = 12
+        MIN_SHAPE_SIZE = 6
+        MAX_SHAPE_DIFF = self.pointWidth
 
         if len(self.scaledData) == 0: self.updateLayout(); return
 
@@ -252,7 +252,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     if shapeIndex != -1: symbol = shapeList[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
                     size = self.pointWidth
-                    if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.scaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
+                    if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
                     newCurveKey = self.insertCurve(str(i))
                     symbolBrush = QBrush(QBrush.NoBrush)
