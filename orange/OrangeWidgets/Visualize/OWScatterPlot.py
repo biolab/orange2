@@ -27,8 +27,8 @@ class OWScatterPlot(OWWidget):
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "ScatterPlot", TRUE)
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
@@ -97,8 +97,7 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
-        self.optimizationDlg = kNNOptimization(self, self.graph)
-        self.optimizationDlg.parentName = "ScatterPlot"
+        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.optimizationDlg.label1.hide()
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()
@@ -106,8 +105,7 @@ class OWScatterPlot(OWWidget):
         self.graph.kNNOptimization = self.optimizationDlg
 
         # cluster dialog
-        self.clusterDlg = ClusterOptimization(self, self.graph)
-        self.clusterDlg.parentName = "ScatterPlot"
+        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.clusterDlg.label1.hide()
         self.clusterDlg.optimizationTypeCombo.hide()
         self.clusterDlg.attributeCountCombo.hide()
@@ -176,8 +174,8 @@ class OWScatterPlot(OWWidget):
         
         self.activateLoadedSettings()
         self.resize(900, 700)
-        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self))
-        self.send("Cluster learner", clusterLearner(self.clusterDlg, self))
+        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self), 0)
+        self.send("Cluster learner", clusterLearner(self.clusterDlg, self), 1)
 
 
     # #########################
@@ -260,8 +258,8 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.finishedAddingResults()
         
 
-    # ####################################
-    # find optimal class separation for shown attributes
+    # ################################################################################################
+    # find projections where different class values are well separated
     def optimizeSeparation(self):
         if self.data == None: return
         
@@ -293,8 +291,12 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.finishedAddingResults()
 
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(len(projections), secs/60, secs%60)
+        print "----------------------------\nNumber of possible projections: %d" % (len(projections))
+        print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
+
+    # ################################################################################################
+    # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
         
@@ -327,7 +329,8 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.finishedAddingResults()
 
         secs = time.time() - startTime
-        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(len(projections), secs/60, secs%60)
+        print "----------------------------\nNumber of possible projections: %d" % (len(projections))
+        print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
 
     #update status on progress bar - gets called by OWScatterplotGraph
@@ -365,9 +368,9 @@ class OWScatterPlot(OWWidget):
 
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
         else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
         print "---------------------------"
         
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
@@ -452,6 +455,7 @@ class OWScatterPlot(OWWidget):
 
     # receive new data and update all fields
     def cdata(self, data):
+        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.optimizationDlg.clearResults()
         self.clusterDlg.clearResults()
         exData = self.data
@@ -468,10 +472,12 @@ class OWScatterPlot(OWWidget):
         self.updateGraph()
         self.sendSelections()
 
-    def subsetdata(self, data):
+    # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
+    def subsetdata(self, data, update = 1):
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.subsetData = data
         qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
-        self.updateGraph()
+        if update: self.updateGraph()
         self.optimizationDlg.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
        

@@ -49,10 +49,11 @@ class kNNOptimization(OWBaseWidget):
     percentDataList = [str(x) for x in percentDataNums]
     kNeighboursList = [str(x) for x in kNeighboursNums]
 
-    def __init__(self, parentWidget=None, graph = None):
-        OWBaseWidget.__init__(self, None, "Optimization Dialog")
+    def __init__(self, parentWidget=None, signalManager = None, graph = None, parentName = "Visualization widget"):
+        OWBaseWidget.__init__(self, None, signalManager, "Optimization Dialog")
 
         self.parentWidget = parentWidget
+        self.parentName = parentName
         self.setCaption("Qt VizRank Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
 
@@ -266,11 +267,15 @@ class kNNOptimization(OWBaseWidget):
         self.finishedAddingResults()
 
     def clearResults(self):
-        self.allResults = []
-        self.shownResults = []
+        del self.allResults; self.allResults = []
+        del self.shownResults; self.shownResults = []
         self.resultList.clear()
         self.attrLenDict = {}
         self.attrLenList.clear()
+
+    def clearArguments(self):
+        del self.arguments; self.arguments = []
+        self.argumentList.clear()
 
     # remove projections that are selected
     def removeSelected(self):
@@ -319,10 +324,10 @@ class kNNOptimization(OWBaseWidget):
         self.rawdata = data
         self.classesList.clear()
         self.classValueList.clear()
-        self.argumentList.clear()
-        self.arguments = []
         self.selectedClasses = []
-
+        self.clearResults()
+        self.clearArguments()
+        
         if not data: return
         
         correct = sqrt(len(data))
@@ -349,8 +354,7 @@ class kNNOptimization(OWBaseWidget):
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
-        self.arguments = []
-        self.argumentList.clear()
+        self.clearArguments()
     
                 
     # given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
@@ -464,8 +468,7 @@ class kNNOptimization(OWBaseWidget):
    
     # ##############################################################
     # ##############################################################
-    # kNNEvaluate - evaluate class separation in the given projection
-    # using a heuristic or k-NN method
+    # kNNEvaluate - evaluate class separation in the given projection using a heuristic or k-NN method
     # ##############################################################
     # ##############################################################
     def kNNComputeAccuracy(self, table):
@@ -509,6 +512,7 @@ class kNNOptimization(OWBaseWidget):
             for index in self.selectedClasses:                          # compute accuracy for selected classes
                 val += prediction[index]; s += currentClassDistribution[index]
             for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
+            if percentDataUsed != 100: del testTable
             return val/float(s), (acc, prediction, currentClassDistribution)
         
         # ###############################
@@ -549,6 +553,8 @@ class kNNOptimization(OWBaseWidget):
                 val += prediction[index]; s += currentClassDistribution[index]
             for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
 
+            if percentDataUsed != 100: del testTable
+            del knn, results
             return val/float(s), (acc, prediction, list(currentClassDistribution))
             
         # for continuous class we can't compute brier score and classification accuracy
@@ -556,6 +562,8 @@ class kNNOptimization(OWBaseWidget):
             val = 0.0
             for res in results.results:  val += res.probabilities[0].density(res.actualClass)
             val/= float(len(results.results))
+            if percentDataUsed != 100: del testTable
+            del knn, results
             return 100.0*val, (100.0*val)
 
         
@@ -586,6 +594,7 @@ class kNNOptimization(OWBaseWidget):
             for res in results.results:
                 returnTable.append(res.probabilities[0].density(res.actualClass))
 
+        del knn, results
         return returnTable
 
     """
@@ -686,6 +695,7 @@ class kNNOptimization(OWBaseWidget):
     # load projections from a file
     def load(self):
         self.clearResults()
+        self.clearArguments()
         if self.rawdata == None:
             QMessageBox.critical(None,'Load','There is no data. First load a data set and then load projection file',QMessageBox.Ok)
             return
@@ -830,17 +840,17 @@ class kNNOptimization(OWBaseWidget):
     # ######################################################
     # Argumentation functions
     # ######################################################
-    def findArguments(self):
+    def findArguments(self, selectBest = 1):
         self.cancelArgumentation = 0
+        self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
-        self.argumentList.clear()
         snapshots = self.createSnapshots
         
         if self.subsetdata == None:
-            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to provide a new example that you wish to classify. \nYou can do this by sending the example to the visualization widget through the "Example Subset" signal.', QMessageBox.Ok + QMessageBox.Default)
             return
         if len(self.shownResults) == 0:
-            QMessageBox.information( None, "Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
+            QMessageBox.information( None, "VizRank Argumentation", 'To find arguments you first have to evaluate some projections by clicking "Start evaluating projections" in the Main tab.', QMessageBox.Ok + QMessageBox.Default)
             return
 
         example = self.subsetdata[0]
@@ -887,7 +897,7 @@ class kNNOptimization(OWBaseWidget):
         self.stopArgumentationButton.hide()
         self.findArgumentsButton.show()
         self.parentWidget.restoreGraphProperties()
-        if self.argumentList.count() > 0: self.argumentList.setCurrentItem(0)        
+        if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)        
        
 
     def getArgumentIndex(self, value, classValue):
@@ -946,10 +956,10 @@ class kNNClassifier(orange.Classifier):
     def __call__(self, example, returnType):
         table = orange.ExampleTable(example.domain)
         table.append(example)
-        self.visualizationWidget.subsetdata(table)
+        self.visualizationWidget.subsetdata(table, 0)
         snapshots = self.kNNOptimizationDlg.createSnapshots
         self.kNNOptimizationDlg.createSnapshots = 0
-        self.kNNOptimizationDlg.findArguments()
+        self.kNNOptimizationDlg.findArguments(0)
         self.kNNOptimizationDlg.createSnapshots = snapshots
         worstAccuracy = self.kNNOptimizationDlg.allResults[-1][0]
 
@@ -966,7 +976,8 @@ class kNNClassifier(orange.Classifier):
         if max(vals) == 0.0:
             print "there are no arguments"
             return
-        
+
+        del table
         if returnType == orange.GetBoth:
             s = sum(vals) + len(vals)
             return (example.domain.classVar[ind], orange.DiscDistribution([(val+1)/float(s) for val in vals]))

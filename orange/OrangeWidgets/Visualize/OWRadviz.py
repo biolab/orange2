@@ -30,11 +30,11 @@ class OWRadviz(OWWidget):
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
     scaleFactorList = [str(x) for x in scaleFactorNums]
         
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Radviz", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -42,13 +42,11 @@ class OWRadviz(OWWidget):
         self.box.addWidget(self.graph)
         
         # cluster dialog
-        self.clusterDlg = ClusterOptimization(self, self.graph)
-        self.clusterDlg.parentName = "Radviz"
+        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "Radviz")
         self.graph.clusterOptimization = self.clusterDlg
 
         # optimization dialog
-        self.optimizationDlg = kNNOptimization(self, self.graph)
-        self.optimizationDlg.parentName = "Radviz"
+        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Radviz")
         self.graph.kNNOptimization = self.optimizationDlg
         self.optimizationDlg.optimizeGivenProjectionButton.show()
 
@@ -169,8 +167,9 @@ class OWRadviz(OWWidget):
 
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
-
         self.resize(900, 700)
+        self.send("VizRank learner", VizRankLearner(self.optimizationDlg, self), 0)
+        self.send("Cluster learner", clusterLearner(self.clusterDlg, self), 1)
 
     # #########################
     # OPTIONS
@@ -243,7 +242,8 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
         
-
+    # ################################################################################################
+    # find projections where different class values are well separated
     def optimizeSeparation(self):
         if self.data == None: return
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
@@ -271,7 +271,7 @@ class OWRadviz(OWWidget):
             l = len(proj)
             for i in range(len(proj)-2, 0, -1):
                 if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
+            self.warning("There are %s possible radviz projections with this set of attributes"% (proj))
         
         self.optimizationDlg.disableControls()
         self.progressBarInit()
@@ -289,23 +289,12 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.finishedAddingResults()
     
         secs = time.time() - startTime
-        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections:  %d\nUsed time: %d min, %d sec" %(self.graph.triedPossibilities, possibilities, secs/60, secs%60)        
-
-    def optimizeGivenProjectionClick(self):
-        results = list(self.optimizationDlg.getShownResults())
-        if len(results) == 0:
-            self.error("To optimize a projection you first have to evaluate some projections and select one")
-            return
-        (acc, other, tableLen, attrList, tryIndex, strList) = results[self.optimizationDlg.resultList.currentItem()]
-
-        self.optimizationDlg.disableControls()
-
-        self.graph.optimizeGivenProjection(attrList, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
-
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.finishedAddingResults()
+        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections: %d" % (self.graph.triedPossibilities, possibilities)
+        print "Used time: %d min, %d sec" % (secs/60, secs%60)        
 
 
+    # ################################################################################################
+    # find projections that have tight clusters of points that belong to the same class value
     def optimizeClusters(self):
         if self.data == None: return
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
@@ -349,7 +338,25 @@ class OWRadviz(OWWidget):
         self.clusterDlg.finishedAddingResults()
     
         secs = time.time() - startTime
-        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections:  %d\nUsed time: %d min, %d sec" %(self.graph.triedPossibilities, possibilities, secs/60, secs%60)        
+        print "----------------------------\nNumber of evaluated projections: %d\nNumber of possible projections: %d" % (self.graph.triedPossibilities, possibilities)
+        print "Used time: %d min, %d sec" % (secs/60, secs%60)        
+
+
+    # ################################################################################################
+    # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
+    def optimizeGivenProjectionClick(self):
+        results = list(self.optimizationDlg.getShownResults())
+        if len(results) == 0:
+            self.error("To optimize a projection you first have to evaluate some projections and select one")
+            return
+        (acc, other, tableLen, attrList, tryIndex, strList) = results[self.optimizationDlg.resultList.currentItem()]
+
+        self.optimizationDlg.disableControls()
+
+        self.graph.optimizeGivenProjection(attrList, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
 
 
     # send signals with selected and unselected examples as two datasets
@@ -514,6 +521,7 @@ class OWRadviz(OWWidget):
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.optimizationDlg.clearResults()
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         self.clusterDlg.clearResults()
@@ -538,9 +546,10 @@ class OWRadviz(OWWidget):
         self.sendSelections()
         self.sendShownAttributes()
 
-    def subsetdata(self, data):
+    def subsetdata(self, data, update = 1):
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.graph.subsetData = data
-        self.updateGraph()
+        if update: self.updateGraph()
         self.optimizationDlg.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
        
