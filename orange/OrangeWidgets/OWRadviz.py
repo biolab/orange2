@@ -58,6 +58,10 @@ class OWRadviz(OWWidget):
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWRadvizGraph(self.mainArea)
         self.box.addWidget(self.graph)
+        self.statusBar = QStatusBar(self.mainArea)
+        self.box.addWidget(self.statusBar)
+        
+        self.statusBar.message("")
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # graph main tmp variables
@@ -230,7 +234,7 @@ class OWRadviz(OWWidget):
     # #####################
 
     def updateGraph(self):
-        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.statusBar)
         #self.graph.replot()
         self.graph.update()
         self.repaint()

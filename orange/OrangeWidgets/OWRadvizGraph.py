@@ -98,6 +98,7 @@ class OWRadvizGraph(OWGraph):
         self.curveIndex = 0
         self.tips = DynamicToolTip(self)
         self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.plotMouseMoved)
+        self.statusBar = None
 
 
         r = QRect(-100,-100,200,200)
@@ -186,10 +187,12 @@ class OWRadvizGraph(OWGraph):
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, labels, className):
+    def updateData(self, labels, className, statusBar):
         self.removeCurves()
         self.removeMarkers()
         self.tips.removeAll()
+
+        self.statusBar = statusBar        
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
@@ -302,11 +305,11 @@ class OWRadvizGraph(OWGraph):
             # we add a tooltip for this point
             xVal = self.transform(QwtPlot.xBottom, x_i)
             yVal = self.transform(QwtPlot.yLeft, y_i)
-            print "x_i = " + str(x_i) + " ; y_i = " + str(y_i) + " ; xVal = " + str(xVal) + " ; yVal = " + str(yVal)
+            #print "x_i = " + str(x_i) + " ; y_i = " + str(y_i) + " ; xVal = " + str(xVal) + " ; yVal = " + str(yVal)
             r = QRect(xVal-RECT_SIZE, yVal-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             text= ""
             for j in range(len(self.rawdata.domain)):
-                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + '\n'
+                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
             self.tips.addToolTip(r, text)
             QToolTip.add(self, r, text)
             ##########
@@ -481,19 +484,25 @@ class OWRadvizGraph(OWGraph):
         x = e.x()
         y = e.y()
 
-        print "x = " + str(x) + " ; y = " + str(y)
+        #print "x = " + str(x) + " ; y = " + str(y)
         #dx = self.invTransform(QwtPlot.xBottom, x)
         #dy = self.invTransform(QwtPlot.yLeft, y)
         #print "dx = " + str(dx) + " ; dy = " + str(dy)
         
-        self.tips.maybeTip(QPoint(x,y))
-        """
+        #self.tips.maybeTip(QPoint(x,y))
+
+        found = 0
         p = QPoint(x,y)
         for i in range(len(self.tips.rects)):
             if self.tips.rects[i].contains(p):
-                print "contains = 1"
+                found = 1
+                if self.statusBar != None:
+                    self.statusBar.message(self.tips.texts[i])
+                    return
+        if found == 0:
+            self.statusBar.message("")
                 
-        """
+
     
 if __name__== "__main__":
     #Draw a simple graph
