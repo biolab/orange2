@@ -83,8 +83,8 @@ class SchemaDoc(QMainWindow):
                 return None
 
             # if there are multiple choices, how to connect this two widget, then show the dialog
-            signals = dialog.getLinks()
-            if len(signals) > 1:
+            
+            if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections:
                 res = dialog.exec_loop()
                 if dialog.result() == QDialog.Rejected:
                     line.remove()
@@ -92,6 +92,7 @@ class SchemaDoc(QMainWindow):
                 
             connected = []
             signalManager.setFreeze(1)
+            signals = dialog.getLinks()
             for (outName, inName) in signals:
                 widgets = inWidget.instance.removeExistingSingleLink(inName)
                 for widget in  widgets:
@@ -148,11 +149,6 @@ class SchemaDoc(QMainWindow):
                     self.removeWidgetSignal(widget, line.inWidget.instance, outName, inName)
                 signals.remove((outName, inName))
         
-        if newSignals == []:
-            self.lines.remove(line)
-            line.remove()
-            return None
-    
         connected = []
         signalManager.setFreeze(1)
         for (outName, inName) in newSignals:
@@ -369,7 +365,8 @@ class SchemaDoc(QMainWindow):
         list = cPickle.load(file)
         for widget in self.widgets:
             str = list[widget.caption]
-            widget.instance.loadSettingsStr(str)
+            if str != None:
+                widget.instance.loadSettingsStr(str)
             widget.instance.activateLoadedSettings()
 
         file.close()

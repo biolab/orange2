@@ -312,18 +312,26 @@ class SignalDialog(QDialog):
 
     def addDefaultLinks(self):
         canConnect = 0
+        self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
         for (outName, outType) in self.outList:
             try:
                 eval(outType)
+                canConnectCount = 0
                 for (inName, inType, handler, single) in self.inList:
                     try:
                         eval(inType)
-                        if issubclass(eval(outType), eval(inType)): canConnect = 1
-                        #if outName == inName and issubclass(eval(outType), eval(inType)):
                         if issubclass(eval(outType), eval(inType)):
+                            canConnect = 1
+                            canConnectCount += 1
+                            
+                        if outName == inName and issubclass(eval(outType), eval(inType)):
+                        #if issubclass(eval(outType), eval(inType)):
                             self.addLink(outName, inName)
+                            
                     except:
                         print "unknown type: ", inType
+                if canConnectCount > 1:
+                    self.multiplePossibleConnections = 1
             except:
                 print "unknown type: ", outType
         return canConnect
