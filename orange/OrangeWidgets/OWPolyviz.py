@@ -283,8 +283,9 @@ class OWPolyviz(OWWidget):
             else: funct = min
 
             # fill the "interesting visualizations" list box
-            #self.optimizationDlg.clear()
-            for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
+            self.optimizationDlg.clear()
+            #for i in range(min(len(fullList), int(str(self.optimizationDlg.resultListCombo.currentText())))):
+            while fullList != []:
                 (accuracy, tableLen, list, reverse) = funct(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)
@@ -326,7 +327,9 @@ class OWPolyviz(OWWidget):
             else: funct = min
             
             # fill the "interesting visualizations" list box
-            for i in range(len(fullList)):
+            #for i in range(len(fullList)):
+            self.optimizationDlg.clear()
+            while fullList != []:
                 (accuracy, tableLen, list, reverse) = funct(fullList)
                 fullList.remove((accuracy, tableLen, list, reverse))
                 self.interestingProjectionsAddItem(accuracy, tableLen, list, reverse)

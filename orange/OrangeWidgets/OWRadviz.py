@@ -294,8 +294,8 @@ class OWRadviz(OWWidget):
             if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
-            #self.optimizationDlg.clear()
-            for i in range(len(fullList)):
+            self.optimizationDlg.clear()
+            while fullList != []:
                 (accuracy, tableLen, list) = funct(fullList)
                 self.optimizationDlg.insertItem(accuracy, tableLen, list)  
                 fullList.remove((accuracy, tableLen, list))
@@ -336,8 +336,9 @@ class OWRadviz(OWWidget):
             if self.data.domain[str(self.classCombo.currentText())].varType == orange.VarTypes.Discrete: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
-            #self.optimizationDlg.clear()
-            for i in range(min(maxResultsLen, len(fullList))):
+            self.optimizationDlg.clear()
+            #for i in range(min(maxResultsLen, len(fullList))):
+            while fullList != []:
                 (accuracy, itemCount, list) = funct(fullList)
                 self.optimizationDlg.insertItem(accuracy, itemCount, list)
                 fullList.remove((accuracy, itemCount, list))
