@@ -347,46 +347,30 @@ class CanvasWidget(QCanvasRectangle):
             line.repaintLine(canvasView)
 
     def updateTooltip(self, view):
-        str = "Widget Caption: " + self.caption + "\nWidget Name: " + self.widget.fileName + "\nAll Input Signals: "
         canvasDlg = view.doc.canvasDlg
+        str = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br>Input Signals: "
 
         for signal in self.widget.inList:
-            str = str + canvasDlg.getChannelName(signal) + ", "
-        if str[-2] == ",":
-            str = str[:-2]
-        else:
-            str = str + "None"
+            start = ""; end = ""
+            for line in self.inLines:
+                if signal in line.signals:
+                    start= "<b>"; end = "</b>"
+            str += start + canvasDlg.getChannelName(signal) + end + ", "
 
-        str = str + "\nAll Output Signals: "
+        if str[-2] == ",": str = str[:-2]
+        else:              str += "None"
+
+        str += "<br>Output Signals: "
         for signal in self.widget.outList:
-            str = str + canvasDlg.getChannelName(signal) + ", "
-        if str[-2] == ",":
-            str = str[:-2]
-        else:
-            str = str + "None"
-                    
+            start = ""; end = ""
+            for line in self.outLines:
+                if signal in line.signals:
+                    start= "<b>"; end = "</b>"
+            str += start + canvasDlg.getChannelName(signal) + end + ", "
 
-        str = str + "\nActive Input Signals: "
-        for line in self.inLines:
-            if line.getEnabled() == TRUE:
-                for signal in line.signals:
-                    str = str + canvasDlg.getChannelName(signal) + ", "
-        if str[-2] == ",":
-            str = str[:-2]
-        else:
-            str = str + "None"
-            
-        str = str + "\nActive Output Signals: "
-        for line in self.outLines:
-            if line.getEnabled() == TRUE:
-                for signal in line.signals:
-                    str = str + canvasDlg.getChannelName(signal) + ", "
-
-        if str[-2] == ",":
-            str = str[:-2]
-        else:
-            str = str + "None"
-            
+        if str[-2] == ",": str = str[:-2]
+        else:              str += "None"
+        
         QToolTip.add(view, self.rect(), str)
 
     def removeTooltip(self, view):

@@ -45,7 +45,8 @@ class WidgetButton(QToolButton):
 		else:
 			formatedOutList = formatedOutList + "None"
 		
-		tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
+		#tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
+		tooltipText = "<b>%s</b><br>Class name: %s<br>in: %s<br>out: %s<br>description: %s" % (name, fileName, formatedInList, formatedOutList, description)
 		QToolTip.add( self, tooltipText)
 
 
