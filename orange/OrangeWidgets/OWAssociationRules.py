@@ -1,3 +1,10 @@
+"""
+<name>Association Rules</name>
+<description>Association rules inducer</description>
+<category>Classification</category>
+<icon>icons/Categorize.png</icon>
+<priority>1100</priority>
+"""
 
 import orange
 from OData import *
@@ -24,6 +31,7 @@ class OWAssociationRules(OWWidget):
         self.method = 0
 
         self.addInput("cdata")
+        self.addOutput("arules")
 
         self.settingsList = ["support", "max_rules", "method"]    # list of settings
         self.loadSettings()                             # function call
@@ -37,9 +45,9 @@ class OWAssociationRules(OWWidget):
         self.cbBuildMethod.insertItem("Sparse Data")
         self.cbBuildMethod.setCurrentItem(self.method)
         self.connect(self.cbBuildMethod, SIGNAL("activated(int)"), self.methodSelected)
-
+        
         self.rulesGB = QGroupBox(1, QGroupBox.Horizontal , 'Build Settings', self.controlArea)
- 		        
+
         # Min Support
         self.lblSupport = QLabel("Min Support: %.2f" % self.support, self.rulesGB) 
         self.sliSupport = QSlider(0, 99, 1, self.support*100, QSlider.Horizontal, self.rulesGB)
@@ -71,7 +79,7 @@ class OWAssociationRules(OWWidget):
         self.hbox.addWidget(self.buildLogFrame)
 
     def methodSelected(self, value):
-    	self.method = value
+        self.method = value
 
     def setSupport(self, value):            
         if str(value) == '':               
@@ -90,12 +98,12 @@ class OWAssociationRules(OWWidget):
 
     def generateAssociations(self):
         self.buildLog.clear()
-        if self.dataset != None:		# èe dataset ni prazen
+        if self.dataset != None:  # èe dataset ni prazen
             # èe je izbran argawal
-	    if self.method == 1:
-	    	self.buildLog.insertLine('Build with Sparse Data method started.', 0)
-	    else:
-		self.buildLog.insertLine('Build with Dense Data method started.', 0)
+            if self.method == 1:
+                self.buildLog.insertLine('Build with Sparse Data method started.', 0)
+            else:
+                self.buildLog.insertLine('Build with Dense Data method started.', 0)
             
             rules = []
 
@@ -103,30 +111,30 @@ class OWAssociationRules(OWWidget):
 
             # korakaj dokler nimaš dovolj pravil, oziroma ne dosežeš minSupport
             for i in range(1, num_of_steps + 1):
-				# zgradi pravila
-				build_support = 1 - float(i) / num_of_steps * (1 - self.support)
-				try:
-					# èe je izbran Sparse Data
-					if self.method == 1:
-						rules=orngAssoc.buildSparse(self.dataset.table,build_support)
-					else:
-						rules=orngAssoc.build(self.dataset.table,build_support)
-				except:
-					self.buildLog.insertLine('Error occured during build.',0)
-					return
+                # zgradi pravila
+                build_support = 1 - float(i) / num_of_steps * (1 - self.support)
+                try:
+                    # èe je izbran Sparse Data
+                    if self.method == 1:
+                        rules=orngAssoc.buildSparse(self.dataset.table,build_support)
+                    else:
+                        rules=orngAssoc.build(self.dataset.table,build_support)
+                except:
+                    self.buildLog.insertLine('Error occured during build.',0)
+                    return
                                     
-				rules_count = len(rules)
-				self.buildLog.insertLine('Found ' + str(rules_count) + ' rules with support >= '+ str(build_support) + '.', 0)
-                
-				# Èe si že našel dovolj pravil				
-				if rules_count >= self.max_rules:
-					break
-				
+                rules_count = len(rules)
+                self.buildLog.insertLine('Found ' + str(rules_count) + ' rules with support >= '+ str(build_support) + '.', 0)
+
+                # Èe si že našel dovolj pravil
+                if rules_count >= self.max_rules:
+                    break
+
             # pošlji pravila
             if self.cbBuildMethod.currentItem() == 1:
-	   	self.buildLog.insertLine('Build with Sparse Data method ended.', 0)
-	    else:
-	  	self.buildLog.insertLine('Build with Dense Data method ended.', 0)
+                self.buildLog.insertLine('Build with Sparse Data method ended.', 0)
+            else:
+                self.buildLog.insertLine('Build with Dense Data method ended.', 0)
            
             self.send("arules", rules)
         else:

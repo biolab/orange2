@@ -1,3 +1,11 @@
+"""
+<name>Association Rules Print</name>
+<description>Association rules print</description>
+<category>Classification</category>
+<icon>icons/Categorize.png</icon>
+<priority>1100</priority>
+"""
+
 from OData import *
 from OWWidget import *
 #from orngAssoc import *        # to ne dela, ce si v napacnem direktoriju
@@ -155,7 +163,7 @@ class OWAssociationRulesPrint(OWWidget):
             if ms!=[]:
                 self.edtRules.append(str( string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%s' % (m[0:4]) for m in ms]))+"\trule")) # prints the first line
             for rule in self.rules:
-                s=(orngAssoc.printRule(rule))
+                s= `rule`
                 s=s.replace(", ",",")                           # the result of categorize might have the sequence ", " that is removed
                 s=s.replace(" ","  ")                           # extend the spaces to achieve greater legibility
                 L=string.lstrip(reduce(lambda a,b: a+"\t"+b, ['%.3f' % getattr(rule,m) for m in ms],""))    # for each rule gets the measures

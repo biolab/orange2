@@ -1,3 +1,11 @@
+"""
+<name>Association Rules Viewer</name>
+<description>Association rules viewer</description>
+<category>Classification</category>
+<icon>icons/Categorize.png</icon>
+<priority>1100</priority>
+"""
+
 from OData import *
 from OWWidget import *
 #from orngAssoc import *        # to ne dela, ce si v napacnem direktoriju

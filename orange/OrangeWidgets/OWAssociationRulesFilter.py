@@ -1,3 +1,11 @@
+"""
+<name>Association Rules Filter</name>
+<description>Association rules filter</description>
+<category>Classification</category>
+<icon>icons/Categorize.png</icon>
+<priority>1100</priority>
+"""
+
 
 import orange
 import orngAssoc
@@ -189,6 +197,7 @@ class OWAssociationRulesFilter(OWWidget):
             "OrangeWidgetsLogo.png")
 
 		self.addInput("arules")
+		self.addOutput("arules")
 
 		# zapomni si glavne karakteristike
 		self.support_max = 1.0
@@ -496,7 +505,7 @@ class OWAssociationRulesFilter(OWWidget):
 	def displayRules(self):
 		self.edtRules.clear()
 		for rule in self.rules:
-			self.edtRules.append(orngAssoc.printRule(rule))
+			self.edtRules.append(`rule`)
 		self.send("arules", self.rules)
 	def arules(self,rules):                # channel po katerem dobi podatke
 		del(self.allrules[:])
