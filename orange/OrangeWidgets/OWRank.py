@@ -291,10 +291,10 @@ by their relevance for particular classification
 #                print '%2d' % (len(v.values)),
                 self.table.setText(j,2,prec % (len(v.values)))
                 k=-1
-                for i in range(len(estimators)):
+                for ii in range(len(estimators)):
                     k+=1
-                    e = estimators[i]
-                    if handle_cont[i]:
+                    e = estimators[ii]
+                    if handle_cont[ii]:
                         self.table.setText(j,3+k,prec % (e(i,self.data)))
 #                        print fm % e(i,data)[0],
                     else:
