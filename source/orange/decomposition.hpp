@@ -42,7 +42,10 @@ class ORANGE_API TExample_nodeIndex
 };
 
 typedef vector<TExample_nodeIndex>::iterator TEnIIterator;
-template class ORANGE_API std::vector<TExample_nodeIndex>;
+
+#ifdef _MSC_VER
+  template class ORANGE_API std::vector<TExample_nodeIndex>;
+#endif
  
 
 class ORANGE_API TSortedExamples_nodeIndices : public vector<TExample_nodeIndex>

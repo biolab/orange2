@@ -124,84 +124,89 @@ class TOrangeVector : public TOrange
     public:
       iterator position;
 
-      explicit reverse_iterator(iterator p)  : position(p) {}
-      reverse_iterator(const reverse_iterator &old) : position(old.position) {}
+      inline explicit reverse_iterator(iterator p) 
+      : position(p)
+      {}
 
-      reverse_iterator &operator ++()
+      inline reverse_iterator(const reverse_iterator &old)
+      : position(old.position)
+      {}
+
+      inline reverse_iterator &operator ++()
       { --position;
         return *this; 
       }
 
-      reverse_iterator operator ++(int)
+      inline reverse_iterator operator ++(int)
       { reverse_iterator sv = *this;
         position--;
         return sv;
       }
 
-      reverse_iterator &operator --()
+      inline reverse_iterator &operator --()
       { ++position;
         return *this;
       }
 
-      reverse_iterator operator --(int)
+      inline reverse_iterator operator --(int)
       { reverse_iterator sv = *this;
         position++;
         return sv;
       }
 
-      T &operator *() const
+      inline T &operator *() const
       { return position[-1]; }
 
-      T *operator->() const
+      inline T *operator->() const
       { return (&**this); }
 
-      reverse_iterator operator +(const int &N)
+      inline reverse_iterator operator +(const int &N)
       { return reverse_iterator(position - N); }
 
-      reverse_iterator operator -(const int &N)
+      inline reverse_iterator operator -(const int &N)
       { return reverse_iterator(position + N); }
 
-      int operator -(const reverse_iterator &other) const
+      inline int operator -(const reverse_iterator &other) const
       { return other.position - position; }
 
-      reverse_iterator &operator +=(const int &N)
+      inline reverse_iterator &operator +=(const int &N)
       { position -= N;
         return *this;
       }
 
-      reverse_iterator &operator -=(const int &N)
+      inline reverse_iterator &operator -=(const int &N)
       { position += N;
         return *this;
       }
 
-      bool operator == (const reverse_iterator &other) const
+      inline bool operator == (const reverse_iterator &other) const
       { return position == other.position; }
 
-      bool operator != (const reverse_iterator &other) const
+      inline bool operator != (const reverse_iterator &other) const
       { return position != other.position; }
 
-      bool operator < (const reverse_iterator &other) const
+      inline bool operator < (const reverse_iterator &other) const
       { return position > other.position; }
 
-      bool operator <= (const reverse_iterator &other) const
+      inline bool operator <= (const reverse_iterator &other) const
       { return position >= other.position; }
 
-      bool operator > (const reverse_iterator &other) const
+      inline bool operator > (const reverse_iterator &other) const
       { return position < other.position; }
 
-      bool operator >= (const reverse_iterator &other) const
+      inline bool operator >= (const reverse_iterator &other) const
       { return position <= other.position; }
     };
 
     inline void _Set(const iterator &p, const T &X) const
     { new ((void *)p) T(X); }
 
-    TOrangeVector<T, Wrapped>()
+    inline TOrangeVector<T, Wrapped>()
     : _First(NULL), _Last(NULL), _End(NULL)
     {}
 
 
-    TOrangeVector<T, Wrapped>(const int &N, const T &V = T())
+    inline TOrangeVector<T, Wrapped>(const int &N, const T &V = T())
     : _First(NULL), _Last(NULL), _End(NULL)
     {
       _Resize(N);
@@ -210,7 +215,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    TOrangeVector<T, Wrapped>(const TOrangeVector<T, Wrapped> &old)
+    inline TOrangeVector<T, Wrapped>(const TOrangeVector<T, Wrapped> &old)
     : _First(NULL), _Last(NULL), _End(NULL)
     {
       _Resize(old.size());
@@ -218,7 +223,7 @@ class TOrangeVector : public TOrange
     }
      
      
-    TOrangeVector<T, Wrapped>(const vector<T> &old)
+    inline TOrangeVector<T, Wrapped>(const vector<T> &old)
     : _First(NULL), _Last(NULL), _End(NULL)
     {
       _Resize(old.size());
@@ -226,7 +231,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    TOrangeVector<T, Wrapped> &operator =(const TOrangeVector<T, Wrapped> old)
+    inline TOrangeVector<T, Wrapped> &operator =(const TOrangeVector<T, Wrapped> old)
     { 
       _Destroy(_First, _Last);
       _Resize(old.size());
@@ -235,7 +240,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    ~TOrangeVector<T, Wrapped>()
+    inline ~TOrangeVector<T, Wrapped>()
     { 
       _Destroy(_First, _Last);
       free(_First);
@@ -243,7 +248,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    operator vector<T>() const
+    inline operator vector<T>() const
     {
       vector<T> conv;
       conv.resize(size());
@@ -268,42 +273,42 @@ class TOrangeVector : public TOrange
       return 0;
     }
 
-    iterator begin()                       { return _First; }
-    const_iterator begin() const           { return _First; }
-    reverse_iterator rbegin()              { return reverse_iterator(end()); }
-    iterator end()                         { return _Last; }
-    const_iterator end() const             { return _Last; }
-    reverse_iterator rend()                { return reverse_iterator(begin()); }
+    inline iterator begin()                       { return _First; }
+    inline const_iterator begin() const           { return _First; }
+    inline reverse_iterator rbegin()              { return reverse_iterator(end()); }
+    inline iterator end()                         { return _Last; }
+    inline const_iterator end() const             { return _Last; }
+    inline reverse_iterator rend()                { return reverse_iterator(begin()); }
 
-    T &back()                              { return _Last[-1]; }
-    const T &back() const                  { return _Last[-1]; }
-    T &front()                             { return *_First; }
-    const T &front() const                 { return *_First; }
+    inline T &back()                              { return _Last[-1]; }
+    inline const T &back() const                  { return _Last[-1]; }
+    inline T &front()                             { return *_First; }
+    inline const T &front() const                 { return *_First; }
 
-    T &operator[](const int i)             { return _First[i]; }
-    const T &operator[](const int i) const { return _First[i]; }
+    inline T &operator[](const int i)             { return _First[i]; }
+    inline const T &operator[](const int i) const { return _First[i]; }
     
-    bool empty() const                     { return _First == _Last; }
-    int size() const                       { return _Last - _First; }
+    inline bool empty() const                     { return _First == _Last; }
+    inline int size() const                       { return _Last - _First; }
 
-    T &at(const int &N)
+    inline T &at(const int &N)
     { if (N >= size())
         raiseError("vector subscript out of range");
       return _First[N];
     }
 
-    const T &at(const int &N) const
+    inline const T &at(const int &N) const
     { if (N >= size())
         raiseError("vector subscript out of range");
       return _First[N];
     }
 
-    void clear()
+    inline void clear()
     { _Destroy(_First, _Last);
       _First = _End = _Last = NULL;
     }
 
-    iterator erase(iterator it)
+    inline iterator erase(iterator it)
     { 
       it->~T();
       memmove(it, it+1, (_Last - it - 1) * sizeof(T));
@@ -311,7 +316,7 @@ class TOrangeVector : public TOrange
       return it;
     }
 
-    iterator erase(iterator first, iterator last)
+    inline iterator erase(iterator first, iterator last)
     { 
       if (first != last) {
         _Destroy(first, last);
@@ -323,7 +328,7 @@ class TOrangeVector : public TOrange
     }
 
     
-    iterator insert(iterator p, const T &X = T())
+    inline iterator insert(iterator p, const T &X = T())
     { 
       const int ind = p - _First;
       insert(p, 1, X);
@@ -331,7 +336,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    void insert(iterator p, const int &n, const T &X)
+    inline void insert(iterator p, const int &n, const T &X)
     {
       if (_End - _Last < n)
         _Resize(size() + n);
@@ -345,7 +350,7 @@ class TOrangeVector : public TOrange
     }
 
 
-    void insert(iterator p, iterator first, iterator last)
+    inline void insert(iterator p, iterator first, iterator last)
     {
       const int n = last - first;
       if (_End - _Last < n)
@@ -360,19 +365,19 @@ class TOrangeVector : public TOrange
     }
 
 
-    void push_back(T const &x)
+    inline void push_back(T const &x)
     {  
        if (_Last == _End)
         _Resize(size() + 1);
       _Set(_Last++, x);
     }
 
-    void reserve(const int n)
+    inline void reserve(const int n)
     { if (n >= _Last - _First)
         _Resize(n);
     }
 
-    void resize(const int n, T x = T())
+    inline void resize(const int n, T x = T())
     { if (n < size()) {
         _Destroy(_First + n, _Last);
         _Resize(n);
@@ -384,13 +389,13 @@ class TOrangeVector : public TOrange
       }
     }
 
-    void _Destroy(const iterator first, const iterator last)
+    inline void _Destroy(const iterator first, const iterator last)
     { for(iterator p = first; p != last; p++)
         p->~T(); 
     }
 
 
-    void _Resize(const int &n)
+    inline void _Resize(const int &n)
     {
       int sze = _RoundUpSize(n);
       if (!_First) {
@@ -456,22 +461,22 @@ public:
 
   PVariable variable; //P the variable to which the list applies
 
-  TValueList(PVariable var = PVariable())
+  inline TValueList(PVariable var = PVariable())
   : TOrangeVector<TValue, false>(),
     variable(var)
   {}
  
-  TValueList(const int &N, const TValue &V = TValue(), PVariable var = PVariable())
+  inline TValueList(const int &N, const TValue &V = TValue(), PVariable var = PVariable())
   : TOrangeVector<TValue, false>(N, V),
     variable(var)
   {}
 
-  TValueList(const TOrangeVector<TValue, false> &i_X, PVariable var = PVariable())
+  inline TValueList(const TOrangeVector<TValue, false> &i_X, PVariable var = PVariable())
   : TOrangeVector<TValue, false>(i_X),
     variable(var)
   {}
 
-  TValueList(const TValueList &other)
+  inline TValueList(const TValueList &other)
   : TOrangeVector<TValue, false>(other),
     variable(other.variable)
   {}
@@ -508,21 +513,21 @@ class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
 public:
   __REGISTER_CLASS
 
-  PVarList attributes;
+  PVarList attributes; //P attributes
 
-  TAttributedFloatList()
+  inline TAttributedFloatList()
   {}
 
-  TAttributedFloatList(PVarList vlist)
+  inline TAttributedFloatList(PVarList vlist)
   : attributes(vlist)
   {}
 
-  TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
+  inline TAttributedFloatList(PVarList vlist, const int &i_N, const float &f = 0.0)
   : TOrangeVector<float, false>(i_N, f),
     attributes(vlist)
   {}
 
-  TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
+  inline TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
   : TOrangeVector<float,false>(i_X),
     attributes(vlist)
   {}
@@ -534,21 +539,21 @@ class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
 public:
   __REGISTER_CLASS
 
-  PVarList attributes;
+  PVarList attributes; //P attributes
 
-  TAttributedBoolList()
+  inline TAttributedBoolList()
   {}
 
-  TAttributedBoolList(PVarList vlist)
+  inline TAttributedBoolList(PVarList vlist)
   : attributes(vlist)
   {}
 
-  TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
+  inline TAttributedBoolList(PVarList vlist, const int &i_N, const bool b= false)
   : TOrangeVector<bool, false>(i_N, b),
     attributes(vlist)
   {}
 
-  TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
+  inline TAttributedBoolList(PVarList vlist, const vector<bool> &i_X)
   : TOrangeVector<bool, false>(i_X),
     attributes(vlist)
   {}
@@ -565,9 +570,10 @@ public:
 WRAPPER(AttributedFloatList)
 WRAPPER(AttributedBoolList)
 
-
-template class ORANGE_API std::vector<int>;
-template class ORANGE_API std::vector<float>;
+#ifdef _MSC_VER
+  template class ORANGE_API std::vector<int>;
+  template class ORANGE_API std::vector<float>;
+#endif
 
 /* These are defined as classes, not templates, so that 
 class TIntIntPair {

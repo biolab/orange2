@@ -156,7 +156,9 @@ public:
     operators do not manipulate it - it is up to you what you store in there and how
     you use it. */
 
-template class ORANGE_API std::vector<float>;
+#ifdef _MSC_VER
+  template class ORANGE_API std::vector<float>;
+#endif
 
 class ORANGE_API TDiscDistribution : public TDistribution {
 public:
@@ -301,11 +303,7 @@ public:
 #ifdef _MSC_VER
   #pragma warning(push)
   #pragma warning(disable: 4661)
-#endif
-
-template class ORANGE_API TOrangeVector<PDistribution>;
- 
-#ifdef _MSC_VER
+  template class ORANGE_API TOrangeVector<PDistribution>;
   #pragma warning(pop)
 #endif
 

@@ -183,17 +183,16 @@ WRAPPER(ProbabilityEstimator);
 #ifdef _MSC_VER
   #pragma warning(push)
   #pragma warning(disable: 4275)
-#endif
 
-// We need this to correctly instantiate the vector as ORANGE_API
-EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PContingencyClass>;
-
-/* Stores TContingency's for all attributes from the generator. Additional field holds frequencies of class values. */
-class ORANGE_API TDomainContingency : public TOrangeVector<PContingencyClass> {
-
-#ifdef _MSC_VER
+  EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<PContingencyClass>;
+  class ORANGE_API TDomainContingency : public TOrangeVector<PContingencyClass> {
   #pragma warning(pop)
+
+#else
+  class ORANGE_API TDomainContingency : public TOrangeVector<PContingencyClass> {
 #endif
+
+
 
 public:
   __REGISTER_CLASS

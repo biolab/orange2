@@ -113,8 +113,6 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
   if (weightIncluded || weightVector) {
     if (weightID)
       columns += weightIncluded;
-    else if (weightRequested || weightVector)
-      raiseErrorWho("parseMatrixContents", "missing id for a meta-attribute with weight");
   }
 
   include.clear();
@@ -212,6 +210,9 @@ void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const cha
             break;
 
           case 'W':
+            gsl_matrix_set(X, row, col++, weightID ? WEIGHT(*ei) : 1.0);
+            break;
+
           case 'w': 
             if (weightID)
               gsl_matrix_set(X, row, col++, WEIGHT(*ei));
@@ -235,7 +236,7 @@ void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const cha
       }
 
       if (w)
-        gsl_vector_set(w, row, WEIGHT(*ei));
+        gsl_vector_set(w, row, weightID ? WEIGHT(*ei) : 1.0);
     }
   }
   catch (...) {

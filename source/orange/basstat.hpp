@@ -54,11 +54,7 @@ WRAPPER(ExampleGenerator);
 #ifdef _MSC_VER
   #pragma warning(push)
   #pragma warning(disable: 4661)
-#endif
-
-template class ORANGE_API TOrangeVector<PBasicAttrStat>;
- 
-#ifdef _MSC_VER
+  template class ORANGE_API TOrangeVector<PBasicAttrStat>;
   #pragma warning(pop)
 #endif
 

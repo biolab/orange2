@@ -954,6 +954,10 @@ SOURCE=.\orange.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange_api.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\ormap.hpp
 # End Source File
 # Begin Source File

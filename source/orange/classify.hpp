@@ -160,7 +160,9 @@ WRAPPER(DomainDistributions);
 WRAPPER(ExampleGenerator);
 
 
-template class ORANGE_API std::vector<float>;
+#ifdef _MSC_VER
+  template class ORANGE_API std::vector<float>;
+#endif
 
 class ORANGE_API TEFMDataDescription : public TOrange {
 public:
