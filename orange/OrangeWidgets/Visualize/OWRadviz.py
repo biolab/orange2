@@ -212,8 +212,10 @@ class OWRadviz(OWWidget):
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Radviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
-            if self.optimizationDlg.measureType == CLASS_ACCURACY:
+            if self.optimizationDlg.getQualityMeasure() == CLASS_ACCURACY:
                 QMessageBox.information( None, "Radviz", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            elif self.optimizationDlg.getQualityMeasure() == AVERAGE_CORRECT:
+                QMessageBox.information( None, "Radviz", 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
             else:
                 QMessageBox.information( None, "Radviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
             
@@ -309,7 +311,7 @@ class OWRadviz(OWWidget):
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
             self.optimizationDlg.clear()
             # fill the "interesting visualizations" list box
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
             else: funct = min
             while fullList != []:
                 (accuracy, tableLen, list) = funct(fullList)
@@ -341,7 +343,7 @@ class OWRadviz(OWWidget):
             fullList += self.optimizeSeparation(val)
 
         self.optimizationDlg.clear()
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
+        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
         while fullList != []:
             (accuracy, tableLen, list) = funct(fullList)

@@ -213,8 +213,10 @@ class OWPolyviz(OWWidget):
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Polyviz", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
-            if self.optimizationDlg.measureType == CLASS_ACCURACY:
+            if self.optimizationDlg.getQualityMeasure() == CLASS_ACCURACY:
                 QMessageBox.information( None, "Polyviz", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            elif self.optimizationDlg.getQualityMeasure() == AVERAGE_CORRECT:
+                QMessageBox.information( None, "Polyviz", 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
             else:
                 QMessageBox.information( None, "Polyviz", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
             
@@ -310,7 +312,7 @@ class OWPolyviz(OWWidget):
             secs = time.time() - startTime
             print "Used time: %d min, %d sec" %(secs/60, secs%60)
             self.optimizationDlg.clear()
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
             else: funct = min
             # fill the "interesting visualizations" list box
             while fullList != []:
@@ -343,7 +345,7 @@ class OWPolyviz(OWWidget):
             fullList += self.optimizeSeparation(val)
 
         self.optimizationDlg.clear()
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
+        if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
         # fill the "interesting visualizations" list box
         while fullList != []:

@@ -11,10 +11,11 @@ from copy import copy
 
 
 CLASS_ACCURACY = 0
-BRIER_SCORE = 1
+AVERAGE_CORRECT = 1
+BRIER_SCORE = 2
 
 class kNNOptimization(OWBaseWidget):
-    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut", "lastSaveDirName"]
+    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "qualityMeasure", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut", "lastSaveDirName"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000', '4000', '8000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ,  4000,   8000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
@@ -38,14 +39,13 @@ class kNNOptimization(OWBaseWidget):
         self.resultListLen = 100
         self.percentDataUsed = 100
         self.bestSubsets = 100
-        self.measureType = 0
+        self.qualityMeasure = 0
         self.useLeaveOneOut = 0
         self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.parentName = "Projection"
         self.useHeuristics = 0
         self.onlyOnePerSubset = 0
         self.lastSaveDirName = os.getcwd() + "/"
-
                 
         self.optimizedListFull = []
         self.optimizedListFiltered = []
@@ -102,13 +102,13 @@ class kNNOptimization(OWBaseWidget):
         self.connect(self.useLeaveOneOutCB, SIGNAL("clicked()"), self.setUseLeaveOneOut)
         self.useLeaveOneOutCB.setChecked(self.useLeaveOneOut)
 
-        self.measureBox = QHButtonGroup(self.optimizeButtonBox, "Quality measure")
-        #self.measureBox.setTitle("")
-        self.measureBox.setExclusive(TRUE)
-        self.measureAccuracy = QRadioButton('Classification accuracy', self.measureBox)
-        self.measureBrier = QRadioButton('Brier score', self.measureBox)
-        self.connect(self.measureBox, SIGNAL("clicked(int)"), self.setMeasure)
-
+        self.measureBox = QHButtonGroup(" Quality measure ", self.optimizeButtonBox)
+        self.measureCombo = QComboBox(self.measureBox)
+        self.measureCombo.insertItem("Classification accuracy")
+        self.measureCombo.insertItem("Average probability of correct classification")
+        self.measureCombo.insertItem("Brier score")
+        self.connect(self.measureCombo, SIGNAL("activated(int)"), self.setQualityMeasure)
+        
         self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
         self.numberOfAttrBox.setTitle("Number of attributes")
     
@@ -202,7 +202,7 @@ class kNNOptimization(OWBaseWidget):
             self.attrKNeighbour.insertItem(self.kNeighboursList[i])
         self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kValue))
 
-        self.measureBox.setButton(self.measureType)
+        self.measureCombo.setCurrentItem(self.qualityMeasure)
 
         self.minTableLenEdit.setText(str(self.minExamples))
         self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
@@ -212,8 +212,11 @@ class kNNOptimization(OWBaseWidget):
         self.saveSettings()
         OWBaseWidget.destroy(self, dw, dsw)
 
-    def setMeasure(self, n):
-        self.measureType = n
+    def setQualityMeasure(self, n):
+        self.qualityMeasure = n
+
+    def getQualityMeasure(self):
+        return self.qualityMeasure
 
     def setKNeighbours(self, n):
         self.kValue = self.kNeighboursNums[n]
@@ -371,7 +374,7 @@ class kNNOptimization(OWBaseWidget):
         # open, write and save file
         file = open(name, "wt")
         file.write("%d\n%d\n%d\n%d\n" % (self.kValue, self.resultListLen, self.minExamples, self.percentDataUsed))
-        file.write("%d\n"  % (self.measureType))
+        file.write("%d\n"  % (self.qualityMeasure))
         file.write("%d\n%d\n" % (self.useHeuristics, self.bestSubsets))
         for val in self.optimizedListFiltered:
             file.write(str(val) + "\n")
@@ -398,7 +401,7 @@ class kNNOptimization(OWBaseWidget):
         self.resultListLen = int(file.readline()[:-1])
         self.minExamples = int(file.readline()[:-1])
         self.percentDataUsed = int(file.readline()[:-1])
-        self.measureType = int(file.readline()[:-1])
+        self.qualityMeasure = int(file.readline()[:-1])
         self.useHeuristics = int(file.readline()[:-1])
         self.bestSubsets = int(file.readline()[:-1])
         line = file.readline()[:-1]
@@ -413,7 +416,7 @@ class kNNOptimization(OWBaseWidget):
         self.minTableLenEdit.setText(str(self.minExamples))
         self.percentDataUsedCombo.setCurrentItem(self.percentDataNums.index(self.percentDataUsed))
 
-        self.measureBox.setButton(self.measureType)
+        self.measureCombo.setCurrentItem(self.qualityMeasure)
         self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
         self.useHeuristicsCB.setChecked(self.useHeuristics)
 
@@ -432,6 +435,7 @@ class kNNOptimization(OWBaseWidget):
 
         qApp.processEvents()        # allow processing of other events
 
+        # continuous class value
         if table.domain.classVar.varType == orange.VarTypes.Continuous:
             for j in range(len(table)):
                 if selection[j] == 0: continue
@@ -439,72 +443,82 @@ class kNNOptimization(OWBaseWidget):
                 experiments += 1
             accuracy = temp/float(experiments)
             return 100.0*accuracy
-
-        # compute accuracy
-        elif self.measureType == CLASS_ACCURACY:
-            if not self.useLeaveOneOut:
-                for j in range(len(table)):
-                    if selection[j] == 0: continue
-                    out = knn(table[j], orange.GetProbabilities)
-                    temp += out[table[j].getclass()]
-                    experiments += 1
-                accuracy = temp/float(experiments)
-                return 100.0*accuracy
-            else:
-                results = orngTest.leaveOneOut([orange.kNNLearner(k=self.kValue, rankWeight=0)], table)
-                acc = 0.0
-                for res in results.results:
-                    acc += res.probabilities[0][res.actualClass]
-                return 100.0*(acc)/len(results.results)
-
-        # compute brier
-        else:
+    
+        if not self.useLeaveOneOut:
             for j in range(len(table)):
                 if selection[j] == 0: continue
                 out = knn(table[j], orange.GetProbabilities)
-                sum = 0
-                for val in out: sum += val*val
-                temp += sum - 2*out[table[j].getclass()]
+                if self.qualityMeasure == AVERAGE_CORRECT:
+                    temp += out[table[j].getclass()]
+                elif self.qualityMeasure == CLASS_ACCURACY:
+                    temp += out[table[j].getclass()] == max(out)
+                else:
+                    sum = 0
+                    for val in out: sum += val*val
+                    temp += sum - 2*out[table[j].getclass()]
                 experiments += 1
-            accuracy = (temp + experiments)/(float(len(list(table.domain.classVar.values))*experiments))
-            return accuracy     # return value is between 0 and 1
-                
+
+            if self.qualityMeasure == BRIER_SCORE:
+                return (temp + experiments)/(float(len(list(table.domain.classVar.values))*experiments))
+            else:
+                return 100.0 * temp / float(experiments)
+        else:
+            results = orngTest.leaveOneOut([orange.kNNLearner(k=self.kValue, rankWeight=0)], table)
+            for res in results.results:
+                if self.qualityMeasure == AVERAGE_CORRECT:
+                    temp += res.probabilities[0][res.actualClass]
+                elif self.qualityMeasure == CLASS_ACCURACY:
+                    temp += res.probabilities[0][res.actualClass] == max(res.probabilities[0])
+                else:
+                    sum = 0
+                    for val in res.probabilities[0]: sum += val*val
+                    temp += sum - 2*res.probabilities[0][res.actualClass]
+            if self.qualityMeasure == BRIER_SCORE:
+                return (temp + len(results.results))/(float(len(list(table.domain.classVar.values)) * len(results.results)))
+            else:
+                return 100.0 * temp / len(results.results)
+
         
     # #############################
     # kNNClassifyData - compute classification error for every example in table
     def kNNClassifyData(self, table):
         knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0)
-        returnTable = []
+        
         qApp.processEvents()        # allow processing of other events
 
+        # continuous class variable
         if table.domain.classVar.varType == orange.VarTypes.Continuous:
             for j in range(len(table)):
                 returnTable.append(pow(table[j][2].value - knn(table[j]), 2))
             # normalize the data to the 0-1 interval
             maxError = max(returnTable)
-            returnTable = [val/maxError for val in returnTable]
-            
-        # compute accuracy
-        elif self.measureType == CLASS_ACCURACY:
-            if not self.useLeaveOneOut:
-                for j in range(len(table)):
-                    out = knn(table[j], orange.GetProbabilities)
-                    returnTable.append(out[table[j].getclass()])
-            else:
-                learner = orange.kNNLearner(k=self.kValue, rankWeight=0)
-                results = orngTest.leaveOneOut([learner], table)
-                for res in results.results:
-                    returnTable.append(res.probabilities[0][res.actualClass])
+            return [val/maxError for val in returnTable]
 
-        # compute brier
-        else:
-            lenClassValues = len(list(table.domain.classVar.values))
+        lenClassValues = len(list(table.domain.classVar.values))
+        returnTable = []
+        if not self.useLeaveOneOut:
             for j in range(len(table)):
                 out = knn(table[j], orange.GetProbabilities)
-                sum = 0
-                for val in out: sum += val*val
-                returnTable.append((sum + 1 - 2*out[table[j].getclass()])/float(lenClassValues))
-        
+                if self.qualityMeasure == AVERAGE_CORRECT:
+                    returnTable.append(out[table[j].getclass()])
+                elif self.qualityMeasure == CLASS_ACCURACY:
+                    returnTable.append(int(out[table[j].getclass()] == max(out)))
+                else:
+                    sum = 0
+                    for val in out: sum += val*val
+                    returnTable.append((sum + 1 - 2*out[table[j].getclass()])/float(lenClassValues))
+
+        else:
+            results = orngTest.leaveOneOut([orange.kNNLearner(k=self.kValue, rankWeight=0)], table)
+            for res in results.results:
+                if self.qualityMeasure == AVERAGE_CORRECT:
+                    returnTable.append(res.probabilities[0][res.actualClass])
+                elif self.qualityMeasure == CLASS_ACCURACY:
+                    returnTable.append(int(res.probabilities[0][res.actualClass] == max(res.probabilities[0])))
+                else:
+                    sum = 0
+                    for val in res.probabilities[0]: sum += val*val
+                    returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
         return returnTable
 
     # from a given dataset return list of (acc, attrs), where attrs are subsets of lenght subsetSize of attributes from table
@@ -538,7 +552,7 @@ class kNNOptimization(OWBaseWidget):
         full = full1 + full2
         shortList = []
 
-        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.measureType == CLASS_ACCURACY: funct = max
+        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.qualityMeasure == CLASS_ACCURACY: funct = max
         else: funct = min
         for i in range(min(returnListSize, len(full))):
             item = funct(full)
@@ -552,11 +566,13 @@ class kNNOptimization(OWBaseWidget):
         self.optimizeButtonBox.setEnabled(0)
         self.manageResultsBox.setEnabled(0)
         self.evaluateBox.setEnabled(0)
+        self.measureCombo.setEnabled(0)
 
     def enableControls(self):    
         self.optimizeButtonBox.setEnabled(1)
         self.manageResultsBox.setEnabled(1)
         self.evaluateBox.setEnabled(1)
+        self.measureCombo.setEnabled(1)
 
 #test widget appearance
 if __name__=="__main__":

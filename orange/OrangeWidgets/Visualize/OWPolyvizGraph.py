@@ -326,16 +326,18 @@ class OWPolyvizGraph(OWVisGraph):
         if self.showKNNModel:
             kNNValues = self.kNNOptimization.kNNClassifyData(table)
             accuracy = copy(kNNValues)
+            measure = self.kNNOptimization.getQualityMeasure()
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-                if (self.kNNOptimization.measureType == CLASS_ACCURACY and self.showCorrect) or (self.kNNOptimization.measureType == BRIER_SCORE and not self.showCorrect):
+                if ((measure == CLASS_ACCURACY or measure == AVERAGE_CORRECT) and self.showCorrect) or (measure == BRIER_SCORE and not self.showCorrect):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
                 if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
             
             if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
             else:
-                if self.kNNOptimization.measureType == CLASS_ACCURACY: preText = "Classification accuracy : "
-                else:                                                  preText = "Brier score : "
+                if measure == CLASS_ACCURACY:    preText = "Classification accuracy : "
+                elif measure == AVERAGE_CORRECT: preText = "Average correct classification : "
+                else:                            preText = "Brier score : "
 
             for j in range(len(table)):
                 newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
@@ -653,6 +655,9 @@ class OWPolyvizGraph(OWVisGraph):
         sum = self.calculateAttrValuesSum(selectedGlobScaledData, len(self.rawdata), indices, validData)
 
         t = time.time()
+        if self.kNNOptimization.getQualityMeasure() == CLASS_ACCURACY: text = "Classification accuracy"
+        elif self.kNNOptimization.getQualityMeasure() == AVERAGE_CORRECT: text = "Average correct classification"
+        else: text = "Brier score"
 
         # for every permutation compute how good it separates different classes            
         for permutation in indPermutations.values():
@@ -683,10 +688,7 @@ class OWPolyvizGraph(OWVisGraph):
 
                 accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
                 if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                    if self.kNNOptimization.measureType == CLASS_ACCURACY:
-                        print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, accuracy)
-                    else:
-                        print "permutation %6d / %d. Brier score: %.2f" % (permutationIndex, totalPermutations, accuracy)
+                    print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, totalPermutations, text, accuracy)
                 else:
                     print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
                 
@@ -703,7 +705,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         if self.kNNOptimization.onlyOnePerSubset:
             # return only the best attribute placements
-            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.measureType == CLASS_ACCURACY:
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE:
                 return [max(fullList)]
             else:
                 return [min(fullList)]
@@ -750,7 +752,7 @@ class OWPolyvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.measureType == CLASS_ACCURACY: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)
@@ -763,7 +765,7 @@ class OWPolyvizGraph(OWVisGraph):
     def getOptimalListSeparation(self, attrSubsetList, reverse):
         currList = []
         # find function, that will delete the worst performances from merged lists currList and retList
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.measureType == CLASS_ACCURACY: funct = min
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = min
         else: funct = max
         
         for (acc, attrList) in attrSubsetList:

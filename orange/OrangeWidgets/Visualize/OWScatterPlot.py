@@ -279,8 +279,10 @@ class OWScatterPlot(OWWidget):
         if self.data.domain.classVar.varType == orange.VarTypes.Continuous:
             QMessageBox.information( None, "Scatterplot", 'Mean square error of kNN model is %.2f'%(acc), QMessageBox.Ok + QMessageBox.Default)
         else:
-            if self.optimizationDlg.measureType == CLASS_ACCURACY:
+            if self.optimizationDlg.getQualityMeasure() == CLASS_ACCURACY:
                 QMessageBox.information( None, "Scatterplot", 'Classification accuracy of kNN model is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
+            elif self.optimizationDlg.getQualityMeasure() == AVERAGE_CORRECT:
+                QMessageBox.information( None, "Scatterplot", 'Average probability of correct classification is %.2f %%'%(acc), QMessageBox.Ok + QMessageBox.Default)
             else:
                 QMessageBox.information( None, "Scatterplot", 'Brier score of kNN model is %.2f' % (acc), QMessageBox.Ok + QMessageBox.Default)
          
@@ -350,7 +352,7 @@ class OWScatterPlot(OWWidget):
             # fill the "interesting visualizations" list box
             self.optimizationDlg.clear()
 
-            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.measureType == CLASS_ACCURACY: funct = max
+            if self.data.domain.classVar.varType == orange.VarTypes.Discrete and self.optimizationDlg.getQualityMeasure() != BRIER_SCORE: funct = max
             else: funct = min
             while fullList != []:
                 (accuracy, tableLen, list) = funct(fullList)
