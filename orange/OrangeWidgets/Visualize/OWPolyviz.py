@@ -94,6 +94,7 @@ class OWPolyviz(OWWidget):
 
         self.optimizationDlg = kNNOptimization(None, self.signalManager, self.graph, "Polyviz")
         self.graph.kNNOptimization = self.optimizationDlg
+        self.optimizationDlg.optimizeGivenProjectionButton.show()
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
@@ -140,10 +141,10 @@ class OWPolyviz(OWWidget):
 
         # ####################################
         #K-NN OPTIMIZATION functionality
+        self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
-        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.reevaluateProjections)
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         #self.connect(self.optimizationDlg.saveProjectionButton, SIGNAL("clicked()"), self.saveCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
@@ -218,29 +219,6 @@ class OWPolyviz(OWWidget):
         self.graph.update()
         self.repaint()
         
-    # reevaluate projections in result list with different k values
-    def reevaluateProjections(self):
-        results = list(self.optimizationDlg.getShownResults())
-        self.optimizationDlg.clearResults()
-
-        self.progressBarInit()
-        self.optimizationDlg.disableControls()
-
-        testIndex = 0
-        for (acc, tableLen, other, attrList, strList) in results:
-            if self.optimizationDlg.isOptimizationCanceled(): continue
-            testIndex += 1
-            self.progressBarSet(100.0*testIndex/float(len(results)))
-
-            reverseDict = self.buildOrientationDictFromString(attrList, strList)
-            accuracy, other_results = self.graph.getProjectionQuality(attrList, reverseDict)
-            self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, strList)
-
-        self.optimizationDlg.finishedAddingResults()
-        self.optimizationDlg.enableControls()
-        self.optimizationDlg.resultList.setCurrentItem(0)
-        self.progressBarFinished()
-
     def optimizeSeparation(self):
         if self.data == None: return
         listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
@@ -270,40 +248,32 @@ class OWPolyviz(OWWidget):
         self.graph.triedPossibilities = 0
 
             
-        if self.graph.totalPossibilities > 20000:
-            proj = str(self.graph.totalPossibilities)
-            l = len(proj)
-            for i in range(len(proj)-2, 0, -1):
-                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            self.warning("There are %s possible polyviz projections using currently visualized attributes"% (proj))
+        if self.graph.totalPossibilities > 200000:
+            self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
             
-        
-        self.progressBarInit()
         self.optimizationDlg.disableControls()
 
-        startTime = time()
-        self.graph.startTime = time()
+        self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
 
-        self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.addInterestingProjection)
-
-        self.progressBarFinished()
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
-    
-        secs = time() - startTime
-        print "----------------------------\nNumber of possible projections: %d\nUsed time: %d min, %d sec" %(int(possibilities), secs/60, secs%60)
 
-    
-    def addInterestingProjection(self, accuracy, other_results, tableLen, attrList, reverse):
-        strList = "["
-        for i in range(len(attrList)):
-            if reverse[self.graph.attributeNames.index(attrList[i])] == 1:
-                strList += attrList[i] + "-, "
-            else:
-                strList += attrList[i] + "+, "
-        strList = strList[:-2] + "]"
-        self.optimizationDlg.addResult(accuracy, other_results, tableLen, attrList, strList)
-        
+    # ################################################################################################
+    # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
+    def optimizeGivenProjectionClick(self):
+        self.optimizationDlg.disableControls()
+        acc = self.graph.getProjectionQuality(self.getShownAttributeList(), self.attributeReverse)[0]
+        # try to find a better separation than the one that is currently shown
+        if self.rotateAttributes:
+            attrs = self.getShownAttributeList()
+            reverse = [self.attributeReverse[attr] for attr in attrs]
+            self.graph.optimizeGivenProjection(attrs, reverse, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+        else:
+            self.graph.optimizeGivenProjection(self.getShownAttributeList(), None, acc, self.optimizationDlg.getEvaluatedAttributes(self.data), self.optimizationDlg.addResult)
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
+
+
 
     def reverseSelectedAttribute(self, item):
         text = str(item.text())
@@ -325,43 +295,29 @@ class OWPolyviz(OWWidget):
     def showSelectedAttributes(self):
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
+        (accuracy, other_results, tableLen, attrList, tryIndex, attrReverseList) = val
         
-        # check if all attributes in list really exist in domain        
-        attrNames = []
-        for attr in self.data.domain:
-            attrNames.append(attr.name)
-        
-        for item in attrList:
-            if not item in attrNames:
-                print "invalid settings"
+        # check if all attributes in list really exist in domain
+        for attr in attrList:
+            if not self.graph.attributeNameIndex.has_key(attr):
                 return
         
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        reverseDict = self.buildOrientationDictFromString(attrList, strList)
+        reverseDict = dict([(attrList[i], attrReverseList[i]) for i in range(len(attrList))])
 
         for attr in attrList:
             if reverseDict[attr]: self.shownAttribsLB.insertItem(attr + " -")
             else: self.shownAttribsLB.insertItem(attr + " +")
             self.attributeReverse[attr] = reverseDict[attr]
 
-        for attr in attrNames:
-            if attr in attrList: continue
-            self.hiddenAttribsLB.insertItem(attr + " +")
-            self.attributeReverse[attr] = 0
-        
-        self.updateGraph()
+        for attr in self.data.domain:
+            if attr.name not in attrList:
+                self.hiddenAttribsLB.insertItem(attr.name + " +")
+                self.attributeReverse[attr.name] = 0
 
-    def buildOrientationDictFromString(self, attrList, strList):
-        ret = {}
-        for attr in attrList:
-            if strList.find(attr + "+,") >=0 or strList.find(attr + "+]") >=0:
-                ret[attr] = 0
-            else:
-                ret[attr] = 1
-        return ret
+        self.updateGraph()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):   
