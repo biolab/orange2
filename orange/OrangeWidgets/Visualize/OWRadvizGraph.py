@@ -493,6 +493,7 @@ class OWRadvizGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
+    """
     # try all posibilities with exactly numOfAttr attributes
     def getOptimalExactSeparation(self, attrList, subsetList, numOfAttr, addResultFunct = None):
         if attrList == [] or numOfAttr == 0:
@@ -638,8 +639,102 @@ class OWRadvizGraph(OWVisGraph):
             return [(acc, lenTable, attrList)]
         else:
             return fullList
+    """
 
-    
+    # #######################################
+    # try to find the optimal attribute order by trying all diferent circular permutations
+    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
+    def getOptimalSeparation(self, attrListLength, projections, addResultFunct):
+        if projections == []: return []
+        
+        # create anchor for every attribute
+        anchors = self.createAnchors(attrListLength)
+        dataSize = len(self.rawdata)
+
+        # variables and domain for the table
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
+
+        if self.kNNOptimization.getQualityMeasure() == CLASS_ACCURACY: text = "Classification accuracy"
+        elif self.kNNOptimization.getQualityMeasure() == AVERAGE_CORRECT: text = "Average correct classification"
+        else: text = "Brier score"
+
+        for attrs in projections:
+            attrs = attrs[1:]   # remove the value of this attribute subset
+            
+            indices = []
+            for attr in attrs:
+                indices.append(self.attributeNames.index(attr))
+
+            indPermutations = {}
+            getPermutationList(indices, [], indPermutations)
+
+            permutationIndex = 0 # current permutation index
+            totalPermutations = len(indPermutations.values())
+
+            validData = self.getValidList(indices)
+
+            # count total number of valid examples
+            count = sum(validData)
+            if count < self.kNNOptimization.minExamples:
+                print "Nr. of examples: ", str(count)
+                print "Not enough examples in example table. Ignoring permutation..."
+                self.triedPossibilities += len(indPermutations.keys())
+                self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+                continue
+
+            # store all sums
+            sum_i=[]
+            for i in range(dataSize):
+                if validData[i] == 0:
+                    sum_i.append(1.0)
+                    continue
+
+                temp = 0    
+                for j in range(attrListLength):
+                    temp += self.noJitteringScaledData[indices[j]][i]
+                if temp == 0.0: temp = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
+                sum_i.append(temp)
+
+            tempList = []
+
+            # for every permutation compute how good it separates different classes            
+            for permutation in indPermutations.values():
+                if self.kNNOptimization.isOptimizationCanceled(): return
+                permutationIndex += 1
+                table = orange.ExampleTable(domain)
+                         
+                for i in range(dataSize):
+                    if validData[i] == 0: continue
+                    
+                    # calculate projections
+                    x_i = 0.0; y_i = 0.0
+                    for j in range(attrListLength):
+                        index = permutation[j]
+                        x_i = x_i + anchors[j][0]*(self.noJitteringScaledData[index][i] / sum_i[i])
+                        y_i = y_i + anchors[j][1]*(self.noJitteringScaledData[index][i] / sum_i[i])
+                    table.append([x_i, y_i, self.rawdata[i].getclass()])
+
+                accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+                if table.domain.classVar.varType == orange.VarTypes.Discrete:   print "permutation %6d / %d. %s: %2.2f%%" % (permutationIndex, totalPermutations, text, accuracy)
+                else:                                                           print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
+                
+                # save the permutation
+                tempList.append((accuracy, len(table), [self.attributeNames[i] for i in permutation]))
+                if not self.kNNOptimization.onlyOnePerSubset and addResultFunct:
+                    addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[i] for i in permutation])
+
+                self.triedPossibilities += 1
+                self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
+
+            if self.kNNOptimization.onlyOnePerSubset:
+                # return only the best attribute placements
+                if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.getQualityMeasure() != BRIER_SCORE: funct = max
+                else: funct = min
+                (acc, lenTable, attrList) = funct(tempList)
+                if addResultFunct: addResultFunct(self.rawdata, acc, lenTable, attrList)
+
    
 
 if __name__== "__main__":

@@ -73,6 +73,49 @@ def getFunctionalList(data):
 ###########################################################################################
 ##### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING Fisher discriminant analysis
 ###########################################################################################
+
+# fisher discriminant implemented to be used as orange.MeasureAttribute
+class MeasureFisherDiscriminant:
+	def __init__(self):
+		self.dataset = None
+		self.attrInfo = {}
+		self.stats = []
+
+	def __call__(self, attr, data):
+		return self.MeasureAttribute_info(attr, data)
+
+	def MeasureAttribute_info(self, attr, data):
+		# if basic statistics is not computed for this dataset -> compute it
+		if not (self.stats and self.dataset == data):
+			self.stats = {}
+			self.dataset = data
+
+			arr = [0] * len(data.domain.attributes)
+			for val in data.domain.classVar.values:
+				data2 = data.select({data.domain.classVar: val})
+				bas = orange.DomainBasicAttrStat(data2)
+				self.stats[val] = bas
+
+			for i in range(len(self.stats.keys())):
+				for j in range(i+1, len(self.stats.keys())):
+					statI = self.stats[self.stats.keys()[i]]
+					statJ = self.stats[self.stats.keys()[j]]
+					for attr in range(len(data.domain.attributes)):
+						sumDev = statI[attr].dev + statJ[attr].dev
+						val = abs(statI[attr].avg - statJ[attr].avg)/(statI[attr].dev/sumDev + statJ[attr].dev/sumDev)
+						arr[attr] += val
+
+			# normalize values in arr so that the largest value will be 1 and others will be proportionally smaller
+			largest = max(arr)
+			arr = [val/largest for val in arr]
+
+			for i in range(len(data.domain.attributes)):
+				self.attrInfo[data.domain.attributes[i].name] = arr[i]
+
+		return self.attrInfo[data.domain[attr].name]
+
+
+# old version of fisher discriminant implemented as a function
 def fisherDiscriminant(rawdata, data, indices, classIndex):
 	matrixDict = {}
 	if classIndex in indices: indices.remove(classIndex)
@@ -229,7 +272,7 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 	shown = []; hidden = []	# initialize outputs
 
 	## both are RELIEF
-	if attrContOrder == "RelieF" and attrDiscOrder == "RelieF":
+	if attrContOrder == "ReliefF" and attrDiscOrder == "ReliefF":
 		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
 		for item in newAttrs:
 			if float(item[1]) > 0.01:   shown.append(item[0])
@@ -246,7 +289,7 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 	if attrContOrder == "None":
 		for item in data.domain:
 			if item.varType == orange.VarTypes.Continuous: shown.append(item.name)
-	elif attrContOrder == "RelieF":
+	elif attrContOrder == "ReliefF":
 		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
 		for item in newAttrs:
 			if data.domain[item[0]].varType != orange.VarTypes.Continuous: continue
@@ -304,7 +347,7 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 	if attrDiscOrder == "None":
 		for item in data.domain.attributes:
 			if item.varType == orange.VarTypes.Discrete: shown.append(item.name)
-	elif attrDiscOrder == "RelieF":
+	elif attrDiscOrder == "ReliefF":
 		newAttrs = orngFSS.attMeasure(data, orange.MeasureAttribute_relief(k=20, m=50))
 		for item in newAttrs:
 			if data.domain[item[0]].varType != orange.VarTypes.Discrete: continue
@@ -345,3 +388,14 @@ def selectAttributes(data, graph, attrContOrder, attrDiscOrder):
 
 
 	return (shown, hidden)
+
+
+def evaluateAttributes(data, contMeasure, discMeasure):
+	attrs = []
+	for attr in data.domain.attributes:
+		if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:   attrs.append((0.1, attr.name))
+		elif contMeasure == None and attr.varType == orange.VarTypes.Continuous: attrs.append((0.1, attr.name))
+		elif attr.varType == orange.VarTypes.Continuous: attrs.append((contMeasure(attr.name, data), attr.name))
+		else: 											 attrs.append((discMeasure(attr.name, data), attr.name))
+	return attrs
+		

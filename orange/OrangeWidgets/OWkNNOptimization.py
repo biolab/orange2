@@ -6,7 +6,7 @@ import cPickle
 import os
 import orange, orngTest, orngStat
 from copy import copy
-import OWGUI
+import OWGUI, OWDlgs
 
 CLASS_ACCURACY = 0
 AVERAGE_CORRECT = 1
@@ -21,7 +21,7 @@ class kNNOptimization(OWBaseWidget):
 	EXACT_NUMBER_OF_ATTRS = 0
 	MAXIMUM_NUMBER_OF_ATTRS = 1
 
-	settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName"]
+	settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc"]
 	resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
 	percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
 	kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
@@ -51,16 +51,20 @@ class kNNOptimization(OWBaseWidget):
 		self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
 		self.parentName = "Projection"
 		self.lastSaveDirName = os.getcwd() + "/"
+		self.attrCont = 0
+		self.attrDisc = 0
 
 		self.allResults = []
 		self.shownResults = []
 		self.attrLenDict = {}
 
+		self.cancelOptimization = 0
+
 		self.loadSettings()
 
 		self.optimizationSettingsBox = OWGUI.widgetBox(self, " Optimization Settings ")
 		self.optimizationBox = OWGUI.widgetBox(self, " Find interesting projections... ")
-		self.evaluateBox = OWGUI.widgetBox(self, " Evaluate projection / classifier ")
+		self.evaluateBox = OWGUI.widgetBox(self, " Evaluate current projection / classifier ")
 		self.manageResultsBox = OWGUI.widgetBox(self, " Manage projections ")
 		self.resultsBox = OWGUI.widgetBox(self, " List of interesting projections ")
 
@@ -80,20 +84,28 @@ class kNNOptimization(OWBaseWidget):
 		#self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
 		self.resultList.setMinimumSize(200,200)
 
-		self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k): ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
-		self.resultListCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "resultListLen", "Number of most interesting projections: ", tooltip = "Maximum length of the list of interesting projections", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
+		self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
+		self.resultListCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "resultListLen", "Number of interesting projections:   ", tooltip = "Maximum length of the list of interesting projections", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
 		self.minTableLenEdit = OWGUI.lineEdit(self.optimizationSettingsBox, self, "minExamples", "Minimum examples in data set:        ", orientation = "horizontal", tooltip = "Due to missing values, different subsets of attributes can have different number of examples. Projections with less than this number of examples will be ignored.", valueType = int)
-		self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", tooltip = "Maximum length of the list of interesting projections", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+		self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
 
+		self.heuristics = OWGUI.button(self.optimizationSettingsBox, self, " Set heuristics for attribute ordering ", callback = self.setAttributeOrdering)
+		
 		self.measureCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "qualityMeasure", box = " Measure of classification success ", items = ["Classification accuracy", "Average probability of correct classification", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
-		self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", box = " Testing method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.") 
+		self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", box = " Testing method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
+
+		#self.heuristicBox = OWGUI.widgetBox(self.optimizationSettingsBox, " Heuristics for attribute ordering ")
+		
 
 		self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
 		self.optimizationTypeCombo = OWGUI.comboBox(self.buttonBox, self, "optimizationType", items = ["    with exactly    ", "  with maximum  "] )
 		self.attributeCountCombo = OWGUI.comboBox(self.buttonBox, self, "attributeCountIndex", tooltip = "Evaluate only projections with exactly (or maximum) this number of attributes")
-		QLabel(' attributes', self.buttonBox)
+		self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
 		self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start evaluating projections")
+		self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation")
+		self.stopOptimizationButton.hide()
+		self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
 
 		for i in range(3,15):
 			self.attributeCountCombo.insertItem(str(i))
@@ -113,6 +125,8 @@ class kNNOptimization(OWBaseWidget):
 		self.attrLenList = QListBox(self.manageResultsBox)
 		self.attrLenList.setSelectionMode(QListBox.Multi)
 		self.attrLenList.setMinimumSize(60,60)
+		self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+
 
 		self.reevaluateResults = OWGUI.button(self.manageResultsBox, self, "Reevaluate shown projections")
 		self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
@@ -124,6 +138,12 @@ class kNNOptimization(OWBaseWidget):
 		self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
 		self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
 		self.closeButton = OWGUI.button(self.buttonBox7, self, "Close", self.hide)
+
+	def stopOptimizationClick(self):
+		self.cancelOptimization = 1
+
+	def isOptimizationCanceled(self):
+		return self.cancelOptimization
 
 	def destroy(self, dw, dsw):
 		self.saveSettings()
@@ -172,7 +192,17 @@ class kNNOptimization(OWBaseWidget):
 		if self.resultList.count() == 0: return None
 		return self.shownResults[self.resultList.currentItem()]
 		
+	def setAttributeOrdering(self):
+		ao = OWDlgs.OWAttributeOrder(self.attrCont, self.attrDisc)
+		ao.exec_loop()
+		if ao.result() != QDialog.Accepted: return
+		self.attrCont = ao.attrCont; self.attrDisc = ao.attrDisc
 
+	# given a dataset return a list of (val, attrName) where val is attribute "importance" and attrName is name of the attribute
+	def getEvaluatedAttributes(self, data):
+		ao = OWDlgs.OWAttributeOrder(self.attrCont, self.attrDisc)
+		return ao.evaluateAttributes(data)
+		
 	def clearResults(self):
 		self.allResults = []
 		self.shownResults = []
@@ -223,6 +253,8 @@ class kNNOptimization(OWBaseWidget):
 			self.shownResults.pop()
 	
 	def finishedAddingResults(self):
+		self.cancelOptimization = 0
+		
 		self.attrLenList.clear()
 		self.attrLenDict = {}
 		found = []
@@ -434,14 +466,23 @@ class kNNOptimization(OWBaseWidget):
 
 	def disableControls(self):
 		self.optimizationSettingsBox.setEnabled(0)
-		self.optimizationBox.setEnabled(0)
+		#self.optimizationBox.setEnabled(0)
+		self.optimizationTypeCombo.setEnabled(0)
+		self.attributeCountCombo.setEnabled(0)
+		#self.startOptimizationButton.setText(" Stop optimization ")
+		self.startOptimizationButton.hide()
+		self.stopOptimizationButton.show()
 		self.manageResultsBox.setEnabled(0)
 		self.evaluateBox.setEnabled(0)
 		self.measureCombo.setEnabled(0)
 
 	def enableControls(self):	
 		self.optimizationSettingsBox.setEnabled(1)
-		self.optimizationBox.setEnabled(1)
+		#self.optimizationBox.setEnabled(1)
+		self.optimizationTypeCombo.setEnabled(1)
+		self.attributeCountCombo.setEnabled(1)
+		self.startOptimizationButton.show()
+		self.stopOptimizationButton.hide()
 		self.manageResultsBox.setEnabled(1)
 		self.evaluateBox.setEnabled(1)
 		self.measureCombo.setEnabled(1)

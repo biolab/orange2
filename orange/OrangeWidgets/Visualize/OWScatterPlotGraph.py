@@ -417,48 +417,57 @@ class OWScatterPlotGraph(OWVisGraph):
 		merged = self.changeClassAttr(selected, unselected)
 		return (selected, unselected, merged)
 		
-	def getOptimalSeparation(self, attrCount, className, addResultFunct = None):
+	def getOptimalSeparation(self, projections, addResultFunct = None):
 		# define lenghts and variables
 		dataSize = len(self.rawdata)
 		attrCount = len(self.rawdata.domain.attributes)
 
-		fullList = []
 		testIndex = 0
-		totalTestCount = attrCount * (attrCount-1) / 2
-		print "---------------------"
-		print "Total number of possible projections: ", str(totalTestCount)
-
-		t = time.time()
+		totalTestCount = len(projections)
 
 		# create a dataset with scaled data
 		fullData = orange.ExampleTable(self.rawdata.domain)
+		attrCount = len(self.rawdata.domain.attributes)
 		for i in range(dataSize):
-			fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i][className]])
+			fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
+		
+		"""
+		for (val, attr1, attr2) in projections:
+			testIndex += 1
+			self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+			
+			table = self.rawdata.select([attr1, attr2, self.rawdata.domain.classVar.name])
+			table = orange.Preprocessor_dropMissing(table)
+			if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
+			
+			accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+			if table.domain.classVar.varType == orange.VarTypes.Discrete:
+				print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
+			else:
+				print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
-		for x in range(attrCount):
-			for y in range(x+1, attrCount):
-				testIndex += 1
-				self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
-				
-				table = fullData.select([x,y, className])
-				table = orange.Preprocessor_dropMissing(table)
-				if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
+			# save the permutation
+			if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
 
-				accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
-				if table.domain.classVar.varType == orange.VarTypes.Discrete:
-					print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
-				else:
-					print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
+		
+		"""
+		for (val, attr1, attr2) in projections:
+			testIndex += 1
+			self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+			if self.kNNOptimization.isOptimizationCanceled(): return
 
-				# save the permutation
-				fullList.append((accuracy, len(table), [self.attributeNames[x], self.attributeNames[y]]))
-				if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [self.attributeNames[x], self.attributeNames[y]])
+			table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
+			table = orange.Preprocessor_dropMissing(table)
+			if len(table) < self.kNNOptimization.minExamples: print "possibility %6d / %d. Not enough examples (%d)" % (testIndex, totalTestCount, len(table)); continue
+			
+			accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
+			if table.domain.classVar.varType == orange.VarTypes.Discrete:
+				print "permutation %6d / %d. Accuracy: %2.2f%%" % (testIndex, totalTestCount, accuracy)
+			else:
+				print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
-		print "------------------------------"
-		secs = time.time() - t
-		print "Used time: %d min, %d sec" %(secs/60, secs%60)
-
-		return fullList
+			# save the permutation
+			if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
 
 
 	def addTooltips(self):

@@ -153,8 +153,8 @@ class OWPolyviz(OWWidget):
 		self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
 		self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        
+		self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+		
 		# add a settings dialog and initialize its values
 		self.activateLoadedSettings()
 
@@ -239,6 +239,19 @@ class OWPolyviz(OWWidget):
 			self.optimizeSeparation()
 		else:
 			self.optimizeAllSubsetSeparation()
+
+	def buildProjections(self, attributes, currentProjection, number, projections):
+		if number == 0:
+			if len(currentProjection) != 1: projections.append(currentProjection)
+			return projections
+		if attributes == []: return projections
+
+		temp = list(currentProjection) + [attributes[0][1]]
+		temp[0] += attributes[0][0]
+		projections = self.buildProjections(attributes[1:], temp, number-1, projections)
+		
+		projections = self.buildProjections(attributes[1:], currentProjection, number, projections)
+		return projections
 			
 
 	# ####################################
@@ -248,7 +261,7 @@ class OWPolyviz(OWWidget):
 		if self.data == None: return
 	
 		if not listOfAttributes:
-			listOfAttributes = self.getShownAttributeList()
+			listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
 		if self.rotateAttributes: reverseList = None
 		else: reverseList = self.attributeReverse
@@ -266,8 +279,8 @@ class OWPolyviz(OWWidget):
 			self.graph.updateSettings(totalPossibilities = combin, triedPossibilities = 0, startTime = time.time())
 		
 			if self.graph.totalPossibilities > 20000:
-				res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?','Yes','No', QString.null,0,1)
-				if res == 0: return []
+				res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (combin),'Yes','No', QString.null,0,1)
+				if res == 0: return
 			
 			self.progressBarInit()
 			self.optimizationDlg.disableControls()
@@ -276,7 +289,12 @@ class OWPolyviz(OWWidget):
 		else:
 			number = numberOfAttrs
 
-		self.graph.getOptimalExactSeparation(listOfAttributes, [], reverseList, number, self.addInterestingProjection)
+		# create a sorted list of attribute subsets to evaluate
+		projections = self.buildProjections(listOfAttributes, [0.0], number, [])
+		projections.sort()
+		projections.reverse()
+
+		self.graph.getOptimalSeparation(number, reverseList, projections, self.addInterestingProjection)
 
 		if not numberOfAttrs:
 			self.progressBarFinished()
@@ -284,7 +302,7 @@ class OWPolyviz(OWWidget):
 			self.optimizationDlg.finishedAddingResults()
 		
 			secs = time.time() - startTime
-			print "Used time: %d min, %d sec" %(secs/60, secs%60)
+			print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(combin, secs/60, secs%60)
 
 
 	# #############################################
@@ -292,10 +310,11 @@ class OWPolyviz(OWWidget):
 	def optimizeAllSubsetSeparation(self):
 		if self.data == None: return
 
-		listOfAttributes = self.getShownAttributeList()
+		listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+		
 		text = str(self.optimizationDlg.attributeCountCombo.currentText())
 		if text == "ALL": maxLen = len(listOfAttributes)
-		else:			 maxLen = int(text)
+		else:			  maxLen = int(text)
 		total = len(listOfAttributes)
 
 		# compute the number of possible projections
@@ -303,6 +322,10 @@ class OWPolyviz(OWWidget):
 		for i in range(3, maxLen+1):
 			if not self.rotateAttributes: proj += combinations(i, total) * fact(i-1)
 			else: proj += combinations(i, total) * fact(i-1) * math.pow(2, i)/2
+
+		if proj > 20000:
+			res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (combin),'Yes','No', QString.null,0,1)
+			if res == 0: return
 
 		self.graph.triedPossibilities = 0
 		self.graph.totalPossibilities = proj
@@ -320,7 +343,7 @@ class OWPolyviz(OWWidget):
 		self.optimizationDlg.enableControls()
 		self.optimizationDlg.finishedAddingResults()
 		secs = time.time() - startTime
-		print "Used time: %d min, %d sec" %(secs/60, secs%60)
+		print "Number of possible projections: %d\nUsed time: %d min, %d sec" %(proj, secs/60, secs%60)
 
 	
 	def addInterestingProjection(self, data, accuracy, tableLen, attrList, reverse):
