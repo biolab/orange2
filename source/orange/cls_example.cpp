@@ -229,7 +229,7 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BA
           }
         }
         else if (!convertFromPythonExisting(list, PyExample_AS_ExampleReference(example))) {
-          Example_dealloc((TPyExample *)example);
+          Py_DECREF(example);
           return PYNULL;
         }
       }

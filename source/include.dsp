@@ -19,6 +19,7 @@ CFG=include - Win32 Debug
 !MESSAGE 
 !MESSAGE "include - Win32 Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "include - Win32 Debug" (based on "Win32 (x86) Static Library")
+!MESSAGE "include - Win32 Release_Debug" (based on "Win32 (x86) Static Library")
 !MESSAGE 
 
 # Begin Project
@@ -76,12 +77,38 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo
 
+!ELSEIF  "$(CFG)" == "include - Win32 Release_Debug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "include___Win32_Release_Debug"
+# PROP BASE Intermediate_Dir "include___Win32_Release_Debug"
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "c:\temp\orange\release_debug"
+# PROP Intermediate_Dir "c:\temp\orange\release_debug"
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# SUBTRACT BASE CPP /Fr
+# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
+# SUBTRACT CPP /Fr
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LIB32=link.exe -lib
+# ADD BASE LIB32 /nologo
+# ADD LIB32 /nologo
+
 !ENDIF 
 
 # Begin Target
 
 # Name "include - Win32 Release"
 # Name "include - Win32 Debug"
+# Name "include - Win32 Release_Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -110,6 +137,11 @@ SOURCE=.\include\stat.cpp
 # ADD CPP /O2
 
 !ELSEIF  "$(CFG)" == "include - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "include - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# ADD CPP /O2
 
 !ENDIF 
 

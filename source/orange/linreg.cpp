@@ -304,7 +304,7 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
       gen = mlnew TExampleTable(regDomain, gen);
     }
 
-    exampleGenerator2gsl(gen, weightID, true, multinomialTreatment, X, y, w, rows, columns);
+    exampleGenerator2gsl(gen, weightID, "A1/Cw", multinomialTreatment, X, y, w, rows, columns);
 
     if (columns==1)
       raiseError("no useful attributes");

@@ -1126,7 +1126,11 @@ PyObject *Domain_getslice(TPyOrange *self, int start, int stop)
   PyCATCH
 }
 
- 
+
+const string &nonamevar = string("<noname>");
+
+inline const string &namefrom(const string &name)
+{ return name.length() ? name : nonamevar; }
 
 string TDomain2string(TPyOrange *self)
 { CAST_TO_err(TDomain, domain, "<invalid domain>")
@@ -1135,7 +1139,7 @@ string TDomain2string(TPyOrange *self)
   
   int added=0;
   PITERATE(TVarList, vi, domain->variables)
-    res+=(added++ ? ", " : "[") +(*vi)->name;
+    res+=(added++ ? ", " : "[") + namefrom((*vi)->name);
 
   if (added) {
     res+="]";
@@ -1149,7 +1153,7 @@ string TDomain2string(TPyOrange *self)
   added=0;
   ITERATE(TMetaVector, mi, domain->metas) {
     char pls[256];
-    sprintf(pls, "%s%i:%s", (added++) ? ", " : "", int((*mi).id), (*mi).variable->name.c_str());
+    sprintf(pls, "%s%i:%s", (added++) ? ", " : "", int((*mi).id), namefrom((*mi).variable->name).c_str());
     res+=pls;
   }
   if (added)
@@ -1734,10 +1738,20 @@ inline PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYAR
 
 #include "table.hpp"
 
+#ifndef NO_NUMERIC
+#include "Numeric/arrayobject.h"
+#endif
+
 TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore);
 
 TExampleTable *readListOfExamples(PyObject *args)
-{ if (PySequence_Check(args)) {
+{ 
+  #ifndef NO_NUMERIC
+  if (PyArray_Check(args))
+    return readListOfExamples(args, PDomain(), false);
+  #endif
+
+  if (PySequence_Check(args)) {
     int size=PySequence_Size(args);
     if (!size)
       PYERROR(PyExc_TypeError, "can't construct a table from an empty sequence", (TExampleTable *)NULL);
@@ -1775,7 +1789,104 @@ TExampleTable *readListOfExamples(PyObject *args)
 
 
 TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
-{ if (PyList_Check(args)) {
+{ 
+  #ifndef NO_NUMERIC
+  if (PyArray_Check(args)) {
+    PyArrayObject *array = (PyArrayObject *)(args);
+    if (array->nd != 2)
+      PYERROR(PyExc_AttributeError, "two-dimensional array expected for an ExampleTable", NULL);
+
+    if (!domain) {
+      TVarList variables;
+      char vbuf[20];
+      for(int i = 0, e = array->dimensions[1]; i < e; i++) {
+        sprintf(vbuf, "a%i", i+1);
+        variables.push_back(mlnew TFloatVariable(vbuf));
+      }
+      domain = mlnew TDomain(PVariable(), variables);
+    }
+
+    else
+      if (array->dimensions[1] != domain->variables->size())
+        PYERROR(PyExc_AttributeError, "the number of columns in the array doesn't match the number of attributes", NULL);
+
+
+    const int arrayType = array->descr->type_num;
+    const TVarList &variables = domain->variables.getReference();
+
+    TVarList::const_iterator vi(variables.begin()), ve(variables.end());
+    for(; vi!=ve; vi++)
+      if (((*vi)->varType != TValue::INTVAR) && ((*vi)->varType != TValue::FLOATVAR))
+        PYERROR(PyExc_TypeError, "cannot read the value of attribute '%s' from an array (unsupported attribute type)", NULL);
+
+    if ((arrayType == PyArray_CFLOAT) || (arrayType == PyArray_CDOUBLE) || (arrayType == PyArray_OBJECT))
+      PYERROR(PyExc_AttributeError, "ExampleTable cannot use arrays of complex numbers or Python objects", NULL);
+    
+    TExampleTable *table = mlnew TExampleTable(domain);
+    TExample *nex = NULL;
+    table->reserve(array->dimensions[0]);
+
+    const int &strideRow = array->strides[0];
+    const int &strideCol = array->strides[1];
+
+    try {
+      TExample::iterator ei;
+      char *rowPtr = array->data;
+
+      for(int row = 0, rowe = array->dimensions[0]; row < rowe; row++, rowPtr += strideRow) {
+        char *elPtr = rowPtr;
+        TExample *nex = mlnew TExample(domain);
+
+        #define ARRAYTYPE(TYPE) \
+          for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol) \
+            if ((*vi)->varType == TValue::INTVAR) \
+              intValInit(*ei, *(TYPE *)elPtr); \
+            else \
+              floatValInit(*ei, *(TYPE *)elPtr); \
+          break;
+
+        switch (arrayType) {
+          case PyArray_CHAR: ARRAYTYPE(char)
+          case PyArray_UBYTE: ARRAYTYPE(unsigned char)
+          case PyArray_SBYTE: ARRAYTYPE(signed char)
+          case PyArray_SHORT: ARRAYTYPE(short)
+          case PyArray_INT: ARRAYTYPE(int)
+          case PyArray_LONG: ARRAYTYPE(long)
+
+          case PyArray_FLOAT:
+            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+              if ((*vi)->varType == TValue::INTVAR)
+                intValInit(*ei, int(floor(0.5 + *(float *)elPtr)));
+              else
+                floatValInit(*ei, *(float *)elPtr);
+            break;
+
+          case PyArray_DOUBLE:
+            for(ei = nex->begin(), vi = variables.begin(); vi!=ve; vi++, ei++, elPtr += strideCol)
+              if ((*vi)->varType == TValue::INTVAR)
+                intValInit(*ei, int(floor(0.5 + *(double *)elPtr)));
+              else
+                floatValInit(*ei, *(double *)elPtr);
+            break;
+
+        }
+
+        table->addExample(nex);
+        nex = NULL;
+      }
+    }
+    catch (...) {
+      mldelete table;
+      mldelete nex;
+      throw;
+    }
+
+    return table;
+  }
+  #endif
+
+
+  if (PyList_Check(args)) {
     int size=PyList_Size(args);
     if (!size)
       PYERROR(PyExc_TypeError, "can't construct a table from an empty list", (TExampleTable *)NULL);
@@ -1928,6 +2039,302 @@ PyObject *ExampleTable_native(PyObject *self, PyObject *args, PyObject *keywords
     return list;
   PyCATCH
 }
+
+
+PyTypeObject *gsl_matrixType = NULL;
+
+bool load_gsl()
+{
+  if (gsl_matrixType)
+    return true;
+
+  PyObject *matrixModule = PyImport_ImportModule("pygsl.matrix");
+  if (!matrixModule)
+    return false;
+
+  gsl_matrixType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(matrixModule), "matrix");
+  return gsl_matrixType != NULL;
+}
+
+
+PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Ignore, 0)
+PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
+PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
+
+#ifndef NO_GSL
+
+#include "gsl/gsl_matrix.h"
+#include "gsl/gsl_vector.h"
+#include "gslconversions.hpp"
+#include "numeric_interface.hpp"
+
+typedef struct {
+    PyObject_HEAD
+    gsl_matrix* m;
+} matrix_matrixObject;
+
+
+PyObject *gsl2pygsl(gsl_vector *gslv, int dim)
+{
+  prepareNumeric();
+
+  PyArrayObject *out = (PyArrayObject *) PyArray_FromDims(1, &dim, PyArray_DOUBLE);
+  double *di = (double *)(out->data);
+  for(int i=0; i<dim; i++, di++)
+    *di = gsl_vector_get(gslv, i);
+  return (PyObject *)out;
+}
+
+
+PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
+{
+  int left = (*contents && *contents != '/') ? 1 : 0;
+
+  char *cp = strchr(contents, '/');
+  if (cp)
+    cp++;
+
+  int right = cp ? strlen(cp) : 0;
+
+  PyObject *res = PyTuple_New(left + right);
+  if (left) {
+    Py_INCREF(X);
+    PyTuple_SetItem(res, 0, X);
+  }
+
+  if (cp)
+    for(; *cp; cp++)
+      if ((*cp == 'c') || (*cp == 'C')) {
+        Py_INCREF(y);
+        PyTuple_SetItem(res, left++, y);
+      }
+      else {
+        Py_INCREF(w);
+        PyTuple_SetItem(res, left++, w);
+      }
+
+  Py_DECREF(X);
+  Py_DECREF(y);
+  Py_DECREF(w);
+
+  return res;
+}
+
+
+PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> gsl matrix")
+{
+  PyTRY
+    if (!gsl_matrixType && !load_gsl())
+      return PYNULL;
+    
+    char *contents = NULL;
+    int weightID = 0;
+    int multinomialTreatment = 1;
+    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
+      return PYNULL;
+
+    if (!contents)
+      contents = "a/cw";
+
+    gsl_matrix *attrss;
+    gsl_vector *classes, *weights;
+    int rows, columns;
+    exampleGenerator2gsl(PyOrange_AS_Orange(self), weightID, contents, multinomialTreatment, attrss, classes, weights, rows, columns);
+
+    PyObject *pymatrix, *pyclasses, *pyweights;
+
+    if (attrss) {
+      pymatrix = (*gsl_matrixType->tp_new)(gsl_matrixType, NULL, NULL);
+      matrix_matrixObject *mao = (matrix_matrixObject *)(pymatrix);
+
+      // Should do it like this: mao->m = attrss;
+      // but it crashes -- must have sth to do with the compiler used for compiling gsl
+      // and the corresponding memory allocation.
+      
+      (*gsl_matrixType->tp_init)(pymatrix, Py_BuildValue("ll", rows, columns), PyDict_New());
+
+      if ((mao->m->tda != attrss->tda) || (mao->m->block->size != attrss->block->size))
+        PYERROR(PyExc_SystemError, "cannot convert the data due to different geometry of GSL matrices.\nPlease report this error to the Orange team!", PYNULL)
+
+      memcpy(mao->m->data, attrss->data, attrss->block->size * sizeof(double));
+    }
+    else {
+      pymatrix = Py_None;
+      Py_INCREF(pymatrix);
+    }
+
+    if (classes)
+      pyclasses = gsl2pygsl(classes, rows);
+    else {
+      pyclasses = Py_None;
+      Py_INCREF(pyclasses);
+    }
+      
+    if (weights)
+      pyweights = gsl2pygsl(weights, rows);
+    else {
+      pyweights = Py_None;
+      Py_INCREF(pyweights);
+    }
+
+    return packMatrixTuple(pymatrix, pyclasses, pyweights, contents);
+  PyCATCH
+}
+
+#else
+
+PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
+{
+  PYERROR(PyExc_SystemError, "This build does not support module 'pygsl'", PYNULL);
+}
+
+#endif
+
+
+#ifndef NO_NUMERIC
+
+
+PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> matrix(-ces)")
+{
+  PyTRY
+    prepareNumeric();
+
+    char *contents = NULL;
+    int weightID = 0;
+    int multinomialTreatment = 1;
+    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
+      return PYNULL;
+
+    if (!contents)
+      contents = "a/cw";
+
+    PExampleGenerator egen = PyOrange_AsExampleGenerator(self);
+
+    bool hasClass, classVector, weightVector, classIsDiscrete;
+    vector<bool> include;
+    int columns;
+    parseMatrixContents(egen, weightID, contents, multinomialTreatment,
+                            hasClass, classVector, weightVector, classIsDiscrete, columns, include);
+
+    int rows = egen->numberOfExamples();
+
+    PyObject *X, *y, *w;
+    double *Xp, *yp, *wp;
+    if (columns) {
+      int dims[2];
+      dims[0] = rows;
+      dims[1] = columns;
+      X = PyArray_FromDims(2, dims, PyArray_DOUBLE);
+      Xp = (double *)((PyArrayObject *)X)->data;
+    }
+    else {
+      X = Py_None;
+      Py_INCREF(X);
+      Xp = NULL;
+    }
+
+    if (classVector) {
+      y = PyArray_FromDims(1, &rows, PyArray_DOUBLE);
+      yp = (double *)((PyArrayObject *)y)->data;
+    }
+    else {
+      y = Py_None;
+      Py_INCREF(y);
+      yp = NULL;
+    }
+
+
+    if (weightVector) {
+      w = PyArray_FromDims(1, &rows, PyArray_DOUBLE);
+      wp = (double *)((PyArrayObject *)w)->data;
+    }
+    else {
+      w = Py_None;
+      Py_INCREF(w);
+      wp = NULL;
+    }
+  
+    try {
+      int row = 0;
+      TExampleGenerator::iterator ei(egen->begin());
+      for(; ei; ++ei, row++) {
+        int col = 0;
+      
+        /* This is all optimized assuming that each symbol (A, C, W) only appears once. 
+           If it would be common for them to appear more than once, we could cache the
+           values, but since this is unlikely, caching would only slow down the conversion */
+        for(const char *cp = contents; *cp && (*cp!='/'); cp++) {
+          switch (*cp) {
+            case 'A':
+            case 'a': {
+              const TVarList &attributes = egen->domain->attributes.getReference();
+              TVarList::const_iterator vi(attributes.begin()), ve(attributes.end());
+              TExample::iterator eei((*ei).begin());
+              vector<bool>::const_iterator bi(include.begin());
+              for(; vi != ve; eei++, vi++, bi++)
+                if (*bi) {
+                  if ((*eei).isSpecial())
+                    raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                  *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
+                }
+              break;
+            }
+
+            case 'C':
+            case 'c': 
+              if (hasClass) {
+                const TValue &classVal = (*ei).getClass();
+                if (classVal.isSpecial())
+                  raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+                *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
+              }
+              break;
+
+            case 'W':
+            case 'w': 
+              if (weightID)
+                *Xp++ = WEIGHT(*ei);
+              break;
+
+            case '0':
+              *Xp++ = 0.0;
+              break;
+
+            case '1':
+              *Xp++ = 1.0;
+              break;
+          }
+        }
+
+        if (yp) {
+          const TValue &classVal = (*ei).getClass();
+          if (classVal.isSpecial())
+            raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+          *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
+        }
+
+        if (wp)
+          *wp++ = WEIGHT(*ei);
+      }
+
+      return packMatrixTuple(X, y, w, contents);
+    }
+    catch (...) {
+      Py_DECREF(X);
+      Py_DECREF(y);
+      Py_DECREF(w);
+      throw;
+    }
+  PyCATCH
+}
+#else
+
+PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords)
+{
+  PYERROR(PyExc_SystemError, "ExampleTable.Numeric: this build does not support module 'Numeric'", PYNULL);
+}
+
+#endif
 
 
 int ExampleTable_nonzero(PyObject *self)

@@ -758,7 +758,7 @@ int Value_coerce(PyObject **i, PyObject **obj)
 { PyTRY
     if (PyString_Check(*obj)) {
       *i = Value_str(*(TPyValue **)i);
-      if (!i)
+      if (!*i)
         return -1;
       Py_INCREF(*obj);
       return 0;
@@ -768,14 +768,14 @@ int Value_coerce(PyObject **i, PyObject **obj)
       TPyValue *val = *(TPyValue **)i;
       if (val->value.varType==TValue::INTVAR) {
         *i = Value_int(val);
-        if (!i)
+        if (!*i)
           return -1;
         Py_INCREF(*obj);
         return 0;
       }
       else if (val->value.varType==TValue::FLOATVAR) {
         *i = Value_float(val);
-        if (!i)
+        if (!*i)
           return -1;
         double x = PyFloat_AsDouble(*obj);
 		    *obj = PyFloat_FromDouble(x);
@@ -787,7 +787,7 @@ int Value_coerce(PyObject **i, PyObject **obj)
 
     if (PyFloat_Check(*obj)) {
       *i = Value_float(*(TPyValue **)i);
-      if (!i)
+      if (!*i)
         return -1;
       Py_INCREF(*obj);
       return 0;
@@ -795,7 +795,7 @@ int Value_coerce(PyObject **i, PyObject **obj)
 
     if (PyLong_Check(*obj)) {
       *i = Value_long(*(TPyValue **)i);
-      if (!i)
+      if (!*i)
         return -1;
       Py_INCREF(*obj);
       return 0;

@@ -19,6 +19,7 @@ CFG=Orange - Win32 Debug
 !MESSAGE 
 !MESSAGE "Orange - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "Orange - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "Orange - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -90,12 +91,43 @@ LINK32=link.exe
 # ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /out:"c:\temp\orange\debug\orange_d.pyd" /pdbtype:sept /libpath:"$(PYTHON)/libs" /libpath:"$(GNUWIN32)/lib"
 # SUBTRACT LINK32 /verbose /nodefaultlib
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "Orange___Win32_Release_Debug"
+# PROP BASE Intermediate_Dir "Orange___Win32_Release_Debug"
+# PROP BASE Ignore_Export_Lib 1
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "c:\temp\orange\release_debug"
+# PROP Intermediate_Dir "c:\temp\orange\release_debug"
+# PROP Ignore_Export_Lib 1
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
+# SUBTRACT BASE CPP /Fr
+# ADD CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
+# SUBTRACT CPP /Fr
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /machine:I386 /out:"c:\temp\orange\release\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+# SUBTRACT BASE LINK32 /debug
+# ADD LINK32 libgslcblas.a libgsl.a kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"d:\ai\orange\orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
+
 !ENDIF 
 
 # Begin Target
 
 # Name "Orange - Win32 Release"
 # Name "Orange - Win32 Debug"
+# Name "Orange - Win32 Release_Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -226,6 +258,13 @@ SOURCE=.\orange\distancemap.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
 !ENDIF 
 
 # End Source File
@@ -288,6 +327,17 @@ SOURCE=.\orange\getarg.cpp
 # Begin Source File
 
 SOURCE=.\orange\gslconversions.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -304,13 +354,35 @@ SOURCE=.\orange\heatmap.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
 
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
+
 !ENDIF 
 
 # End Source File
 # Begin Source File
 
 SOURCE=.\orange\im_col_assess.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
 # PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+# PROP Exclude_From_Build 1
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# PROP BASE Exclude_From_Build 1
+# PROP Exclude_From_Build 1
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -339,6 +411,17 @@ SOURCE=.\orange\lib_io.cpp
 # Begin Source File
 
 SOURCE=.\orange\lib_kernel.cpp
+
+!IF  "$(CFG)" == "Orange - Win32 Release"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -410,6 +493,10 @@ SOURCE=.\orange\nearest.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\numeric_interface.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\obsolete.cpp
 # End Source File
 # Begin Source File
@@ -450,6 +537,13 @@ SOURCE=.\orange\redundancy.cpp
 # SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
 
 !ENDIF 
 
@@ -500,6 +594,13 @@ SOURCE=.\orange\tabdelim.cpp
 # SUBTRACT CPP /Z<none>
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
+
+# ADD BASE CPP /O2
+# SUBTRACT BASE CPP /Z<none>
+# ADD CPP /O2
+# SUBTRACT CPP /Z<none>
 
 !ENDIF 
 
@@ -714,6 +815,10 @@ SOURCE=.\orange\getarg.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\gslconversions.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\hclust.hpp
 # End Source File
 # Begin Source File
@@ -791,6 +896,10 @@ SOURCE=.\orange\module.hpp
 # Begin Source File
 
 SOURCE=.\orange\nearest.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\numeric_interface.hpp
 # End Source File
 # Begin Source File
 

@@ -236,5 +236,21 @@ public:
   CASES((intV!=v.intV), (floatV!=v.floatV), (svalV->operator != (v.svalV.getReference())), -1)
 };
 
+inline void intValInit(TValue &val, const int &i)
+{ 
+  val.varType = TValue::INTVAR;
+  val.valueType = valueRegular;
+  val.intV = i;
+  val.svalV = PSomeValue();
+}
+
+inline void floatValInit(TValue &val, const float &f)
+{ 
+  val.varType = TValue::FLOATVAR;
+  val.valueType = valueRegular;
+  val.floatV = f;
+  val.svalV = PSomeValue();
+}
+
 #endif
 

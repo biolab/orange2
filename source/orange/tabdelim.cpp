@@ -698,7 +698,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, PV
     attributeDescriptions.push_back(classDescription);
 
   if (sourceDomain) {
-    if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+    if (!domainDepot_tab.checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, classPos >= 0, NULL))
       raiseError("given domain does not match the file");
     else
       return sourceDomain;

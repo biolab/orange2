@@ -102,6 +102,10 @@ LINK32=link.exe
 
 SOURCE=.\corn\corn.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=.\orange\numeric_interface.cpp
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
