@@ -293,8 +293,6 @@ PyObject *AssociationRules_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VAR
 #include "tdidt_stop.hpp"
 #include "callback.hpp"
 
-C_NAMED(MapIntValue, TransformValue, "([mapping=])")
- 
 C_CALL(TreeLearner, Learner, "([examples] [, weight=, split=, stop=, nodeLearner=, lookDownOnUnknown=]) -/-> Classifier")
 
 C_NAMED(TreeNode, Orange, "([lookDownOnUnknown=, chooseBranch=, nodeClassifier=, branches=, contingency=])")

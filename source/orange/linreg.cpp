@@ -21,14 +21,15 @@
 
 #include <vector>
 #include "gsl/gsl_multifit.h"
+#include "gslconversions.hpp"
 
-#include "examplegen.hpp"
 #include "stat.hpp"
 
-#include "linreg.ppp"
+#include "examplegen.hpp"
+#include "table.hpp"
+#include "imputation.hpp"
 
-void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, bool addConstant, const int &multiTreatment,
-                          gsl_matrix *&X, gsl_vector *&y, gsl_vector *&w, int &rows, int &columns);
+#include "linreg.ppp"
 
 
 TLinRegLearner::TLinRegLearner()
@@ -40,31 +41,28 @@ TLinRegLearner::TLinRegLearner()
 {}
 
 
-#define FREE_IF(O,func) { if (O) { func(O); O = NULL; }}
-
 void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, const int &rows, const int &columns,
                                 bool forward, bool backward,
-                                gsl_vector *&c, gsl_vector *&c_se, double &SSres, double &SStot)
+                                vector<int> &bestOrder, gsl_vector *&best_c, gsl_vector *&best_se, double &SSres, double &SStot, double &N)
 {
   gsl_matrix *cov = NULL;
   gsl_multifit_linear_workspace *work = NULL;
   gsl_vector *bestc = NULL, *bestc_se = NULL, *cnew = NULL;
-  c = gsl_vector_calloc(columns);
-  c_se = gsl_vector_calloc(columns);
 
-  double Sy = 0.0, SSy = 0.0, Sw = 0.0;
+  double Sy = 0.0, SSy = 0.0;
+  N = 0.0;
   int i;
   for(i = 0; i<rows; i++) {
     const double el = gsl_vector_get(y, i);
     const double we = gsl_vector_get(w, i);
     Sy += we * el;
     SSy += we * el * el;
-    Sw += we;
+    N += we;
   }
-  if (Sw == 0.0)
+  if (N == 0.0)
     raiseError("total weight of examples equals 0.0");
   
-  SStot = SSy - Sy*Sy/Sw;
+  SStot = SSy - Sy*Sy/N;
 
   try {
     int iterations, nSelected;
@@ -84,34 +82,44 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
         iterations = columns;
 
       SSres = SStot;
-      SSminimal = Sy/Sw*Sy/Sw*1e-20; // SSres below 1e-20th of average is low enough
+      SSminimal = Sy/N*Sy/N*1e-20; // SSres below 1e-20th of average is low enough
       if (SSres < SSminimal) {
-        gsl_vector_set(c, 0, Sy/Sw);
-        gsl_vector_set(c_se, 0, sqrt(SSres/(rows-2)/rows));
+        bestOrder = vector<int>(1, 0);
+        best_c = gsl_vector_alloc(1);
+        best_se = gsl_vector_alloc(1);
+        gsl_vector_set(best_c, 0, Sy/N);
+        gsl_vector_set(best_se, 0, sqrt(SSres/(rows-2)/rows));
         return;
       }
     }
-    else {
+
+    else { // !forward
       nSelected = iterations = columns;
 
       work = gsl_multifit_linear_alloc(rows, columns);
       cov = gsl_matrix_alloc(columns, columns);
-      gsl_multifit_wlinear(X, w, y, c, cov, &SSres, work);
-      FREE_IF(work, gsl_multifit_linear_free);
+      best_c = gsl_vector_alloc(columns);
+      gsl_multifit_wlinear(X, w, y, best_c, cov, &SSres, work);
+      GSL_FREE(work, multifit_linear);
+
       if (!backward) {
+        best_se = gsl_vector_alloc(columns);
         for(i=0; i<columns; i++)
-          gsl_vector_set(c_se, i, sqrt(gsl_matrix_get(cov, i, i)));
-        FREE_IF(cov, gsl_matrix_free)
+          gsl_vector_set(best_se, i, sqrt(gsl_matrix_get(cov, i, i)));
+        GSL_FREE(cov, matrix)
+
+        bestOrder = vector<int>();
+        for(i = 0; i<columns; bestOrder.push_back(i++));
         return;
       }
 
-      FREE_IF(cov, gsl_matrix_free)
-      gsl_vector_set_zero(c);
+      GSL_FREE(cov, matrix)
+      GSL_FREE(best_c, vector)
       SSminimal = 1e-20;
     }
 
-    vector<int> colAttribute, bestOrder;
-    for(i = 0; i<columns; colAttribute.push_back(i++));
+    vector<int> columnOrder;
+    for(i = 0; i<columns; columnOrder.push_back(i++));
 
     /* That's ugly and can cause troubles on future GSLs
        I should use gsl_matrix_submatrix, but it causes stack problems
@@ -136,12 +144,12 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
         double bestSS = 1e30, SSnew;
         int bestplace = 0;
         bool prevbest = false;
-        vector<int>::iterator swapi(colAttribute.begin()+swapplace);
+        vector<int>::iterator swapi(columnOrder.begin()+swapplace);
         for(int candidate = swapplace - (forward && backward && (direction==-1) ? 1 : 0); // won't remove the one which we just added
             candidate && (candidate<columns); candidate+=direction) {
           if (swapplace != candidate) {
             gsl_matrix_swap_columns(X, swapplace, candidate);
-            swap(*swapi, colAttribute[candidate]);
+            swap(*swapi, columnOrder[candidate]);
             if (prevbest) {
               // remember the column with the best candidate so far
               bestplace = candidate;
@@ -155,18 +163,18 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
 
           if (((direction==1) ? (Fprob < Fin) : (Fprob > Fout)) && (SSnew < bestSS)) {
             if (!bestc || (bestc->size != p)) {
-              FREE_IF(bestc, gsl_vector_free);
-              FREE_IF(bestc_se, gsl_vector_free);
-              bestc = gsl_vector_alloc(p);
-              bestc_se = gsl_vector_alloc(p);
+              GSL_FREE(best_c, vector);
+              GSL_FREE(best_se, vector);
+              best_c = gsl_vector_alloc(p);
+              best_se = gsl_vector_alloc(p);
             }
-            gsl_vector_memcpy(bestc, cnew);
-            // should use that, but crashes MS VS
+            gsl_vector_memcpy(best_c, cnew);
+            // should use that, but crashes MS VC
             // gsl_vector_view gsl_matrix_diagonal (gsl_matrix * m)
             for(i=0; i<p; i++)
-              gsl_vector_set(bestc_se, i, gsl_matrix_get(cov, i, i));
+              gsl_vector_set(best_se, i, gsl_matrix_get(cov, i, i));
 
-            bestOrder = vector<int>(colAttribute.begin(), colAttribute.begin()+p);
+            bestOrder = vector<int>(columnOrder.begin(), columnOrder.begin()+p);
 
             // remember this candidate at the next swap (a few lines above)
             prevbest = true;
@@ -174,14 +182,14 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
           }
         }
 
-        FREE_IF(cnew, gsl_vector_free)
-        FREE_IF(cov, gsl_matrix_free)
-        FREE_IF(work, gsl_multifit_linear_free)
+        GSL_FREE(cnew, vector)
+        GSL_FREE(cov, matrix)
+        GSL_FREE(work, multifit_linear)
 
         // put the column with the best candidate to the swap place
         if (bestplace) {
             gsl_matrix_swap_columns(X, swapplace, bestplace);
-            swap(*swapi, colAttribute[bestplace]);
+            swap(*swapi, columnOrder[bestplace]);
         }
         else
           // if there is no best candidate place remembered and it was not the last one...
@@ -194,31 +202,89 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
       }
     }
 
-    i = 0;
-    for(vector<int>::const_iterator seli(bestOrder.begin()), sele(bestOrder.end()); seli!=sele; seli++, i++) {
-      gsl_vector_set(c, *seli, gsl_vector_get(bestc, i));
-      gsl_vector_set(c_se, *seli, sqrt(gsl_vector_get(bestc_se, i)));
-    }
-    if (!i) {
-      gsl_vector_set(c, 0, Sy/Sw);
-      gsl_vector_set(c_se, 0, sqrt(SSres/(rows-2)/rows));
+    if (!nSelected) {
+      GSL_FREE(best_c, vector);
+      GSL_FREE(best_se, vector);
+      bestOrder = vector<int>(1, 0);
+      best_c = gsl_vector_alloc(1);
+      best_se = gsl_vector_alloc(1);
+      gsl_vector_set(best_c, 0, Sy/N);
+      gsl_vector_set(best_se, 0, sqrt(SSres/(rows-2)/rows));
     }
 
-
-    FREE_IF(bestc, gsl_vector_free)
   }
   catch (...) {
-    FREE_IF(c, gsl_vector_free)
-    FREE_IF(cnew, gsl_vector_free)
-    FREE_IF(cov, gsl_matrix_free)
-    FREE_IF(work, gsl_multifit_linear_free)
-    FREE_IF(bestc, gsl_vector_free)
+    GSL_FREE(cnew, vector)
+    GSL_FREE(cov, matrix)
+    GSL_FREE(work, multifit_linear)
+    GSL_FREE(best_c, vector)
+    GSL_FREE(best_se, vector)
     throw;
   }
 }
 
 
-PClassifier TLinRegLearner::operator()(PExampleGenerator gen, const int &weightID)
+gsl_vector *TLinRegLearner::unmix(gsl_vector *mixed, vector<int> columnOrder, int N)
+{
+  gsl_vector *straight = gsl_vector_calloc(N);
+  int i = 0;
+  for(vector<int>::const_iterator seli(columnOrder.begin()), sele(columnOrder.end()); seli!=sele; seli++, i++)
+    gsl_vector_set(straight, *seli, gsl_vector_get(mixed, i));
+  return straight;
+}
+
+
+#include <algorithm>
+
+template<class T>
+class TSortedIndexVector : public vector<int> {
+public:
+  const vector<T> &vect;
+
+  TSortedIndexVector(vector<T> &v)
+  : vector<int>(),
+    vect(v)
+  { 
+    for(int i(0), e(vect.size()); i<e; push_back(i++));
+    sort(begin(), end(), *this);
+  }
+
+  bool operator ()(const int &ind1, const int &ind2) const
+  { return less<T>()(vect[ind1], vect[ind2]); }
+};
+
+
+template<class T, class _Pr>
+class TSortedIndexVectorPred : public vector<int> {
+public:
+  const vector<T> &vect;
+
+  TSortedIndexVectorPred(vector<T> &v, _Pr P)
+  : vector<int>(),
+    vect(v)
+  { 
+    for(int i(0), e(vect.size()); i<e; push_back(i++));
+    sort(begin(), end(), *this);
+  }
+
+  bool operator ()(const int &ind1, const int &ind2) const
+  { return P(vect[ind1], vect[ind2]); }
+};
+
+
+void TLinRegLearner::sort_inPlace(gsl_vector *mixed, vector<int> columnOrder)
+{
+  TSortedIndexVector<int> sorted(columnOrder);
+  gsl_vector *temp = gsl_vector_alloc(columnOrder.size());
+  gsl_vector_memcpy(temp, mixed);
+  int i = 0;
+  ITERATE(vector<int>, si, sorted)
+    gsl_vector_set(mixed, *si, gsl_vector_get(temp, i++));
+  GSL_FREE(temp, vector);
+}
+
+
+PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weightID)
 {
   gsl_matrix *X = NULL;
   gsl_vector *y = NULL, *w = NULL;
@@ -229,75 +295,154 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator gen, const int &weightI
     raiseError("invalid 'iterativeSelection'");
 
   try {
+    PImputer imputer = imputerConstructor ? imputerConstructor->call(origen, weightID) : PImputer();
+    PExampleGenerator gen = imputer ? imputer->call(origen, weightID) : origen;
+
+    if (hasNonContinuousAttributes(gen->domain, true)) {
+      PDomain regDomain = regressionDomain(gen);
+      gen = mlnew TExampleTable(regDomain, gen);
+    }
+
     exampleGenerator2gsl(gen, weightID, true, multinomialTreatment, X, y, w, rows, columns);
 
     if (columns==1)
       raiseError("no useful attributes");
 
-    double SSres, SStot;
-    Fselection(X, y, w, rows, columns, (iterativeSelection & 1) == 1, (iterativeSelection & 2) == 2, c, c_se, SSres, SStot);
+    double SSres, SStot, N;
+    vector<int> columnOrder;
+    Fselection(X, y, w, rows, columns, (iterativeSelection & 1) == 1, (iterativeSelection & 2) == 2, columnOrder, c, c_se, SSres, SStot, N);
+    GSL_FREE(X, matrix)
+    GSL_FREE(y, vector)
+    GSL_FREE(w, vector)
 
-    FREE_IF(X, gsl_matrix_free)
-    FREE_IF(y, gsl_vector_free)
-    FREE_IF(w, gsl_vector_free)
+    if (iterativeSelection) {
+      sort_inPlace(c, columnOrder);
+      sort_inPlace(c_se, columnOrder);
+      sort(columnOrder.begin(), columnOrder.end());
+    }
 
-    PVarList attributes = mlnew TVarList(); 
-    attributes->push_back(gen->domain->classVar);
-    PITERATE(TVarList, vl, gen->domain->attributes) 
-      attributes->push_back(*vl);
+    const TVarList &origattr = gen->domain->attributes.getReference();
+    PVarList dom_attributes = mlnew TVarList();
+    PVarList attributes = mlnew TVarList();
+    PAttributedFloatList coeffs = mlnew TAttributedFloatList(attributes, columnOrder.size());
+    PAttributedFloatList coeffs_se = mlnew TAttributedFloatList(attributes, columnOrder.size());
 
-    PAttributedFloatList coeffs = mlnew TAttributedFloatList(attributes, attributes->size());
-    PAttributedFloatList coeffs_se = mlnew TAttributedFloatList(attributes, attributes->size());
     TAttributedFloatList::iterator ci(coeffs->begin()), ce(coeffs->end());
     TAttributedFloatList::iterator ci_se(coeffs_se->begin());
-    for(int i = 0; ci!=ce; ci++, ci_se++, i++) {
+    vector<int>::const_iterator cli(columnOrder.begin()), cle(columnOrder.end());
+
+    for(int i = 0; cli!=cle; cli++, ci++, ci_se++, i++) {
+      if (i) {
+        attributes->push_back(origattr[*cli-1]);
+        dom_attributes->push_back(origattr[*cli-1]);
+      }
+      else
+        attributes->push_back(gen->domain->classVar);
+
       *ci = float(gsl_vector_get(c, i));
       *ci_se = float(gsl_vector_get(c_se, i));
     }
 
-    FREE_IF(c, gsl_vector_free)
+    GSL_FREE(c, vector)
+    GSL_FREE(c_se, vector)
 
-    return mlnew TLinRegClassifier(gen->domain, coeffs, coeffs_se, SSres, SStot);
+
+    TLinRegClassifier *classifier = mlnew TLinRegClassifier(mlnew TDomain(origen->domain->classVar, dom_attributes.getReference()), coeffs, coeffs_se, SSres, SStot, N);
+    PClassifier wclassifier(classifier);
+    classifier->imputer = imputer;
+
+    if (origen->domain->classVar->varType == TValue::INTVAR)
+      classifier->threshold = 0.5; //XXX compute the threshold!!!
+
+    return wclassifier;
   }
   catch (...) {
-    FREE_IF(X, gsl_matrix_free)
-    FREE_IF(y, gsl_vector_free)
-    FREE_IF(w, gsl_vector_free)
-    FREE_IF(c, gsl_vector_free)
+    GSL_FREE(X, matrix)
+    GSL_FREE(y, vector)
+    GSL_FREE(w, vector)
+    GSL_FREE(c, vector)
+    GSL_FREE(c_se, vector)
     throw;
   }
 }
 
 
 TLinRegClassifier::TLinRegClassifier()
-: SSres(0.0),
-  SStot(0.0)
+: N(0.0),
+  SStot(-1.0),
+  SSres(-1.0),
+  SSreg(-1.0),
+  MSres(-1.0),
+  MSreg(-1.0),
+  F(-1.0),
+  Fprob(-1.0),
+  R2(-1.0),
+  adjR2(-1.0)
 {}
 
 
-TLinRegClassifier::TLinRegClassifier(PDomain dom, PAttributedFloatList coeffs, PAttributedFloatList coeffs_se, const double &aSSres, const double &aSStot)
+TLinRegClassifier::TLinRegClassifier(PDomain dom, PAttributedFloatList coeffs, PAttributedFloatList coeffs_se, const float &SSres, const float &SStot, const float &N)
 : TClassifierFD(dom),
   coefficients(coeffs),
   coefficients_se(coeffs_se),
-  SSres(aSSres),
-  SStot(aSStot)
-{}
+  N(0.0),
+  SStot(-1.0),
+  SSres(-1.0),
+  SSreg(-1.0),
+  MSres(-1.0),
+  MSreg(-1.0),
+  F(-1.0),
+  Fprob(-1.0),
+  R2(-1.0),
+  adjR2(-1.0)
+{ setStatistics(SSres, SStot, N); }
 
 
 TValue TLinRegClassifier::operator()(const TExample &ex)
 { 
   checkProperty(domain)
-  TExample exam = TExample(domain, ex);
-  TAttributedFloatList::const_iterator ci(coefficients->begin()), ce(coefficients->end());
-  TExample::const_iterator ei(exam.begin());
-  TVarList::const_iterator vi(domain->attributes->begin());
+  TExample cexample = TExample(domain, ex);
+  TExample *example = imputer ? imputer->call(cexample) : &cexample;
 
-  float prediction = *(ci++);
-  for(; ci!=ce; ci++, ei++, vi++) {
-    if ((*ei).isSpecial())
-      raiseError("attribute '%s' has unknown value", (*vi)->name.c_str());
-    prediction += *ci * ( (*vi)->varType==TValue::INTVAR ? (*ei).intV : (*ei).floatV);
+  try {
+    TAttributedFloatList::const_iterator ci(coefficients->begin()), ce(coefficients->end());
+    TExample::const_iterator ei(example->begin());
+    TVarList::const_iterator vi(domain->attributes->begin());
+
+    float prediction = *(ci++);
+    for(; ci!=ce; ci++, ei++, vi++) {
+      if ((*ei).isSpecial())
+        raiseError("attribute '%s' has unknown value", (*vi)->name.c_str());
+      prediction += *ci * ( (*vi)->varType==TValue::INTVAR ? (*ei).intV : (*ei).floatV);
+    }
+
+    if (classVar->varType == TValue::FLOATVAR)
+      return TValue(prediction);
+    else
+      return TValue(prediction>threshold ? 1 : 0);
   }
-
-  return TValue(prediction);
+  catch (...) {
+    if (imputer)
+      mldelete example;
+    throw;
+  }
 }
+
+void TLinRegClassifier::setStatistics(const float &aSSres, const float &aSStot, const float &aN)
+{
+  const int k = coefficients->size()-1;
+
+  N = aN;
+  SSres = aSSres;
+  SStot = aSStot;
+  SSreg = SSres+SStot;
+  MSres = SSres / (N-k-1);
+  MStot = SStot / (N-1);
+  MSreg = k>0 ? SSreg / k : 0.0;
+  
+  F = (MSres>1e-1) ? MSreg / MSres : numeric_limits<float>::max();
+  Fprob = (F>1e-10) ? fprob(double(k), double(N-k-1), double(F)) : 0.0;
+  R2 = 1 - SSres/SStot;
+  adjR2 = 1 - MSres/MStot;
+}
+

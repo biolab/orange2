@@ -25,13 +25,13 @@
 
 #include "root.hpp"
 #include "transval.hpp"
+#include "classify.hpp"
 
 WRAPPER(Imputer)
 WRAPPER(ExampleGenerator)
 WRAPPER(ImputerConstructor)
 WRAPPER(Example)
 WRAPPER(Learner)
-VWRAPPER(ClassifierList)
 
 
 class TTransformValue_IsDefined : public TTransformValue

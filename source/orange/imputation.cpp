@@ -32,6 +32,7 @@
 
 #include "imputation.ppp"
 
+WRAPPER(Classifier)
 
 void TTransformValue_IsDefined::transform(TValue &val)
 {

@@ -29,6 +29,9 @@
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 
+WRAPPER(Imputer)
+WRAPPER(ImputerConstructor)
+
 class TLinRegLearner : public TLearner
 {
 public:
@@ -40,13 +43,18 @@ public:
   float Fout; //P significance limit for the attribute to be removed
   int maxIterations; //P maximal number of iterations for stepwise
 
+  PImputerConstructor imputerConstructor; //P if present, it constructs an imputer for unknown values
+
   TLinRegLearner();
 
   void Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, const int &rows, const int &columns,
                   bool forward, bool backward,
-                  gsl_vector *&c, gsl_vector *&c_se, double &SSres, double &SStot);
+                  vector<int> &columnOrder, gsl_vector *&c, gsl_vector *&c_se, double &SSres, double &SStot, double &N);
 
   virtual PClassifier operator()(PExampleGenerator, const int &weight = 0);
+
+  static gsl_vector *unmix(gsl_vector *mixed, vector<int> columnOrder, int k);
+  static void sort_inPlace(gsl_vector *mixed, vector<int> columnOrder);
 };
 
 
@@ -57,13 +65,27 @@ public:
 
 	PAttributedFloatList coefficients; //P coefficients of regression plane
   PAttributedFloatList coefficients_se; //P standard errors of coefficients
-  float SSres; //P residual sum of squares
+  float N; //P number of examples
   float SStot; //P total sum of squares
+  float SSres; //P residual sum of squares
+  float SSreg; //P sum of squares due to regression
+  float MStot; //P total mean squares
+  float MSres; //P residual mean square
+  float MSreg; //P mean square regression
+  float F; //P F statistics for the model
+  float Fprob; //P significance of the model (F)
+  float R2; //P determination
+  float adjR2; //P adjusted determination
+
+  PImputer imputer; //P if present, it imputes unknown values
+  float threshold; //P classification threshold (for discrete classes)
 
   TLinRegClassifier();
-  TLinRegClassifier(PDomain, PAttributedFloatList, PAttributedFloatList, const double &SSres, const double &SStot);
+  TLinRegClassifier(PDomain, PAttributedFloatList, PAttributedFloatList, const float &SSres, const float &SStot, const float &N);
 
   TValue operator()(const TExample &ex);
+
+  void setStatistics(const float &aSSres, const float &aSStot, const float &N);
 };
 
 WRAPPER(LinRegLearner)

@@ -24,8 +24,11 @@
 #define __TRANSVAL_HPP
 
 #include "root.hpp"
+#include "orvector.hpp"
 
 WRAPPER(TransformValue);
+WRAPPER(Domain);
+WRAPPER(ExampleGenerator);
 
 /*  Transforms the value to another value. Transforming can be done 'in place' by replacing the old
     value with a new one (function 'transform'). Alternatively, operator () can be used to get
@@ -43,6 +46,55 @@ public:
 
   virtual void transform(TValue &val) =0;
 };
+
+
+class TMapIntValue : public TTransformValue {
+public:
+  __REGISTER_CLASS
+
+  PIntList mapping; //P a lookup table
+
+  TMapIntValue(PIntList = PIntList());
+  TMapIntValue(const TIntList &);
+
+  virtual void transform(TValue &val);
+};
+
+
+class TDiscrete2Continuous : public TTransformValue {
+public:
+  __REGISTER_CLASS
+
+  int value; //P target value
+  bool invert; //P give 1.0 to values not equal to the target
+
+  TDiscrete2Continuous(const int =-1, bool = false);
+  virtual void transform(TValue &);
+};
+
+
+class TNormalizeContinuous : public TTransformValue {
+public:
+  __REGISTER_CLASS
+
+  float average; //P the average value
+  float span; //P the value span
+
+  TNormalizeContinuous(const float =0.0, const float =0.0);
+  virtual void transform(TValue &);
+};
+
+class TEnumVariable;
+WRAPPER(Variable)
+
+PVariable discrete2continuous(TEnumVariable *evar, PVariable wevar, const int &val);
+void discrete2continous(PVariable var, TVarList &vars);
+PVariable normalizeContinuous(PVariable var, const float &avg, const float &span);
+PVariable discreteClass2continous(PVariable classVar, const int &targetClass, bool invertClass);
+PDomain regressionDomain(PDomain, const int &targetClass = -1, bool invert = false);
+PDomain regressionDomain(PExampleGenerator, const int &targetClass = -1, bool invertClass = false, bool normalizeContinuous = true);
+
+bool hasNonContinuousAttributes(PDomain, bool checkClass);
 
 #endif
 

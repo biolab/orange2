@@ -104,31 +104,70 @@ PyObject *Discretizer_constructVariable(PyObject *self, PyObject *var) PYARGS(ME
 }
 
 
-/* ************ SVM FILTERS ************** */
+/* ************ FILTERS FOR REGRESSION ************** */
 
-#include "svm_filtering.hpp"
+#include "transval.hpp"
 
+C_NAMED(MapIntValue, TransformValue, "([mapping=])")
 C_NAMED(Discrete2Continuous, TransformValue, "([value=])")
 C_NAMED(NormalizeContinuous, TransformValue, "([average=, span=])")
 
-PyObject *Domain4SVM(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "([domain | examples]) -> domain")
+int getTargetClass(PVariable classVar, PyObject *pyval)
+{
+  if (pyval) {
+    if (classVar->varType != TValue::INTVAR)
+      PYERROR(PyExc_TypeError, "cannot set target value for non-discrete class", -2);
+
+    TValue targetValue;
+    if (!convertFromPython(pyval, targetValue, classVar))
+      return -2;
+    if (targetValue.isSpecial())
+      PYERROR(PyExc_TypeError, "unknown value passed as class target", -2)
+    else
+      return targetValue.intV;
+  }
+  return -1; // not an error, but undefined!
+}
+
+// WAS: Domain4SVM -- has Aleks used it already?
+PyObject *RegressionDomain(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "([domain | examples]) -> domain")
 { PyTRY
     PyObject *arg;
-    if (!PyArg_ParseTuple(args, "O", &arg))
-      PYERROR(PyExc_TypeError, "Domain4SVM: domain or examples expected", PYNULL);
+    PyObject *pyval = PYNULL;
+    PyObject *pyInvertClass = PYNULL;
+    PyObject *pyNormalizeContinuous = PYNULL;
+    if (!PyArg_ParseTuple(args, "O|Oii:RegressionDomain", &arg, &pyval, &pyInvertClass, &pyNormalizeContinuous))
+      return PYNULL;
 
-    PDomain res;
+    bool invertClass = pyInvertClass && PyObject_IsTrue(pyInvertClass);
+    bool normalizeContinuous = pyNormalizeContinuous && PyObject_IsTrue(pyNormalizeContinuous);
 
-    if (PyOrDomain_Check(arg))
-      res=domain4SVM(PyOrange_AsDomain(arg));
-    else {
-      PExampleGenerator egen=exampleGenFromParsedArgs(arg);
-      if (!egen)
-        PYERROR(PyExc_TypeError, "Domain4SVM: domain or examples expected", PYNULL);
-      res=domain4SVM(egen);
+    if (PyOrDomain_Check(arg)) {
+      if (normalizeContinuous)
+        PYERROR(PyExc_SystemError, "cannot normalize continuous attributes based on Domain only", PYNULL);
+
+      PDomain dom(PyOrange_AsDomain(arg));
+      int targetClass = getTargetClass(dom->classVar, pyval);
+      if (targetClass==-2)
+        return PYNULL;
+
+      return WrapOrange(regressionDomain(dom, targetClass, invertClass));
     }
 
-    return WrapOrange(res);
+    else {
+      PExampleGenerator egen = exampleGenFromParsedArgs(arg);
+      if (!egen)
+        PYERROR(PyExc_TypeError, "domain or examples expected as the first argument", PYNULL);
+      if (!egen->domain->classVar)
+        PYERROR(PyExc_TypeError, "class-less domain", PYNULL);
+
+      int targetClass = getTargetClass(egen->domain->classVar, pyval);
+      if (targetClass=-2)
+        return PYNULL;
+
+      return WrapOrange(regressionDomain(egen, targetClass, invertClass, normalizeContinuous));
+    }
+
   PyCATCH
 }
 

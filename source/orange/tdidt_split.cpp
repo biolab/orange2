@@ -33,35 +33,6 @@
 #include "tdidt_split.ppp"
 
 
-TMapIntValue::TMapIntValue(PIntList al)
-: mapping(al)
-{}
-
-
-TMapIntValue::TMapIntValue(const TIntList &al)
-: mapping(mlnew TIntList(al))
-{}
-
-
-void TMapIntValue::transform(TValue &val)
-{ checkProperty(mapping);
-
-  if (val.isSpecial())
-    return;
-  if (val.varType!=TValue::INTVAR)
-    raiseErrorWho("transform", "invalid value type (discrete expected)");
-  if (val.intV>=int(mapping->size()))
-    raiseErrorWho("transform", "value out of range");
-
-  int res = mapping->at(val.intV);
-  if (res<0)
-    val.setDK();
-  else
-    val.intV = res;
-}
-
-
-
 TTreeSplitConstructor::TTreeSplitConstructor(const float &aml)
 : minSubset(aml>0 ? aml : 1e-20)
 {}

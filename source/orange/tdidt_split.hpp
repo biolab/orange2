@@ -39,20 +39,6 @@ WRAPPER(MeasureAttribute)
 WRAPPER(ExampleTable)
 
 
-class TMapIntValue : public TTransformValue {
-public:
-  __REGISTER_CLASS
-
-  PIntList mapping; //P a lookup table
-
-  TMapIntValue(PIntList = PIntList());
-  TMapIntValue(const TIntList &);
-
-  virtual void transform(TValue &val);
-};
-
-
-
 class TTreeSplitConstructor : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
