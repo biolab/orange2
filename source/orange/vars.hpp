@@ -161,6 +161,7 @@ public:
   float stepValue;  //P step
   
   int numberOfDecimals; //P number of digits after decimal point
+  bool scientificFormat; //P use scientific format in output
   int adjustDecimals; //P adjust number of decimals according to the values converted (0 - no, 1 - yes, 2 - yes, but haven't seen any yet)
 
   TFloatVariable();

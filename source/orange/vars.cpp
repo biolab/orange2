@@ -390,6 +390,7 @@ TFloatVariable::TFloatVariable()
   endValue(0.0),
   stepValue(-1.0),
   numberOfDecimals(3),
+  scientificFormat(false),
   adjustDecimals(2)
 {}
 
@@ -400,6 +401,7 @@ TFloatVariable::TFloatVariable(const string &aname)
   endValue(0.0),
   stepValue(-1.0),
   numberOfDecimals(3),
+  scientificFormat(false),
   adjustDecimals(2)
 {}
 
@@ -437,12 +439,17 @@ int  TFloatVariable::noOfValues() const
 { return stepValue>0 ? int((endValue-startValue)/stepValue) : -1; }
 
 
-inline int getNumberOfDecimals(const char *vals)
+inline int getNumberOfDecimals(const char *vals, bool &hasE)
 {
   const char *valsi;
-  for(valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')) && (*valsi!='.'); valsi++);
+  for(valsi = vals; *valsi && ((*valsi<'0') || (*valsi>'9')); valsi++);
   if (!*valsi)
     return -1;
+
+  if ((*valsi=='e') || (*valsi=='E')) {
+    hasE = true;
+    return 0;
+  }
 
   for(; *valsi && (*valsi!='.'); valsi++);
   if (!*valsi)
@@ -450,6 +457,8 @@ inline int getNumberOfDecimals(const char *vals)
 
   int decimals = 0;
   for(valsi++; *valsi && (*valsi>='0') && (*valsi<='9'); valsi++, decimals++);
+
+  hasE = hasE || (*valsi == 'e') || (*valsi == 'E');
   return decimals;
 }
 
@@ -470,11 +479,11 @@ void TFloatVariable::str2val(const string &valname, TValue &valu)
   int decimals;
   switch (adjustDecimals) {
     case 2:
-      numberOfDecimals = getNumberOfDecimals(vals);
+      numberOfDecimals = getNumberOfDecimals(vals, scientificFormat);
       adjustDecimals = 1;
       break;
     case 1:
-      decimals = getNumberOfDecimals(vals);
+      decimals = getNumberOfDecimals(vals, scientificFormat);
       if (decimals > numberOfDecimals)
         numberOfDecimals = decimals;
   }
@@ -496,11 +505,11 @@ bool TFloatVariable::str2val_try(const string &valname, TValue &valu)
   int decimals;
   switch (adjustDecimals) {
     case 2:
-      numberOfDecimals = getNumberOfDecimals(vals);
+      numberOfDecimals = getNumberOfDecimals(vals, scientificFormat);
       adjustDecimals = 1;
       break;
     case 1:
-      decimals = getNumberOfDecimals(vals);
+      decimals = getNumberOfDecimals(vals, scientificFormat);
       if (decimals > numberOfDecimals)
         numberOfDecimals = decimals;
   }
@@ -515,10 +524,10 @@ void TFloatVariable::val2str(const TValue &valu, string &vname) const
   else {
     char buf[64];
     const float f = fabs(valu.floatV);
-    if ((f==0.0) || ((f>1e-6) && (f<1e6)))
-      sprintf(buf, "%.*f", numberOfDecimals, valu.floatV);
+    if (scientificFormat)
+      sprintf(buf, "%g", valu.floatV);
     else
-      sprintf(buf, "%e", valu.floatV);
+      sprintf(buf, "%.*f", numberOfDecimals, valu.floatV);
     vname = buf;
   }
 }
