@@ -1,21 +1,11 @@
-import os, re, orange, httplib, urllib, sys
+import os, re, httplib, urllib, sys
 from qt import *
 import md5
 
 
-orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
-iconsDir = os.path.join(orangeDir, "OrangeCanvas/icons")
-updateIcon = os.path.join(iconsDir, "update.png")
-foldersIcon = os.path.join(iconsDir, "folders.png")
-
 defaultIcon = ['16 13 5 1', '. c #040404', '# c #808304', 'a c None', 'b c #f3f704', 'c c #f3f7f3',  'aaaaaaaaa...aaaa',  'aaaaaaaa.aaa.a.a',  'aaaaaaaaaaaaa..a',
     'a...aaaaaaaa...a', '.bcb.......aaaaa', '.cbcbcbcbc.aaaaa', '.bcbcbcbcb.aaaaa', '.cbcb...........', '.bcb.#########.a', '.cb.#########.aa', '.b.#########.aaa', '..#########.aaaa', '...........aaaaa']
 
-if not os.path.exists(updateIcon):
-    updateIcon = defaultIcon
-
-if not os.path.exists(foldersIcon):
-    foldersIcon = defaultIcon
 
 def splitDirs(path):
     dirs, filename = os.path.split(path)
@@ -65,12 +55,20 @@ class updateOrangeDlg(QMainWindow):
         self.setCentralWidget(self.text)
         self.statusBar.message('Ready')
 
+        import updateOrange
+        self.orangeDir = os.path.split(os.path.abspath(updateOrange.__file__))[0]
+        iconsDir = os.path.join(self.orangeDir, "OrangeCanvas/icons")
+        updateIcon = os.path.join(iconsDir, "update.png")
+        foldersIcon = os.path.join(iconsDir, "folders.png")
+        if not os.path.exists(updateIcon): updateIcon = defaultIcon
+        if not os.path.exists(foldersIcon): foldersIcon = defaultIcon
+
         self.re_vLocalLine = re.compile(r'(?P<fname>.*)=(?P<version>[.0-9]*)(:?)(?P<md5>.*)')
         self.re_vInternetLine = re.compile(r'(?P<fname>.*)=(?P<version>[.0-9]*)(:?)(?P<location>.*)')
         self.re_widget = re.compile(r'(?P<category>.*)[/,\\].*')
         self.re_documentation = re.compile(r'doc[/,\\].*')
 
-        self.downfile = os.path.join(os.path.dirname(orange.__file__),"whatsdown.txt")
+        self.downfile = os.path.join(self.orangeDir, "whatsdown.txt")
         self.httpconnection = httplib.HTTPConnection('www.ailab.si')
 
         self.updateGroups = []
@@ -87,7 +85,7 @@ class updateOrangeDlg(QMainWindow):
             self.addText("Current versions of Orange files were successfully located.")
         except:
             self.addText("Orange update failed to locate file '%s'. There is no information about current versions of Orange files." %(self.downfile), 0)
-        
+        self.addText("To check for newer versions of files click the 'Update Files' button.")
 
         # create buttons
         self.toolUpdate  = QToolButton(QPixmap(updateIcon), "Update Files" , QString.null, self.executeUpdate, self.toolbar, 'Update Files')
@@ -290,8 +288,8 @@ class updateOrangeDlg(QMainWindow):
         self.addText("Finished updating new files. New files: <b>%d</b>. Updated files: <b>%d</b>\n<hr>" %(newFiles, updatedFiles))
 
         # remove widgetregistry.xml in orangeCanvas directory
-        if os.path.exists(os.path.join(orangeDir, "OrangeCanvas/widgetregistry.xml")):
-            os.remove(os.path.join(orangeDir, "OrangeCanvas/widgetregistry.xml"))
+        if os.path.exists(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml")):
+            os.remove(os.path.join(self.orangeDir, "OrangeCanvas/widgetregistry.xml"))
         
         self.statusBar.message("Finished...")
         
