@@ -3,7 +3,7 @@
 #	document class - main operations (save, load, ...)
 #
 import sys
-import os
+import os, os.path
 import string
 from qt import *
 from qtcanvas import *
@@ -475,34 +475,28 @@ class SchemaDoc(QMainWindow):
     # ###########################################
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
-        appName = self.applicationname
-        if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".": appName = appName + ".py"
-        elif len(appName) > 4 and appName[-4] == '.': appName = appName[:-4] + ".py"
-        appName = appName.replace(" ", "")
-
+        appName = os.path.splitext(self.applicationname)[0] + ".py"
         qname = QFileDialog.getSaveFileName( self.applicationpath + "/" + self.applicationname , "Orange Scripts (*.py)", self, "", "Save File as Application")
         if qname.isEmpty(): return
         
-        appName = str(qname)
-        if len(appName) > 4 and appName[-4] != "." and appName[-3] != ".":
-            appName = appName + ".py"
-
+        appName = os.path.splitext(str(qname))[0] + ".py"
         self.applicationname = appName
         (dir, fileName) = os.path.split(appName)
         self.applicationpath = dir
-        fileName = fileName[:-3]
+        fileName = os.path.splitext(fileName)[0]
 
         #format string with file content
         t = "    "  # instead of tab
-        imports = "import sys\nimport os\nfrom orngSignalManager import *\n"
+        imports = "import sys, os, cPickle\nfrom orngSignalManager import *\n"
         instancesT = "# create widget instances\n" +t+t
         instancesB = "# create widget instances\n" +t+t
         tabs = "# add tabs\n"+t+t
         links = "# add widget signals\n"+t+t + "signalManager.setFreeze(1)\n" +t+t
-        save = ""
         buttons = "# create widget buttons\n"+t+t
         buttonsConnect = "#connect GUI buttons to show widgets\n"+t+t
         manager = ""
+        loadSett = ""
+        saveSett = ""
         progressHandlers = ""
         # add widgets to application as they are topologically sorted
         for instance in self.signalManager.widgets:
@@ -513,15 +507,17 @@ class SchemaDoc(QMainWindow):
             name = name.replace(" ", "_")
             name = name.replace("(", "")
             name = name.replace(")", "")
-            imports += "from " + widget.widget.fileName + " import *\n"
-            instancesT += "self.ow" + name + " = " + widget.widget.fileName + "(self.tabs)\n"+t+t
-            manager += "signalManager.addWidget(self.ow" + name + ")\n" +t+t
-            instancesB += "self.ow" + name + " = " + widget.widget.fileName + "()\n"+t+t
-            tabs += "self.tabs.insertTab (self.ow" + name + ",\"" + widget.caption + "\")\n"+t+t
-            buttons += "owButton" + name + " = QPushButton(\"" + widget.caption + "\", self)\n"+t+t
-            buttonsConnect += "self.connect( owButton" + name + ",SIGNAL(\"clicked()\"), self.ow" + name + ".reshow)\n"+t+t
-            save += "self.ow" + name + ".saveSettings()\n"+t+t
-            progressHandlers += "self.ow" + name + ".progressBarSetHandler(self.progressHandler)\n"+t+t
+            imports += "from %s import *\n" % (widget.widget.fileName)
+            instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.fileName)+t+t
+            manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
+            instancesB += "self.ow%s = %s()\n" %(name, widget.widget.fileName) +t+t
+            tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
+            buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
+            buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
+            progressHandlers += "self.ow%s.progressBarSetHandler(self.progressHandler)\n" % (name) +t+t
+            loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, name) +t+t
+            loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
+            saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (name, name) +t+t
             
         for line in self.lines:
             if not line.getEnabled(): continue
@@ -539,7 +535,8 @@ class SchemaDoc(QMainWindow):
                 links += "signalManager.addLink( self.ow" + outWidgetName + ", self.ow" + inWidgetName + ", '" + outName + "', '" + inName + "', 1)\n" +t+t
     
         links += "signalManager.setFreeze(0)\n" +t+t
-        buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"),a,SLOT(\"quit()\"))\n"+t+t
+        buttons += "frameSpace = QFrame(self);  frameSpace.setMinimumHeight(10); frameSpace.setMaximumHeight(10)\n"+t+t
+        buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"), application, SLOT(\"quit()\"))\n"+t+t
 
         classname = os.path.basename(appName)[:-3]
         classname = classname.replace(" ", "_")
@@ -589,28 +586,57 @@ class SchemaDoc(QMainWindow):
             self.progress.setProgress(val)
             self.update()"""    
 
+        loadSettings = """
+        
+    def loadSettings(self):
+        try:
+            file = open("%s", "r")
+        except:
+            print "File %s not found. Unable to load settings."
+            return
+        strSettings = cPickle.load(file)
+        file.close()
+        """ % (fileName + ".sav", fileName + ".sav")
+        loadSettings += loadSett
+
+        saveSettings = """
+        
+    def saveSettings(self):
+        strSettings = {}
+        """ + saveSett + "\n" + t+t + """file = open("%s", "w")
+        cPickle.dump(strSettings, file)
+        file.close()
+        """ % (fileName + ".sav")
+        
                 
         finish = """
-a=QApplication(sys.argv)
-ow=""" + classname + """()
-a.setMainWidget(ow)
-QObject.connect(a, SIGNAL('aboutToQuit()'),ow.exit) 
+application = QApplication(sys.argv)
+ow = """ + classname + """()
+application.setMainWidget(ow)
+ow.loadSettings()
 ow.show()
-a.exec_loop()"""
+application.exec_loop()
+ow.saveSettings()
+"""
 
-        if save != "":
-            save = t+"def exit(self):\n" +t+t+ save
+        #if save != "":
+        #    save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n\n" + handlerFunct + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + save + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(appName, "wt")
         fileApp.write(whole)
         fileApp.flush()
         fileApp.close()
+
+        # save settings
+        self.saveWidgetSettings(os.path.splitext(appName)[0] + ".sav")
+        
+        
 
 if __name__=='__main__': 
 	app = QApplication(sys.argv)
