@@ -54,9 +54,7 @@ class kNNOptimization(OWBaseWidget):
 
         self.parentWidget = parentWidget
         self.setCaption("Qt VizRank Optimization Dialog")
-        self.topLayout = QVBoxLayout( self, 10 ) 
-        self.grid=QGridLayout(5,2)
-        self.topLayout.addLayout( self.grid, 10 )
+        self.controlArea = QVBoxLayout(self)
 
         self.graph = graph
         self.kValue = 10
@@ -95,6 +93,7 @@ class kNNOptimization(OWBaseWidget):
         self.loadSettings()
 
         self.tabs = QTabWidget(self, 'tabWidget')
+        self.controlArea.addWidget(self.tabs)
         
         self.MainTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self)
@@ -222,6 +221,10 @@ class kNNOptimization(OWBaseWidget):
         self.resize(350,550)
         self.setMinimumWidth(350)
         self.tabs.setMinimumWidth(350)
+
+        self.statusBar = QStatusBar(self)
+        self.controlArea.addWidget(self.statusBar)
+        self.controlArea.activate()
 
     # ##############################################################
     # EVENTS
@@ -833,9 +836,6 @@ class kNNOptimization(OWBaseWidget):
         if self.resultList.count() == 0: return None
         return self.shownResults[self.resultList.currentItem()]
 
-    def resizeEvent(self, ev):
-        self.tabs.resize(ev.size().width(), ev.size().height())
-
     def stopOptimizationClick(self):
         self.cancelOptimization = 1
 
@@ -944,7 +944,8 @@ class kNNOptimization(OWBaseWidget):
         classInd = self.classValueList.currentItem()
         self.parentWidget.showAttributes(self.arguments[classInd][ind][4], clusterClosure = None)
         
-
+    def setStatusBarText(self, text):
+        self.statusBar.message(text)
 
 
 #test widget appearance
