@@ -1,0 +1,4 @@
+## Program to compute "the meaning of life, the universe, and everything"
+
+return 42
+
