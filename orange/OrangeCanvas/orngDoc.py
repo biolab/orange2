@@ -83,10 +83,20 @@ class SchemaDoc(QMainWindow):
             
         dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
         dialog.setOutInWidgets(outWidget, inWidget)
-        canConnect = dialog.addDefaultLinks()
-        if not canConnect:
+        connectStatus = dialog.addDefaultLinks()
+        if connectStatus == -1:
+            #QMessageBox.critical( None, "Orange Canvas", "Error while connecting widgets. Please rebuild  widget registry (menu Options/Rebuild widget registry) because some of the widgets have now different signals.", QMessageBox.Ok + QMessageBox.Default )
+            #return
+            self.canvasDlg.menuItemRebuildWidgetRegistry()
+            connectStatus = dialog.addDefaultLinks()
+        
+        if connectStatus == 0:
             QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
             return
+        elif connectStatus == -1:
+            QMessageBox.critical( None, "Orange Canvas", "Error while connecting widgets. Please rebuild  widget registry (menu Options/Rebuild widget registry) and restart Orange Canvas. Some of the widgets have now different signals.", QMessageBox.Ok + QMessageBox.Default )
+            return
+        
 
         # if there are multiple choices, how to connect this two widget, then show the dialog
         if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
@@ -363,7 +373,7 @@ class SchemaDoc(QMainWindow):
             temp.setAttribute("xPos", str(int(widget.x())) )
             temp.setAttribute("yPos", str(int(widget.y())) )
             temp.setAttribute("caption", widget.caption)
-            temp.setAttribute("widgetName", widget.widget.fileName)
+            temp.setAttribute("widgetName", widget.widget.getFileName())
             widgets.appendChild(temp)
 
         #save connections
@@ -522,10 +532,10 @@ class SchemaDoc(QMainWindow):
                 name = name.replace(" ", "_")
                 name = name.replace("(", "")
                 name = name.replace(")", "")
-                imports += "from %s import *\n" % (widget.widget.fileName)
-                instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.fileName)+t+t
+                imports += "from %s import *\n" % (widget.widget.getFileName())
+                instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
-                instancesB += "self.ow%s = %s()\n" %(name, widget.widget.fileName) +t+t
+                instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
                 buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t

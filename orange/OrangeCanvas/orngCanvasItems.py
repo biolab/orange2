@@ -239,8 +239,8 @@ class CanvasWidget(QCanvasRectangle):
         self.canvas = canvas
         self.view = view
         self.canvasDlg = canvasDlg
-        if os.path.isfile(widget.iconName):
-            self.image = QPixmap(widget.iconName)
+        if os.path.isfile(widget.getIconName()):
+            self.image = QPixmap(widget.getIconName())
         else:
             self.image = QPixmap(defaultPic)
 
@@ -269,9 +269,9 @@ class CanvasWidget(QCanvasRectangle):
         #self.instance = eval(code)
 
         # import widget class and create a class instance
-        code = compile("import " + widget.fileName, ".", "single")
+        code = compile("import " + widget.getFileName(), ".", "single")
         exec(code)
-        code = compile(widget.fileName + "." + widget.fileName + "()", ".", "eval")
+        code = compile(widget.getFileName() + "." + widget.getFileName() + "()", ".", "eval")
         self.instance = eval(code)
         self.instance.progressBarSetHandler(self.view.progressBarHandler)   # set progress bar event handler
 
@@ -294,18 +294,16 @@ class CanvasWidget(QCanvasRectangle):
     def getOutSignalInfo(self, outSignal):
         for signal in self.instance.outputs:
             if signal[0] == outSignal: return signal
-        print self.instance.outputs
-        print "Warning - name ", outSignal, " was not found in outputs"
+        print 
+        print "Warning - name ", outSignal, " was not found in outputs of widget ", self.instance
         return None
 
     def getInSignalInfo(self, inSignal):
         for signal in self.instance.inputs:
             if signal[0] == inSignal: return signal
-        print self.instance.inputs
-        print "Warning - name ", inSignal, " was not found in inputs"
+        print "Warning - name ", inSignal, " was not found in inputs of widget ", self.instance
         return None
         
-
     def remove(self):
         self.progressBarRect.hide()
         self.progressRect.hide()
@@ -369,7 +367,7 @@ class CanvasWidget(QCanvasRectangle):
     # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, pos):
         LBox = QRect(self.x(), self.y()+18,8,16)
-        if self.widget.inList == []: return FALSE
+        if self.widget.getInList() == []: return FALSE
 
         if isinstance(pos, QPoint):
             if LBox.contains(pos): return TRUE
@@ -383,7 +381,7 @@ class CanvasWidget(QCanvasRectangle):
     # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, pos):
         RBox = QRect(self.x() + 60, self.y()+18,8,16)
-        if self.widget.outList == []: return FALSE
+        if self.widget.getOutList() == []: return FALSE
 
         if isinstance(pos, QPoint):
             if RBox.contains(pos): return TRUE
@@ -427,12 +425,12 @@ class CanvasWidget(QCanvasRectangle):
         #painter.drawRect(self.x()+8, self.y(), 52, 52)
 
         if self.imageEdge != None:
-            if self.widget.inList != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
-            if self.widget.outList != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
+            if self.widget.getInList() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
+            if self.widget.getOutList() != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
         else:
             painter.setBrush(QBrush(self.blue))
-            if self.widget.inList != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
-            if self.widget.outList != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+            if self.widget.getInList() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
+            if self.widget.getOutList() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
         painter.setPen(QPen(self.black))
         #rect = painter.boundingRect(0,0,200,20,0,self.caption)
@@ -445,10 +443,10 @@ class CanvasWidget(QCanvasRectangle):
 
         painter.setBrush(QBrush(self.black))
         
-        if self.widget.inList != []:
+        if self.widget.getInList() != []:
             painter.drawRect(self.x(), self.y() + 18, 8, 16)
 
-        if self.widget.outList != []:
+        if self.widget.getOutList() != []:
             painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
         #painter.setBrush(QBrush(self.NoBrush))
@@ -501,9 +499,9 @@ class CanvasWidget(QCanvasRectangle):
         self.removeTooltip()
         string = "<nobr><b>" + self.caption + "</b></nobr><br><hr>Inputs:<br>"
 
-        if self.widget.inList == []: string += "None<br>"
+        if self.widget.getInList() == []: string += "None<br>"
         else:
-            for (signal, type, handler, single) in self.widget.inList:
+            for (signal, type, handler, single) in self.widget.getInList():
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal)
                 if len(widgets) > 0:
                     string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (from "
@@ -514,9 +512,9 @@ class CanvasWidget(QCanvasRectangle):
                     string += "<nobr>- " + self.canvasDlg.getChannelName(signal) + "</nobr><br>"
 
         string += "<hr>Outputs:<br>"
-        if self.widget.outList == []: string += "None"
+        if self.widget.getOutList() == []: string += "None"
         else:
-            for (signal, type) in self.widget.outList:
+            for (signal, type) in self.widget.getOutList():
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal)
                 if len(widgets) > 0:
                     string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal) + "</b> (to "

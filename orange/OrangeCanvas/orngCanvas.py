@@ -41,6 +41,7 @@ class OrangeCanvasDlg(QMainWindow):
 		self.connect(self.workspace, SIGNAL("windowActivated(QWidget*)"), self.focusDocument)
 		
 		self.settings = {}
+		self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
 		self.loadSettings()
 		self.rebuildSignals()	# coloring of signals - unused!
 		self.useLargeIcons = FALSE
@@ -100,7 +101,7 @@ class OrangeCanvasDlg(QMainWindow):
 
 	def createWidgetsToolbar(self, rebuildRegistry):
 		self.widgetsToolBar.clear()
-		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
+		self.tabs = orngTabs.WidgetTabs(self.widgetInfo, self.widgetsToolBar, 'tabs')
 		self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
 		
 		self.tabs.setCanvasDlg(self)
@@ -371,7 +372,7 @@ class OrangeCanvasDlg(QMainWindow):
 
 	def updateUseLargeIcons(self):
 		self.tabs.hide()
-		self.tabs = orngTabs.WidgetTabs(self.widgetsToolBar, 'tabs')
+		self.tabs = orngTabs.WidgetTabs(self.widgetInfo, self.widgetsToolBar, 'tabs')
 		self.tabs.setCanvasDlg(self)
 		self.tabs.readInstalledWidgets(self.registryFileName, self.widgetDir, self.picsDir, self.defaultPic, self.useLargeIcons)
 		

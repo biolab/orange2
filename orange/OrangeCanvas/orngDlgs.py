@@ -300,7 +300,7 @@ class SignalDialog(QDialog):
     def setOutInWidgets(self, outWidget, inWidget):
         self.outWidget = outWidget
         self.inWidget = inWidget
-        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+        (width, height) = self.canvasView.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.getOutList(), inWidget.widget.getInList(), outWidget.widget.getIconName(), inWidget.widget.getIconName())
         self.canvas.resize(width, height)
         self.resize(width+50, height+85)
         
@@ -309,15 +309,17 @@ class SignalDialog(QDialog):
         canConnect = 0
         addedLinks = []
         self.multiplePossibleConnections = 0    # can we connect some signal with more than one widget
-        for (outName, outType) in self.outWidget.widget.outList:
+        for (outName, outType) in self.outWidget.widget.getOutList():
+            if not self.outWidget.instance.hasOutputName(outName):   return -1   # rebuild registry
             (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
             canConnectCount = 0
-            for (inName, inType, handler, single) in self.inWidget.widget.inList:
+            for (inName, inType, handler, single) in self.inWidget.widget.getInList():
+                if not self.inWidget.instance.hasInputName(inName):   return -1   # rebuild registry
                 (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
                 if issubclass(outClass, inClass):
                     canConnect = 1
                     canConnectCount += 1
-                    if (outName == inName or (inName, inType) not in self.outWidget.widget.outList):
+                    if (outName == inName or (inName, inType) not in self.outWidget.widget.getOutList()):
                         if inName not in addedLinks:
                             self.addLink(outName, inName)
                             addedLinks.append(inName)
@@ -338,7 +340,7 @@ class SignalDialog(QDialog):
         # if inName is a single signal and connection already exists -> delete it        
         for (outN, inN) in self._links:
             if inN == inName:
-                for (name, type, handler, single) in self.inWidget.widget.inList:
+                for (name, type, handler, single) in self.inWidget.widget.getInList():
                     if name == inName and single:
                         for (o, i) in self._links:
                             if i == inName:

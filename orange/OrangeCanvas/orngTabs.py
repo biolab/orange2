@@ -41,15 +41,12 @@ class WidgetButton(QToolButton):
 		apply(QToolButton.__init__,(self,)+ args)
 		self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
-	def setValue(self, name, fileName, inList, outList, icon, description, priority, canvasDlg, useLargeIcons):
+	def setValue(self, name, nameKey, tabs, canvasDlg, useLargeIcons):
+		self.widgetTabs = tabs
 		self.name = name
-		self.fileName = fileName
-		self.iconName = icon
-		self.priority = priority
-		self.description = description
-		self.inList = inList
-		self.outList = outList
+		self.nameKey = nameKey
 
+		inList = self.getInList()
 		if len(inList) == 0:
 			formatedInList = "<b>Inputs:</b><br>None"
 		else:
@@ -58,6 +55,7 @@ class WidgetButton(QToolButton):
 				formatedInList = formatedInList + "- " + canvasDlg.getChannelName(signalname) + " (" + type + ")<br>"
 			#formatedInList += "</ul>"
 
+		outList = self.getOutList()
 		if len(outList) == 0:
 			formatedOutList = "<b>Outputs:</b><br>None"
 		else:
@@ -67,13 +65,13 @@ class WidgetButton(QToolButton):
 			#formatedOutList += "</ul>"
 		
 		#tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
-		tooltipText = "<b>%s</b><br><hr><b>Description:</b><br>%s<hr>%s<hr>%s" % (name, description, formatedInList, formatedOutList)
+		tooltipText = "<b>%s</b><br><hr><b>Description:</b><br>%s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList, formatedOutList)
 		QToolTip.add( self, tooltipText)
 
 		self.canvasDlg = canvasDlg
 
 		self.setTextLabel(name, FALSE)		
-		self.setPixmap(QPixmap(self.iconName))
+		self.setPixmap(QPixmap(self.widgetTabs.widgetInfo[nameKey]["iconName"]))
 		if useLargeIcons == 1:
 			self.setUsesTextLabel (TRUE)
 			self.setUsesBigPixmap(TRUE)
@@ -82,6 +80,24 @@ class WidgetButton(QToolButton):
 		else:
 			self.setMaximumSize(48, 48)
 			self.setMinimumSize(48, 48)
+
+	def getFileName(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["fileName"]
+
+	def getIconName(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["iconName"]
+
+	def getPriority(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["priority"]
+
+	def getDescription(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["description"]
+
+	def getInList(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["inList"]
+
+	def getOutList(self):
+		return self.widgetTabs.widgetInfo[self.nameKey]["outList"]
 
 	def clicked(self):
 		win = self.canvasDlg.workspace.activeWindow()
@@ -166,7 +182,7 @@ class WidgetTab(QWidget):
 
 
 class WidgetTabs(QTabWidget):
-	def __init__(self, *args):
+	def __init__(self, widgetInfo, *args):
 		apply(QTabWidget.__init__,(self,) + args)
 		self.tabs = []
 		self.canvasDlg = None
@@ -174,6 +190,7 @@ class WidgetTabs(QTabWidget):
 		self.useLargeIcons = FALSE
 		self.tabDict = {}
 		self.setMinimumWidth(10)	# this way the < and > button will show if tab dialog is too small
+		self.widgetInfo = widgetInfo
 
 	def insertWidgetTab(self, name):
 		tab = WidgetTab(self.useLargeIcons, self, name)
@@ -268,7 +285,8 @@ class WidgetTabs(QTabWidget):
 		exIndex = 0
 		for i in range(len(priorityList)):			
 			button = WidgetButton(tab)
-			button.setValue(nameList[i], fileNameList[i], inListList[i], outListList[i], iconNameList[i], descriptionList[i], priorityList[i], self.canvasDlg, self.useLargeIcons)
+			self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "inList":inListList[i], "outList": outListList[i], "iconName": iconNameList[i], "description":descriptionList[i], "priority":priorityList}
+			button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
 			self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
 			if exIndex != priorityList[i] / 1000:
 				for k in range(priorityList[i]/1000 - exIndex):

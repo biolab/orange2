@@ -51,6 +51,21 @@ class SignalManager:
 
     def addLink(self, widgetFrom, widgetTo, signalNameFrom, signalNameTo, enabled):
         if not self.canConnect(widgetFrom, widgetTo): return 0
+        # check if signal names still exist
+        found = 0
+        for (name, type) in widgetFrom.outputs:
+            if name == signalNameFrom: found=1
+        if not found:
+            print "Error. Widget %s changed its output signals. It does not have signal %s anymore." % (str(widgetFrom.caption()), signalNameFrom)
+            return 0
+
+        found = 0
+        for (name, type, handler, single) in widgetTo.inputs:
+            if name == signalNameTo: found=1
+        if not found:
+            print "Error. Widget %s changed its input signals. It does not have signal %s anymore." % (str(widgetTo.caption()), signalNameTo)
+            return 0
+
 
         if self.links.has_key(widgetFrom):
             for (widget, signalFrom, signalTo, Enabled) in self.links[widgetFrom]:
