@@ -358,7 +358,8 @@ class OWScatterPlotGraph(OWVisGraph):
                         else:              y = self.subsetData[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
                         if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial():
-                            if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(self.scaleExampleValue(self.subsetData[i], colorIndex), 255, 255)
+                            val = min(1.0, max(0.0, self.scaleExampleValue(self.subsetData[i], colorIndex)))    # scale to 0-1 interval
+                            if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(val, 255, 255)
                             else: newColor = classColors[colorIndices[self.subsetData[i][colorIndex].value]]
                         else: newColor = QColor(0,0,0)
                                 
