@@ -143,7 +143,6 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
 	master.controledAttributes.append((value, CallFront_radioButtons(bg)))
 	if callback:
 		master.connect(bg, SIGNAL("clicked(int)"), FunctionCallback(master, callback))
-#		self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
 	return bg
 
 

@@ -95,6 +95,7 @@ class OWScatterPlot(OWWidget):
         # optimization
         self.optimizationDlg = kNNOptimization(None, self.graph)
         self.optimizationDlg.parentName = "ScatterPlot"
+        self.optimizationDlg.label1.hide()
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()
         self.optimizationDlg.attributeLabel.hide()
