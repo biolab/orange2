@@ -23,7 +23,7 @@ import OWVisAttrSelection
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "showContinuous", "useSplines", "lineTracking", "showLegend"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "jitteringType", "GraphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "showCorrelations", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF","Correlation"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -57,7 +57,6 @@ class OWParallelCoordinates(OWWidget):
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
         self.globalValueScaling = 0
-        self.showContinuous = 0
         self.useSplines = 0
         self.lineTracking = 1
         self.showLegend = 1
@@ -100,21 +99,14 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
-        self.selClass = QVGroupBox(self.controlArea)
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
-        self.selClass.setTitle("Class attribute")
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
-        self.classCombo = QComboBox(self.selClass)
-        self.showContinuousCB = QCheckBox('show continuous', self.selClass)
-        self.hbox2 = QHBox(self.selClass)
-        self.label = QLabel("Target value: ", self.hbox2)
-        self.targetValueCombo = QComboBox(self.hbox2)
-        self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classComboChange)
-        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
+        self.targetGroup = QVGroupBox(self.controlArea)
+        self.targetValueCombo = QComboBox(self.targetGroup)
         self.connect(self.targetValueCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
@@ -178,8 +170,6 @@ class OWParallelCoordinates(OWWidget):
             self.options.linesDistance.insertItem(self.linesDistanceList[i])
         self.options.linesDistance.setCurrentItem(self.linesDistanceNums.index(self.linesDistance))
 
-        self.showContinuousCB.setChecked(self.showContinuous)
-
         self.graph.updateSettings(enabledLegend = self.showLegend)
         self.graph.updateSettings(useSplines = self.useSplines)
         self.graph.setJitteringOption(self.jitteringType)
@@ -240,6 +230,7 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
 
     def setLineTracking(self, b):
+        print self.lineTracking, b
         self.lineTracking = b
         self.graph.updateSettings(lineTracking = b)
 
@@ -323,7 +314,7 @@ class OWParallelCoordinates(OWWidget):
 
     # #####################
 
-    def updateGraph(self):
+    def updateGraph(self, *args):
         graphWidth = self.width()-230
         attrs = self.getShownAttributeList()
         maxAttrs = graphWidth / self.linesDistance
@@ -345,50 +336,11 @@ class OWParallelCoordinates(OWWidget):
         start = min(self.slider.value(), len(attrs)-maxAttrs)
         targetVal = self.targetValueCombo.currentText()
         if targetVal == "(None)": targetVal = None
-        self.graph.updateData(attrs[start:start+maxAttrs], str(self.classCombo.currentText()), targetVal)
+        self.graph.updateData(attrs[start:start+maxAttrs], targetVal)
         self.slider.repaint()
         self.graph.update()
         self.repaint()
 
-    # set combo box values with attributes that can be used for coloring the data
-    def setClassCombo(self):
-        exText = str(self.classCombo.currentText())
-        self.showContinuous = self.showContinuousCB.isOn()
-        self.classCombo.clear()
-        
-        if self.data == None:
-            return
-
-        # add possible class attributes
-        self.classCombo.insertItem('(One color)')
-        for i in range(len(self.data.domain)):
-            attr = self.data.domain[i]
-            if attr.varType == orange.VarTypes.Discrete or self.showContinuous:
-                self.classCombo.insertItem(attr.name)
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == exText:
-                self.classCombo.setCurrentItem(i)
-                self.classComboChange(self.classCombo.currentText())
-                return
-
-        for i in range(self.classCombo.count()):
-            if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
-                self.classCombo.setCurrentItem(i)
-                self.classComboChange(self.classCombo.currentText())
-        
-
-    def classComboChange(self, className):
-        className = str(className)
-        self.targetValueCombo.clear()
-        self.targetValueCombo.insertItem("(None)")
-        if className == "(One color)": return
-        if self.data.domain[className].varType == orange.VarTypes.Discrete:
-            for val in self.data.domain[className].values:
-                self.targetValueCombo.insertItem(val)
-        self.targetValueCombo.setCurrentItem(0)
-        self.updateGraph()
-            
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
@@ -423,11 +375,18 @@ class OWParallelCoordinates(OWWidget):
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
-        self.setClassCombo()
 
         if self.data == None:
             self.repaint()
             return
+
+        # update target combo
+        self.targetValueCombo.clear()
+        self.targetValueCombo.insertItem("(None)")
+        if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+            for val in self.data.domain.classVar.values:
+                self.targetValueCombo.insertItem(val)
+        self.targetValueCombo.setCurrentItem(0)
         
         self.setShownAttributeList(self.data)
         self.updateGraph()
@@ -442,16 +401,10 @@ class OWParallelCoordinates(OWWidget):
 
         if self.data == None: return
 
-        if self.data.domain.classVar.name not in list:
-            self.shownAttribsLB.insertItem(self.data.domain.classVar.name)
-
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
-
         for attr in self.data.domain:
-            if attr.name not in list and attr.name != self.data.domain.classVar.name:
-                self.hiddenAttribsLB.insertItem(attr.name)
-            
+            if attr.name in list: self.shownAttribsLB.insertItem(attr)
+            else:                 self.hiddenAttribsLB.insertItem(attr)
+                
         self.updateGraph()
     #################################################
        
