@@ -71,6 +71,6 @@ ORANGE_API converter pt_weightByGen(PExampleGenerator &peg);
 
 ORANGE_API int pt_DomainContingency(PyObject *args, void *egen);
 
-ORANGE_API registerFileType(const char *, const char *[], PyObject *, PyObject *);
+ORANGE_API void registerFileType(const char *, const char *[], PyObject *, PyObject *);
 
 #endif
