@@ -316,7 +316,7 @@ class SchemaView(QCanvasView):
             items = self.canvas().collisions(ev.pos())
             item = self.findFirstItemType(items, orngCanvasItems.CanvasWidget)
 
-            # we must check if we have really coonected some output to input
+            # we must check if we have really conected some output to input
             if item!= None and item != self.tempWidget:
                 if self.tempWidget.mouseInsideLeftChannel(self.tempLine.startPoint()):
                     outWidget = item

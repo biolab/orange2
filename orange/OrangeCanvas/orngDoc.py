@@ -106,6 +106,7 @@ class SchemaDoc(QMainWindow):
             if connected == []:
                 print "Error. No connections were maid."
                 line.remove()
+                signalManager.setFreeze(0)
                 return None
 
             line.setSignals(connected)
