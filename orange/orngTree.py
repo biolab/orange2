@@ -11,10 +11,10 @@ Z = {
 	}
 
 def TreeLearner(examples = None, weightID = 0, **argkw):
-	tl = apply(TreeLearnerClass, (), argkw)
+	tree = apply(TreeLearnerClass, (), argkw)
 	if examples:
-		tl = tl(examples, weightID)
-	return tl
+		tree = tree(examples, weightID)
+	return tree
 
 class TreeLearnerClass:
 	def __init__(self, **kw):

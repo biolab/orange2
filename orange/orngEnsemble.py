@@ -65,8 +65,9 @@ class BoostedClassifier:
 		value = orange.Value(self.classvar, index)
 		if resultType == orange.GetValue:
 			return value
+		sv = sum(votes)
 		for i in range(len(votes)):
-			votes[i] = votes[i]/len(self.classifiers)
+			votes[i] = votes[i]/sv
 		if resultType == orange.GetProbabilities:
 			return votes
 		else:
