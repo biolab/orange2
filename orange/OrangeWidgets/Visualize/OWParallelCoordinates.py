@@ -466,7 +466,7 @@ VIZRANK = 1
 
 class ParallelOptimization(OWBaseWidget):
     resultListList = [50, 100, 200, 500, 1000]
-    settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure", "numberOfAttributes"]
+    settingsList = ["attributeCount", "fileBuffer", "lastSaveDirName", "optimizationMeasure", "numberOfAttributes", "orderAllAttributes"]
     qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
 
@@ -489,6 +489,7 @@ class ParallelOptimization(OWBaseWidget):
         self.projections = []
         self.allResults = []
         self.canOptimize = 0
+        self.orderAllAttributes = 1 # do we wish to order all attributes or find just an interesting subset
         self.worstVal = -1  # used in heuristics to stop the search in uninteresting parts of the graph
 
         self.loadSettings()
@@ -536,7 +537,15 @@ class ParallelOptimization(OWBaseWidget):
         self.testingMethodLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Testing method used:")
         self.qualityMeasureLabel = OWGUI.widgetLabel(self.resultsInfoBox, "Quality measure used:")
 
-        self.numberOfAttributesCombo = OWGUI.comboBoxWithCaption(self.optimizeBox, self, "numberOfAttributes", "Number of visualized attributes: ", tooltip = "Projections with this number of attributes will be evaluated", items = [x for x in range(3, 12)], sendSelectedValue = 1, valueType = int)
+        #self.numberOfAttributesCombo = OWGUI.comboBoxWithCaption(self.optimizeBox, self, "numberOfAttributes", "Number of visualized attributes: ", tooltip = "Projections with this number of attributes will be evaluated", items = [x for x in range(3, 12)], sendSelectedValue = 1, valueType = int)
+        self.allAttributesRadio = QRadioButton("Order all attributes", self.optimizeBox)
+        self.connect(self.allAttributesRadio, SIGNAL("clicked()"), self.setAllAttributeRadio)
+        box = OWGUI.widgetBox(self.optimizeBox, orientation = "horizontal")
+        self.subsetAttributeRadio = QRadioButton("find subsets of      ", box)
+        self.connect(self.subsetAttributeRadio, SIGNAL("clicked()"), self.setSubsetAttributeRadio)
+        self.subsetAttributeEdit = OWGUI.lineEdit(box, self, "numberOfAttributes", valueType = int)
+        label  = OWGUI.widgetLabel(box, "   attributes")
+        
         self.startOptimizationButton = OWGUI.button(self.optimizeBox, self, " Start optimization ", callback = self.startOptimization)
         f = self.startOptimizationButton.font()
         f.setBold(1)
@@ -554,7 +563,27 @@ class ParallelOptimization(OWBaseWidget):
         self.closeButton = OWGUI.button(self.manageBox, self, "Close dialog", self.hide)
 
         self.changeProjectionFile()
+        self.activateLoadedSettings()
 
+    
+    def activateLoadedSettings(self):
+        if self.orderAllAttributes: self.setAllAttributeRadio()
+        else:                       self.setSubsetAttributeRadio()
+
+    def destroy(self, dw, dsw):
+        self.saveSettings()
+
+    def setAllAttributeRadio(self):
+        self.orderAllAttributes = 1
+        self.allAttributesRadio.setState(QButton.On)
+        self.subsetAttributeRadio.setState(QButton.Off)
+        self.subsetAttributeEdit.setEnabled(0)
+
+    def setSubsetAttributeRadio(self):
+        self.orderAllAttributes = 0
+        self.allAttributesRadio.setState(QButton.Off)
+        self.subsetAttributeRadio.setState(QButton.On)
+        self.subsetAttributeEdit.setEnabled(1)
 
     # return list of selected attributes
     def getSelectedAttributes(self):
@@ -695,10 +724,7 @@ class ParallelOptimization(OWBaseWidget):
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
 
-        limit = getrecursionlimit()
-        setrecursionlimit(max(limit, len(attrInfo)+1000))
-        OWVisAttrSelection.optimizeAttributeOrder(attrInfo, [], 0.0, self.numberOfAttributes, self, qApp)
-        setrecursionlimit(limit)
+        OWVisAttrSelection.optimizeAttributeOrder(attrInfo, self.numberOfAttributes, self, qApp)
 
         self.stopOptimizationButton.hide()
         self.startOptimizationButton.show()

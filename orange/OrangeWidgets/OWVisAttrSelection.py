@@ -270,64 +270,14 @@ def computeCorrelationInsideClassesBetweenAttributes(data, attrList, minCorrelat
     return correlations
 
 
-def addBestToCurrentProj(currentProj, attrInfo):
+def addBestToCurrentProj(proj, projVal, attrInfo):
     for (val, a1, a2) in attrInfo:
-        if a1 == currentProj[0] or a2 == currentProj[0] or a1 == currentProj[-1] or a2 == currentProj[-1]:
-            if a1 == currentProj[0]: return ([a2] + currentProj, (val, a1, a2), a1, val)
-            elif a2 == currentProj[0]: return ([a1] + currentProj, (val, a1, a2), a2, val)
-            elif a1 == currentProj[-1]: return (currentProj + [a2], (val, a1, a2), a1, val)
-            else                       : return (currentProj + [a1], (val, a1, a2), a2, val)
-    return (None, None, None, None)
-
-def removeAttribute(attr, group, currentProj, attrInfo):
-    if attr == group[1]: attr2 = group[2]
-    else: attr2 = group[1]
-
-    # remove attribute attr, that is fixed inside currentProj
-    for i in range(len(attrInfo)-1, -1, -1):
-        if attrInfo[i][1] == attr or attrInfo[i][2] == attr:
-            attrInfo.remove(attrInfo[i])
-        elif attrInfo[i][1] in currentProj and attrInfo[i][2] in currentProj:
-            attrInfo.remove(attrInfo[i])
-
-    return attrInfo
-
-
-def optimizeAttributeOrder(attrInfo, currentProj, currentVal, numberOfAttributes, optimizationDlg, app = None):
-    if len(currentProj) == numberOfAttributes:
-        for attr in currentProj:
-            if currentProj.count(attr) > 1: return
-        optimizationDlg.addProjection(currentVal/(numberOfAttributes-1), currentProj)
-        return
-    elif attrInfo == []: return
-    elif len(currentProj) > 0 and optimizationDlg.getWorstVal() > currentVal/(len(currentProj)-1):
-        print "skipping search at depth ", len(currentProj)
-        return
-
-    if not optimizationDlg.canContinueOptimization(): return
-    if app: app.processEvents()        # allow processing of other events
-    
-    if currentProj == []:
-        newCurrentProj = [attrInfo[0][1], attrInfo[0][2]]
-        newCurrentVal = attrInfo[0][0]
-        group = attrInfo[0]
-        newAttrInfo = list(attrInfo)
-    else:
-        newCurrentProj, group, attr, val = addBestToCurrentProj(currentProj, attrInfo)
-        if not newCurrentProj: return    # there are no more attributes that can be added to this projection
-        newCurrentVal = currentVal + val
-        newAttrInfo = removeAttribute(attr, group, newCurrentProj, list(attrInfo))
-
-    if group in attrInfo: attrInfo.remove(group)
-    if group in newAttrInfo: newAttrInfo.remove(group)
-    
-    optimizeAttributeOrder(newAttrInfo, newCurrentProj, newCurrentVal, numberOfAttributes, optimizationDlg, app)
-    if not optimizationDlg.canContinueOptimization(): return
-
-    if len(currentProj) < numberOfAttributes/2:
-        optimizeAttributeOrder(attrInfo, currentProj, currentVal, numberOfAttributes, optimizationDlg, app)
-    if not optimizationDlg.canContinueOptimization(): return
-    
+        if (a1 == proj[0] and a2 not in proj) or (a2 == proj[0] and a1 not in proj) or (a1 == proj[-1] and a2 not in proj) or (a2 == proj[-1] and a1 not in proj):
+            if a1 == proj[0]: return ([a2] + proj, [val] + projVal, 1)
+            elif a2 == proj[0]: return ([a1] + proj, [val] + projVal, 1)
+            elif a1 == proj[-1]: return (proj + [a2], projVal + [val], 1)
+            else                       : return (proj + [a1], projVal + [val], 1)
+    return (proj, projVal, 0)
 
 
 def getTopAttrs(results, maxSum = 0.95, onlyPositive = 1):
@@ -343,5 +293,75 @@ def getTopAttrs(results, maxSum = 0.95, onlyPositive = 1):
     return (s, h)
         
 
+# ##########################################################################################
+# ##########################################################################################
+# find interesting attribute order for parallel coordinates
+# attrInfo = [(val1, attr1, attr2), .... ]
+def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app = None):
+    while (attrInfo != []):
+        proj = []
+        projVal = []
+        canAddAttribute = 1
+        while canAddAttribute:
+            if not optimizationDlg.canContinueOptimization(): return
+            if app: app.processEvents()        # allow processing of other events
+    
+            if len(proj) == 0:
+                proj = [attrInfo[0][1], attrInfo[0][2]]
+                projVal = [attrInfo[0][0]]
+            elif len(proj) == numberOfAttributes:
+                canAddAttribute = 0     # time to add the projection to the list
+            else:
+                proj, projVal, success = addBestToCurrentProj(proj, projVal, attrInfo)
+                if not success: canAddAttribute = 0 # there are no more attributes that can be added to this projection
+
+        if len(proj) == numberOfAttributes:
+            proj, projVal = fixIntersectingPairs(proj, projVal, attrInfo)
+            for i in range(len(projVal)):
+                removeAttributePair(proj[i], proj[i+1], attrInfo)
+            optimizationDlg.addProjection(sum(projVal)/len(projVal), proj)
+        else:
+            for i in range(len(proj)-1):
+                removeAttributePair(proj[i], proj[i+1], attrInfo)
 
 
+# try rotating subsequences of proj to increase value of attribute order
+def fixIntersectingPairs(proj, projVal, attrInfo):
+    changed = 1
+    while changed:
+        changed = 0
+        for i in range(len(projVal)-1):
+            if changed: continue
+            for j in range(i+2, len(projVal)-1):
+                if changed: continue
+                val1, exists1 = getAttributePairValue(proj[i], proj[j], attrInfo)
+                print proj, i, j, len(projVal)
+                val2, exists2 = getAttributePairValue(proj[i+1], proj[j+1], attrInfo)
+                if exists1 and exists2 and (val1 + val2 > projVal[i] + projVal[j]):
+                    projVal[i] = val1
+                    projVal[j] = val2
+                    print i, j, proj[i:j]
+                    rev = proj[i:j]
+                    rev.reverse()
+                    tempProj = proj[:i] + rev + proj[j:]
+                    proj = tempProj
+                    changed = 1     # we rotated the projection. start checking from the begining
+                    print "changed"
+    return proj, projVal
+
+# return value for attribute pair (val, attr1, attr2) if exists. if not, return 0
+def getAttributePairValue(attr1, attr2, attrInfo):
+    for (val, a1, a2) in attrInfo:
+        if (attr1 == a1 and attr2 == a2) or (attr1 == a2 and attr2 == a1): return (val, 1)
+    return (0,0)
+
+# remove attribute pair (val, attr1, attr2) from attrInfo
+def removeAttributePair(attr1, attr2, attrInfo):
+    for (val, a1, a2) in attrInfo:
+        if (attr1 == a1 and attr2 == a2) or (attr1 == a2 and attr2 == a1):
+            attrInfo.remove((val, a1, a2))
+            return
+    print "failed to remove attribute pair", attr1, attr2
+
+# ##########################################################################################
+# ##########################################################################################
