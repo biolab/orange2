@@ -19,6 +19,8 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
+/*  Most of the functions on this file are adapted from stat.py, which is in
+    turn based on number of various sources. */
 
 #ifndef STAT_HPP
 #define STAT_HPP
