@@ -114,7 +114,9 @@ class CanvasLine(QCanvasLine):
                 exec(code)
             except:
                 print "Failed to " + action + " widgets"
-                print "Unexpected error: ", sys.exc_info()[0]
+                print "Unexpected error:"
+                import traceback
+                traceback.print_exc()
 
         
     # draw the line
