@@ -318,10 +318,8 @@ bool TExample::compatible(const TExample &other) const
 }
 
 
-int TExample::sumValues() const
-{ unsigned long crc;
-  INIT_CRC(crc);
-
+void TExample::addToCRC(unsigned long &crc) const
+{
   TValue *vli = values;
   const_PITERATE(TVarList, vi, domain->attributes) {
     if ((*vi)->varType == TValue::INTVAR)
@@ -330,7 +328,13 @@ int TExample::sumValues() const
       add_CRC(vli->floatV, crc);
     vli++;
   }
+}
 
+
+int TExample::sumValues() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+  addToCRC(crc);
   FINISH_CRC(crc);
   return int(crc & 0x7fffffff);
 }

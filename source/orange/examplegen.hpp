@@ -94,7 +94,10 @@ public:
   virtual void addMetaAttribute(const int &id, const TValue &value);
   virtual void copyMetaAttribute(const int &id, const int &source, TValue &defaultVal);
   virtual void removeMetaAttribute(const int &id);
+
+  virtual int checkSum();
 };
+
 
 WRAPPER(ExampleGenerator);
 

@@ -23,6 +23,8 @@
 #include "vars.hpp"
 #include "domain.hpp"
 
+#include "crc.h"
+
 #include "examplegen.ppp"
 
 DEFINE_TOrangeVector_classDescription(PExampleGenerator, "TExampleGeneratorList")
@@ -93,6 +95,15 @@ NOT_SUPPORTED(copyMetaAttribute)
 void TExampleGenerator::removeMetaAttribute(const int &)
 NOT_SUPPORTED(removeMetaAttribute)
 
+
+int TExampleGenerator::checkSum()
+{ unsigned long crc;
+  INIT_CRC(crc);
+  for(TExampleIterator ei(begin()); ei; ++ei)
+    (*ei).addToCRC(crc);
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}
 
 
 // Constructs the iterator, setting generator and data fields to the given values.

@@ -29,6 +29,8 @@
 #include "distvars.hpp"
 #include "stladdon.hpp"
 
+#include "crc.h"
+
 #include "table.ppp"
 
 
@@ -784,4 +786,20 @@ void TExampleTable::sort(vector<int> &sortOrder)
   free(temp);
 
   examplesHaveChanged();
+}
+
+
+int TExampleTable::checkSum() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+
+  for(TExample **ei = examples, **ee = _Last; ei!=ee; (*ei++)->addToCRC(crc));
+
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}
+
+void TExampleTable::sortByPointers()
+{
+  std::sort((int *)examples, (int *)_Last);
 }

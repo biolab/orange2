@@ -12,6 +12,8 @@ graph.objects = ["Age", "Gender", "Height", "Weight"]
 graph["Age", "Gender"] = 0.1
 graph["Age", "Height"] = 1.2
 graph["Gender", "Height"] = 0.3
+print graph.getEdges()
+asdf
 
 print graph[1, 2]
 print graph["Gender", "Height"]

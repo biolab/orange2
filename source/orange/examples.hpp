@@ -116,6 +116,7 @@ public:
   int  compare(const TExample &other) const;
   bool compatible(const TExample &other) const;
 
+  void addToCRC(unsigned long &crc) const;
   int sumValues() const;
 };
 

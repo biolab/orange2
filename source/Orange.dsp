@@ -131,6 +131,86 @@ LINK32=link.exe
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
+# Begin Group "wml"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlDelaunay2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlDelaunay2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlDelaunay2a.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlDelaunay2a.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlMath.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlSystem.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector2.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector3.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlVector3.inl
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlWinSystem.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\wml\WmlWinSystem.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=.\orange\assistant.cpp
@@ -1392,74 +1472,6 @@ SOURCE=.\orange\px\obsolete.px
 # Begin Source File
 
 SOURCE=.\orange\px\timestamp
-# End Source File
-# End Group
-# Begin Group "wml"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlDelaunay2a.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlMath.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlMath.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlMath.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlSystem.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlSystem.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlSystem.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector2.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector2.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector2.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector3.h
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlVector3.inl
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlWinSystem.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\wml\WmlWinSystem.h
 # End Source File
 # End Group
 # End Target

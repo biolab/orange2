@@ -35,6 +35,8 @@
 #endif
 
 
+#define UNKNOWN_F ILLEGAL_FLOAT
+
 #define PAINT_PIXEL_LINE                     \
 { unsigned char col;                         \
   if (*intensity == UNKNOWN_F)   col = 255;  \
@@ -132,8 +134,6 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   return res;
 }
 
-
-#define UNKNOWN_F -1e30f
 
 TDistanceMap::TDistanceMap(const int &d)
 : cells(new float [d*d]),

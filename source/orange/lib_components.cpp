@@ -3245,10 +3245,61 @@ void PyEdge_Dealloc(TPyEdge *self)
 }
 
 
+PyObject *PyEdge_Richcmp(TPyEdge *self, PyObject *j, int op)
+{
+  float ref;
+  if (!PyNumber_ToFloat(j, ref))
+    PYERROR(PyExc_TypeError, "edge weights can only be compared to floats", PYNULL);
+
+  if (self->graph->nEdgeTypes != 1)
+    PYERROR(PyExc_TypeError, "multiple-type edges cannot be compared to floats", PYNULL);
+
+  if (!self->getWeights() || (*self->weights == GRAPH__NO_CONNECTION))
+    PYERROR(PyExc_TypeError, "edge does not exist", PYNULL);
+
+  const float &f = *self->weights;
+
+  int cmp;
+  switch (op) {
+		case Py_LT: cmp = (f<ref); break;
+		case Py_LE: cmp = (f<=ref); break;
+		case Py_EQ: cmp = (f==ref); break;
+		case Py_NE: cmp = (f!=ref); break;
+		case Py_GT: cmp = (f>ref); break;
+		case Py_GE: cmp = (f>=ref); break;
+    default:
+      Py_INCREF(Py_NotImplemented);
+      return Py_NotImplemented;
+  }
+  
+  PyObject *res;
+  if (cmp)
+    res = Py_True;
+  else
+    res = Py_False;
+  Py_INCREF(res);
+  return res;
+}
+
+
+PyObject *PyEdge_Float(TPyEdge *self)
+{
+  if (self->graph->nEdgeTypes != 1)
+    PYERROR(PyExc_TypeError, "multiple-type edges cannot be cast to floats", PYNULL);
+
+  if (!self->getWeights() || (*self->weights == GRAPH__NO_CONNECTION))
+    PYERROR(PyExc_TypeError, "edge does not exist", PYNULL);
+
+  return PyFloat_FromDouble(*self->weights);
+}
+
+
 PyNumberMethods PyEdge_as_number = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   (inquiry)PyEdge_Nonzero,                           /* nb_nonzero */
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 
+  (unaryfunc)PyEdge_Float,  /* nb_float */
+  0, 0,
 };
 
 static PySequenceMethods PyEdge_as_sequence = {
@@ -3290,7 +3341,7 @@ PyTypeObject PyEdge_Type = {
  	0,					/* tp_doc */
  	(traverseproc)PyEdge_Traverse,					/* tp_traverse */
  	(inquiry)PyEdge_Clear,					/* tp_clear */
-	0,					/* tp_richcompare */
+	(richcmpfunc)PyEdge_Richcmp,					/* tp_richcompare */
 	0,					/* tp_weaklistoffset */
 	0,			/* tp_iter */
 	0,	/* tp_iternext */
@@ -3656,6 +3707,40 @@ PyObject *Graph_getEdgesTo(PyObject *self, PyObject *args, PyObject *) PYARGS(ME
 }
 
 
+PyObject *Graph_getEdges(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "([edgetype]) -> list of (v1, v2, weights)")
+{
+  PyTRY
+    CAST_TO(TGraph, graph);
+
+    int edgeType = -1;
+    if (!PyArg_ParseTuple(args, "|i:Graph.getEdges", &edgeType))
+      return PYNULL;
+
+    bool hasType = (PyTuple_Size(args) != 0);
+    if (hasType && (edgeType<0) || (edgeType >= graph->nEdgeTypes)) {
+      PyErr_Format(PyExc_IndexError, "edge type out of range 0-%i", graph->nEdgeTypes);
+      return PYNULL;
+    }
+
+    PyObject *res = PyList_New(0);
+    vector<int> neighbours;
+
+    for(int v1 = 0; v1 < graph->nVertices; v1++) {
+      if (hasType)
+        graph->getNeighboursFrom_Single(v1, edgeType, neighbours);
+      else
+        graph->getNeighboursFrom_Single(v1, neighbours);
+
+      ITERATE(vector<int>, ni, neighbours) {
+        PyObject *nel = Py_BuildValue("ii", v1, *ni);
+        PyList_Append(res, nel);
+        Py_DECREF(nel);
+      }
+    }
+
+    return res;
+  PyCATCH
+}
 
 PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Graph, "(nVertices, directed[, nEdgeTypes])")
 {
@@ -3687,6 +3772,27 @@ PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
       PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 
     return WrapNewOrange(mlnew TGraphAsTree(nVertices, nEdgeTypes, directed != 0), type);
+  PyCATCH
+}
+
+
+PGraph triangulate(PExampleGenerator egen, const int &);
+//int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+
+PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, nEdgeTypes]) -> graph")
+{
+  PyTRY
+    PExampleGenerator egen;
+    int nEdgeTypes = 1;
+    if (!PyArg_ParseTuple(args, "O&|i:triangulate", pt_ExampleGenerator, &egen, &nEdgeTypes))
+      return PYNULL;
+
+    PyObject *res = WrapOrange(triangulate(egen, nEdgeTypes));
+
+    PyObject *objs = PyString_FromString("objects");
+    Orange_setattrLow((TPyOrange *)res, objs, PyTuple_GET_ITEM(args, 0), false);
+    Py_DECREF(objs);
+    return res;
   PyCATCH
 }
 

@@ -1707,6 +1707,11 @@ PyObject *multipleSelectLow(TPyOrange *self, PyObject *pylist, bool reference)
 PyObject *ExampleGenerator_getitems(TPyOrange *self, PyObject *pylist)  PYARGS(METH_O, "(indices) -> ExampleTable")
 { return multipleSelectLow(self, pylist, false); }
 
+
+PyObject *ExampleGenerator_checksum(PyObject *self, PyObject *) PYARGS(METH_NOARGS, "() -> crc")
+{ return PyInt_FromLong(SELF_AS(TExampleGenerator).checkSum()); }
+
+
 PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::P_FromArguments(arg); }
 PyObject *ExampleGeneratorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_FromArguments(type, arg); }
 inline PyObject *ExampleGeneratorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ExampleGenerator>)") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, (PyTypeObject *)&PyOrExampleGenerator_Type>::_new(type, arg, kwds); }

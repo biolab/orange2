@@ -366,6 +366,8 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
                     for cl in range(nLrn):
                         if not cache or not testResults.loaded[cl]:
                             cr = classifiers[cl](ex, orange.GetBoth)
+                            if cr[0].isSpecial():
+                                raise "Classifier %s returned unknown value" % (classifiers[cl].name or ("#%i" % cl))
                             testResults.results[i].setResult(cl, cr[0], cr[1])
             if callback:
                 callback()
