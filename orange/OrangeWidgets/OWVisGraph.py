@@ -84,14 +84,16 @@ class OWVisGraph(OWGraph):
     # set new data and scale its values
     def setData(self, data):
         self.rawdata = data
-        self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.scaledData = []
         self.noJitteringScaledData = []
         self.coloringScaledData = []
         self.attrValues = {}
         self.attributeNames = []
-        for attr in data.domain: self.attributeNames.append(attr.name)
+
         if data == None: return
+        
+        self.domainDataStat = orange.DomainBasicAttrStat(data)
+        for attr in data.domain: self.attributeNames.append(attr.name)
 
         min = -1; max = -1
         if self.globalValueScaling == 1:

@@ -229,6 +229,8 @@ class OWBaseWidget(QDialog):
             for i in range(len(self.linksIn[signalName])):
                 if widgetFrom == self.linksIn[signalName][i][1]:
                     self.linksIn[signalName].remove(self.linksIn[signalName][i])
+                    if self.linksIn[signalName] == []:  # if key is empty, delete key value
+                        del self.linksIn[signalName]
                     return
 
     # return widget, that is already connected to this singlelink signal. If this widget exists, the connection will be deleted (since this is only single connection link)
@@ -240,6 +242,7 @@ class OWBaseWidget(QDialog):
             
         for signalName in self.linksIn.keys():
             if signalName == signal:
+                print self.linksIn[signalName]
                 widget = self.linksIn[signalName][0][1]
                 del self.linksIn[signalName]
                 return widget

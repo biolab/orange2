@@ -12,7 +12,7 @@ CLASS_ACCURACY = 0
 BRIER_SCORE = 1
 
 class kNNOptimization(OWBaseWidget):
-    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics"]
+    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics", "bestSubsets"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
@@ -26,13 +26,16 @@ class kNNOptimization(OWBaseWidget):
 
         self.setCaption("Qt kNN Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 
-        self.grid=QGridLayout(3,2)
+        self.grid=QGridLayout(4,2)
         self.topLayout.addLayout( self.grid, 10 )
 
+        self.currentSubset = 0  # used in FSS
+        self.totalSubsets = 0   # used in FSS
         self.kValue = 1
         self.minExamples = 0
         self.resultListLen = 100
         self.percentDataUsed = 100
+        self.bestSubsets = 100
         self.measureType = 0
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.parentName = "Projection"
@@ -54,9 +57,9 @@ class kNNOptimization(OWBaseWidget):
         #self.infoBox =QVGroupBox(self, "Selected projection information")
         #self.infoBox.setTitle("Information")
 
-        self.evaluateBox = QVGroupBox(self, "Evaluate projection")
-        self.evaluateBox.setTitle("Evaluate projection")
-        
+        self.evaluateBox = QVGroupBox(self, "Evaluate projection/classifier ")
+        self.evaluateBox.setTitle("Evaluate projection / classifier ")
+
         self.resultsBox = QVGroupBox (self, "Results")
         self.resultsBox.setTitle("Results")
 
@@ -68,8 +71,8 @@ class kNNOptimization(OWBaseWidget):
         self.grid.setColStretch(0, 0)
         self.grid.setColStretch(1, 100)
         self.grid.setRowStretch(0, 0)
-        self.grid.setRowStretch(2, 100)
         self.grid.setRowStretch(1, 0)
+        self.grid.setRowStretch(2, 100)
                 
         self.interestingList = QListBox(self.resultsBox)
         #self.interestingList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
@@ -110,9 +113,13 @@ class kNNOptimization(OWBaseWidget):
         self.maxLenCombo = QComboBox(self.hbox6)    # maximum number of attributes in subset
         self.exactlyAttrLabel2 = QLabel(' attributes', self.hbox6)
 
-        self.useHeuristicsCB = QCheckBox("Use heuristics (experimental)", self.numberOfAttrBox)
+        self.hbox11 = QHBox(self.numberOfAttrBox)
+        self.useHeuristicsCB = QCheckBox("Test only best ", self.hbox11)
         self.connect(self.useHeuristicsCB, SIGNAL("clicked()"), self.setUseHeuristics)
-        self.useHeuristicsCB.setChecked(self.useHeuristics)        
+        self.useHeuristicsCB.setChecked(self.useHeuristics)
+        self.numberOfBestSubsetsEdit = QLineEdit(self.hbox11)
+        self.numberOfBestSubsetsEdit.setMaximumWidth(40)
+        self.numberOfBestSubsetsLabel = QLabel(' feature subsets (FSS)', self.hbox11)
         
         self.exactlyLenCombo.insertItem("ALL")
         self.maxLenCombo.insertItem("ALL")
@@ -126,12 +133,12 @@ class kNNOptimization(OWBaseWidget):
         self.hbox10 = QHBox(self.evaluateBox)
         self.evaluateProjectionButton = QPushButton("Evaluate projection", self.hbox10)
         self.saveProjectionButton = QPushButton("Save projection", self.hbox10)
+
         self.hbox7 = QHBox(self.evaluateBox)
         self.showKNNCorrectButton = QPushButton('kNN correct', self.hbox7)
         self.showKNNWrongButton = QPushButton('kNN wrong', self.hbox7)
-        self.showKNNResetButton = QPushButton('<-', self.hbox7) 
-        
-        
+        self.showKNNResetButton = QPushButton('Original', self.hbox7) 
+                
         #self.resize(200, 500)
         self.attrLenCaption = QLabel('Select attribute count', self.manageResultsBox)
         self.attrLenList = QListBox(self.manageResultsBox)
@@ -152,6 +159,7 @@ class kNNOptimization(OWBaseWidget):
         self.connect(self.resultListCombo, SIGNAL("activated(int)"), self.setResultListLen)
         self.connect(self.percentDataUsedCombo, SIGNAL("activated(int)"), self.setPercentDataUsed)
         self.connect(self.minTableLenEdit, SIGNAL("textChanged(const QString &)"), self.setMinTableLen)
+        self.connect(self.numberOfBestSubsetsEdit, SIGNAL("textChanged(const QString &)"), self.setBestSubsetsEdit)
         self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
         self.connect(self.filterButton, SIGNAL("clicked()"), self.filter)
         self.connect(self.removeSelectedButton, SIGNAL("clicked()"), self.removeSelected)
@@ -182,7 +190,10 @@ class kNNOptimization(OWBaseWidget):
         self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kValue))
 
         self.measureBox.setButton(self.measureType)
-        self.minTableLenEdit.setText(str(self.minExamples))        
+
+        self.minTableLenEdit.setText(str(self.minExamples))
+        self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
+        self.useHeuristicsCB.setChecked(self.useHeuristics)
 
     def setMeasure(self, n):
         self.measureType = n
@@ -207,7 +218,10 @@ class kNNOptimization(OWBaseWidget):
     def setMinTableLen(self, val):
         self.minExamples = int(str(val))
         self.saveSettings()
-        
+
+    def setBestSubsetsEdit(self, val):
+        self.bestSubsets = int(str(val))
+        self.saveSettings()
 
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -312,9 +326,16 @@ class kNNOptimization(OWBaseWidget):
 
         # open, write and save file
         file = open(name, "wt")
-        cPickle.dump(self.optimizedListFiltered, file)
+        #cPickle.dump(self.optimizedListFiltered, file)
+        file.write("%d\n%d\n%d\n%d\n" % (self.kValue, self.resultListLen, self.minExamples, self.percentDataUsed))
+        file.write("%d\n"  % (self.measureType))
+        file.write("%d\n%d\n" % (self.useHeuristics, self.bestSubsets))
+        for val in self.optimizedListFiltered:
+            file.write(str(val) + "\n")
         file.flush()
         file.close()
+
+        
 
     # load projections from a file
     def load(self):
@@ -325,9 +346,31 @@ class kNNOptimization(OWBaseWidget):
             return
 
         file = open(str(name), "rt")
-        self.optimizedListFull = cPickle.load(file)
+        #self.optimizedListFull = cPickle.load(file)
+        self.kValue = int(file.readline()[:-1])
+        self.resultListLen = int(file.readline()[:-1])
+        self.minExamples = int(file.readline()[:-1])
+        self.percentDataUsed = int(file.readline()[:-1])
+        self.measureType = int(file.readline()[:-1])
+        self.useHeuristics = int(file.readline()[:-1])
+        self.bestSubsets = int(file.readline()[:-1])
+        line = file.readline()[:-1]
+        while (line != ""):
+            self.optimizedListFull.append(eval(line))
+            line = file.readline()[:-1]
         file.close()
 
+        # show new settings in controls
+        self.attrKNeighbour.setCurrentItem(self.kNeighboursNums.index(self.kValue))
+        self.resultListCombo.setCurrentItem(self.resultsListLenNums.index(self.resultListLen))
+        self.minTableLenEdit.setText(str(self.minExamples))
+        self.percentDataUsedCombo.setCurrentItem(self.percentDataNums.index(self.percentDataUsed))
+
+        self.measureBox.setButton(self.measureType)
+        self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
+        self.useHeuristicsCB.setChecked(self.useHeuristics)
+
+        # update loaded results
         self.updateNewResults()
 
 
@@ -418,13 +461,19 @@ class kNNOptimization(OWBaseWidget):
             if len(testingList) != subsetSize: return []
 
             # do the testing
+            self.currentSubset += 1
             attrs = []
             for attr in testingList:
                 attrs.append(table.domain[attr])
-            domain = orange.Domain(attrs)
+            domain = orange.Domain(attrs + [table.domain.classVar])
             shortTable = orange.Preprocessor_dropMissing(table.select(domain))
-            if len(shortTable) < self.minExamples: return []
-            print testingList
+            text = "Current attribute subset (%d/%d): " % (self.currentSubset, self.totalSubsets)
+            for attr in testingList[:-1]: text += attr + ", "
+            text += testingList[-1]
+            if len(shortTable) < self.minExamples:
+                print text + " - ignoring (too few examples)"
+                return []
+            print text
             return [(self.kNNComputeAccuracy(shortTable), testingList)]
 
         full1 = self.kNNGetInterestingSubsets(subsetSize, attributes[1:], returnListSize, table, testingList)
@@ -435,16 +484,19 @@ class kNNOptimization(OWBaseWidget):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.measureType == CLASS_ACCURACY: funct = max
-        else: funct = min
         for i in range(min(returnListSize, len(full))):
-            item = funct(full)
-            shortList.append(item)
-            full.remove(item)
+            shortList.append(self.removeBestItem(full, table))
 
         return shortList
 
-
+    # find the best item in resultList. remove it from the list and return it
+    def removeBestItem(self, resultList, table):
+        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.measureType == CLASS_ACCURACY: funct = max
+        else: funct = min
+        item = funct(resultList)
+        resultList.remove(item)
+        return item
+    
 
     def disableControls(self):
         self.optimizeButtonBox.setEnabled(0)
