@@ -86,7 +86,7 @@ class OWParallelGraph(OWVisGraph):
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
         classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        
         length = len(attributes)
         indices = []
         xs = []
@@ -96,9 +96,14 @@ class OWParallelGraph(OWVisGraph):
 
         xs = range(length)
         dataSize = len(self.scaledData[0])
-        colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-        if self.lineTracking:
-            colorPalette.setBrightness(150)
+        continuousClass = (self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous)
+        if not continuousClass:
+            colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+            if self.lineTracking:
+                colorPalette.setBrightness(150)
+        else:
+            colorPalette = ColorPaletteHSV()
 
         #############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
@@ -167,7 +172,10 @@ class OWParallelGraph(OWVisGraph):
                     newColor = self.colorNonTargetValue
                     curves[0].append(curve)
             else:
-                newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
+                if continuousClass:
+                    newColor = colorPalette[self.noJitteringScaledData[classNameIndex][i]]
+                else:
+                    newColor = colorPalette[classValueIndices[self.rawdata[i].getclass().value]]
                 key = self.insertCurve(curve)
                 self.dataKeys.append(key)
             curve.setPen(QPen(newColor))
