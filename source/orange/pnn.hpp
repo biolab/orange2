@@ -65,6 +65,7 @@ public:
   TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const float &exponent2 = -1.0);
 
   virtual PDistribution classDistribution(const TExample &);
+  virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;
 
   virtual void project(const TExample &, double &x, double &y);
   //virtual void project(double *, double *);

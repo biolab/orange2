@@ -2168,13 +2168,17 @@ CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStor
 
 
 
-PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool exhaustiveFilesearch)
+PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool exhaustiveFilesearch, bool &fileFound)
 {
   vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, true, false, exhaustiveFilesearch);
-  if (fi!=filetypeDefinitions.end()) {
+  fileFound = fi!=filetypeDefinitions.end();
+
+  if (fileFound) {
     PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
     if (!res)
       throw pyexception();
+    if (res == Py_None)
+      return res;
 
     if (PyOrExampleTable_Check(res))
       return res;
@@ -2205,9 +2209,14 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     if (PyArg_ParseTuple(argstuple, "s", &filename)) {
       PyObject *res;
       
-      res = loadDataByPython(type, filename, argstuple, keywords, false);
+      bool pythonFileFound;
+      res = loadDataByPython(type, filename, argstuple, keywords, false, pythonFileFound);
       if (res)
-        return res;
+        if (res != Py_None)
+          return res;
+        else
+          Py_DECREF(Py_None);
+
       PyErr_Clear();
 
       bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
@@ -2219,11 +2228,16 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
       if (table)
         return WrapNewOrange(table, type);
 
-      res = loadDataByPython(type, filename, argstuple, keywords, true);
+      res = loadDataByPython(type, filename, argstuple, keywords, true, pythonFileFound);
       if (res)
         return res;
 
-      PYERROR(PyExc_SystemError, "file not found", PYNULL);
+      if (pythonFileFound) {
+        PYERROR(PyExc_SystemError, "cannot load the file", PYNULL);
+      }
+      else {
+        PYERROR(PyExc_SystemError, "file not found", PYNULL);
+      }
     }
 
     PyErr_Clear();

@@ -335,7 +335,6 @@ PDistribution TP2NN::classDistribution(const TExample &example)
   double x, y;
   const int nClasses = domain->classVar->noOfValues();
   float *cprob = mlnew float[nClasses];
-  for(float *ci = cprob, *ce = cprob + nClasses; ci != ce; *ci++ = 0.0);
   
   try {
     if (example.domain == domain)
@@ -345,12 +344,7 @@ PDistribution TP2NN::classDistribution(const TExample &example)
       project(example, x, y);
     }
 
-    for(double *proj = projections, *proje = projections + 3*nExamples; proj != proje; proj += 3) {
-      double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
-      if (dist < 1e-5)
-        dist = 1e-5;
-      cprob[int(proj[2])] += exp(exponent2 * log(dist));
-    }
+    classDistribution(x, y, cprob, nClasses);
 
     TDiscDistribution *dist = mlnew TDiscDistribution(cprob, nClasses);
     PDistribution wdist = dist;
@@ -363,4 +357,16 @@ PDistribution TP2NN::classDistribution(const TExample &example)
   }
 
   return PDistribution();
+}
+
+
+void TP2NN::classDistribution(const double &x, const double &y, float *distribution, const int &nClasses) const
+{
+  for(float *ci = distribution, *ce = distribution + nClasses; ci != ce; *ci++ = 0.0);
+  for(double *proj = projections, *proje = projections + 3*nExamples; proj != proje; proj += 3) {
+    double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+    if (dist < 1e-5)
+      dist = 1e-5;
+    distribution[int(proj[2])] += exp(exponent2 * log(dist));
+  }
 }
