@@ -910,14 +910,18 @@ PyObject *FindNearestConstructor_call(PyObject *self, PyObject *args, PyObject *
 
 
 
-PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(k, example) -> ExampleTable")
+PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example, k) -> ExampleTable")
 {
   PyTRY
     SETATTRIBUTES
     float k;
     TExample *example;
-    if (!PyArg_ParseTuple(args, "fO&", &k, ptr_Example, &example))
-      PYERROR(PyExc_TypeError, "attribute error (number and example expected)", PYNULL);
+    // Both forms are allowed for compatibility with older versions
+    if (!PyArg_ParseTuple(args, "fO&", &k, ptr_Example, &example)) {
+      PyErr_Clear();
+      if (!PyArg_ParseTuple(args, "O&f", ptr_Example, &example, &k))
+        PYERROR(PyExc_TypeError, "attribute error (number and example expected)", PYNULL);
+    }
 
     return WrapOrange(SELF_AS(TFindNearest).call(*example, k));
   PyCATCH

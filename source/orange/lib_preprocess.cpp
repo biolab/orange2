@@ -544,6 +544,21 @@ PyObject *SubsetsGenerator_minMaxSize_new(PyTypeObject *type, PyObject *args, Py
 }
 
 
+PyObject *SubsetsGenerator_constant_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(SubsetsGenerator, "([min=, max=])")
+{ PyTRY
+    PyObject *varlist = NULL;
+
+    if (!PyArg_ParseTuple(args, "|O:SubsetsGenerator_constant.__new__", &varlist))
+      return PYNULL;
+
+    TSubsetsGenerator_constant *ssg = mlnew TSubsetsGenerator_constant();
+    PyObject *res = WrapNewOrange(ssg, type);
+    if (varlist && SubsetsGeneratorResetFromVars(res, varlist) < 0)
+      return PYNULL;
+    ssg->constant = CLONE(TVarList, ssg->varList);
+    return res;
+  PyCATCH
+}
 /* ************ MINIMAL COMPLEXITY ************ */
 
 #include "minimal_complexity.hpp"

@@ -156,7 +156,7 @@ bool TSubsetsGenerator_constant::reset(const TVarList &vl)
 
 bool TSubsetsGenerator_constant::reset()
 {
-  if (!varList)
+  if (!varList || !constant)
     moreToCome = false;
   else {
     moreToCome = true;

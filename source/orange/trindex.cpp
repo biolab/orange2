@@ -153,9 +153,16 @@ PRandomIndices TMakeRandomIndices2::operator()(PExampleGenerator gen, const floa
               predOn2nd<pair<int, int>, less<int> >(), predOn2nd<pair<int, int>, equal_to<int> >(),
               rsrgen(randomGenerator, randseed));
 
-  float p0 = (ap0<=1.0) ? ap0 : ap0/float(ricv.size());
-  if (p0>1.0)
-    p0 = 1.0;
+  float p0;
+  if (ap0>1.0) {
+    if (ap0>ricv.size())
+      raiseError("p0 is greater than the number of examples");
+    else
+      p0 = ap0/float(ricv.size());
+  }
+  else
+    p0 = ap0;
+
   float p1 = 1-p0;
   float rem = 0;
 
@@ -221,9 +228,21 @@ PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
     raiseError("'p' not defined or empty");
 
   float sum = 0;
-  for(vector<float>::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; sum += (*(pis++)));
-  if (sum>=1.0)
-    raiseError("elements of 'p' sum to 1 or more");
+  bool props = true;
+  for(vector<float>::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; pis++) {
+    sum += *pis;
+    if (*pis > 1.0)
+      props = false;
+  }
+
+  if (props) {
+    if (sum>=1.0)
+      raiseError("elements of 'p' sum to 1 or more");
+  }
+  else {
+    if (sum>n)
+      raiseError("elements of 'p' sum to more than number of examples");
+  } 
 
   if (stratified==TMakeRandomIndices::STRATIFIED)
     raiseError("stratification not implemented");
@@ -232,7 +251,7 @@ PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
   TFoldIndices::iterator ii(indices->begin()), ie(indices->end());
   int no, ss=-1;
   PITERATE(vector<float>, pi, ap)
-    for(ss++, no= *pi<1.0 ? int(*pi*n+0.5) : int(*pi+0.5); no-- && (ii!=ie); *(ii++)=ss);
+    for(ss++, no = props ? int(*pi*n+0.5) : int(*pi+0.5); no-- && (ii!=ie); *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);
   random_shuffle(indices->begin(), indices->end(), rg);
