@@ -59,29 +59,29 @@ class OWScatterPlot(OWWidget):
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWScatterPlotGraph(self.mainArea)
         self.box.addWidget(self.graph)
-        #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # graph main tmp variables
         self.addInput("cdata")
         self.addInput("view")
 
-        self.setOptions()        
+        self.activateLoadedSettings()        
         
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)        
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
         self.connect(self.options.jitteringButtons, SIGNAL("clicked(int)"), self.setSpreadType)
-        self.connect(self.options.gSetXaxisCB, SIGNAL("toggled(bool)"), self.updateSettings)
-        self.connect(self.options.gSetYaxisCB, SIGNAL("toggled(bool)"), self.updateSettings)
-        self.connect(self.options.gSetVgridCB, SIGNAL("toggled(bool)"), self.setVGrid)
-        self.connect(self.options.gSetHgridCB, SIGNAL("toggled(bool)"), self.setHGrid)
-        self.connect(self.options.gSetLegendCB, SIGNAL("toggled(bool)"), self.updateSettings)
-        self.connect(self.options.gShowFilledSymbolsCB, SIGNAL("toggled(bool)"), self.updateSettings)
-        self.connect(self.options.jitterContinuous, SIGNAL("toggled(bool)"), self.updateSettings)
-        self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
+        self.connect(self.options.gSetXaxisCB, SIGNAL("toggled(bool)"), self.setXAxis)
+        self.connect(self.options.gSetYaxisCB, SIGNAL("toggled(bool)"), self.setYAxis)
+        self.connect(self.options.gSetVgridCB, SIGNAL("toggled(bool)"), self.setVerticalGridlines)
+        self.connect(self.options.gSetHgridCB, SIGNAL("toggled(bool)"), self.setHorizontalGridlines)
+        self.connect(self.options.gSetLegendCB, SIGNAL("toggled(bool)"), self.setShowLegend)
+        self.connect(self.options.gShowFilledSymbolsCB, SIGNAL("toggled(bool)"), self.setFilledSymbols)
+        self.connect(self.options.jitterContinuous, SIGNAL("toggled(bool)"), self.setJitterCont)
+        self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitterSize)
         self.connect(self.options, PYSIGNAL("gridColorChange(QColor &)"), self.setGridColor)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
-
+        
         #add controls to self.controlArea widget
         self.attrSelGroup = QVGroupBox(self.controlArea)
         self.attrSelGroup.setTitle("Shown attributes")
@@ -120,16 +120,16 @@ class OWScatterPlot(OWWidget):
     # #########################
     # OPTIONS
     # #########################
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.jitteringButtons.setButton(self.spreadType.index(self.jitteringType))
         self.options.gSetXaxisCB.setChecked(self.showXAxisTitle)
         self.options.gSetYaxisCB.setChecked(self.showYAxisTitle)
         self.options.gSetVgridCB.setChecked(self.showVerticalGridlines)
         self.options.gSetHgridCB.setChecked(self.showHorizontalGridlines)
         self.options.gSetLegendCB.setChecked(self.showLegend)
+        self.options.gShowFilledSymbolsCB.setChecked(self.showFilledSymbols)
         self.options.gSetGridColor.setNamedColor(str(self.graphGridColor))
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
-        self.options.gShowFilledSymbolsCB.setChecked(self.showFilledSymbols)
 
         self.options.jitterContinuous.setChecked(self.jitterContinuous)
         for i in range(len(self.jitterSizeList)):
@@ -152,23 +152,63 @@ class OWScatterPlot(OWWidget):
         self.graph.setJitterSize(self.jitterSize)
         self.graph.setShowFilledSymbols(self.showFilledSymbols)
 
+    def setXAxis(self, b):
+        self.showXAxisTitle = b
+        self.graph.setShowXaxisTitle(self.showXAxisTitle)
+        if self.data != None: self.updateGraph()
+
+    def setYAxis(self, b):
+        self.showYAxisTitle = b
+        self.graph.setShowYLaxisTitle(self.showYAxisTitle)
+        if self.data != None: self.updateGraph()
+
+    def setVerticalGridlines(self, b):
+        self.showVerticalGridlines = b
+        self.graph.enableGridXB(self.showVerticalGridlines)
+        if self.data != None: self.updateGraph()
+
+    def setHorizontalGridlines(self, b):
+        self.showHorizontalGridlines = b
+        self.graph.enableGridYL(self.showHorizontalGridlines)
+        if self.data != None: self.updateGraph()
+
+    def setLegend(self, b):
+        self.showLegend = b
+        self.graph.enableGraphLegend(self.showLegend)
+        if self.data != None: self.updateGraph()
+
+    def setJitterCont(self, b):
+        self.jitterContinuous = b
+        self.graph.setJitterContinuous(self.jitterContinuous)
+        if self.data != None: self.updateGraph()
+
+    def setJitterSize(self, size):
+        self.jitterSize = size
+        self.graph.setJitterSize(self.jitterSize)
+        if self.data != None: self.updateGraph()
+
+    def setFilledSymbols(self, b):
+        self.showFilledSymbols = b
+        self.graph.setShowFilledSymbols(self.showFilledSymbols)
+        if self.data != None: self.updateGraph()
+
     def setPointWidth(self, n):
         self.pointWidth = n
         self.graph.setPointWidth(n)
-        self.updateGraph()
+        if self.data != None: self.updateGraph()
         
     # jittering options
     def setSpreadType(self, n):
         self.jitteringType = self.spreadType[n]
         self.graph.setJitteringOption(self.spreadType[n])
         self.graph.setData(self.data)
-        self.updateGraph()
+        if self.data != None: self.updateGraph()
 
     # jittering options
     def setJitteringSize(self, n):
         self.jitterSize = self.jitterSizeNums[n]
         self.graph.setJitterSize(self.jitterSize)
-        self.updateGraph()
+        if self.data != None: self.updateGraph()
 
     def setCanvasColor(self, c):
         self.graphCanvasColor = c
@@ -181,14 +221,17 @@ class OWScatterPlot(OWWidget):
     def setShowLegend(self, b):
         self.showLegend = b
         self.graph.enableGraphLegend(b)
+        if self.data != None: self.updateGraph()
 
     def setHGrid(self, b):
         self.showHorizontalGridlines = b
         self.graph.enableGridXB(b)
+        if self.data != None: self.updateGraph()
 
     def setVGrid(self, b):
         self.showVerticalGridlines = b
         self.graph.enableGridYL(b)
+        if self.data != None: self.updateGraph()
         
     # #############################
     # ATTRIBUTE SELECTION

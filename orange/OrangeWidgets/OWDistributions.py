@@ -106,7 +106,7 @@ distribution of classes for each attribute.
 
         # set values in options dialog to values in settings
         self.options = OWDistributionsOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -175,7 +175,7 @@ distribution of classes for each attribute.
         self.graph.replot()
         self.repaint()
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         "Sets options in the settings dialog"
         self.options.numberOfBars.setValue(self.NumberOfBars)
         self.setNumberOfBars(self.NumberOfBars)

@@ -113,12 +113,12 @@ class OWSurveyPlot(OWWidget):
         self.box.addWidget(self.statusBar)
         
         # add a settings dialog and initialize its values
-        self.setOptions()
+        self.activateLoadedSettings()
 
     # #########################
     # OPTIONS
     # #########################
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
         self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))

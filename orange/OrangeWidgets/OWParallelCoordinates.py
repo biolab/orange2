@@ -71,11 +71,11 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
 
-        self.connect(self.options.showDistributions, SIGNAL("clicked()"), self.updateSettings)
-        self.connect(self.options.showAttrValues, SIGNAL("clicked()"), self.updateSettings)
-        self.connect(self.options.hidePureExamples, SIGNAL("clicked()"), self.updateSettings)
-        self.connect(self.options.showCorrelations, SIGNAL("clicked()"), self.updateSettings)
-        self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
+        self.connect(self.options.showDistributions, SIGNAL("toggled(bool)"), self.setDistributions)
+        self.connect(self.options.showAttrValues, SIGNAL("toggled(bool)"), self.setAttrValues)
+        self.connect(self.options.hidePureExamples, SIGNAL("toggled(bool)"), self.setHidePureExamples)
+        self.connect(self.options.showCorrelations, SIGNAL("toggled(bool)"), self.setShowCorrelations)
+        self.connect(self.options.globalValueScaling, SIGNAL("toggled(bool)"), self.setGlobalValueScaling)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options.attrContButtons, SIGNAL("clicked(int)"), self.setAttrContOrderType)
         self.connect(self.options.attrDiscButtons, SIGNAL("clicked(int)"), self.setAttrDiscOrderType)
@@ -119,14 +119,14 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
         # add a settings dialog and initialize its values
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #self.repaint()
 
     # #########################
     # OPTIONS
     # #########################
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
         self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
@@ -161,19 +161,24 @@ class OWParallelCoordinates(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def updateSettings(self):
-        self.showDistributions = self.options.showDistributions.isChecked()
-        self.graph.setShowDistributions(self.showDistributions)
+    def setDistributions(self, b):
+        self.showDistributions = b
+        self.graph.setShowDistributions(b)
+        self.updateGraph()
 
-        self.showAttrValues = self.options.showAttrValues.isChecked()        
-        self.graph.setShowAttrValues(self.showAttrValues)
+    def setAttrValues(self, b):
+        self.showAttrValues = b
+        self.graph.setShowAttrValues(b)
+        self.updateGraph()
 
-        self.hidePureExamples = self.options.hidePureExamples.isChecked()
-        self.graph.setHidePureExamples(self.hidePureExamples)
-
-        self.showCorrelations = self.options.showCorrelations.isChecked()
-        self.graph.setShowCorrelations(self.showCorrelations)
-
+    def setHidePureExamples(self, b):
+        self.hidePureExamples = b
+        self.graph.setHidePureExamples(b)
+        self.updateGraph()
+        
+    def setShowCorrelations(self, b):
+        self.showCorrelations = b
+        self.graph.setShowCorrelations(b)
         self.updateGraph()
 
     def setGlobalValueScaling(self):

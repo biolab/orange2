@@ -72,7 +72,7 @@ shows interactions of two attributes
 
         # add a settings dialog and initialize its values
         self.options = OW2DInteractionsOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -164,7 +164,7 @@ shows interactions of two attributes
         self.GraphCanvasColor = str(c.name())
         self.graph.setCanvasColor(c)
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.widthSlider.setValue(self.PointWidth)
         self.options.widthLCD.display(self.PointWidth)
         self.setPointWidth(self.PointWidth)

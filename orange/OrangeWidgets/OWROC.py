@@ -696,7 +696,7 @@ class OWROC(OWWidget):
         self.defaultPerfLinePValues = []
 
         self.options = OWROCOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -816,7 +816,7 @@ class OWROC(OWWidget):
         for g in self.graphs:
             g.setHullColor(c)
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.pointWidthSlider.setValue(self.PointWidth)
         self.options.pointWidthLCD.display(self.PointWidth)
         self.setPointWidth(self.PointWidth)

@@ -69,7 +69,7 @@ class OWScatterPlotMatrix(OWWidget):
 
         # add a settings dialog and initialize its values
         self.options = OWScatterPlotMatrixOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #GUI
         #add controls to self.controlArea widget
@@ -109,7 +109,7 @@ class OWScatterPlotMatrix(OWWidget):
     # #########################
     # OPTIONS
     # #########################
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.jitteringButtons.setButton(self.spreadType.index(self.jitteringType))
         self.options.gShowTitle.setChecked(self.showTitle)
         self.options.gShowAttributeValues.setChecked(self.showAttributeValues)

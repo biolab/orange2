@@ -59,7 +59,7 @@ by their relevance for particular classification
         # and adding your setting controls, like checkboxes, radiobuttons and sliders
         # and don't forget tooltips)
         self.options=OWRankOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
         
         #connect settingsbutton to show options
         self.connect(self.settingsButton,SIGNAL("clicked()"),self.options.show),
@@ -149,7 +149,7 @@ by their relevance for particular classification
         self.DiscretizationMethod=self.options.discretizationStrings[dm]
         self.recalculate()
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.precisionSlider.setValue(self.Precision)
         self.options.kSlider.setValue(self.ReliefK)
         self.options.nSlider.setValue(self.ReliefN)

@@ -224,7 +224,7 @@ class OWCalibrationPlot(OWWidget):
         self.numberOfClassifiers = 0
 
         self.options = OWCalibrationPlotOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -262,7 +262,7 @@ class OWCalibrationPlot(OWWidget):
         for g in self.graphs:
             g.setShowRugs(v)
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.lineWidthSlider.setValue(self.CalibrationCurveWidth)
         self.options.lineWidthLCD.display(self.CalibrationCurveWidth)
         self.setCalibrationCurveWidth(self.CalibrationCurveWidth)

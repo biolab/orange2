@@ -37,19 +37,22 @@ class IntGraphView(QCanvasView):
 ##### WIDGET : Interaction graph
 ###########################################################################################
 class OWInteractionGraph(OWWidget):
-    settingsList = []
+    settingsList = ["onlyImportantAttrs", "onlyImportantInteractions"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Interaction graph", 'show interaction graph', TRUE, TRUE)
+        OWWidget.__init__(self, parent, "Interaction graph", 'show interaction graph', FALSE, FALSE)
 
         #set default settings
         self.data = None
         self.interactionMatrix = None
         self.rectIndices = {}   # QRect rectangles
         self.rectNames   = {}   # info about rectangle names (attributes)
-        self.lines = []     # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
+        self.lines = []         # dict of form (rectName1, rectName2):(labelQPoint, [p1QPoint, p2QPoint, ...])
         self.interactionRects = []
         self.rectItems = []
+
+        self.onlyImportantAttrs = 1
+        self.onlyImportantInteractions = 1
 
         self.addInput("cdata")
         self.addOutput("cdata")
@@ -90,16 +93,38 @@ class OWInteractionGraph(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
+        self.importantAttrsCB = QCheckBox('Show only important attributes', self.space)
+        self.importantInteractionsCB = QCheckBox('Show only important interactions', self.space)
+        
         self.selectionButton = QPushButton("Show selection", self.space)
+
+        self.saveLCanvas = QPushButton("Save left canvas", self.space)
+        self.saveRCanvas = QPushButton("Save right canvas", self.space)
+        self.connect(self.saveLCanvas, SIGNAL("clicked()"), self.saveToFileLCanvas)
+        self.connect(self.saveRCanvas, SIGNAL("clicked()"), self.saveToFileRCanvas)
 
         #connect controls to appropriate functions
         self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttributeClick)
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttributeClick)
         self.connect(self.selectionButton, SIGNAL("clicked()"), self.selectionClick)
-
+        self.connect(self.importantAttrsCB, SIGNAL("toggled(bool)"), self.showImportantAttrs)
+        self.connect(self.importantInteractionsCB, SIGNAL("toggled(bool)"), self.showImportantInteractions)
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
         #self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
+        self.activateLoadedSettings()
+
+    def showImportantAttrs(self, b):
+        self.onlyImportantAttrs = b
+        self.showInteractionRects()
+        
+    def showImportantInteractions(self, b):
+        self.onlyImportantInteractions = b
+        self.showInteractionRects()
+
+    def activateLoadedSettings(self):
+        self.importantAttrsCB.setChecked(self.onlyImportantAttrs)
+        self.importantInteractionsCB.setChecked(self.onlyImportantInteractions)
 
     # did we click inside the rect rectangle
     def clickInside(self, rect, point):
@@ -211,8 +236,20 @@ class OWInteractionGraph(OWWidget):
         self.canvasL.update()
         self.canvasR.update()
 
+    def showInteractionPair(self, attrIndex1, attrIndex2):
+        attrName1 = self.data.domain[attrIndex1].name
+        attrName2 = self.data.domain[attrIndex2].name
+        if self.onlyImportantAttrs == 1:
+            if self.getAttrVisible(attrName1) == 0 or self.getAttrVisible(attrName2) == 0: return 0
+        if self.onlyImportantInteractions == 1:
+            for (attr1, attr2, rect) in self.lines:
+                if (attr1 == attrName1 and attr2 == attrName2) or (attr1 == attrName2 and attr2 == attrName1): return 1
+            return 0
+        return 1
+
     def showInteractionRects(self):
         if self.interactionMatrix == None: return
+        if self.data == None : return
 
         ################################
         # hide all interaction rectangles
@@ -232,14 +269,13 @@ class OWInteractionGraph(OWWidget):
         # get max width of the attribute text
         xOff = 0        
         for ((total, (gain1, gain2, attrIndex1, attrIndex2))) in self.interactionList:
-            if self.getAttrVisible(self.data.domain[attrIndex1].name) == 0 or self.getAttrVisible(self.data.domain[attrIndex2].name) == 0:
-                continue
+            if not self.showInteractionPair(attrIndex1, attrIndex2): continue
             text = QCanvasText(self.data.domain[attrIndex1].name, self.canvasL)
             rect = text.boundingRect()
             if xOff < rect.width():
                 xOff = rect.width()
 
-        xOff += 10;  yOff = 30
+        xOff += 10;  yOff = 40
         index = 0
         xscale = 300;  yscale = 200
         maxWidth = xOff + xscale + 10;  maxHeight = 0
@@ -252,17 +288,23 @@ class OWInteractionGraph(OWWidget):
         tick1 = QCanvasRectangle(xOff, yOff-10, 1, 6, self.canvasL);              tick1.show()
         tick2 = QCanvasRectangle(xOff + (xscale/2), yOff-10, 1, 6, self.canvasL); tick2.show()
         tick3 = QCanvasRectangle(xOff + xscale-1, yOff-10, 1, 6,  self.canvasL);  tick3.show()
+        self.rectItems = [line, tick1, tick2, tick3]
+        for i in range(10):
+            tick = QCanvasRectangle(xOff + xscale * (float(i)/10.0), yOff-8, 1, 5, self.canvasL);
+            tick.show()
+            self.rectItems.append(tick)
         
         text1 = QCanvasText("0%", self.canvasL);   text1.setTextFlags(Qt.AlignHCenter); text1.move(xOff, yOff - 23); text1.show()
         text2 = QCanvasText("50%", self.canvasL);  text2.setTextFlags(Qt.AlignHCenter); text2.move(xOff + xscale/2, yOff - 23); text2.show()
         text3 = QCanvasText("100%", self.canvasL); text3.setTextFlags(Qt.AlignHCenter); text3.move(xOff + xscale, yOff - 23); text3.show()
-        self.rectItems = [line, tick1, tick2, tick3, text1, text2, text3]
+        text4 = QCanvasText("Class entropy removed", self.canvasL); text4.setTextFlags(Qt.AlignHCenter); text4.move(xOff + xscale/2, yOff - 36); text4.show()
+        self.rectItems.append(text1); self.rectItems.append(text2); self.rectItems.append(text3); self.rectItems.append(text4)
 
         ################################
         #create rectangles
         for ((total, (gain1, gain2, attrIndex1, attrIndex2))) in self.interactionList:
-            if self.getAttrVisible(self.data.domain[attrIndex1].name) == 0 or self.getAttrVisible(self.data.domain[attrIndex2].name) == 0:
-                continue
+            if not self.showInteractionPair(attrIndex1, attrIndex2): continue
+            
             interaction = (total - gain1 - gain2)
             rectsYOff = yOff + index * yscale * 0.15
 
@@ -351,7 +393,7 @@ class OWInteractionGraph(OWWidget):
                 width = int(bottomRightRectList[0]) - xLeft
                 height = int(bottomRightRectList[1]) - yTop
 
-                rect = QCanvasRectangle(xLeft, yTop, width, height, self.canvasR)
+                rect = QCanvasRectangle(xLeft+2, yTop+2, width, height, self.canvasR)
                 pen = QPen(Qt.green)
                 pen.setWidth(4)
                 rect.setPen(pen)
@@ -435,7 +477,31 @@ class OWInteractionGraph(OWWidget):
         self.showInteractionRects()
         self.canvasL.update()
         self.canvasR.update()
-    
+
+    ##################################################
+    # SAVING GRAPHS
+    ##################################################
+    def saveToFileLCanvas(self):
+        self.saveCanvasToFile(self.canvasViewL, self.canvasL.size())
+
+    def saveToFileRCanvas(self):
+        self.saveCanvasToFile(self.canvasViewR, self.canvasR.size())
+        
+    def saveCanvasToFile(self, canvas, size):
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        fileName = str(qfileName)
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+        
+        buffer = QPixmap(size) # any size can do, now using the window size
+        painter = QPainter(buffer)
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        canvas.drawContents(painter, 0,0, size.width(), size.height())
+        painter.end()
+        buffer.save(fileName, ext)
+
 
 #test widget appearance
 if __name__=="__main__":

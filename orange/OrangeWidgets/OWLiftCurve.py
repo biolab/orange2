@@ -207,7 +207,7 @@ class OWLiftCurve(OWROC):
         self.defaultPerfLinePValues = []
 
         self.options = OWLiftCurveOptions()
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
@@ -266,7 +266,7 @@ class OWLiftCurve(OWROC):
         for v in szs: sum += v
         self.splitQS.setSizes( [round(1.0/5.0*sum), round(2.0/5.0*sum), round(2.0/5.0*sum)] )
 
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.pointWidthSlider.setValue(self.PointWidth)
         self.options.pointWidthLCD.display(self.PointWidth)
         self.setPointWidth(self.PointWidth)

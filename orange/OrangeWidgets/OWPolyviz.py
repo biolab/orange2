@@ -117,14 +117,14 @@ class OWPolyviz(OWWidget):
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
         # add a settings dialog and initialize its values
-        self.setOptions()
+        self.activateLoadedSettings()
 
         #self.repaint()
 
     # #########################
     # OPTIONS
     # #########################
-    def setOptions(self):
+    def activateLoadedSettings(self):
         self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
         self.options.attrContButtons.setButton(self.attributeContOrder.index(self.attrContOrder))
         self.options.attrDiscButtons.setButton(self.attributeDiscOrder.index(self.attrDiscOrder))
