@@ -7,7 +7,13 @@
 # it builds a RPM package from the specified sources
 # and copies it to the web (on estelle)
 
+# the script is run as user orange
+# so appropriate write permissions should be set for the build environment
+# /usr/src/redhat/*
+#
+
 if [ $# -lt 3 ]; then
+	echo "parameters not given: version release RPMfile CVStag"
 	exit 1
 fi
 
@@ -24,7 +30,7 @@ ORANGEDIR=orange-$VER
 rm -Rf $ORANGEDIR 
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d $ORANGEDIR orange
 cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r $TAG -f -d $ORANGEDIR/source source
-tar -cvzf $ORANGESOURCE $ORANGEDIR
+tar -czf $ORANGESOURCE $ORANGEDIR
 rm -Rf $ORANGEDIR
 
 ## create .spec file for building RPM for Orange version: $VER
@@ -105,4 +111,5 @@ else
 fi
 
 cp /usr/src/redhat/RPMS/i386/orange-$VER-$REL.i386.rpm $RPMFILE
+cp /usr/src/redhat/SRPMS/orange-$VER-$REL.src.rpm .
 #
