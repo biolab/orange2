@@ -270,10 +270,8 @@ class OWRadviz(OWWidget):
         if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
         
-        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
-            minLen = maxLen
-        else:
-            minLen = 3
+        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
+        else: minLen = 3
 
         self.optimizationDlg.clearResults()
 
@@ -292,24 +290,16 @@ class OWRadviz(OWWidget):
             self.warning("There are %s possible radviz projections with this set of attributes"% (proj))
         
         self.optimizationDlg.disableControls()
-        self.progressBarInit()
-        startTime = time.time()
-        self.graph.startTime = time.time()
+        
         try:
             self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
 
-
-        self.progressBarFinished()
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
     
-        secs = time.time() - startTime
-        print "Number of evaluated projections: %d\nNumber of possible projections: %d\n----------------------------" % (self.graph.triedPossibilities, possibilities)
-        print "Used time: %d min, %d sec" % (secs/60, secs%60)        
-
 
     # ################################################################################################
     # find projections that have tight clusters of points that belong to the same class value
@@ -345,24 +335,16 @@ class OWRadviz(OWWidget):
                 if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
             self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
         
-        self.progressBarInit()
         self.clusterDlg.disableControls()
-        startTime = time.time()
-        self.graph.startTime = time.time()
         try:
             self.graph.getOptimalClusters(listOfAttributes, minLen, maxLen, self.clusterDlg.addResult)
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
 
-        self.progressBarFinished()
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
-    
-        secs = time.time() - startTime
-        print "Number of evaluated projections: %d\nNumber of possible projections: %d\n----------------------------" % (self.graph.triedPossibilities, possibilities)
-        print "Used time: %d min, %d sec" % (secs/60, secs%60)        
-
+   
 
     # ################################################################################################
     # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
@@ -429,14 +411,12 @@ class OWRadviz(OWWidget):
         
         self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))        
 
-        """
-        if type(tryIndex[0]) == tuple:
-            for vals in tryIndex:
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
+        if type(other) == dict:
+            for vals in other.values():
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[vals[0]], vals[1], vals[2], vals[3], vals[5])
         else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[other[0]], other[1], other[2], other[3], other[5])
         print "---------------------------"
-        """
         
 
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
@@ -544,7 +524,7 @@ class OWRadviz(OWWidget):
     
     # ###### CDATA signal ################################
     # receive new data and update all fields
-    def cdata(self, data):
+    def cdata(self, data, clearResults = 1):
         if data:
             name = ""
             if hasattr(data, "name"): name = data.name
@@ -554,8 +534,8 @@ class OWRadviz(OWWidget):
         exData = self.data
         self.data = data
         self.graph.setData(self.data)
-        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
-        self.clusterDlg.setData(data)
+        self.optimizationDlg.setData(data)  
+        self.clusterDlg.setData(data, clearResults)
         self.graph.insideColors = None; self.graph.clusterClosure = None
         
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same                

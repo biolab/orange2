@@ -276,35 +276,27 @@ class OWScatterPlot(OWWidget):
         if self.data == None: return
         
         self.optimizationDlg.clearResults()
-        self.progressBarInit()
         self.optimizationDlg.disableControls()
 
-        startTime = time.time()
         attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
         if len(attributeNameOrder) > 1000:
             self.warning("Since there were too many attributes, all but best 1000 attributes were removed.")
             attributeNameOrder = attributeNameOrder[:1000]
 
+        # sort projections using heuristics
         projections = []
         for i in range(len(attributeNameOrder)):
             for j in range(i+1, len(attributeNameOrder)):
                 projections.append((attributeNameOrder[i][0] + attributeNameOrder[j][0], attributeNameOrder[i][1], attributeNameOrder[j][1]))
-
-        # sort projections using heuristics
         projections.sort()
         projections.reverse()
 
         self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
         self.graph.getOptimalSeparation(projections, self.optimizationDlg.addResult)
 
-        self.progressBarFinished()
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
-
-        secs = time.time() - startTime
-        print "Number of possible projections: %d\n----------------------------" % (len(projections))
-        print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
 
     # ################################################################################################
@@ -315,10 +307,8 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.clearResults()
         self.clusterDlg.clusterStabilityButton.setOn(0)
         self.clusterDlg.pointStability = None
-        self.progressBarInit()
         self.clusterDlg.disableControls()
 
-        startTime = time.time()
         attributeNameOrder = self.clusterDlg.getEvaluatedAttributes(self.data)
 
         if len(attributeNameOrder) > 1000:
@@ -336,13 +326,8 @@ class OWScatterPlot(OWWidget):
 
         self.graph.getOptimalClusters(projections, self.clusterDlg.addResult)
 
-        self.progressBarFinished()
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
-
-        secs = time.time() - startTime
-        print "Number of possible projections: %d\n----------------------------" % (len(projections))
-        print "Used time: %d min, %d sec" %(secs/60, secs%60)
 
 
     #update status on progress bar - gets called by OWScatterplotGraph
@@ -378,14 +363,13 @@ class OWScatterPlot(OWWidget):
 
         self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))
 
-        """
-        if type(tryIndex[0]) == tuple:
-            for vals in tryIndex:
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3])
+        if type(other) == dict:
+            for vals in other.values():
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[vals[0]], vals[1], vals[2], vals[3], vals[5])
         else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3])
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[other[0]], other[1], other[2], other[3], other[5])
         print "---------------------------"
-        """
+        
         
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
         attrNames = [attr.name for attr in self.data.domain]
@@ -435,14 +419,6 @@ class OWScatterPlot(OWWidget):
         else:                         self.attrColor = "(One color)"
         self.attrShape = "(One shape)"
         self.attrSize= "(One size)"
-        
-    # set text to "text" in combo box "combo"
-    def setText(self, combo, text):
-        for i in range(combo.count()):
-            if str(combo.text(i)) == text:
-                combo.setCurrentItem(i)
-                return 1
-        return 0
 
     def removeSelectionsAndUpdateGraph(self, *args):
         self.graph.removeAllSelections()
@@ -468,7 +444,7 @@ class OWScatterPlot(OWWidget):
     # #######################################
 
     # receive new data and update all fields
-    def cdata(self, data):
+    def cdata(self, data, clearResults = 1):
         if data:
             name = ""
             if hasattr(data, "name"): name = data.name
@@ -479,12 +455,12 @@ class OWScatterPlot(OWWidget):
         self.data = data
         self.graph.setData(data)
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
-        self.clusterDlg.setData(data)
+        self.clusterDlg.setData(data, clearResults)
         self.graph.insideColors = None; self.graph.clusterClosure = None
        
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()
-        
+
         self.updateGraph()
         self.sendSelections()
 
