@@ -301,7 +301,7 @@ newdomain.addmetas(domain.getmetas())
 
 <H2>Domains as lists</H2>
 
-<P>To certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta-attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors.</P>
+<P>To certain extent, domains behave like lists. The length of domain is the number of its attributes, including the class attribute. Iterating through domain goes through attributes and the class attribute, but not through meta-attributes. You can get slices, but cannot set them (since domains are immutable). Domains can be indexed by integer indices, attribute names or descriptors. Domain has a method <CODE>index(var)</CODE> that returns the index of an attribute specified by a descriptor, name (or index, if you believe this makes sense).</P>
 
 <XMP class="code">
 >>> print d2

@@ -34,6 +34,8 @@
 <DD>Class probabilities returned by the classifier.</DD>
 </DL>
 
+<P>The <CODE>DefaultClassifier</CODE>'s constructor can be called without arguments, with value (for <CODE>defaultVal</CODE>), variable (for <CODE>classVar</CODE>). If the value is given and is of type <CODE>orange.Value</CODE> (alternatives are an integer index of a discrete value or a continuous value), its field <CODE>variable</CODE> is will either be used for initializing <CODE>classVar</CODE> if variable is not given as an argument, or checked against the variable argument, if it is given.
+
 <HR>
 
 <H2>Example</H2>
