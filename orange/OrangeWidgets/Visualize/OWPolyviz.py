@@ -32,7 +32,7 @@ class OWPolyviz(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", FALSE, TRUE, icon = "Polyviz.png")
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
 
         #set default settings
@@ -539,6 +539,7 @@ class OWPolyviz(OWWidget):
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
         
         self.updateGraph()
+        self.sendSelections()
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show

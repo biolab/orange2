@@ -26,7 +26,7 @@ class OWSurveyPlot(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Survey Plot", "Show data using survey plot visualization method", FALSE, TRUE, icon = "SurveyPlot.png")
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Selection", list)] 
 
         #set default settings

@@ -31,7 +31,7 @@ class OWParallelCoordinates(OWWidget):
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE, icon = "ParallelCoordinates.png")
         self.resize(700,700)
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]
+        self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute selection", list)]
     
         #set default settings

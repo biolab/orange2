@@ -42,7 +42,7 @@ class OWScatterPlotMatrix(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Scatterplot matrix", 'Show all possible projections of the data', FALSE, TRUE, icon = "ScatterPlotMatrix.png")
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Attribute selection", list)] 
 
 

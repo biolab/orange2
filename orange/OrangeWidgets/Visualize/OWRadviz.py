@@ -32,7 +32,7 @@ class OWRadviz(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", FALSE, TRUE, icon = "Radviz.png")
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Selection", list, self.selection, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
 
         #GUI
@@ -479,6 +479,7 @@ class OWRadviz(OWWidget):
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
         self.updateGraph()
+        self.sendSelections()
 
 
     # ###### SELECTION signal ################################

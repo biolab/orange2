@@ -468,7 +468,7 @@ class OWPolyvizGraph(OWVisGraph):
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)].value), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker(str(self.rawdata[index][self.attributeNames.index(label)]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                         marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNames.index(label)][index]), (x_i + xAnchors[i])/2.0, (y_i + yAnchors[i])/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)

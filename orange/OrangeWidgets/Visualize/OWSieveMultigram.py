@@ -26,7 +26,7 @@ class OWSieveMultigram(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Sieve Multigram", "Show sieve multigram", FALSE, TRUE, icon = "SieveMultigram.png")
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Selection", list, self.selection, 1)]
+        self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
         self.outputs = [] 
 
         #set default settings
