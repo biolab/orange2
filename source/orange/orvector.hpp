@@ -506,6 +506,8 @@ VWRAPPER(VarList)
 class ORANGE_API TAttributedFloatList : public TOrangeVector<float, false>
 {
 public:
+  __REGISTER_CLASS
+
   PVarList attributes;
 
   TAttributedFloatList()
@@ -524,16 +526,14 @@ public:
   : TOrangeVector<float,false>(i_X),
     attributes(vlist)
   {}
-
-  static TClassDescription st_classDescription;
-  virtual TClassDescription const *classDescription() const;
-  virtual TOrange *clone() const;
 };
 
 
 class ORANGE_API TAttributedBoolList : public TOrangeVector<bool, false>
 {
 public:
+  __REGISTER_CLASS
+
   PVarList attributes;
 
   TAttributedBoolList()
@@ -552,10 +552,6 @@ public:
   : TOrangeVector<bool, false>(i_X),
     attributes(vlist)
   {}
-
-  static TClassDescription st_classDescription;
-  virtual TClassDescription const *classDescription() const;
-  virtual TOrange *clone() const;
 };
 
 #ifdef _MSC_VER

@@ -1141,20 +1141,34 @@ bool TContDistribution::noDeviation() const
 
 float TContDistribution::average() const
 { if (!abs)
-    raiseError("cannot compute average (no values)");
+    if (variable)
+      raiseError("cannot compute average ('%s' has no defined values)", variable->name.c_str());
+    else
+      raiseError("cannot compute average (attribute has no defined values)");
+
   return sum/abs ; 
 }
 
 
 float TContDistribution::dev() const
-{ if (abs<=1e-7)
-    raiseError("cannot compute standard deviation (no values)");
+{ 
+  if (abs<=1e-7)
+    if (variable)
+      raiseError("cannot compute standard deviation ('%s' has no defined values)", variable->name.c_str());
+    else
+      raiseError("cannot compute standard deviation (attribute has no defined values)");
+
   return sqrt((sum2-sum*sum/abs)/abs);
 }
   
 float TContDistribution::var() const
-{ if (!abs)
-    raiseError("cannot compute variance (no values)");
+{
+  if (!abs)
+    if (variable)
+      raiseError("cannot compute variance ('%s' has no defined values)", variable->name.c_str());
+    else
+      raiseError("cannot compute variance (attribute has no defined values)");
+
   return (sum2-sum*sum/abs)/abs;
 }
   

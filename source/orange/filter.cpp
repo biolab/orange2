@@ -99,8 +99,17 @@ TFilter_isDefined::TFilter_isDefined(bool aneg, PDomain dom)
 
 bool TFilter_isDefined::operator()(const TExample &exam)
 {
+  TExample *example;
+  PExample wex;
+  if (domain && (domain != exam.domain)) {
+    example = mlnew TExample(domain, exam);
+    wex = example;
+  }
+  else
+    example = const_cast<TExample *>(&exam);
+
   if (!check || !check->size()) {
-    const_ITERATE(TExample, ei, exam)
+    const_PITERATE(TExample, ei, example)
       if ((*ei).isSpecial())
         return negate;
     return !negate;
@@ -108,7 +117,7 @@ bool TFilter_isDefined::operator()(const TExample &exam)
 
   else {
     TBoolList::const_iterator ci(check->begin()), ce(check->end());
-    TExample::const_iterator ei(exam.begin()), ee(exam.end());
+    TExample::const_iterator ei(example->begin()), ee(example->end());
     for(; (ci!=ce) && (ei!=ee); ci++, ei++)
       if (*ci && (*ei).isSpecial())
         return negate;

@@ -44,29 +44,6 @@ DEFINE_TOrangeVector_classDescription(PVariable, "TVarList", true, ORANGE_API)
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList", true, ORANGE_API)
 
 
-TPropertyDescription TAttributedFloatList_properties[] = {
-  {"attributes", "The list of attributes that corresponds to elements of the list", &typeid(POrange), &TVarList::st_classDescription, offsetof(TAttributedFloatList, attributes), false, false},
-  {NULL}
-};
-
-size_t const TAttributedFloatList_components[] = { 0};
-TClassDescription TAttributedFloatList::st_classDescription = { "TAttributedFloatList", &typeid(TAttributedFloatList), &TOrange::st_classDescription, TAttributedFloatList_properties, TAttributedFloatList_components };
-TClassDescription const *TAttributedFloatList::classDescription() const { return &TAttributedFloatList::st_classDescription; }
-TOrange *TAttributedFloatList::clone() const { return mlnew TAttributedFloatList(*this); }
-
-
-TPropertyDescription TAttributedBoolList_properties[] = {
-  {"attributes", "The list of attributes that corresponds to elements of the list", &typeid(POrange), &TVarList::st_classDescription, offsetof(TAttributedBoolList, attributes), false, false},
-  {NULL}
-};
-
-size_t const TAttributedBoolList_components[] = { 0};
-TClassDescription TAttributedBoolList::st_classDescription = { "TAttributedBoolList", &typeid(TAttributedBoolList), &TOrange::st_classDescription, TAttributedBoolList_properties, TAttributedBoolList_components };
-TClassDescription const *TAttributedBoolList::classDescription() const { return &TAttributedBoolList::st_classDescription; }
-TOrange *TAttributedBoolList::clone() const { return mlnew TAttributedBoolList(*this); }
-
-
-
 TVariable::TVariable(const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
