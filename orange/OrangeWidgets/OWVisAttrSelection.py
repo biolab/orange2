@@ -75,6 +75,24 @@ def getFunctionalList(data):
 # #### FUNCTIONS FOR CALCULATING ATTRIBUTE ORDER USING Fisher discriminant analysis
 # ##########################################################################################
 
+# class that measures correlation between continuous class value and continuous attribute
+class MeasureCorrelation:
+    def __init__(self):
+        pass
+
+    def __call__(self, attr, data):
+        return self.MeasureAttribute_info(attr, data)
+
+    def MeasureAttribute_info(self, attr, data):
+        table = data.select([attr, data.domain.classVar])
+        table = orange.Preprocessor_dropMissing(table)
+        a1 = [table[k][0].value for k in range(len(table))]
+        a2 = [table[k][1].value for k in range(len(table))]
+        
+        val, prob = statc.pearsonr(a1, a2)
+        return val
+        
+
 # fisher discriminant implemented to be used as orange.MeasureAttribute
 class MeasureFisherDiscriminant:
     def __init__(self):
@@ -120,10 +138,12 @@ class MeasureFisherDiscriminant:
 # used by kNN optimization to evaluate attributes
 def evaluateAttributes(data, contMeasure, discMeasure):
     attrs = []
+    corr = MeasureCorrelation()
     for attr in data.domain.attributes:
-        if   discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
-        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
+        if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
         elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.1, attr.name))
+        elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
+        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
         elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
         else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
     attrs.sort()
