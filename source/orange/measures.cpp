@@ -356,7 +356,7 @@ float getGini(const vector<float> &vf)
     N += *vi;
     sum += (*vi)*(*vi);
   }
-  return N ? 1 - sum/N/N : 0.0;
+  return N ? (1 - sum/N/N)/2 : 0.0;
 }
 
 
