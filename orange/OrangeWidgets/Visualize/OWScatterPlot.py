@@ -57,7 +57,7 @@ class OWScatterPlot(OWWidget):
         self.loadSettings()
 
         #GUI
-        self.tabs = QTabWidget(self.space, 'tabWidget')
+        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
         self.GeneralTab = QVGroupBox(self)
         self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
@@ -140,7 +140,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
         OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
         OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
-        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
+        OWGUI.checkBox(box, self, 'showDistributions', 'Show distributions', callback = self.setShowDistributions, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setFilledSymbols)
         OWGUI.checkBox(box, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
 
@@ -416,6 +416,10 @@ class OWScatterPlot(OWWidget):
 
     def setShowLegend(self):
         self.graph.updateSettings(enabledLegend = self.showLegend)
+        self.updateGraph()
+
+    def setShowDistributions(self):
+        self.graph.updateSettings(showDistributions = self.showDistributions)
         self.updateGraph()
 
     def setAutoSendSelection(self):
