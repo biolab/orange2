@@ -44,12 +44,13 @@ class TestedExample:
 
 
 class ExperimentResults:
-    def __init__(self, iterations, learners, weights, **argkw):
+    def __init__(self, iterations, learners, weights, baseClass, **argkw):
         self.numberOfIterations = iterations
         self.numberOfLearners = learners
         self.results = []
         self.classifiers = []
         self.loaded = None
+        self.baseClass = baseClass
         self.weights = weights
         self.__dict__.update(argkw)
 
@@ -99,7 +100,7 @@ def leaveOneOut(learners, examples, pps=[], **argkw):
 def proportionTest(learners, examples, learnProp, times=10, strat=orange.MakeRandomIndices.StratifiedIfPossible, pps=[], **argkw):
     examples, weight = demangleExamples(examples)
     pick = orange.MakeRandomIndices2(stratified = strat, p0 = learnProp)
-    testResults = ExperimentResults(times, len(learners), weight!=0)
+    testResults = ExperimentResults(times, len(learners), weight!=0, examples.domain.classVar.baseValue)
     for time in range(times):
         indices = pick(examples)
         learnset = examples.selectref(indices, 0)
@@ -153,7 +154,7 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
             if "*" in fnstr:
                 cache = 0
 
-        testResults = ExperimentResults(cv.folds, len(learners), weight!=0)
+        testResults = ExperimentResults(cv.folds, len(learners), weight!=0, examples.domain.classVar.baseValue)
         testResults.results = [TestedExample(folds[i], int(examples[i].getclass()), nLrn, examples[i].getweight())
                                for i in range(len(examples))]
 
@@ -203,7 +204,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
     allResults=[]
     for p in proportions:
         print_verbose(verb, "Proportion: %5.3f" % p)
-        testResults = ExperimentResults(times, len(learners), testweight!=0)
+        testResults = ExperimentResults(times, len(learners), testweight!=0, testset.domain.classVar.baseValue)
         testResults.results = []
         
         for t in range(times):
@@ -218,7 +219,7 @@ def learningCurveWithTestData(learners, learnset, testset, times=10, proportions
 def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **argkw):
     verb = argkw.get("verbose", 0)
     cache = argkw.get("cache", 1)
-    storeclassifiers = argkw.get("storeclassifiers", 0)
+    storeclassifiers = argkw.get("storeclassifiers", 0) or argkw.get("storeClassifiers", 0)
     cache = cache and not storeclassifiers
 
     examples, weight = demangleExamples(examples)
@@ -229,7 +230,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], **
             raise SystemError, "cannot preprocess testing examples"
 
     nIterations = max(indices)+1
-    testResults = ExperimentResults(nIterations, len(learners), weight!=0)
+    testResults = ExperimentResults(nIterations, len(learners), weight!=0, examples.domain.classVar.baseValue)
     testResults.results = [TestedExample(indices[i], int(examples[i].getclass()), nLrn, examples[i].getweight(weight))
                            for i in range(len(examples))]
 
@@ -322,7 +323,7 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
     testset, testweight = demangleExamples(testset)
 
     if not testResults:
-        testResults=ExperimentResults(1, len(classifiers), testweight!=0)
+        testResults=ExperimentResults(1, len(classifiers), testweight!=0, testset.domain.classVar.baseValue)
     
     for ex in testset:
         te = TestedExample(iterationNumber, int(ex.getclass()), 0, ex.getweight(testweight))

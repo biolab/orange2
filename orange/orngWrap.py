@@ -16,7 +16,7 @@ class Tune1Parameter:
             lastobj=getattr(lastobj, i)
         return lastobj, names[-1]
         
-    def __call__(self, table, weight):
+    def __call__(self, table, weight, verbose=0):
         import types, whrandom
         import orange, orngTest, orngStat
         
@@ -37,7 +37,8 @@ class Tune1Parameter:
                 setattr(i[0], i[1], par)
             # self.evaluate could be, for example, orngEval.CA
             res=evaluate(orngTest.testWithIndices([self.object], (table, weight), cvind))
-            print par, res
+            if verbose:
+                print par, res
             if not bestres:
                 bestres, bestpar, wins = res, par, 1
             else:

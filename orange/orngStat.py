@@ -267,9 +267,15 @@ class ConfusionMatrix:
                 self.TN += weight
 
 
-def computeConfusionMatrices(res, classIndex=1, **argkw):
+def computeConfusionMatrices(res, classIndex=-1, **argkw):
     tfpns = [ConfusionMatrix() for i in range(res.numberOfLearners)]
 
+    if classIndex<0:
+        if res.baseClass>=0:
+            classIndex = res.baseClass
+        else:
+            classIndex = 1
+            
     cutoff = argkw.get("cutoff")
     if cutoff:
         if argkw.get("unweighted", 0) or not res.weights:
@@ -333,7 +339,7 @@ def NPV(confm):
 
 
 
-def AROC(res, classIndex=1):
+def AROC(res, classIndex=-1):
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
     problists, tots = corn.computeROCCumulative(res, classIndex, useweights)
@@ -364,12 +370,12 @@ def AROC(res, classIndex=1):
     return results
 
     
-def compare2AROCs(res, lrn1, lrn2, classIndex, **argkw):
+def compare2AROCs(res, lrn1, lrn2, classIndex=-1, **argkw):
     import corn
     return corn.compare2ROCs(res, lrn1, lrn2, classIndex, res.weights and not argkw.get("unweighted"))
 
     
-def computeROC(res, classIndex=1):
+def computeROC(res, classIndex=-1):
     import corn
     problists, tots = corn.computeROCCumulative(res, classIndex)
 
@@ -403,7 +409,13 @@ class CDT:
     self.C, self.D, self.T = C, D, T
    
 
-def computeCDT(res, classIndex=1, **argkw):
+def computeCDT(res, classIndex=-1, **argkw):
+    if classIndex<0:
+        if res.baseClass>=0:
+            classIndex = res.baseClass
+        else:
+            classIndex = 1
+            
     import corn
     useweights = res.weights and not argkw.get("unweighted", 0)
 
@@ -549,7 +561,7 @@ def plotLearningCurve(file, allResults, proportions, legend, noConfidence=0):
     for i in range(len(legend)):
         if not noConfidence:
             for p in range(len(proportions)):
-                file.write("%f\t%f\t%f\n" % (proportions[p], CAs[p][i][0], CAs[p][i][1]))
+                file.write("%f\t%f\t%f\n" % (proportions[p], CAs[p][i][0], 1.96*CAs[p][i][1]))
             file.write("e\n\n")
 
         for p in range(len(proportions)):
@@ -691,12 +703,12 @@ def learningCurve2PiCTeX(file, allResults, proportions, **options):
     file.write("  \\beginpicture\n")
     file.write("  \\setcoordinatesystem units <%10.8fcm, %5.3fcm>\n\n" % (xunit, graphsize))    
     file.write("  \\setplotarea x from %5.3f to %5.3f, y from 0 to 1\n" % (0, ntestexamples))    
-    file.write("  \\axis bottom invisible\n")# label {\v stevilo u\v cnih primerov}\n")
+    file.write("  \\axis bottom invisible\n")# label {#examples}\n")
     file.write("      ticks short at %s /\n" % reduce(lambda x,y:x+" "+y, ["%i"%(x*nexamples+0.5) for x in proportions]))
     if numberedx:
         file.write("            long numbered at %s /\n" % reduce(lambda x,y:x+y, ["%i " % int(x+0.5) for x in numberedx]))
     file.write("  /\n")
-    file.write("  \\axis left invisible\n")# label {klasifikacijska to\v cnost}\n")
+    file.write("  \\axis left invisible\n")# label {classification accuracy}\n")
     file.write("      shiftedto y=%5.3f\n" % yshift)
     file.write("      ticks short from 0.0 to 1.0 by 0.05\n")
     file.write("            long numbered from 0.0 to 1.0 by 0.25\n")
