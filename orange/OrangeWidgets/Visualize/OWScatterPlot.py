@@ -458,11 +458,14 @@ class OWScatterPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = data
-       
         self.optimizationDlg.clear()
-        self.initAttrValues()
+        exData = self.data
+        self.data = data
         self.graph.setData(self.data)
+       
+        if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)): # preserve attribute choice if the domain is the same
+            self.initAttrValues()
+        
         self.updateGraph()
        
     #################################################

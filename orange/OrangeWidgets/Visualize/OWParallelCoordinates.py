@@ -286,7 +286,8 @@ class OWParallelCoordinates(OWWidget):
             self.send("Unselected Examples",unselected)
             self.send("Example Distribution", merged)
         else:
-            attrs = self.getShownAttributeList() + [self.data.domain.classVar.name]
+            attrs = self.getShownAttributeList()
+            if self.data.domain.classVar: attrs += [self.data.domain.classVar.name]
             if selected:    self.send("Selected Examples", selected.select(attrs))
             else:           self.send("Selected Examples", None)
             if unselected:  self.send("Unselected Examples", unselected.select(attrs))
@@ -386,7 +387,7 @@ class OWParallelCoordinates(OWWidget):
         if data == None: return
         
         shown, hidden = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-        if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
+        if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
             self.shownAttribsLB.insertItem(data.domain.classVar.name)
         for attr in shown:
             self.shownAttribsLB.insertItem(attr)
@@ -405,21 +406,25 @@ class OWParallelCoordinates(OWWidget):
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):
+        exData = self.data
         self.data = data
         self.graph.setData(self.data)
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
 
-        self.targetValueCombo.clear()
-        self.targetValueCombo.insertItem("(None)")
+        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
+            self.shownAttribsLB.clear()
+            self.hiddenAttribsLB.clear()
 
-        # update target combo
-        if data and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            for val in self.data.domain.classVar.values:
-                self.targetValueCombo.insertItem(val)
-            self.targetValueCombo.setCurrentItem(0)
-        
-        self.setShownAttributeList(self.data)
+            self.targetValueCombo.clear()
+            self.targetValueCombo.insertItem("(None)")
+
+            # update target combo
+            if data and data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
+                for val in data.domain.classVar.values:
+                    self.targetValueCombo.insertItem(val)
+                self.targetValueCombo.setCurrentItem(0)
+            
+            self.setShownAttributeList(data)
+
         self.updateGraph()
     #################################################
 

@@ -260,9 +260,12 @@ class OWSieveDiagram(OWWidget):
     # receive new data and update all fields
     def data(self, data):
         self.interestingList.clear()
+        exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissing(data)
-        self.initCombos(self.data)
+
+        if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)):  # preserve attribute choice if the domain is the same
+            self.initCombos(self.data)
         self.updateData()
 
     def clearGraph(self):

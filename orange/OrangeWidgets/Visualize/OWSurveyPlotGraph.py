@@ -59,7 +59,9 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
 
-        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        classNameIndex = -1
+        if self.rawdata.domain.classVar: classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        
         xs = range(self.length)
         count = len(self.rawdata)
         pos = 0
@@ -68,7 +70,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
-            newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
+            if classNameIndex >= 0: newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
                 
             curve.color = newColor
             curve.penColor = newColor
@@ -90,7 +92,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             self.setCurveStyle(ckey, QwtCurve.UserCurve)
             self.setCurveData(ckey, xData, yData)
 
-        if self.enabledLegend and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+        if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             varValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
             for ind in range(len(varValues)):
                 newColor = QColor()

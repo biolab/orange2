@@ -294,7 +294,12 @@ class OWSurveyPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        exData = self.data
         self.data = data
+
+        if self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes): # preserve attribute choice if the domain is the same
+            self.sortingClick()
+            return  
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 

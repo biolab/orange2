@@ -436,20 +436,6 @@ class OWPolyviz(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
-    # continuous attribute ordering
-    def setAttrContOrderType(self, n):
-        self.attrContOrder = self.attributeContOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
-    # discrete attribute ordering
-    def setAttrDiscOrderType(self, n):
-        self.attrDiscOrder = self.attributeDiscOrder[n]
-        if self.data != None:
-            self.setShownAttributeList(self.data)
-        self.updateGraph()
-
     
     # ####################################
     # show selected interesting projection
@@ -607,7 +593,11 @@ class OWPolyviz(OWWidget):
     def setShownAttributeList(self, data):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
+        self.attributeReverse = {}
+        
         if data == None: return
+
+        for attr in data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
 
         if self.attributeReverse[data.domain.classVar.name] == 0:   self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
         else:                                                       self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " -")
@@ -635,15 +625,12 @@ class OWPolyviz(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.optimizationDlg.clear()
-        self.attributeReverse = {}
+        exData = self.data
         self.data = data
         self.graph.setData(self.data)
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
 
-        if data:
-            for attr in self.data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
-        self.setShownAttributeList(self.data)
+        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same
+            self.setShownAttributeList(self.data)
         self.updateGraph()
     #################################################
 

@@ -571,12 +571,12 @@ class OWRadviz(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.optimizationDlg.clear()
+        exData = self.data
         self.data = data
         self.graph.setData(self.data)
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-        
-        self.setShownAttributeList(self.data)
+
+        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same                
+            self.setShownAttributeList(self.data)
         self.updateGraph()
     # ################################################
 

@@ -153,7 +153,9 @@ class OWSieveMultigram(OWWidget):
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
-    def setShownAttributeList(self, data):
+    def setShownAttributeList(self, data, exData):
+        if self.data and exData and str(exData.domain) == str(self.data.domain): return  # preserve attribute choice if the domain is the same
+
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
         if data == None: return
@@ -173,12 +175,12 @@ class OWSieveMultigram(OWWidget):
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):
+        exData = self.data
         self.data = None
-        if data:
-            self.data = orange.Preprocessor_dropMissing(data)
+        if data: self.data = orange.Preprocessor_dropMissing(data)
         self.computeProbabilities()        
 
-        self.setShownAttributeList(self.data)
+        self.setShownAttributeList(self.data, exData)
         self.updateGraph()
         
     #################################################
