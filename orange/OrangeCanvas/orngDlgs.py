@@ -332,7 +332,7 @@ class SignalDialog(QDialog):
         if (outName, inName) in self._links: return
 
         # check if correct types
-        print self.inWidget, self.outWidget
+        #print self.inWidget, self.outWidget
         (foo, outClass) = self.outWidget.getOutSignalInfo(outName)
         (foo2, inClass, funct, num) = self.inWidget.getInSignalInfo(inName)
         if not issubclass(outClass, inClass): return 0

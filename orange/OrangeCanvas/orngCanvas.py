@@ -631,9 +631,6 @@ class WidgetWorkspace(QWorkspace):
 				item.parentWidget().move((k+1)*self.off,(k+1)*self.off)
 				item.parentWidget().resize(self.width()-(k+1)*self.off, self.height()-(k+1)*self.off)
 
-	def windowActivated(self, window):
-		print "activated ", window
-
 
 app = QApplication(sys.argv) 
 dlg = OrangeCanvasDlg()
