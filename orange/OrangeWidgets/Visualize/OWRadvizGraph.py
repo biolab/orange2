@@ -257,6 +257,9 @@ class OWRadvizGraph(OWVisGraph):
 
                     # scale data values for example i
                     dataVals = [self.scaleExampleValue(self.subsetData[i], indicesWithClass[index]) for index in range(len(indicesWithClass))]
+                    if min(dataVals) < 0.0 or max(dataVals) > 1.0:
+                        self.radvizWidget.warning("Subset data values are out of range and their data points can be placed at the wrong position.")
+                        for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
                     [x,y] = self.getProjectedPointPosition(indices, dataVals[:-1])  # compute position of the point, but don't use the class value
                     x = x * self.scaleFactor; y = y * self.scaleFactor
@@ -264,7 +267,7 @@ class OWRadvizGraph(OWVisGraph):
                     if colors and not self.subsetData[i].getclass().isSpecial():
                         newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
                     elif not self.subsetData[i].getclass().isSpecial():
-                        newColor.setHsv(self.scaleExampleValue(self.subsetData[i], classNameIndex), 255, 255)
+                        newColor.setHsv(dataVals[-1], 255, 255)
                     else: newColor = QColor(0,0,0)
 
                     if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
@@ -632,7 +635,9 @@ class OWRadvizGraph(OWVisGraph):
                     tryIndex += 1
                     
                     validData = self.getValidList(attrs)
-                    classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    #classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+                    classList = Numeric.compress(validData, classList)
                         
                     selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
                     sum_i = self._getSum_i(selectedData)
@@ -721,7 +726,9 @@ class OWRadvizGraph(OWVisGraph):
                     XAnchors = anchorList[count-3][0]
                     YAnchors = anchorList[count-3][1]
                     validData = self.getValidList(projections[0])
-                    classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    #classList = Numeric.compress(validData, (self.noJitteringScaledData[classIndex]*2*len(self.rawdata.domain.classVar.values)- 1 )/2.0) # remove data with missing values and convert floats back to ints
+                    classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+                    classList = Numeric.compress(validData, classList)
                     sum_i = self._getSum_i(Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, projections[0])))
                     
                     tempList = []
