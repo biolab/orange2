@@ -15,7 +15,7 @@ from OWWidget import *
 import OWGUI, string, os.path
 
 class OWFile(OWWidget):
-    settingsList=["recentFiles", "selectedFileName"]
+    settingsList=["recentFiles"]
 
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File Widget")
@@ -24,16 +24,15 @@ class OWFile(OWWidget):
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
     
         #set default settings
-        self.recentFiles=[]
-        self.selectedFileName = "None"
+        self.recentFiles=["(none)"]
         #get settings from the ini file, if they exist
         self.loadSettings()
         
         #GUI
-        box = QHGroupBox("Data File", self.controlArea)
-        self.filecombo=QComboBox(box)
+        self.box = QHGroupBox("Data File", self.controlArea)
+        self.filecombo=QComboBox(self.box)
         self.filecombo.setMinimumWidth(250)
-        button = OWGUI.button(box, self, '...', callback = self.browseFile, disabled=0)
+        button = OWGUI.button(self.box, self, '...', callback = self.browseFile, disabled=0)
         button.setMaximumWidth(25)
 
         # info
@@ -47,40 +46,57 @@ class OWFile(OWWidget):
     def activateLoadedSettings(self):
         # remove missing data set names
         self.recentFiles=filter(os.path.exists,self.recentFiles)
-        self.setFilelist()
+        self.setFileList()
         
-        if self.selectedFileName != "":
-            if os.path.exists(self.selectedFileName):
-                self.openFile(self.selectedFileName)
-            else:
-                self.selectedFileName = ""
-
+        if len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
+            self.openFile(self.recentFiles[0])
+            
         # connecting GUI to code
-        self.connect(self.filecombo,SIGNAL('activated(int)'),self.selectFile)
+        self.connect(self.filecombo, SIGNAL('activated(int)'), self.selectFile)
 
+    # user selected a file from the combo box
+    def selectFile(self,n):
+        if n < len(self.recentFiles) :
+            name = self.recentFiles[n]
+            self.recentFiles.remove(name)
+            self.recentFiles.insert(0, name)
+        if len(self.recentFiles) > 0:
+            self.setFileList()
+            self.openFile(self.recentFiles[0])
+
+    # user pressed the "..." button to manually select a file to load
     def browseFile(self):
         "Display a FileDialog and select a file"
-        if self.recentFiles==[]:
+        if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
             startfile="."
         else:
             startfile=self.recentFiles[0]
-        filename=QFileDialog.getOpenFileName(startfile,
+        filename = str(QFileDialog.getOpenFileName(startfile,
         'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
-        None,'Open Orange Data File')
-        self.openFile(str(filename))
+        None,'Open Orange Data File'))
+    
+        if filename == "": return
+        if filename in self.recentFiles: self.recentFiles.remove(filename)
+        self.recentFiles.insert(0, filename)
+        self.setFileList()
+        self.openFile(self.recentFiles[0])
+
+    # set the file combo box
+    def setFileList(self):
+        self.filecombo.clear()
+        for file in self.recentFiles:
+            if file == "(none)": self.filecombo.insertItem("(none)")
+            else:                self.filecombo.insertItem(os.path.split(file)[1])
+        #self.filecombo.adjustSize() #doesn't work properly :(
+        self.filecombo.updateGeometry()
 
     def setInfo(self, info):
         for (i, s) in enumerate(info):
             self.info[i].setText(s)            
 
-    def xsp(self, l):
-        n = len(l)
-        if n>1: return n, 's'
-        else: return n, ''
-        
+    # Open a file, create data from it and send it over the data channel
     def openFile(self,fn):
-        "Open a file, create data from it and send it over the data channel"
-        if fn!="(none)":
+        if fn != "(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             if fileExt in (".txt",".tab",".xls"):
                 data = orange.ExampleTable(fn)
@@ -89,9 +105,6 @@ class OWFile(OWWidget):
             else:
                 return
                 
-            # update recent file list
-            self.addFileToList(fn)
-
             # update data info
             def sp(l):
                 n = len(l)
@@ -110,44 +123,14 @@ class OWFile(OWWidget):
             else:
                 self.infob.setText('Classless domain')
 
-            # set setting
-            self.selectedFileName = fn
-            
             # make new data and send it
             data.name = string.split(os.path.split(fn)[1], '.')[0]
             self.send("Examples", data)
             if data.domain.classVar:
-                    self.send("Classified Examples", data)
+                self.send("Classified Examples", data)
         else:
             self.send("Classified Examples", None)
             self.send("Examples", None)
-
-    def addFileToList(self,fn):
-        # Add a file to the start of the file list. 
-        # If it exists, move it to the start of the list
-        if fn in self.recentFiles:
-            self.recentFiles.remove(fn)
-        self.recentFiles.insert(0, fn)
-        self.setFilelist()       
-
-    def setFilelist(self):
-        "Set the GUI filelist"
-        self.filecombo.clear()
-        if self.recentFiles!=[]:
-            for file in self.recentFiles:
-                (dir,filename)=os.path.split(file)
-                #leave out the path
-                self.filecombo.insertItem(filename)
-        else:
-            self.filecombo.insertItem("(none)")
-        self.filecombo.adjustSize() #doesn't work properly :(
-            
-    def selectFile(self,n):
-        "Slot that is called when a file is selected from the combo box"
-        if self.recentFiles:
-            self.openFile(self.recentFiles[n])
-        else:
-            self.openFile("(none)")
         
         
 if __name__ == "__main__":
