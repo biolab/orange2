@@ -435,7 +435,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
     ITERATE(list<TSearchWarranty>, wi, searchWarranties) {
       const string &name = varNames[(*wi).posInFile];
       if ((*wi).suspectedType == 3)
-        ::raiseError("cannot determine type for attribute '%s'", name.c_str());
+        raiseWarning("cannot determine type for attribute '%s'; the attribute will be ignored", name.c_str());
 
       int type = (*wi).suspectedType == 2 ? TValue::INTVAR : TValue::FLOATVAR;
       if ((*wi).posInDomain<0)
@@ -443,6 +443,12 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
       else
         attributeDescriptions[(*wi).posInDomain].varType = type;
     }
+
+    for(int i = 0; i < attributeDescriptions.size(); )
+      if (attributeDescriptions[i].varType == -1)
+        attributeDescriptions.erase(attributeDescriptions.begin() + i);
+      else
+        i++;
   }
 
   if (sourceDomain) {
