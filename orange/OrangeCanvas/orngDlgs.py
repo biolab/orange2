@@ -587,14 +587,8 @@ class PreferencesDlg(QDialog):
 
 if __name__=="__main__":
     app = QApplication(sys.argv) 
-    #dlg = SignalDialog(app)
-    #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'),("Examples", 'ExampleTable'),("Examples", 'ExampleTable'),("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass'),("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
-    #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'),("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
-    #dlg.addSignalList("outWidget name", "inWidget name", [("Examples", 'ExampleTable'), ("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass', None, 1)], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
-    #dlg.addSignalList("outWidget name", "inWidget name", [("Classified Examples", 'ExampleTableWithClass')],[("Classified Examples", 'ExampleTableWithClass')], "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png", "E:/Development/Python23/Lib/site-packages/Orange/OrangeWidgets/icons/SelectAttributes.png")
     dlg = CanvasOptionsDlg(app)
     app.setMainWidget(dlg)
     dlg.show()
-    #dlg.addSignals(["data", "cdata", "ddata"], ["test", "ddata", "cdata"])
     app.exec_loop() 
 

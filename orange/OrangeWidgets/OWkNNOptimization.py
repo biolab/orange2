@@ -365,7 +365,6 @@ class kNNOptimization(OWBaseWidget):
 
         # open, write and save file
         file = open(name, "wt")
-        #cPickle.dump(self.optimizedListFiltered, file)
         file.write("%d\n%d\n%d\n%d\n" % (self.kValue, self.resultListLen, self.minExamples, self.percentDataUsed))
         file.write("%d\n"  % (self.measureType))
         file.write("%d\n%d\n" % (self.useHeuristics, self.bestSubsets))
@@ -373,6 +372,8 @@ class kNNOptimization(OWBaseWidget):
             file.write(str(val) + "\n")
         file.flush()
         file.close()
+
+        os.chdir(os.path.dirname(name))
 
         
 
