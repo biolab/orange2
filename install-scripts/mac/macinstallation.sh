@@ -33,7 +33,7 @@ if [ $COMPILEORANGE == 1 ]; then
   cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f source
   cd source
   python makedep.py
-  if ! make -f Makefile.mac; then
+  if ! make; then
     exit 1
   fi
   cd ..
