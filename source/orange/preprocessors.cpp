@@ -768,26 +768,53 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
 { 
   checkProperty(method);
 
+  TVarList discretized;
+  vector<int> discretizedMetas;
+  TDomain *newDomain = mlnew TDomain();
+  PDomain wdomain(newDomain);
+  
   const TDomain &domain = gen->domain.getReference();
-
-  vector<int> discretizeId;
-  if (attributes && attributes->size()) {
-    PITERATE(TVarList, vi, attributes)
-      discretizeId.push_back(domain.getVarNum(*vi));
-  }
-  else {
-    int idx = 0;
-    const_PITERATE(TVarList, vi, domain.attributes) {
-      if ((*vi)->varType==TValue::FLOATVAR)
-        discretizeId.push_back(idx);
-      idx++;
+  
+  PITERATE(TVarList, vi, domain.variables)
+    if (   ((*vi)->varType == TValue::FLOATVAR)
+        && (   !attributes || !attributes->size() 
+            || exists(attributes->begin(), attributes->end(), *vi))) {
+      PVariable evar = method->operator()(gen, *vi);
+      newDomain->variables->push_back(evar);
+      newDomain->attributes->push_back(evar);
+      discretized.push_back(*vi);
     }
-    if (discretizeClass && (domain.classVar->varType == TValue::FLOATVAR))
-      discretizeId.push_back(idx);
-  }
+    else {
+      newDomain->variables->push_back(*vi);
+      newDomain->attributes->push_back(*vi);
+    }
 
+  if (gen->domain->classVar) {
+    newDomain->classVar = newDomain->variables->back();
+    newDomain->attributes->erase(newDomain->attributes->end()-1);
+  }
+  
+  PITERATE(TVarList, ai, attributes)
+    if (!exists(discretized.begin(), discretized.end(), *ai)) {
+      long varNum = domain.getVarNum(*ai);
+      if (varNum == ILLEGAL_INT)
+        raiseError("Attribute '%s' is not found", (*ai)->name.c_str());
+      else if ((varNum >= 0) || ((*ai)->varType != TValue::FLOATVAR))
+        raiseError("Attribute '%s' is not continuous", (*ai)->name.c_str());
+      else {
+        PVariable evar = method->operator()(gen, *ai);
+	TMetaDescriptor ndsc(varNum, evar);
+	newDomain->metas.push_back(ndsc);
+	discretizedMetas.push_back(varNum);
+      }
+    }
+
+  ITERATE(TMetaVector, mi, domain.metas)
+    if (!exists(discretizedMetas.begin(), discretizedMetas.end(), (*mi).id))
+      newDomain->metas.push_back(*mi);
+      
   newWeight = weightID;
-  return mlnew TExampleTable(PDomain(mlnew TDiscretizedDomain(gen, discretizeId, weightID, method)), gen);
+  return mlnew TExampleTable(newDomain, gen);
 }
 
 
@@ -795,7 +822,6 @@ TImputeClassifier::TImputeClassifier(PVariable newVar, PVariable oldVar)
 : TClassifier(newVar),
   classifierFromVar(mlnew TClassifierFromVar(newVar, oldVar))
 {}
-
 
 TImputeClassifier::TImputeClassifier(const TImputeClassifier &old)
 : TClassifier(old),

@@ -54,6 +54,7 @@ public:
 
   TMetaDescriptor();
   TMetaDescriptor(const long &ai, const PVariable &avar);
+  TMetaDescriptor(const TMetaDescriptor &);
 };
 
 
