@@ -774,7 +774,7 @@ class OWROC(OWWidget):
         for g in self.graphs:
             if g.isVisible():
                 clfname = fil + "_" + str(cl) + "." + ext
-                g.saveToFile(clfname, ext)
+                g.saveToFileDirect(clfname, ext)
             cl += 1
 
     def setPointWidth(self, v):
