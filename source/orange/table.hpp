@@ -46,6 +46,7 @@ public:
   TExampleTable(PExampleGenerator orig, bool owns = true); // also copies examples
   TExampleTable(PDomain, PExampleGenerator orig); // owns = true (cannot change domain of references); copies examples
   TExampleTable(PExampleGenerator lock, int); // owns = false; pass anything for int; this constructor locks, but does not copy
+  TExampleTable(PExampleGeneratorList tables);
   ~TExampleTable();
 
 

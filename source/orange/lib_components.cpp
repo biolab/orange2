@@ -1355,6 +1355,8 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 
 #include "imputation.hpp"
 
+C_NAMED(TransformValue_IsDefined, TransformValue, "([value=])")
+
 BASED_ON(Imputer, Orange)
 C_NAMED(Imputer_asValue, Imputer, "() -> Imputer_asValue")
 C_NAMED(Imputer_model, Imputer, "() -> Imputer_model")
@@ -1375,6 +1377,7 @@ C_CALL(ImputerConstructor_average, ImputerConstructor, "(examples[, weightID]) -
 C_CALL(ImputerConstructor_minimal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_maximal, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 C_CALL(ImputerConstructor_model, ImputerConstructor, "(examples[, weightID]) -> Imputer")
+C_CALL(ImputerConstructor_asValue, ImputerConstructor, "(examples[, weightID]) -> Imputer")
 
 PyObject *Imputer_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
@@ -2128,6 +2131,21 @@ PyObject *Heatmap_getRowIntensity(PyObject *self, PyObject *args, PyObject *) PY
     return PyFloat_FromDouble(ri);
   PyCATCH
 }
+
+
+PyObject *Heatmap_getPercentileInterval(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(lower_percentile, upper_percentile) -> (min, max)")
+{
+  PyTRY
+    float lowperc, highperc;
+    if (!PyArg_ParseTuple(args, "ff:Heatmap_percentileInterval", &lowperc, &highperc))
+      return PYNULL;
+
+    float minv, maxv;
+    SELF_AS(THeatmap).getPercentileInterval(lowperc, highperc, minv, maxv);
+    return Py_BuildValue("ff", minv, maxv);
+  PyCATCH
+}
+
 
 PHeatmapList PHeatmapList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::P_FromArguments(arg); }
 PyObject *HeatmapList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::_FromArguments(type, arg); }

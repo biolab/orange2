@@ -28,6 +28,7 @@
 #include "random.hpp"
 
 #include "vars.hpp"
+#include "stringvars.hpp"
 #include "domain.hpp"
 #include "distvars.hpp"
 #include "examplegen.hpp"
@@ -149,6 +150,32 @@ int TValueFilter_discrete::operator()(const TExample &example) const
 
   const_PITERATE(TValueList, vi, values)
     if ((*vi).intV == val.intV)
+      return 1;
+
+  return 0;
+}
+
+
+TValueFilter_string::TValueFilter_string(const int &pos, PStringList bl, const int &accs)
+: TValueFilter(pos, accs),
+  values(bl)
+{}
+
+
+TValueFilter_string::TValueFilter_string(const int &pos, PVariable var, const int &accs)
+: TValueFilter(pos, accs),
+  values(mlnew TStringList(var))
+{}
+
+
+int TValueFilter_string::operator()(const TExample &example) const
+{ const TValue &val = example[position];
+  if (val.isSpecial())
+    return acceptSpecial;
+
+  const string &value = val.svalV.AS(TStringValue)->value;
+  const_PITERATE(TStringList, vi, values)
+    if (value == *vi)
       return 1;
 
   return 0;

@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <queue>
 #include "table.hpp"
 #include "module.hpp"
 #include "errors.hpp"
@@ -88,6 +89,28 @@ unsigned char *THeatmap::averages2string(const int &cellWidth, const int &cellHe
   return bitmap2string(cellWidth, cellHeight, size, averages, 1, height, absLow, absHigh, gamma);
 }
 
+
+void THeatmap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max)
+{
+  int ncells = height * width;
+  const int nlow = lowperc * ncells;
+  const int nhigh = highperc * ncells;
+
+  priority_queue<float, vector<float>, greater<float> > lower;
+  priority_queue<float, vector<float>, less<float> > upper;
+
+  for(float *ci = cells; ncells--; ci++) {
+    lower.push(*ci);
+    if (lower.size() > nlow)
+      lower.pop();
+    upper.push(*ci);
+    if (upper.size() > nhigh)
+      upper.pop();
+  }
+
+  min = lower.top();
+  max = upper.top();
+}
 
 float THeatmap::getCellIntensity(const int &y, const int &x) const
 { 
@@ -375,6 +398,8 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, fl
     }
 
     int nLines = int(floor(0.5 + (classEnd - classBegin) * unadjustedSqueeze));
+    if (!nLines)
+      nLines++;
     const float squeeze = float(nLines) / (classEnd-classBegin);
 
     THeatmap *hm = new THeatmap(nLines, nColumns, sortedExamples);

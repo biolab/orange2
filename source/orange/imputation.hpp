@@ -2,6 +2,7 @@
 #define __IMPUTATION_HPP
 
 #include "root.hpp"
+#include "transval.hpp"
 
 WRAPPER(Imputer)
 WRAPPER(ExampleGenerator)
@@ -11,6 +12,15 @@ WRAPPER(Learner)
 VWRAPPER(ClassifierList)
 
 
+class TTransformValue_IsDefined : public TTransformValue
+{
+public:
+  __REGISTER_CLASS
+
+  virtual void transform(TValue &val);
+};
+
+
 class TImputer : public TOrange
 {
 public:
@@ -18,6 +28,8 @@ public:
   virtual TExample *operator()(TExample &) = 0;
 
   virtual PExampleGenerator operator()(PExampleGenerator, const int &);
+
+  void imputeDefaults(TExample *example, PExample defaults);
 };
 
 
@@ -38,6 +50,7 @@ class TImputer_asValue : public TImputer
 public:
   __REGISTER_CLASS
   PDomain domain; //P domain to which the values are converted
+  PExample defaults; //P values to impute instead of missing ones - for continuous attributes only!
   virtual TExample *operator()(TExample &example);
 };
 
@@ -94,6 +107,16 @@ class TImputerConstructor_maximal : public TImputerConstructor
 public:
   __REGISTER_CLASS
   virtual PImputer operator()(PExampleGenerator, const int &);
+};
+
+
+class TImputerConstructor_asValue : public TImputerConstructor
+{
+public:
+  __REGISTER_CLASS
+  virtual PImputer operator()(PExampleGenerator, const int &);
+
+  PVariable createImputedVar(PVariable);
 };
 
 

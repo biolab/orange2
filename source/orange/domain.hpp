@@ -126,4 +126,16 @@ public:
   void afterSet(const string &name);
 };
 
+
+#define TDomainList TOrangeVector<PDomain> 
+VWRAPPER(DomainList)
+
+// For each attribute, the correspongin element of multimapping gives
+//   domains and position in domains in which the attribute appears
+typedef vector<vector<pair<int, int> > > TDomainMultiMapping;
+
+PDomain combineDomains(PDomainList sources, TDomainMultiMapping &mapping);
+void computeMapping(PDomain destination, PDomainList sources, TDomainMultiMapping &mapping);
+
+
 #endif

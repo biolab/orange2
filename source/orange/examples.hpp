@@ -26,6 +26,10 @@
 #include "meta.hpp"
 #include "orvector.hpp"
 WRAPPER(Domain)
+WRAPPER(Example)
+
+#define TExampleList TOrangeVector<PExample> 
+VWRAPPER(ExampleList)
 
 // A vector of attribute and class values
 class TExample : public TOrange {
@@ -40,8 +44,13 @@ public:
   TExample(PDomain dom, bool initMetas = true);
   TExample(PDomain dom, const TExample &orig, bool copyMetas = true);
   TExample(const TExample &orig, bool copyMetas = true);
+  TExample(PDomain dom, PExampleList);
   virtual ~TExample();
 
+private:
+  void insertVal(TValue &srcval, PVariable var, const int &metaID = 0);
+
+public:
   int traverse(visitproc visit, void *arg) const;
   int dropReferences();
 

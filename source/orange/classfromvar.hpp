@@ -35,6 +35,7 @@ public:
   PVariable whichVar; //P variable
   PTransformValue transformer; //P transformer
   PDistribution distributionForUnknown; //P distribution for unknown value
+  bool transformUnknowns; //P if false (default), unknowns stay unknown or are changed into distribution if given
 
   TClassifierFromVar(PVariable classVar=PVariable(), PDistribution = PDistribution());
   TClassifierFromVar(PVariable classVar, PVariable whichVar, PDistribution = PDistribution());
@@ -56,6 +57,7 @@ public:
   int position; //P position of the attribute in domain
   PTransformValue transformer; //P transformer
   PDistribution distributionForUnknown; //P distribution for unknown value
+  bool transformUnknowns; //P if false (default), unknowns stay unknown or are changed into distribution if given
 
   TClassifierFromVarFD(PVariable classVar=PVariable(), PDomain =PDomain(), const int &position = ILLEGAL_INT, PDistribution = PDistribution(), PTransformValue = PTransformValue());
   TClassifierFromVarFD(const TClassifierFromVarFD &);

@@ -1305,79 +1305,115 @@ PyObject *list2python(const vector<double> &lst)
 typedef void TSampFunc(const vector<double> &, int, vector<double> &);
 TSampFunc *sampFuncs[] = {samplingMinimal, samplingFactor, samplingFixed, samplingUniform};
 
+
+bool getSmootherPars(PyObject *args, vector<pair<double, double> > &points, vector<double> &sampPoints,
+                  float &smoothPar, const char *method)
+{
+  PyObject *pypoints;
+  int nPoints;
+  int distMethod;
+  char buf[20];
+  vector<double> xpoints;
+
+  points.clear();
+  sampPoints.clear();
+
+ 
+  if (PyList_Check(PyTuple_GET_ITEM(args, 1))) {
+    snprintf(buf, 19, "OO&f:%s", method);
+    if (!PyArg_ParseTuple(args, buf, &pypoints, cc_list, &sampPoints, &smoothPar))
+      return false;
+    distMethod = -1;
+  }
+  else {
+    snprintf(buf, 19, "Oif|i:%s", method);
+    if (!PyArg_ParseTuple(args, "Oif|i:loess", &pypoints, &nPoints, &smoothPar, &distMethod))
+      return false;
+    if ((distMethod < DISTRIBUTE_MINIMAL) || (distMethod > DISTRIBUTE_UNIFORM))
+      PYERROR(PyExc_TypeError, "invalid point distribution method", false);
+  }
+
+
+  PyObject *iter = PyObject_GetIter(pypoints);
+  if (!iter)
+    PYERROR(PyExc_TypeError, "a list (or a tuple) of points expected", false);
+
+  PyObject *item;
+  for (int i = 0; (item = PyIter_Next(iter)) != NULL; i++) {
+    PyObject *pyx = NULL, *pyy = NULL;
+    if (   !PyTuple_Check(item)
+        || (PyTuple_Size(item)!=2)
+        || ((pyx = PyNumber_Float(PyTuple_GetItem(item, 0))) == NULL)
+        || ((pyy = PyNumber_Float(PyTuple_GetItem(item, 1))) == NULL)) {
+      Py_XDECREF(pyx);
+      Py_DECREF(item);
+      Py_DECREF(iter);
+      PyErr_Format(PyExc_TypeError, "invalid point at index %i", i);
+      return false;
+    }
+
+    points.push_back(pair<double, double>(PyFloat_AsDouble(pyx), PyFloat_AsDouble(pyy)));
+    if (distMethod != -1)
+      xpoints.push_back(PyFloat_AsDouble(pyx));
+
+    Py_DECREF(pyy);
+    Py_DECREF(pyx);
+    Py_DECREF(item);
+  }
+  Py_DECREF(iter);
+  
+  if (distMethod != -1)
+    sampFuncs[distMethod](xpoints, nPoints, sampPoints);
+
+  return true;
+}
+
+
+PyObject *curve2PyCurve(const vector<double> xs, const vector<pair<double, double> > yvars)
+{
+  PyObject *pypoints = PyList_New(xs.size());
+  int i = 0;
+  vector<double>::const_iterator xi(xs.begin());
+  vector<pair<double, double> >::const_iterator yvi(yvars.begin()), yve(yvars.end());
+  for (; yvi != yve; yvi++, xi++)
+    PyList_SetItem(pypoints, i++, Py_BuildValue("fff", *xi, (*yvi).first, (*yvi).second));
+  return pypoints;
+}
+
+
 PyObject *py_loess(PyObject *, PyObject *args) 
 { PyTRY
-    PyObject *pypoints;
-    int nPoints;
     float windowProp;
-    int distMethod;
-
-    if (PyTuple_Size(args)<3)
-      PYERROR(PyExc_AttributeError, "loess expects 3 or 4 arguments", PYNULL);
-
+    vector<pair<double, double> > points;
     vector<double> sampPoints;
 
-    bool sampPointsGiven = PyList_Check(PyTuple_GET_ITEM(args, 1));
-    if (sampPointsGiven) {
-      if (!PyArg_ParseTuple(args, "OO&f:loess", &pypoints, cc_list, &sampPoints, &windowProp))
-        return PYNULL;
-    }
-    else {
-      if (!PyArg_ParseTuple(args, "Oif|i:loess", &pypoints, &nPoints, &windowProp, &distMethod))
-        return PYNULL;
-      if ((distMethod < DISTRIBUTE_MINIMAL) || (distMethod > DISTRIBUTE_UNIFORM))
-        PYERROR(PyExc_TypeError, "invalid point distribution method", PYNULL);
-    }
-
-    PyObject *iter = PyObject_GetIter(pypoints);
-    if (!iter)
-      PYERROR(PyExc_TypeError, "loess exects a list (or a tuple) of points", PYNULL);
-
-    vector<pair<double, double> > points;
-    vector<double> xpoints;
-    PyObject *item;
-    int i = 0;
-    while ((item = PyIter_Next(iter)) != NULL) {
-      PyObject *pyx = NULL, *pyy = NULL;
-      if (   !PyTuple_Check(item)
-          || (PyTuple_Size(item)!=2)
-          || ((pyx = PyNumber_Float(PyTuple_GetItem(item, 0))) == NULL)
-          || ((pyy = PyNumber_Float(PyTuple_GetItem(item, 1))) == NULL)) {
-        Py_XDECREF(pyx);
-        Py_DECREF(item);
-        Py_DECREF(iter);
-        PyErr_Format(PyExc_TypeError, "loess: invalid point at index %i", i);
-        return NULL;
-      }
-
-      i++;
-      const double &x = PyFloat_AsDouble(pyx);
-      const double &y = PyFloat_AsDouble(pyy);
-      points.push_back(pair<double, double>(x, y));
-      if (!sampPointsGiven)
-        xpoints.push_back(x);
-      Py_DECREF(pyy);
-      Py_DECREF(pyx);
-      Py_DECREF(item);
-    }
-    Py_DECREF(iter);
-
-    if (!sampPointsGiven)
-      sampFuncs[distMethod](xpoints, nPoints, sampPoints);
+    if (!getSmootherPars(args, points, sampPoints, windowProp, "loess"))
+      return PYNULL;
 
     vector<pair<double, double> > loess_curve;
     loess(sampPoints, points, windowProp, loess_curve);
 
-    pypoints = PyList_New(loess_curve.size());
-    i = 0;
-    vector<pair<double, double> >::const_iterator pi(loess_curve.begin()), pe(loess_curve.end());
-    vector<double>::const_iterator si(sampPoints.begin());
-    for (; pi != pe; pi++, si++)
-      PyList_SetItem(pypoints, i++, Py_BuildValue("fff", *si, (*pi).first, (*pi).second));
-
-    return pypoints;
+    return curve2PyCurve(sampPoints, loess_curve);
   PyCATCH
 }
+
+
+PyObject *py_lwr(PyObject *, PyObject *args) 
+{ PyTRY
+    float sigmaPercentile;
+    vector<pair<double, double> > points;
+    vector<double> sampPoints;
+
+    if (!getSmootherPars(args, points, sampPoints, sigmaPercentile, "lwr"))
+      return PYNULL;
+
+    vector<pair<double, double> > lwr_curve;
+    lwr(sampPoints, points, sigmaPercentile, lwr_curve);
+
+    return curve2PyCurve(sampPoints, lwr_curve);
+  PyCATCH
+}
+
 
 /* *********** COMBINATORIAL FUNCTIONS ************/
 
@@ -1519,6 +1555,7 @@ PyMethodDef statc_functions[]={
      DECLARE(logcomb)
 
      {"loess", (binaryfunc)py_loess, METH_VARARGS},
+     {"lwr", (binaryfunc)py_lwr, METH_VARARGS},
      DECLARE(samplingFactor)
      DECLARE(samplingFixed)
      DECLARE(samplingMinimal)

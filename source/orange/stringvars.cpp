@@ -112,7 +112,11 @@ void TStringVariable::str2val(const string &valname, TValue &valu)
 
 
 void TStringVariable::val2str(const TValue &valu, string &vname) const
-{ const TStringValue *sv = dynamic_cast<const TStringValue *>(valu.svalV.getUnwrappedPtr());
+{ 
+  if (!valu.svalV)
+    vname = "";
+
+  const TStringValue *sv = dynamic_cast<const TStringValue *>(valu.svalV.getUnwrappedPtr());
   if (!sv)
     raiseErrorWho("val2str", "invalid value type");
 

@@ -84,6 +84,78 @@ TExampleTable::TExampleTable(PExampleGenerator alock, int)
 }
 
 
+TExampleTable::TExampleTable(PExampleGeneratorList tables)
+: TExampleGenerator(PDomain()),
+  examples(NULL),
+  _Last(NULL),
+  _EndSpace(NULL),
+  ownsExamples(true),
+  lock()
+{
+  if (!tables->size())
+    raiseError("merging constructor was given no datasets to merge");
+
+  TDomainList domains;
+  int size = tables->front()->numberOfExamples();
+  vector<TExampleIterator> iterators;
+  PITERATE(TExampleGeneratorList, sdi, tables) {
+    if ((*sdi)->numberOfExamples() != size)
+      raiseError("cannot merge dataset of unequal sizes");
+    domains.push_back((*sdi)->domain);
+    iterators.push_back((*sdi)->begin());
+  }
+
+  TDomainMultiMapping mapping;
+  domain = combineDomains(PDomainList(domains), mapping);
+
+  int exno = 0;
+  for(; iterators.front(); exno++) {
+    TExample *example = mlnew TExample(domain);
+    addExample(example);
+    TDomainMultiMapping::const_iterator dmmi(mapping.begin());
+    TExample::iterator ei(example->begin()), ee(example->end());
+    TVarList::const_iterator vi(domain->variables->begin());
+    for(; ei!=ee; ei++, dmmi++, vi++) {
+      bool notfirst = 0;
+      for(vector<pair<int, int> >::const_iterator sdmmi((*dmmi).begin()), sdmme((*dmmi).end()); sdmmi!=sdmme; sdmmi++) {
+        const TValue &value = (*iterators[(*sdmmi).first])[(*sdmmi).second];
+        if (notfirst++) {
+          if (*ei != value)
+            raiseError("mismatching value of attribute '%s' in example #%i", (*vi)->name.c_str(), exno);
+        }
+        else
+          *ei = value;
+      }
+    }
+
+    // copy meta attributes and increase the iterators
+    for(vector<TExampleIterator>::iterator ii(iterators.begin()), ie(iterators.end()); ii!=ie; ++*(ii++)) {
+      ITERATE(TMetaValues, mvi, (**ii).meta) {
+        if (example->hasMeta((*mvi).first)) {
+          TValue &val = (*mvi).second;
+          if (val.isSpecial())
+            continue;
+
+          TValue &vale = example->getMeta((*mvi).first);
+          if (vale.isSpecial())
+            example->setMeta((*mvi).first, (*mvi).second);
+          else if ((val.varType != vale.varType) || (val != vale)) {
+            PVariable metavar = domain->getMetaVar((*mvi).first, false);
+            if (metavar && metavar->name.length())
+              raiseError("Meta attribute '%s' has ambiguous values on example #%i", metavar->name.c_str(), exno);
+            else
+              raiseError("Meta attribute %i has ambiguous values on example #%i", (*mvi).first, exno);
+          }
+        }
+        else
+          example->setMeta((*mvi).first, (*mvi).second);
+      }
+    }
+  }
+
+  version = ++generatorVersion;
+}
+
 TExampleTable::~TExampleTable()
 { 
   if (examples) {

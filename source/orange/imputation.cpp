@@ -5,9 +5,16 @@
 #include "learn.hpp"
 #include "basstat.hpp"
 #include "table.hpp"
+#include "lookup.hpp"
+#include "classfromvar.hpp"
 
 #include "imputation.ppp"
 
+
+void TTransformValue_IsDefined::transform(TValue &val)
+{
+  val = TValue(val.isSpecial() ? 1 : 0);
+}
 
 PExampleGenerator TImputer::operator()(PExampleGenerator gen, const int &weightID)
 {
@@ -28,6 +35,24 @@ PExampleGenerator TImputer::operator()(PExampleGenerator gen, const int &weightI
 }
 
 
+void TImputer::imputeDefaults(TExample *example, PExample defaults)
+{ 
+  if (example->domain != defaults->domain)
+    raiseError("invalid domain");
+
+  try {
+    TExample::const_iterator ei(defaults->begin());
+    TExample::iterator oi(example->begin()), oe(example->end());
+    for(; oi!=oe; oi++, ei++)
+      if ((*oi).isSpecial() && !(*ei).isSpecial())
+        *oi = *ei;
+  }
+  catch (...) {
+    mldelete example;
+    throw;
+  }
+}
+
 TImputer_defaults::TImputer_defaults(PDomain domain)
 : defaults(mlnew TExample(domain))
 {}
@@ -41,23 +66,8 @@ TImputer_defaults::TImputer_defaults(const TExample &valu)
 TExample *TImputer_defaults::operator()(TExample &example)
 {
   checkProperty(defaults);
-
-  if (example.domain != defaults->domain)
-    raiseError("invalid domain");
-
   TExample *imputed = CLONE(TExample, &example);
-  try {
-    TExample::const_iterator ei(defaults->begin());
-    TExample::iterator oi(imputed->begin()), oe(imputed->end());
-    for(; oi!=oe; oi++, ei++)
-      if ((*oi).isSpecial() && !(*ei).isSpecial())
-        *oi = *ei;
-  }
-  catch (...) {
-    mldelete imputed;
-    throw;
-  }
-
+  imputeDefaults(imputed, defaults);
   return imputed;
 };
 
@@ -65,7 +75,10 @@ TExample *TImputer_defaults::operator()(TExample &example)
 TExample *TImputer_asValue::operator()(TExample &example)
 { 
   checkProperty(domain);
-  return mlnew TExample(domain, example);
+  TExample *imputed = mlnew TExample(domain, example);
+  if (defaults)
+    imputeDefaults(imputed, defaults);
+  return imputed;
 }
 
 
@@ -173,6 +186,90 @@ PImputer TImputerConstructor_maximal::operator()(PExampleGenerator egen, const i
   return wimputer;
 }
 
+
+TTransformValue_IsDefined staticTransform_IsDefined;
+
+PVariable TImputerConstructor_asValue::createImputedVar(PVariable var)
+{
+  if (var->varType == TValue::INTVAR) {
+    TEnumVariable *newvar = mlnew TEnumVariable(var->name);
+    PVariable res = newvar;
+    newvar->values = mlnew TStringList(var.AS(TEnumVariable)->values.getReference());
+    newvar->values->push_back("NA");
+
+    TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(newvar, var);
+    newvar->getValueFrom = cblt;
+    TValueList &table = cblt->lookupTable.getReference();
+    for(int i = 0, e = table.size(); i!=e; i++)
+      table[i] = TValue(i);
+
+    return res;
+  }
+
+  if (var->varType == TValue::FLOATVAR) {
+    TEnumVariable *newvar = mlnew TEnumVariable(var->name + "_def");
+    PVariable res = newvar;
+    newvar->values->push_back("def");
+    newvar->values->push_back("undef");
+
+    TClassifierFromVar *cfv = mlnew TClassifierFromVar(newvar, var);
+    newvar->getValueFrom = cfv;
+    cfv->transformUnknowns = true;
+
+    cfv->transformer = PTransformValue(staticTransform_IsDefined);
+    return res;
+  }
+
+  return PVariable();
+}
+
+
+PImputer TImputerConstructor_asValue::operator ()(PExampleGenerator egen, const int &weightID)
+{
+  PDomain &domain = egen->domain;
+  if (imputeClass && domain->classVar && domain->classVar->varType == TValue::FLOATVAR)
+    raiseError("This method cannot impute continuous classes");
+
+  bool hasContinuous = false;
+  TVarList newVariables;
+  PITERATE(TVarList, vi, domain->attributes) {
+    PVariable newvar = createImputedVar(*vi);
+    if (newvar) {
+      newVariables.push_back(newvar);
+      if ((*vi)->varType == TValue::FLOATVAR) {
+        newVariables.push_back(*vi);
+        hasContinuous = true;
+      }
+    }
+    else
+      newVariables.push_back(*vi);
+  }
+
+  PVariable classVar;
+  if (domain->classVar) {
+    if (imputeClass)
+      createImputedVar(domain->classVar);
+    if (!classVar)
+      classVar = domain->classVar;
+  }
+
+  TImputer_asValue *imputer = mlnew TImputer_asValue;
+  PImputer wimputer(imputer);
+  imputer->domain = mlnew TDomain(classVar, newVariables);
+
+  if (hasContinuous) {
+    imputer->defaults = mlnew TExample(imputer->domain);
+    TDomainBasicAttrStat basstat(egen, weightID);
+    TExample::iterator aei(imputer->defaults->begin());
+    ITERATE(TDomainBasicAttrStat, bi, basstat) {
+      aei++;
+      if (*bi)
+        *(aei++) = TValue((*bi)->avg);
+    }        
+  }
+
+  return wimputer;
+}
 
 TImputerConstructor_model::TImputerConstructor_model()
 : useClass(false)

@@ -161,6 +161,41 @@ void samplingUniform(const map<double, double> &points, int nPoints, vector<doub
 }
 
 
+
+bool comp1st(const pair<double, double> &x1, const pair<double, double> &x2)
+{ return x1.first < x2.first; }
+
+
+void vector2weighted(const vector<pair<double, double> > &points, vector<TXYW> &weighted)
+{
+  if (points.empty())
+    throw StatException("lwr/loess: empty sample");
+
+  weighted.clear();
+
+  vector<pair<double, double> > myPoints = points;
+  sort(myPoints.begin(), myPoints.end(), comp1st);
+
+  vector<pair<double, double> >::const_iterator mpi(myPoints.begin()), mpe(myPoints.end());
+  weighted.push_back(TXYW((*mpi).first, (*mpi).second));
+  while(++mpi != mpe) {
+    TXYW &last = weighted.back();
+    if ((*mpi).first == last.x) {
+      last.y += (*mpi).second;
+      last.w += 1.0;
+    }
+    else {
+      if (last.w > 1e-6)
+        last.y /= last.w;
+      weighted.push_back(TXYW((*mpi).first, (*mpi).second));
+    }
+  }
+
+  TXYW &last = weighted.back();
+  if (last.w > 1e-6)
+    last.y /= last.w;
+}
+
 void loess(const vector<double> &refpoints, const vector<TXYW> &points, const float &windowProp, vector<pair<double, double> > &result)
 { 
   result.clear();
@@ -276,35 +311,11 @@ void loess(const vector<double> &refpoints, const vector<TXYW> &points, const fl
 }
 
 
-bool comp1st(const pair<double, double> &x1, const pair<double, double> &x2)
-{ return x1.first < x2.first; }
-
 void loess(const vector<double> &refpoints, const vector<pair<double, double> > &points, const float &windowProp, vector<pair<double, double> > &result)
 {
-  if (points.empty())
-    throw StatException("loess: empty sample");
-
-  vector<pair<double, double> > myPoints = points;
-  sort(myPoints.begin(), myPoints.end(), comp1st);
-
-  vector<TXYW> opoints;
-  vector<pair<double, double> >::const_iterator mpi(myPoints.begin()), mpe(myPoints.end());
-  opoints.push_back(TXYW((*mpi).first, (*mpi).second));
-  while(++mpi != mpe) {
-    if ((*mpi).first == opoints.back().x) {
-      opoints.back().y += (*mpi).second;
-      opoints.back().w += 1.0;
-    }
-    else {
-      if (opoints.back().w > 1.0)
-        opoints.back().y /= opoints.back().w;
-      opoints.push_back(TXYW((*mpi).first, (*mpi).second));
-    }
-  }
-  if (opoints.back().w > 1.0)
-    opoints.back().y /= opoints.back().w;
-
-  loess(refpoints, opoints, windowProp, result);
+  vector<TXYW> weighted;
+  vector2weighted(points, weighted);
+  loess(refpoints, weighted, windowProp, result);
 }
 
 
@@ -315,4 +326,111 @@ void loess(const vector<double> &refpoints, const map<double, double> &points, c
     opoints.push_back(TXYW((*pi).first, (*pi).second));
 
   loess(refpoints, opoints, windowProp, result);
+}
+
+
+void lwr(const vector<double> &refpoints, const vector<TXYW> &points, const float &smoothFactor, vector<pair<double, double> > &result)
+{ 
+  result.clear();
+  
+  typedef vector<TXYW>::const_iterator iterator;
+
+  float tot_w = 0.0;
+  { 
+    const_ITERATE(vector<TXYW>, pi, points)
+    tot_w += (*pi).w;
+  }
+  const float p25 = 0.25 * tot_w;
+  const float p75 = 0.75 * tot_w;
+  float x25, x75;
+  tot_w = 0;
+  { 
+    vector<TXYW>::const_iterator pi(points.begin()), pe(points.end());
+    for(; (pi!=pe) && (tot_w<p25); tot_w += (*pi).w, pi++);
+    const float &x1 = (*(pi-1)).x;
+    x25 = x1 + ((*pi).x-x1) * (p25 - tot_w + (*pi).w) / (*pi).w;
+
+    if (tot_w >= p75)
+      throw StatException("not enough data to compute 25th and 75th percentile");
+
+    for(; (pi!=pe) && (tot_w<p75); tot_w += (*pi).w, pi++);
+    const float &x2 = (*(pi-1)).x;
+    x75 = x2 + ((*pi).x-x2) * (p75 - tot_w + (*pi).w) / (*pi).w;
+  }
+
+  const float sigma = smoothFactor * (x75-x25);
+
+  const_ITERATE(vector<double>, ri, refpoints) {
+    const double &refx = *ri;
+
+    double Sx = 0.0, Sy = 0.0, Sxx = 0.0, Syy = 0.0, Sxy = 0.0, Sw = 0.0, Swx = 0.0, Swxx = 0.0;
+    double n = 0.0;
+
+    for (vector<TXYW>::const_iterator ii(points.begin()), ie(points.end()); ii != ie; ii++) {
+      const double &x = (*ii).x;
+      const double &y = (*ii).y;
+
+      // compute the weight based on the distance and the point's given weight
+      const double dx = x - *ri;
+      double w = (*ii).w * exp(- dx*dx / (sigma*sigma));
+
+      n   += w;
+      Sx  += w * x;
+      Sxx += w * x * x;
+      Sy  += w * y;
+      Syy += w * y * y;
+      Sxy += w * x * y;
+
+      Sw  += w * w;
+      Swx += w * w * x;
+      Swxx += w * w * x * x;
+    }
+
+    if (n==0) {
+      result.push_back(pair<double, double>(Sy, 0));
+      continue;
+    }
+
+    const double mu_x = Sx / n;
+    const double mu_y = Sy / n;
+    const double sigma_x2 = (Sxx - mu_x * Sx) / n;
+    if (sigma_x2 < 1e-20) {
+      result.push_back(pair<double, double>(Sy, 0));
+      continue;
+    }
+
+    const double sigma_y2 = (Syy - mu_y * Sy) / n;
+    const double sigma_xy = (Sxy - Sx * Sy / n) / n;
+    const double sigma_y_x = sigma_y2 - sigma_xy * sigma_xy / sigma_x2;
+
+    const double dist_x = refx - mu_x;
+    const double y = mu_y + sigma_xy / sigma_x2 * dist_x;
+
+    double var_y = sigma_y_x / n / n * (Sw + dist_x * dist_x / sigma_x2 / sigma_x2 * (Swxx + mu_x * mu_x * Sw - 2 * mu_x * Swx));
+    if ((var_y < 0) && (var_y > -1e-6))
+      var_y = 0;
+    else
+      var_y = sqrt(var_y);
+
+    result.push_back(pair<double, double>(y, var_y));
+  }
+}
+
+
+
+void lwr(const vector<double> &refpoints, const vector<pair<double, double> > &points, const float &smoothFactor, vector<pair<double, double> > &result)
+{
+  vector<TXYW> weighted;
+  vector2weighted(points, weighted);
+  lwr(refpoints, weighted, smoothFactor, result);
+}
+
+
+void lwr(const vector<double> &refpoints, const map<double, double> &points, const float &smoothFactor, vector<pair<double, double> > &result)
+{
+  vector<TXYW> opoints;
+  for(map<double, double>::const_iterator pi(points.begin()), pe(points.end()); pi != pe; pi++)
+    opoints.push_back(TXYW((*pi).first, (*pi).second));
+
+  lwr(refpoints, opoints, smoothFactor, result);
 }

@@ -44,8 +44,7 @@ TClassifierByLookupTable::TClassifierByLookupTable(PVariable aclass, PValueList 
   lookupTable(vlist),
   distributions(mlnew TDistributionList())
 { 
-  PVariable avar = lookupTable->variable;
-  for(int i = avar->noOfValues()+1; i--; )
+  for(int i = lookupTable->size(); i--; )
     distributions->push_back(TDistribution::create(aclass));
 }
 

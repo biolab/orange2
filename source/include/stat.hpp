@@ -1500,8 +1500,12 @@ public:
 
 // refpoints and points should be sorted
 void loess(const vector<double> &refpoints, const vector<TXYW> &points, const float &windowProp, vector<pair<double, double> > &result);
+void lwr(const vector<double> &refpoints, const vector<TXYW> &points, const float &smoothFactor, vector<pair<double, double> > &result);
 
 void loess(const vector<double> &refpoints, const vector<pair<double, double> > &points, const float &windowProp, vector<pair<double, double> > &result);
 void loess(const vector<double> &refpoints, const map<double, double> &points, const float &windowProp, vector<pair<double, double> > &result);
+
+void lwr(const vector<double> &refpoints, const vector<pair<double, double> > &points, const float &smoothFactor, vector<pair<double, double> > &result);
+void lwr(const vector<double> &refpoints, const map<double, double> &points, const float &smoothFactor, vector<pair<double, double> > &result);
 
 #endif

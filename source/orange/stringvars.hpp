@@ -28,6 +28,8 @@
 #include "vars.hpp"
 #include <string>
 
+#define STRINGVAR 6
+
 class TStringValue : public TSomeValue {
 public:
   __REGISTER_CLASS

@@ -294,7 +294,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
       else if (*cptr == 'C')
         varType = TValue::FLOATVAR;
       else if (*cptr == 'S')
-        varType = stringVarType;
+        varType = STRINGVAR;
 
       else
         ::raiseError("unrecognized flags in attribute name '%s'", cptr);
@@ -323,7 +323,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
       else if (*cptr == 'C')
         varType = TValue::FLOATVAR;
       else if (*cptr == 'S')
-        varType = stringVarType;
+        varType = STRINGVAR;
       else
         ::raiseError("unrecognized flags in attribute name '%s'", cptr);
 
@@ -558,7 +558,7 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
     else if ((*ti=="d") || (*ti=="discrete") || (*ti=="e") || (*ti=="enum"))
       attributeDescription->varType = TValue::INTVAR;
     else if (*ti=="string")
-      attributeDescription->varType = stringVarType;
+      attributeDescription->varType = STRINGVAR;
     else {
       attributeDescription->varType = TValue::INTVAR;
       attributeDescription->values = mlnew TStringList;

@@ -88,10 +88,16 @@ PDistribution TkNNClassifier::classDistribution(const TExample &oexam)
     else {
       const int &distanceID = findNearest->distanceID;
 
-      // This is not really elegant, but there's not other way to reach the last example...
-      const TExample *last = NULL;
-      { PEITERATE(ei, neighbours)
-          last = &*ei;
+      TExample *last;
+      TExampleTable *neighble = neighbours.AS(TExampleTable);
+      if (neighble)
+        last = &neighble->back();
+      else {
+        // This is not really elegant, but there's no other way to get the last example...
+        const TExample *last = NULL;
+        { PEITERATE(ei, neighbours)
+            last = &*ei;
+        }
       }
 
       float lastwei = WEIGHT2(*last, distanceID);

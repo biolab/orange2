@@ -29,6 +29,8 @@ public:
 
   float getCellIntensity(const int &y, const int &x) const;
   float getRowIntensity(const int &y) const;
+
+  void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max);
 };
 
 

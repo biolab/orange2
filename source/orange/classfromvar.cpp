@@ -29,19 +29,18 @@
 #include "classfromvar.ppp"
 
 
-inline TValue processValue(PTransformValue &transformer, const TValue &val, const PDistribution &distributionForUnknown)
+inline TValue processValue(PTransformValue &transformer, const TValue &val, const PDistribution &distributionForUnknown, bool transformUnknowns)
 {
-  if (val.isSpecial()) {
-    if (distributionForUnknown) {
-      PDistribution distr = CLONE(TDistribution, distributionForUnknown);
-      distr->normalize();
-      return TValue(distr, val.varType, val.valueType);
-    }
-    else
-      return val;
+  if (!val.isSpecial() || transformUnknowns)
+    return transformer ? transformer->call(val) : val;
+
+  if (distributionForUnknown) {
+    PDistribution distr = CLONE(TDistribution, distributionForUnknown);
+    distr->normalize();
+    return TValue(distr, val.varType, val.valueType);
   }
 
-  return transformer ? transformer->call(val) : val;
+  return val;
 }
 
 
@@ -49,6 +48,7 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PDistribution dun)
 : TClassifier(acv),
   whichVar(acv),
   distributionForUnknown(dun),
+  transformUnknowns(false),
   lastDomainVersion(-1)
 {}
 
@@ -57,6 +57,7 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDist
 : TClassifier(acv),
   whichVar(awhichVar),
   distributionForUnknown(dun),
+  transformUnknowns(false),
   lastDomainVersion(-1)
 {}
 
@@ -66,6 +67,7 @@ TClassifierFromVar::TClassifierFromVar(const TClassifierFromVar &old)
   whichVar(old.whichVar),
   transformer(old.transformer),
   distributionForUnknown(old.distributionForUnknown),
+  transformUnknowns(false),
   lastDomainVersion(-1)
 {};
 
@@ -86,16 +88,15 @@ TValue TClassifierFromVar::operator ()(const TExample &example)
   }
 
   if (position>=0)
-    return processValue(transformer, example[position], distributionForUnknown);
+    return processValue(transformer, example[position], distributionForUnknown, transformUnknowns);
 
   TMetaVector::const_iterator mi(example.domain->metas.begin()), me(example.domain->metas.end());
   for( ; (mi!=me) && ((*mi).variable!=whichVar); mi++);
-
   if (mi!=me)
-    return processValue(transformer, example[(*mi).id], distributionForUnknown);
+    return processValue(transformer, example[(*mi).id], distributionForUnknown, transformUnknowns);
 
   if (whichVar->getValueFrom)
-    return processValue(transformer, whichVar->computeValue(example), distributionForUnknown);
+    return processValue(transformer, whichVar->computeValue(example), distributionForUnknown, transformUnknowns);
 
   int varType;
   if (distributionForUnknown->variable)
@@ -118,7 +119,8 @@ TClassifierFromVarFD::TClassifierFromVarFD(PVariable acv, PDomain dom, const int
 : TClassifierFD(dom),
   position(p),
   transformer(atrans),
-  distributionForUnknown(dun)
+  distributionForUnknown(dun),
+  transformUnknowns(false)
 { classVar = acv; }
 
 
@@ -126,7 +128,8 @@ TClassifierFromVarFD::TClassifierFromVarFD(const TClassifierFromVarFD &old)
 : TClassifierFD(old),
   position(old.position),
   transformer(old.transformer),
-  distributionForUnknown(old.distributionForUnknown)
+  distributionForUnknown(old.distributionForUnknown),
+  transformUnknowns(false)
 {};
 
 
@@ -138,5 +141,5 @@ TValue TClassifierFromVarFD::operator ()(const TExample &example)
   if (position>=example.domain->variables->size())
     raiseError("'position' out of range");
   
-  return processValue(transformer, example[position], distributionForUnknown);
+  return processValue(transformer, example[position], distributionForUnknown, transformUnknowns);
 }

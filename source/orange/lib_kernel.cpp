@@ -150,15 +150,21 @@ PDomain knownDomain(PyObject *keywords)
 
 TMetaVector *knownMetas(PyObject *keywords)
 { 
-  PVarList variables;
-  PyObject *pyknownDomain = keywords ? PyDict_GetItemString(keywords, "domain") : PYNULL;
-  if (!pyknownDomain)
+  if (!keywords)
     return NULL;
 
-  if (!PyOrDomain_Check(pyknownDomain))
-    raiseError("invalid value for 'domain' argument"); // PYERROR won't do - NULL is a valid value to return...
+  PyObject *pyknownDomain = PyDict_GetItemString(keywords, "domain");
+  if (pyknownDomain) {
+    if (!PyOrDomain_Check(pyknownDomain))
+      raiseError("invalid value for 'domain' argument"); // PYERROR won't do - NULL is a valid value to return...
+    return &PyOrange_AsDomain(pyknownDomain)->metas;
+  }
 
-  return &PyOrange_AsDomain(pyknownDomain)->metas;
+  pyknownDomain = PyDict_GetItemString(keywords, "use");
+  if (pyknownDomain && PyOrDomain_Check(pyknownDomain))
+    return &PyOrange_AsDomain(pyknownDomain)->metas;
+  
+  return NULL;
 }
 
 BASED_ON(Variable, Orange)
@@ -1536,12 +1542,33 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
         if (PyOrDomain_Check(args))
           return WrapNewOrange(mlnew TExampleTable(PyOrange_AsDomain(args)), type);
 
-        else if (PyOrExampleGenerator_Check(args))
+        if (PyOrExampleGenerator_Check(args))
           return WrapNewOrange(mlnew TExampleTable(PyOrange_AsExampleGenerator(args)), type);
       }
       else {
         TExampleTable *res = readListOfExamples(args);
-        return res ? WrapNewOrange(res, type) : PYNULL;
+        if (res)
+          return WrapNewOrange(res, type);
+        PyErr_Clear();
+
+        // check if it's a list of generators
+        if (PyList_Check(args)) {
+          TExampleGeneratorList eglist;
+          PyObject *iterator = PyObject_GetIter(args);
+          for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+            if (!PyOrExampleGenerator_Check(item)) {
+              Py_DECREF(item);
+              break;
+            }
+            eglist.push_back(PyOrange_AsExampleGenerator(item));
+            Py_DECREF(item);
+          }
+          Py_DECREF(iterator);
+          if (!item)
+            return WrapNewOrange(mlnew TExampleTable(PExampleGeneratorList(eglist)), type);
+        }
+
+        PYERROR(PyExc_TypeError, "invalid arguments for constructor (domain or examples or both expected)", PYNULL);
       }
     }
 

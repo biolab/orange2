@@ -202,9 +202,30 @@ PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(R
 
       PyObject *example = Example_FromDomain(dom);
       
-      if (list && !convertFromPythonExisting(list, PyExample_AS_ExampleReference(example))) {
-        Example_dealloc((TPyExample *)example);
-        return PYNULL;
+      if (list) {
+        if (PyList_Check(list) && PyList_Size(list) && PyOrExample_Check(PyList_GET_ITEM(list, 0))) {
+          TExampleList elist;
+          PyObject *iterator = PyObject_GetIter(list);
+          for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
+            if (!PyOrExample_Check(item)) {
+              Py_DECREF(item);
+              break;
+            }
+            elist.push_back(PyExample_AS_Example(item));
+            Py_DECREF(item);
+          }
+          Py_DECREF(iterator);
+          if (item)
+            raiseError("invalid elements in list for example join");
+          else {
+            PExample ex = mlnew TExample(dom, PExampleList(elist));
+            return Example_FromWrappedExample(ex);
+          }
+        }
+        else if (!convertFromPythonExisting(list, PyExample_AS_ExampleReference(example))) {
+          Example_dealloc((TPyExample *)example);
+          return PYNULL;
+        }
       }
 
       return example;
@@ -339,6 +360,9 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
       return PYNULL; 
 
     return convertToPythonNative(PyExample_AS_Example(pex)->getMeta(idx), var);
+
+    // This could be better, but I wouldn't dare to change this
+    // return Value_FromVariableValue(var, PyExample_AS_Example(pex)->getMeta(idx));
   PyCATCH
 }
 

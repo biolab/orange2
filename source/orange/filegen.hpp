@@ -105,8 +105,6 @@ protected:
 };
 
 
-#define stringVarType 6
-
 /* Creates a variable with given name and type. */
 PVariable createVariable(const string &name, const int &varType, PStringList values);
 

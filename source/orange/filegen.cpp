@@ -309,7 +309,7 @@ PVariable createVariable(const string &name, const int &varType, PStringList val
   switch (varType) {
     case TValue::INTVAR:  return mlnew TEnumVariable(name, values ? values : PStringList(mlnew TStringList()));
     case TValue::FLOATVAR: return mlnew TFloatVariable(name);
-    case stringVarType: return mlnew TStringVariable(name);
+    case STRINGVAR: return mlnew TStringVariable(name);
   }
 
   if (varType==-1)
@@ -324,7 +324,7 @@ PVariable makeVariable(const string &name, unsigned char varType, PStringList va
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==name)
           && (    (varType==-1)
-               || (varType==stringVarType) && (*vi).is_derived_from(TStringVariable)
+               || (varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
                || ((*vi)->varType==varType))) {
         id = 0;
         return *vi;
@@ -334,7 +334,7 @@ PVariable makeVariable(const string &name, unsigned char varType, PStringList va
     const_PITERATE(TMetaVector, mi, metas)
       if (   ((*mi).variable->name == name)
           && (    (varType == -1)
-               || (varType==stringVarType) && (*mi).variable.is_derived_from(TStringVariable)
+               || (varType==STRINGVAR) && (*mi).variable.is_derived_from(TStringVariable)
                || ((*mi).variable->varType==varType))) {
         id = (*mi).id;
         return (*mi).variable;
@@ -344,7 +344,7 @@ PVariable makeVariable(const string &name, unsigned char varType, PStringList va
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==name)
           && (    (varType==-1)
-               || (varType==stringVarType) && (*vi).is_derived_from(TStringVariable)
+               || (varType==STRINGVAR) && (*vi).is_derived_from(TStringVariable)
                || ((*vi)->varType==varType))) {
         id = 0;
         return *vi;

@@ -34,6 +34,8 @@
 #include "examples.ppp"
 #include "crc.h"
 
+DEFINE_TOrangeVector_classDescription(PExample, "TExampleList")
+
 TExample::TExample()
 : values(NULL),
   values_end(NULL)
@@ -76,12 +78,74 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 : domain(dom),
   meta(copyMetas ? orig.meta : TMetaValues())
 { if (!dom)
-    raiseError("example needs domain");
+    raiseError("example needs a domain");
 
   const int attrs = domain->variables->size();
   values = mlnew TValue[attrs];
   values_end = values + attrs;
   domain->convert(*this, orig);
+}
+
+
+void TExample::insertVal(TValue &srcval, PVariable var, const int &metaID)
+{
+  int position = var ? domain->getVarNum(var) : ILLEGAL_INT;
+  if (position == ILLEGAL_INT)
+    if (metaID)
+      position = metaID;
+    else
+      return;
+
+  if (position>=0) {
+    TValue &val = values[position];
+    if (val.isSpecial())
+      val = srcval;
+    else if (val!=srcval)
+      raiseError("ambiguous value of attribute '%s'", var->name);
+  }
+
+  else {
+    if (hasMeta(position)) {
+      TValue &val = meta[position];
+      if (val.isSpecial())
+        val = srcval;
+      else if (val!=srcval)
+        if (var)
+          raiseError("ambiguous value for meta-attribute '%s'", var->name);
+        else
+          raiseError("ambiguous value for meta-attribute %i", position);
+    }
+  }
+}
+
+
+TExample::TExample(PDomain dom, PExampleList elist)
+: domain(dom)
+{
+  if (!dom)
+    raiseError("example needs a domain");
+
+  PITERATE(TExampleList, eli, elist) {
+    TVarList::iterator vli((*eli)->domain->variables->begin());
+    TExample::iterator ei((*eli)->begin()), ee((*eli)->end());
+    for(; ei!=ee; ei++, vli++) 
+      if (!(*ei).isSpecial())
+        insertVal(*ei, *vli);
+
+    set<int> metasNotToCopy;
+    ITERATE(TMetaVector, mai, (*eli)->domain->metas) {
+      metasNotToCopy.insert((*mai).id);
+      if (hasMeta((*mai).id)) {
+        TValue &val = getMeta((*mai).id);
+        insertVal(val, (*mai).variable, (*mai).id);
+      }
+    }
+
+    set<int>::iterator mend(metasNotToCopy.end());
+    ITERATE(TMetaValues, mi, (*eli)->meta)
+      if (metasNotToCopy.find((*mi).first)==mend)
+        insertVal((*mi).second, PVariable(), (*mi).first);
+  }    
 }
 
 

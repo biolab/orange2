@@ -237,6 +237,7 @@ PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) 
 }
 
 
+#include "stringvars.hpp"
 
 typedef MapMethods<PVariableFilterMap, TVariableFilterMap, PVariable, PValueFilter> TMM_VariableFilterMap;
 
@@ -274,6 +275,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
           Py_DECREF(iterator);
           return -1;
         }
+        Py_DECREF(item);
         valueList.push_back(value);
       }
       Py_DECREF(iterator);
@@ -289,6 +291,35 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
     return 0;
   }
 
+  if (var.is_derived_from(TStringVariable)) {
+    TValueFilter_string *vfilter = mlnew TValueFilter_string(ILLEGAL_INT, var);
+    PValueFilter wvfilter = vfilter;
+    TStringList &values = vfilter->values.getReference();
+
+    if (PyTuple_Check(pyvalue) || PyList_Check(pyvalue)) {
+      PyObject *iterator = PyObject_GetIter(pyvalue);
+      int i = 0;
+      for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator), i++) {
+        if (!PyString_Check(item)) {
+          PyErr_Format(PyExc_TypeError, "error at index %i, string expected", i);
+          Py_DECREF(item);
+          Py_DECREF(iterator);
+          return -1;
+        }
+        Py_DECREF(item);
+        values.push_back(PyString_AsString(item));
+      }
+      Py_DECREF(iterator);
+    }
+    else if (PyString_Check(pyvalue))
+      values.push_back(PyString_AsString(pyvalue));
+    else
+      PyErr_Format(PyExc_TypeError, "string or a list of strings expected", -1);
+
+    aMap->__ormap[var] = wvfilter;
+    return 0;
+  }
+    
   PYERROR(PyExc_TypeError, "VariableFilterMap.__setitem__: unrecognized item type", -1);
 }
 

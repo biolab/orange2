@@ -129,6 +129,18 @@ public:
 };
 
 
+class TValueFilter_string : public TValueFilter {
+public:
+  __REGISTER_CLASS
+
+  PStringList values; //P acceptable values
+
+  TValueFilter_string(const int &pos = ILLEGAL_INT, PStringList = PStringList(), const int &accs = -1);
+  TValueFilter_string(const int &pos, PVariable, const int &accs = -1);
+  virtual int operator()(const TExample &) const;
+};
+
+
 #define TValueFilterList TOrangeVector<PValueFilter>
 VWRAPPER(ValueFilterList)
 
