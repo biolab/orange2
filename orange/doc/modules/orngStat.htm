@@ -131,16 +131,22 @@ SE(AUC1)+SE(AUC2)-2*COVAR)).</DD><P>
 data from a single iteration. </DD><P>
 
 <DT><B>computeCDT(res, classIndex=1)</B></DT>
-<DD>Computes CDT matrices for the given ExperimentResults, one matrix
-for each classifier. For each treaining set, this procedure examines
-all pairs of examples, and counts the number of concordant pairs
-(for a pair E1 and E2, example pair has different class C(E1)<>C(E2),
-this being concordant with model estimated probabilities, V=C(E1),
-P(V|E1)>P(V|E2)), discordant pairs (similarly, but model estimated
-probabilities point to a wrong direction, e.g. P(V|E1)<P(V|E2))), and
-tied pairs (different class, but same model estimated probabilities,
-e.g. P(V|E1)<P(V|E2)). The function compares only pairs of examples that
-were tested at the same iteration.</DD><P>
+
+<DD>Computes CDT matrix (number of concordant, discordant and tied
+pairs for each of the test iterations) for the given
+ExperimentResults, one for each classifier. For each treaining
+set, this procedure examines all pairs of examples, and counts the
+number of concordant pairs (for a pair E1 and E2, example pair has
+different class C(E1)<>C(E2), this being concordant with model
+estimated probabilities, V=C(E1), P(V|E1)>P(V|E2)), discordant pairs
+(similarly, but model estimated probabilities point to a wrong
+direction, e.g. P(V|E1)<P(V|E2))), and tied pairs (different class,
+but same model estimated probabilities, e.g. P(V|E1)<P(V|E2)). The
+function compares only pairs of examples that were tested at the same
+iteration. If for any iteration the sum of C, D and T is 0 (all
+examples in the iteration are of the same true class) than CDT is
+computed from all the tested examples disregarding the information on
+test iteration.</DD><P>
 
 <DT><B>ROCsFromCDT(cdt, {print})</B></DT>
 
