@@ -104,6 +104,8 @@ class OWScatterPlotGraph(OWVisGraph):
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
         MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
+        MIN_SHAPE_SIZE = 10
+        MAX_SHAPE_DIFF = 10
 
         if len(self.scaledData) == 0: self.updateLayout(); return
 
@@ -124,6 +126,7 @@ class OWScatterPlotGraph(OWVisGraph):
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
             colorIndex = self.scaledDataAttributes.index(colorAttr)
+            if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: MAX_HUE_VAL = 360
 
         shapeIndex = -1
         shapeIndices = {}
@@ -177,7 +180,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
             size = self.pointWidth
             if sizeShapeIndex != -1:
-                size = 10 + round(self.scaledData[sizeShapeIndex][i] * 10)
+                size = MIN_SHAPE_SIZE + round(self.scaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
             newCurveKey = self.insertCurve(str(i))
 
@@ -212,13 +215,13 @@ class OWScatterPlotGraph(OWVisGraph):
                 varName = self.rawdata.domain[shapeIndex].name
                 varValues = self.getVariableValuesSorted(self.rawdata, shapeIndex)
                 for ind in range(len(self.rawdata.domain[shapeIndex].values)):
-                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), self.pointWidth, shapeList[ind], enableLegend = 1)
+                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), self.pointWidth, symbol = shapeList[ind], enableLegend = 1)
 
             if sizeShapeIndex != -1 and self.rawdata.domain[sizeShapeIndex].varType == orange.VarTypes.Discrete:
                 varName = self.rawdata.domain[sizeShapeIndex].name
                 varValues = self.getVariableValuesSorted(self.rawdata, sizeShapeIndex)
-                for ind in range(len(self.rawdata.domain[sizeShapeIndex].values)):
-                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), size, enableLegend = 1)
+                for ind in range(len(varValues)):
+                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), MIN_SHAPE_SIZE + round(ind*MAX_SHAPE_DIFF/len(varValues)), enableLegend = 1)
 
 
         if colorAttr != "" and showColorLegend == 1:

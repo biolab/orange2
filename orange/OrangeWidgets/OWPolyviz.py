@@ -22,7 +22,7 @@ import OWVisAttrSelection
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "graphCanvasColor", "globalValueScaling"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitteringType", "graphCanvasColor", "globalValueScaling"]
     def __init__(self,parent=None):
         self.spreadType=["none","uniform","triangle","beta"]
         self.attributeContOrder = ["None","RelieF"]
@@ -36,7 +36,8 @@ class OWPolyviz(OWWidget):
         TRUE)
 
         #set default settings
-        self.pointWidth = 3
+        self.pointWidth = 5
+        self.lineLength = 2
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         self.jitteringType = "none"
@@ -68,6 +69,7 @@ class OWPolyviz(OWWidget):
 
         #connect settingsbutton to show options
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
+        self.connect(self.options.lengthSlider, SIGNAL("valueChanged(int)"), self.setLineLength)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.globalValueScaling, SIGNAL("clicked()"), self.setGlobalValueScaling)
@@ -128,7 +130,9 @@ class OWPolyviz(OWWidget):
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
         self.options.attrOrderingButtons.setButton(self.attributeOrdering.index(self.attrOrdering))
         self.options.widthSlider.setValue(self.pointWidth)
+        self.options.lengthSlider.setValue(self.lineLength)
         self.options.widthLCD.display(self.pointWidth)
+        self.options.lengthLCD.display(self.lineLength)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
         
         self.graph.setJitteringOption(self.jitteringType)
@@ -140,7 +144,13 @@ class OWPolyviz(OWWidget):
         self.pointWidth = n
         self.graph.setPointWidth(n)
         self.updateGraph()
-        
+
+    def setLineLength(self, n):
+        self.lineLength = n
+        self.graph.setLineLength(n)
+        self.options.lengthLCD.display(self.lineLength)
+        self.updateGraph()
+
     # jittering options
     def setSpreadType(self, n):
         self.jitteringType = self.spreadType[n]
@@ -189,6 +199,11 @@ class OWPolyviz(OWWidget):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
+
+        # this is not optimal, because we do the rescaling twice (TO DO)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+
         self.updateGraph()
         
     # ####################
@@ -224,6 +239,9 @@ class OWPolyviz(OWWidget):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
+
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 
@@ -235,6 +253,8 @@ class OWPolyviz(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 
@@ -269,9 +289,6 @@ class OWPolyviz(OWWidget):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.insertItem(self.data.domin.classVar.name)
-        self.classCombo.setCurrentItem(self.classCombo.count()-1)
-
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list

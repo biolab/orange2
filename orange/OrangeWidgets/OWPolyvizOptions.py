@@ -20,6 +20,13 @@ class OWPolyvizOptions(OWOptions):
         self.widthSlider.setTickmarks(QSlider.Below)
         self.widthLCD = QLCDNumber(1, widthBox)
 
+        # line length
+        lengthBox = QHGroupBox("Line Length", self.top)
+        QToolTip.add(widthBox, "The length of the line")
+        self.lengthSlider = QSlider(1, 5, 1, 2, QSlider.Horizontal, lengthBox)
+        self.lengthSlider.setTickmarks(QSlider.Below)
+        self.lengthLCD = QLCDNumber(1, lengthBox)
+
         #####
         # jittering
         self.spreadButtons = QVButtonGroup("Jittering type", self.top)

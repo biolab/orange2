@@ -49,8 +49,8 @@ class OWScatterPlotOptions(OWOptions):
         self.gSetHgridCB = QCheckBox('horizontal gridlines', self.graphSettings)
         self.gSetLegendCB = QCheckBox('show legend', self.graphSettings)
         self.gShowFilledSymbolsCB = QCheckBox('show filled symbols', self.graphSettings)
-        self.gSetGridColorB = QPushButton("Grid Color", self.graphSettings)
-        self.gSetCanvasColorB = QPushButton("Canvas Color", self.graphSettings)
+        self.gSetGridColorB = QPushButton("Grid Color", self.top)
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self.top)
 
         self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
         self.connect(self.gSetGridColorB, SIGNAL("clicked()"), self.setGraphGridColor)

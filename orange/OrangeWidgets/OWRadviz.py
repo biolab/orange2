@@ -192,6 +192,11 @@ class OWRadviz(OWWidget):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
+
+        # this is not optimal, because we do the rescaling twice (TO DO)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+            
         self.updateGraph()
         
     # ####################
@@ -227,6 +232,8 @@ class OWRadviz(OWWidget):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 
@@ -238,6 +245,8 @@ class OWRadviz(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 
@@ -272,8 +281,6 @@ class OWRadviz(OWWidget):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.insertItem(self.data.domin.classVar.name)
-        self.classCombo.setCurrentItem(self.classCombo.count()-1)
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############

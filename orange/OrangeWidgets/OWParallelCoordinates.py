@@ -40,7 +40,7 @@ class OWParallelCoordinates(OWWidget):
         self.jitteringType = "none"
         self.GraphCanvasColor = str(Qt.white.name())
         self.showDistributions = 0
-        self.showAttrValues = 0
+        self.showAttrValues = 1
         self.hidePureExamples = 1
         self.GraphGridColor = str(Qt.black.name())
         self.data = None
@@ -162,6 +162,8 @@ class OWParallelCoordinates(OWWidget):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
     # continuous attribute ordering
@@ -265,8 +267,6 @@ class OWParallelCoordinates(OWWidget):
             if str(self.classCombo.text(i)) == self.data.domain.classVar.name:
                 self.classCombo.setCurrentItem(i)
                 return
-        self.classCombo.insertItem(self.data.domin.classVar.name)
-        self.classCombo.setCurrentItem(self.classCombo.count()-1)
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############

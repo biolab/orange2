@@ -149,6 +149,11 @@ class OWSurveyPlot(OWWidget):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
+
+        # this is not optimal, because we do the rescaling twice (TO DO)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+
         self.updateGraph()
         
     def setCanvasColor(self, c):
@@ -188,6 +193,8 @@ class OWSurveyPlot(OWWidget):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 
@@ -199,6 +206,8 @@ class OWSurveyPlot(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
+        if self.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         self.graph.replot()
 

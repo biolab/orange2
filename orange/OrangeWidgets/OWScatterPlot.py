@@ -37,7 +37,7 @@ class OWScatterPlot(OWWidget):
         self.showYAxisTitle = 1
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
-        self.showLegend = 0
+        self.showLegend = 1
         self.jitterContinuous = 0
         self.jitterSize = 1
         self.showFilledSymbols = 1

@@ -74,7 +74,10 @@ class OWPolyvizGraph(OWVisGraph):
         OWVisGraph.__init__(self, parent, name)
         self.localScaledData = []
         self.attrLocalValues = {}
-        self.lineLength = 0.2
+        self.lineLength = 2*0.05
+
+    def setLineLength(self, len):
+        self.lineLength = len*0.05
 
     #
     # if we use globalScaling we must also create a copy of localy scaled data
@@ -84,7 +87,8 @@ class OWPolyvizGraph(OWVisGraph):
         OWVisGraph.setData(self, data)
 
         if data == None: return
-        
+
+        self.localScaledData = []        
         if self.globalValueScaling == 1:
             for index in range(len(data.domain)):
                 scaled, values = self.scaleData(data, index)
@@ -168,10 +172,9 @@ class OWPolyvizGraph(OWVisGraph):
                 k = 1.15
                 for j in range(count):
                     pos = (1.0 + 2.0*float(j)) / float(2*count)
-                    print pos
                     mkey = self.insertMarker(values[j])
-                    self.marker(mkey).setXValue(k*pos*anchors[0][i]+k*(1-pos)*anchors[0][(i+1)%length])
-                    self.marker(mkey).setYValue(k*pos*anchors[1][i]+k*(1-pos)*anchors[1][(i+1)%length])
+                    self.marker(mkey).setXValue(k*(1-pos)*anchors[0][i]+k*pos*anchors[0][(i+1)%length])
+                    self.marker(mkey).setYValue(k*(1-pos)*anchors[1][i]+k*pos*anchors[1][(i+1)%length])
                     self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
             else:
                 # min value
@@ -231,8 +234,8 @@ class OWPolyvizGraph(OWVisGraph):
             for j in range(length):
                 index = indices[j]
                 val = self.localScaledData[index][i]
-                xDataAnchor = anchors[0][j]*val + anchors[0][(j+1)%length]*(1.0-val)
-                yDataAnchor = anchors[1][j]*val + anchors[1][(j+1)%length]*(1.0-val)
+                xDataAnchor = anchors[0][j]*(1-val) + anchors[0][(j+1)%length]*val
+                yDataAnchor = anchors[1][j]*(1-val) + anchors[1][(j+1)%length]*val
                 x_i += xDataAnchor * (self.scaledData[index][i] / sum_i)
                 y_i += yDataAnchor * (self.scaledData[index][i] / sum_i)
                 xDataAnchors.append(xDataAnchor)
@@ -249,6 +252,7 @@ class OWPolyvizGraph(OWVisGraph):
             if valLen == 1:
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
+                lineColor.setHsv(0, 255, 255)
             elif self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
                 curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
                 curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
@@ -279,7 +283,7 @@ class OWPolyvizGraph(OWVisGraph):
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
                 self.setCurveData(key, curveData[i][0], curveData[i][1])
         else:
-            for i in range(contData):
+            for i in range(len(contData)):
                 newColor = QColor()
                 newColor.setHsv(contData[i][2], 255, 255)
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
@@ -333,9 +337,9 @@ class OWPolyvizGraph(OWVisGraph):
         if self.globalValueScaling == 1:
             min = -1; max = -1
             for attr in attrList:
-                if data.domain[attr].varType == orange.VarTypes.Discrete: continue
+                if self.rawdata.domain[attr].varType == orange.VarTypes.Discrete: continue
                 index = self.scaledDataAttributes.index(attr)
-                (minVal, maxVal) = self.getMinMaxVal(data, index)
+                (minVal, maxVal) = self.getMinMaxVal(self.rawdata, index)
                 if attr == attrList[0]:
                     min = minVal; max = maxVal
                 else:
@@ -344,7 +348,7 @@ class OWPolyvizGraph(OWVisGraph):
 
             for attr in attrList:
                 index = self.scaledDataAttributes.index(attr)
-                scaled, values = self.scaleData(data, index, min, max, jitteringEnabled = 0)
+                scaled, values = self.scaleData(self.rawdata, index, min, max, jitteringEnabled = 0)
                 selectedGlobScaledData[index] = scaled
         else:
             selectedGlobScaledData = selectedLocScaledData
@@ -365,7 +369,7 @@ class OWPolyvizGraph(OWVisGraph):
         for i in range(dataSize):
             temp = 0
             for j in range(attrListLength):
-                temp += selectedScaledData[indices[j]][i]
+                temp += selectedGlobScaledData[indices[j]][i]
             sum_i.append(temp)
 
         # create all possible circular permutations of this indices
@@ -385,10 +389,10 @@ class OWPolyvizGraph(OWVisGraph):
                 for j in range(attrListLength):
                     index = permutation[j]
                     val = selectedGlobScaledData[index][i]
-                    xDataAnchor = anchors[0][j]*val + anchors[0][j%length]*(1.0-val)
-                    yDataAnchor = anchors[1][j]*val + anchors[1][j%length]*(1.0-val)
-                    x_i += xDataAnchor * (self.scaledData[index][i] / sum_i)
-                    y_i += yDataAnchor * (self.scaledData[index][i] / sum_i)
+                    xDataAnchor = anchors[0][j]*val + anchors[0][j%attrListLength]*(1.0-val)
+                    yDataAnchor = anchors[1][j]*val + anchors[1][j%attrListLength]*(1.0-val)
+                    x_i += xDataAnchor * (selectedGlobScaledData[index][i] / sum_i[i])
+                    y_i += yDataAnchor * (selectedGlobScaledData[index][i] / sum_i[i])
 
                     
                 curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
