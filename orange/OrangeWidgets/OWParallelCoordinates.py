@@ -45,7 +45,6 @@ class OWParallelCoordinates(OWWidget):
 
         # graph main tmp variables
         self.addInput("cdata")
-                        
 
         # add a settings dialog and initialize its values
         self.options = OWParallelCoordinatesOptions()
@@ -67,7 +66,6 @@ class OWParallelCoordinates(OWWidget):
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classAttributeChange)
         self.connect(self.attributesLB, SIGNAL("selectionChanged()"), self.attributeSelectionChange)
 
-        self.graph.setCoordinateAxes(['red','green','blue','light blue', 'dark blue', 'yellow', 'orange', 'magenta'])
         self.repaint()
     
     def setCanvasColor(self, c):
@@ -85,9 +83,9 @@ class OWParallelCoordinates(OWWidget):
             self.repaint()
             return
 
-		# add possible class attributes
+        # add possible class attributes
         catAttributes = ['(One color)']
-        for attr in self.data.data.domain.attributes:
+        for attr in self.data.data.domain:
             if attr.varType == orange.VarTypes.Discrete:
                 catAttributes.append(attr.name)
         self.setClassCombo(catAttributes)
@@ -100,10 +98,21 @@ class OWParallelCoordinates(OWWidget):
         for i in range(self.attributesLB.numRows()):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
-        self.graph.setCoordinateAxes(attributes)
-        self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
+        
+        self.updateData(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
+
+    def updateData(self, labels, className):
+        self.graph.removeCurves()
+        xs = range(5)
+        ys = range(5)
+        for i in range(100):
+            newCurveKey = self.graph.insertCurve(str(i))
+            if newCurveKey > 0:
+                self.graph.setCurveData(newCurveKey, xs, ys)
+            else:
+                pass
 
 
     def setClassCombo(self, list):
@@ -123,18 +132,16 @@ class OWParallelCoordinates(OWWidget):
 
         self.attributesLB.selectAll(TRUE)
 
-
     def attributeSelectionChange(self):
         self.showSelectedAttributes()
         
-
     def classAttributeChange(self, newClass):
         attributes = []
         for i in range(self.attributesLB.numRows()):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
 
-        self.graph.updateDataCurves(attributes, str(self.classCombo.currentText()))
+        self.updateData(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
 

@@ -2,7 +2,7 @@
 <name>File</name>
 <description>The File Widget is used for selecting and opening data files.</description>
 <category>Input</category>
-<icon>pics\File.png</icon>
+<icon>icons\File.png</icon>
 """
 
 #

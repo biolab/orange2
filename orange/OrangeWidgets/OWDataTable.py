@@ -2,7 +2,7 @@
 <name>Data table</name>
 <description>DataTable shows the data set in a spreadsheet.</description>
 <category>Data</category>
-<icon>pics\DataTable.png</icon>
+<icon>icons\DataTable.png</icon>
 """
 
 #

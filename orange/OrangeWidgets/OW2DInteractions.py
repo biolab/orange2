@@ -2,7 +2,7 @@
 <name>2D Interactions</name>
 <description>Shows interactions of two attributes (works for discrete and numerical attributes)</description>
 <category>Visualization</category>
-<icon>pics\2DInteractions.png</icon>
+<icon>icons\2DInteractions.png</icon>
 """
 # OW2DInteractions.py
 #

@@ -2,7 +2,7 @@
 <name>Classification Tree Viewer</name>
 <description>ClassificationTreeViewer displays a classification tree in a hierarchical list view.</description>
 <category>Visualization</category>
-<icon>pics\ClassificationTreeViewer.png</icon>
+<icon>icons\ClassificationTreeViewer.png</icon>
 """
 
 from OData import *

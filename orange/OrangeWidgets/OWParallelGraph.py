@@ -33,7 +33,7 @@ class OWParallelGraph(QwtPlot):
 
         self.scaledData = []
         self.scaledDataAttributes = []
-
+        """
         self.enableAxis(QwtPlot.yLeft, 1)
         self.enableAxis(QwtPlot.xBottom, 1)
         self.setAutoReplot(FALSE)
@@ -76,6 +76,10 @@ class OWParallelGraph(QwtPlot):
         self.YLaxisTitle = None
         self.showYRaxisTitle = FALSE
         self.YRaxisTitle = None
+        """
+        self.noneSymbol = QwtSymbol()
+        self.noneSymbol.setStyle(QwtSymbol.None)        
+        self.curveIndex = 0
 
     def setCanvasColor(self, c):
         self.setCanvasBackground(c)
@@ -141,7 +145,7 @@ class OWParallelGraph(QwtPlot):
         self.rawdata = data
         self.scaledData = []
         self.scaledDataAttributes = []
-        
+        """
         if data == None:
         	return
 
@@ -151,7 +155,10 @@ class OWParallelGraph(QwtPlot):
             self.scaledDataAttributes.append(attr.name)
             if attr.varType == orange.VarTypes.Discrete:
                 # TO DO NUJNO: naredi hash tabelo z imeni kategoricnih vrednosti ter indexi
-                num = len(attr.values)
+                if len(attr.values) > 1:
+                	num = float(len(attr.values)-1)
+                else:
+                	num = float(1)
                 for i in range(len(data.data)):
                     if data.data[i][index].isSpecial():
                         temp.append(1)
@@ -173,60 +180,63 @@ class OWParallelGraph(QwtPlot):
                 for i in range(len(data.data)):
                     temp.append((data.data[i][attr].value - min) / diff)
                 self.scaledData.append(temp)
+        """
 
-    def setCoordinateAxes(self, labels):
+    def updateData(self, labels, className):
+        self.removeCurves()
+        self.axesKeys = []
+        self.curveKeys = []
+        """
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
         self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels))
+        self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1)
+        
+        
 
-        self.removeCurves()
-        self.axesKeys = []
-        symbol = QwtSymbol()
-        symbol.setStyle(QwtSymbol.None)
-
-        if len(labels) == 0:
+        if len(self.scaledData) == 0 or len(labels) == 0:
+            self.updateLayout()
             return
 
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
-            self.setCurveStyle(newCurveKey, QwtCurve.Lines)
-            self.setCurveSymbol(newCurveKey, symbol)
+            #self.axesKeys.append(newCurveKey)
             self.setCurveData(newCurveKey, [i,i], [0,1])
-            self.axesKeys.append(newCurveKey)
+        """
+        xs = range(5)
+        ys = range(5)
+        for i in range(100):
+            newCurveKey = self.insertCurve(str(self.curveIndex))
+            self.curveIndex = self.curveIndex + 1
+            self.curveKeys.append(newCurveKey)
 
-        self.updateLayout()      
-        #self.updateToolTips()
+        for i in range(100):
+            if self.curveKeys[i] > 0:
+                self.setCurveData(self.curveKeys[i], xs, ys)
+            else:
+                pass
 
-    def updateDataCurves(self, labels, className):
-        self.curveKeys = []
+        """
         length = len(labels)
         indices = []
         xs = []
-        if len(self.scaledData) == 0:
-            return
-        
-        symbol = QwtSymbol()
-        symbol.setStyle(QwtSymbol.None)
         
         for label in labels:
             index = self.scaledDataAttributes.index(label)
             indices.append(index)
 
-        for i in range(length):
-            xs.append(i)
+        xs = range(length)
 
         dataSize = len(self.scaledData[0])        
         for i in range(dataSize):
-            newCurveKey = self.insertCurve("")
-            self.curveKeys.append(newCurveKey)
-            self.setCurveStyle(newCurveKey, QwtCurve.Lines)
-            self.setCurveSymbol(newCurveKey, symbol)
-            self.axesKeys.append(newCurveKey)
+            newCurveKey = self.insertCurve(str(i))
+            #self.curveKeys.append(newCurveKey)
             ys = []
             for index in indices:
                 ys.append(self.scaledData[index][i])
             self.setCurveData(newCurveKey, xs, ys)
+        pass
+        """
                        
     
 if __name__== "__main__":

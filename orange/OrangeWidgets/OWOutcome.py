@@ -3,7 +3,7 @@
 <description>Enables selecting the target outcome from all the possible outcomes in the data.
 It also provides some basic data statistics.</description>
 <category>Input</category>
-<icon>pics\Outcome.png</icon>
+<icon>icons\Outcome.png</icon>
 """
 #
 # OWOutcome.py

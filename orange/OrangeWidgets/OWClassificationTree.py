@@ -3,7 +3,7 @@
 <description>Classification Tree widget can construct a classification tree learner or (if given
 a data set) a classification tree classifier.</description>
 <category>Classification</category>
-<icon>pics\ClassificationTree.png</icon>
+<icon>icons\ClassificationTree.png</icon>
 """
 
 from OData import *
