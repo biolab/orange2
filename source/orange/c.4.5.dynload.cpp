@@ -94,7 +94,8 @@ const char *dynloadC45(char buf[], char *bp)
   Boolean isFolder, didSomething;
   
   printf(buf);
-  err = FSPathMakeRef("/Users/janez/orange-dev/modules/c45.so", &fsr, &isFolder);
+  err = FSPathMakeRef(buf, &fsr, &isFolder);
+//  err = FSPathMakeRef("/Users/janez/orange-dev/modules/c45.so", &fsr, &isFolder);
   if (err) {
     printf("FSPathMakeRef: %i", int(err));
     return "Cannot load c45.so";
@@ -111,10 +112,17 @@ const char *dynloadC45(char buf[], char *bp)
     printf("GetDiskFragment: %i, %s", int(err), errMessage+1);
     return "Cannot load c45.so";
   }
-    
-  return "So far so good";
-}
 
+ /* pc45data = FindSymbol(connID, "\007c45Data", &sym, &clss) ? NULL : (void *)sym;
+  c45learn = FindSymbol(connID, "\005learn", &sym, &clss) ? NULL : (void *)sym;
+  c45garbage = FindSymbol(connID, "\017guarded_collect", &sym, &clss) ? NULL : (void *)sym;
+        
+  if (!pc45data || !c45learn || !c45garbage)
+    return "invalid c45.so (cannot find the necessary symbols)";
+*/
+  return NULL;
+}
+    
 #else
 
 const char *dynloadC45()
