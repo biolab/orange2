@@ -31,7 +31,7 @@ class kNNOptimization(OWBaseWidget):
     kNeighboursList = [str(x) for x in kNeighboursNums]
     resultsListLenList = [str(x) for x in resultsListLenNums]
 
-    def __init__(self,parent=None):
+    def __init__(self,parent=None, graph = None):
         OWBaseWidget.__init__(self, parent, "Optimization Dialog", "Find interesting projections of data", FALSE, FALSE, FALSE)
 
         self.setCaption("Qt VizRank Optimization Dialog")
@@ -39,6 +39,7 @@ class kNNOptimization(OWBaseWidget):
         self.grid=QGridLayout(5,2)
         self.topLayout.addLayout( self.grid, 10 )
 
+        self.graph = graph
         self.kValue = 10
         self.minExamples = 0
         self.resultListLen = 100
@@ -138,8 +139,8 @@ class kNNOptimization(OWBaseWidget):
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.buttonBox7 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.filterButton = OWGUI.button(self.buttonBox5, self, "Remove attribute", self.filter)
         self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
+        self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
         self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
@@ -291,16 +292,40 @@ class kNNOptimization(OWBaseWidget):
         self.resultList.setCurrentItem(0)
 
     
-    # we can remove projections that have a specific attribute
-    def filter(self):
-        (Qstring,ok) = QInputDialog.getText("Remove attribute", "Remove projections with attribute:")
-        if ok:
-            attributeName = str(Qstring)
-            for i in range(len(self.shownResults)-1, -1, -1):
-                (accuracy, itemCount, list, strList) = self.shownResults[i]
-                if attributeName in list:        # remove from  listbox and original list of results
-                    self.shownResults.remove(self.shownResults[i])
-                    self.resultList.removeItem(i)
+    # ##############################################################
+    # exporting multiple pictures
+    # ##############################################################
+    def exportMultipleGraphs(self):
+        (text, ok) = QInputDialog.getText('Qt Graph count', 'How many of the best projections do you wish to save?')
+        if not ok: return
+        self.bestGraphsCount = int(str(text))
+
+        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self.graph)
+        self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
+        self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
+        self.sizeDlg.exec_loop()
+
+    def saveToFileAccept(self):
+        fileName = str(QFileDialog.getSaveFileName("Graph","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to.."))
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        if ext == "":	
+        	ext = "PNG"  	# if no format was specified, we choose png
+        	fileName = fileName + ".png"
+        ext = ext.upper()
+
+        (fil, extension) = os.path.splitext(fileName)
+        size = self.sizeDlg.getSize()
+        for i in range(1, min(self.resultList.count(), self.bestGraphsCount+1)):
+            self.resultList.setSelected(i-1, 1)
+            self.graph.replot()
+            name = fil + " (%02d)" % i + extension
+            self.sizeDlg.saveToFileDirect(name, ext, size)
+        QDialog.accept(self.sizeDlg)
+
+    # ##############################################################
+    # ##############################################################
 
     # remove projections that are selected
     def removeSelected(self):
