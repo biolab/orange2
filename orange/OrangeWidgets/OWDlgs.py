@@ -108,11 +108,10 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
-        ext = ext.replace(".","")
-        if ext == "":	
+        ext = ext.replace(".",""); ext = ext.upper()
+        if ext == "" or not (ext == "BMP" or ext == "GIF" or ext == "PNG") :	
         	ext = "PNG"  	# if no format was specified, we choose png
         	fileName = fileName + ".png"
-        ext = ext.upper()
 
         dirName, shortFileName = os.path.split(fileName)
         self.lastSaveDirName = dirName + "/"
