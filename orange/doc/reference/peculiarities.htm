@@ -123,7 +123,9 @@ TypeError: invalid parameter type for 'ExampleTable.domain', (expected 'Domain',
 >>> a.x = 12
 </xmp>
 
-<p>As described in the previous section, Orange's classes are C++ classes, and a rather complex machinery is needed to support adding new attributes in this same manner. Allowing this, however, caused many nasty bugs in Python scripts for Python. Orange's classes have many attributes with long names and it is quite easy to misspell them. For instance, if you want a Bayesian classifier to use m-estimate for probability, you need to set its <code>unconditionalEstimatorConstructor</code>. If you misspell it, you will create a new attribute with your, misspelled variation of the original name. The learner will not see it and will use the default value instead.</p>
+<P>The ability to add attributes as needed is a really neat feature of Python, which enables extensibility and reusability unparalleled by most (if not all) other object-oriented languages. Orange supports this as well and it can be put to good use, for instance, in classification trees, where a testing procedure can use additional attributes to count the number of misclassifications for each node.</P>
+
+<P>As described in the previous section, Orange's classes are written in C++, and a rather complex machinery is needed to support adding new attributes. Allowing this, however, can cause nasty bugs in Python scripts for Orange. Orange's classes have many attributes with long names and it is quite easy to misspell them. For instance, if you want a Bayesian classifier to use m-estimate for probability, you need to set its <code>unconditionalEstimatorConstructor</code>. Misspell it and you will create a new attribute with your, misspelled variation of the original name. The learner will not see it and will use the default value instead.</p>
 
 <p>Due to many such errors and relatively little need for the user-defined attributes, Orange will trigger a warnings when such attributes are created.</p>
 
@@ -133,20 +135,27 @@ TypeError: invalid parameter type for 'ExampleTable.domain', (expected 'Domain',
 __main__:1: AttributeWarning: 'g' is not a builtin attribute of 'BayesLearner'
 </xmp>
 
-<p>This, on the other hand, can be annoying. To disable the unwanted warnings, Python offers warning filtering. To disable warnings of this kind, you can use the standard Python warning filtering:</p>
+<p>This, on the other hand, can be annoying when setting a new attribute is not a mistake. There are two ways to avoid the unwanted warnings. One is to utilize standard Python's warning filters.</p>
 
 <xmp class="code">
 warnings.filterwarnings("ignore", "", orange.AttributeWarning)
 </xmp>
 
-<p>We do not recommend this. It is much safer to disable warnings that occur in particular module and/or with a particular orange class. This has already been done for orng modules - any warning that would occur in orng module is ignored, which has been achieved by calling</p>
+<p>This is rather dangerous practice; it is much safer to disable warnings that occur in particular module and/or with a particular orange class or module. The following disables warnings in <CODE>orng</CODE> modules.</p>
 
 <xmp class="code">
 warnings.filterwarnings("ignore", "", orange.AttributeWarning, "orng.*")
 </xmp>
 
-The complete documentation on module <code>warning</code> is included in Python's distribution.</p>
+<P>The complete documentation on module <code>warning</code> is included in Python's distribution.</p>
 
+<P>The best way to use new attributes but without disabling the otherwise beneficial warnings is not to set them the usual way but through a function <CODE>setattr</CODE>.</P>
+
+<XMP class="code">
+>>> b.setattr("i", 15)
+</XMP>
+
+<P>This has the exact same effect as <CODE>b.i = 15</CODE>, only without warnings.</P>
 
 <h2>Orange Lists</h2>
 
