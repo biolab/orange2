@@ -79,6 +79,7 @@ public:
 
   virtual TDistribution &operator += (const TDistribution &other);
   virtual TDistribution &operator -= (const TDistribution &other);
+  virtual TDistribution &operator *= (const TDistribution &other);
   virtual TDistribution &operator *= (const float &);
   virtual void  normalize() = 0;
   virtual float highestProb() const =0;
@@ -127,6 +128,7 @@ public:
 
   TDistribution &operator +=(PDistribution);
   TDistribution &operator -=(PDistribution);
+  TDistribution &operator *=(PDistribution);
 
   virtual const float &operator[](const TValue &val);
   virtual const float &operator[](const TValue &val) const;

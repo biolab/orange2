@@ -476,19 +476,24 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
   TDistributionMap::const_iterator lowedge = points.begin();
   TDistributionMap::const_iterator highedge = points.end();
 
-  int needpoints = int(ceil(points.size() * windowProportion));
-  if (needpoints<3)
-    needpoints = 3;
-
   bool needAll;
   map<float, PDistribution>::const_iterator from, to;
 
   vector<float>::const_iterator pi(xpoints.begin()), pe(xpoints.end());
   float refx = *pi;
 
+  from = lowedge;
+  to = highedge; 
+  int totalNumOfPoints = frequencies->outerDistribution->abs;
+
+  int needpoints = int(ceil(totalNumOfPoints * windowProportion));
+  if (needpoints<3)
+    needpoints = 3;
+
+
   TSimpleRandomGenerator rgen(frequencies->outerDistribution->cases);
 
-  if ((needpoints<=0) || (needpoints>=points.size())) {
+  if ((needpoints<=0) || (needpoints>=totalNumOfPoints)) {  //points.size()
     needAll = true;
     from = lowedge;
     to = highedge;
@@ -506,15 +511,23 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
         from --;
 
     /* Extend the interval; we set from to highedge when it would go beyond lowedge, to indicate that only to can be modified now */
-    while (needpoints--) {
+    while (needpoints) {
       if ((to == highedge) || ((from != highedge) && (refx - (*from).first < (*to).first - refx))) {
         if (from == lowedge)
           from = highedge;
-        else
+        else {
           from--;
+          needpoints -= (*from).second->cases;
+        }
       }
-      else
+      else {
         to++;
+        if (to!=highedge)
+          needpoints -= (*to).second->cases;
+        else
+          needpoints = 0;
+      }
+
     }
     
     if (from == highedge)
@@ -523,7 +536,7 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
       from++;
   }
 
-
+  int numOfOverflowing = 0;
   // This follows http://www-2.cs.cmu.edu/afs/cs/project/jair/pub/volume4/cohn96a-html/node7.html
   for(;;) {
     TDistributionMap::const_iterator tt = to;
@@ -543,20 +556,22 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     float w = fabs(refx - x) / h;
     w = 1 - w*w*w;
     w = w*w*w;
-    float n = w;
-    float Sww = w * w;
 
-    float Sx = w * x;
-    float Swwx  = w * w * x;
-    float Swwxx = w * w * x * x;
+    const float num = y->abs; // number of instances with this x - value
+    float n = w * num;
+    float Sww = w * w * num;
+
+    float Sx = w * x * num;
+    float Swwx  = w * w * x * num;
+    float Swwxx = w * w * x * x * num;
     TDistribution *Sy = CLONE(TDistribution, y);
     PDistribution wSy = Sy;
     *Sy *= w;
 
-    float Sxx = w * x * x;
+    float Sxx = w * x * x * num;
     TDistribution *Syy = CLONE(TDistribution, y);
     PDistribution wSyy = Syy;
-    *Syy *= y;
+    //*Syy *= y;
 
     TDistribution *Sxy = CLONE(TDistribution, y);
     PDistribution wSxy = Sxy;
@@ -572,24 +587,23 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
         w = 1 - w*w*w;
         w = w*w*w;
 
-        n   += w;
-        Sww += w * w;
-        Sx  += w * x;
-        Swwx += w * w * x;
-        Swwxx += w * w * x * x;
-        Sxx += w * x * x;
+        const float num = y->abs;
+        n   += w * num;
+        Sww += w * w * num;
+        Sx  += w * x * num;
+        Swwx += w * w * x * num;
+        Swwxx += w * w * x * x * num;
+        Sxx += w * x * x * num;
 
         TDistribution *ty = CLONE(TDistribution, y);
         PDistribution wty = ty;
         *ty *= w;
         *Sy  += wty;
+        *Syy += wty;
         *ty *= x;
         *Sxy += wty;
 
-        // ty is now again w*y
-        *ty *= 1/x;
-        *ty *= PDistribution(y);
-        *Syy += wty;
+        //*ty *= PDistribution(y);
       }
 
     float sigma_x2 = n<1e-6 ? 0.0 : (Sxx - Sx * Sx / n)/n;
@@ -609,39 +623,55 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     TDistribution *sigma_xy = CLONE(TDistribution, Sy);
     PDistribution wsigma_xy = sigma_xy;
     *sigma_xy *= -Sx/n;
-    *sigma_xy += wSxy;
+    *sigma_xy += wSxy; 
     *sigma_xy *= 1/n;
 
-    // This will be sigma_xy ^2 / sigma_x2, but we'll multiply it by whatever we need
+    // This will be sigma_xy / sigma_x2, but we'll multiply it by whatever we need
     TDistribution *sigma_tmp = CLONE(TDistribution, sigma_xy);
     PDistribution wsigma_tmp = sigma_tmp;
-    *sigma_tmp *= wsigma_tmp;
+    //*sigma_tmp *= wsigma_tmp;
     *sigma_tmp *= 1/sigma_x2;
 
     const float difx = refx - Sx/n;
 
     // computation of y
     *sigma_tmp *= difx;
+    *Sy *= 1/n;
     *Sy += *sigma_tmp;
-    Sy->normalize();
+
+    // probabilities that are higher than 0.9 normalize with a logistic function, which produces two positive 
+    // effects: prevents overfitting and avoids probabilities that are higher than 1.0. But, on the other hand, this 
+    // solution is rather unmathematical. Do the same for probabilities that are lower than 0.1.
+
+    vector<float>::iterator syi(((TDiscDistribution *)(Sy))->distribution.begin()); 
+    vector<float>::iterator sye(((TDiscDistribution *)(Sy))->distribution.end()); 
+    for (; syi!=sye; syi++) {
+      if (*syi > 0.9)
+        *syi = 1/(1+exp(-10*((*syi)-0.9)*log(9)-log(9)));
+      if (*syi < 0.1)
+        *syi = 1/(1+exp(10*(0.1-(*syi))*log(9)+log(9)));
+    }
+
     Sy->cases = cases;
     (*cont->continuous)[refx] = (wSy);
-
-
+ 
     // now for the variance
     // restore sigma_tmp and compute the conditional sigma
-    *sigma_tmp *= - 1/difx;
+    *sigma_tmp *= (1/difx);
+    *sigma_tmp *= wsigma_xy;
+    *sigma_tmp *= -1; 
     *sigma_tmp += wsigma_y2;
     // fct corresponds to part of (10) in the brackets (see URL above)
-    float fct = Sww + difx*difx/sigma_x2/sigma_x2 * (Swwxx   - 2/n * Sx*Swwx   +  2/n/n * Sx*Sx*Sww);
-    *sigma_tmp *= fct/n/n;
+ //   float fct = Sww + difx*difx/sigma_x2/sigma_x2 * (Swwxx   - 2/n * Sx*Swwx   +  2/n/n * Sx*Sx*Sww);
+    float fct = 1 + difx*difx/sigma_x2; //n + difx*difx/sigma_x2+n*n --- add this product to the overall fct sum if you are estimating error for a single user and not for the line.  
+    *sigma_tmp *= fct/n; // fct/n/n;
     ((TDiscDistribution *)(Sy)) ->variances = mlnew TFloatList(((TDiscDistribution *)(sigma_tmp))->distribution);
     
 
     // on to the next point
     pi++;
     if (pi==pe)
-      break;
+      break; 
 
     refx = *pi;
 
@@ -649,8 +679,15 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     while (to!=highedge) {
       float dif = (refx - (*from).first) - ((*to).first - refx);
       if ((dif>0) || (dif==0) && rgen.randbool()) {
-        to++;
-        from++;
+        if (numOfOverflowing > 0) {
+          from++;
+          numOfOverflowing -= (*from).second->cases;
+        }
+        else {
+          to++;
+          if (to!=highedge) 
+            numOfOverflowing += (*to).second->cases;
+        }
       }
 	    else
 		    break;

@@ -130,6 +130,9 @@ NOT_IMPLEMENTED("+=")
 TDistribution &TDistribution::operator -= (const TDistribution &)
 NOT_IMPLEMENTED("-=")
 
+TDistribution &TDistribution::operator *= (const TDistribution &)
+NOT_IMPLEMENTED("*=")
+
 TDistribution &TDistribution::operator *= (const float &)
 NOT_IMPLEMENTED("*=")
 
@@ -219,6 +222,9 @@ TDistribution &TDistribution::operator +=(PDistribution other)
 
 TDistribution &TDistribution::operator -=(PDistribution other)
 { return operator -= (other.getReference()); }
+
+TDistribution &TDistribution::operator *=(PDistribution other)
+{ return operator *= (other.getReference()); }
 
 
 
@@ -588,7 +594,8 @@ TDistribution &TDiscDistribution::operator *=(const float &weight)
 
 
 TDistribution &TDiscDistribution::operator *=(const TDistribution &other)
-{ const TDiscDistribution *mother=dynamic_cast<const TDiscDistribution *>(&other);
+{ 
+  const TDiscDistribution *mother=dynamic_cast<const TDiscDistribution *>(&other);
   if (!mother)
     raiseError("wrong type of distribution for *=");
 
