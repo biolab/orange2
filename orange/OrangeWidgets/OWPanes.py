@@ -14,7 +14,7 @@ from OWRank import *
 class OWPanes(QVBox):
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
-        self.setCaption("Orange Widgets Panes")
+        self.setCaption("Qt Orange Widgets Panes")
         self.setIcon(QPixmap("OrangeWidgetsIcon.gif"))
         self.tabs = QTabWidget(self, 'tabWidget')
         self.bottom=QHBox(self)

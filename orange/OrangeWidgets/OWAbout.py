@@ -9,7 +9,7 @@ from qt import *
 class OWAbout(QTabDialog):
     def __init__(self, parent=None, name=None):
         QTabDialog.__init__(self,parent,name)
-        self.setCaption("About Orange Widgets")
+        self.setCaption("Qt About Orange Widgets")
         self.icon=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeWidgetsIcon.png")
         self.setIcon(self.icon)
         self.setIconText("Orange Widgets")

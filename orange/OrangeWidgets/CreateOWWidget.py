@@ -37,7 +37,7 @@ class OWCreator(QVBox):
         self.connect(self.createButton,SIGNAL("clicked()"),self.createWidget)
         self.connect(self.cancelButton,SIGNAL("clicked()"),a,SLOT("quit()"))
         self.resize(200,400)
-        self.setCaption("Orange Widget Creator")
+        self.setCaption("Qt Orange Widget Creator")
     
 
     def createWidget(self):

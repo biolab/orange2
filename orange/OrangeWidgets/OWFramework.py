@@ -16,7 +16,7 @@ class OWFramework(QMainWindow):
 		"constructor"
 		QMainWindow.__init__(self,parent,name)
 		self.resize(640,480)
-		self.setCaption("Orange Widgets Framework")
+		self.setCaption("Qt Orange Widgets Framework")
 		#give it an icon and a title
 		self.setMenu()
 		self.ad=OWAbout()

@@ -26,7 +26,6 @@ class OWScatterPlot(OWWidget):
         #OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
         apply(OWWidget.__init__, (self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)) 
 
-        self.setCaption("asdf")
         self.spreadType=["none","uniform","triangle","beta"]
         self.jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
         self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]

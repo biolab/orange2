@@ -13,6 +13,10 @@ class OWOptions(QVBox):
         self.top=QVBox(self)
         self.ok=QPushButton(self,"ok")
         self.ok.setText("OK")
+
+        # if we want the widget to show the title then the title must start with "Qt"
+        if title[:2].upper != "QT":
+            title = "Qt " + title
         self.setCaption(title)
         self.setIcon(QPixmap(icon))
         self.connect(self.ok,SIGNAL("clicked()"),self,SLOT("close()"))

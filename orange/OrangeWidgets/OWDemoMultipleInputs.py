@@ -12,7 +12,7 @@ class OWDemo(QVBox):
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
         self.setSpacing(0)
-        self.setCaption("Orange Widgets Demo")
+        self.setCaption("Qt Orange Widgets Demo")
         self.setIcon(QPixmap("OrangeWidgetsIcon.gif"))
         #GUI
         owf1Button=QPushButton("&File",self)
