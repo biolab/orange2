@@ -168,19 +168,22 @@ preprocessors to filter/change the data.
         if self.data:
             if self.zeroPoint:
                 self.classifier, betas_ap = LogRegLearner_getPriors(self.data)
-                self.classifier.betas_ap = betas_ap
+                self.classifier.setattr("betas_ap", betas_ap)
             else:
                 try:
                     self.classifier = self.learner(self.data)
+                    self.classifier.setattr("data", self.data)
                 except orange.KernelException, (errValue):
                     self.classifier = None
-                    QMessageBox("LogRegFitter error:", str(errValue), QMessageBox.Warning,
-                                QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                    self.error("LogRegFitter error:"+ str(errValue))
+#                    QMessageBox("LogRegFitter error:", str(errValue), QMessageBox.Warning,
+#                                QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                     return
-            self.classifier.betas_ap = None
+            self.classifier.setattr("betas_ap", None)
                     
             self.classifier.name = self.name
             self.send("Classifier", self.classifier)
+        self.error()
 
     def activateLoadedSettings(self):
         self.removeSingularCB.setChecked(self.removeSingular)

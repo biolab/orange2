@@ -198,20 +198,24 @@ preprocessors to filter/change the data.
                 self.classifier = orngLR_Jakulin.MarginMetaLearner(self.learner,folds = 1)(self.data)
                 self.classifier.name = self.name
                 self.classifier.domain = self.data.domain
+                self.classifier.data = self.data
                 self.send("Classifier", self.classifier)
                 vectors = self.data.getitemsref(self.classifier.classifier.model["SVi"])
                 self.send("Support Vectors", vectors)
             except Exception, (errValue):
                 self.classifier = None
-                QMessageBox("SVM error:", str(errValue), QMessageBox.Warning,
-                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                self.error("SVM error:"+ str(errValue))
+#                QMessageBox("SVM error:", str(errValue), QMessageBox.Warning,
+#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                 return                
             except:
                 self.classifier = None
-                QMessageBox("SVM error:", "Unidentified error!", QMessageBox.Warning,
-                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+                self.error("SVM error:"+ "Unidentified error!")
+#                QMessageBox("SVM error:", "Unidentified error!", QMessageBox.Warning,
+#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                 return                
-            
+        self.error()
+        
     def cdata(self,data):
         self.data=data
         self.applySettings()

@@ -13,9 +13,15 @@
 
 import math
 import orange
-import OWGUI, orngLR_Jakulin, orngLR
+
+import OWGUI
 from OWWidget import *
 from OWNomogramGraph import *
+
+import orngLR
+import orngLR_Jakulin
+
+
 
 aproxZero = 0.0001
 
@@ -48,7 +54,7 @@ class OWNomogram(OWWidget):
         parent,
         "&Nomogram",
         """OWNomogram is an Orange Widget
-for displaying a nomogram of a Naive Bayesian or logistic regression classifier.""",
+        for displaying a nomogram of a Naive Bayesian or logistic regression classifier.""",
         FALSE,
         TRUE)
         self.setWFlags(Qt.WResizeNoErase | Qt.WRepaintNoErase) #this works like magic.. no flicker during repaint!
@@ -85,7 +91,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
 
         #inputs
-        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1)] #, ("Target Class Value", int, self.ctarget, 1)]
+        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1)] #, ("Target Class Value", int, self.ctarget, 1)]
 
         # GUI definition
         self.tabs = QTabWidget(self.controlArea, 'tabWidget')
@@ -280,6 +286,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
+        self.error()
 
     # Input channel: the logistic regression classifier    
     def lrClassifier(self, cl):
@@ -362,6 +369,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.alignType = 0
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
+        self.error()
 
     def svmClassifier(self, cl):
         import Numeric
@@ -377,8 +385,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             beta_from_cl = self.cl.estimator.classifier.classifier.beta[0] - self.cl.estimator.translator.trans[0].disp*self.cl.estimator.translator.trans[0].mult*self.cl.estimator.classifier.classifier.beta[1]
             beta_from_cl = mult*beta_from_cl
         except:
-            QMessageBox("orngLinVis.Visualizer error", str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]), QMessageBox.Warning,
-                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+            self.error("orngLinVis.Visualizer error"+ str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]))
+#            QMessageBox("orngLinVis.Visualizer error", str(sys.exc_info()[0])+":"+str(sys.exc_info()[1]), QMessageBox.Warning,
+#                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
             return
         
         self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
@@ -441,6 +450,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.cl.domain = orange.Domain(self.data.domain.classVar)
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
+        self.error()
 
     def initClassValues(self, classValue):
         self.targetCombo.clear()
@@ -452,19 +462,14 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if cl:
                 self.initClassValues(cl.domain.classVar)
         self.cl = cl
-        # fill values in targetClass combo box
-        self.updateNomogram()
-        
-    # Input channel: data
-    def cdata(self, data):
-        # call appropriate classifier
-        if data and data.domain and not data.domain.classVar:
-            QMessageBox("OWNomogram:", " This domain has no class attribute!", QMessageBox.Warning,
-                        QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
+        if hasattr(self.cl, "data"):
+            self.data = self.cl.data
+        else:
+            self.data = None
+        if self.data and self.data.domain and not self.data.domain.classVar:
+            self.error("OWNomogram:"+" This domain has no class attribute!")
             return
-        
-        self.data = data
-        if not data:
+        if not self.data:
             self.histogramCheck.setChecked(False)
             self.histogramCheck.setDisabled(True)
             self.histogramLabel.setDisabled(True)
@@ -477,7 +482,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.CICheck.setEnabled(True)
             self.CILabel.setEnabled(True)
         self.updateNomogram()
-
+        
     def setTarget(self):
         # find index
         for c_i in range(len(self.cl.domain.classVar.values)):
@@ -485,22 +490,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 self.TargetClassIndex = c_i
         self.updateNomogram()
         
-    def ctarget(self, target):
-        if not target:
-            self.TargetClassIndex = 1
-        else:
-            self.TargetClassIndex = target
-        if self.TargetClassIndex == 1:
-            self.notTargetClassIndex = 0
-        else:
-            self.notTargetClassIndex = 1
-        if self.cl and self.cl.domain and self.TargetClassIndex == self.cl.domain.classVar[1]:
-            self.notTargetClassIndex = self.cl.domain.classVar[0]
-        elif self.cl and self.cl.domain:
-            self.notTargetClassIndex = self.cl.domain.classVar[1]
-        self.updateNomogram()
-            
-
     def updateNomogram(self):
         import orngSVM
 
