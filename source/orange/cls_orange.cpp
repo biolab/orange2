@@ -514,6 +514,7 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
 
               if (obj) {
                 self->ptr->wr_setProperty(name, PyOrange_AS_Orange((TPyOrange *)obj));
+                Py_DECREF(obj);
                 return 0;
               }
             }

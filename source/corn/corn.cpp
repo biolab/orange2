@@ -411,7 +411,11 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
       return PYNULL;
 
     PyObject *orngStatModuleDict = PyModule_GetDict(orngStatModule);
+    Py_DECREF(orngStatModule);
+
     PyObject *CDTType = PyDict_GetItemString(orngStatModuleDict, "CDT");
+    Py_DECREF(orngStatModuleDict);
+
     if (!CDTType)
       PYERROR(PyExc_AttributeError, "orngStat does not define CDT class", PYNULL);
 
@@ -420,12 +424,14 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
     ITERATE(vector<TCDT>, cdti, cdts) {
       PyObject *PyCDT = PyInstance_New(CDTType, Py_BuildValue("fff", (*cdti).C, (*cdti).D, (*cdti).T), PyDict_New());
       if (!PyCDT) {
+        Py_DECREF(CDTType);
         Py_XDECREF(res);
         return PYNULL;
       }
       PyList_SetItem(res, i++, PyCDT);
     }
 
+    Py_DECREF(CDTType);
     return res;
   PyCATCH
 }

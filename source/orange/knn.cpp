@@ -96,10 +96,16 @@ PDistribution TkNNClassifier::classDistribution(const TExample &oexam)
 
       float lastwei = WEIGHT2(*last, distanceID);
 
-      const float &sigma2 = lastwei*lastwei / -log(0.001);
-      PEITERATE(ei, neighbours) {
-        const float &wei = WEIGHT2(*ei, distanceID);
-        classDist->add((*ei).getClass(), WEIGHT(*ei) * exp(-wei*wei/sigma2));
+      if (lastwei == 0.0) {
+        PEITERATE(ei, neighbours)
+          classDist->add((*ei).getClass());
+      }
+      else {
+        const float &sigma2 = lastwei*lastwei / -log(0.001);
+        PEITERATE(ei, neighbours) {
+          const float &wei = WEIGHT2(*ei, distanceID);
+          classDist->add((*ei).getClass(), WEIGHT(*ei) * exp(-wei*wei/sigma2));
+        }
       }
     }
   }
