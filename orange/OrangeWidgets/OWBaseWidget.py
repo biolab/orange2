@@ -6,10 +6,33 @@
 
 import sys
 import ConfigParser,os
+import orange
 from string import *
 import cPickle
 from OWTools import *
 from OWAboutX import *
+from orngSignalManager import *
+
+
+
+class ExampleTable(orange.ExampleTable):
+    pass
+
+class ExampleTableWithClass(ExampleTable):
+    pass
+
+class SignalWrapper:
+    def __init__(self, widget, method):
+        self.widget = widget
+        self.method = method
+
+    def __call__(self, *k):
+        signalManager.signalProcessingInProgress += 1
+        apply(self.method, k)
+        signalManager.signalProcessingInProgress -= 1
+        if not signalManager.signalProcessingInProgress:
+            signalManager.processNewSignals(self.widget)
+
 
 class OWBaseWidget(QDialog):
     def __init__(
@@ -45,146 +68,47 @@ class OWBaseWidget(QDialog):
 
         apply(QDialog.__init__, (self, parent, title, modal, Qt.WStyle_Customize + Qt.WStyle_NormalBorder + Qt.WStyle_Title + Qt.WStyle_SysMenu + Qt.WStyle_Minimize))
 
-        #list of all active connections to this widget
-        self.connections=[]
-        #list of inputs - should list all the channels that can be received
-        self.inputs=[]
-        self.multipleInputs=[]
-        #list of outputs - should list all the channels that can be emited
-        self.outputs=[]
+        # number of control signals, that are currently being processed
+        # needed by signalWrapper to know when everything was sent
+        #self.stackHeight = 0
+        self.needProcessing = 0
+
+        self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
+        self.outputs = []    # signalName: dataType
+        self.wrappers =[]    # stored wrappers for widget events
+        self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
+        self.linksOut = {}       # signalName: signalData
+    
         #the map with settings
         if not hasattr(self, 'settingsList'):
             self.__class__.settingsList = []
-        #is widget enabled?
-        self.enabled=TRUE
+
         #the title
         self.setCaption(self.captionTitle)
         self.setIcon(QPixmap(fullIcon))
+
         #about box
         self.about=OWAboutX(title,description,fullIcon,logo)
         self.buttonBackground=QVBox(self)
-        if wantSettings:
-            self.settingsButton=QPushButton("&Settings",self.buttonBackground)
-        if wantGraph:
-            self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
+        if wantSettings: self.settingsButton=QPushButton("&Settings",self.buttonBackground)
+        if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
         if wantAbout:
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
-        #if parent==None:
-        #    self.closeButton=QPushButton("&Close",self.buttonBackground)
-        
-        #if parent==None:
-        #    self.connect(self.closeButton,SIGNAL("clicked()"),self.close)
         self.mainArea=QWidget(self)
-#        self.mainArea.setBackgroundColor(Qt.white)
         self.controlArea=QVBox(self)
         self.space=QVBox(self)
-#        self.controlArea.setBackgroundColor(Qt.white)
-#        self.connect(self,SIGNAL("exit"),self.saveSettings)
-        self.linkBuffer={}
         
-    def link(self,source,channel):
-        """
-        Link a widget to this widget
-        Parameters:
-            source - source widget
-            cnannel - name of the channel and the function it connects to
-        """
-        #what to do with those tree:classifier signals?!
-        
-        #check if this channel exist
-        if channel not in self.inputs and channel not in self.multipleInputs:
-            return
-        if channel not in self.connections:
-            self.connections.append([channel,source])
-            #there should be a function with the same name as the signal 
-            #in the destination class, otherwise this won't work!
-            #We could check if the destination functions exists.. to be done.
-            if self.enabled:                                
-#                print "self."+channel
-                if (channel in self.inputs or channel in self.multipleInputs):
-                    self.connect(source,PYSIGNAL(channel),self.receive)
-                    source.resend(channel)
-                else:
-                    print "Cannot link: the channel %s does not exist" % channel
-        
-    def unlink(self,source,channel):
-        """
-        Destroy link from a widget to this widget
-        Parameters:
-            source - source widget
-            cnannel - name of the channel and the function it connects to
-        """
-        try:
-            self.connections.remove([channel,source])
-#            self.disconnect(source,PYSIGNAL(channel),eval("self."+channel))
-            self.disconnect(source,PYSIGNAL(channel),self.receive)
-        except:
-            pass
-            
-    def send(self,channel,data):
-        """
-        Send data over a channel
-            channel - the channel name
-            data - the data to be sent, must be a tuple!
-        Saves some typing compared to QObject.emit. 
-        Only sends if connected.
-        """
-#        print "sending", data, "over channel", channel
-#        self.emit(PYSIGNAL(channel),(data,))
-        #save the data for later
-        self.linkBuffer[channel]=data
-        self.emit(PYSIGNAL(channel),(data,channel,id(self)))
-        
-    def resend(self,channel):
-        """
-        resends the data that was last sent through the channel
-        """
-        if channel in self.linkBuffer:
-            self.send(channel,self.linkBuffer[channel])
-    
-    def receive(self,zdata,channel,source):
-        """
-        Receives data over a channel. Passes it to the right function
-            data - the data
-            channel - the name of the channel
-            source - the source of the channel
-        """      
-        if channel in self.inputs:
-            eval("self."+channel)(zdata)
-        elif channel in self.multipleInputs:
-            eval("self."+channel)(zdata,source)
-        else:
-            print "Error: this channel does not exist as input!" #impossible
-    
-    def getConnections(self):
-        """
-        Gets all connections
-        Returns the list with all connections
-        """
-        return self.connections
-        
-    def setEnabled(self,enable):
-        """
-        Set this widget in enabled or disabled state
-        enable: TRUE - widget is enabled 
-                FALSE - widget is disabled
-        """
-        #setEnabled(FALSE) removes all links in connections
-        #setEnabled(TRUE) restores all this links
-        #we'll see if this works
-        self.enabled=enable
-        for connection in self.connections:
-            if enabled:
-#                self.connect(connection[0],PYSIGNAL(connection[1]),eval("self."+connection[1]))
-                self.connect(connection[0],PYSIGNAL(connection[1]),self.receive)
-                #resend in case something went wrong
-                self.resend(connection[1],connection[0])
-            else:
-#                self.disconnect(connection[0],PYSIGNAL(connection[1]),eval("self."+connection[1]))
-                self.disconnect(connection[0],PYSIGNAL(connection[1]),self.receive)
-        
+    # put this widget on top of all windows
+    def reshow(self):
+        self.hide()
+        self.show()
+
+    def send(self, signalName, value):
+        self.linksOut[signalName] = value
+        signalManager.send(self, signalName, value)
+       
     def setSettings(self,settings):
         """
         Set all settings
@@ -253,37 +177,80 @@ class OWBaseWidget(QDialog):
     def activateLoadedSettings(self):
         pass
         
-    def addInput(self,inpu,singleSignal=TRUE):
-        """
-        Adds an input.
-        Should be called for all functions that can be inputs (link destinations).
-        """
-        if singleSignal:
-            self.inputs.append(inpu)
-        else:
-            self.multipleInputs.append(inpu)
-    
-    def addOutput(self,output):
-        """
-        Adds an output.
-        Should be called for all the outputs (link sources) that can be generated.
-        """
-        self.outputs.append(output)
-        
-    def getInputs(self):
-        """
-        Get the names of all inputs
-        """
-        return self.inputs
-        
-    def getOutputs(self):
-        """
-        Get the names of all outputs
-        """
-        return self.outputs
+    def addInput(self,signalName, dataType, handler, onlySingleConnection=TRUE):
+        self.inputs.append((signalName, dataType, handler, onlySingleConnection))
+            
+    def addOutput(self, signalName, dataType):
+        self.outputs.append((signalName, dataType))
 
     def setOptions(self):
         pass
+
+    # ########################################################################
+    def connect(self, control, signal, method):
+        wrapper = SignalWrapper(self, method)
+        self.wrappers.append(wrapper)
+        QDialog.connect(control, signal, wrapper)
+        #QWidget.connect(control, signal, method)        # ordinary connection useful for dialogs and windows that don't send signals to other widgets
+
+    def findSignalTypeFrom(self, signalName):
+        for (signal, dataType) in self.outputs:
+            if signal == signalName: return dataType
+        return dataType 
+
+    def findSignalTypeTo(self, signalName):
+        for (signal, dataType, handler, onlySingleConnection) in self.inputs:
+            if signalName == signal: return dataType
+        return None
+
+    def addInputConnection(self, widgetFrom, signalName):
+        handler = None
+        for (signal, dataType, h, onlySingle) in self.inputs:
+            if signalName == signal: handler = h
+            
+        existing = []
+        if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
+        self.linksIn[signalName] = existing + [(0, widgetFrom, handler, None)]    # (dirty, handler, signalData)
+    
+
+    # return list of signal names, that are single and already connected to other widgets        
+    def removeExistingSingleLink(self, signal):
+        #(type, handler, single) = self.inputs[signal]
+        #if not single: return []
+        for (signalName, dataType, handler, onlySingle) in self.inputs:
+            if signalName == signal and not onlySingle: return []
+            
+        widgets = []
+        for signalName in self.linksIn.keys():
+            if signalName == signal:
+                widgets.append(self.linksIn[signalName][0][1])
+                del self.linksIn[signalName]
+                
+        return widgets
+        
+    # signal manager calls this function when all input signals have updated the data
+    def processSignals(self):
+        #if self.stackHeight > 0: return  # if this widet is already processing something return
+        
+        # we define only a way to handle signals that have defined a handler function
+        for key in self.linksIn.keys():
+            for i in range(len(self.linksIn[key])):
+                (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
+                if handler != None and dirty:
+                    print "processing ", self.name()," , handler = ", str(handler)[13:30]
+                    self.linksIn[key][i] = (0, widgetFrom, handler, signalData) # clear the dirty flag
+                    handler(signalData)
+
+        self.needProcessing = 0
+
+    # set new data from widget widgetFrom for a signal with name signalName
+    def updateNewSignalData(self, widgetFrom, signalName, value):
+        if not self.linksIn.has_key(signalName): return
+        for i in range(len(self.linksIn[signalName])):
+            (dirty, widget, handler, oldValue) = self.linksIn[signalName][i]
+            if widget == widgetFrom:
+                self.linksIn[signalName][i] = (1, widget, handler, value)
+        self.needProcessing = 1
 
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
