@@ -10,7 +10,6 @@
 # 
 
 from OWWidget import *
-from OWInteractionGraphOptions import *
 from qt import *
 from qtcanvas import *
 import orngInteract
@@ -69,8 +68,6 @@ class OWInteractionGraph(OWWidget):
         self.loadSettings()
 
         # add a settings dialog and initialize its values
-        #self.options = OWInteractionGraphOptions()
-
         self.splitCanvas = QSplitter(self.mainArea)
         
         self.canvasL = QCanvas(2000, 2000)
