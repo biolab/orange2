@@ -56,7 +56,7 @@ class OWDistanceMap(OWWidget):
         OWWidget.__init__(self, parent, name, 'Distance Map', FALSE, FALSE) 
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, 1)]
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]#,("Attribute List", orange.VarList)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass),("Attribute List", orange.VarList)]
 
         self.clicked = False
         self.offsetX = 5
@@ -66,6 +66,8 @@ class OWDistanceMap(OWWidget):
         self.distanceImage = None
         self.legendImage = None
         self.ColorSchemas = None
+
+        self.shiftPressed = False        
       
 
         #set default settings
@@ -94,7 +96,7 @@ class OWDistanceMap(OWWidget):
         box = QVButtonGroup("Cell Size (Pixels)", tab)
         OWGUI.qwtHSlider(box, self, "CellWidth", label='Width: ', labelWidth=38, minValue=1, maxValue=self.maxHSize, step=1, precision=0, callback=self.drawDistanceMap)
         self.sliderVSize = OWGUI.qwtHSlider(box, self, "CellHeight", label='Height: ', labelWidth=38, minValue=1, maxValue=self.maxVSize, step=1, precision=0, callback=self.createDistanceMap)
-        OWGUI.checkBox(box, self, "SquareCells", "Cells as squares", callback = None)
+        OWGUI.checkBox(box, self, "SquareCells", "Cells as squares", callback = self.drawDistanceMap)
         OWGUI.checkBox(box, self, "Grid", "Show grid", callback = self.createDistanceMap)
         
         OWGUI.qwtHSlider(tab, self, "Gamma", box="Gamma", minValue=0.1, maxValue=1, step=0.1, callback=self.drawDistanceMap)
@@ -130,6 +132,7 @@ class OWDistanceMap(OWWidget):
 
         box = QVButtonGroup("Select", tab)
         box2 = QHBox(box)
+        self.box2 = box2
         self.buttonUndo = OWToolbars.createButton(box2, 'Undo', self.actionUndo, QPixmap(OWToolbars.dlg_undo), toggle = 0)
         self.buttonRemoveAllSelections = OWToolbars.createButton(box2, 'Remove all selections', self.actionRemoveAllSelections, QPixmap(OWToolbars.dlg_clear), toggle = 0)
         self.buttonSendSelections = OWToolbars.createButton(box2, 'Send selections', self.sendOutput, QPixmap(OWToolbars.dlg_send), toggle = 0)
@@ -142,10 +145,11 @@ class OWDistanceMap(OWWidget):
         self.layout = QVBoxLayout(self.mainArea)
         self.canvas = QCanvas()
         self.canvasView = EventfulCanvasView(self.canvas, self.mainArea, self)
+
         self.layout.add(self.canvasView)
 
         #construct selector
-        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.CellHeight, self.canvas)
+        self.selector = QCanvasRectangle(0, 0, self.CellWidth, self.getCellHeight(), self.canvas)
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
         self.selector.setZ(20)
@@ -153,10 +157,8 @@ class OWDistanceMap(OWWidget):
         self.bubble = BubbleInfo(self.canvas)
         self.selection = SelectionManager()
 
-        self.selectionRect = QCanvasRectangle(0, 0, 1, 1, self.canvas)
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
-        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))        
-        self.selectionRect.setZ(20)
+        self.selectionLines = []
+        self.annotationTexts = []
 
         self.legendText1 = QCanvasText(self.canvas)
         self.legendText1.move(0,0)
@@ -185,7 +187,7 @@ class OWDistanceMap(OWWidget):
         if (y <= self.offsetY or y >= self.offsetY + self.imageHeight):
             return -1
         else:
-            return int((y - self.offsetY)/self.CellHeight)
+            return int((y - self.offsetY)/self.getCellHeight())
 
 
     def qrgbToQColor(self, color):
@@ -202,7 +204,12 @@ class OWDistanceMap(OWWidget):
 
         return j
 
-
+    def getCellHeight(self):
+        if self.SquareCells:
+            return self.CellWidth
+        else:
+            return self.CellHeight
+        
     def sendOutput(self):
         if len(self.matrix.items)<1:
             return
@@ -233,11 +240,13 @@ class OWDistanceMap(OWWidget):
                     selectedIndices += [i]
 
             items = self.matrix.items
-            #if issubclass(orange.EnumVariable, type(items[0])):
-            #    selected = orange.VarList()
-            #    for i in selectedIndices:
-            #        selected.append(items[i])
-            #    self.send("Attribute List", selected)
+            if issubclass(orange.EnumVariable, type(items[0])):
+                print "bbbbbbb"
+                selected = orange.VarList()
+                for i in selectedIndices:
+                    selected.append(items[i])
+                self.send("Attribute List", selected)
+
                 
             if isinstance(items[0], orange.Example):
                 ex = [items[x] for x in selectedIndices]
@@ -251,9 +260,6 @@ class OWDistanceMap(OWWidget):
     def setColor(self):
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]
-        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
 
         self.ColorSchemas = self.colorPalette.getColorSchemas()
         self.drawDistanceMap()
@@ -311,7 +317,7 @@ class OWDistanceMap(OWWidget):
             self.offsetY = 5
 
         palette = self.colorPalette.getCurrentColorSchema().getPalette()
-        bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth), int(self.CellHeight), lo, hi, self.Gamma, self.Grid)
+        bitmap, width, height = self.distanceMap.getBitmap(int(self.CellWidth), int(self.getCellHeight()), lo, hi, self.Gamma, self.Grid)
 
         self.canvas.resize(2000, 2000) # this needs adjustment
         self.distanceImage = ImageItem(bitmap, self.canvas, width, height, palette, x=self.offsetX, y=self.offsetY, z=0)
@@ -321,26 +327,59 @@ class OWDistanceMap(OWWidget):
         self.imageWidth = width
         self.imageHeight = height
 
-        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]        
-        self.selectionRect.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-
         color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Cell outline"]
         self.selector.setPen(QPen(self.qrgbToQColor(color),v_sel_width))
-        self.selector.setSize(self.CellWidth, self.CellHeight)
+        self.selector.setSize(self.CellWidth, self.getCellHeight())
         
         self.updateSelectionRect()
         self.canvas.update()
 
-    def updateSelectionRect(self):
-        if len(self.selection.getSelection())>0:
-            start = self.selection.getSelection()[0][0]
-            end = self.selection.getSelection()[0][1]
-            self.selectionRect.setX(self.offsetX + start.x()* self.CellWidth)
-            self.selectionRect.setY(self.offsetY + start.y()* self.CellHeight)
-            self.selectionRect.setSize((end.x()-start.x() + 1)*self.CellWidth,(end.y()-start.y() + 1)*self.CellHeight)
-            self.selectionRect.show()
+    def addSelectionLine(self, x, y, direction):
+        selLine = QCanvasLine(self.canvas)
+        if direction==0:
+            #horizontal line
+            selLine.setPoints(self.offsetX + x*self.CellWidth, self.offsetY + y*self.getCellHeight(),
+                              self.offsetX + (x+1)*self.CellWidth, self.offsetY + y*self.getCellHeight())
         else:
-            self.selectionRect.hide()
+            #vertical line
+            selLine.setPoints(self.offsetX + x*self.CellWidth, self.offsetY + y*self.getCellHeight(),
+                              self.offsetX + x*self.CellWidth, self.offsetY + (y+1)*self.getCellHeight())
+        color = self.colorPalette.getCurrentColorSchema().getAdditionalColors()["Selected cells"]            
+        selLine.setPen(QPen(self.qrgbToQColor(color),v_sel_width))        
+        selLine.setZ(20)            
+        selLine.show();
+        self.selectionLines += [selLine]
+            
+    def updateSelectionRect(self):
+        entireSelection = []
+        newSel = False
+        for selLine in self.selectionLines:
+            selLine.setCanvas(None)
+            
+        self.selectionLines = []
+        if len(self.selection.getSelection())>0:
+            for sel in self.selection.getSelection():
+                for i in range(sel[0].x(), sel[1].x()):
+                    for j in range(sel[0].y(), sel[1].y()):
+                        selTuple = (i, j)
+                        if not (selTuple in entireSelection):
+                            entireSelection += [selTuple]
+            for selTuple in entireSelection:
+                #check left
+                if (not (selTuple[0] - 1, selTuple[1]) in entireSelection):
+                    self.addSelectionLine(selTuple[0], selTuple[1], 1)
+                    
+                #check up
+                if (not (selTuple[0], selTuple[1] - 1) in entireSelection):
+                    self.addSelectionLine(selTuple[0], selTuple[1], 0)
+
+                #check down
+                if (not (selTuple[0], selTuple[1] + 1) in entireSelection):
+                    self.addSelectionLine(selTuple[0], selTuple[1] + 1, 0)                    
+
+                #check right
+                if (not (selTuple[0] + 1, selTuple[1]) in entireSelection):
+                    self.addSelectionLine(selTuple[0] + 1, selTuple[1], 1)                    
         self.canvas.update()    
 
             
@@ -356,7 +395,7 @@ class OWDistanceMap(OWWidget):
             self.bubble.hide()
         else:
             self.selector.setX(self.offsetX + col * self.CellWidth)
-            self.selector.setY(self.offsetY + row * self.CellHeight)
+            self.selector.setY(self.offsetY + row * self.getCellHeight())
             self.selector.show()
 
             if self.ShowBalloon == 1:
@@ -378,12 +417,19 @@ class OWDistanceMap(OWWidget):
             self.updateSelectionRect()
 
         self.canvas.update()
+
+    def keyPressEvent(self, e):
+        self.shiftPressed = (e.key() == 4128)
+
+    def keyReleaseEvent(self, e):        
+        self.shiftPressed = False
         
     def mousePress(self, x,y):
         self.clicked = True
         row = self.rowFromMousePos(x,y)
         col = self.colFromMousePos(x,y)
-        self.selection.clear()
+        if not (self.shiftPressed == True):
+            self.selection.clear()
         self.selection.SelStart(col, row)
         
     def mouseRelease(self, x,y):
@@ -402,7 +448,7 @@ class OWDistanceMap(OWWidget):
                 self.sendOutput()
 
     def actionUndo(self):
-        self.selection.clear()
+        self.selection.undo()
         self.updateSelectionRect()
     
     def actionRemoveAllSelections(self):
@@ -457,6 +503,13 @@ class ImageItem(QCanvasRectangle):
 
     def drawShape(self, painter):
         painter.drawImage(self.x(), self.y(), self.image, 0, 0, -1, -1)
+
+class QCustomCanvasText(QCanvasText):
+    def __init__(self, text, canvas = None):
+        QCanvasText.__init__(self, text, canvas)
+
+    def draw(self, painter):
+        QCanvasText.draw(self, painter)
 ##################################################################################################
 # selection manager class
 
@@ -468,6 +521,8 @@ class SelectionManager:
         self.currSel = None
 
     def SelStart(self, x, y):
+        if x < 0: x=0
+        if y < 0: y=0
         self.currSel = QPoint(x,y)
         self.currSelEnd = QPoint(x,y)
         self.selecting = True
@@ -484,6 +539,10 @@ class SelectionManager:
 
         miny = min(self.currSel.y(), self.currSelEnd.y())
         maxy = max(self.currSel.y(), self.currSelEnd.y())
+            
+        if (minx==maxx) and (miny==maxy):
+            maxx+=1
+            maxy+=1
         
         self.selection += [(QPoint(minx, miny),QPoint(maxx,maxy))]
         self.selecting = False
@@ -491,6 +550,10 @@ class SelectionManager:
     def clear(self):
         self.selection = []
 
+    def undo(self):
+        if len(self.selection)>0:
+            del self.selection[len(self.selection)-1]
+                        
     def getSelection(self):
         res = self.selection + []
         if self.selecting==True:
