@@ -37,7 +37,7 @@
 
 #include "tabdelim.ppp"
 
-bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true, bool csv = false);
+int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true, bool csv = false);
 bool atomsEmpty(const TIdList &atoms);
 
 list<TDomain *> TTabDelimExampleGenerator::knownDomains;
@@ -68,15 +68,8 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool 
   
   TIdList atoms;
   for (int i = headerLines; !feof(fei.file) && i--; )
-    while(!feof(fei.file) && !readTabAtom(fei, atoms, true, csv)) {
-      TIdList::iterator ii(atoms.begin()), ie(atoms.end());
-      while ((ii!=ie) && !(*ii).length())
-        ii++;
-      if (ii==ie)
-        atoms.clear();
-      else
-        break;
-    }
+    // read one line (not counting comment lines, but counting empty lines)
+    while(!feof(fei.file) && (readTabAtom(fei, atoms, true, csv) == -1));
 
   startDataPos = ftell(fei.file);
   startDataLine = fei.line;
@@ -90,7 +83,8 @@ void TTabDelimExampleGenerator::destroyNotifier(TDomain *domain)
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
   TIdList atoms;
-  while(!feof(fei.file) && (!readTabAtom(fei, atoms, true, csv) || atomsEmpty(atoms))) {
+  // read lines until eof or a non-empty line
+  while(!feof(fei.file) && ((readTabAtom(fei, atoms, true, csv)>0) || atomsEmpty(atoms))) {
     TIdList::iterator ii(atoms.begin()), ie(atoms.end());
     while ((ii!=ie) && !(*ii).length())
       ii++;
@@ -257,7 +251,8 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
   TFileExampleIteratorData fei(stem);
   
   TIdList varNames;
-  while(!feof(fei.file) && !readTabAtom(fei, varNames, true, csv));
+  // read the next non-comment line
+  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv)==-1));
   if (varNames.empty())
     ::raiseError("unexpected end of file '%s'", fei.filename.c_str());
 
@@ -373,7 +368,8 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool 
     vector<string> atoms;
     char numTest[64];
     while (!feof(fei.file) && !searchWarranties.empty()) {
-      if (!readTabAtom(fei, atoms, true, csv))
+      // seek to the next line non-empty non-comment line
+      if (readTabAtom(fei, atoms, true, csv) <= 0)
         continue;
     
       for(list<TSearchWarranty>::iterator wi(searchWarranties.begin()), we(searchWarranties.end()); wi!=we; wi++) {
@@ -478,15 +474,15 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
   
   TIdList varNames, varTypes, varFlags;
   
-  while(!feof(fei.file) && !readTabAtom(fei, varNames, true, csv));
+  while(!feof(fei.file) && (readTabAtom(fei, varNames, true, csv) == -1));
   if (varNames.empty())
     ::raiseError("empty file");
 
-  while(!feof(fei.file) && !readTabAtom(fei, varTypes, false, csv));
+  while(!feof(fei.file) && (readTabAtom(fei, varTypes, false, csv) == -1));
   if (varTypes.empty())
     ::raiseError("cannot read types of attributes");
 
-  while(!feof(fei.file) && !readTabAtom(fei, varFlags, true, csv));
+  while(!feof(fei.file) && (readTabAtom(fei, varFlags, true, csv) == -1));
 
   if (varNames.size() != varTypes.size())
     ::raiseError("mismatching number of attributes and their types.");
@@ -622,8 +618,11 @@ bool atomsEmpty(const TIdList &atoms)
 
 /*  Reads a list of atoms from a line of tab or comma delimited file. Atom consists of any characters
     except \n, \r and \t (and ',' if csv=true). Multiple spaces are replaced by a single space. Atoms
-    are separated by \t or ',' if csv=true. Lines end with \n or \r. Lines which begin with | are ignored. */
-bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces, bool csv)
+    are separated by \t or ',' if csv=true. Lines end with \n or \r. Lines which begin with | are ignored.
+   
+    Returns number of atoms, -1 for comment line and -2 for EOF
+    */
+int readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces, bool csv)
 {
   atoms.clear();
 
@@ -631,7 +630,7 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
     raiseErrorWho("TabDelimExampleGenerator", "file not opened");
 
   if (feof(fei.file))
-    return false;
+    return -2;
 
   fei.line++;
 
@@ -645,7 +644,7 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
       break;
     if (!col && (c=='|')) {
       for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=EOF); c=fgetc(fei.file));
-      return false;
+      return -1;
     }
 
     col++;
@@ -655,7 +654,12 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
       case '\n':
         if (atom.length() || atoms.size())
           atoms.push_back(atom);  // end of line
-        return atoms.size()>0;
+        if (c == '\r') {
+          c = fgetc(fei.file);
+          if (c != '\n')
+            fseek(fei.file, SEEK_CUR, -1);
+        }
+        return atoms.size();
 
       case '\t':
         atoms.push_back(atom);
@@ -690,7 +694,7 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
   if (atom.length() || atoms.size())
     atoms.push_back(csv ? trim(atom) : atom);
 
-  return atoms.size()>0;
+  return atoms.size();
 }
 
 

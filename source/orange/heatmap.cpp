@@ -291,16 +291,24 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     lineAverages.reserve(nRows);
         
     int pcl = -1;
+    if (!haveBase && nClasses)
+      while(pcl < classes.front()) {
+        classBoundaries.push_back(0);
+        pcl++;
+      }
+
     ITERATE(vector<int>, si, sortIndices) {
       esorted.addExample(etable[*si]);
       lineCenters.push_back(tempLineCenters[*si]);
       lineAverages.push_back(tempLineAverages[*si]);
       floatMap.push_back(tempFloatMap[*si]);
       tempFloatMap[*si] = NULL;
-      if (!haveBase && nClasses && (classes[*si] != pcl)) {
-        classBoundaries.push_back(floatMap.size());
-        pcl = classes[*si];
-      }
+
+      if (!haveBase && nClasses)
+        while(pcl < classes[*si]) {
+          classBoundaries.push_back(floatMap.size());
+          pcl++;
+        }
     }
 
     if (!haveBase) {
@@ -338,6 +346,14 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, fl
   for(int classNo = 0, ncl = nClasses ? nClasses : 1; classNo < ncl; classNo++) {
     const int classBegin = classBoundaries[classNo];
     const int classEnd = classBoundaries[classNo+1];
+
+    if (classBegin == classEnd) {
+      THeatmap *hm = new THeatmap(0, nColumns, sortedExamples);
+      hml->push_back(hm);
+      hm->exampleIndices->push_back(classBegin);
+      hm->exampleIndices->push_back(classBegin);
+      continue;
+    }
 
     int nLines = int(floor(0.5 + (classEnd - classBegin) * unadjustedSqueeze));
     const float squeeze = float(nLines) / (classEnd-classBegin);
@@ -390,7 +406,6 @@ PHeatmapList THeatmapConstructor::operator ()(const float &unadjustedSqueeze, fl
 
       *ami = nDefinedAverages ? *ami/nDefinedAverages : UNKNOWN_F;
     }
-
   }
 
   delete spec;
