@@ -242,7 +242,7 @@ def toR(filename,t):
                 else:
                     f.write('"%s"'%str(t[j][i]))
                 if (j == len(t)-1):
-                    f.write(')')
+                    f.write('))')
                 else:
                     f.write(',')
         else:
