@@ -199,9 +199,11 @@ PyObject *PyOrType_GenericCallableNew(PyTypeObject *type, PyObject *args, PyObje
             goto err;
           }
 
+          Py_DECREF(self1);
           rewrap((TPyOrange *&)self2, (PyTypeObject *)ccReturn);
         }
 
+        Py_DECREF(self1);
         if (PyOrOrange_Check(self2))
           ((TPyOrange *)self2)->call_constructed = true;
         return self2;

@@ -200,7 +200,10 @@ public:
   typedef typename _ListType::const_iterator const_iterator;
 
   static _WrappedElement _fromPython(PyObject *obj)
-  { if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
+  { if (obj == Py_None)
+      return _WrappedElement();
+  
+    if (!obj || !PyObject_TypeCheck(obj, _PyElementType)) {
       PyErr_Format(PyExc_TypeError, "expected '%s', got '%s'", _PyElementType->tp_name, obj ? obj->ob_type->tp_name : "NULL");
       return _WrappedElement();
     }
@@ -419,7 +422,7 @@ public:
   static PyObject *_append(TPyOrange *self, PyObject *item)
   { PyTRY
       _WrappedElement obj = _fromPython(item);
-      if (!obj)
+      if (PyErr_Occurred())
         return PYNULL;
 
       CAST_TO(_ListType, aList);

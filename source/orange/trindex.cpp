@@ -129,13 +129,14 @@ PRandomIndices TMakeRandomIndices2::operator()(PExampleGenerator gen, const floa
       return operator()(gen->numberOfExamples(), ap0);
     else
       raiseError("cannot prepare stratified indices (non-discrete class values)");
-    
+  
   TExampleIterator ri=gen->begin();
   if (!ri)
     return PRandomIndices(mlnew TFoldIndices());
   
   typedef pair<int, int> pii; // index of example, class value
   vector<pii> ricv;
+
   for(int in=0; ri; ++ri)
     if ((*ri).getClass().isSpecial()) {
       if (stratified==TMakeRandomIndices::STRATIFIED_IF_POSSIBLE)
