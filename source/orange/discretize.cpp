@@ -346,10 +346,7 @@ void TEquiNDiscretization::cutoffsByCounting(PIntervalDiscretizer discretizer, c
 
 
 void TEquiNDiscretization::cutoffsByDivision(PIntervalDiscretizer discretizer, const TContDistribution &distr) const
-{ cutoffsByDivision(numberOfIntervals,
-                    const_cast<TFloatList &>(discretizer->points.getReference()),
-                    distr.begin(), distr.end(), distr.abs); 
-}
+{ cutoffsByDivision(numberOfIntervals, discretizer->points.getReference(), distr.begin(), distr.end(), distr.abs); }
 
 
 void TEquiNDiscretization::cutoffsByDivision(const int &, TFloatList &, 

@@ -202,8 +202,8 @@ TestedExample::TestedExample(PyObject *obj)
     throw CornException("error in 'classes' attribute");
 
   int i,e;
-  for(i=0, e=PyList_Size(temp); i<e; i++) {
-    PyObject *cp=PyList_GetItem(temp, i);
+  for(i = 0, e = PyList_Size(temp); i<e; i++) {
+    PyObject *cp = PyList_GetItem(temp, i);
     if (!cp || !PyInt_Check(cp))
       throw CornException("error in 'classes' attribute");
     classes.push_back((int)PyInt_AsLong(cp));
@@ -213,13 +213,13 @@ TestedExample::TestedExample(PyObject *obj)
   if (!temp || !PyList_Check(temp))
     throw CornException("error in 'probabilities' attribute");
 
-  for(i=0, e=PyList_Size(temp); i<e; i++) {
-    PyObject *slist=PyList_GetItem(temp, i);
+  for(i = 0, e = PyList_Size(temp); i<e; i++) {
+    PyObject *slist = PyList_GetItem(temp, i);
     if (!slist || !PyList_Check(slist))
       throw CornException("error in 'probabilities' attribute");
     probabilities.push_back(vector<float>());
-    for(int ii=0, ee=PyList_Size(slist); ii<ee; ii++) {
-      PyObject *fe=PyList_GetItem(slist, ii);
+    for(int ii = 0, ee = PyList_Size(slist); ii<ee; ii++) {
+      PyObject *fe = PyList_GetItem(slist, ii);
       if (!fe || !PyFloat_Check(fe))
         throw CornException("error in 'probabilities' attribute");
       probabilities.back().push_back((float)PyFloat_AsDouble(fe));
@@ -246,12 +246,12 @@ ExperimentResults::ExperimentResults(PyObject *obj)
   temp = PyObject_GetAttrString(obj, "baseClass");
   baseClass = PyInt_AsLong(temp);
 
-  PyObject *pyresults=PyObject_GetAttrString(obj, "results");
+  PyObject *pyresults = PyObject_GetAttrString(obj, "results");
   if (!pyresults || !PyList_Check(pyresults))
     throw CornException("error in 'results' attribute");
 
-  for(int i=0, e=PyList_Size(pyresults); i<e; i++) {
-    PyObject *testedExample=PyList_GetItem(pyresults, i);
+  for(int i = 0, e = PyList_Size(pyresults); i<e; i++) {
+    PyObject *testedExample = PyList_GetItem(pyresults, i);
     results.push_back(TestedExample(testedExample));
   }
 }
@@ -278,7 +278,7 @@ public:
     abnormal(0.0)
   {}
 
-  inline void add(const bool &b, const float &w=1.0)
+  inline void add(const bool &b, const float &w = 1.0)
   { *(b ? &abnormal : &normal) += w; }
 
   pp &operator +=(const pp &other)
@@ -354,7 +354,7 @@ PyObject *py_computeROCCumulative(PyObject *, PyObject *arg)
 { 
   PyTRY
     PyObject *pyresults;
-    int classIndex=-1;
+    int classIndex = -1;
     PyObject *pyuseweights = NULL;
     if (!PyArg_ParseTuple(arg, "O|iO", &pyresults, &classIndex, &pyuseweights))
       PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex and 'useWeights' flag expected", PYNULL);
@@ -388,7 +388,7 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
 {
   PyTRY
     PyObject *pyresults;
-    int classIndex=1;
+    int classIndex = -1;
     PyObject *pyuseweights;
     if (!PyArg_ParseTuple(arg, "OiO", &pyresults, &classIndex, &pyuseweights))
       PYERROR(PyExc_TypeError, "computeROCCummulative: results and optionally the classIndex expected", PYNULL);
@@ -434,7 +434,7 @@ PyObject *py_computeCDT(PyObject *, PyObject *arg)
 PyObject *py_compare2ROCs(PyObject *, PyObject *arg)
 { PyTRY
     PyObject *pyresults;
-    int roc1, roc2, classIndex=-1;
+    int roc1, roc2, classIndex = -1;
     PyObject *pyuseweights;
     if (!PyArg_ParseTuple(arg, "OiiiO", &pyresults, &roc1, &roc2, &classIndex, &pyuseweights))
       PYERROR(PyExc_TypeError, "compare2ROCs: results and two integer indices (optionally also classIndex) expected", PYNULL);
@@ -452,9 +452,10 @@ PyObject *py_compare2ROCs(PyObject *, PyObject *arg)
     if (classIndex<0)
       classIndex = 1;
 
-    float e11[]={0, 0}, e10[]={0, 0}, e01[]={0, 0}, e11r=0, e10r=0, e01r=0;
+    float e11[] = {0, 0}, e10[] = {0, 0}, e01[] = {0, 0};
+    float e11r = 0, e10r = 0, e01r = 0;
     float th[] ={0, 0};
-    int m=0, n=0;
+    int m = 0, n = 0;
     /* m is number of examples with class == classIndex, n are others
        X_* represent example with class == classIndex, Y_* are others
     */
@@ -466,13 +467,13 @@ PyObject *py_compare2ROCs(PyObject *, PyObject *arg)
       else { // (*i).actualClass == classIndex
         m++;
 
-        float X_i[]={(*i).probabilities[roc1][classIndex], (*i).probabilities[roc2][classIndex]};
+        float X_i[] = {(*i).probabilities[roc1][classIndex], (*i).probabilities[roc2][classIndex]};
 
-        for (vector<TestedExample>::const_iterator j=i+1; j!=e; j++)
+        for (vector<TestedExample>::const_iterator j = i+1; j!=e; j++)
           if ((*j).actualClass!=classIndex) {
 
-            float Y_j[]={(*j).probabilities[roc1][classIndex], (*j).probabilities[roc2][classIndex]};
-            float diffs[]={ diff2(X_i[0], Y_j[0]), diff2(X_i[1], Y_j[1]) };
+            float Y_j[] = {(*j).probabilities[roc1][classIndex], (*j).probabilities[roc2][classIndex]};
+            float diffs[] = { diff2(X_i[0], Y_j[0]), diff2(X_i[1], Y_j[1]) };
 
             th[0] += diffs[0];
             th[1] += diffs[1];
@@ -499,7 +500,7 @@ PyObject *py_compare2ROCs(PyObject *, PyObject *arg)
           }
       }
 
-    float n11=float(m)*float(n), n01=float(m)*float(n)*float(m-1)/2.0, n10=float(m)*float(n)*float(n-1)/2.0;
+    float n11 = float(m)*float(n), n01 = float(m)*float(n)*float(m-1)/2.0, n10 = float(m)*float(n)*float(n-1)/2.0;
   
     th[0] /= n11;
     th[1] /= n11;
@@ -543,14 +544,14 @@ public:
     { Py_XDECREF(py_compare); }
 
   int operator()(PyObject *obj1, PyObject *obj2)
-    { PyObject *args=Py_BuildValue("OO", obj1, obj2);
-      PyObject *result=PyEval_CallObject(py_compare, args);
+    { PyObject *args = Py_BuildValue("OO", obj1, obj2);
+      PyObject *result = PyEval_CallObject(py_compare, args);
       Py_DECREF(args);
 
       if (!result) 
         throw pyexception();
 
-      bool res=PyInt_AsLong(result)<0;
+      bool res = PyInt_AsLong(result)<0;
       Py_DECREF(result);
       return res;
     }
@@ -569,14 +570,14 @@ public:
     { Py_XDECREF(py_compare); }
 
   int operator()(PyObject *obj1, PyObject *obj2)
-    { PyObject *args=Py_BuildValue("OO", obj1, obj2);
-      PyObject *result=PyEval_CallObject(py_compare, args);
+    { PyObject *args = Py_BuildValue("OO", obj1, obj2);
+      PyObject *result = PyEval_CallObject(py_compare, args);
       Py_DECREF(args);
 
       if (!result) 
         throw pyexception();
 
-      bool res=PyInt_AsLong(result)==0;
+      bool res = (PyInt_AsLong(result)==0);
       Py_DECREF(result);
       return res;
     }
@@ -593,15 +594,15 @@ PyObject *py_sort_random(PyObject *, PyObject *arg)
 
     vector<PyObject *> toSort;
     int i, e;
-    for(i=0, e=PyList_Size(pylist); i<e; i++) {
-      PyObject *item=PyList_GetItem(pylist, i);
+    for(i = 0, e = PyList_Size(pylist); i<e; i++) {
+      PyObject *item = PyList_GetItem(pylist, i);
       Py_XINCREF(item);
       toSort.push_back(item);
     }
 
     random_sort(toSort.begin(), toSort.end(), CompCallbackLess(compfunc), CompCallbackEqual(compfunc));
 
-    for(i=0, e=PyList_Size(pylist); i<e; i++)
+    for(i = 0, e = PyList_Size(pylist); i<e; i++)
       PyList_SetItem(pylist, i, toSort[i]);
 
     RETURN_NONE;
@@ -619,7 +620,7 @@ PyObject *py_ref(PyObject *, PyObject *arg)
 #define DECLARE(name) \
  {#name, (binaryfunc)py_##name, METH_VARARGS},
 
-PyMethodDef corn_functions[]={
+PyMethodDef corn_functions[] = {
      DECLARE(compare2ROCs)
      DECLARE(computeROCCumulative)
      DECLARE(sort_random)

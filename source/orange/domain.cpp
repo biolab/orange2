@@ -42,7 +42,8 @@ TDomain::TDomain()
   attributes(mlnew TVarList()),
   variables(mlnew TVarList()), 
   version(++domainVersion),
-  lastDomain(knownDomains.end())
+  lastDomain(knownDomains.end()),
+  destroyNotifier(NULL)
 {}
 
 
@@ -51,7 +52,8 @@ TDomain::TDomain(const TVarList &vl)
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
   version(++domainVersion),
-  lastDomain(knownDomains.end())
+  lastDomain(knownDomains.end()),
+  destroyNotifier(NULL)
 { if (attributes->size())
     attributes->erase(attributes->end()-1); 
 }
@@ -62,7 +64,8 @@ TDomain::TDomain(PVariable va, const TVarList &vl)
   attributes(mlnew TVarList(vl)),
   variables(mlnew TVarList(vl)),
   version(++domainVersion),
-  lastDomain(knownDomains.end())
+  lastDomain(knownDomains.end()),
+  destroyNotifier(NULL)
 { if (va)
     variables->push_back(va); 
 }
@@ -76,12 +79,16 @@ TDomain::TDomain(const TDomain &old)
   metas(old.metas),
   version(++domainVersion),
   knownDomains(old.knownDomains),
-  lastDomain(knownDomains.end()) 
+  lastDomain(knownDomains.end()),
+  destroyNotifier(NULL)
 {}
 
 
 TDomain::~TDomain()
-{ domainChangedDispatcher(); }
+{ domainChangedDispatcher(); 
+  if (destroyNotifier)
+    (*destroyNotifier)(this);
+}
 
 
 int TDomain::traverse(visitproc visit, void *arg) const

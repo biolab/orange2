@@ -61,7 +61,7 @@ typedef enum {UNKNOWN, TXT, TAB, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
 WRAPPER(ExampleTable);
 
-TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain, bool dontCheckStored, bool dontStore)
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore)
 { char *ext, *hash;
   if (filename) {
     for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
@@ -83,24 +83,26 @@ TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain,
   // If the extension is given, we simply determine the format and load the files
   if (ext) {
     if (!strcmp(ext, ".txt")) {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, TTabDelimDomain::readDomain(true, filename, knownVars, knownDomain, dontCheckStored, dontStore));
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".tab")) {
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, TTabDelimDomain::readDomain(false, filename, knownVars, knownDomain, dontCheckStored, dontStore));
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(filename, false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".data") || !strcmp(ext, ".names") || !strcmp(ext, ".test")) {
-      PDomain domain = TC45Domain::readDomain(string(filename, ext) + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TC45ExampleGenerator(strcmp(ext, ".names") ? filename : string(filename, ext) + ".data", domain);
+      PExampleGenerator gen = mlnew TC45ExampleGenerator(strcmp(ext, ".names") ? filename : string(filename, ext) + ".data",
+                                                         string(filename, ext) + ".names",
+                                                         knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     if (!strcmp(ext, ".rda") || !strcmp(ext, ".rdo")) {
-      PDomain domain = TRetisDomain::readDomain(string(filename, ext) + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TRetisExampleGenerator(string(filename, ext) + ".rda", domain);
+      PExampleGenerator gen = mlnew TRetisExampleGenerator(string(filename, ext) + ".rda",
+                                                           string(filename, ext) + ".rdo",
+                                                           knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
@@ -113,8 +115,9 @@ TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain,
         raiseError("invalid assistant filename (it should start with 'asdo' or 'asda')");
 
       stem += 3;
-      PDomain domain = TAssistantDomain::readDomain(string(filename, stem) + "o" + string(stem+1, ext), knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "a" + string(stem+1, ext), domain);
+      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "a" + string(stem+1, ext), 
+                                                               string(filename, stem) + "o" + string(stem+1, ext),
+                                                               knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
@@ -196,32 +199,29 @@ TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain,
 
   switch (fileFormat) {
     case TXT: {
-      PDomain domain = TTabDelimDomain::readDomain(true, sfilename + ".txt", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".txt", domain);
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".txt", true, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     case TAB: {
-      PDomain domain = TTabDelimDomain::readDomain(false, sfilename + ".tab", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", domain);
+      PExampleGenerator gen = mlnew TTabDelimExampleGenerator(sfilename+".tab", false, knownVars, knownMetas, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     case C45: {
-      PDomain domain = TC45Domain::readDomain(sfilename + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TC45ExampleGenerator(sfilename + ".data", domain);
+      PExampleGenerator gen = mlnew TC45ExampleGenerator(sfilename + ".data", sfilename + ".names", knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     case RETIS: {
-      PDomain domain = TRetisDomain::readDomain(sfilename + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TRetisExampleGenerator(sfilename + ".rda", domain);
+      PExampleGenerator gen = mlnew TRetisExampleGenerator(sfilename + ".rda", sfilename + ".rdo", knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 
     case ASSISTANT: {
-      PDomain domain = TAssistantDomain::readDomain(string(filename, stem) + "asdo" + string(stem)+".dat", knownVars, knownDomain, dontCheckStored, dontStore);
-      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat", domain);
+      PExampleGenerator gen = mlnew TAssistantExampleGenerator(string(filename, stem) + "asda" + string(stem)+".dat",
+                                                               string(filename, stem) + "asdo" + string(stem)+".dat",
+                                                               knownVars, knownDomain, dontCheckStored, dontStore);
       return mlnew TExampleTable(gen);
     }
 

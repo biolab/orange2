@@ -23,44 +23,30 @@
 #ifndef __ASSISTANT_HPP
 #define __ASSISTANT_HPP
 
-#include <string>
-#include <iostream>
-
 #include "filegen.hpp"
 #include "domain.hpp"
 
 using namespace std;
 
-
 class TAssistantExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  TAssistantExampleGenerator(const string &, PDomain);
+  vector<vector<float> *> intervals;
+
+  TAssistantExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars = PVarList(), PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
+  TAssistantExampleGenerator(const TAssistantExampleGenerator &old);
+  ~TAssistantExampleGenerator();
+
   TExampleIterator begin();
   virtual bool readExample (TFileExampleIteratorData &, TExample &);
-};
 
+  PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-class TAssistantDomain : public TDomain {
-public:
-  __REGISTER_CLASS
-
-  vector<vector<float> *> intervals;
-  TAssistantDomain();
-  TAssistantDomain(const TAssistantDomain &);
-  ~TAssistantDomain();
-
-  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  static void destroyNotifier(TDomain *);
 
 protected:
-  static list<TAssistantDomain *> knownDomains;
-  static TKnownVariables knownVariables;
-
-  static void removeKnownVariable(TVariable *var);
-  static void addKnownDomain(TAssistantDomain *domain);
-
-  bool isSameDomain(const TAssistantDomain *original) const;
+  static list<TDomain *> knownDomains;
 };
 
 #endif

@@ -336,7 +336,7 @@ PColoredIG TColorIG_MCF::operator()(PIG graph)
   if (graph->nodes.empty())
     return colored;
 
-  TIntList &colors = const_cast<TIntList &>(colored->colors.getReference());
+  TIntList &colors = colored->colors.getReference();
   int maxColor = -1;
 
   /* Construct a priority queue, with nodes priority corresponding

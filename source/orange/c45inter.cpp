@@ -31,21 +31,28 @@
 
 #include "c45inter.ppp"
 
+bool readC45Atom(TFileExampleIteratorData &fei, TIdList &atoms);
 
-TC45ExampleGenerator::TC45ExampleGenerator(const string &afname, PDomain dom)
-  : TFileExampleGenerator(afname, dom)
-  {}
-  
+list<TDomain *> TC45ExampleGenerator::knownDomains;
+
+TC45ExampleGenerator::TC45ExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+: TFileExampleGenerator(datafile, PDomain()),
+  skip (mlnew TBoolList())
+{ // domain needs to be initialized after skip!
+  domain = readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore);
+}
+
+
+TC45ExampleGenerator::TC45ExampleGenerator(const TC45ExampleGenerator &old)
+: TFileExampleGenerator(old),
+  skip(CLONE(TBoolList, old.skip))
+{}
+
 
 /* Reads one line of the file. Atoms are converted to example values using str2val_add methods of corresponding
    variables and skipping the attributes with 'skip' flag set ('domain' field is casted to TC45Domain). */
 bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
-  TC45Domain *mydomain;
-  domain.dynamic_cast_to(mydomain);
-  if (!mydomain)
-    raiseError("'domain' should be derived from C45Domain");
-
   TIdList atoms;
   while(!feof(fei.file) && !readC45Atom(fei, atoms));
 
@@ -53,124 +60,92 @@ bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &
     return false;
 
   TExample::iterator ei = exam.begin();
-  TVarList::iterator vi(mydomain->variables->begin());
-  TIdList::iterator ai(atoms.begin());
-  vector<bool>::iterator si(mydomain->skip->begin());
-  for (; (vi!=domain->variables->end()) && (ai!=atoms.end()); ai++)
-    if (!*si++) 
+  TVarList::iterator vi(domain->variables->begin()), ve(domain->variables->end());
+  TIdList::iterator ai(atoms.begin()), ae(atoms.end());
+  vector<bool>::iterator si(skip->begin());
+  for (; (vi!=ve) && (ai!=ae); ai++)
+    if (!*si++)
       (*(vi++))->str2val_add(*ai, *(ei++));
 
-  if ((vi!=domain->variables->end()) || (ai!=atoms.end()))
+  if ((vi!=ve) || (ai!=ae))
     raiseError("invalid length of example");
 
   return true;
 }
 
 
-TC45Domain::TC45Domain()
-: skip (mlnew TBoolList())
-{}
-
-
-TC45Domain::TC45Domain(const TC45Domain &old)
-: TDomain(old),
-  skip(CLONE(TBoolList, old.skip))
-{}
-
-
-TC45Domain::~TC45Domain()
-{ knownDomains.remove(this);
-}
-
-
-list<TC45Domain *> TC45Domain::knownDomains;
-TKnownVariables TC45Domain::knownVariables;
-
-
-void TC45Domain::removeKnownVariable(TVariable *var)
-{ knownVariables.remove(var);
-  var->destroyNotifier = NULL;
-}
-
-
-bool TC45Domain::isSameDomain(TC45Domain const *orig) const
-{ if (   !orig
-      || !sameDomains(this, orig)
-      || (skip && (!orig->skip || (skip->size() != orig->skip->size()))))
-    return false;
-
-  for(vector<bool>::const_iterator bi1(skip->begin()), be1(skip->end()), bi2(orig->skip->begin()); bi1!=be1; bi1++, bi2++)
-    if (*bi1!=*bi2)
-      return false;
-
-  return true;
-}
-
-
 // Reads the .names file. The format allow using different delimiters, not just those specified by the original format
-PDomain TC45Domain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ TC45Domain *newDomain = mlnew TC45Domain();
-  PDomain wdomain = newDomain;
-
-  TFileExampleIteratorData fei(stem);
+PDomain TC45ExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ TFileExampleIteratorData fei(stem);
   
   TIdList atoms;
   while(!feof(fei.file) && !readC45Atom(fei, atoms));
   if (!atoms.size())
-    ::raiseError("C45Domain: empty or invalid names file");
+    ::raiseError("empty or invalid names file");
 
-  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
-  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
+  PStringList classValues = mlnew TStringList;
+  for(TIdList::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
+    classValues->push_back(*(ai++)); 
 
-  newDomain->classVar = makeVariable("y", TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
-  TEnumVariable *evar = newDomain->classVar.AS(TEnumVariable);
-  { for(TIdList::iterator ai(atoms.begin()), ei(atoms.end()); ai!=ei; ) 
-      evar->addValue(*(ai++)); 
-  }
+  TAttributeDescriptions attributeDescriptions;
 
   do {
     while(!feof(fei.file) && !readC45Atom(fei, atoms));
-    if (!atoms.size()) break;
+    if (!atoms.size())
+      break;
     if (atoms.size()<2)
-      ::raiseError("C45Domain: invalid .names file");
+      ::raiseError("invalid .names file");
 
     TIdList::iterator ai(atoms.begin());
     string name = *(ai++);
 
     if (*ai=="ignore")
-      newDomain->skip->push_back(true);
+      skip->push_back(true);
     else {
-      newDomain->skip->push_back(false);
+      skip->push_back(false);
 
       if ((ai==atoms.end()) || (string((*ai).begin(), (*ai).begin()+9)=="discrete "))
-        newDomain->attributes->push_back(makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier));
+        attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
       else if (*ai=="continuous")
-        newDomain->attributes->push_back(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
+        attributeDescriptions.push_back(TAttributeDescription(name, TValue::FLOATVAR));
       else {
-        newDomain->attributes->push_back(makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier));
-        evar = newDomain->attributes->back().AS(TEnumVariable);
+        attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
+        PStringList values = mlnew TStringList;
+        attributeDescriptions.back().values = values;
         while(ai!=atoms.end())
-          evar->addValue(*(ai++));
+          values->push_back(*(ai++));
       }
     }
   } while (!feof(fei.file));
             
-  if (!newDomain->attributes->size())
-    ::raiseError("C45Domain: .names file contains no variables but class variable");
+  if (!attributeDescriptions.size())
+    ::raiseError("names file contains no variables but class variable");
 
-  newDomain->skip->push_back(false); // for class
-  newDomain->variables = mlnew TVarList(newDomain->attributes.getReference());
-  newDomain->variables->push_back(newDomain->classVar);
+  attributeDescriptions.push_back(TAttributeDescription("y", TValue::INTVAR));
+  attributeDescriptions.back().values = classValues;
+  skip->push_back(false);
 
-  if (newDomain->isSameDomain(sourceDomain.AS(TC45Domain)))
-    return sourceDomain;
+  if (sourceDomain) {
+    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
+  }
 
-  ITERATE(list<TC45Domain *>, di, knownDomains)
-    if (newDomain->isSameDomain(*di))
-      return *di;
+  bool domainIsNew;
+  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
 
-   return wdomain;
+  if (domainIsNew && !dontStore) {
+    newDomain->destroyNotifier = destroyNotifier;
+    knownDomains.push_front(newDomain.getUnwrappedPtr());
+  }
+
+  return newDomain;
 }
+
+
+void TC45ExampleGenerator::destroyNotifier(TDomain *domain)
+{ knownDomains.remove(domain); }
 
 
 

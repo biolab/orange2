@@ -392,7 +392,7 @@ void TContingencyClassAttr::add_gen(PExampleGenerator gen, const long &weightID)
     if (!innerVariable->getValueFrom)
       raiseError("attribute '%s' is not in the domain and its 'getValueFrom' is not defined", innerVariable->name.c_str());
 
-    TVariable &vfe = const_cast<TVariable &>(innerVariable.getReference());
+    TVariable &vfe = innerVariable.getReference();
     PEITERATE(ei, gen)
       add((*ei).getClass(), vfe.computeValue(*ei), WEIGHT(*ei));
   }
@@ -470,7 +470,7 @@ void TContingencyAttrClass::add_gen(PExampleGenerator gen, const long &weightID)
     if (!outerVariable->getValueFrom)
       raiseError("attribute '%s' is not in the domain and its value cannot be computed", outerVariable->name.c_str());
 
-    TVariable &vfe = const_cast<TVariable &>(outerVariable.getReference());
+    TVariable &vfe = outerVariable.getReference();
     PEITERATE(ei, gen)
       add((*ei).getClass(), vfe.computeValue(*ei), WEIGHT(*ei));
   }

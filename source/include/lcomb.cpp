@@ -48,17 +48,17 @@ bool init_p() {
   return 0;
 }
 
-bool to_init=init_p();
+bool to_init = init_p();
 
 
 double fact(const int &n)
 {
   int sze = p_fact.size();
-  if (sze<=n) {
+  if (sze <= n) {
     p_fact.reserve(n+1);
     float bk = p_fact.back();
-    for(; sze<=n; sze++)
-      p_fact.push_back(bk*=float(sze));
+    for(; sze <= n; sze++)
+      p_fact.push_back(bk *= float(sze));
   }
   return p_fact[n];
 }
@@ -66,9 +66,9 @@ double fact(const int &n)
 
 double comb(const int &n, const int &k)
 { if ((int(p_comb.size())>n) && (int(p_comb[n].size())>k)) {
-    double &res=p_comb[n][k];
+    double &res = p_comb[n][k];
     if (res<0)
-      res=fact(n)/fact(k)/fact(n-k);
+      res = fact(n)/fact(k)/fact(n-k);
     return res;
   }
 
@@ -77,7 +77,7 @@ double comb(const int &n, const int &k)
       p_comb.push_back(vector<double>());
   }
 
-  vector<double> &line=p_comb[n];
+  vector<double> &line = p_comb[n];
   line.reserve(k+1);
   { for(int i = k-line.size()+1; i--; )
       line.push_back(-1);
@@ -96,51 +96,51 @@ double stirling2(const int &n, const int &k)
     return 1.0;
 
   if ((n<int(p_stirling2.size())) && (k<int(p_stirling2[n].size()))) {
-    double &res=p_stirling2[n][k];
+    double &res = p_stirling2[n][k];
     if (res<0)
-      res=k*stirling2(n-1,k)+stirling2(n-1,k-1);
+      res = k*stirling2(n-1,k) + stirling2(n-1,k-1);
     return res;
   }
 
-  if (n>=int(p_stirling2.size())) {
+  if (n >= int(p_stirling2.size())) {
     p_stirling2.reserve(n+1);
-    { for(int i=n-p_stirling2.size()+1; i--; )
+    { for(int i = n-p_stirling2.size()+1; i--; )
         p_stirling2.push_back(vector<double>());
     }
   }
 
-  vector<double> &line=p_stirling2[n];
-  if (k>=int(line.size())) {
+  vector<double> &line = p_stirling2[n];
+  if (k >= int(line.size())) {
     line.reserve(k+1);
-    { for(int i=k-line.size()+1; i--; )
+    { for(int i = k-line.size()+1; i--; )
         line.push_back(-1);
     }
   }
 
-  line[k]=k*stirling2(n-1,k)+stirling2(n-1,k-1);
+  line[k] = k*stirling2(n-1,k) + stirling2(n-1,k-1);
   return line[k];
 }
 
 
 double bell(const int &n)
-{ double res=0.0;
-  for(int i=1; i<=n; res+=(stirling2(n, i++)));
+{ double res = 0.0;
+  for(int i = 1; i <= n; res += (stirling2(n, i++)));
   return res;
 }
 
 
 double log(double);
 
-const float log_of_2=log(2.0);
+const float log_of_2 = log(2.0);
 
 
 double logfact(const int &n)
 {
-  if (int(p_logfact.size())<=n) {
+  if (int(p_logfact.size()) <= n) {
     p_logfact.reserve(n+1);
-    float bk=p_logfact.back();
-    for(int sze=p_logfact.size(); sze<=n; sze++)
-      p_logfact.push_back(bk+=log(float(sze))/log_of_2);
+    float bk = p_logfact.back();
+    for(int sze = p_logfact.size(); sze<=n; sze++)
+      p_logfact.push_back(bk += log(float(sze))/log_of_2);
   }
   return p_logfact[n];
 }
@@ -148,24 +148,24 @@ double logfact(const int &n)
 
 double logcomb(const int &n, const int &k)
 { if ((int(p_logcomb.size())>n) && (int(p_logcomb[n].size())>k)) {
-    double &res=p_logcomb[n][k];
+    double &res = p_logcomb[n][k];
     if (res==-99.0)
-      res=logfact(n)-logfact(k)-logfact(n-k);
+      res = logfact(n)-logfact(k)-logfact(n-k);
     return res;
   }
 
   p_comb.reserve(n+1);
-  { for(int i=n-p_logcomb.size()+1; i--; )
+  { for(int i = n-p_logcomb.size()+1; i--; )
       p_logcomb.push_back(vector<double>());
   }
 
-  vector<double> &line=p_logcomb[n];
+  vector<double> &line = p_logcomb[n];
   line.reserve(k+1);
-  { for(int i=k-line.size()+1; i--; )
+  { for(int i = k-line.size()+1; i--; )
       line.push_back(-99.0);
   }
 
-  line[k]=logfact(n)-logfact(k)-logfact(n-k);
+  line[k] = logfact(n)-logfact(k)-logfact(n-k);
   return line[k];
 }
 

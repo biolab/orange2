@@ -361,7 +361,7 @@ PDistribution TTreeClassifier::classDistribution(PTreeNode node, const TExample 
 PDistribution TTreeClassifier::vote(PTreeNode node, const TExample &exam, PDiscDistribution branchWeights)
 {
   PDistribution res = TDistribution::create(classVar);
-  TDistribution &ures = const_cast<TDistribution &>(res.getReference());
+  TDistribution &ures = res.getReference();
   TDiscDistribution::const_iterator bdi(branchWeights->begin()), bde(branchWeights->end());
   TTreeNodeList::const_iterator bi(node->branches->begin());
   for(; bdi!=bde; bdi++, bi++)

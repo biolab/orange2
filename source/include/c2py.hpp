@@ -57,9 +57,11 @@ public:
    // (say by calling restore() that passes them on to PyErr_Restore
    
    virtual const char* what () const throw ()
-    { PyObject *str=PyObject_Str(value);
-      if (str) return PyString_AsString(str); 
-      else return "Unidentified Python exception"; }
+    { PyObject *str = PyObject_Str(value);
+      if (str)
+        return PyString_AsString(str); 
+      else
+        return "Unidentified Python exception"; }
 
    void restore()
     { PyErr_Restore(type, value, tracebk); }

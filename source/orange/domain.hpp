@@ -75,6 +75,8 @@ public:
 
   list<TDomain *> knownByDomains;
 
+  typedef void TDestroyNotifier(TDomain *);
+  TDestroyNotifier *destroyNotifier;
 
   TDomain();
   TDomain(PVariable, const TVarList &attributes);

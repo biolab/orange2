@@ -88,8 +88,6 @@ int ccn_##type(PyObject *obj, void *ptr) \
     return cc_##type(obj, ptr); \
 }
 
-#define LIST_PLUGIN_METHODS(name) name##_plugin_methods
-
 #define NAME_CAST_TO_err(type, aname, obj, errreturn) \
   type *obj; \
   PyOrange_AS_Orange(aname).dynamic_cast_to(obj); \

@@ -126,6 +126,13 @@ public:
     floatV(v)
   {}
 
+  explicit TValue(const double &v)
+  : varType(FLOATVAR), 
+    valueType(valueRegular),
+    intV(numeric_limits<int>::max()),
+    floatV(float(v))
+  {}
+
   explicit TValue(const float &afloatV, PSomeValue v)
   : varType(FLOATVAR), 
     valueType(valueRegular), 
@@ -134,7 +141,7 @@ public:
     svalV(v)
   {}
 
-  TValue(PSomeValue v, const unsigned char &t = OTHERVAR, const signed char &spec = valueRegular)
+  explicit TValue(PSomeValue v, const unsigned char &t = OTHERVAR, const signed char &spec = valueRegular)
   : varType(t), 
     valueType(spec), 
     intV(numeric_limits<int>::max()),
@@ -142,7 +149,7 @@ public:
     svalV(v)
   {}
 
-  TValue(const unsigned char &t, signed char spec=valueDC)
+  explicit TValue(const unsigned char &t, signed char spec=valueDC)
   : varType(t),
     valueType(spec),
     intV(numeric_limits<int>::max()),

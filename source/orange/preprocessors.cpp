@@ -38,7 +38,6 @@
 #include "discretize.hpp"
 #include "classfromvar.hpp"
 #include "cost.hpp"
-#include "survival.hpp"
 
 #include <string>
 #include "preprocessors.ppp"
@@ -475,19 +474,19 @@ PExampleGenerator TPreprocessor_addMissingClasses::operator()(PExampleGenerator 
 
 
 
-TPreprocessor_addCostWeight::TPreprocessor_addCostWeight()
+TPreprocessor_addClassWeight::TPreprocessor_addClassWeight()
 : classWeights(mlnew TFloatList),
   equalize(false)
 {}
 
 
-TPreprocessor_addCostWeight::TPreprocessor_addCostWeight(PFloatList cw, const bool &eq)
+TPreprocessor_addClassWeight::TPreprocessor_addClassWeight(PFloatList cw, const bool &eq)
 : equalize(eq),
   classWeights(cw)
 {}
 
 
-PExampleGenerator TPreprocessor_addCostWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+PExampleGenerator TPreprocessor_addClassWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
   if (!gen->domain->classVar || (gen->domain->classVar->varType != TValue::INTVAR))
     raiseError("Class-less domain or non-discrete class");
@@ -502,32 +501,56 @@ PExampleGenerator TPreprocessor_addCostWeight::operator()(PExampleGenerator gen,
     return wtable;
   }
 
-  newWeight = getMetaID();
+  if (classWeights && classWeights->size() && (classWeights->size() != nocl))
+    raiseError("size of classWeights should equal the number of classes");
 
-  vector<float> weights(nocl, 1.0);
-  if (classWeights) {
-    int i = 0;
-    PITERATE(vector<float>, ci, classWeights) {
-      weights[i++] = *ci;
-      if (i==nocl)
-        break;
-    }
-  }  
+
+  vector<float> weights;
 
   if (equalize) {
     PDistribution dist(getClassDistribution(gen, weightID));
     const TDiscDistribution &ddist = CAST_TO_DISCDISTRIBUTION(dist);
-    float N = ddist.abs;
-    TDiscDistribution dv;
-    vector<float>::iterator wi(weights.begin());
-    const_ITERATE(TDiscDistribution, di, ddist) {
-      if (*di>0.0)
-        (*(wi++)) *= N / nocl / *di;
-      else
-        *(wi++) = 1.0;
+    if (ddist.size() > nocl)
+      raiseError("there are out-of-range classes in the data (attribute descriptor has too few values)");
+
+    if (classWeights && classWeights->size()) {
+      float total = 0.0;
+      float tot_w = 0.0;
+      vector<float>::const_iterator cwi(classWeights->begin());
+      TDiscDistribution::const_iterator di(ddist.begin()), de(ddist.end());
+      for(; di!=de; di++, cwi++) {
+        total += *di * *cwi;
+        tot_w += *cwi;
+      }
+      if (total == 0.0) {
+        newWeight = 0;
+        return wtable;
+      }
+
+      float fact = tot_w * (ddist.abs / total);
+      PITERATE(vector<float>, wi, classWeights)
+        weights.push_back(*wi * fact);
+    }
+
+    else { // no class weights, only equalization
+      int noNullClasses = 0;
+      { const_ITERATE(TDiscDistribution, di, ddist)
+          if (*di>0.0)
+            noNullClasses++;
+      }
+      const float N = ddist.abs;
+      const_ITERATE(TDiscDistribution, di, ddist)
+        if (*di>0.0)
+          weights.push_back(N / noNullClasses / *di);
+        else
+          weights.push_back(1.0);
     }
   }
 
+  else  // no equalization, only weights
+    weights = classWeights.getReference();
+
+  newWeight = getMetaID();
   PEITERATE(ei, table)
     (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * weights[(*ei).getClass().intV]));
 
@@ -536,19 +559,21 @@ PExampleGenerator TPreprocessor_addCostWeight::operator()(PExampleGenerator gen,
 
 
 
+PDistribution kaplanMeier(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID);
+
 TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight()
 : outcomeVar(),
+  timeVar(),
   eventValue(),
-  timeID(0),
   method(km),
   maxTime(0.0)
 {}
 
 
-TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, const TValue &ev, const int &tv, const int &me, const float &mt)
+TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, PVariable tv, const TValue &ev, const int &me, const float &mt)
 : outcomeVar(ov),
+  timeVar(tv),
   eventValue(ev),
-  timeID(tv),
   method(me),
   maxTime(0.0)
 {}
@@ -556,22 +581,36 @@ TPreprocessor_addCensorWeight::TPreprocessor_addCensorWeight(PVariable ov, const
 
 PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
-  checkProperty(outcomeVar);
-
   if (eventValue.isSpecial())
     raiseError("'eventValue' not set");
 
   if (eventValue.varType != TValue::INTVAR)
     raiseError("'eventValue' invalid (discrete value expected)");
 
-  if (!timeID)
-    raiseError("'timeVar' not set");
-
-  if ((method<km) || (method>linear))
-    raiseError("invalid method");
-
-  const int outcomeIndex = outcomeVar ? gen->domain->getVarNum(outcomeVar) : gen->domain->attributes->size();
   const int failIndex = eventValue.intV;
+
+  int outcomeIndex;
+  if (outcomeVar) {
+    outcomeIndex = gen->domain->getVarNum(outcomeVar, false);
+    if (outcomeIndex<0)
+      outcomeIndex = -gen->domain->getMetaNum(outcomeVar, false);
+      if (outcomeIndex>0)
+        raiseError("outcomeVar not found in domain");
+  }
+  else
+    if (gen->domain->classVar)
+      outcomeIndex = gen->domain->attributes->size();
+    else
+      raiseError("'outcomeVar' not set and the domain is class-less");
+
+  checkProperty(timeVar);
+  int timeIndex = gen->domain->getVarNum(timeVar, false);
+  if (timeIndex==-1) {
+    timeIndex = gen->domain->getMetaNum(timeVar, false);
+    if (timeIndex>1)
+      raiseError("'timeVar' not found in domain");
+  }
+  bool metatime = timeIndex<0;
 
   TExampleTable *table = mlnew TExampleTable(gen);
   PExampleGenerator wtable = table;
@@ -580,7 +619,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
     float thisMaxTime = maxTime;
     if (thisMaxTime<=0.0)
       PEITERATE(ei, table) {
-        const TValue &tme = (*ei).meta[timeID];
+        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
         if (!tme.isSpecial()) {
           if (tme.varType != TValue::FLOATVAR)
             raiseError("invalid time (continuous attribute expected)");
@@ -598,43 +637,48 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
         (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
       else {
-        const TValue &tme = (*ei).meta[timeID];
-        if (tme.isSpecial())
-          (*ei).meta.setValue(newWeight, 0.0);
-        else if (tme.varType != TValue::FLOATVAR)
-          raiseError("invalid time (continuous value expected)");
-        else
-          (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * tme.floatV / thisMaxTime));
+        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
+        // need to check it again -- the above check is only run if maxTime is not given
+        if (tme.varType != TValue::FLOATVAR)
+          raiseError("invalid time (continuous attribute expected)");
+
+        (*ei).meta.setValue(newWeight, TValue(tme.isSpecial() ? float(0.0) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
       }
     }
   }
 
-  else { // method == km or nmr
-    TKaplanMeier *kaplanMeier = mlnew TKaplanMeier(gen, outcomeIndex, failIndex, timeID, weightID);;
+  else if (method == km) {
+    PDistribution KM = kaplanMeier(gen, outcomeIndex, eventValue, timeIndex, weightID);
 
-    if (method==km)
-      kaplanMeier->toFailure();
-    else // method == nmr
-      kaplanMeier->toLog();
-
-    if (maxTime>0.0)
-      kaplanMeier->normalizedCut(maxTime);
+    float KM_max = maxTime>0.0 ? KM->p(maxTime) : (*KM.AS(TContDistribution)->distribution.rbegin()).second;
 
     newWeight = getMetaID();
     PEITERATE(ei, table) {
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
         (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
       else {
-        const TValue &tme = (*ei).meta[timeID];
-        if (tme.isSpecial())
-          (*ei).meta.setValue(newWeight, 0.0);
-        else if (tme.varType != TValue::FLOATVAR)
+        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
+        if (tme.varType != TValue::FLOATVAR)
+          raiseError("invalid time (continuous attribute expected)");
+        if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous value expected)");
-        else
-          (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * kaplanMeier->operator()(tme.floatV)));
+        if (tme.isSpecial())
+          (*ei).meta.setValue(newWeight, TValue(0.0));
+        else {
+          if (tme.floatV > maxTime)
+            (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
+          else {
+            float KM_t = KM->p(tme.floatV);
+            if (KM_t>0) // it shouldn't be 0 here - at least this example DID survive; but let's play it safe
+              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * KM_max/KM_t));
+          }
+        }
       }
     }
   }
+
+  else
+    raiseError("unknown weighting method");
 
   return wtable;
 }

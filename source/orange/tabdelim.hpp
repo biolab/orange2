@@ -61,49 +61,33 @@ class TTabDelimExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  TTabDelimExampleGenerator(const string &, PDomain);
-  virtual bool readExample (TFileExampleIteratorData &, TExample &);
-};
-
-
-/*  A descendant of TDomain which reads data from tab delimited file.
-    The format is described in <a href="TTabDelimExampleGenerator.html">TTabDelimExampleGenerator</a>.
-    It also has an additional field, specifying which attributes are ignored. */
-class TTabDelimDomain : public TDomain {
-public:
-  __REGISTER_CLASS
-
 /*  A kind of each attribute:
            -2   pending meta value (used only at construction time)
            -1   normal
             0   skipped
      positive   meta value. */
   PIntList attributeTypes; //P types of attributes (-1 normal, 0 skip, positive = meta ID)
+
   PStringList DCs; //P characters that mean DC (for each attribute)
   int classPos; //P position of the class attribute
   int headerLines; //P number of header lines (3 for .tab, 1 for .txt)
 
-  TTabDelimDomain();
-  TTabDelimDomain(const TTabDelimDomain &);
-  virtual ~TTabDelimDomain();
+  TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old);
+  TTabDelimExampleGenerator(const string &, bool autoDetect, PVarList sourceVars = PVarList(), TMetaVector *sourceMetas = NULL, PDomain sourceDomain = PDomain(), bool dontCheckStored = false, bool dontStore = false);
+  virtual bool readExample (TFileExampleIteratorData &, TExample &);
 
   void atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei);
 
-  static PDomain readDomain(const bool autoDetect, const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
-  static PDomain domainWithDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
-  static PDomain domainWithoutDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  PDomain readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  PDomain domainWithDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
+  PDomain domainWithoutDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored);
+
+  static void destroyNotifier(TDomain *);
 
 protected:
-  static list<TTabDelimDomain *> knownDomains;
-  static TKnownVariables knownVariables;
-
-  static void removeKnownVariable(TVariable *var);
-  static void addKnownDomain(TTabDelimDomain *domain);
-
-  static PVariable createVariable(const string &name, const int &varType, bool dontStore);
-
-  bool isSameDomain(const TTabDelimDomain *original) const;
+  static list<TDomain *> knownDomains;
 };
+
 
 #endif
 

@@ -20,182 +20,114 @@
 */
 
 
-#include <math.h>
 #include "stladdon.hpp"
-
 #include "vars.hpp"
-#include "meta.hpp"
+#include "distvars.hpp"
 #include "domain.hpp"
 #include "examples.hpp"
 #include "examplegen.hpp"
 
-#include "survival.ppp"
-
-
-class Tcevents {
+class TCEvents {
 public:
   float failed, censored;
-  Tcevents()
-  : failed(0.0),
-    censored(0.0)
-  {}
+  TCEvents() : failed(0.0), censored(0.0) {}
 };
 
-typedef map<float, Tcevents> Ttimes;
+typedef map<float, TCEvents> TTimes;
 
-TKaplanMeier::TKaplanMeier(PExampleGenerator gen, const int &outcomeIndex, const int &eventIndex, const int &timeIndex, const int &weightID)
+void survivals(TTimes &times, float &sow, PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID)
 {
-  Ttimes times; // second==true -> censored  (i.e., !event)
-  float sow = 0.0;
+  const bool outcomemeta = outcomeIndex<0;
+  const bool timemeta = timeIndex<0;
+
+  if (!timemeta && (gen->domain->variables->at(timeIndex)->varType != TValue::FLOATVAR))
+    raiseError("continuous attribute expected for censoring time");
+  if (!outcomemeta && (gen->domain->variables->at(outcomeIndex)->varType != TValue::INTVAR))
+    raiseError("discrete attribute expected for outcome");
+  if (failValue.isSpecial() || (failValue.varType!=TValue::INTVAR))
+    raiseError("discrete value needs to be specified for the 'failure'");
+
+  const int &failIndex = failValue.intV;
+
   PEITERATE(ei, gen) {
     float wei = WEIGHT(*ei);
-    times[fabs((*ei).meta[timeIndex].floatV)].*(((*ei)[outcomeIndex].intV==eventIndex) ? &Tcevents::failed : &Tcevents::censored) += wei;
+
+    TValue &timeval = timemeta ? (*ei).meta[-timeIndex] : (*ei)[timeIndex];
+    if (timeval.isSpecial())
+      continue;
+    if (timemeta && timeval.varType != TValue::FLOATVAR)
+      raiseError("continuous attribute expected for censoring time");
+
+    TValue &outcomeval = outcomemeta ? (*ei).meta[-outcomeIndex] : (*ei)[outcomeIndex];
+    if (outcomeval.isSpecial())
+      continue;
+    if (outcomemeta && outcomeval.varType != TValue::INTVAR)
+      raiseError("discrete attribute expected for outcome");
+
+    if (outcomeval.intV==failIndex)
+      times[timeval.floatV].failed += wei;
+    else
+      times[timeval.floatV].censored += wei;
+
     sow += wei;
   }
+}
+
+
+PDistribution kaplanMeier(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID)
+{ TTimes times;
+  float riskset;
+  survivals(times, riskset, gen, outcomeIndex, failValue, timeIndex, weightID);
+
+  TContDistribution *curve = mlnew TContDistribution();
+  PDistribution res = curve;
 
   float survnow = 1.0;
-  float riskset = sow;
-  curve[0.0] = survnow;
-  ITERATE(Ttimes, ti, times)
+  curve->set(TValue(float(0.0)), survnow);
+
+  ITERATE(TTimes, ti, times)
     if ((*ti).second.failed>0.0) {
-      curve[(*ti).first] = (survnow*=(1 - (*ti).second.failed / riskset));
+      survnow *= (1 - (*ti).second.failed / riskset);
+      curve->set(TValue((*ti).first), survnow);
       riskset -= ( (*ti).second.failed + (*ti).second.censored );
     }
     else
       riskset -= (*ti).second.censored;
+
+  return res;
 }
 
+/*
+PDistribution relativeSurvival(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID, const float &maxTime)
+{ TTimes times;
+  float riskset;
+  survivals(times, sow, gen, outcomeIndex, failValue, timeIndex, weightID);
 
-void TKaplanMeier::toFailure()
-{ ITERATE(TCurveType, kmi, curve)
-    (*kmi).second = 1-(*kmi).second;
-}
+  float above = 0.0;
+  TTimes::reverse_iterator si(times.rbegin()), se(times.rend());
+  for(; (si!=se) && ((*si).first>maxTime); si++);
+    above += (*si).second.failed + (*si).second.censored;
 
-void TKaplanMeier::toLog()
-{ ITERATE(TCurveType, kmi, curve)
-    (*kmi).second = -log((*kmi).second);
-}
+  float losers = 0.0;
+  for(; si!=se; si++)
+    if ((*ti).second.failed
 
 
-float TKaplanMeier::operator()(const float &time)
-{ if (time==-1.0)
-    return (*curve.rbegin()).second;
-  else {
-    TCurveType::iterator first1 = curve.upper_bound(time);
-    if (first1==curve.end())
-      return (*curve.rbegin()).second;
-    else if (first1==curve.begin())
-      return 1.0;
+  
+  float survnow = 1.0;
+  curve->set(TValue(float(0.0)), survnow);
+
+  ITERATE(TTimes, ti, times)
+    if ((*ti).second.failed>0.0) {
+      survnow *= (1 - (*ti).second.failed / riskset);
+      curve->set(TValue((*ti).first), survnow);
+      riskset -= ( (*ti).second.failed + (*ti).second.censored );
+    }
     else
-      return (*(--first1)).second;
-  }
+      riskset -= (*ti).second.censored;
+
+  return res;
 }
 
 
-void TKaplanMeier::normalizedCut(const float &maxTime)
-{ float div;
-  TCurveType::iterator first1;
-  if (maxTime==-1.0) {
-    div = (*curve.rbegin()).second;
-    first1 = curve.end();
-  }
-  else {
-    first1 = curve.upper_bound(maxTime);
-    if (first1==curve.end()) 
-      div = (*curve.rbegin()).second;
-    else 
-      if (first1==curve.begin())
-        div=1;
-      else {
-        div = (*(--first1)).second;
-        first1++;
-      }
-  }
-
-  if (div==0.0)
-    return;
-
-  div = 1.0/div;
-
-  for(TCurveType::iterator kmi(curve.begin()); kmi!=first1; (*(kmi++)).second*=div);
-  if (first1==curve.end())
-    curve[maxTime]=1.0;
-  else {
-    (*first1).second = 1.0;
-    first1++;
-    curve.erase(first1, curve.end());
-  }
-}
-
-    
-TClassifierForKMWeight::TClassifierForKMWeight(PVariable classVar, PKaplanMeier km, const int &wid, PVariable ovar, const int &fi)
-: TClassifier(classVar),
-  whichID(wid),
-  outcomeVar(ovar),
-  failIndex(fi),
-  kaplanMeier(km),
-  lastDomainVersion(-1)
-{}
-
-
-TClassifierForKMWeight::TClassifierForKMWeight(const TClassifierForKMWeight &old)
-: TClassifier(old),
-  whichID(old.whichID),
-  outcomeVar(old.outcomeVar),
-  failIndex(old.failIndex),
-  kaplanMeier(old.kaplanMeier), 
-  lastDomainVersion(old.lastDomainVersion),
-  lastOPos(old.lastOPos)
-{}
-
-
-TValue TClassifierForKMWeight::operator ()(const TExample &example)
-{ if (example.domain->version!=lastDomainVersion) {
-    lastOPos = example.domain->getVarNum(outcomeVar);
-    lastDomainVersion = example.domain->version;
-  }
-
-  if (!example[lastOPos].isSpecial() && example[lastOPos].intV==failIndex)
-    return TValue(float(1));
-
-  TValue tme = example.meta[whichID];
-  return TValue (tme.isSpecial() ? float(0.0) : kaplanMeier->operator()(tme.floatV));
-}
- 
-
-
-TClassifierForLinearWeight::TClassifierForLinearWeight(PVariable classVar, const float &mT, const int &wid, PVariable ovar, const int &fi)
-: TClassifier(classVar),
-  whichID(wid),
-  outcomeVar(ovar),
-  failIndex(fi),
-  maxTime(mT),
-  lastDomainVersion(-1)
-{}
-
-
-TClassifierForLinearWeight::TClassifierForLinearWeight(const TClassifierForLinearWeight &old)
-: TClassifier(old),
-  whichID(old.whichID),
-  outcomeVar(old.outcomeVar),
-  failIndex(old.failIndex),
-  maxTime(old.maxTime), 
-  lastDomainVersion(old.lastDomainVersion),
-  lastOPos(old.lastOPos)
-{}
-
-
-TValue TClassifierForLinearWeight::operator ()(const TExample &example)
-{ if (example.domain->version!=lastDomainVersion) {
-    lastOPos = example.domain->getVarNum(outcomeVar);
-    lastDomainVersion = example.domain->version;
-  }
-
-  if (!example[lastOPos].isSpecial() && example[lastOPos].intV==failIndex)
-    return TValue(float(1));
-
-  TValue tme = example.meta[whichID];
-  return TValue (tme.isSpecial() ? float(0.0)
-                                 : ((tme.floatV>maxTime) ? float(1.0)
-                                                         : float(tme.floatV/maxTime)));
-}
+*/

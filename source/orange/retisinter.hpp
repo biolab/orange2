@@ -23,40 +23,25 @@
 #ifndef __RETISINTER_HPP
 #define __RETISINTER_HPP
 
-#include <string>
-#include <iostream>
-
 #include "filegen.hpp"
 #include "domain.hpp"
 
 using namespace std;
 
-
 class TRetisExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  TRetisExampleGenerator(const string &, PDomain);
+  TRetisExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
   TExampleIterator begin();
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
-};
 
+  PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-// TRetisDomain which is initialized the Retis .rdo file.
-class TRetisDomain : public TDomain {
-public:
-  __REGISTER_CLASS
-
-  ~TRetisDomain();
-
-  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  static void destroyNotifier(TDomain *);
 
 protected:
-  static list<TRetisDomain *> knownDomains;
-  static TKnownVariables knownVariables;
-
-  static void removeKnownVariable(TVariable *var);
-  static void addKnownDomain(TRetisDomain *domain);
+  static list<TDomain *> knownDomains;
 };
 
 #endif

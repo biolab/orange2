@@ -9,13 +9,6 @@
 #include <direct.h>
 #include <ole2.h>
 
-class TExcelDomain : public TDomain
-{ public:
-    TExcelDomain(PVariable, TVarList);
-    ~TExcelDomain();
-};
-
-
 // These functions are wrapped into a class for easier implementation of clean-up (especially at exceptions).
 class TExcelReader {
 public:
@@ -24,13 +17,8 @@ public:
 
   TExampleTable *operator ()(char *filename, char *sheet, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-  friend class TExcelDomain;
 protected:
-  static list<TExcelDomain *> knownDomains;
-  static TKnownVariables knownVariables;
-
-  static void removeKnownVariable(TVariable *var);
-  static void addKnownDomain(TExcelDomain *domain);
+  static list<TDomain *> knownDomains;
 
 private:
   IDispatch *pXlApp;
@@ -60,26 +48,17 @@ private:
   char *cellAsText(const int &row, const int &col);
   int cellType(const int &row, const int &col);
 
-  PVariable TExcelReader::constructAttr(const int &attrNo, int &id, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
   PDomain constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
   TExampleTable *readExamples(PDomain domain, const vector<int> &specials);
   void readValue(const int &row, const int &col, PVariable var, TValue &value);
+
+  static void destroyNotifier(TDomain *domain);
 
   void setArg(const int argno, const int arg);
 };
 
 
-TExcelDomain::TExcelDomain(PVariable classVar, TVarList attributes)
-: TDomain(classVar, attributes)
-{}
-
-
-TExcelDomain::~TExcelDomain()
-{ TExcelReader::knownDomains.remove(this); }
-
-
-list<TExcelDomain *> TExcelReader::knownDomains;
-TKnownVariables TExcelReader::knownVariables;
+list<TDomain *> TExcelReader::knownDomains;
 
 
 TExcelReader::TExcelReader()
@@ -139,11 +118,6 @@ TExcelReader::~TExcelReader()
   CoUninitialize();
 }
 
-
-void TExcelReader::removeKnownVariable(TVariable *var)
-{ knownVariables.remove(var);
-  var->destroyNotifier = NULL;
-}
 
 
 void TExcelReader::Invoke(int autoType, IDispatch *pDisp, LPOLESTR ptName, int cArgs)
@@ -318,117 +292,134 @@ int TExcelReader::cellType(const int &row, const int &col) // 0 cannot be contin
 }
 
 
-// id is 0 for normal, > 0 for meta (meta id), -1 for class
-PVariable TExcelReader::constructAttr(const int &attrNo, int &id, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ char *name = cellAsText(0, attrNo);
-  char special = 0;
-
-  int type = - 1;
-  char *cptr = name;
-  if (*cptr && (cptr[1]=='#')) {
-    if (*cptr == 'i')
-      return PVariable();
-    else if ((*cptr == 'm') || (*cptr == 'c'))
-      special = *cptr;
-    else if (*cptr == 'D')
-      type = TValue::INTVAR;
-    else if (*cptr == 'C')
-      type = TValue::FLOATVAR;
-    else if (*cptr == 'S')
-      type = TValue::OTHERVAR;
-    else
-      raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-    *cptr += 2;
-  }
-
-  else if (*cptr && cptr[1] && (cptr[2]=='#')) {
-    if (*cptr == 'i')
-      return PVariable();
-    else if ((*cptr == 'm') || (*cptr == 'c'))
-      special = *cptr;
-    else
-      raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-    cptr++;
-    if (*cptr == 'D')
-      type = TValue::INTVAR;
-    else if (*cptr == 'C')
-      type = TValue::FLOATVAR;
-    else if (*cptr == 'S')
-      type = TValue::OTHERVAR;
-    else
-      raiseError("unrecognized flags in attribute name '%s'", cptr);
-
-    *cptr += 2; // we have already increased cptr once
-  }
-
-  PVariable var = makeVariable<TExcelDomain>(cptr, type, sourceVars, sourceDomain,
-                                             dontCheckStored ? NULL : &knownVariables,
-                                             dontCheckStored ? NULL : &knownDomains,
-                                             id, type>=0, dontStore ? NULL : removeKnownVariable);
-  if (!var) {
-    char minCellType = 2; // 0 cannot be continuous, 1 can be continuous, 2 can even be coded discrete
-    for (int row = 1; row<=nExamples; row++) {
-      const char tct = cellType(row, attrNo);
-      if (!tct)
-        return mlnew TEnumVariable(cptr);
-      if (tct < minCellType)
-        minCellType = tct;
-    }
-
-    var = makeVariable<TExcelDomain>(cptr, minCellType==1 ? TValue::FLOATVAR : TValue::INTVAR,
-                                     sourceVars, sourceDomain,
-                                     dontCheckStored ? NULL : &knownVariables,
-                                     dontCheckStored ? NULL : &knownDomains,
-                                     id, false, dontStore ? NULL : removeKnownVariable);
-  }
-
-  if (special == 'm') {
-    if (!id)
-      id = getMetaID();
-  }
-  else if (special == 'c') 
-    id = -1;
-  else
-    id = 0;
-
-  return var;
-}
-
-
 // specials: 0 = normal, -1 = class, -2 = ignore, >0 = meta id
 PDomain TExcelReader::constructDomain(vector<int> &specials, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
 {
-  TVarList attributes;
-  TMetaVector metas;
-  PVariable classVar;
+  TFileExampleGenerator::TAttributeDescriptions attributeDescriptions;
+  TFileExampleGenerator::TAttributeDescriptions metas;
+  TFileExampleGenerator::TAttributeDescription classDescription("", -1);
 
-  for (int i = 0; i < nAttrs; i++) {
-    int id;
-    PVariable var = constructAttr(i, id, sourceVars, sourceDomain, dontCheckStored, dontStore);
-    if (!var)
-      specials.push_back(-2);
-    else {
-      specials.push_back(id);
-      if (id > 0)
-        metas.push_back(TMetaDescriptor(id, var));
-      else if (id == -1)
-        if (classVar)
-          raiseError("Multiple class variables ('%s' and '%s')", classVar->name.c_str(), var->name.c_str());
-        else
-          classVar = var;
+  for (int attrNo = 0; attrNo < nAttrs; attrNo++) {
+    TFileExampleGenerator::TAttributeDescription *attributeDescription;
+
+    char *name = cellAsText(0, attrNo);
+    char special = 0;
+
+    int type = - 1;
+    char *cptr = name;
+    if (*cptr && (cptr[1]=='#')) {
+      if (*cptr == 'i') {
+        specials.push_back(-2);
+        continue;
+      }
+
+      else if ((*cptr == 'm') || (*cptr == 'c'))
+        special = *cptr;
+
+      else if (*cptr == 'D')
+        type = TValue::INTVAR;
+      else if (*cptr == 'C')
+        type = TValue::FLOATVAR;
+      else if (*cptr == 'S')
+        type = TValue::OTHERVAR;
       else
-        attributes.push_back(var);
+        raiseError("unrecognized flags in attribute name '%s'", cptr);
+
+      *cptr += 2;
+    }
+
+    else if (*cptr && cptr[1] && (cptr[2]=='#')) {
+
+      if (*cptr == 'i') {
+        specials.push_back(-2);
+        continue;
+      }
+      else if ((*cptr == 'm') || (*cptr == 'c'))
+        special = *cptr;
+      else
+        raiseError("unrecognized flags in attribute name '%s'", cptr);
+
+      cptr++;
+      if (*cptr == 'D')
+        type = TValue::INTVAR;
+      else if (*cptr == 'C')
+        type = TValue::FLOATVAR;
+      else if (*cptr == 'S')
+        type = TValue::OTHERVAR;
+      else
+        raiseError("unrecognized flags in attribute name '%s'", cptr);
+
+      *cptr += 2; // we have already increased cptr once
+    }
+
+    switch (special) {
+      case 0:
+        attributeDescriptions.push_back(TFileExampleGenerator::TAttributeDescription(cptr, type));
+        attributeDescription = &attributeDescriptions.back();
+        specials.push_back(0);
+        break;
+
+      case 'm':
+        metas.push_back(TFileExampleGenerator::TAttributeDescription(cptr, type));
+        attributeDescription = &metas.back();
+        specials.push_back(1); // this will later be replaced with a real id
+        break;
+
+      case 'c':
+        classDescription.name = cptr;
+        classDescription.varType = type;
+        specials.push_back(-1);
+        break;
+    };
+        
+    if (type<0) {
+      char minCellType = 2; // 0 cannot be continuous, 1 can be continuous, 2 can even be coded discrete
+      for (int row = 1; row<=nExamples; row++) {
+        const char tct = cellType(row, attrNo);
+        if (!tct) {
+          attributeDescription->varType = TValue::INTVAR;
+          break;
+        }
+        if (tct < minCellType)
+          minCellType = tct;
+      }
+
+      attributeDescription->varType = minCellType==1 ? TValue::FLOATVAR : TValue::INTVAR;
     }
   }
 
-  TExcelDomain *domain = mlnew TExcelDomain(classVar, attributes);
-  domain->metas = metas;
+  if (classDescription.varType >= 0)
+    attributeDescriptions.push_back(classDescription);
 
-  TExcelDomain *sdomain = sourceDomain.AS(TExcelDomain);
-  return (sdomain && sameDomains(domain, sdomain)) ? sourceDomain : PDomain(domain);
+  if (sourceDomain) {
+    if (!TFileExampleGenerator::checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
+  }
+
+  bool domainIsNew;
+  int *metaIDs = mlnew int[metas.size()];
+  PDomain newDomain = TFileExampleGenerator::prepareDomain(&attributeDescriptions, classDescription.varType>=0, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL, metaIDs);
+
+  if (domainIsNew && !dontStore) {
+    newDomain->destroyNotifier = destroyNotifier;
+    knownDomains.push_front(newDomain.getUnwrappedPtr());
+  }
+
+  int *mid = metaIDs;
+  ITERATE(vector<int>, ii, specials)
+    if (*ii == 1)
+      *ii = *(mid++);
+
+  mldelete metaIDs;
+
+  return newDomain;
 }
+
+
+void TExcelReader::destroyNotifier(TDomain *domain)
+{ knownDomains.remove(domain); }
 
 
 void TExcelReader::readValue(const int &row, const int &col, PVariable var, TValue &value)

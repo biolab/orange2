@@ -74,22 +74,16 @@ PyObject *Discretization_call(PyObject *self, PyObject *args, PyObject *keywords
   PyTRY
     SETATTRIBUTES 
     PyObject *variable;
-    PyObject *examples;
+    PExampleGenerator egen;
     int weightID=0;
-    if (!PyArg_ParseTuple(args, "OO|i", &variable, &examples, &weightID)) 
+    if (!PyArg_ParseTuple(args, "OO&|i", &variable, pt_ExampleGenerator, &egen, &weightID)) 
       PYERROR(PyExc_SystemError, "invalid parameters", PYNULL);
 
-    PExampleGenerator egen=
-      PyOrOrange_Check(examples) ? PyOrange_AsExampleGenerator(examples)
-                                 : PExampleGenerator(readListOfExamples(examples));
-    if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (examples expected)", PYNULL);
-
-    PVariable toDiscretize=varFromArg_byDomain(variable, egen->domain);
+    PVariable toDiscretize = varFromArg_byDomain(variable, egen->domain);
     if (!toDiscretize)
       return PYNULL; // varFromArg_byDomain has already set the error message
 
-    PVariable discr=SELF_AS(TDiscretization)(egen, toDiscretize, weightID);
+    PVariable discr = SELF_AS(TDiscretization)(egen, toDiscretize, weightID);
     if (!discr)
       PYERROR(PyExc_SystemError, "discretization construction failed", PYNULL);
 
@@ -151,13 +145,11 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *suspiciousList=NULL;
+    PExampleGenerator egen;
+    PyObject *suspiciousList=NULL;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "O|Oi", &examples, &suspiciousList, &weight))
+    if (!PyArg_ParseTuple(args, "O&|Oi", pt_ExampleGenerator, &egen, &suspiciousList, &weight))
       PYERROR(PyExc_TypeError, "attribute error", PYNULL);
-
-    PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-    if (!egen) PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
 
     TVarList suspiciousset;
     if (suspiciousList)
@@ -195,11 +187,15 @@ C_CALL(Preprocessor_addClassNoise, Preprocessor, "([examples[, weightID]] [class
 C_CALL(Preprocessor_addGaussianNoise, Preprocessor, "([examples[, weightID]] [<see the manual>]) -/-> ExampleTable")
 C_CALL(Preprocessor_addGaussianClassNoise, Preprocessor, "([examples[, weightID]] [classDeviation=<float>]) -/-> ExampleTable")
 
-C_CALL(Preprocessor_addCostWeight, Preprocessor, "([examples[, weightID]] [equalize=, costs=) -/-> ExampleTable")
+C_CALL(Preprocessor_addClassWeight, Preprocessor, "([examples[, weightID]] [equalize=, classWeights=) -/-> ExampleTable")
 C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [method=0-km, 1-nmr, 2-linear, outcomeVar=, eventValue=, timeID=, maxTime=]) -/-> ExampleTable")
 
 C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
 C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [noOfIntervals=, notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
+
+PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, KM, TPreprocessor_addCensorWeight::km)
+PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Linear, TPreprocessor_addCensorWeight::linear)
+PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Relative, TPreprocessor_addCensorWeight::relative)
 
 PyObject *Preprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> ExampleTable")
 { 
@@ -245,7 +241,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
   if (var->varType == TValue::INTVAR) {
     TValueFilter_discrete *vfilter = mlnew TValueFilter_discrete(var);
     PValueFilter wvfilter = vfilter;
-    TValueList &valueList = const_cast<TValueList &>(vfilter->acceptableValues.getReference());
+    TValueList &valueList = vfilter->acceptableValues.getReference();
 
     if (PyTuple_Check(pyvalue) || PyList_Check(pyvalue)) {
       PyObject *iterator = PyObject_GetIter(pyvalue);
@@ -307,6 +303,41 @@ PyObject *TMM_VariableFilterMap::_setdefault(TPyOrange *self, PyObject *args)
 
   return convertValueToPython((*fi).second);
 }
+
+
+PDistribution kaplanMeier(PExampleGenerator gen, const int &outcomeIndex, TValue &failValue, const int &timeIndex, const int &weightID);
+
+PyObject *kaplanMeier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(examples, outcome attribute, fail value, time attribute[, weightID]) -> survival curve")
+{ PExampleGenerator egen;
+  PyObject *outcomevar, *timevar;
+  PyObject *pyfailvalue;
+  TValue failvalue;
+  int weightID = 0;
+  if (!PyArg_ParseTuple(args, "O&OOOi:kaplanMeier", pt_ExampleGenerator, &egen, &outcomevar, &pyfailvalue, &timevar, &weightID))
+
+    return PYNULL;
+
+  int outcomeIndex, timeIndex;
+  if (outcomevar) {
+    if (!varNumFromVarDom(outcomevar, egen->domain, outcomeIndex)) 
+      PYERROR(PyExc_AttributeError, "outcome variable not found in domain", PYNULL);
+  }
+  else
+    if (egen->domain->classVar)
+      outcomeIndex = egen->domain->attributes->size();
+    else
+      PYERROR(PyExc_AttributeError, "'outcomeVar' not set and the domain is class-less", PYNULL);
+
+  PVariable ovar = (outcomeIndex>=0) ?  egen->domain->variables->at(outcomeIndex) : egen->domain->getMetaVar(outcomeIndex);
+
+  if (   !convertFromPython(pyfailvalue, failvalue, ovar)
+      || failvalue.isSpecial()
+      || (failvalue.varType != TValue::INTVAR))
+    PYERROR(PyExc_AttributeError, "invalid value for failure", PYNULL);
+
+  return WrapOrange(kaplanMeier(egen, outcomeIndex, failvalue, timeIndex, weightID));
+}
+
 
 // modified setitem to accept intervals/names of values
 INITIALIZE_MAPMETHODS(TMM_VariableFilterMap, &PyOrVariable_Type, &PyOrValueFilter_Type, _orangeValueFromPython<PVariable>, _orangeValueFromPython<PValueFilter>, _orangeValueToPython<PVariable>, _orangeValueToPython<PValueFilter>)
@@ -370,22 +401,19 @@ PyObject *FeatureInducer_call(PyObject *self, PyObject *args, PyObject *keywords
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *boundList;
+    PExampleGenerator egen;
+    PyObject *boundList;
     char *name;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "OOs|i", &examples, &boundList, &name, &weight))
+    if (!PyArg_ParseTuple(args, "O&Os|i", pt_ExampleGenerator, &egen, &boundList, &name, &weight))
       PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
-
-    PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-    if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
 
     TVarList boundset;
     if (!varListFromDomain(boundList, egen->domain, boundset))
       return PYNULL;
 
     float meas;
-    PVariable newvar=SELF_AS(TFeatureInducer)(egen, boundset, name, meas, weight);
+    PVariable newvar = SELF_AS(TFeatureInducer)(egen, boundset, name, meas, weight);
     return Py_BuildValue("Nf", WrapOrange(newvar), meas);
   PyCATCH
 }
@@ -533,21 +561,19 @@ PYCLASSCONSTANT_INT(FeatureByMinComplexity, CompletionByBayes, completion_bayes)
 
 bool convertFromPython(PyObject *args, TIGNode &ign)
 { PyTRY
-    PyObject *example, *inco=PYNULL, *co=PYNULL;
-    if (   !PyArg_ParseTuple(args, "O|OO", &example, &inco, &co)
-        || !PyOrExample_Check(example)
-        || inco && !PyOrDiscDistribution_Check(inco)
-        || co && !PyOrDiscDistribution_Check(co))
-      PYERROR(PyExc_TypeError, "invalid arguments while constructing IG node", false);
+    PDiscDistribution inco, co;
+    TExample *example;
+    if (!PyArg_ParseTuple(args, "O&|O&O&:convertFromPython(IG)", ptr_Example, &example, ccn_DiscDistribution, &inco, ccn_DiscDistribution, &co))
+      return false;
 
-    ign.example=PExample(mlnew TExample(PyExample_AS_Example(example)));
+    ign.example = PExample(mlnew TExample(*example));
 
     if (inco)
-      ign.incompatibility = PyOrange_AsDiscDistribution(inco).getReference();
+      ign.incompatibility = inco.getReference();
     if (co)
-      ign.compatibility = PyOrange_AsDiscDistribution(co).getReference();
+      ign.compatibility = co.getReference();
+    return true;
   PyCATCH_r(false);
-  return true;
 }
       
 
@@ -633,21 +659,17 @@ PyObject *IGConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *boundList;
+    PExampleGenerator egen;
+    PyObject *boundList;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "OO|i", &examples, &boundList, &weight))
+    if (!PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weight))
       PYERROR(PyExc_TypeError, "attribute error", PYNULL);
-
-    PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-    if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
 
     TVarList boundset;
     if (!varListFromDomain(boundList, egen->domain, boundset))
       return PYNULL;
 
-    PIG ig=SELF_AS(TIGConstructor)(egen, boundset, weight);
-    return WrapOrange(ig);
+    return WrapOrange(SELF_AS(TIGConstructor)(egen, boundset, weight));
   PyCATCH
 }
 
@@ -657,11 +679,8 @@ PyObject *ColorIG_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *pygraph;
-    if (!PyArg_ParseTuple(args, "O", &pygraph) || !PyOrIG_Check(pygraph))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
-
-    return WrapOrange(SELF_AS(TColorIG)(PyOrange_AsIG(pygraph)));
+    PIG graph;
+    return PyArg_ParseTuple(args, "O&:ColorIG.__call__", cc_IG, &graph) ? WrapOrange(SELF_AS(TColorIG)(graph)) : PYNULL;
   PyCATCH
 }
 
@@ -717,14 +736,10 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *boundList;
-    int weightID=0;
-    if (PyArg_ParseTuple(args, "OO|i", &examples, &boundList, &weightID)) {
-
-      PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-      if (!egen)
-        PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-
+    PExampleGenerator egen;
+    PyObject *boundList;
+    int weightID = 0;
+    if (PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -736,11 +751,7 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
     PyErr_Clear();
 
     PyObject *freeList;
-    if (PyArg_ParseTuple(args, "OOO|i", &examples, &boundList, &freeList, &weightID)) {
-
-      PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-      if (!egen) PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-
+    if (PyArg_ParseTuple(args, "O&OO|i", pt_ExampleGenerator, &egen, &boundList, &freeList, &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -755,11 +766,9 @@ PyObject *IMConstructor_call(PyObject *self, PyObject *args, PyObject *keywords)
 
     PyErr_Clear();
 
-    if (PyArg_ParseTuple(args, "O", &examples)) {
-      if (PyOrIMByRows_Check(examples))
-        return WrapOrange(SELF_AS(TIMConstructor)(PIMByRows(PyOrange_AsIMByRows(examples))));
-    }
-
+    PIMByRows imbr;
+    if (PyArg_ParseTuple(args, "O&", cc_IMByRows, &imbr))
+      return WrapOrange(SELF_AS(TIMConstructor)(imbr));
 
     PYERROR(PyExc_TypeError, "invalid arguments -- examples, boundset and optional freeset and weight expected", PYNULL);
   PyCATCH
@@ -771,14 +780,10 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *boundList;
+    PExampleGenerator egen;
+    PyObject *boundList;
     int weightID=0;
-    if (PyArg_ParseTuple(args, "OO|i", &examples, &boundList, &weightID)) {
-
-      PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-      if (!egen)
-        PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-
+    if (PyArg_ParseTuple(args, "O&O|i", pt_ExampleGenerator, &egen, &boundList, &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -790,12 +795,7 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
     PyErr_Clear();
 
     PyObject *freeList;
-    if (PyArg_ParseTuple(args, "OOO|i", &examples, &boundList, &freeList, &weightID)) {
-
-      PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-      if (!egen)
-        PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
-
+    if (PyArg_ParseTuple(args, "O&OO|i", pt_ExampleGenerator, &egen, &boundList, &freeList, &weightID)) {
       TVarList boundset;
       if (!varListFromDomain(boundList, egen->domain, boundset))
         return PYNULL;
@@ -818,11 +818,11 @@ PyObject *IMByRowsConstructor_call(PyObject *self, PyObject *args, PyObject *key
 PyObject *IMByRowsPreprocessor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(IMByRows) -> None")
 { PyTRY
     SETATTRIBUTES
-    PyObject *pimbr;
-    if (!PyArg_ParseTuple(args, "O", &pimbr) || !PyOrIMByRows_Check(pimbr))
+    PIMByRows pimbr;
+    if (!PyArg_ParseTuple(args, "O&", cc_IMByRows, &pimbr))
       PYERROR(PyExc_TypeError, "IMByRows expected", PYNULL)
 
-    SELF_AS(TIMByRowsPreprocessor)(PyOrange_AsIMByRows(pimbr));
+    SELF_AS(TIMByRowsPreprocessor)(pimbr);
     RETURN_NONE;
   PyCATCH
 }
@@ -890,17 +890,17 @@ PyObject *convertToPython(const T_ExampleIMColumnNode &eicn)
 
 
 bool convertFromPython(PyObject *args, T_ExampleIMColumnNode &eicn)
-{ PyObject *example, *column;
-  if (   !PyArg_ParseTuple(args, "OO", &example, &column)
-      || !PyOrExample_Check(example)
+{ PyObject *column;
+  TExample *example;
+  if (   !PyArg_ParseTuple(args, "O&O", ptr_Example, &example, &column)
       || !PyTuple_Check(column))
     PYERROR(PyExc_TypeError, "convertFromPython(T_ExampleIMColumnNode): invalid arguments", false);
 
-  eicn.example=mlnew TExample(PyExample_AS_Example(example));
-
   bool discrete = PyTuple_Size(column)==3;
-  eicn.column=NULL;
-  TIMColumnNode **nodeptr=&eicn.column;
+
+  eicn.example = mlnew TExample(*example);
+  eicn.column = NULL;
+  TIMColumnNode **nodeptr = &eicn.column;
 
   for(int i=0; i<PyList_Size(column); i++) {
     PyObject *item=PyList_GetItem(column, i);
@@ -1036,11 +1036,11 @@ PyObject *ClustersFromIM_call(PyObject *self, PyObject *args, PyObject *keywords
 { 
   PyTRY
     SETATTRIBUTES
-    PyObject *pyim;
-    if (!PyArg_ParseTuple(args, "O", &pyim) || !PyOrIM_Check(pyim))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
+    PIM im;
+    if (!PyArg_ParseTuple(args, "O&:ClustersFromIM.__call__", cc_IM, &im))
+      return PYNULL;
 
-    return WrapOrange(SELF_AS(TClustersFromIM)(PyOrange_AsIM(pyim)));
+    return WrapOrange(SELF_AS(TClustersFromIM)(im));
   PyCATCH
 }
 
@@ -1052,11 +1052,11 @@ PyObject *AssessIMQuality_call(PyObject *self, PyObject *args, PyObject *keyword
 { 
   PyTRY
     SETATTRIBUTES
-    PyObject *pyim;
-    if (!PyArg_ParseTuple(args, "O", &pyim) || !PyOrIM_Check(pyim))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
+    PIM im;
+    if (!PyArg_ParseTuple(args, "O&:AssessIMQuality.__call__", cc_IM, &im))
+      return PYNULL;
 
-    return PyFloat_FromDouble((double)SELF_AS(TAssessIMQuality)(PyOrange_AsIM(pyim)));
+    return PyFloat_FromDouble((double)SELF_AS(TAssessIMQuality)(im));
   PyCATCH
 }
 
@@ -1097,19 +1097,17 @@ PyObject *ExampleDistConstructor_call(PyObject *self, PyObject *args, PyObject *
 {
   PyTRY
     SETATTRIBUTES
-    PyObject *examples, *boundList;
+    PExampleGenerator egen;
+    PyObject *boundList;
     int weightID=0;
-    if (!PyArg_ParseTuple(args, "OO|i", &examples, &boundList, &weightID))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
-
-    PExampleGenerator egen=exampleGenFromParsedArgs(examples);
-    if (!egen) PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
+    if (!PyArg_ParseTuple(args, "O&O|i:ExampleDistConstructor.__call__", pt_ExampleGenerator, &egen, &boundList, &weightID))
+      return PYNULL;
 
     TVarList boundset;
     if (!varListFromDomain(boundList, egen->domain, boundset))
       return PYNULL;
 
-    PExampleDistVector edv=SELF_AS(TExampleDistConstructor)(egen, boundset, weightID);
+    PExampleDistVector edv = SELF_AS(TExampleDistConstructor)(egen, boundset, weightID);
     return WrapOrange(edv);
   PyCATCH
 }
@@ -1151,11 +1149,11 @@ PyObject *ClustersFromDistributions_call(PyObject *self, PyObject *args, PyObjec
 { 
   PyTRY
     SETATTRIBUTES
-    PyObject *pyim;
-    if (!PyArg_ParseTuple(args, "O", &pyim) || !PyOrExampleDistVector_Check(pyim))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
+    PExampleDistVector edv;
+    if (!PyArg_ParseTuple(args, "O&:ClustersFromDistributions.__call__", cc_ExampleDistVector, &edv))
+      return PYNULL;
 
-    return WrapOrange(SELF_AS(TClustersFromDistributions)(PyOrange_AsExampleDistVector(pyim)));
+    return WrapOrange(SELF_AS(TClustersFromDistributions)(edv));
   PyCATCH
 }
 

@@ -59,7 +59,6 @@ class TBoolCount_const : public TBoolCounters {
 public:
   TBoolCount_const(const int n);
   TBoolCount_const(const vector<unsigned char> &ab);
-  virtual ~TBoolCount_const();
 
   virtual bool next();
   virtual bool prev();
@@ -72,7 +71,6 @@ public:
   TCounter counter;
 
   TBoolCount_n(int bits, int aset);
-  virtual ~TBoolCount_n();
 
   virtual bool next();
   virtual bool prev();
@@ -85,7 +83,6 @@ public:
 class TBoolCount : public TBoolCounters {
 public:
   TBoolCount(int abits=0);
-  virtual ~TBoolCount();
 
   virtual bool next();
   virtual bool prev();
@@ -99,7 +96,6 @@ public:
   vector<int> limits;
 
   TLimitsCounter(const vector<int> &alimits);
-  virtual ~TLimitsCounter();
 
   virtual bool reset();
   virtual bool next();

@@ -91,16 +91,12 @@ TBoolCount_const::TBoolCount_const(const vector<unsigned char> &ab)
 
 TBoolCount_const::TBoolCount_const(const int n) : TBoolCounters(n) {}
 
-TBoolCount_const::~TBoolCount_const() 
-{}
 
 bool TBoolCount_const::next() 
-{ return 0;
-}
+{ return 0; }
 
 bool TBoolCount_const::prev()
-{ return 0;
-}
+{ return 0; }
 
 
 /* TBoolCount_n member functions */
@@ -109,8 +105,6 @@ TBoolCount_n::TBoolCount_n(int bits, int aset)
  : TBoolCounters(bits), counter(aset, bits)
 { synchro(); }
 
-TBoolCount_n::~TBoolCount_n() 
-{}
 
 void TBoolCount_n::synchro()
 { fill(begin(), end(), 0); 
@@ -141,8 +135,6 @@ TBoolCount::TBoolCount(int abits)
  : TBoolCounters(abits)
 {}
 
-TBoolCount::~TBoolCount() 
-{}
 
 unsigned char TBoolCount::neg(unsigned char &b)
 { b= !b; return b;
@@ -178,10 +170,6 @@ bool TBoolCount::prev()
 TLimitsCounter::TLimitsCounter(const vector<int> &alimits)
  : limits(alimits)
  { reset(); }
-
-
-TLimitsCounter::~TLimitsCounter()
-{}
 
 
 bool TLimitsCounter::reset()

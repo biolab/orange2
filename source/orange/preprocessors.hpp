@@ -217,15 +217,15 @@ public:
 
 
 
-class TPreprocessor_addCostWeight : public TPreprocessor {
+class TPreprocessor_addClassWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
   PFloatList classWeights; //P weights of examples of particular classes
   bool equalize; //P reweight examples to equalize class proportions
 
-  TPreprocessor_addCostWeight();
-  TPreprocessor_addCostWeight(PFloatList, const bool & = false);
+  TPreprocessor_addClassWeight();
+  TPreprocessor_addClassWeight(PFloatList, const bool & = false);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 
@@ -234,17 +234,16 @@ class TPreprocessor_addCensorWeight : public TPreprocessor {
 public:
   __REGISTER_CLASS
 
-  // Do not change the order!
-  enum {km, nmr, linear};
+  enum {linear, km, relative};
 
-  PVariable outcomeVar; //P outcome variable name
+  PVariable outcomeVar; //P outcome variable
+  PVariable timeVar; //P time variable
   TValue eventValue; //P event (fail) value
-  int timeID; //P time variable meta ID
   int method; //P weighting method
   float maxTime; //P maximal time
 
   TPreprocessor_addCensorWeight();
-  TPreprocessor_addCensorWeight(PVariable, const TValue & = TValue(), const int & = 0, const int & = km, const float & = 0.0);
+  TPreprocessor_addCensorWeight(PVariable, PVariable, const TValue & = TValue(), const int & = km, const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 

@@ -107,6 +107,40 @@ bool convertFromPython(PyObject *lst, TExample &example, PDomain dom)
 }
 
 
+int cc_Example(PyObject *obj, void *ptr)
+{ if (!PyOrExample_Check(obj))
+    return 0;
+  *(PExample *)(ptr) = PyExample_AS_Example(obj);
+  return 1;
+}
+
+int ccn_Example(PyObject *obj, void *ptr)
+{ if (obj == Py_None) {
+    *(PExample *)(ptr) = PExample();
+    return 1;
+  }
+  else
+    return cc_Example(obj, ptr);
+}
+
+
+int ptr_Example(PyObject *obj, void *ptr)
+{ if (!PyOrExample_Check(obj))
+    return 0;
+  *(TExample **)(ptr) = PyExample_AS_Example(obj).getUnwrappedPtr();
+  return 1;
+}
+
+int ptrn_Example(PyObject *obj, void *ptr)
+{ if (obj == Py_None) {
+    *(TExample **)(ptr) = NULL;
+    return 1;
+  }
+  else
+    return ptr_Example(obj, ptr);
+}
+
+
 PyObject *Example_FromExample(PyTypeObject *type, PExample example, POrange lock)
 { TPyExample *self=PyObject_GC_New(TPyExample, type);
   self->example.init();
@@ -386,8 +420,8 @@ PyObject *Example_compatible(TPyExample *pex, PyObject *obj) PYARGS(METH_O, "(ex
 { PyTRY
     if (!PyOrExample_Check(obj))
       PYERROR(PyExc_TypeError, "example expected", PYNULL)
-    else
-      return PyInt_FromLong(PyExample_AS_Example(pex)->compatible(PyExample_AS_ExampleReference(obj)) ? 1 : 0);
+
+    return PyInt_FromLong(PyExample_AS_Example(pex)->compatible(PyExample_AS_ExampleReference(obj)) ? 1 : 0);
   PyCATCH
 }
 
@@ -440,7 +474,7 @@ int exampleIndex(PExample example, int ind)
 
 PyObject *Example_getitem_sq(TPyExample *pex, int idx)
 { PyTRY
-    PExample example=PyExample_AS_Example(pex);
+    PExample example = PyExample_AS_Example(pex);
     int ind=exampleIndex(example, idx);
     if (ind<0)
       return PYNULL;
@@ -481,7 +515,7 @@ int TPyExample_setItem_lower(PExample example, const int &ind, PyObject *vala)
 
 int Example_setitem(TPyExample *pex, PyObject *vara, PyObject *vala)
 { PyTRY
-    PExample example=PyExample_AS_Example(pex);
+    PExample example = PyExample_AS_Example(pex);
     return TPyExample_setItem_lower(example, getAttributeIndex(example->domain, vara), vala);
   PyCATCH_1
 }
@@ -489,7 +523,7 @@ int Example_setitem(TPyExample *pex, PyObject *vara, PyObject *vala)
 
 int Example_setitem_sq(TPyExample *pex, const int &ind, PyObject *vala)
 { PyTRY
-    PExample example=PyExample_AS_Example(pex);
+    PExample example = PyExample_AS_Example(pex);
     return TPyExample_setItem_lower(example, exampleIndex(example, ind), vala);
   PyCATCH_1
 }
@@ -553,7 +587,7 @@ inline void addValue(string &res, const TValue &val, PVariable var)
 }
 
 string TPyExample2string(TPyExample *pex)
-{ PExample example=PyExample_AS_Example(pex);
+{ PExample example = PyExample_AS_Example(pex);
   string res("[");
   TVarList::iterator vi(example->domain->variables->begin());
   PITERATE(TExample, ei, example) {

@@ -78,7 +78,7 @@ public:
       return _CreateEmptyList(type);
 
     PyObject *arg;
-    PVariable var = PVariable();
+    PVariable var;
     if (   PyArg_ParseTuple(args, "O|O&", &arg, ccn_Variable, &var)
         && PySequence_Check(arg))
       return _FromArguments(type, arg, var);

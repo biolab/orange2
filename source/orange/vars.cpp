@@ -56,8 +56,7 @@ TVariable::TVariable(const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
   distributed(false),
-  getValueFromLocked(false),
-  destroyNotifier(NULL)
+  getValueFromLocked(false)
 {}
 
 
@@ -65,15 +64,8 @@ TVariable::TVariable(const string &aname, const int &avarType, const bool &ord)
 : varType(avarType),
   ordered(ord),
   distributed(false),
-  getValueFromLocked(false),
-  destroyNotifier(NULL)
+  getValueFromLocked(false)
 { name = aname; };
-
-
-TVariable::~TVariable()
-{ if (destroyNotifier)
-    (*destroyNotifier)(this);
-}
 
 
 TValue  TVariable::DC() const

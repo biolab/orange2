@@ -280,14 +280,11 @@ int DomainBasicAttrStat_setitem(PyObject *self, PyObject *args, PyObject *obj)
 
 PyObject *Contingency_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(outer_desc, inner_desc)")
 { PyTRY
-    PyObject *object1, *object2;
+    PVariable var1, var2;
+    if (!PyArg_ParseTuple(args, "O&O&:Contingency.__new__", cc_Variable, &var1, cc_Variable, &var2))
+      return PYNULL;
 
-    if (PyArg_ParseTuple(args, "OO", &object1, &object2)) {
-      if (PyOrVariable_Check(object1) && PyOrVariable_Check(object2))
-        return WrapNewOrange(mlnew TContingency(PyOrange_AsVariable(object1), PyOrange_AsVariable(object2)), type);
-    }
-
-    PYERROR(PyExc_TypeError, "invalid parameters for Contingency", PYNULL);
+    return WrapNewOrange(mlnew TContingency(var1, var2), type);
   PyCATCH
 }
 
@@ -300,23 +297,21 @@ PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject 
 
     PyErr_Clear();
 
-    PyObject *object1, *object2;
+    PyObject *object1;
+    PExampleGenerator gen;
     int weightID=0;
-    if (   PyArg_ParseTuple(args, "OO|i", &object1, &object2, &weightID)) {
-      PExampleGenerator gen;
-      if ((gen=exampleGenFromParsedArgs(object2))==true) {
-        if (PyOrVariable_Check(object1))
-          return WrapNewOrange(mlnew TContingencyAttrClass(gen, PyOrange_AsVariable(object1), weightID), type);
+    if (PyArg_ParseTuple(args, "OO&|i", &object1, pt_ExampleGenerator, &gen, &weightID)) {
+      if (PyOrVariable_Check(object1))
+        return WrapNewOrange(mlnew TContingencyAttrClass(gen, PyOrange_AsVariable(object1), weightID), type);
 
-        int attrNo;
-        if (varNumFromVarDom(object1, gen->domain, attrNo))
-          return WrapNewOrange(mlnew TContingencyAttrClass(gen, attrNo, weightID), type);
-      }
+      int attrNo;
+      if (varNumFromVarDom(object1, gen->domain, attrNo))
+        return WrapNewOrange(mlnew TContingencyAttrClass(gen, attrNo, weightID), type);
     }
           
-  PyCATCH
+    PYERROR(PyExc_TypeError, "invalid type for ContingencyAttrClass constructor", PYNULL);   
 
-  PYERROR(PyExc_TypeError, "invalid type for ContingencyAttrClass constructor", PYNULL);   
+  PyCATCH
 }
 
 
@@ -324,6 +319,7 @@ PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject 
 { PyTRY
     PyObject *object1, *object2;
 
+    // cannot use O&O& - need objects, not vars!
     if (   PyArg_ParseTuple(args, "OO", &object1, &object2)
         && PyOrVariable_Check(object1)
         && PyOrVariable_Check(object2)) {
@@ -337,16 +333,15 @@ PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject 
     PyErr_Clear();
 
     int weightID=0;
-    if (   PyArg_ParseTuple(args, "OO|i", &object1, &object2, &weightID)) {
-      PExampleGenerator gen;
-      if ((gen=exampleGenFromParsedArgs(object2))==true)
-        if (PyOrVariable_Check(object1))
-          return WrapNewOrange(mlnew TContingencyClassAttr(gen, PyOrange_AsVariable(object1), weightID), type);
-        else {
-          int attrNo;
-          if (varNumFromVarDom(object1, gen->domain, attrNo))
-            return WrapNewOrange(mlnew TContingencyClassAttr(gen, attrNo, weightID), type);
-        }
+    PExampleGenerator gen;
+    if (   PyArg_ParseTuple(args, "OO&|i", &object1, pt_ExampleGenerator, &gen, &weightID)) {
+      if (PyOrVariable_Check(object1))
+        return WrapNewOrange(mlnew TContingencyClassAttr(gen, PyOrange_AsVariable(object1), weightID), type);
+      else {
+        int attrNo;
+        if (varNumFromVarDom(object1, gen->domain, attrNo))
+          return WrapNewOrange(mlnew TContingencyClassAttr(gen, attrNo, weightID), type);
+      }
     }
           
   PyCATCH
@@ -847,14 +842,12 @@ PyObject *ExamplesDistanceConstructor_call(PyObject *self, PyObject *uargs) PYDO
 
 PyObject *ExamplesDistance_Normalized_attributeDistances(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(example1, example2) -> [by-attribute distances as floats]")
 { PyTRY
-    PyObject *pyex1, *pyex2;
-    if (   !PyArg_ParseTuple(args, "OO", &pyex1, &pyex2)
-        || !PyOrExample_Check(pyex1)
-        || !PyOrExample_Check(pyex2))
+    TExample *ex1, *ex2;
+    if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.attributeDistances", ptr_Example, &ex1, ptr_Example, &ex2))
       PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);
 
     vector<float> difs;
-    SELF_AS(TExamplesDistance_Normalized).getDifs(PyExample_AS_ExampleReference(pyex1), PyExample_AS_ExampleReference(pyex2), difs);
+    SELF_AS(TExamplesDistance_Normalized).getDifs(*ex1, *ex2, difs);
     
     PyObject *l = PyList_New(difs.size());
     for(int i = 0, e = difs.size(); i<e; e++)
@@ -869,14 +862,11 @@ PyObject *ExamplesDistance_call(PyObject *self, PyObject *args, PyObject *keywor
 {
   PyTRY
     SETATTRIBUTES
-
-    PyObject *pyex1, *pyex2;
-    if (   !PyArg_ParseTuple(args, "OO", &pyex1, &pyex2)
-        || !PyOrExample_Check(pyex1)
-        || !PyOrExample_Check(pyex2))
+    TExample *ex1, *ex2;
+    if (!PyArg_ParseTuple(args, "O&O&:ExamplesDistance_Normalized.attributeDistances", ptr_Example, &ex1, ptr_Example, &ex2))
       PYERROR(PyExc_TypeError, "attribute error (two examples expected)", PYNULL);
 
-    return PyFloat_FromDouble((double)(SELF_AS(TExamplesDistance)(PyExample_AS_ExampleReference(pyex1), PyExample_AS_ExampleReference(pyex2))));
+    return PyFloat_FromDouble((double)(SELF_AS(TExamplesDistance)(*ex1, *ex2)));
   PyCATCH
 }
 
@@ -915,13 +905,11 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
   PyTRY
     SETATTRIBUTES
     float k;
-    PyObject *pyexample;
+    TExample *example;
+    if (!PyArg_ParseTuple(args, "fO&", &k, ptr_Example, &example))
+      PYERROR(PyExc_TypeError, "attribute error (number and example expected)", PYNULL);
 
-    if (   !PyArg_ParseTuple(args, "fO", &k, &pyexample)
-        || !PyOrExample_Check(pyexample))
-      PYERROR(PyExc_TypeError, "attribute error (int/float and example expected)", PYNULL);
-
-    return WrapOrange(SELF_AS(TFindNearest).call(PyExample_AS_ExampleReference(pyexample), k));
+    return WrapOrange(SELF_AS(TFindNearest).call(*example, k));
   PyCATCH
 }
 
@@ -1010,8 +998,7 @@ PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keyw
 
     int n;
     float f;
-    PyObject *pygen;
-    PExampleGenerator gen;
+    PExampleGenerator egen;    
     PRandomIndices res;
 
     if (PyArg_ParseTuple(args, "i", &n)) {
@@ -1024,16 +1011,16 @@ PyObject *MakeRandomIndices2_call(PyObject *self, PyObject *args, PyObject *keyw
       res = (*mri2)(n, f);
       goto out;
     }
-    
+
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O", &pygen) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mri2)(gen);
+    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+      res = (*mri2)(egen);
       goto out;
     }
 
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "Of", &pygen, &f) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mri2)(gen, f);
+    if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
+      res = (*mri2)(egen, f);
       goto out;
     }
 
@@ -1057,8 +1044,7 @@ PyObject *MakeRandomIndicesMultiple_call(PyObject *self, PyObject *args, PyObjec
 
     int n;
     float f;
-    PyObject *pygen;
-    PExampleGenerator gen;
+    PExampleGenerator egen;
     PRandomIndices res;
 
     if (PyArg_ParseTuple(args, "i", &n)) {
@@ -1073,14 +1059,14 @@ PyObject *MakeRandomIndicesMultiple_call(PyObject *self, PyObject *args, PyObjec
     }
 
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O", &pygen) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mrim)(gen);
+    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+      res = (*mrim)(egen);
       goto out;
     }
 
     PyErr_Clear();
-    if (   PyArg_ParseTuple(args, "Of", &pygen, &f) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mrim)(gen, f);
+    if (PyArg_ParseTuple(args, "O&f", pt_ExampleGenerator, &egen, &f)) {
+      res = (*mrim)(egen, f);
       goto out;
     }
 
@@ -1105,9 +1091,8 @@ PyObject *MakeRandomIndicesN_call(PyObject *self, PyObject *args, PyObject *keyw
     CAST_TO(TMakeRandomIndicesN, mriN)
 
     int n;
-    PyObject *pyvector;
-    PyObject *pygen;
-    PExampleGenerator gen;
+    PFloatList pyvector;
+    PExampleGenerator egen;
     PRandomIndices res;
 
     if (PyArg_ParseTuple(args, "i", &n)) {
@@ -1116,20 +1101,20 @@ PyObject *MakeRandomIndicesN_call(PyObject *self, PyObject *args, PyObject *keyw
     }
 
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "iO", &n, &pyvector) && PyOrFloatList_Check(pyvector)) {
-      res = (*mriN)(n, PyOrange_AsFloatList(pyvector));
+    if (PyArg_ParseTuple(args, "iO&", &n, cc_FloatList, &pyvector)) {
+      res = (*mriN)(n, pyvector);
       goto out;
     }
 
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O", &pygen) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mriN)(gen);
+    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+      res = (*mriN)(egen);
       goto out;
     }
 
     PyErr_Clear();
-    if (   PyArg_ParseTuple(args, "OO", &pygen, &pyvector) && !!(gen=exampleGenFromParsedArgs(pygen)) && PyOrFloatList_Check(pyvector) ) {
-      res = (*mriN)(gen, PyOrange_AsFloatList(pyvector));
+    if (PyArg_ParseTuple(args, "O&O&", pt_ExampleGenerator, &egen, cc_FloatList, &pyvector)) {
+      res = (*mriN)(egen, pyvector);
       goto out;
     }
 
@@ -1153,8 +1138,7 @@ PyObject *MakeRandomIndicesCV_call(PyObject *self, PyObject *args, PyObject *key
     CAST_TO(TMakeRandomIndicesCV, mriCV)
 
     int n, f;
-    PyObject *pygen;
-    PExampleGenerator gen;
+    PExampleGenerator egen;
     PRandomIndices res;
 
     if (PyArg_ParseTuple(args, "i", &n)) {
@@ -1169,14 +1153,14 @@ PyObject *MakeRandomIndicesCV_call(PyObject *self, PyObject *args, PyObject *key
     }
 
     PyErr_Clear();
-    if (PyArg_ParseTuple(args, "O", &pygen) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mriCV)(gen);
+    if (PyArg_ParseTuple(args, "O&", pt_ExampleGenerator, &egen)) {
+      res = (*mriCV)(egen);
       goto out;
     }
 
     PyErr_Clear();
-    if (   PyArg_ParseTuple(args, "Oi", &pygen, &f) && !!(gen=exampleGenFromParsedArgs(pygen)) ) {
-      res = (*mriCV)(gen, f);
+    if (PyArg_ParseTuple(args, "O&i", pt_ExampleGenerator, &egen, &f)) {
+      res = (*mriCV)(egen, f);
       goto out;
     }
 

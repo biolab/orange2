@@ -531,7 +531,7 @@ PClassifier TLookupLearner::operator()(PExampleGenerator ogen, const int &weight
   while (bi) {
     TExampleIterator bbi = bi;
     PDistribution classDist = TDistribution::create(examplePtrs.domain->classVar);
-    TDistribution &tcv = const_cast<TDistribution &>(classDist.getReference());
+    TDistribution &tcv = classDist.getReference();
     int diff;
     do {
       if (!(*bbi).getClass().isSpecial())
@@ -744,7 +744,7 @@ TValue TClassifierFromGenerator::operator ()(const TExample &exam)
   }
 
   PDistribution wclassDist = TDistribution::create(generator->domain->classVar);
-  TDistribution &classDist = const_cast<TDistribution &>(wclassDist.getReference());
+  TDistribution &classDist = wclassDist.getReference();
   for(TExampleIterator ri(generator->begin()); ri; ++ri)
     if (cexam.compatible(*ri) && !(*ri).getClass().isSpecial())
       classDist.add((*ri).getClass(), WEIGHT(*ri));
@@ -765,7 +765,7 @@ PDistribution TClassifierFromGenerator::classDistribution(const TExample &exam)
   }
   
   PDistribution wclassDist = TDistribution::create(generator->domain->classVar);
-  TDistribution &classDist = const_cast<TDistribution &>(wclassDist.getReference());
+  TDistribution &classDist = wclassDist.getReference();
   for(TExampleIterator ri(generator->begin()); ri; ++ri)
     if (cexam.compatible(*ri) && !(*ri).getClass().isSpecial())
       classDist.add((*ri).getClass(), WEIGHT(*ri));

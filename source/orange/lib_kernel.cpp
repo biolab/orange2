@@ -78,7 +78,7 @@ PyObject *VarList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { re
 PyObject *VarList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Variable") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_pop(self, args); }
 PyObject *VarList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Variable) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_remove(self, obj); }
 PyObject *VarList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_reverse(self); }
-PyObject *VarList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func] -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_sort(self, args); }
+PyObject *VarList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PVarList, TVarList, PVariable, (PyTypeObject *)&PyOrVariable_Type>::_sort(self, args); }
 
 
 PVarListList PVarListList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PVarListList, TVarListList, PVarList, (PyTypeObject *)&PyOrVarList_Type>::P_FromArguments(arg); }
@@ -146,6 +146,19 @@ PDomain knownDomain(PyObject *keywords)
 }
 
 
+TMetaVector *knownMetas(PyObject *keywords)
+{ 
+  PVarList variables;
+  PyObject *pyknownDomain = keywords ? PyDict_GetItemString(keywords, "domain") : PYNULL;
+  if (!pyknownDomain)
+    return NULL;
+
+  if (!PyOrDomain_Check(pyknownDomain))
+    raiseError("invalid value for 'domain' argument"); // PYERROR won't do - NULL is a valid value to return...
+
+  return &PyOrange_AsDomain(pyknownDomain)->metas;
+}
+
 BASED_ON(Variable, Orange)
 C_NAMED(IntVariable, Variable, "([name=, startValue=, endValue=, distributed=, getValueFrom=])")
 C_NAMED(EnumVariable, Variable, "([name=, values=, autoValues=, distributed=, getValueFrom=])")
@@ -177,17 +190,17 @@ PyObject *Variable_firstvalue(PyObject *self, PyObject *args) PYARGS(0, "() -> V
   PyCATCH
 }
 
-PyObject *Variable_nextvalue(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(value)  -> Value | None")
+PyObject *Variable_nextvalue(PyObject *self, PyObject *val) PYARGS(METH_O, "(value)  -> Value | None")
 { PyTRY
     CAST_TO(TVariable, var);
-    TPyValue *val;
-    if (   !PyArg_ParseTuple(args, "O", &val)
-        || !PyOrValue_Check(val)
-        || (val->variable ? (val->variable!=var) : (val->value.varType!=var->varType)))
+    if (   !PyOrValue_Check(val)
+        || (PyValue_AS_Variable(val) ? (PyValue_AS_Variable(val) != var) : (PyValue_AS_Value(val).varType != var->varType)))
       PYERROR(PyExc_TypeError, "invalid value parameter", PYNULL);
 
-    TValue sval=val->value;
-    if (!var->nextValue(sval)) RETURN_NONE;
+    TValue sval = PyValue_AS_Value(val);
+
+    if (!var->nextValue(sval))
+      RETURN_NONE;
 
     return Value_FromVariableValue(PyOrange_AsVariable(self), sval);
   PyCATCH
@@ -195,15 +208,16 @@ PyObject *Variable_nextvalue(PyObject *self, PyObject *args) PYARGS(METH_VARARGS
 
 
 PyObject *Variable_computeValue(PyObject *self, PyObject *args) PYARGS(METH_O, "(example) -> Value")
-{
-  CAST_TO(TVariable, var);
-  if (!var->getValueFrom)
-    PYERROR(PyExc_SystemError, "Variable.computeValue: 'getValueFrom' not defined", PYNULL);
+{ PyTRY
+    CAST_TO(TVariable, var);
+    if (!var->getValueFrom)
+      PYERROR(PyExc_SystemError, "Variable.computeValue: 'getValueFrom' not defined", PYNULL);
 
-  if (!PyOrExample_Check(args))
-    PYERROR(PyExc_TypeError, "Variable.computeValue: 'Example' expected", PYNULL);
+    if (!PyOrExample_Check(args))
+      PYERROR(PyExc_TypeError, "Variable.computeValue: 'Example' expected", PYNULL);
 
-  return Value_FromVariableValue(var, var->computeValue(PyExample_AS_ExampleReference(args)));
+    return Value_FromVariableValue(var, var->computeValue(PyExample_AS_ExampleReference(args)));
+  PyCATCH
 }
 
 
@@ -212,12 +226,12 @@ PyObject *Variable_call(PyObject *self, PyObject *args, PyObject *keywords) PYDO
     SETATTRIBUTES
 
     PyObject *object;
-    if (!PyArg_ParseTuple(args, "O", &object))
-      PYERROR(PyExc_TypeError, "invalid parameter", PYNULL);
-
     TValue value;
-    if (!convertFromPython(object, value, PyOrange_AsVariable(self)))
+
+    if (   !PyArg_ParseTuple(args, "O:Variable.__call__", &object)
+        || !convertFromPython(object, value, PyOrange_AsVariable(self)))
       return PYNULL;
+
     return Value_FromVariableValue(PyOrange_AsVariable(self), value);
   PyCATCH
 }
@@ -410,21 +424,19 @@ PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
 
 #include "domain.hpp"
 
-PyObject *Domain_metaid(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(name | descriptor) -> int")
+PyObject *Domain_metaid(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "(name | descriptor) -> int")
 { PyTRY
     CAST_TO(TDomain, domain);
+    TMetaDescriptor *desc = NULL;
 
-    PyObject *rar;
-    if (!PyArg_ParseTuple(args, "O", &rar))
-      PYERROR(PyExc_AttributeError, "string or variable expected", PYNULL);
-
-    TMetaDescriptor *desc=(TMetaDescriptor *)NULL;
     if (PyString_Check(rar))
       desc = domain->metas[string(PyString_AsString(rar))];
     else if (PyOrVariable_Check(rar))
-      desc=domain->metas[PyOrange_AS(TVariable, rar).name];
+      desc = domain->metas[PyOrange_AS(TVariable, rar).name];
 
-    if (!desc) PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
+    if (!desc)
+      PYERROR(PyExc_AttributeError, "meta variable does not exist", PYNULL);
+
     return PyInt_FromLong(desc->id);
   PyCATCH
 }
@@ -432,9 +444,6 @@ PyObject *Domain_metaid(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(
 PyObject *Domain_getmetas(TPyOrange *self, PyObject *args) PYARGS(0, "() -> {int: Variable}")
 { PyTRY
     CAST_TO(TDomain, domain);
-
-    if (args && !PyArg_ParseTuple(args, ""))
-      PYERROR(PyExc_AttributeError, "no arguments expected", PYNULL);
 
     PyObject *dict=PyDict_New();
     ITERATE(TMetaVector, mi, domain->metas)
@@ -449,31 +458,31 @@ PyObject *Domain_addmeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
     CAST_TO(TDomain, domain);
 
     int id;
-    PyObject *pyvar;
-    if (PyArg_ParseTuple(args, "iO", &id, &pyvar))
-      if (!PyOrVariable_Check(pyvar))
-        PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL)
-      else 
-        domain->metas.push_back(TMetaDescriptor(id, PyOrange_AsVariable(pyvar)));
-    else if (PyArg_ParseTuple(args, "O", &pyvar))
-      if (!PyDict_Check(pyvar))
-        PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL)
-      else {
-        int pos=0;
-        PyObject *key, *value;
-        vector<TMetaDescriptor> tempMetas;
-        while (PyDict_Next(pyvar, &pos, &key, &value))
-          if (PyInt_Check(key) && PyOrVariable_Check(value))
-            tempMetas.push_back(TMetaDescriptor(PyInt_AsLong(key), PyOrange_AsVariable(value)));
-          else PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
-        ITERATE(vector<TMetaDescriptor>, mi, tempMetas)
-          domain->metas.push_back(*mi);
-      }
-    else PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL)
-
+    PVariable var;
+    if (PyArg_ParseTuple(args, "iO&", &id, cc_Variable, &var)) {
+      domain->metas.push_back(TMetaDescriptor(id, var));
+      RETURN_NONE;
+    }
     PyErr_Clear();
 
-    RETURN_NONE;
+    PyObject *dict;
+    if (PyArg_ParseTuple(args, "O", &dict) && !PyDict_Check(dict)) {
+      int pos = 0;
+      PyObject *key, *value;
+      vector<TMetaDescriptor> tempMetas;
+      while (PyDict_Next(dict, &pos, &key, &value))
+        if (PyInt_Check(key) && PyOrVariable_Check(value))
+          tempMetas.push_back(TMetaDescriptor(PyInt_AsLong(key), PyOrange_AsVariable(value)));
+        else
+          PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
+
+      ITERATE(vector<TMetaDescriptor>, mi, tempMetas)
+        domain->metas.push_back(*mi);
+
+      RETURN_NONE;
+    }
+
+    PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL)
   PyCATCH
 }
 
@@ -500,13 +509,9 @@ bool removeMeta(PyObject *rar, TMetaVector &metas)
 }
 
 
-PyObject *Domain_removemeta(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "({id0:desc0, id1:desc1, ...}) | ([id0|desc0, id1|desc1, ...]) -> None")
+PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id0:desc0, id1:desc1, ...}) | ([id0|desc0, id1|desc1, ...]) -> None")
 { PyTRY
     CAST_TO(TDomain, domain);
-
-    PyObject *rar;
-    if (!PyArg_ParseTuple(args, "O", &rar))
-      PYERROR(PyExc_AttributeError, "invalid arguments", PYNULL);
 
     if (PyDict_Check(rar)) {
       int pos=0;
@@ -554,6 +559,8 @@ int Domain_len(TPyOrange *self)
   PyCATCH_1
 }
 
+
+CONSTRUCTOR_KEYWORDS(ExampleTable, "source")
 
 PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(list-of-attrs | domain [, hasClass | classVar | None] [,domain | list-of-attrs | source=domain])")
 { PyTRY
@@ -668,10 +675,11 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
 PyObject *Domain_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(example) -> Example")
 { PyTRY
     SETATTRIBUTES
-    PyObject *pex;
-    if (PyArg_ParseTuple(args, "O", &pex) && PyOrExample_Check(pex))
-      return Example_FromWrappedExample(PExample(mlnew TExample(PyOrange_AsDomain(self), PyExample_AS_ExampleReference(pex))));
-    PYERROR(PyExc_TypeError, "invalid parameters (Example expected)", PYNULL);
+    TExample *ex;
+    if (!PyArg_ParseTuple(args, "O&", ptr_Example, &ex))
+      PYERROR(PyExc_TypeError, "invalid parameters (Example expected)", PYNULL);
+
+    return Example_FromWrappedExample(PExample(mlnew TExample(PyOrange_AsDomain(self), *ex)));
   PyCATCH
 }
 
@@ -860,6 +868,7 @@ PExampleGenerator exampleGenFromParsedArgs(PyObject *args)
 PExampleGenerator exampleGenFromArgs(PyObject *args, long *weightID)
 { PyObject *examples;
   int aweight = 0;
+  PExampleGenerator gen;
   if (PyArg_ParseTuple(args, (char *)(weightID ? "O|i" : "O"), &examples, &aweight)) {
     if (weightID) *weightID=aweight;
 
@@ -1115,8 +1124,8 @@ inline PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYAR
 /* ************ EXAMPLE TABLE ************ */
 
 #include "table.hpp"
-#include "readdata.hpp"
 
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore);
 
 TExampleTable *readListOfExamples(PyObject *args)
 { if (PyList_Check(args)) {
@@ -1127,13 +1136,13 @@ TExampleTable *readListOfExamples(PyObject *args)
     TExampleTable *table=NULL;
  
     for(int i=0; i<size; i++) {
-      PyObject *pex=PyList_GetItem(args, i);
+      PyObject *pex = PyList_GetItem(args, i);
       if (!PyOrExample_Check(pex)) {
         mldelete table;
         PYERROR(PyExc_TypeError, "example list is expected to consist of Example's", NULL);
       }
       if (!i)
-        table=mlnew TExampleTable(PyExample_AS_Example(pex)->domain);
+        table = mlnew TExampleTable(PyExample_AS_Example(pex)->domain);
       table->addExample(PyExample_AS_ExampleReference(pex));
     }
 
@@ -1150,7 +1159,7 @@ bool readBoolFlag(PyObject *keywords, char *flag)
 }
 
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use dontCheckStored dontStore")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain | examples)")
 { PyTRY
@@ -1160,7 +1169,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
     char *filename = NULL;
 
     if (PyArg_ParseTuple(argstuple, "|ss", &filename))
-      res = readData(filename, knownVars(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore"));
+      res = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), readBoolFlag(keywords, "dontCheckStored"), readBoolFlag(keywords, "dontStore"));
 
     else if (PyArg_ParseTuple(argstuple, "O", &args))
       if (PyOrOrange_Check(args)) {
@@ -1228,15 +1237,15 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARG
 { PyTRY
     CAST_TO(TExampleTable, table)
 
-    PyObject *parsed;
-    if (PyArg_ParseTuple(args, "O", &parsed) && PyOrExample_Check(parsed)) {
-      table->addExample(PyExample_AS_ExampleReference(parsed));
+    TExample *example;
+    if (PyArg_ParseTuple(args, "O&", ptr_Example, &example)) {
+      table->addExample(*example);
       RETURN_NONE;
     }
 
     PyErr_Clear();
 
-    PExampleGenerator egen=exampleGenFromArgs(args);
+    PExampleGenerator egen = exampleGenFromArgs(args);
     if (egen) {
       // to prevent cycling in t.append(t)
       TExampleTable tab(egen);
@@ -1245,11 +1254,11 @@ PyObject *ExampleTable_append(PyObject *self, PyObject *args) PYARGS(METH_VARARG
       RETURN_NONE;
     }
 
-    if (PyList_Check(parsed)) {
-      int size=PyList_Size(parsed);
+    if (PyList_Check(args)) {
+      int size=PyList_Size(args);
 
       for(int i=0; i<size; i++) {
-        PyObject *pex=PyList_GetItem(parsed, i);
+        PyObject *pex=PyList_GetItem(args, i);
         TExample example(table->domain);
         if (!convertFromPython(pex, example, table->domain))
           return PYNULL;
@@ -1294,7 +1303,7 @@ int ExampleTable_setitem_sq(TPyOrange *self, int idx, TPyExample *pex)
     if (!PyOrExample_Check(pex))
       PYERROR(PyExc_TypeError, "invalid parameter type (Example expected)", -1)
 
-    (*table)[idx]=TExample(table->domain, PyExample_AS_ExampleReference(pex));
+    (*table)[idx] = TExample(table->domain, PyExample_AS_ExampleReference(pex));
     return 0;
   PyCATCH_1
 }
@@ -1645,13 +1654,12 @@ PyObject *ExampleTable_removeMetaAttribute(PyObject *self, PyObject *args) PYARG
 
 PyObject *ExampleTable_changeDomain(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(Domain) -> None")
 { PyTRY
-    PyObject *pydomain;
-    if (   !PyArg_ParseTuple(args, "O", &pydomain)
-        || !PyOrDomain_Check(pydomain))
+    PDomain domain;
+    if (!PyArg_ParseTuple(args, "O&", cc_Domain, &domain))
       PYERROR(PyExc_AttributeError, "domain argument expected", PYNULL);
 
     CAST_TO(TExampleTable, table);
-    table->changeDomain(PyOrange_AsDomain(pydomain));
+    table->changeDomain(domain);
     RETURN_NONE;
   PyCATCH
 }
@@ -2444,13 +2452,13 @@ PyObject *ContDistribution_items(PyObject *self) PYARGS(0, "() -> [(string, floa
 }
 
 
-PyObject *getClassDistribution(PyTypeObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples) -> Distribution")
+PyObject *getClassDistribution(PyObject *type, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weightID]) -> Distribution")
 { PyTRY
     long weightID;
     PExampleGenerator gen=exampleGenFromArgs(args, &weightID);
     if (!gen)
       return PYNULL;
-    return WrapOrange(getClassDistribution(gen));
+    return WrapOrange(getClassDistribution(gen, weightID));
   PyCATCH
 }
 
@@ -2636,9 +2644,11 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
     int weight = -1;
     PExampleGenerator egen;
 
-    if (   !PyArg_ParseTuple(targs, "O&|i:Learner.__call__", pt_ExampleGenerator, &egen, &weight)
-        && !PyArg_ParseTuple(targs, "(O&|i):Learner.__call__", pt_ExampleGenerator, &egen, &weight))
-      return PYNULL;
+    if (!PyArg_ParseTuple(targs, "O&|i", pt_ExampleGenerator, &egen, &weight)) {
+      PyErr_Clear();
+      if (!PyArg_ParseTuple(targs, "(O&|i):Learner.__call__", pt_ExampleGenerator, &egen, &weight))
+        return PYNULL;
+    }
 
     if (weight == -1) {
       weight = 0;
@@ -2692,7 +2702,7 @@ PyObject *ClassifierList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list
 PyObject *ClassifierList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Classifier") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_pop(self, args); }
 PyObject *ClassifierList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Classifier) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_remove(self, obj); }
 PyObject *ClassifierList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_reverse(self); }
-PyObject *ClassifierList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func] -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_sort(self, args); }
+PyObject *ClassifierList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PClassifierList, TClassifierList, PClassifier, (PyTypeObject *)&PyOrClassifier_Type>::_sort(self, args); }
 
 
 
@@ -2726,23 +2736,22 @@ PyObject *Classifier_call(PyObject *self, PyObject *args, PyObject *keywords) PY
     if (!classifier)
       PYERROR(PyExc_SystemError, "attribute error", PYNULL);
 
-    TPyExample *example;
+    TExample *example;
     int dist=0;
-    if (   !PyArg_ParseTuple(args, "O|i", &example, &dist)
-        || !PyOrExample_Check(example))
-      PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
+    if (!PyArg_ParseTuple(args, "O&|i", ptr_Example, &example, &dist))
+      PYERROR(PyExc_TypeError, "attribute error; example (and, optionally, return type) expected", PYNULL);
 
     switch (dist) {
       case 0:
-        return Value_FromVariableValue(classifier->classVar, (*classifier)(PyExample_AS_ExampleReference(example)));
+        return Value_FromVariableValue(classifier->classVar, (*classifier)(*example));
 
       case 1:
-        return WrapOrange(classifier->classDistribution(PyExample_AS_ExampleReference(example)));
+        return WrapOrange(classifier->classDistribution(*example));
 
       case 2:
         TValue val;
         PDistribution dist;
-        classifier->predictionAndDistribution(PyExample_AS_ExampleReference(example), val, dist);
+        classifier->predictionAndDistribution(*example, val, dist);
         return Py_BuildValue("NN", Value_FromVariableValue(classifier->classVar, val), WrapOrange(dist));
     }
 
@@ -2800,14 +2809,11 @@ PyObject *ClassifierByExampleTable_boundset(PyObject *self) PYARGS(0, "() -> var
 
 PyObject *ClassifierByLookupTable_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, descriptor)")
 { PyTRY
-    PyObject *pycl, *pyvl;
-
-    if (   !PyArg_ParseTuple(args, "OO", &pycl, &pyvl)
-        || !PyOrVariable_Check(pycl)
-        || !PyOrVariable_Check(pyvl))
+    PVariable vcl, vvl;
+    if (!PyArg_ParseTuple(args, "O&O&", cc_Variable, &vcl, cc_Variable, &vvl))
       PYERROR(PyExc_TypeError, "invalid parameter; two variables expected", PYNULL);
 
-    return WrapNewOrange(mlnew TClassifierByLookupTable(PyOrange_AsVariable(pycl), PyOrange_AsVariable(pyvl)), type);
+    return WrapNewOrange(mlnew TClassifierByLookupTable(vcl, vvl), type);
   PyCATCH
 }
 
@@ -2832,15 +2838,11 @@ PyObject *ClassifierByLookupTable_getindex(PyObject *self, PyObject *pyexample) 
 
 PyObject *ClassifierByLookupTable2_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, desc0, desc1)")
 { PyTRY
-    PyObject *pycl, *pyvl1, *pyvl2;
-
-    if (   !PyArg_ParseTuple(args, "OOO", &pycl, &pyvl1, &pyvl2)
-        || !PyOrVariable_Check(pycl)
-        || !PyOrVariable_Check(pyvl1)
-        || !PyOrVariable_Check(pyvl2))
+    PVariable vcl, vvl1, vvl2;
+    if (!PyArg_ParseTuple(args, "O&O&O&", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2))
       PYERROR(PyExc_TypeError, "invalid parameter; three variables expected", PYNULL);
 
-    return WrapNewOrange(mlnew TClassifierByLookupTable2(PyOrange_AsVariable(pycl), PyOrange_AsVariable(pyvl1), PyOrange_AsVariable(pyvl2)), type);
+    return WrapNewOrange(mlnew TClassifierByLookupTable2(vcl, vvl1, vvl2), type);
   PyCATCH
 }
 
@@ -2865,18 +2867,14 @@ PyObject *ClassifierByLookupTable2_getindex(PyObject *self, PyObject *pyexample)
 
 PyObject *ClassifierByLookupTable3_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Classifier, "(class-descriptor, desc0, desc1, desc2)")
 { PyTRY
-    PyObject *pycl, *pyvl1, *pyvl2, *pyvl3;
+    PVariable vcl, vvl1, vvl2, vvl3;
+    if (!PyArg_ParseTuple(args, "O&O&O&O&", cc_Variable, &vcl, cc_Variable, &vvl1, cc_Variable, &vvl2, cc_Variable, &vvl3))
+      PYERROR(PyExc_TypeError, "invalid parameter; four variables expected", PYNULL);
 
-    if (   !PyArg_ParseTuple(args, "OOOO", &pycl, &pyvl1, &pyvl2, &pyvl3)
-        || !PyOrVariable_Check(pycl)
-        || !PyOrVariable_Check(pyvl1)
-        || !PyOrVariable_Check(pyvl2)
-        || !PyOrVariable_Check(pyvl3))
-    PYERROR(PyExc_TypeError, "invalid parameter; four variables expected", PYNULL);
-
-    return WrapNewOrange(mlnew TClassifierByLookupTable3(PyOrange_AsVariable(pycl), PyOrange_AsVariable(pyvl1), PyOrange_AsVariable(pyvl2), PyOrange_AsVariable(pyvl3)), type);
+    return WrapNewOrange(mlnew TClassifierByLookupTable3(vcl, vvl1, vvl2, vvl3), type);
   PyCATCH
 }
+
 
 PyObject *ClassifierByLookupTable3_boundset(PyObject *self) PYARGS(0, "() -> [variable1, variable2, variable3]")
 { PyTRY

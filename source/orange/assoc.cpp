@@ -575,7 +575,7 @@ TAssociationClassifier::TAssociationClassifier(PDomain dom, PAssociationRules ar
 
 PDistribution TAssociationClassifier::classDistribution(const TExample &ex)
 { PDistribution wdistval = TDistribution::create(domain->classVar);
-  TDistribution &distval = const_cast<TDistribution &>(wdistval.getReference());
+  TDistribution &distval = wdistval.getReference();
 
   if ((voteWeight=='s') || (voteWeight=='c') || (voteWeight=='p'))
     PITERATE(TAssociationRules, ri, rules) {

@@ -38,17 +38,32 @@
 
 bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpaces=true);
 
-TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, PDomain dom)
-: TFileExampleGenerator(afname, dom)
+list<TDomain *> TTabDelimExampleGenerator::knownDomains;
+
+
+TTabDelimExampleGenerator::TTabDelimExampleGenerator(const TTabDelimExampleGenerator &old)
+: TFileExampleGenerator(old),
+  attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
+  DCs(old.DCs),
+  classPos(old.classPos),
+  headerLines(old.headerLines)
+{}
+
+
+TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+: TFileExampleGenerator(afname, PDomain()),
+  attributeTypes(mlnew TIntList()),
+  DCs(mlnew TStringList()),
+  classPos(-1),
+  headerLines(0)
 { 
-  TTabDelimDomain *mydomain = domain.AS(TTabDelimDomain);
-  if (!mydomain)
-    raiseError("'domain' should be derived from TabDelimDomain");
+  // domain needs to be initialized after attributeTypes, DCs, classPos, headerLines
+  domain = readDomain(afname, autoDetect, sourceVars, sourceMetas, sourceDomain, dontCheckStored, dontStore);
 
   TFileExampleIteratorData fei(afname);
   
   TIdList atoms;
-  for (int i = mydomain->headerLines; !feof(fei.file) && i--; )
+  for (int i = headerLines; !feof(fei.file) && i--; )
     while(!feof(fei.file) && !readTabAtom(fei, atoms)) {
       TIdList::iterator ii(atoms.begin()), ie(atoms.end());
       while ((ii!=ie) && !(*ii).length())
@@ -64,12 +79,12 @@ TTabDelimExampleGenerator::TTabDelimExampleGenerator(const string &afname, PDoma
 }
 
 
+void TTabDelimExampleGenerator::destroyNotifier(TDomain *domain)
+{ knownDomains.remove(domain); }
+
+
 bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
-  TTabDelimDomain *mydomain = domain.AS(TTabDelimDomain);
-  if (!mydomain)
-    raiseError("'domain' should be derived from TabDelimDomain");
-
   TIdList atoms;
   while(!feof(fei.file) && !readTabAtom(fei, atoms)) {
     TIdList::iterator ii(atoms.begin()), ie(atoms.end());
@@ -84,94 +99,109 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
   if (!atoms.size())
     return false;
 
-  mydomain->atomList2Example(atoms, exam, fei);
-  return true;
-}
+  // Add an appropriate number of empty atoms, if needed
+  while (atoms.size()<attributeTypes->size())
+    atoms.push_back(string(""));
+  _ASSERT(exam.domain==domain);
 
+  TExample::iterator ei(exam.begin());
+  TVarList::iterator vi(domain->attributes->begin());
+  TIdList ::iterator ai(atoms.begin());
+  vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
+  vector<string>::iterator dci(DCs->begin());
+  int pos=0;
+  for (; (si!=se); pos++, si++, ai++, dci++)
+    if (*si) { // if attribute is not to be skipped
+      string valstr;
 
-list<TTabDelimDomain *> TTabDelimDomain::knownDomains;
-TKnownVariables TTabDelimDomain::knownVariables;
+      // Check for don't care
+      if (!(*ai).length() || (valstr=="NA"))
+        valstr = "?"; // empty fields are treated as don't care
+      else { // else check if one of don't care symbols
+        valstr = *ai;
+        if (valstr.length()==1) {
+          if ((*dci).size()) {
+            string::iterator dcii = (*dci).begin();
+            for(; (dcii!=(*dci).end()) && (*dcii!=valstr[0]); dcii++);
+            if (dcii!=(*dci).end())
+              valstr[0]='?';
+          }
+          else
+            if (valstr[0]=='.')
+              valstr[0]='?';
+        }
+        else
+          if (valstr=="*")
+            valstr[0]='~';
+      }
 
+      if (*si==-1)
+        if (pos==classPos) { // if this is class value
+          TValue cval;
+          if (domain->classVar->varType == TValue::FLOATVAR) {
+            if (!domain->classVar->str2val_try(valstr, cval))
+              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous class", fei.filename.c_str(), fei.line, valstr.c_str());
+          }
+          else
+            domain->classVar->str2val_add(valstr, cval);
 
-void TTabDelimDomain::removeKnownVariable(TVariable *var)
-{ knownVariables.remove(var);
-  var->destroyNotifier = NULL;
-}
+          exam.setClass(cval);
+        }
+        else { // if this is a normal value
+          // replace the first ',' with '.'
+          // (if there is more than one, it's an error anyway
+          if ((*vi)->varType == TValue::FLOATVAR) {
+            int cp = valstr.find(',');
+            if (cp!=string::npos)
+              valstr[cp] = '.';
+            if (!(*vi)->str2val_try(valstr, *ei))
+              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous attribute '%s'", fei.filename.c_str(), fei.line, valstr.c_str(), (*vi)->name.c_str());
+          }
+          else
+            (*vi)->str2val_add(valstr, *ei);
 
+          vi++;
+          ei++;
+        }
+      else { // if this is a meta value
+        TMetaDescriptor *md = domain->metas[*si];
+        _ASSERT(md!=NULL);
+        TValue mval;
+        md->variable->str2val_add(valstr, mval);
+        exam.meta.setValue(*si, mval);
+      }
+    }
 
+  if (pos==classPos) // if class is the last value in the line, it is set here
+    domain->classVar->str2val_add(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1]);
 
-PVariable TTabDelimDomain::createVariable(const string &name, const int &varType, bool dontStore)
-{ PVariable var = ::createVariable(name, varType);
-  if (!dontStore)
-    knownVariables.add(var.AS(TVariable), removeKnownVariable);
+  while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
 
-  return var;
-}
-
-
-TTabDelimDomain::TTabDelimDomain(const TTabDelimDomain &old)
-: TDomain(old),
-  attributeTypes(mlnew TIntList(old.attributeTypes.getReference())),
-  DCs(old.DCs),
-  classPos(old.classPos)
-{}
-
-
-TTabDelimDomain::TTabDelimDomain()
-: TDomain(),
-  attributeTypes(mlnew TIntList()),
-  DCs(mlnew TStringList()),
-  classPos(-1),
-  headerLines(0)
-{}
-
-
-TTabDelimDomain::~TTabDelimDomain()
-{ knownDomains.remove(this);
-}
-
-
-bool TTabDelimDomain::isSameDomain(TTabDelimDomain const *orig) const
-{ if (   !orig
-      || (classPos != orig->classPos)
-      || !sameDomains(this, orig))
-    return false;
-
-  for (TIntList::const_iterator ki1(attributeTypes->begin()), ke1(attributeTypes->end()), ki2(orig->attributeTypes->begin()); ki1!=ke1; ki1++, ki2++)
-    if (*ki1 != *ki2)
-      return false;
-
-  for (TStringList::const_iterator si1(DCs->begin()), se1(DCs->end()), si2(orig->DCs->begin()); si1!=se1; si1++, si2++)
-    if (*si1 != *si2)
-      return false;
-
-  return true;
-}
-
-
-PDomain TTabDelimDomain::readDomain(const bool autoDetect, const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ PDomain newDomain = (autoDetect ? domainWithDetection : domainWithoutDetection) (stem, sourceVars, sourceDomain, dontCheckStored, dontStore);
-
-  TTabDelimDomain *unewDomain = newDomain.AS(TTabDelimDomain);
-  if (!unewDomain)
-    return newDomain;
-                                 
-  if (sourceDomain) {
-    TTabDelimDomain *usourceDomain = sourceDomain.AS(TTabDelimDomain);
-    if (unewDomain->isSameDomain(usourceDomain))
-      return sourceDomain;
+  if (ai!=atoms.end()) {
+	TIdList::iterator ii=atoms.begin();
+	string s=*ii;
+	while(++ii!=atoms.end()) s+=" "+*ii;
+    raiseError("example of invalid length (%s)", s.c_str());
   }
 
-  if (dontCheckStored)
-    return newDomain;
+  return true;
+}
 
-  ITERATE(list<TTabDelimDomain *>, sdi, knownDomains)
-    if (unewDomain->isSameDomain(*sdi))
-      // The domain is rewrapped here (we have a pure pointer, but it has already been wrapped)
-      return *sdi;
 
-  if (!dontStore && !exists(knownDomains, unewDomain))
-    knownDomains.push_back(unewDomain);
+
+PDomain TTabDelimExampleGenerator::readDomain(const string &stem, const bool autoDetect, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ bool domainIsNew;
+  PDomain newDomain;
+  
+  if (autoDetect)
+    newDomain = domainWithDetection(stem, domainIsNew, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+  else
+    newDomain = domainWithoutDetection(stem, domainIsNew, sourceVars, sourceMetas, sourceDomain, dontCheckStored);
+
+  if (domainIsNew && !dontStore) {
+    newDomain->destroyNotifier = destroyNotifier;
+    knownDomains.push_back(newDomain.AS(TDomain));
+  }
 
   return newDomain;
 }
@@ -213,8 +243,11 @@ class TSearchWarranty
   {}
 };
 
-PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
 { 
+  headerLines = 1;
+  DCs = mlnew TStringList(domain->variables->size(), "");
+
   TFileExampleIteratorData fei(stem);
   
   TIdList varNames;
@@ -222,14 +255,10 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
   if (varNames.empty())
     ::raiseError("unexpected end of file '%s'", fei.filename.c_str());
 
-  TTabDelimDomain *domain = mlnew TTabDelimDomain();
-  PDomain wdomain = domain;
-  int &classPos = domain->classPos;
-  TVarList &variables = const_cast<TVarList &>(domain->variables.getReference());
-  TIntList &attributeTypes = const_cast<TIntList &>(domain->attributeTypes.getReference());
-  TMetaVector &metas = domain->metas;
+  TAttributeDescriptions attributeDescriptions, metas;
+  classPos = -1;
+  int classType = -1;
 
-  domain->headerLines = 1;
 
   list<TSearchWarranty> searchWarranties;
 
@@ -243,14 +272,15 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
          (and reports an error if there is more than one such attribute)
        - to attributeTypes, appends -1 for ordinary atributes, -2 for metas and 0 for ignored */
     int varType = -1; // varType, or -1 for unnown
-    attributeTypes.push_back(-1);
+    attributeTypes->push_back(-1);
+    int &attributeType = attributeTypes->back();
 
     const char *cptr = (*ni).c_str();
     if (*cptr && (cptr[1]=='#')) {
       if (*cptr == 'm')
-        attributeTypes.back() = -2;
+        attributeType = -2;
       else if (*cptr == 'i')
-        attributeTypes.back() = 0;
+        attributeType = 0;
       else if (*cptr == 'c') {
         if (classPos>-1)
           ::raiseError("more than one attribute marked as class");
@@ -274,9 +304,9 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
     else if (*cptr && cptr[1] && (cptr[2]=='#')) {
       bool beenWarned = false;
       if (*cptr == 'm')
-        attributeTypes.back() = -2;
+        attributeType = -2;
       else if (*cptr == 'i')
-        attributeTypes.back() = 0;
+        attributeType = 0;
       else if (*cptr == 'c') {
         if (classPos>-1)
           ::raiseError("more than one attribute marked as class");
@@ -308,24 +338,27 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
        If the descriptor was nor found nor created, a warranty is issued.
     */
       
-    if (attributeTypes.back()) {
-      int id;
-      PVariable var = makeVariable<TTabDelimDomain>(*ni, varType, sourceVars, sourceDomain, dontCheckStored ? NULL : &knownVariables, dontCheckStored ? NULL : &knownDomains, id, varType>=0, NULL);
-      if (attributeTypes.back() == -2) {
-        if (!id)
-          id = getMetaID();
-        metas.push_back(TMetaDescriptor(id, var));
-        attributeTypes.back() = id;
-
-        if (!var)
-          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -id));
+    if ((classPos == ni-varNames.begin())) {
+      classType = varType;
+    }
+    else {
+      if (attributeType == -2) {
+        metas.push_back(TAttributeDescription(*ni, varType));
+        if (varType==-1)
+          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -metas.size()));
       }
-      else {
-        variables.push_back(var);
-        if (!var)
-          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), variables.size()-1));
+      else if (attributeType) {
+        attributeDescriptions.push_back(TAttributeDescription(*ni, varType));
+        if (varType=-1)
+          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), attributeType==-2 ? -1 : attributeDescriptions.size()-1));
       }
     }
+  }
+
+  if (classPos > -1) {
+    attributeDescriptions.push_back(TAttributeDescription(varNames[classPos], classType));
+    if (classType<0)
+      searchWarranties.push_back(TSearchWarranty(classPos, attributeDescriptions.size()-1));
   }
 
   if (!searchWarranties.empty()) {
@@ -340,11 +373,10 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
 
         // only discrete attributes can have values longer than 63 characters
         if (atom.length()>63) {
-          PVariable newVar = createVariable(varNames[(*wi).posInFile], TValue::INTVAR, dontStore);
-          if ((*wi).posInDomain >= 0)
-            variables[(*wi).posInDomain] = newVar;
+          if ((*wi).posInDomain<0)
+            metas[-(*wi).posInDomain - 1].varType = TValue::INTVAR;
           else
-            metas[-(*wi).posInDomain]->variable = newVar;
+            attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
           wi = searchWarranties.erase(wi);
           wi--;
           continue;
@@ -378,12 +410,12 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
         char *eptr;
         strtod(numTest, &eptr);
         if (*eptr) {
-          PVariable newVar = createVariable(varNames[(*wi).posInFile], TValue::INTVAR, dontStore);
-          if ((*wi).posInDomain >= 0)
-            variables[(*wi).posInDomain] = newVar;
+          if ((*wi).posInDomain<0)
+            metas[-(*wi).posInDomain - 1].varType = TValue::INTVAR;
           else
-            metas[-(*wi).posInDomain]->variable = newVar;
+            attributeDescriptions[(*wi).posInDomain].varType = TValue::INTVAR;
           wi = searchWarranties.erase(wi);
+          wi--;
           continue;
         }
       }
@@ -395,41 +427,36 @@ PDomain TTabDelimDomain::domainWithDetection(const string &stem, PVarList source
       if ((*wi).suspectedType == 3)
         ::raiseError("cannot determine type for attribute '%s'", name.c_str());
 
-      PVariable var = createVariable(name, (*wi).suspectedType == 2 ? TValue::INTVAR : TValue::FLOATVAR, dontStore);
-      if ((*wi).posInDomain >= 0)
-        variables[(*wi).posInDomain] = var;
+      int type = (*wi).suspectedType == 2 ? TValue::INTVAR : TValue::FLOATVAR;
+      if ((*wi).posInDomain<0)
+        metas[-(*wi).posInDomain - 1].varType = type;
       else
-        metas[-(*wi).posInDomain]->variable = var;
+        attributeDescriptions[(*wi).posInDomain].varType = type;
     }
   }
 
-  if (classPos>=0) {
-    TVarList::iterator ci = variables.begin()+classPos;
-    domain->classVar = *ci;
-    variables.erase(ci);
-    domain->attributes = mlnew TVarList(variables);
-    variables.push_back(domain->classVar);
-  }
-  else {
-    classPos = varNames.size()-1;
-    vector<int>::reverse_iterator fri(attributeTypes.rbegin()), fre(attributeTypes.rend());
-    for(; (fri!=fre) && (*fri != -1); fri++, classPos--);
-    if (fri==fre)
-      classPos = -1;
-    else {
-      domain->attributes = mlnew TVarList(variables);
-      domain->classVar = variables.back();
-      domain->attributes->erase(domain->attributes->end()-1);
-    }
+  if (sourceDomain) {
+    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
   }
 
-  domain->DCs = mlnew TStringList(domain->variables->size(), "");
+  int *metaIDs = mlnew int[metas.size()];
+  PDomain newDomain = prepareDomain(&attributeDescriptions, classPos>=0, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, sourceMetas, metaIDs);
 
-  return wdomain;
+  int *mid = metaIDs;
+  PITERATE(TIntList, ii, attributeTypes)
+    if (*ii == -2)
+      *ii = *(mid++);
+
+  mldelete metaIDs;
+
+  return newDomain;
 }
 
 
-PDomain TTabDelimDomain::domainWithoutDetection(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bool &domainIsNew, PVarList sourceVars, TMetaVector *sourceMetas, PDomain sourceDomain, bool dontCheckStored)
 {
   TFileExampleIteratorData fei(stem);
   
@@ -450,216 +477,120 @@ PDomain TTabDelimDomain::domainWithoutDetection(const string &stem, PVarList sou
   if (varNames.size() < varFlags.size())
     ::raiseError("too many flags (third line too long)");
 
-  TTabDelimDomain *domain = mlnew TTabDelimDomain();
-  domain->attributeTypes = mlnew TIntList(varNames.size(), -1);
-  domain->DCs = mlnew TStringList(varNames.size(), "");
+  TAttributeDescriptions attributeDescriptions, metas;
+  TAttributeDescription classDescription("", 0);
+  classPos = -1;
+  headerLines = 3;
 
-  PDomain wdomain = domain;
-  int &classPos = domain->classPos;
-  TVarList &variables = const_cast<TVarList &>(domain->variables.getReference());
-  TIntList &attributeTypes = const_cast<TIntList &>(domain->attributeTypes.getReference());
-  TMetaVector &metas = domain->metas;
+  attributeTypes = mlnew TIntList(varNames.size(), -1);
+  DCs = mlnew TStringList(varNames.size(), "");
 
-  domain->headerLines = 3;
+  TIdList::iterator vni(varNames.begin()), vne(varNames.end());
+  TIdList::iterator ti(varTypes.begin());
+  TIdList::iterator fi(varFlags.begin()), fe(varFlags.end());
+  TIntList::iterator ati(attributeTypes->begin());
+  for(; vni!=vne; fi++, vni++, ti++, ati++) {
+    TAttributeDescription *attributeDescription = NULL;
+    bool ordered = false;
 
+    if (fi!=fe) {
+      TProgArguments args("dc: ordered", *fi, false);
 
-  int pos=0;
-
-  // parses the 3rd line; for each attribute, it checks whether the flags are correct,
-  // it sets the classPos (position of the class attribute), attributeTypes[i] becomes 0 for attribute i
-  // which is to be skipped, and id (getMetaID) for meta attributes. It sets DCs[i] for attributes
-  // with different DC character.
-  TIdList::iterator vni = varNames.begin();
-  vector<TProgArguments> arguments;
-  ITERATE(TIdList, fi, varFlags) {
-    arguments.push_back(TProgArguments("dc: ordered", *fi, false));
-    TProgArguments &args = arguments.back();
-    if (args.direct.size()) {
-      if (args.direct.size()>1)
-        ::raiseError("invalid flags for attribute '%s'", (*vni).c_str());
-      string direct = args.direct.front();
-      if ((direct=="s") || (direct=="skip") || (direct=="i") || (direct=="ignore"))
-        attributeTypes[pos] = 0;
-      else if ((direct=="c") || (direct=="class"))
-        if (classPos==-1)
-          classPos = pos;
-        else 
-          ::raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", varNames[pos].c_str(), (*vni).c_str());
-      else if (direct=="meta")
-        attributeTypes[pos]=-2;
-    }
-
-    if (args.exists("dc"))
-      domain->DCs->at(pos) = args["dc"];
-
-    pos++;
-    vni++;
-  }
-  while (arguments.size()<varNames.size())
-    arguments.push_back(TProgArguments());
-
-  TKnownVariables *sknownv = dontCheckStored ? NULL : &knownVariables;
-  list<TTabDelimDomain *> *sknownd = dontCheckStored ? NULL : &knownDomains;
-  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
-
-  // Constructs variables
-  vector<int>::iterator si = attributeTypes.begin();
-  vector<TProgArguments>::const_iterator argi(arguments.begin());
-  pos=0;
-  for(TIdList::iterator ni=varNames.begin(), ti=varTypes.begin(); ni!=varNames.end(); ni++, ti++, pos++, argi++, si++) {
-    if (*si) {
-      PVariable newVar;
-      int id;
-
-      if (!(*ti).length())
-        ::raiseError("type for attribute '%s' is missing", (*ni).c_str());
-
-      if ((*ti=="c") || (*ti=="continuous") || (*ti=="float") || (*ti=="f"))
-        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::FLOATVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
-
-      else if ((*ti=="d") || (*ti=="discrete") || (*ti=="e") || (*ti=="enum")) {
-        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::INTVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
-        newVar->ordered = (*argi).exists("ordered");
+      if (args.direct.size()) {
+        if (args.direct.size()>1)
+          ::raiseError("invalid flags for attribute '%s'", (*vni).c_str());
+        string direct = args.direct.front();
+        if ((direct=="s") || (direct=="skip") || (direct=="i") || (direct=="ignore"))
+          *ati = 0;
+        else if ((direct=="c") || (direct=="class"))
+          if (classPos==-1) {
+            classPos = vni - varNames.begin();
+            classDescription.name = *vni;
+            attributeDescription = &classDescription;
+          }
+          else 
+            ::raiseError("multiple attributes are specified as class attribute ('%s' and '%s')", (*vni).c_str(), (*vni).c_str());
+        else if ((direct=="m") || (direct=="meta"))
+          *ati = -2;
       }
 
-      else if (*ti=="string")
-        newVar = makeVariable<TTabDelimDomain>(*ni, stringVarType, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
+      if (args.exists("dc"))
+        DCs->at(vni-varNames.begin()) = args["dc"];
 
+      ordered = args.exists("ordered");
+    }
+
+    if (!*ati)
+      continue;
+
+    if (!attributeDescription) {// this can only be defined if the attribute is a class attribute
+      if (*ati==-2) {
+        metas.push_back(TAttributeDescription(*vni, -1, ordered));
+        attributeDescription = &metas.back();
+      }
       else {
-        string vals;
-        newVar = makeVariable<TTabDelimDomain>(*ni, TValue::INTVAR, sourceVars, sourceDomain, sknownv, sknownd, id, false, notifier);
-        TEnumVariable *evar = newVar.AS(TEnumVariable);
-        newVar->ordered = (*argi).exists("ordered");
-        ITERATE(string, ci, *ti)
-          if (*ci==' ') {
-            if (vals.length())
-              evar->addValue(vals);
-            vals="";
-          } 
-          else {
-            if ((*ci=='\\') && (ci[1]==' ')) {
-              vals += ' ';
-              ci++;
-            }
-            else
-              vals += *ci;
+        attributeDescriptions.push_back(TAttributeDescription(*vni, -1, ordered));
+        attributeDescription = &attributeDescriptions.back();
+      }
+    }
+    else
+      attributeDescription->ordered = ordered;
+
+    if (!(*ti).length())
+      ::raiseError("type for attribute '%s' is missing", (*vni).c_str());
+
+    if ((*ti=="c") || (*ti=="continuous") || (*ti=="float") || (*ti=="f"))
+      attributeDescription->varType = TValue::FLOATVAR;
+    else if ((*ti=="d") || (*ti=="discrete") || (*ti=="e") || (*ti=="enum"))
+      attributeDescription->varType = TValue::INTVAR;
+    else if (*ti=="string")
+      attributeDescription->varType = stringVarType;
+    else {
+      attributeDescription->varType = TValue::INTVAR;
+      attributeDescription->values = mlnew TStringList;
+
+      string vals;
+      ITERATE(string, ci, *ti)
+        if (*ci==' ') {
+          if (vals.length())
+            attributeDescription->values->push_back(vals);
+          vals="";
+        }
+        else {
+          if ((*ci=='\\') && (ci[1]==' ')) {
+            vals += ' ';
+            ci++;
           }
+          else
+            vals += *ci;
+        }
 
-        if (vals.length())
-          evar->addValue(vals);
-
-        newVar->ordered = (*argi).exists("ordered");
-      }
-
-      if (*si==-1) {
-        if (pos==classPos)
-          domain->classVar = newVar;
-        else
-          domain->attributes->push_back(newVar);
-      }
-      else { // *si==-2
-        if (!id)
-          id = getMetaID();
-        *si = id;
-        metas.push_back(TMetaDescriptor(id, newVar));
-      }
+      if (vals.length())
+        attributeDescription->values->push_back(vals);
     }
   }
 
-  domain->variables = mlnew TVarList(domain->attributes.getReference());
-  if (domain->classVar)
-    domain->variables->push_back(domain->classVar);
+  if (classPos > -1)
+    attributeDescriptions.push_back(classDescription);
 
-  return wdomain;
-}
-
-
-void TTabDelimDomain::atomList2Example(TIdList &atoms, TExample &exam, const TFileExampleIteratorData &fei)
-{
-  // Add an appropriate number of empty atoms, if needed
-  while (atoms.size()<attributeTypes->size())
-    atoms.push_back(string(""));
-  _ASSERT(exam.domain==this);
-
-  TExample::iterator ei(exam.begin());
-  TVarList::iterator vi(attributes->begin());
-  TIdList ::iterator ai(atoms.begin());
-  vector<int>::iterator si(attributeTypes->begin()), se(attributeTypes->end());
-  vector<string>::iterator dci(DCs->begin());
-  int pos=0;
-  for (; (si!=se); pos++, si++, ai++, dci++)
-    if (*si) { // if attribute is not to be skipped
-      string valstr;
-
-      // Check for don't care
-      if (!(*ai).length() || (valstr=="NA"))
-        valstr = "?"; // empty fields are treated as don't care
-      else { // else check if one of don't care symbols
-        valstr = *ai;
-        if (valstr.length()==1) {
-          if ((*dci).size()) {
-            string::iterator dcii = (*dci).begin();
-            for(; (dcii!=(*dci).end()) && (*dcii!=valstr[0]); dcii++);
-            if (dcii!=(*dci).end())
-              valstr[0]='?';
-          }
-          else
-            if (valstr[0]=='.')
-              valstr[0]='?';
-        }
-        else
-          if (valstr=="*")
-            valstr[0]='~';
-      }
-
-      if (*si==-1)
-        if (pos==classPos) { // if this is class value
-          TValue cval;
-          if (classVar->varType == TValue::FLOATVAR) {
-            if (!classVar->str2val_try(valstr, cval))
-              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous class", fei.filename.c_str(), fei.line, valstr.c_str());
-          }
-          else
-            classVar->str2val_add(valstr, cval);
-
-          exam.setClass(cval);
-        }
-        else { // if this is a normal value
-          // replace the first ',' with '.'
-          // (if there is more than one, it's an error anyway
-          if ((*vi)->varType == TValue::FLOATVAR) {
-            int cp = valstr.find(',');
-            if (cp!=string::npos)
-              valstr[cp] = '.';
-            if (!(*vi)->str2val_try(valstr, *ei))
-              raiseError("file '%s', line %i: '%s' is not a legal value for the continuous attribute '%s'", fei.filename.c_str(), fei.line, valstr.c_str(), (*vi)->name.c_str());
-          }
-          else
-            (*vi)->str2val_add(valstr, *ei);
-
-          vi++;
-          ei++;
-        }
-      else { // if this is a meta value
-        TMetaDescriptor *md = metas[*si];
-        _ASSERT(md!=NULL);
-        TValue mval;
-        md->variable->str2val_add(valstr, mval);
-        exam.meta.setValue(*si, mval);
-      }
-    }
-
-  if (pos==classPos) // if class is the last value in the line, it is set here
-    classVar->str2val_add(ai==atoms.end() ? "?" : *(ai++), exam[variables->size()-1]);
-
-  while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
-
-  if (ai!=atoms.end()) {
-	TIdList::iterator ii=atoms.begin();
-	string s=*ii;
-	while(++ii!=atoms.end()) s+=" "+*ii;
-    raiseError("example of invalid length (%s)", s.c_str());
+  if (sourceDomain) {
+    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
   }
+
+  int *metaIDs = mlnew int[metas.size()];
+  PDomain newDomain = prepareDomain(&attributeDescriptions, classPos>=0, &metas, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, sourceMetas, metaIDs);
+
+  int *mid = metaIDs;
+  PITERATE(TIntList, ii, attributeTypes)
+    if (*ii == -2)
+      *ii = *(mid++);
+
+  mldelete metaIDs;
+
+  return newDomain;
 }
 
 
@@ -796,9 +727,9 @@ void printVarType(FILE *file, PVariable var)
 }
 
 
-void tabDelim_writeDomain(FILE *file, PDomain dom)
+void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom)
 { 
-  { int notFirst=0;
+  { int notFirst = 0;
     const_PITERATE(TVarList, vi, dom->variables) {
       if (notFirst++)
         fprintf(file, "\t%s", (*vi)->name.c_str());
@@ -848,3 +779,70 @@ void tabDelim_writeDomain(FILE *file, PDomain dom)
   }
 }
 
+
+/* If discrete value can be mistakenly read as continuous, we need to add the prefix.
+   This needs to be checked. */
+bool tabDelim_checkNeedsD(PVariable var)
+{
+  bool floated = false;
+  TEnumVariable *enumv = var.AS(TEnumVariable);
+  if (enumv) {
+    TValue val;
+    string sval;
+    char svalc[65];
+
+    if (!enumv->firstValue(val))
+      return true;
+    
+    do {
+      enumv->val2str(val, sval);
+      if (sval.size()>63)
+        return false;
+
+      if ((sval.size()==1) && (sval[0]>='0') && (sval[0]<='9'))
+        continue;
+
+      // Convert commas into dots
+      char *sc = svalc;
+      ITERATE(string, si, sval) {
+        *(sc++) = *si==',' ? '.' : *si;
+        *sc = 0;
+
+        char *eptr;
+        strtod(svalc, &eptr);
+        if (*eptr)
+          return false;
+        else
+          floated = true;
+      }
+    } while (enumv->nextValue(val));
+  }
+  
+  // All values were either one digit or successfully interpreted as continuous
+  // We need to return true if there were some that were not one-digit...
+  return floated;
+}
+
+
+void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom)
+{
+  int notFirst = 0;
+  const_PITERATE(TVarList, vi, dom->attributes)
+    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
+  
+  if (dom->classVar)
+    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
+
+  const_ITERATE(TMetaVector, mi, dom->metas)
+    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+
+  fprintf(file, "\n");
+}
+
+
+void tabDelim_writeDomain(FILE *file, PDomain dom, bool autodetect)
+{ if (autodetect)
+    tabDelim_writeDomainWithDetection(file, dom);
+  else 
+    tabDelim_writeDomainWithoutDetection(file, dom);
+}

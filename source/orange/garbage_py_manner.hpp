@@ -282,6 +282,17 @@ public:
   { return (counter!=NULL); }
 
 
+  inline T *getUnwrappedPtr()
+  { return counter ? counter->ptr : NULL; }
+
+
+  inline T &getReference()
+  { if (!counter)
+      raiseError("Orange internal error: NULL pointer to '%s'", TYPENAME(typeid(T)));
+    return *counter->ptr;
+  }
+
+
   inline T const *getUnwrappedPtr() const
   { return counter ? counter->ptr : NULL; }
 

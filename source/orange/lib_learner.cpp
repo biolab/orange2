@@ -157,41 +157,35 @@ PyObject *AssociationRule_new(PyTypeObject *type, PyObject *args, PyObject *) BA
 }
 
 
-PyObject *AssociationRule_appliesLeft(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(example) -> bool")
+PyObject *AssociationRule_appliesLeft(PyObject *self, PyObject *arg, PyObject *) PYARGS(METH_O, "(example) -> bool")
 { PyTRY
-    TPyExample *le;
-    if (PyArg_ParseTuple(args, "O", (PyObject *)(&le)) && PyOrExample_Check(le)) {
-      CAST_TO(TAssociationRule, rule)
-      return PyInt_FromLong(rule->appliesLeft(PyExample_AS_ExampleReference(le)) ? 1 : 0);
-    }
-    else 
-      return PYNULL;
+    if (!PyOrExample_Check(arg))
+      PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
+    
+    CAST_TO(TAssociationRule, rule)
+    return PyInt_FromLong(rule->appliesLeft(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
 }
 
 
-PyObject *AssociationRule_appliesRight(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(example) -> bool")
+PyObject *AssociationRule_appliesRight(PyObject *self, PyObject *arg, PyObject *) PYARGS(METH_O, "(example) -> bool")
 { PyTRY
-    TPyExample *le;
-    if (PyArg_ParseTuple(args, "O", (PyObject *)(&le)) && PyOrExample_Check(le)) {
-      CAST_TO(TAssociationRule, rule)
-      return PyInt_FromLong(rule->appliesRight(PyExample_AS_ExampleReference(le)) ? 1 : 0);
-    }
-    else 
-      return PYNULL;
+    if (!PyOrExample_Check(arg))
+      PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
+    
+    CAST_TO(TAssociationRule, rule)
+    return PyInt_FromLong(rule->appliesRight(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
 }
 
 
-PyObject *AssociationRule_appliesBoth(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(example) -> bool")
+PyObject *AssociationRule_appliesBoth(PyObject *self, PyObject *arg, PyObject *) PYARGS(METH_O, "(example) -> bool")
 { PyTRY
-    TPyExample *le;
-    if (PyArg_ParseTuple(args, "O", (PyObject *)(&le)) && PyOrExample_Check(le)) {
-      CAST_TO(TAssociationRule, rule)
-      return PyInt_FromLong(rule->appliesBoth(PyExample_AS_ExampleReference(le)) ? 1 : 0);
-    }
-    else 
-      return PYNULL;
+    if (!PyOrExample_Check(arg))
+      PYERROR(PyExc_TypeError, "attribute error (example expected)", PYNULL);
+    
+    CAST_TO(TAssociationRule, rule)
+    return PyInt_FromLong(rule->appliesBoth(PyExample_AS_ExampleReference(arg)) ? 1 : 0);
   PyCATCH
 }
 
@@ -214,25 +208,19 @@ bool convertFromPython(PyObject *obj, PAssociationRule &rule)
       return true;
     }
 
-  TPyExample *le, *re;
+  TExample *le, *re;
   float support, confidence;
-  if (   PyArg_ParseTuple(obj, "OOff", (PyObject *)(&le), (PyObject *)(&re), &support, &confidence)
-      && PyOrExample_Check(le) && PyOrExample_Check(re)
-     ) {
-    rule=mlnew TAssociationRule(PExample(mlnew TExample(PyExample_AS_Example(le))), PExample(mlnew TExample(PyExample_AS_Example(re))),
-                                     support, confidence,
-                                     TAssociationRule::countItems(PExample(PyExample_AS_Example(le))),
-                                      TAssociationRule::countItems(PExample(PyExample_AS_Example(re))));
+  if (PyArg_ParseTuple(obj, "O&O&ff", ptr_Example, &le, ptr_Example, &re, &support, &confidence)) {
+    PExample nle = mlnew TExample(*le);
+    PExample nre = mlnew TExample(*re);
+    rule = mlnew TAssociationRule(nle, nre, support, confidence, TAssociationRule::countItems(nle), TAssociationRule::countItems(nre));
     return true;
   }
-  
-  PyObject *couldBeRule;
-  if (   PyArg_ParseTuple(obj, "O", &couldBeRule)
-      && PyOrAssociationRule_Check(couldBeRule)
-     ) {
-        rule = PyOrange_AsAssociationRule(couldBeRule);
-        return true;
-     }
+ 
+  PyErr_Clear();
+   
+  if (PyArg_ParseTuple(obj, "O&:convertFromPython(AssociationRule)", cc_AssociationRule, &rule))
+    return true;
     
   PYERROR(PyExc_TypeError, "invalid arguments", false);
 }
@@ -385,10 +373,7 @@ PyObject *TreeStopCriteria_lowcall(PyObject *self, PyObject *args, PyObject *key
     PExampleGenerator egen;
     PDomainContingency dcont;
     int weight = 0;
-    if (!PyArg_ParseTuple(args, "O&|iO&:TreeStopCriteria.__call__",
-                                 pt_ExampleGenerator, &egen,
-                                 &weight,
-                                 pt_DomainContingency, &dcont))
+    if (!PyArg_ParseTuple(args, "O&|iO&:TreeStopCriteria.__call__", pt_ExampleGenerator, &egen, &weight, pt_DomainContingency, &dcont))
       return PYNULL;
 
     bool res;
@@ -431,8 +416,8 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     SETATTRIBUTES
     PExampleGenerator gen;
     int weightID = 0;
-    PDomainContingency dcont = PDomainContingency();
-    PDistribution apriori = PDistribution();
+    PDomainContingency dcont;
+    PDistribution apriori;
     PyObject *pycandidates = PYNULL;
 
     if (!PyArg_ParseTuple(args, "O&|iO&O&O:TreeSplitConstructor.call", &pt_ExampleGenerator, &gen, &weightID, &ccn_DomainContingency, &dcont, &ccn_Distribution, &apriori, &pycandidates))
@@ -532,14 +517,13 @@ PyObject *TreeDescender_call(PyObject *self, PyObject *args, PyObject *keywords)
 
     SETATTRIBUTES
 
-    PyObject *pynode, *pyexample;
-    if (   !PyArg_ParseTuple(args, "OO", &pynode, &pyexample)
-        || !PyOrTreeNode_Check(pynode)
-        || !PyOrExample_Check(pyexample))
+    PTreeNode onode;
+    TExample *example;
+    if (!PyArg_ParseTuple(args, "O&O&", cc_TreeNode, &onode, ptr_Example, &example))
       PYERROR(PyExc_TypeError, "invalid parameters", PYNULL);
 
     PDiscDistribution distr;
-    PTreeNode node = SELF_AS(TTreeDescender)(PyOrange_AsTreeNode(pynode), PyExample_AS_ExampleReference(pyexample), distr);
+    PTreeNode node = SELF_AS(TTreeDescender)(onode, *example, distr);
     return Py_BuildValue("NN", WrapOrange(node), WrapOrange(distr));
   PyCATCH
 }
@@ -658,14 +642,14 @@ PyObject *BayesClassifier_p(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 { PyTRY
     CAST_TO(TBayesClassifier, me);
 
-    PyObject *pyvalue, *pyex;
+    PyObject *pyvalue;
     TValue value;
-    if (   !PyArg_ParseTuple(args, "OO:BayesClassifier.p", &pyvalue, &pyex)
-        || !PyOrExample_Check(pyex)
+    TExample *ex;
+    if (   !PyArg_ParseTuple(args, "OO&:BayesClassifier.p", &pyvalue, ptr_Example, &ex)
         || !convertFromPython(pyvalue, value, me->domain->classVar))
-      PYERROR(PyExc_TypeError, "BayesLearner.p: invalid arguments", PYNULL);
+      return PYNULL;
       
-    return PyFloat_FromDouble((double)SELF_AS(TBayesClassifier).p(value, PyExample_AS_Example(pyex).getReference()));
+    return PyFloat_FromDouble((double)SELF_AS(TBayesClassifier).p(value, *ex));
 
   PyCATCH
 }

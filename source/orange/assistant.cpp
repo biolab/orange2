@@ -31,10 +31,30 @@
 #include "assistant.ppp"
 
 
-TAssistantExampleGenerator::TAssistantExampleGenerator(const string &afname, PDomain dom)
-  : TFileExampleGenerator(afname, dom)
-  {}
-  
+list<TDomain *> TAssistantExampleGenerator::knownDomains;
+
+TAssistantExampleGenerator::TAssistantExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+: TFileExampleGenerator(datafile, readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore))
+{}
+
+TAssistantExampleGenerator::TAssistantExampleGenerator(const TAssistantExampleGenerator &old)
+: TFileExampleGenerator(old),
+  intervals(old.intervals.size(), NULL)
+{ const_ITERATE(vector<vector<float> *>, ii, old.intervals)
+    intervals.push_back(*ii ? mlnew vector<float>(**ii) : NULL);
+}
+
+
+TAssistantExampleGenerator::~TAssistantExampleGenerator()
+{ ITERATE(vector<vector<float> *>, ii, intervals)
+    if (*ii)
+      mldelete *ii;
+}
+
+
+void TAssistantExampleGenerator::destroyNotifier(TDomain *domain)
+{ knownDomains.remove(domain); }
+
 
 // Overloaded to skip the first line of the file (number of examples)
 TExampleIterator TAssistantExampleGenerator::begin()
@@ -52,10 +72,6 @@ TExampleIterator TAssistantExampleGenerator::begin()
 // Reads a line of the file. Atoms are converted to example values using str2val_add methods of corresponding variables
 bool TAssistantExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 { char line[1024], *curr;
-
-  TAssistantDomain *mydomain = domain.AS(TAssistantDomain);
-  if (!mydomain)
-    raiseError("'domain' should be derived from AssistantDomain.");
 
   while(!feof(fei.file)) {
     fei.line++;
@@ -89,7 +105,7 @@ bool TAssistantExampleGenerator::readExample(TFileExampleIteratorData &fei, TExa
     raiseError("error while reading line %i of file '%s'example", fei.line, fei.filename.c_str());
 
   TExample::iterator ei = exam.begin();
-  vector<vector<float> *>::const_iterator ri(mydomain->intervals.begin());
+  vector<vector<float> *>::const_iterator ri(intervals.begin());
   for(TVarList::iterator vi(domain->attributes->begin()), ve(domain->attributes->end()); vi!=ve; vi++, ri++, ei++)
     if ((*vi)->varType==TValue::INTVAR)
 	    if (*ri) {
@@ -119,117 +135,69 @@ bool TAssistantExampleGenerator::readExample(TFileExampleIteratorData &fei, TExa
 // This is defined in retis.cpp
 string getLine(istream &str);
 
-TAssistantDomain::TAssistantDomain()
-{}
 
-
-TAssistantDomain::TAssistantDomain(const TAssistantDomain &old)
-: TDomain(old),
-  intervals(old.intervals.size(), NULL)
-{ const_ITERATE(vector<vector<float> *>, ii, old.intervals)
-    intervals.push_back(*ii ? mlnew vector<float>(**ii) : NULL);
-}
-
-
-TAssistantDomain::~TAssistantDomain()
-{ ITERATE(vector<vector<float> *>, ii, intervals)
-    if (*ii)
-      mldelete *ii;
-  knownDomains.remove(this);
-}
-
-
-list<TAssistantDomain *> TAssistantDomain::knownDomains;
-TKnownVariables TAssistantDomain::knownVariables;
-
-
-void TAssistantDomain::removeKnownVariable(TVariable *var)
-{ knownVariables.remove(var);
-  var->destroyNotifier = NULL;
-}
-
-
-bool TAssistantDomain::isSameDomain(TAssistantDomain const *orig) const
-{ if (   !orig
-      || !sameDomains(this, orig)
-      || (intervals.size()!=orig->intervals.size()))
-    return false;
-
-  for(vector<vector<float> *>::const_iterator vvi1(intervals.begin()), vve1(intervals.end()), vvi2(orig->intervals.begin()); vvi1!=vve1; vvi1++, vvi2++) {
-    if ((*vvi1==NULL) != (*vvi2==NULL))
-      return false;
-    if (!*vvi1)
-      continue;
-    if ((*vvi1)->size() != (*vvi2)->size())
-      return false;
-    for(vector<float>::const_iterator vi1((*vvi1)->begin()), ve1((*vvi1)->end()), vi2((*vvi2)->begin()); vi1!=ve1; vi1++, vi2++)
-      if (*vi1 != *vi2)
-        return false;
-  }
-
-  return true;
-}
-
-
-PDomain TAssistantDomain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ TAssistantDomain *newDomain = mlnew TAssistantDomain();
-  PDomain wdomain = newDomain;
-  
+PDomain TAssistantExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ 
   ifstream str(stem.c_str(), ios::binary);
   if (!str.is_open())
     ::raiseError("AssistantDomain: cannot open file '%s'", stem.c_str());
 
-  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
-  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
-
-  newDomain->classVar = makeVariable(getLine(str), TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
-  newDomain->variables->push_back(newDomain->classVar);
-  TEnumVariable *evar = newDomain->classVar.AS(TEnumVariable);
+  TAttributeDescription classDescription(getLine(str), TValue::INTVAR);
+  classDescription.values = mlnew TStringList;
   for(int noval = atoi(getLine(str).c_str()); noval; noval--)
-    evar->addValue(getLine(str).c_str());
+    classDescription.values->push_back(getLine(str));
+
+  TAttributeDescriptions attributeDescriptions;
 
   int noAttr = atoi(getLine(str).c_str());
-  newDomain->intervals = vector<vector<float> *>(noAttr, (vector<float> *)NULL);
-  vector<vector<float> *>::iterator ri = newDomain->intervals.begin();
+  intervals = vector<vector<float> *>(noAttr, (vector<float> *)NULL);
+  vector<vector<float> *>::iterator ri = intervals.begin();
 
   while(noAttr--) {
-    string name = getLine(str);
-	  int values = atoi(getLine(str).c_str());
-	  if (values>0) {
-      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
-      evar = newvar.AS(TEnumVariable);
-      while(values--)
-        evar->addValue(getLine(str).c_str());
-      newDomain->addVariable(newvar);
+    attributeDescriptions.push_back(TAttributeDescription(getLine(str), TValue::INTVAR));
+    PStringList values = mlnew TStringList();
+    attributeDescriptions.back().values = values;
+
+	  int nvalues = atoi(getLine(str).c_str());
+	  if (nvalues>0) {
+      while(nvalues--)
+        values->push_back(getLine(str).c_str());
     }
-	  else if (values<0) {
-      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
-      evar = newvar.AS(TEnumVariable);
+	  else if (nvalues<0) {
       *ri = mlnew vector<float>();
       char buf[128];
-	    while(values++) {
+	    while(nvalues++) {
         (*ri)->push_back(atof(getLine(str).c_str()));
         sprintf(buf, "v%i", (*ri)->size());
-        evar->addValue(buf);
+        values->push_back(buf);
 	    }
       sprintf(buf, "v%i", (*ri)->size()+1);
-      evar->addValue(buf);
-      newDomain->addVariable(newvar);
+      values->push_back(buf);
     }
     else
-      newDomain->addVariable(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
+      attributeDescriptions.back().varType = TValue::FLOATVAR;
 
     ri++;
   }
 
-  if (newDomain->isSameDomain(sourceDomain.AS(TAssistantDomain)))
-    return sourceDomain;
+  attributeDescriptions.push_back(classDescription);
 
-  ITERATE(list<TAssistantDomain *>, di, knownDomains)
-    if (newDomain->isSameDomain(*di))
-      return *di;
+  if (sourceDomain) {
+    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
+  }
 
-   return wdomain;
+  bool domainIsNew;
+  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
+
+  if (domainIsNew && !dontStore) {
+    newDomain->destroyNotifier = destroyNotifier;
+    knownDomains.push_front(newDomain.getUnwrappedPtr());
+  }
+
+  return newDomain;
 }
 
 

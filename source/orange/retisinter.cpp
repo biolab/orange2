@@ -31,8 +31,10 @@
 #include "retisinter.ppp"
 
 
-TRetisExampleGenerator::TRetisExampleGenerator(const string &afname, PDomain dom)
-: TFileExampleGenerator(afname, dom)
+list<TDomain *> TRetisExampleGenerator::knownDomains;
+
+TRetisExampleGenerator::TRetisExampleGenerator(const string &datafile, const string &domainfile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+: TFileExampleGenerator(datafile, readDomain(domainfile, sourceVars, sourceDomain, dontCheckStored, dontStore))
 {}
   
 
@@ -111,36 +113,15 @@ bool TRetisExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample
 }
 
 
-
-TRetisDomain::~TRetisDomain()
-{ knownDomains.remove(this);
-}
-
-
-list<TRetisDomain *> TRetisDomain::knownDomains;
-TKnownVariables TRetisDomain::knownVariables;
-
-
-void TRetisDomain::removeKnownVariable(TVariable *var)
-{ knownVariables.remove(var);
-  var->destroyNotifier = NULL;
-}
-
-
-
 // Reads the .names file. The format allow using different delimiters, not just those specified by the original format
-PDomain TRetisDomain::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
-{ TRetisDomain *newDomain = mlnew TRetisDomain();
-  PDomain wdomain = newDomain;
-
-  ifstream str(stem.c_str(), ios::binary);
+PDomain TRetisExampleGenerator::readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore)
+{ ifstream str(stem.c_str(), ios::binary);
   if (!str.is_open())
     ::raiseError("RetisDomain: file '%s' not found", stem.c_str());
 
-  TVariable::TDestroyNotifier *notifier = dontStore ? NULL : removeKnownVariable;
-  TKnownVariables *sknown = dontCheckStored ? NULL : &knownVariables;
+  TAttributeDescriptions attributeDescriptions;
 
-  newDomain->setClass(makeVariable(getLine(str), TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
+  string className = getLine(str);
   getLine(str); getLine(str);
   int noAttr = atoi(getLine(str).c_str());
 
@@ -148,32 +129,44 @@ PDomain TRetisDomain::readDomain(const string &stem, PVarList sourceVars, PDomai
     string name = getLine(str);
     string type = getLine(str);
     if (type=="discrete") {
-      PVariable newvar = makeVariable(name, TValue::INTVAR, sourceVars, sourceDomain, sknown, notifier);
-      TEnumVariable *evar=newvar.AS(TEnumVariable);
-      int noVals=atoi(getLine(str).c_str());
+      attributeDescriptions.push_back(TAttributeDescription(name, TValue::INTVAR));
+      PStringList values = mlnew TStringList;
+      attributeDescriptions.back().values = values;
+      int noVals = atoi(getLine(str).c_str());
       while(noVals--)
-        evar->addValue(getLine(str).c_str());
-      newDomain->addVariable(newvar);
+        values->push_back(getLine(str).c_str());
     }
     else if (type=="continuous") {
-      newDomain->addVariable(makeVariable(name, TValue::FLOATVAR, sourceVars, sourceDomain, sknown, notifier));
+      attributeDescriptions.push_back(TAttributeDescription(name, TValue::FLOATVAR));
       getLine(str); getLine(str);
     }
     else
-      ::raiseError("RetisDomain: invalid type (%s) for attribute %s", type.c_str(), name.c_str());
+      ::raiseError("RetisDomain: invalid type ('%s') for attribute '%s'", type.c_str(), name.c_str());
   }
 
-  TRetisDomain *orig = sourceDomain.AS(TRetisDomain);
-  if (orig && sameDomains(newDomain, orig))
-    return sourceDomain;
+  attributeDescriptions.push_back(TAttributeDescription(className, TValue::FLOATVAR));
 
-  ITERATE(list<TRetisDomain *>, di, knownDomains)
-    if (sameDomains(newDomain, *di))
-      return *di;
+  if (sourceDomain) {
+    if (!checkDomain(sourceDomain.AS(TDomain), &attributeDescriptions, true, NULL))
+      raiseError("given domain does not match the file");
+    else
+      return sourceDomain;
+  }
 
-   return wdomain;
+  bool domainIsNew;
+  PDomain newDomain = prepareDomain(&attributeDescriptions, true, NULL, domainIsNew, dontCheckStored ? NULL : &knownDomains, sourceVars, NULL);
 
+  if (domainIsNew && !dontStore) {
+    newDomain->destroyNotifier = destroyNotifier;
+    knownDomains.push_front(newDomain.getUnwrappedPtr());
+  }
+
+  return newDomain;
 }
+
+
+void TRetisExampleGenerator::destroyNotifier(TDomain *domain)
+{ knownDomains.remove(domain); }
 
 
 void retis_writeDomain(FILE *file, PDomain dom)

@@ -42,7 +42,6 @@
 
 #include <windows.h>
 
-
 bool c45Loaded = false;
 
 double **rClassSum;

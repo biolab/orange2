@@ -54,4 +54,9 @@ PyObject *convertToPythonNative(const TExample &, int natvt=1, bool tuples=false
 bool convertFromPython(PyObject *args, TExample &, PDomain domain);
 bool convertFromPythonExisting(PyObject *lst, TExample &example);
 
+int cc_Example(PyObject *obj, void *ptr);
+int ccn_Example(PyObject *obj, void *ptr);
+int ptr_Example(PyObject *obj, void *ptr);
+int ptrn_Example(PyObject *obj, void *ptr);
+
 #endif

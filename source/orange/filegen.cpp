@@ -103,7 +103,7 @@ bool skipNonEmptyLine(FILE *file, const char *filename, const char &commentChar)
 
 
 
-TFileExampleGenerator::TFileExampleGenerator(const string &afname, PDomain &dom)
+TFileExampleGenerator::TFileExampleGenerator(const string &afname, PDomain dom)
 : TExampleGenerator(dom),
   filename(afname),
   startDataPos(0),
@@ -138,7 +138,7 @@ TExampleIterator TFileExampleGenerator::begin(TExampleIterator &fei)
 
   return fei;
 }
-  
+
 
 bool TFileExampleGenerator::randomExample(TExample &)
 { return 0; }
@@ -183,16 +183,94 @@ void TFileExampleGenerator::copyIterator(const TExampleIterator &source, TExampl
 }
 
 
-void TKnownVariables::add(PVariable wvar, TVariable::TDestroyNotifier *notifier)
-{ TVariable *var = const_cast<TVariable *>(wvar.getUnwrappedPtr());
-  if (var->destroyNotifier) {
-    if (!exists(begin(), end(), var))
-      ::raiseError("addKnownVariable: system error - destroyNotifier busy");
+TFileExampleGenerator::TAttributeDescription::TAttributeDescription(const string &n, const int &vt, bool or)
+: name(n),
+  varType(vt),
+  ordered(or)
+{}
+
+
+bool TFileExampleGenerator::checkDomain(const TDomain *domain, 
+                                        const TAttributeDescriptions *attributes,
+                                        bool hasClass,
+                                        const TAttributeDescriptions *metas,
+                                        int *metaIDs)
+{
+  // check the number of attributes and meta attributes, and the presence of class attribute
+  if (    (domain->variables->size() != attributes->size())
+       || (bool(domain->classVar) != hasClass)
+       || (metas ? (metas->size() != domain->metas.size()) : domain->metas.size() )
+     )
+    return false;
+
+  // check the names and types of attributes
+  TVarList::const_iterator vi(domain->variables->begin());
+  const_PITERATE(TAttributeDescriptions, ai, attributes)
+    if (    ((*ai).name != (*vi)->name)
+         || ((*ai).varType<0) && ((*ai).varType != (*vi)->varType))
+      return false;
+    else
+      vi++;
+
+  // check the meta attributes if they exist
+  if (metas)
+    const_PITERATE(TAttributeDescriptions, mi, metas) {
+      PVariable var = domain->getMetaVar((*mi).name, false);
+      if (    !var
+           || (((*mi).varType > 0) && ((*mi).varType != var->varType))
+         )
+        return false;
+      if (metaIDs)
+        *(metaIDs++) = domain->getMetaNum((*mi).name, false);
+    }
+
+  return true;
+}
+
+
+PDomain TFileExampleGenerator::prepareDomain(const TAttributeDescriptions *attributes,
+                                             bool hasClass,
+                                             const TAttributeDescriptions *metas,
+                                             bool &domainIsNew,
+                                             list<TDomain *> *knownDomains,
+                                             PVarList knownVars,
+                                             const TMetaVector *knownMetas,
+                                             int *metaIDs)
+{ if (knownDomains)
+    PITERATE(list<TDomain *>, kdi, knownDomains)
+      if (checkDomain(*kdi, attributes, hasClass, metas, metaIDs)) {
+        domainIsNew = false;
+        return *kdi;
+      }
+
+  TVarList attrList;
+  int foo;
+  const_PITERATE(TAttributeDescriptions, ai, attributes)
+    attrList.push_back(makeVariable((*ai).name, (*ai).varType, foo, knownVars, knownMetas, false, false));
+
+  PDomain newDomain;
+
+  PVariable classVar;
+  if (hasClass) {
+    classVar = attrList.back();
+    attrList.erase(attrList.end()-1);
   }
-  else {
-    var->destroyNotifier = notifier;
-    push_back(var);
-  }
+  
+  newDomain = mlnew TDomain(classVar, attrList);
+
+  if (metas)
+    const_PITERATE(TAttributeDescriptions, mi, metas) {
+      int id;
+      PVariable var = makeVariable((*mi).name, (*mi).varType, id, knownVars, knownMetas, false, true);
+      if (!id)
+        id = getMetaID();
+      newDomain->metas.push_back(TMetaDescriptor(id, var));
+      if (metaIDs)
+        *(metaIDs++) = id;
+    }
+    
+  domainIsNew = true;
+  return newDomain;
 }
 
 
@@ -211,37 +289,8 @@ PVariable createVariable(const string &name, const int &varType)
 }
 
 
-PVariable makeVariable(const string &name, const int &varType, PVarList sourceVars, PDomain sourceDomain, TKnownVariables *storedVars, TVariable::TDestroyNotifier *notifier)
-{ 
-  int id;
-  if (sourceDomain) {
-    PVariable var = ::makeVariable(name, varType, id, sourceDomain->variables, &sourceDomain->metas, true);
-    if (var)
-      return var;
-  }
-
-  if (sourceVars) {
-    PVariable var = ::makeVariable(name, varType, id, sourceVars, NULL, true);
-    if (var)
-      return var;
-  }
-
-  if (storedVars)
-    PITERATE(list<TVariable *>, vi, storedVars)
-      if (((*vi)->name==name) && ((varType==-1) || ((*vi)->varType==varType)))
-        // The variable is rewrapped here (we have a pure pointer, but it has already been wrapped)
-        return *vi;
-
-  PVariable var = createVariable(name, varType);
-  if (storedVars && notifier)
-    storedVars->add(var.AS(TVariable), notifier);
-
-  return var;
-}
-
-
-PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew)
-{ if (knownVars)
+PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarList knownVars, const TMetaVector *metas, bool dontCreateNew, bool preferMetas)
+{ if (!preferMetas && knownVars)
     const_PITERATE(TVarList, vi, knownVars)
       if (   ((*vi)->name==name)
           && (    (varType==-1)
@@ -261,33 +310,17 @@ PVariable makeVariable(const string &name, unsigned char varType, int &id, PVarL
         return (*mi).variable;
       }
 
+  if (preferMetas && knownVars)
+    const_PITERATE(TVarList, vi, knownVars)
+      if (   ((*vi)->name==name)
+          && (    (varType==-1)
+               || (varType==stringVarType) && (*vi).is_derived_from(TStringVariable)
+               || ((*vi)->varType==varType))) {
+        id = 0;
+        return *vi;
+      }
+  
   id = 0;
 
   return dontCreateNew ? PVariable() : createVariable(name, varType);
-}
-
-
-bool sameDomains(const TDomain *dom1, const TDomain *dom2)
-{
-  if ((dom1->classVar != dom2->classVar) || (dom1->variables->size() != dom2->variables->size()))
-    return false;
-
-  for(TVarList::const_iterator tvi(dom1->variables->begin()), tve(dom1->variables->end()), ovi(dom2->variables->begin()); tvi!=tve; tvi++, ovi++)
-    if (*tvi != *ovi)
-      return false;
-
-  vector<bool> used(dom2->metas.size(), true);
-  const_ITERATE(TMetaVector, mvi1, dom1->metas) {
-    TMetaVector::const_iterator mvi2(dom2->metas.begin()), mve2(dom2->metas.end());
-    int i;
-    for (i = 0; (mvi2!=mve2) && (mvi1->id!=mvi2->id) && (mvi1->variable!=mvi2->variable) && !used[i]; i++, mvi2++);
-    if (mvi2==mve2)
-      return false;
-    used[i] = true;
-  }
-  ITERATE(vector<bool>, bi, used)
-    if (!*bi)
-      return false;
-
-  return true;
 }

@@ -23,51 +23,29 @@
 #ifndef __C45INTER_HPP
 #define __C45INTER_HPP
 
-#include <string>
-
 #include "filegen.hpp"
 #include "domain.hpp"
-//#include "examples.hpp"
 
 using namespace std;
-
 
 class TC45ExampleGenerator : public TFileExampleGenerator {
 public:
   __REGISTER_CLASS
 
-  TC45ExampleGenerator(const string &, PDomain);
+  PBoolList skip;  //P a boolean list, one element per attribute, denoting which attributes to skip
+
+  TC45ExampleGenerator(const string &datafile, const string &domainFile, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  TC45ExampleGenerator(const TC45ExampleGenerator &old);
+
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
-};
 
+  PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-
-/* TC45Domain differs from its ancestor in that it is initialized
-    from the C4.5 .names file. It also has an additional field 'skip'
-    to mark attributes which are to be skipped when reading examples. */
-class TC45Domain : public TDomain {
-public:
-  __REGISTER_CLASS
-
-  PBoolList skip; //P a boolean list, one element per attribute, denoting which attributes to skip
-
-  TC45Domain();
-  TC45Domain(const TC45Domain &);
-  ~TC45Domain();
-
-  static PDomain readDomain(const string &stem, PVarList sourceVars, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
+  static void destroyNotifier(TDomain *);
 
 protected:
-  static list<TC45Domain *> knownDomains;
-  static TKnownVariables knownVariables;
-
-  static void removeKnownVariable(TVariable *var);
-  static void addKnownDomain(TC45Domain *domain);
-
-  bool isSameDomain(const TC45Domain *original) const;
+  static list<TDomain *> knownDomains;
 };
-
-bool   readC45Atom(TFileExampleIteratorData &, vector<string> &);
 
 #endif
 

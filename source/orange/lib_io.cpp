@@ -39,6 +39,7 @@ This file includes constructors and specialized methods for ML* object, defined 
 #include "externs.px"
 
 PVarList knownVars(PyObject *keywords); // defined in lib_kernel.cpp
+TMetaVector *knownMetas(PyObject *keywords); // ibid
 PDomain knownDomain(PyObject *keywords); // ibid
 
 /* ************ FILE EXAMPLE GENERATORS ************ */
@@ -47,16 +48,9 @@ PDomain knownDomain(PyObject *keywords); // ibid
 BASED_ON(FileExampleGenerator, ExampleGenerator)
 
 #include "tabdelim.hpp"
-BASED_ON(TabDelimDomain, Domain)
-
 #include "c45inter.hpp"
-BASED_ON(C45Domain, Domain)
-
 #include "retisinter.hpp"
-BASED_ON(RetisDomain, Domain)
-
 #include "assistant.hpp"
-BASED_ON(AssistantDomain, Domain)
 
 
 bool divDot(const string &name, string &before, string &after)
@@ -78,7 +72,7 @@ PyObject *TabDelimExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObj
     if (!divDot(name, b, a))
       name+=".tab";
 
-    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, TTabDelimDomain::readDomain(false, name, knownVars(keywords), knownDomain(keywords), false, false)), type);
+    return WrapNewOrange(mlnew TTabDelimExampleGenerator(name, false, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
 
@@ -95,7 +89,7 @@ PyObject *RetisExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject
     else
       { data=string(stem)+".rda"; domain=string(stem)+".rdo"; }
       
-    return WrapNewOrange(mlnew TRetisExampleGenerator(data, TRetisDomain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
+    return WrapNewOrange(mlnew TRetisExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
 
@@ -112,7 +106,7 @@ PyObject *C45ExampleGenerator_new(PyTypeObject *type, PyObject *args, PyObject *
     else
       { data=string(stem)+".data"; domain=string(stem)+".names"; }
 
-    return WrapNewOrange(mlnew TC45ExampleGenerator(data, TC45Domain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
+    return WrapNewOrange(mlnew TC45ExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
 
@@ -133,24 +127,23 @@ PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyOb
     else // this is a longer name, but starting with ASDA
       { domain="ASDO"+string(stem+4); data=string(stem); }
 
-    return WrapNewOrange(mlnew TAssistantExampleGenerator(data, TAssistantDomain::readDomain(domain, knownVars(keywords), knownDomain(keywords), false, false)), type);
+    return WrapNewOrange(mlnew TAssistantExampleGenerator(data, domain, knownVars(keywords), knownDomain(keywords), false, false), type);
   PyCATCH
 }
 
 
 
-PExampleGenerator exampleGenFromParsedArgs(PyObject *args);
+int pt_ExampleGenerator(PyObject *args, void *egen);
 
-void tabDelim_writeDomain(FILE *, PDomain);
+void tabDelim_writeDomain(FILE *, PDomain, bool autodetect);
 void tabDelim_writeExamples(FILE *, PExampleGenerator);
 
 PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
     char *filename;
-    PyObject *genobj;
     PExampleGenerator gen;
 
-    if (!PyArg_ParseTuple(args, "sO", &filename, &genobj) || !(gen=exampleGenFromParsedArgs(genobj)))
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
     FILE *ostr = fopen(filename, "wt");
@@ -159,7 +152,30 @@ PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fi
       return PYNULL;
     }
 
-    tabDelim_writeDomain(ostr, gen->domain);
+    tabDelim_writeDomain(ostr, gen->domain, false);
+    tabDelim_writeExamples(ostr, gen);
+    fclose(ostr);
+
+    RETURN_NONE
+  PyCATCH
+}
+
+
+PyObject *saveTxt(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+{ PyTRY
+    char *filename;
+    PExampleGenerator gen;
+
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
+      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
+  
+    FILE *ostr = fopen(filename, "wt");
+    if (!ostr) {
+      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
+      return PYNULL;
+    }
+
+    tabDelim_writeDomain(ostr, gen->domain, true);
     tabDelim_writeExamples(ostr, gen);
     fclose(ostr);
 
@@ -174,10 +190,9 @@ void c45_writeExamples(FILE *, PExampleGenerator);
 PyObject *saveC45(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
     char *filename;
-    PyObject *genobj;
     PExampleGenerator gen;
 
-    if (!PyArg_ParseTuple(args, "sO", &filename, &genobj) || !(gen=exampleGenFromParsedArgs(genobj)))
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
     if (gen->domain->classVar->varType!=TValue::INTVAR)
@@ -213,10 +228,9 @@ void assistant_writeExamples(FILE *, PExampleGenerator);
 PyObject *saveAssistant(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
     char *filename;
-    PyObject *genobj;
     PExampleGenerator gen;
 
-    if (!PyArg_ParseTuple(args, "sO", &filename, &genobj) || !(gen=exampleGenFromParsedArgs(genobj)))
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
     if (gen->domain->classVar->varType!=TValue::INTVAR)
@@ -255,10 +269,9 @@ void retis_writeExamples(FILE *, PExampleGenerator);
 PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
     char *filename;
-    PyObject *genobj;
     PExampleGenerator gen;
 
-    if (!PyArg_ParseTuple(args, "sO", &filename, &genobj) || !(gen=exampleGenFromParsedArgs(genobj)))
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
     if (gen->domain->classVar->varType!=TValue::FLOATVAR)

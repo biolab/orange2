@@ -694,7 +694,7 @@ PExampleGeneratorList TTreeExampleSplitter::prepareGeneratorList(int size, PDoma
 
 bool TTreeExampleSplitter::getBranchIndices(PTreeNode node, PExampleGenerator gen, vector<int> &indices)
 {
-  TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+  TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
   
   PEITERATE(ei, gen) {
@@ -708,7 +708,7 @@ bool TTreeExampleSplitter::getBranchIndices(PTreeNode node, PExampleGenerator ge
 }
 
 PExampleGeneratorList TTreeExampleSplitter_IgnoreUnknowns::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExamplePointerTable *> uexamplePtrs;
@@ -724,7 +724,7 @@ PExampleGeneratorList TTreeExampleSplitter_IgnoreUnknowns::operator ()(PTreeNode
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsToCommon::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
   const int mostCommon = node->branchSizes->highestProbIntIndex();
 
@@ -741,7 +741,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToCommon::operator ()(PTreeNo
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsToAll::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExamplePointerTable *> uexamplePtrs;
@@ -761,7 +761,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToAll::operator ()(PTreeNode 
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsToRandom::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   const int maxIndex = node->branchDescriptions->size();
 
   vector<TExamplePointerTable *> uexamplePtrs;
@@ -787,7 +787,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToRandom::operator ()(PTreeNo
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsToBranch::operator ()(PTreeNode node, PExampleGenerator gen, const int &, vector<int> &)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   int maxIndex = node->branchDescriptions->size();
   node->branchDescriptions->push_back("unknown");
 
@@ -807,7 +807,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsToBranch::operator ()(PTreeNo
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTreeNode node, PExampleGenerator gen, const int &weightID, vector<int> &newWeights)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   int maxIndex = node->branchDescriptions->size();
 
  
@@ -869,7 +869,7 @@ PExampleGeneratorList TTreeExampleSplitter_UnknownsAsBranchSizes::operator()(PTr
 
 
 PExampleGeneratorList TTreeExampleSplitter_UnknownsAsSelector::operator()(PTreeNode node, PExampleGenerator gen, const int &weightID, vector<int> &newWeights)
-{ TClassifier &branchSelector = const_cast<TClassifier &>(node->branchSelector.getReference());
+{ TClassifier &branchSelector = node->branchSelector.getReference();
   int maxIndex = node->branchDescriptions->size();
 
  
