@@ -602,7 +602,7 @@ TC45TreeNode::TC45TreeNode(const Tree &node, PDomain domain)
   leaf(TValue(node->Leaf)),
   items(node->Items),
   classDist(mlnew TDiscDistribution(domain->classVar)),
-  tested(domain->attributes->operator[](node->Tested)),
+  tested(nodeType != Leaf ? domain->attributes->operator[](node->Tested) : PVariable()),
   cut(node->Cut),
   lower(node->Lower),
   upper(node->Upper),

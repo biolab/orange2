@@ -269,17 +269,17 @@ TExampleIterator TNoiseValuesGenerator::changeExample(const TExampleIterator &it
 }
 
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast)
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PDomain &dom, TExampleIterator &afirst, TExampleIterator &alast, PRandomGenerator rgen)
 : TChangeExampleGenerator(dom, afirst, alast),
   deviations(mlnew TIntFloatList(rp)),
-  randomGenerator(mlnew TRandomGenerator())
+  randomGenerator(rgen ? rgen : mlnew TRandomGenerator())
 {}
 
 
-TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PExampleGenerator gen)
+TGaussianNoiseGenerator::TGaussianNoiseGenerator(const vector<pair<int, float> > &rp, PExampleGenerator gen, PRandomGenerator rgen)
 : TChangeExampleGenerator(gen),
   deviations(mlnew TIntFloatList(rp)),
-  randomGenerator(mlnew TRandomGenerator())
+  randomGenerator(rgen ? rgen : mlnew TRandomGenerator())
 {}
 
 

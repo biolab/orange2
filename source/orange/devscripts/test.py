@@ -1,7 +1,10 @@
 import os, os.path, sys, traceback
 
 startdir = os.getcwd()
-os.chdir(r"d:\ai\orange\doc\reference")
+dir = r"d:\ai\orange\doc\modules"
+
+os.chdir(dir)
+sys.path = [dir] + sys.path
 
 newscripts, modified, israndom, errors = [], [], [], []
 
@@ -11,6 +14,8 @@ outputdir = "outputs"
 newname = outputdir + "\\%s.new.txt"
 oldname = outputdir + "\\%s.txt"
 oldoldname = outputdir + "\\%s.old.txt"
+
+NO_RANDOMNESS = 1 # prevent random parts of scripts to run
 
 def samefiles(name):
     fnew, fold = open(newname % name, "rt"), open(oldname % name, "rt")

@@ -95,6 +95,7 @@ public:
   virtual int   highestProbIntIndex(const long &) const;
   virtual int   highestProbIntIndex(const TExample &) const;
   virtual int   randomInt();
+  virtual int   randomInt(const long &random);
   virtual float p(const int &) const;
   virtual int   noOfElements() const;
 
@@ -107,6 +108,7 @@ public:
   virtual void  setfloat(const float &v, const float &w);
   virtual float highestProbFloatIndex() const;
   virtual float randomFloat();
+  virtual float randomFloat(const long &random);
   virtual float average() const;
   virtual float dev() const;
   virtual float var() const;
@@ -134,6 +136,7 @@ public:
   virtual TValue highestProbValue(const long &random) const;
   virtual TValue highestProbValue(const TExample &random) const;
   virtual TValue randomValue();
+  virtual TValue randomValue(const long &random);
   virtual float p(const TValue &) const;
 
   virtual float operator -  (const TSomeValue &v) const;
@@ -195,6 +198,7 @@ public:
   virtual int   highestProbIntIndex(const TExample &) const;
   virtual float highestProb() const;
   virtual int   randomInt();
+  virtual int   randomInt(const long &random);
   virtual bool  noDeviation() const;
 };
 
@@ -240,6 +244,7 @@ public:
   virtual float highestProbFloatIndex() const;
   virtual float highestProb() const;
   virtual float randomFloat();
+  virtual float randomFloat(const long &random);
   virtual bool  noDeviation() const;
 };
 
@@ -264,6 +269,7 @@ public:
   virtual float highestProbFloatIndex() const;
   virtual float highestProb() const;
   virtual float randomFloat();
+  virtual float randomFloat(const long &random);
 
   virtual float p(const float &) const;
   virtual bool  noDeviation() const;

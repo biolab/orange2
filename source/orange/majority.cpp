@@ -48,7 +48,7 @@ PClassifier TMajorityLearner::operator()(PExampleGenerator ogen, const int &weig
 
   PDistribution classDistr = getClassDistribution(ogen, weight);
   if (estimatorConstructor)
-    classDistr = estimatorConstructor->call(classDistr, PDistribution(), ogen, weight)->call();
+    classDistr = estimatorConstructor->call(classDistr, aprioriDistribution, ogen, weight)->call();
     if (!classDistr)
       raiseError("invalid estimatorConstructor");
   else

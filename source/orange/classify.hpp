@@ -141,13 +141,13 @@ class TRandomClassifier : public TClassifier {
 public:
   __REGISTER_CLASS
 
-  PDiscDistribution probabilities; //P probabilities of predictions
+  PDistribution probabilities; //P probabilities of predictions
 
   TRandomClassifier(PVariable acv=PVariable());
-  TRandomClassifier(const TDiscDistribution &probs);
-  TRandomClassifier(PVariable acv, const TDiscDistribution &probs);
-  TRandomClassifier(PDiscDistribution);
-  TRandomClassifier(PVariable acv, PDiscDistribution);
+  TRandomClassifier(const TDistribution &probs);
+  TRandomClassifier(PVariable acv, const TDistribution &probs);
+  TRandomClassifier(PDistribution);
+  TRandomClassifier(PVariable acv, PDistribution);
 
   TValue operator()(const TExample &);
   PDistribution classDistribution(const TExample &);

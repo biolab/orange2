@@ -113,12 +113,14 @@ PExampleGenerator TPreprocessor_select::operator()(PExampleGenerator gen, const 
 
 
 TPreprocessor_drop::TPreprocessor_drop()
-: values(mlnew TVariableFilterMap())
+: values(mlnew TVariableFilterMap()),
+  conjunction(true)
 {}
 
 
-TPreprocessor_drop::TPreprocessor_drop(PVariableFilterMap avalues)
-: values(avalues)
+TPreprocessor_drop::TPreprocessor_drop(PVariableFilterMap avalues, bool aconj)
+: values(avalues),
+  conjunction(aconj)
 {}
 
 
@@ -133,29 +135,31 @@ PExampleGenerator TPreprocessor_drop::operator()(PExampleGenerator gen, const in
   }
 
   newWeight = weightID;
-  return filterExamples(mlnew TFilter_values(wdropvalues, true, true, gen->domain), gen);
+  return filterExamples(mlnew TFilter_values(wdropvalues, conjunction, true, gen->domain), gen);
 }
 
   
 
 TPreprocessor_take::TPreprocessor_take()
-: values(mlnew TVariableFilterMap())
+: values(mlnew TVariableFilterMap()),
+  conjunction(true)
 {}
 
 
-TPreprocessor_take::TPreprocessor_take(PVariableFilterMap avalues)
-: values(avalues)
+TPreprocessor_take::TPreprocessor_take(PVariableFilterMap avalues, bool aconj)
+: values(avalues),
+  conjunction(aconj)
 {}
 
 
 PExampleGenerator TPreprocessor_take::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 { 
   newWeight = weightID;
-  return filterExamples(constructFilter(values, gen->domain), gen);
+  return filterExamples(constructFilter(values, gen->domain, conjunction), gen);
 }
 
 
-PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain domain)
+PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain domain, bool conj)
 { TValueFilterList *dropvalues = mlnew TValueFilterList();
   PValueFilterList wdropvalues = dropvalues;
   PITERATE(TVariableFilterMap, vi, values) {
@@ -163,7 +167,7 @@ PFilter TPreprocessor_take::constructFilter(PVariableFilterMap values, PDomain d
     dropvalues->push_back(vf); // this wraps it!
     vf->position = domain->getVarNum((*vi).first);
   }
-  return mlnew TFilter_values(wdropvalues, true, false, domain);
+  return mlnew TFilter_values(wdropvalues, conj, false, domain);
 }
 
 
@@ -213,7 +217,7 @@ PExampleGenerator TPreprocessor_takeMissingClasses::operator()(PExampleGenerator
 
 TPreprocessor_addNoise::TPreprocessor_addNoise()
 : proportions(mlnew TVariableFloatMap()),
-  defaultProportion(0.0)  
+  defaultProportion(0.0)
 {}
 
 
@@ -238,7 +242,10 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
   PExampleGenerator wtable = table;
 
   const int n = table->size();
+  PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
   TMakeRandomIndices2 makerind;
+  // We mustn't allow MakeRandomIndices2 to initalize a new generator each time it's called since we'd than always select the same examples
+  makerind.randomGenerator = rg;
 
   if (proportions)
     PITERATE(TVariableFloatMap, vi, proportions) {
@@ -270,7 +277,7 @@ PExampleGenerator TPreprocessor_addNoise::operator()(PExampleGenerator gen, cons
         int eind = 0;
         PITERATE(TLongList, ri, rind) {
           if (*ri)
-            (*table)[eind][idx] = var.randomValue();
+            (*table)[eind][idx] = var.randomValue(rg->randint());
           eind++;
         }
       }
@@ -331,7 +338,7 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
     }
   }
 
-  TGaussianNoiseGenerator gg = TGaussianNoiseGenerator(ps, gen);
+  TGaussianNoiseGenerator gg = TGaussianNoiseGenerator(ps, gen, randomGenerator);
   return PExampleGenerator(mlnew TExampleTable(PExampleGenerator(gg)));
 }
 
@@ -367,6 +374,8 @@ PExampleGenerator TPreprocessor_addMissing::operator()(PExampleGenerator gen, co
 
   const int n = table->size();
   TMakeRandomIndices2 makerind;
+  // We mustn't allow MakeRandomIndices2 to initalize a new generator each time it's called since we'd than always select the same examples
+  makerind.randomGenerator = randomGenerator ? randomGenerator : mlnew TRandomGenerator;;
 
   if (proportions)
     PITERATE(TVariableFloatMap, vi, proportions) {
@@ -426,13 +435,15 @@ PExampleGenerator TPreprocessor_addClassNoise::operator()(PExampleGenerator gen,
 
   if (proportion>0.0) {
     TMakeRandomIndices2 mri2;
+    PRandomGenerator rg = randomGenerator ? randomGenerator : mlnew TRandomGenerator;
+    mri2.randomGenerator = rg;
     PLongList rind(mri2(table->size(), 1-proportion));
 
     TVariable &classVar = table->domain->classVar.getReference();
     int eind = 0;
     PITERATE(TLongList, ri, rind) {
       if (*ri)
-        (*table)[eind].setClass(classVar.randomValue());
+        (*table)[eind].setClass(classVar.randomValue(rg->randint()));
       eind++;
     }
   }
@@ -462,7 +473,7 @@ PExampleGenerator TPreprocessor_addGaussianClassNoise::operator()(PExampleGenera
   if (deviation>0.0) {
     vector<pair<int, float> > deviations;
     deviations.push_back(pair<int, float>(gen->domain->attributes->size(), deviation));
-    TGaussianNoiseGenerator gngen(deviations, gen);
+    TGaussianNoiseGenerator gngen(deviations, gen, randomGenerator);
     return PExampleGenerator(mlnew TExampleTable(PExampleGenerator(gngen)));
   }
 
@@ -487,6 +498,7 @@ PExampleGenerator TPreprocessor_addMissingClasses::operator()(PExampleGenerator 
 
   if (proportion>0.0) {
     TMakeRandomIndices2 mri2;
+    mri2.randomGenerator = randomGenerator;
     PLongList rind(mri2(table->size(), 1-proportion));
 
     const TVariable &classVar = table->domain->classVar.getReference();

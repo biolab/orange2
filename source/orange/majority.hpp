@@ -34,6 +34,7 @@ public:
   __REGISTER_CLASS
 
   PProbabilityEstimatorConstructor estimatorConstructor; //P constructs probability estimator
+  PDistribution aprioriDistribution; //P apriori class distribution
 
   TMajorityLearner();
   virtual PClassifier operator()(PExampleGenerator, const int & =0);

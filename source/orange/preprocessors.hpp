@@ -83,9 +83,10 @@ public:
   __REGISTER_CLASS
 
   PVariableFilterMap values; //P variable-filter pairs
+  bool conjunction; //P decides whether to take conjunction or disjunction of values
 
   TPreprocessor_drop();
-  TPreprocessor_drop(PVariableFilterMap);
+  TPreprocessor_drop(PVariableFilterMap, bool = true);
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
@@ -95,12 +96,13 @@ public:
   __REGISTER_CLASS
 
   PVariableFilterMap values; //P variable-filter pairs
+  bool conjunction; //P decides whether to take conjunction or disjunction of values
 
   TPreprocessor_take();
-  TPreprocessor_take(PVariableFilterMap);
+  TPreprocessor_take(PVariableFilterMap, bool = true);
   virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 
-  static PFilter constructFilter(PVariableFilterMap values, PDomain domain);
+  static PFilter constructFilter(PVariableFilterMap values, PDomain domain, bool conj);
 };
 
 
@@ -145,6 +147,7 @@ public:
 
   PVariableFloatMap proportions; //P proportion of changed values for individual attributes
   float defaultProportion; //P default proportion of changed values (for attributes not specified above)
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addNoise();
   TPreprocessor_addNoise(PVariableFloatMap, const float & = 0.0);
@@ -158,6 +161,7 @@ public:
 
   PVariableFloatMap deviations; //P deviations individual attribute values
   float defaultDeviation; //P default deviation
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addGaussianNoise();
   TPreprocessor_addGaussianNoise(PVariableFloatMap, const float & = 0.0);
@@ -172,6 +176,7 @@ public:
   PVariableFloatMap proportions; //P proportion of removed values for individual values
   float defaultProportion; //P default proportion of removed values (for attributes not specified above)
   int specialType; //P special value type (1=DC, 2=DK)
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addMissing();
   TPreprocessor_addMissing(PVariableFloatMap, const float & = 0.0, const int &specialType = valueDK);
@@ -185,6 +190,7 @@ public:
 
   float proportion; //P proportion of removed class values
   int specialType; //P special value type (1=DC, 2=DK)
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addMissingClasses(const float & = 0.0, const int & = valueDK);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
@@ -199,6 +205,7 @@ public:
   __REGISTER_CLASS
 
   float proportion; //P proportion of changed class values
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addClassNoise(const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
@@ -210,6 +217,7 @@ public:
   __REGISTER_CLASS
 
   float deviation; //P class deviation
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addGaussianClassNoise(const float & = 0.0);
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
@@ -223,6 +231,7 @@ public:
 
   PFloatList classWeights; //P weights of examples of particular classes
   bool equalize; //P reweight examples to equalize class proportions
+  PRandomGenerator randomGenerator; //P random number generator
 
   TPreprocessor_addClassWeight();
   TPreprocessor_addClassWeight(PFloatList, const bool & = false);

@@ -381,48 +381,57 @@ void TDefaultClassifier::predictionAndDistribution(const TExample &exam, TValue 
 
 
 TRandomClassifier::TRandomClassifier(PVariable acv)
-: TClassifier(acv)
+: TClassifier(acv),
+  probabilities(acv ? TDistribution::create(acv) : PDistribution())
 {
-  if (classVar->varType != TValue::INTVAR)
-    raiseError("discrete class expected (which '%s' is not)", classVar->name.c_str());
-
-  probabilities = dynamic_cast<TDiscDistribution *>(TDistribution::create(acv));
   if (probabilities)
     // if distribution is discrete, it sets probabilities to 1/acv->noOfValues
     probabilities->normalize();
 }
 
 
-TRandomClassifier::TRandomClassifier(const TDiscDistribution &probs)
+TRandomClassifier::TRandomClassifier(const TDistribution &probs)
 : TClassifier(),
-  probabilities(mlnew TDiscDistribution(probs))
+  probabilities(CLONE(TDistribution, &probs))
 { probabilities->normalize(); }
 
 
-TRandomClassifier::TRandomClassifier(PVariable acv, const TDiscDistribution &probs)
-: TClassifier(acv), probabilities(mlnew TDiscDistribution(probs))
+TRandomClassifier::TRandomClassifier(PVariable acv, const TDistribution &probs)
+: TClassifier(acv),
+  probabilities(CLONE(TDistribution, &probs))
 { probabilities->normalize(); }
 
 
-TRandomClassifier::TRandomClassifier(PDiscDistribution probs)
-  : TClassifier(), probabilities(probs)
-  { probabilities->normalize(); }
+TRandomClassifier::TRandomClassifier(PDistribution probs)
+: TClassifier(),
+  probabilities(probs)
+{ probabilities->normalize(); }
 
 
-TRandomClassifier::TRandomClassifier(PVariable acv, PDiscDistribution probs)
-  : TClassifier(acv), probabilities(probs)
-  { probabilities->normalize(); }
+TRandomClassifier::TRandomClassifier(PVariable acv, PDistribution probs)
+: TClassifier(acv),
+  probabilities(probs)
+{ probabilities->normalize(); }
 
 
-TValue TRandomClassifier::operator()(const TExample &)
-{ return probabilities->randomValue(); }
+TValue TRandomClassifier::operator()(const TExample &ex)
+{ 
+ if (!probabilities) {
+    checkProperty(classVar);
+    return classVar->randomValue();
+  }
+
+  return probabilities->randomValue(ex.sumValues());
+}
 
 
 PDistribution TRandomClassifier::classDistribution(const TExample &)
-{ return CLONE(TDistribution, probabilities); }
+{ checkProperty(probabilities);
+  return CLONE(TDistribution, probabilities); }
 
      
 void TRandomClassifier::predictionAndDistribution(const TExample &, TValue &val, PDistribution &dist)
-{ val = probabilities->randomValue();
+{ checkProperty(probabilities);
+  val = probabilities->randomValue();
   dist = CLONE(TDistribution, probabilities);
 }

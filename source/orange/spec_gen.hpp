@@ -143,8 +143,8 @@ public:
   PIntFloatList deviations; //P deviations for attributes' values
   PRandomGenerator randomGenerator; //P random generator
 
-  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &);
-  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PExampleGenerator);
+  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PDomain &, TExampleIterator &, TExampleIterator &, PRandomGenerator = PRandomGenerator());
+  TGaussianNoiseGenerator(const vector<pair<int, float> > &, PExampleGenerator, PRandomGenerator = PRandomGenerator());
 
   TExampleIterator changeExample(const TExampleIterator &it);
 };

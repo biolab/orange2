@@ -125,6 +125,9 @@ public:
 
   int randsemilong()
   { return rand()<<15 | rand(); }
+
+  float randfloat()
+  { return float(rand())/0x7fff; }
 };
 
 #endif

@@ -1,4 +1,4 @@
-import orange, math, orngEval, random, orngMisc
+import orange, math, orngTest, orngStat, random, orngMisc
 from operator import add
 inf = 100000
 
@@ -92,14 +92,17 @@ class BaggedLearnerClass:
 		self.learner = learner
 
 	def __call__(self, examples, weight=0):
+		r = random.Random()
+		r.seed(0)
+		
 		n = len(examples)
 		classifiers = []
 		for i in range(self.t):
 			selection = []
 			for i in range(n):
-				selection.append(random.randrange(n))
+				selection.append(r.randrange(n))
 			examples = orange.ExampleTable(examples)
-			data = examples.multipleselect(selection)
+			data = examples.getitems(selection)
 			classifiers.append(self.learner(data, weight))
 		return BaggedClassifier(classifiers = classifiers, name=self.name, classvar=examples.domain.classVar)
 

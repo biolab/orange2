@@ -626,6 +626,12 @@ PyObject *C45Learner_commandline(PyObject *self, PyObject *args) PYARGS(METH_VAR
 
 C_NAMED(C45TreeNode, Orange, "")
 
+PYCLASSCONSTANT_INT(C45TreeNode, Leaf, TC45TreeNode::Leaf)
+PYCLASSCONSTANT_INT(C45TreeNode, Branch, TC45TreeNode::Branch)
+PYCLASSCONSTANT_INT(C45TreeNode, Cut, TC45TreeNode::Cut)
+PYCLASSCONSTANT_INT(C45TreeNode, Subset, TC45TreeNode::Subset)
+
+
 PC45TreeNodeList PC45TreeNodeList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::P_FromArguments(arg); }
 PyObject *C45TreeNodeList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_FromArguments(type, arg); }
 PyObject *C45TreeNodeList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of C45TreeNode>)") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_new(type, arg, kwds); }

@@ -1043,7 +1043,7 @@ inline PFilter filter_sameValues(PyObject *dict, PDomain domain, PyObject *kwds 
   if (!svm)
     return PFilter();
 
-  PFilter filter = TPreprocessor_take::constructFilter(svm, domain); 
+  PFilter filter = TPreprocessor_take::constructFilter(svm, domain, true); 
   PyObject *pyneg = kwds ? PyDict_GetItemString(kwds, "negate") : NULL;
   filter->negate = pyneg && PyObject_IsTrue(pyneg);
   return filter;

@@ -150,6 +150,9 @@ NOT_IMPLEMENTED("add(int, float)")
 int TDistribution::randomInt()
 NOT_IMPLEMENTED("randomInt()")
 
+int TDistribution::randomInt(const long &)
+NOT_IMPLEMENTED("randomInt(long)")
+
 int TDistribution::highestProbIntIndex() const
 NOT_IMPLEMENTED("highestProbIntIndex()")
 
@@ -181,6 +184,9 @@ NOT_IMPLEMENTED("add(float, float)")
 
 float TDistribution::randomFloat()
 NOT_IMPLEMENTED("randomFloat()")
+
+float TDistribution::randomFloat(const long &)
+NOT_IMPLEMENTED("randomFloat(long)")
 
 float TDistribution::highestProbFloatIndex() const
 NOT_IMPLEMENTED("highestProbFloatIndex()")
@@ -307,6 +313,16 @@ TValue TDistribution::randomValue()
     return TValue(randomInt());
   else if (supportsContinuous)
     return TValue(randomFloat());
+  else 
+    return TValue();
+}
+
+
+TValue TDistribution::randomValue(const long &random)
+{ if (supportsDiscrete)
+    return TValue(randomInt(random));
+  else if (supportsContinuous)
+    return TValue(randomFloat(random));
   else 
     return TValue();
 }
@@ -801,6 +817,19 @@ bool TDiscDistribution::noDeviation() const
 }
   
 
+int TDiscDistribution::randomInt(const long &random)
+{ 
+  TSimpleRandomGenerator rg(random);
+  for (int i = 10; i--; rg.randbool());
+
+  float ri = rg.randfloat()*abs;
+  const_iterator di(begin());
+  while (ri > *di)
+    ri -= *(di++);
+  return int(di-begin());
+}
+
+
 int TDiscDistribution::randomInt()
 { 
   if (!randomGenerator)
@@ -998,12 +1027,19 @@ TDistribution &TContDistribution::operator *=(const float &weight)
 
 float TContDistribution::highestProbFloatIndex() const
 {
+  long sum = 0;
+  { const_this_ITERATE(i)
+      sum += *(long *)(&(*i).first) + *(long *)(&(*i).second);
+  }
+
+  TSimpleRandomGenerator rg(sum);
+
   int wins=0;
   const_iterator best=0;
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
-        || ((*i).second == (*best).second) && globalRandom->randbool(++wins))
+        || ((*i).second == (*best).second) && rg.randbool(++wins))
       best = i;
   return (*best).first;
 }
@@ -1011,12 +1047,19 @@ float TContDistribution::highestProbFloatIndex() const
 
 float TContDistribution::highestProb() const
 {
+  long sum = 0;
+  { const_this_ITERATE(i)
+      sum += *(long *)(&(*i).first) + *(long *)(&(*i).second);
+   }
+
+  TSimpleRandomGenerator rg(sum);
+
   int wins=0;
   const_iterator best=0;
   const_this_ITERATE(i)
     if (   (wins==0) && ((wins=1)==1)
         || ((*i).second >  (*best).second) && ((wins=1)==1)
-        || ((*i).second == (*best).second) && globalRandom->randbool(++wins))
+        || ((*i).second == (*best).second) && rg.randbool(++wins))
       best = i;
 
   if (wins)
@@ -1119,6 +1162,19 @@ float TContDistribution::randomFloat()
 }
 
 
+float TContDistribution::randomFloat(const long &random)
+{ 
+  TSimpleRandomGenerator rg(random);
+  for (int i = 10; i--; rg.randbool());
+
+  float ri = rg.randfloat()*abs;
+  const_iterator di(begin());
+  while (ri > (*di).first)
+    ri -= (*(di++)).first;
+  return (*di).second;
+}
+
+
 float TContDistribution::p(const float &x) const
 { const_iterator rb = upper_bound(x);
   if (rb==end())
@@ -1193,6 +1249,14 @@ float TGaussianDistribution::randomFloat()
 
   return (float)gasdev((double)mean, (double)sigma, randomGenerator.getReference());
 }
+
+
+float TGaussianDistribution::randomFloat(const long &random)
+{  
+  TRandomGenerator rg(random);
+  return (float)gasdev((double)mean, (double)sigma, rg);
+}
+
 
 
 float TGaussianDistribution::p(const float &x) const
