@@ -11,7 +11,6 @@
 #
 
 from OWWidget import *
-from OData import *
 from random import *
 
 class OWSubsetGenerator(OWWidget):

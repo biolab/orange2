@@ -13,7 +13,6 @@
 #
 
 from OWWidget import *
-from OData import *
 import OWGUI
 
 class OWSave(OWWidget):

@@ -1,4 +1,3 @@
-from OData import *
 from OWWidget import *
 from orngTreeLearner import TreeLearner
 from OWGUI import *

@@ -6,7 +6,6 @@
 <priority>2100</priority>
 """
 
-from OData import *
 from OWWidget import *
 from orngTreeLearner import TreeLearner
 from OWGUI import *
@@ -206,9 +205,7 @@ class OWClassificationTreeViewer(OWWidget):
 
     # signal processing
     def viewSelectionChanged(self, item):
-        data = OrangeData(self.nodeClassDict[item].examples)
-        if not hasattr(data, "title"):
-            data.title = ""
+        data = self.nodeClassDict[item].examples
         self.send("Classified Examples", data)
 
         tx = ""

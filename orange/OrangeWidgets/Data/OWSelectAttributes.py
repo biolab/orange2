@@ -16,7 +16,6 @@
 
 from OWWidget import *
 from OWGUI import *
-from OData import *
 
 #############################################################################
 #
@@ -274,13 +273,12 @@ class OWSelectAttributes(OWWidget):
 #test widget appearance
 if __name__=="__main__":
     data = orange.ExampleTable('adult_sample.tab')
-    odata = OrangeData(data)
-    
+
     a=QApplication(sys.argv)
     ow=OWSelectAttributes()
     a.setMainWidget(ow)
     ow.show()
-    ow.cdata(odata)
+    ow.cdata(data)
     a.exec_loop()
 
     #save settings 

@@ -16,7 +16,6 @@
 #
 
 from qttable import *
-from OData import *
 from OWWidget import *
 import math, orngLR
 

@@ -13,7 +13,6 @@ It also provides some basic data statistics.</description>
 #
 
 from OWWidget import *
-from OData import *
 
 class OWOutcome(OWWidget):
     settingsList = []

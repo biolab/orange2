@@ -8,7 +8,6 @@ learners and used them in other Orange Widgets.</description>
 <priority>100</priority>
 """
 
-from OData import *
 from OWWidget import *
 from OWGUI import *
 import os.path
@@ -217,8 +216,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     dataset = orange.ExampleTable('test')
-    od = OrangeData(dataset)
-    ow.cdata(od)
+    ow.cdata(dataset)
 
     ow.show()
     a.exec_loop()

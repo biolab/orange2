@@ -7,7 +7,6 @@
 """
 
 import orange
-from OData import *
 from OWWidget import *
 import orngAssoc, OWGUI
 

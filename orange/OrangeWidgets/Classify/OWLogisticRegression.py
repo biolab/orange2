@@ -7,7 +7,6 @@ a Logistic regression classifier. </description>
 <priority>15</priority>
 """
 
-from OData import *
 from OWWidget import *
 from orngLR import *
 import OWGUI

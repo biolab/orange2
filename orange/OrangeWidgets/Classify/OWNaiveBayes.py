@@ -14,7 +14,6 @@
 # all sorts of preprocessing (including discretization) on the table,
 # output a new table and export it in variety of formats.
 
-from OData import *
 from OWWidget import *
 import OWGUI
 
@@ -164,10 +163,6 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNaiveBayes()
     a.setMainWidget(ow)
-
-    #dataset = orange.ExampleTable('test')
-    #od = OrangeData(dataset)
-    #ow.cdata(od)
 
     ow.show()
     a.exec_loop()

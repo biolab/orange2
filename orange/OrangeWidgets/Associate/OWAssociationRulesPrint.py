@@ -6,7 +6,6 @@
 <priority>400</priority>
 """
 
-from OData import *
 from OWWidget import *
 #from orngAssoc import *        # to ne dela, ce si v napacnem direktoriju
 

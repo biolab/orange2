@@ -6,7 +6,6 @@
 <priority>100</priority>
 """
 
-from OData import *
 from OWWidget import *
 from orngSVM import *
 import orngLR_Jakulin
@@ -256,10 +255,6 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWBasicSVM()
     a.setMainWidget(ow)
-
-    #dataset = orange.ExampleTable('test')
-    #od = OrangeData(dataset)
-    #ow.cdata(od)
 
     ow.show()
     a.exec_loop()

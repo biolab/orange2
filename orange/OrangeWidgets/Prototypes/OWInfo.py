@@ -13,7 +13,6 @@
 #
 
 from OWWidget import *
-from OData import *
 
 ##################################################################################
 # we have to catch keypress event and send it to its parent to save current text

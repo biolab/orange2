@@ -17,7 +17,6 @@ by their relevance for particular classification.</description>
 #
 
 from qttable import *
-from OData import *
 from OWWidget import *
 # from OWRankGraph import * #if using a graph
 

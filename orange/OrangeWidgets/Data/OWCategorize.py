@@ -19,7 +19,6 @@ cut-off by MDL-based technique proposed by Fayyad & Iranni), equal-frequency int
 # output a new table and export it in variety of formats.
 
 from qttable import *
-from OData import *
 from OWWidget import *
 
 ##############################################################################
@@ -220,8 +219,7 @@ if __name__=="__main__":
     a.setMainWidget(ow)
 
     dataset = orange.ExampleTable(r'..\datasets\adult_sample')
-    od = OrangeData(dataset)
-    ow.cdata(od)
+    ow.cdata(dataset)
 
     ow.show()
     a.exec_loop()

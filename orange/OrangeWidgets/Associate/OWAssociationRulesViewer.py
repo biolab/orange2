@@ -6,7 +6,6 @@
 <priority>300</priority>
 """
 
-from OData import *
 from OWWidget import *
 import OWGUI
 

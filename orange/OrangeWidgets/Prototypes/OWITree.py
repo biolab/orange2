@@ -6,7 +6,6 @@
 <priority>20</priority>
 """
 from OWWidget import *
-from OData import *
 from OWFile import *
 from OWIRankOptions import *
 from OWClassificationTreeViewer import *
