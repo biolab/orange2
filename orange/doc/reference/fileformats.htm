@@ -1,0 +1,239 @@
+<html>
+<HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD>
+
+<BODY>
+<h1>Supported File Formats</h1>
+
+<P>Orange reads and writes files in a number of different formats.
+<DL>
+<DT><B>C4.5</B></DT>
+<DD>A format used in Quinlan's system C45; the system is a standard benchmark and the file format is one of the most widely formats in machine learning. It uses at least two files, &lt;stem&gt;.names contains descriptions of attributes and &lt;stem&gt;.data contains learning examples. If so requested, C4.5 also reads a file &lt;stem&gt;.test with testing examples. The details about the format can be found on Quinlan's web pages. This format is not the same as C5 (aka See5). C5's format is rather complex and only a limited support is planned for some future release of Orange. There's no point in supporting a format that allows specification of all kinds of transformations is these can be done in Python scripts.</DD>
+
+<DT><B>Assistant</B></DT>
+<DD>Assistant format is used by a family of Assistant systems, state-of-the-art tree induction systems that were developed in 80s and early 90s on Jozef Stefan Institute in Ljubljana, Slovenia. The data is stored in two files, ASDO&lt;stem&gt;.DAT containing the attribute descriptions and ASDA&lt;stem&gt;.DAT containing the data. Details can be found in documentation for any version of Assistant.</DD>
+
+<DT><B>Retis</B></DT>
+<DD>Retis is another older product of Jozef Stefan Institute, this one for induction of regression trees. The file format thus supports only continuous outcomes. The description of attributes is stored in &lt;stem&gt;.rdo and the data in &lt;stem&gt;.rda. Details can be found in Retis documentation.</DD>
+
+<DT><B>Tab-delimited</B></DT>
+<DD>An easy-to-use, yet powerful native Orange file format. Both, domain description and examples are stored in the same file. It comes in two flavors. In the older version, the first three lines contain names of the attributes, their values and optional flags, respectively. In newer, the first line contains attribute names whose prefixes describe the attribute types and optional flags - the prefixes need only be given in special occasions, while in general the parser will guess the attribute types itself. In both flavors, the remaining lines contain examples. Fields are delimited by tabulators. Detailed description is given below.</DD>
+
+<DT><B>Comma-separated</B></DT>
+<DD>The format itself is similar to the new-favor tab-delimited formats: the first line lists attribute names and the remaining lines contain values, separated by commas. Spaces are trimmed. Additional specifiers can be prefixed to the attribute names.</DD>
+
+<DT><B>Basket</B></DT>
+<DD>Basket format is suitable for storing sparse examples. These are not described by the usual list of values of attributes whose order is defined in domain descriptor. Instead, all values are written as meta-attributes. Examples in such format can be used for derivation of association rules; if you want to use them for any other purpose, you need to convert them into "ordinary" examples by pulling some meta-attributes into ordinary attributes. At the moment, this file format is limited to continuous attributes only.</DD>
+
+<DT><B>Excel</B></DT>
+<DD>This format is only available on Windows. Besides, you need to have Excel installed in order for Orange to be able to read those files. Besides besides, Orange occasionally hangs during communication with Excel, for an unknown reason. The file format is generally the same as the second flavor of tab-delimited files, except that tab-separated entries in the former are here substituted by spreadsheet's cells. This format is read-only, for now; if you want to output the file by Orange and then process it with Excel, you can use tab-delimited files.</DD>
+</DL>
+
+<H2>Loading Examples</H2>
+
+<P>Loading examples is trivial. To load the data from the file <CODE>iris.tab</CODE>, you simply type</P>
+
+<XMP class="code">
+>>> data = orange.ExampleTable("iris.tab")
+</XMP>
+
+<P>You can, of course, also give a relative or absolute path to the file. Well, <CODE>ExampleTable</CODE> is even smarted than that. You can omit the file extension.</P>
+
+<XMP class="code">
+>>> data = orange.ExampleTable("iris")
+</XMP>
+
+<P>This will do the same - Orange will look for any file with stem "iris" and a recognizable extension, such as .tab, .names, .rda... What happens when there is more than one such file? If orange discovers that you have, for instance, iris.tab <EM>and</EM> iris.names in the current directory, it will issue an error. You will have to provide the extension in this case.</P>
+
+<P>But there's more. You don't even have to provide a filename. If you call the <CODE>ExampleTable</CODE> without any arguments, like this,</P>
+
+<XMP class="code">
+>>> data = orange.ExampleTable("")
+</XMP>
+
+<P>it will load the file with the same name as the current directory name. So, if your current directory is "c:\mydata\iris", it will look for files with stem "iris" and any known extensions. This might come handy if you perform some massive experiments and you want to run the same script for many different datasets located in separate directories.</P>
+
+<P>There's a special trick for reading Excel files. If the file has multiple worksheets, the active worksheet (the one which was visible when the file was last saved) is read. To override this, you can specify a worksheet by appending a "#" and the worksheet's name to the file name. If your iris file is in Excel's format in a worksheet named "train", you can read it by
+
+<XMP class="code">
+>>> data = orange.ExampleTable("iris#train")
+</XMP>
+
+<P>There's one more important thing to care about when loading files. Say that you have separate files for training and testing examples and load them like this (judging by the extensions, these two files must be in C4.5 format).</P>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("iris.data")
+>>> test = orange.ExampleTable("iris.test")
+</XMP>
+
+<P>Orange needs to do something special here. When loading the first file, it reads the .names file and constructs attribute definitions and the domain descriptor. When it loads the second file, it reads the names file and checks the domains that were already constructed. It finds out that the iris.test's domain is exactly the same as iris.data's and uses the existing domain instead of constructing a new one. In this case, both datasets had the same .names file, but this is not necessary: when loading data, Orange compares whether an old domain can be reused by the names, types and order of the attributes, presence, name and type of the class attribute and names and type of meta-attributes. Order of meta-attributes is not important. Reuse is restricted to domains coming from the same file-format; when reading C4.5 files, only domains constructed from C4.5 files are checked for potential reuse. It is possible to explicitly tell Orange to reuse another domain, though (see below).<P>
+
+<P>A situtation that would probably occur even more often is to have an Excel file with two spreadsheets, one containing training and the other testing examples. They can be loaded by:</P>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("breast.xls#train")
+>>> test = orange.ExampleTable("breast.xls#test")
+</XMP>
+
+<P>The purpose of reuse is not to save space. If new attribute descriptors were constructed for each file, the attributes in the two datasets would have same names, but would be treated as different attributes. Orange does not distinguish attributes by names but by descriptors. Names are there for your eyes only. Classifier induces from dataset <CODE>train</CODE> wouldn't recognize attributes from dataset <CODE>test</CODE> if there was no reuse.</P>
+
+<P>You can override the default behaviour by adding a few keyword parameters. You can prohibit reusing domains by setting <code>dontCheckStored</code> to 1. Therefore, if you would, for any weird reason, want to have the above iris datasets belonging to two unrelated domains, you can load them by</p>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("iris.data")
+>>> test = orange.ExampleTable("iris.test", dontCheckStored = 1)
+</XMP>
+
+<P>Similarly, you can prohibit storing a domain by setting <code>dontStore</code> to 1. This way, the domain will never be reused at further loading.</p>
+
+<p>You can give the <code>ExampleTable</code> a list of attributes that can be reused. For instance, you might have testing set that contains some attributes not present in the training set. By the usual mechanism, these datasets would have separate domain and attribute definitions - even the attributes with the same names would be actually unrelated; models induced from the training data would be completely useless on the testing data, as none of its attributes would be recognized. So, to tell Orange to reuse the attributes, you can use the <code>use</code> keyword:</p>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("breast.xls#train")
+>>> test = orange.ExampleTable("breast.xls#test", \
+              use = train.domain)
+</XMP>
+
+<p>By this, Orange is licensed to reuse any of attributes, either normal or meta, when constructing the domain for testing examples. Instead of giving a domain, you can also pass a list of attributes:</p>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("breast.xls#train")
+>>> test = orange.ExampleTable("breast.xls#test", \
+            use = train.domain.attributes + someother.domain.attributes)
+</XMP>
+
+<p>Finally, you can tell Orange to reuse a domain.</p>
+
+<XMP class="code">
+>>> train = orange.ExampleTable("breast.xls#train")
+>>> test = orange.ExampleTable("breast.xls#test", domain = some.domain)
+</XMP>
+
+<p>Here, <code>some.domain</code> does not need to be a domain that was constructed when loading data from files. If the given domain cannot be reused, an error is reported.</p>
+
+
+<H2>Saving Examples</H2>
+
+<P>Writing examples into files is even simpler - all you need to do is call <CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE> or <CODE>saveTxt</CODE>, passing a filename as the first and the examples as the second argument. The function will decorate the file name according to the format's customs. For instance, while saving in Assistant's format, the domain description file will be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>.</P>
+
+<P>Some formats are not able to store all types of datasets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
+
+
+<H2>Tab-delimited and Excel Format</H2>
+
+<P>Tab-delimited files are the most powerful file format available in Orange, as they can store classification and regression datasets, meta-attributes, string attributes... They come in two flavours, the older is a bit more complex and has the extension .tab, while the newer is easier to use and has extension .txt. In addition, Orange for Windows can read Excel files (provided that Excel is installed on the machine), which are formatted in the newer fashion of tab-delimited files.</P>
+
+<P>The file begins with description of the domain in three lines for the older and one line for the newer format. The remaining lines contain examples.</P>
+
+<H3>Domain description - older version (.tab)</H3>
+
+<P>The first line of the file in the older format contains names of the attributes. Names can contain any character but CR, LF, NUL or TAB. Spaces are allowed.</P>
+
+<P>The second line contains types of attributes, one entry for each attribute. These can be "d" or "discrete" for discrete attributes, "c" or "continuous" for continuous attributes and "string" for string attributes. Note that string attributes are, at the moment, not used by any of Orange's learners, but can be used as meta-attributes describing examples, for instance. For discrete attributes, you can list the possible values of the attribute instead of "d" or "discrete"; values should be separated by spaces. Spaces contained in values must be "escaped" (that is, preceded by a backslash): a value named "light blue" would be written as <CODE>light\ blue</CODE>. Listing attributes is useful since it prescribes the order of the values; if you only described the attribute type by "d", the order of values will be the same as encountered when reading the examples.</P>
+
+<P>The third line contains optional flags.
+<DL>
+<DT><CODE>i</CODE> or <CODE>ignore</CODE></DT>
+<DD>Attributes with this flag are ignored, <EM>i.e.</EM> not read into the table.</DD>
+
+<DT><CODE>c</CODE> or <CODE>class</CODE></DT>
+<DD>denotes a class attribute. There can be at most one such attribute; if there are none, the last attribute is the class.</DD>
+
+<DT><CODE>m</CODE> or <CODE>meta</CODE></DT>
+<DD>denotes a meta-attribute. Such attributes are not used by any learning algorithm (or by algorithms for, say, measuring distances between examples) but are stored with examples. Meta attributes are most often used for weighting the examples.</DD>
+
+<DT><CODE>-dc</CODE></DT>
+<DD>followed by a value or by a list of space-separated values enclosed in double quotes specifies the "don't care" symbol for this attribute. By default, empty fields, <CODE>?</CODE> and <CODE>NA</CODE> are interpreted as "don't care" and "~" as don't know. If your file contains another string, such as "UNDETERMINED" to denote such values, you can either search&replace it or add the flag </CODE>-dc UNDETERMINED</CODE> to the third line for this attribute.</DD>
+</DL>
+
+<H3>Domain description - new version (.txt, .csv and .xls)</H3>
+
+<P>The newer version of tab-delimited formats is much simpler yet still powerful. The domain description is given in a single line which, in its most simple form, contains only the names of the attributes. In this case, Orange will recognize the attribute types itself, using this procedure:</P>
+
+<OL>
+<LI>If the attribute descriptor with the same name is found in known descriptors (passed by <CODE>use</CODE> or determine by reuse), it will be used, thus specifying the attribute type as well.</LI>
+<LI>If the attribute is new, its values in the file are checked:
+<UL>
+<LI>attributes whose values are digits from 0-9 (or some subset of this) are discrete; this is to cover the domains with coded attribute values,</LI>
+<LI>attributes whose values can be parsed as numbers (in .txt) or whose cells contain numbers (in Excel) are continuous,</LI>
+<LI>other attributes are discrete.</LI>
+Symbolic values representing unknown values ("?", "~", "NA"... are ignored).
+</OL>
+
+<P>The last non-ignored non-meta attribute will be a class attribute. It is not possible to specify a classless domain in those two file formats.</P>
+
+<P>This procedure is not foolproof. You can have continuous attributes whose values are accidentally only digits from 0-9. Or you can have a discrete attribute with values 1.1, 1.2, 1.3 and 2.1. You may want to designate some other attribute as class attribute, ignore another attribute and have a few meta attribute. This can be achieved by prefixes.</P>
+
+<P>Prefixed attributes contain one- or two-lettered prefix, followed by "#" and the name. The first letter of the prefix can be either "m" for meta-attributes, "i" to ignore the attribute, and "c" to define the class attribute. As always, only one attribute can be a class attribue. The second letter denotes the attribute type, "D" for discrete, "C" for continuous and "S" for string attributes.</P>
+
+<P>In most cases, however, the attribute detection mechanism will suffice.</P>
+
+<H3>Examples</H3>
+
+<P>Examples are given as lists of symbolic values, separated by tabulators in .tab and .txt files or occupying a row in an Excel file. Lines in (.tab or .txt) files that commence by "|" are comment lines and are ignored. There is no such thing in Excel.</P>
+
+<P>The first few lines of iris dataset in the old format looks like this:</P>
+
+<XMP class="code">
+sepal length   sepal width   petal length   petal width   iris
+c              c             c              c             d
+                                                          class
+5.1            3.5           1.4            0.2           Iris-setosa
+4.9            3.0           1.4            0.2           Iris-setosa
+4.7            3.2           1.3            0.2           Iris-setosa
+4.6            3.1           1.5            0.2           Iris-setosa
+</XMP>
+
+<P>The more compact new format skips the second and the third line.</P>
+
+<XMP class="code">
+sepal length   sepal width   petal length   petal width   iris
+5.1            3.5           1.4            0.2           Iris-setosa
+4.9            3.0           1.4            0.2           Iris-setosa
+4.7            3.2           1.3            0.2           Iris-setosa
+4.6            3.1           1.5            0.2           Iris-setosa
+</XMP>
+
+<P>If you would like to ignore the first attribute, use the second as a class, explicitly require the third attribute to be discrete and have the fourth attribute be a continuous weight, you would "correct" the first line like this</P>
+
+<XMP class="code">
+i#sepal length   c#sepal width    D#petal length    mC#petal width    iris
+</XMP>
+
+<P>As for the comma-separated format, you can download some such files from UCI repository. When we were writing documentation on censoring, for instance, we needed some censored data. We downloaded the new Wisconsin breast cancer data, looks as follows:</P>
+
+<XMP class=code>
+119513,N,31,18.02,27.6,117.5,1013,0.09489,0.1036, <...>
+8423,N,61,17.99,10.38,122.8,1001,0.1184,0.2776, <...>
+842517,N,116,21.37,17.44,137.5,1373,0.08836,0.1189, <...>
+843483,N,123,11.42,20.38,77.58,386.1,0.1425,0.2839, <...>
+<...>
+</XMP>
+
+<P>To make the data acceptable by Orange, we only needed to add the first line.</P>
+
+<XMP class=code>
+m#ID,c#recur,time,radius,texture,perimeter,area,smoothness, <...>
+</XMP>
+
+<P>Since we don't want the ID to be used for learning, we turned it into a meta-attribute. Besides, we needed to tell Orange that "recur" is the class attributes.</P>
+
+
+<H2>Basket format</H2>
+
+<P>In the basket format, each example is represented by a line in the file. The line is written as a comma-separated list of name-value pairs. Here's an example of such file.</P>
+
+<XMP class=code>
+nobody, expects, the, Spanish, Inquisition=5
+our, chief, weapon, is, surprise=3, surprise=2, and, fear,fear, and, surprise
+our, two, weapons, are, fear, and, surprise, and, ruthless, efficiency
+to, the, Pope, and, nice, red, uniforms, oh damn
+</XMP>
+
+<P>The file contains four examples. The first examples has five attributes defined, "nobody", "expects", "the", "Spanish" and "Inquisition"; the first four have (the default) value of 1.0 and the last has a value of 5.0.</P>
+
+<P>The attributes that appear in the domain aren't defined in any headers or even separate files, as with other formats supported by Orange.</P>
+
+<P>If attribute appears more than once, its values are added. For instance, the value of attribute "surprise" in the second examples is 6.0 and the value of "fear" is 2.0; the former appears three times with values of 3.0, 2.0 and 1.0, and the latter appears twice with value of 1.0.</P> 

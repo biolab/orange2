@@ -1,0 +1,141 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+
+<p class="links">
+Prev: <a href="c_bagging.htm">Bagging</a>,
+Next: <a href="assoc.htm">Association Rules</a>,
+Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
+<br><br><hr></p>
+
+<H1>Regression</H1>
+
+<br>
+
+<p>At the time of writing of this part of tutorial, there were essentially two different learning methods for regression modelling: regression trees and instance-based learner (k-nearest neighbors). In this lesson, we will see that using regression is just like using classifiers, and evaluation techniques are not much different either.</p>
+
+<p>Let us start with regression trees. Below is an example script that builds the tree from <a href="housing.tab">housing</a> data set and prints out the tree in textual form.</p>
+
+<p class="header"><a href="regression1.py">regression1.py</a> (uses <a href=
+"housing.tab">housing.tab</a>)</p>
+<xmp class="code">
+import orange, orngTree
+
+data = orange.ExampleTable("housing.tab")
+rt = orngTree.TreeLearner(data, measure="retis", mForPruning=2, minExamples=20)
+orngTree.printTxt(rt, leafFields=["average","confidenceInterval"], \
+  decimalPlaces=1, confidenceLevel=0.85)
+</xmp>
+
+<p>Notice special setting for attribute evaluation measure! Following is the output of this script:</p>
+
+<xmp class="code">
+RM <6.941: 19.9 [19.5, 20.4]
+RM >=6.941: 
+|   RM <7.437: 
+|   |   CRIM <7.393: 
+|   |   |   DIS <1.886: 45.7 [39.4, 51.9]
+|   |   |   DIS >=1.886: 32.7 [31.9, 33.6]
+|   |   CRIM >=7.393: 14.4 [11.3, 17.5]
+|   RM >=7.437: 
+|   |   TAX <534.500: 45.9 [44.7, 47.1]
+|   |   TAX >=534.500: 21.9 [21.9, 21.9]
+</xmp>
+
+<p>Predicting continues classes is just like predicting crisp ones. In this respect, the following script will be nothing new. It uses both regression trees and k-nearest neighbors, and also uses a majority learner which for regression simply returns an average value from learning data set.</p>
+
+<p class="header"><a href="regression2.py">regression2.py</a> (uses <a href=
+"housing.tab">housing.tab</a>)</p>
+<xmp class="code">
+import orange, orngTree, orngTest, orngStat
+
+data = orange.ExampleTable("housing.tab")
+selection = orange.MakeRandomIndices2(data, 0.5)
+train_data = data.select(selection, 0)
+test_data = data.select(selection, 1)
+
+maj = orange.MajorityLearner(train_data)
+maj.name = "default"
+
+rt = orngTree.TreeLearner(train_data, measure="retis", mForPruning=2, minExamples=20)
+rt.name = "reg. tree"
+
+k = 5
+knn = orange.kNNLearner(train_data, k=k)
+knn.name = "k-NN (k=%i)" % k
+
+regressors = [maj, rt, knn]
+
+print "\n%10s " % "original",
+for r in regressors:
+  print "%10s " % r.name,
+print
+
+for i in range(10):
+  print "%10.1f " % test_data[i].getclass(),
+  for r in regressors:
+    print "%10.1f " % r(test_data[i]),
+  print
+</xmp>
+
+<p>Here goes the output:</p>
+<xmp class="code">
+  original     default   reg. tree  k-NN (k=5) 
+      24.0        50.0        25.0        24.6 
+      21.6        50.0        25.0        22.0 
+      34.7        50.0        35.4        26.6 
+      28.7        50.0        25.0        36.2 
+      27.1        50.0        21.7        18.9 
+      15.0        50.0        21.7        18.9 
+      18.9        50.0        21.7        18.9 
+      18.2        50.0        21.7        21.0 
+      17.5        50.0        21.7        16.6 
+      20.2        50.0        21.7        23.1 
+</xmp>
+
+<p>For our third and last example for regression, let us see how we can use cross-validation testing and for a score function use mean squared error.</p>
+
+<p class="header"><a href="regression3.py">regression3.py</a> (uses <a href=
+"housing.tab">housing.tab</a>)</p>
+<xmp class="code">
+import orange, orngTree, orngTest, orngStat
+
+data = orange.ExampleTable("housing.tab")
+
+maj = orange.MajorityLearner()
+maj.name = "default"
+rt = orngTree.TreeLearner(measure="retis", mForPruning=2, minExamples=20)
+rt.name = "regression tree"
+k = 5
+knn = orange.kNNLearner(k=k)
+knn.name = "k-NN (k=%i)" % k
+learners = [maj, rt, knn]
+
+data = orange.ExampleTable("housing.tab")
+results = orngTest.crossValidation(learners, data, folds=10)
+mse = orngStat.MSE(results)
+
+print "Learner        MSE"
+for i in range(len(learners)):
+  print "%-15s %5.3f" % (learners[i].name, mse[i])
+</xmp>
+
+<p>Again, compared to classification tasks, this is nothing new. The only news in the above script is a mean squared error evaluation function (<code>orngStat.MSE</code>). The scripts prints out the following report:</p>
+
+<xmp class="code">
+Learner        MSE
+default         862.838
+regression tree 53.378
+k-NN (k=5)      23.285
+</xmp>
+
+<p>Currently, mean squared error is the only evaluation function we provide for regression. If you need to implement something more advanced or meaningful for your data, you should check how <code>MSE</code> is implemented in <code>orngStat</code>: it really takes only about a single line of code to compute this statistics, so you should have no problems implementing your scoring functions.</p>
+
+<p class="links"><hr><br>
+Prev: <a href="c_bagging.htm">Bagging</a>,
+Next: <a href="assoc.htm">Association Rules</a>,
+Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
+</p>
+
+</body></html>

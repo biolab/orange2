@@ -1,0 +1,349 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+<h1>orngTree: Orange Decision Trees Module</h1>
+
+<P>Module orngTree implements a wrapper function <code>TreeLearner</code> for building trees and two functions for tree output. There is also the <code>TreeLearner</code> function in core Orange which should not be confused with the one in orngTree module. We implement a textual output
+in tabulated format as well as the output in DOT format (DOT is a language used to describe graph structures.
+It is used with <a href="http://www.research.att.com/sw/tools/graphviz">GraphViz</a>). In both, user can choose among several different print options, i.e. what should be printed at each node or leaf. For discrete classes it is possible to print out the contingencies, the percentage of majority class at each node and the
+percentage of base class. For continuous class, it is only possible to print out the average and 95%
+confidence interval.
+</P>
+
+<HR>
+
+<H2>Implementations</H2>
+
+<H3>Functions</H3>
+<DL>
+
+<DT><B>TreeLearner</B>([<EM>examples=None</EM>, <EM>weightID=0</EM>, <EM>sameMajorityPruning=0</EM>, <EM>mForPruning=0</EM>,
+<EM>split</EM>, <EM>binarization=0</EM>, <EM>measure="gainRatio"</EM>, <EM>worstAcceptable=0</EM>,
+<EM>minSubset=0</EM>, <EM>stop</EM>, <EM>maxMajority=0</EM>, <EM>minExamples=0</EM>,
+<EM>storeDistributions=1</EM>, <EM>storeContingencies=1</EM>, <EM>storeExamples=0</EM>,
+<EM>storeNodeClassifier=1</EM>])
+<DD class=ddfun>
+Returns a <code>TreeClassifier</code> if <code>examples</code> are given. If <code>examples</code> are not specified,
+an instance of object TreeLearner with its parameters appropriately initialized is returned. Parameters may also be set
+after the creation of the object. Parameter <code>weightID</code> defines the ID
+of the weight meta attribute. Parameter <code>sameMajorityPruning</code> can be either true or false and,
+in case ob being true, prunes the tree so that there is no subtree in which all the nodes
+would have the same majority class. Another parameter to control pruning is <code>mForPruning</code> which
+sets m for m-estimate.
+Splitting can be controled by <code>split</code> parameter which enable the user
+to define a new <code>TreeSplitConstructor</code>. If <code>split</code> is ommited we can change the default
+settings by setting <code>binarization</code> (true or false), <code>measure</code>, <code>worstAcceptable</code> and
+<code>minSubset</code> parameters. Parameter <code>measure</code> can take one of the following values:
+"infoGain", "gainRatio", "gini", "relief", "retis" depending on the type of the tree (regression or classification).
+Parameter <code>worstAcceptable</code> sets lowest required split quality for a split to be acceptable. Note
+that this value make sense only in connection with a <code>measure</code> parameter.
+Parameter <code>minSubset</code> sets the minimal number of examples (weighted number of examples) in non-null leaves.
+The next three parameters control the stop criteria. By defining <code>stop</code> the user can override the
+default <code>TreeStopCriteria</code>. Otherwise the stop criteria can be controled by
+<code>maxMajority</code> (induction stops when the value exceeds the maximal proportion of majority class
+in node) and <code>minExamples</code> which sets the minimal number of examples in internal leaves. Subsets with less than
+<code>minExamples</code> examples are not split any further. Do not forget that example count is weighed.
+The rest of parameters, <code>storeDistributions</code>, <code>storeContingencies</code>,
+<code>storeExamples</code> and <code>storeNodeClassifier</code> define what data should be stored while
+building the tree. By default, examples are not stored to save space. Note that distributions and
+contingencies could not be stored either causing the output functions not to work.
+</DD><br><br>
+
+<DT><B>printTxt</B>(<EM>tree</EM> [, <EM>fileName=""</EM>, <EM>examplesLimit=-1 </EM>, <EM>depthLimit=10000</EM>,
+                    <EM>baseValueIndex=-1</EM>, <EM>internalNodeFields=[]</EM>, <EM>leafFields=["major","average"]</EM>,
+                    <EM>decimalPlaces=3</EM>, <EM>confidenceLevel=0.95</EM>])
+
+<DD class=ddfun>Prints out the tree <code>tree</code> in plain text. By default the output goes to
+standard output. If <code>fileName</code> is specified, the output will be redirected to that file.
+The rest of parameters control the output format of the tree. By setting the <code>examplesLimit</code>
+a node of the tree will only be printed out if the number of examples in the node is grater than
+<code>examplesLimit</code>. The parameter <code>depthLimit</code> sets the limit of the tree levels
+to be printed while the parameter <code>baseValueIndex</code> sets the index of the base class value.
+To specify the fields to be printed at each node, use <code>internalNodeFields</code> and
+<code>leafFields</code> parameters. The possible string values for both lists are <code>'contingency'</code>,
+<code>'major'</code> and <code>'baseValue'</code> for classification problems and <code>'average'</code>,
+<code>'confidenceInterval'</code> for regression problems. For these, <code>decimalPlaces</code> can be set to control the
+format of real numbers. For regression, we can also set the confidence level <code>confidenceLevel</code>, by default set to 0.95.
+Other valid choices are 0.75, 0.8, 0.85, 0.9, 0.95, 0.99, otherwise default value is used.
+Confidence level is used to determine the confidence interval which we can optionaly print out. Confidence level is the probability
+of the class value to belong to the confidence interval assuming normal distribution.
+</DD>
+
+<DT><B>printDot</B>(<EM>tree</EM> [, <EM>fileName="out.dot"</EM>, <EM>examplesLimit=-1 </EM>, <EM>depthLimit=10000</EM>,
+                    <EM>baseValueIndex=-1</EM>, <EM>leafShape="plaintext"</EM>, <EM>internalNodeShape="box"</EM>,
+                    <EM>internalNodeFields=[]</EM>, <EM>leafFields=["major","average"]</EM>,
+                    <EM>decimalPlaces=3</EM>, <EM>confidenceLevel=0.95</EM>])
+
+<DD class=ddfun>Prints out the tree <code>tree</code> in Dot format (or check <a href="http://www.research.att.com/~erg/graphviz/info/shapes.html">Polygon-based Nodes</a> page). Shape (outline) of the nodes in dot format use <code>leafShape</code> and <code>internalNodeShape</code>.
+Please refer to dot's user manual and our examples for valid values.
+The rest of parameters control
+the output format of the tree and are the same as with <code>printTxt()</code>.
+</DD>
+
+<DT><B>countNodes</B>(<EM>tree</EM>)
+<DD class=ddfun>Returns the number of nodes of tree <code>tree</code> (this includes, obviously, the number of leaves plus the number of internal nodes).
+</DD>
+
+<DT><B>countLeaves</B>(<EM>tree</EM>)
+<DD class=ddfun>Returns the number of leaves of tree <code>tree</code>.
+</DD>
+
+</DL>
+
+<hr>
+
+<H2>Examples</H2>
+
+In the first example we show a simple way of controlling the splitting by allowing to split only when
+gainRatio (the default measure) is grater than 0.6.
+<p class="header"><a href="tree1.py">tree1.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+data = orange.ExampleTable("iris.tab")
+l = orngTree.TreeLearner(data, worstAcceptable=0.6)
+orngTree.printTxt(l, leafFields=['major', 'contingency'])
+</XMP>
+
+<p>The result is printed as a plain text as follows:</p>
+
+<XMP class=code>
+petal width <0.800: Iris-setosa (100.0%)
+petal width >=0.800:
+|   petal width <1.750:
+|   |   petal length <4.950:
+|   |   |   sepal length <5.150: Iris-versicolor (80.0%)
+|   |   |   sepal length >=5.150: Iris-versicolor (100.0%)
+|   |   petal length >=4.950: Iris-virginica (66.66%)
+|   petal width >=1.750:
+|   |   petal length <4.950: Iris-virginica (83.33%)
+|   |   petal length >=4.950: Iris-virginica (100.0%)
+</XMP>
+
+<p>The following example shows how to handle stopping criteria by setting the maximal proportion of majority class in the node.</p>
+
+<p class="header"><a href="tree2.py">tree2.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+data = orange.ExampleTable("iris.tab")
+
+print "BIG TREE:",
+tree1 = orngTree.TreeLearner(data)
+orngTree.printTxt(tree1, leafFields=['major', 'contingency'])
+
+print "\nPRE-PRUNED TREE:",
+tree2 = orngTree.TreeLearner(data, maxMajority=0.7)
+orngTree.printTxt(tree2, leafFields=['major', 'contingency'])
+</XMP>
+<p>
+This script prints out two trees, one build using default parameters and the other one pre-pruned with <code>maxMajority</code> set to 70%.
+</p>
+<XMP class=code>
+BIG TREE:
+petal width <0.800: Iris-setosa (100.0%; <50, 0, 0>)
+petal width >=0.800:
+|   petal width <1.750:
+|   |   petal length <5.350:
+|   |   |   petal length <4.950:
+|   |   |   |   petal width <1.650: Iris-versicolor (100.0%; <0, 47, 0>)
+|   |   |   |   petal width >=1.650: Iris-virginica (100.0%; <0, 0, 1>)
+|   |   |   petal length >=4.950:
+|   |   |   |   petal width <1.550: Iris-virginica (100.0%; <0, 0, 2>)
+|   |   |   |   petal width >=1.550: Iris-versicolor (100.0%; <0, 2, 0>)
+|   |   petal length >=5.350: Iris-virginica (100.0%; <0, 0, 2>)
+|   petal width >=1.750:
+|   |   petal length <4.850:
+|   |   |   sepal width <3.100: Iris-virginica (100.0%; <0, 0, 2>)
+|   |   |   sepal width >=3.100: Iris-versicolor (100.0%; <0, 1, 0>)
+
+|   |   petal length >=4.850: Iris-virginica (100.0%; <0, 0, 43>)
+
+PRE-PRUNED TREE:
+petal width <0.800: Iris-setosa (100.0%; <50, 0, 0>)
+petal width >=0.800:
+|   petal width <1.750: Iris-versicolor (90.74%; <0, 49, 5>)
+|   petal width >=1.750: Iris-virginica (97.82%; <0, 1, 45>)
+</XMP>
+
+<p>The next example demonstrates how to write your own stop function. The example itself is more
+funny than useful. It prints out two trees. For the first one we define the <code>defStop</code>
+function, which is used by default, and combine it with a random function so that the stop criteria
+will also be met in additional 20% of the cases when <code>defStop</code> is false. The second tree is build such that it considers only the random function as the stopping criteria. Note that in the second case lambda function still has three parameters, since this is a necessary number of parameters for the stop function (for more, see section on <a href="../reference/TreeLearner.htm">Orange Trees</a> in Orange Reference).
+</p>
+<p class="header"><a href="tree3.py">tree3.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+from whrandom import randint, random
+
+data = orange.ExampleTable("iris.tab")
+
+defStop = orange.TreeStopCriteria()
+f = lambda examples, weightID, contingency: defStop(examples, weightID, contingency) or randint(1, 5)==1
+l = orngTree.TreeLearner(data, stop=f)
+orngTree.printTxt(l, leafFields=['major', 'contingency'])
+
+f = lambda x,y,z: randint(1, 5)==1
+l = orngTree.TreeLearner(data, stop=f)
+orngTree.printTxt(l, leafFields=['major', 'contingency'])
+</XMP>
+<p>
+The output is not shown here since the resulting trees are rather big, and they change in time (Python's whrandom library sets the seed according to the time a script imports this library -- check it out by running the above script several times).
+</p>
+
+<p>
+The next script prints out the data instances at each leaf. It can do so by setting storeExamples to true when learning the tree: this causes the <code>TreeLearner</code> to remember the examples at each node. Notice that we could print out the examples in internal nodes of the tree (you may do this by a minor change in the script below). The script also prints out the class distribution at the root node. Again, class distributions are saved for all the nodes in the tree: this is enabled by setting <code>storeContingencies</code> to <code>true</code> (in Python, setting it to 1).</p>
+
+<p class="header"><a href="tree4.py">tree4.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+
+def printExamples(node):
+    if node:
+        if node.branches:
+            for b in node.branches:
+                printExamples(b)
+        else:
+            print "----------------- NEW NODE -----------------"
+            for ex in node.examples:
+                print ex
+    else:
+        print "null node"
+
+
+data = orange.ExampleTable("iris.tab")
+print len(data)
+
+tree = orngTree.TreeLearner(data, storeExamples=1, storeContingencies=1)
+print 'CLASSIFICATION TREE:',
+orngTree.printTxt(tree)
+
+print '\nEXAMPLES IN NODES:'
+printExamples(tree.tree)
+
+print '\nCONTINGENCY:'
+print tree.tree.contingency.classes
+</XMP>
+
+<p>The following scripts demonstrate the use of both print functions, i.e., the print functions that prints to the console and the one that prints to the DOT file. Let us first print out a small tree induced from iris data set:</p>
+
+<p class="header"><a href="tree5.py">tree5.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+data = orange.ExampleTable("iris.tab")
+
+tree = orngTree.TreeLearner(data, worstAcceptable=0.6)
+orngTree.printTxt(tree)
+orngTree.printDot(tree, fileName="tree5.dot")
+</XMP>
+
+<P>
+This script outputs the tree in the following form:
+</P>
+
+<XMP class=code>
+petal width <0.800: Iris-setosa (100.0%)
+petal width >=0.800:
+|   petal width <1.750:
+|   |   petal length <5.350: Iris-versicolor (94.23%)
+|   |   petal length >=5.350: Iris-virginica (100.0%)
+|   petal width >=1.750: Iris-virginica (97.82%)
+</XMP>
+
+<P>It also writes out a DOT file tree5.dot. This file can be used <a href="http://www.research.att.com/sw/tools/graphviz/">AT&amp;T's Graphviz</a> software to graphically present the tree. Graphwiz's DOT can use different output formats; we have used GIF a obtained the gile tree5.gif with a following command from the console:</P>
+
+<XMP class=code>
+dot -Tgif tree5.dot -otree5.gif
+</XMP>
+
+<P>You can use any of the common viewers for this file, and see something like the following presentation of the tree:</P>
+
+<img src="tree5.gif" alt="tree5.gif" border="0">
+
+
+<P>Now, we generate the tree without pre-pruning that uses <code>worstAcceptable=0.6</code>, and print it out tree only to the 3rd level. We also print out class distributions (contingencies) and a proportion (percentages) of examples that belong to the majority class in internal nodes.</P>
+
+<p class="header"><a href="tree6.py">tree6.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+data = orange.ExampleTable("iris.tab")
+
+tree = orange.TreeLearner(data)
+orngTree.printTxt(tree, internalNodeFields=['contingency','major'], depthLimit=3)
+orngTree.printDot(tree, fileName="tree6.dot", internalNodeFields=['contingency','major'], depthLimit=3)
+</XMP>
+
+<P>Plain text output of this script is:</P>
+<XMP class=code>
+petal width (33.33%; <50, 50, 50>) <0.800: Iris-setosa (100.0%)
+petal width (33.33%; <50, 50, 50>) >=0.800:
+|   petal width (50.0%; <0, 50, 50>) <1.750:
+|   |   petal length (90.74%; <0, 49, 5>) <4.950:
+|   |   petal length (90.74%; <0, 49, 5>) >=4.950:
+|   petal width (50.0%; <0, 50, 50>) >=1.750:
+|   |   petal length (97.82%; <0, 1, 45>) <4.950:
+|   |   petal length (97.82%; <0, 1, 45>) >=4.950:
+</XMP>
+
+<P>The corresponding GIF file we have created using dot is:</P>
+
+<img src="tree6.gif" alt="tree6.gif" border="0">
+
+<P>And finally, and also to indicate that orngTree can also handle regression trees, let us build a regression tree and print it out. To do this, we use housing data set that uses continuous class.</P>
+
+<p class="header"><a href="tree7.py">tree7.py</a> (uses <a href=
+"housing.tab">housing.tab</a>)</p>
+<XMP class=code>
+import orange, orngTree
+
+train = orange.ExampleTable("housing.tab")
+
+l = orngTree.TreeLearner(train, measure="retis", mForPruning=2, minExamples=20)
+
+orngTree.printTxt(l, leafFields=["average","confidenceInterval"], decimalPlaces=1, confidenceLevel=0.85)
+orngTree.printDot(l, leafFields=["average","confidenceInterval"], fileName="tree7.dot", decimalPlaces=1, confidenceLevel=0.85)
+print
+print "Number of nodes:",orngTree.countNodes(l)
+print "Number of leaves:",orngTree.countLeaves(l)
+</XMP>
+<p>
+The result is the following tree in text format:
+</p>
+<XMP class=code>
+RM <6.941: 19.9 [19.5, 20.4]
+RM >=6.941:
+|   RM <7.437:
+|   |   CRIM <7.393:
+|   |   |   DIS <1.886: 45.7 [39.4, 51.9]
+|   |   |   DIS >=1.886: 32.7 [31.9, 33.6]
+|   |   CRIM >=7.393: 14.4 [11.3, 17.5]
+|   RM >=7.437:
+|   |   TAX <534.500: 45.9 [44.7, 47.1]
+|   |   TAX >=534.500: 21.9 [21.9, 21.9]
+
+Number of nodes: 11
+Number of leaves: 6
+</XMP>
+<p>
+Notice that instead of class labels, each node has a corresponding average value of class variable (price of housing) over the instances from training set that belong to this node. A corresponding tree in GIF format (again, using Graphwiz's dot) is:</p>
+
+<img src="tree7.gif" alt="tree7.gif" border="0">
+
+<HR>
+
+<H2>References</H2>
+<P>
+E Koutsofios, SC North. Drawing Graphs with dot. AT&T Bell Laboratories,
+Murray Hill NJ, U.S.A., October 1993.
+</P>
+
+<p>
+<a href="http://www.research.att.com/sw/tools/graphviz/">Graphviz - open source graph drawing software</a>. A home page of AT&T's dot and similar software packages.
+
+</BODY>
+</HTML> 

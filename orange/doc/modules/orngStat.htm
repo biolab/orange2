@@ -1,0 +1,128 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+
+<h1>orngStat: Orange Statistics for Classifiers</h1>
+
+<hr>
+
+<H2>Functions</H2>
+
+Arguments 'res', required by most functions, denotes an instance of ExperimentResults as computed by orngTest. If weights are present, they are taken into account. This can be disabled by giving unweighted=1 as a keyword argument.
+
+Another way of disabling weights is to clear the ExperimentResults' flag
+'weights'.
+
+<H4>General Measures of Quality</H4>
+<DL>
+
+<DT><B>CA(res)</B></DT>
+<DD>Computes classification accuracy, i.e. percentage of matches between predicted and actual class. The function returns a list of classification accuracies.</DD><P>
+
+<DT><B>CA_se(res)</B></DT>
+<DD>Computes classification accuracy, i.e. percentage of matches between predicted and actual class, and the standard error. The function returns a list of tuples with classification accuracies and errors.<P>
+
+If results are from multiple repetitions of experiments (like those returned by orngTest.crossValidation or orngTest.proportionTest) the standard error (SE) is estimated from deviation of classification accuracy accross folds (SD), as SE = SD/sqrt(N), where N is number of repetitions (e.g. number of folds).
+
+If results are from a single repetition, we assume independency of examples and treat the classification accuracy as distributed according to binomial distribution. This can be approximated by normal distribution, so we report the SE of sqrt(CA*(1-CA)/N), where CA is classification accuracy and N is number of test examples.
+</DD><P>
+
+<DT><B>AP(res)</B></DT>
+<DD>Computes the average probability assigned to the correct class.</DD><P>
+
+<DT><B>BrierScore(res)</B></DT>
+<DD>Computes the Brier's score, defined as the average (over test examples) of sum<SUB>x</SUB>(t(x)-p(x))<SUP>2</SUP>, where x is a class, t(x) is 1 for the correct class and 0 for the others, and p(x) is the probability that the classifier assigned to the class x.</DD><P>
+
+<DT><B>IS(res, apriori=None)</B></DT>
+<DD>Computes information scores as defined by Kononenko and Bratko (1991). Argument 'apriori' gives the apriori class distribution; if it is omitted, the class distribution is computed from the actual classes of examples in res.</DD><P>
+
+</DL>
+
+
+<H4>Analysis of Confusion Matrix</H4>
+
+<DL>
+
+<DT><B>computeConfusionMatrices(res, classIndex=1, {cutoff})</B></DT>
+<DD>A utility function that computes a 2-class confusion matrix from ExperimentResults. The target class is the class attribute's <CODE>baseValue</CODE>, but it can be overridden by argument <CODE>classIndex</CODE>. If there is neither <CODE>baseValue</CODE> nor <CODE>classIndex</CODE>, 1 is used as default. If keyword argument cutoff is given (e.g. computeConfusionMatrices(results, cutoff=0.3), the predicted probabilities are used instead of class prediction and the given value is used as a threshold: if predicted probability of the target class is higher than cutoff, the target class is predicted.<P>
+
+A list of instances of ConfusionMatrix is returned.</DD><P>
+
+
+<DT><B>sens(confm)</B></DT>, <DT><B>spec(confm)</B></DT>, <DT><B>PPV(confm)</B></DT>, <DT><B>NPV(confm)</B></DT>
+<DD>Compute sensitivity [TP/(TP+FN)], specificity [TN/(TN+FP)], positive predictive value [TP/(TP+FP)] and negative predictive value [TN/(TN+FN)] from confusion matrix. If confm is a single confusion matrix, a single result is returned. If confm is a list of confusion matrices, a list of sensitivities is returned.
+
+Note that weights are taken into account when computing the matrix, so these functions don't check the 'weighted' keyword argument.</DD><P>
+</DL>
+
+
+<H4>ROC Analysis</H4>
+
+<P>The target class for all functions below is the class attribute's <CODE>baseValue</CODE> (at the time when results were obtain, e.g. by <CODE>orngTest.CrossValidation</CODE>; later changes of <CODE>baseValue</CODE> have no effect), but it can be overridden by argument <CODE>classIndex</CODE>. If there is neither <CODE>baseValue</CODE> nor <CODE>classIndex</CODE>, 1 is used as default.</P>
+
+<DL>
+<DT><B>AROC(res, classIndex=1)</B></DT>
+<DD>Computes the area under ROC and its standard error using Wilcoxon's approach proposed by Hanley and McNeal (1982). This function expects experimental data from a single iteration. The result is a list of tuples (aROC, standard error).</DD><P>
+
+<DT><B>compare2AROCs(res, learner1, learner2, classIndex=1)</B></DT>
+<DD>Compares ROC curves of learning algorithms with indices learner1 and learner2. ExperimentResults must describe a single-iteration experiment. The function returns three tuples with areas under ROCs and standard errors, and the difference of the areas and its standard error: ((aROC1, SE1), (aROC2, SE2), (aROC1-aROC2, SE(aROC1)+SE(aROC2)-2*COVAR)).</DD><P>
+
+<DT><B>computeROC(res, classIndex=1)</B></DT>
+<DD>Computes a ROC curve as a list of (x, y) tuples, where x is 1-spec and y is sens. This function expects experimental data from a single iteration. </DD><P>
+
+<DT><B>computeCDT</B></DT>
+<DD>Computes CDT matrices for the given ExperimentResults, one matrix for each classifier. The function compares only pairs of examples that were tested at the same iteration. Using this data for further analysis gives ROC's averaged over iterations.</DD><P>
+
+<DT><B>AROCFromCDT(res, {print})</B></DT>
+<DD>Computes ROC statistics from CDT. The results is a tuple (%concordant, %discordant, %tied, #pairs, Somers' D, Gamma, Tau, CI). If you add a keyword argument 'print=1', results will be printed out. With aROCFromCDT it is possible to compute a aROC for experimental results obtained, for example, by cross-validation. There is, however, no function for comparing aROCs of different curves on multi-iteration experiments.
+</DD><P>
+</DL>
+
+
+<H4>Comparison of Algorithms</H4>
+
+<DL>
+<DT><B>McNemar(res)</B></DT>
+<DD>Computes a triangular matrix with McNemar statistics for each pair of classifiers. The statistics is distributed by chi-square distribution with one degree of freedom; critical value for 5% significance is around 3.84.</DD><P>
+
+<DT><B>McNemarOfTwo(res, learner1, learner2)</B></DT>
+<DD>McNemarOfTwo computes a McNemar statistics for a pair of classifier, specified by indices learner1 and learner2.</DD><P>
+
+</DL>
+
+<H4>Plotting Functions</H4>
+
+&lt;&lt;to be written&gt;&gt;
+
+<H4>Utility Functions</H4>
+
+<DL>
+<DT><B>splitByIterations(res)</B></DT>
+<DD>Splits ExperimentResults of multiple iteratation test into a list of ExperimentResults, one for each iteration.
+</DD></DL>
+
+<H1>Classes</H1>
+
+<H4>ConfusionMatrix</H4>
+
+A 2-class confusion matrix with the weighted number of true positives (TP), false negatives (FN), false positives (FP) and true negatives (TN).
+
+<H4>CDT</H4>
+
+Stores a numbers of weighted concordant (C), discordant (D) and tied (T) pairs. CDT is used for ROC analysis.
+
+<H1>Compatibility issues</H1>
+
+Functions for ROC analysis, with exception of computeCDT, don't work on multi-iteration experiments any more. If you're determined to cheat, you can <UL>
+<LI>use computeCDT and aROCFromCDT (this is OK, it's the average area)</LI>
+<LI>use splitByIterations, analize folds separately and sum the results (OK as long as you do nothing but averaging)</LI>
+<LI>set ExperimentResults' numberOfIterations to 1; clearly wrong because it compares examples from different folds</LI>
+</UL>
+
+<H1>References</H1>
+
+Kononenko, I., Bratko, I. (1991) !!!!MLJ!!!!<P>
+
+Hanley, McNeal (1982). The meaning and Use of the Area under a Receiver Operating Characteristic (TOC) Curve, Radiology 143, April 1982.
+</BODY>

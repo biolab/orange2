@@ -1,0 +1,84 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+<h1>orngEnsemble: Orange Bagging and Boosting Module</h1>
+
+<br>
+<P>Module orngEnsemble implements Breiman's bagging and Freund and Schapire's boosting
+algorithms.</P>
+<HR>
+
+<H2>Implementations</H2>
+
+<H3>Functions</H3>
+
+<DL>
+<DT><B>BaggedLearner</B>(<EM>learner=None</EM> [, <EM>examples=None</EM>])
+<DD class=ddfun>Takes the learner (<em>learner</em>) and passes it to a
+<code>BaggedLearnerClass</code> which returns a bagged learner. If examples are
+present, it calls <code>BaggedLearner</code> on the examples and returns a bagged
+classifier.
+</DD>
+
+<DT><B>BoostedLearner</B>(<EM>learner=None</EM> [, <EM>examples=None</EM>])
+<DD class=ddfun>Takes the learner (<em>learner</em>) and passes it to a
+<code>BoostedLearnerClass</code> which returns a boosted learner. If examples are
+present, it calls <code>BoostedLearner</code> on the examples and returns a boosted
+classifier.
+</DD>
+
+
+</DL>
+<HR>
+
+<H2>Examples</H2>
+<P>
+Let us try boosting and bagging on a well known Iris data set and use <code>TreeLearner</code> with post-pruning as a base learner. For testing, we use 10-fold cross validation and observe classification accuracy.</p>
+
+<p class="header"><a href="ensemble.py">ensemble.py</a> (uses <a href=
+"iris.tab">iris.tab</a>)</p>
+<XMP class=code>
+import orange, orngEnsemble, orngTree
+import orngTest, orngStat
+
+tree = orngTree.TreeLearner(mForPruning=2)
+tree.name = "tree"
+bs = orngEnsemble.BoostedLearner(tree)
+bs.name = "boosted tree"
+bg = orngEnsemble.BaggedLearner(tree)
+bg.name = "bagged tree"
+
+data = orange.ExampleTable("iris.tab")
+
+learners = [tree, bs, bg]
+results = orngTest.crossValidation(learners, data)
+print "Classification Accuracy:"
+for i in range(len(learners)):
+    print ("%15s: %5.3f") % (learners[i].name, orngStat.CA(results)[i])
+</XMP>
+
+<p>Running this script, we may get something like:</p>
+<XMP class=code>
+Classification Accuracy:
+           tree: 0.947
+   boosted tree: 0.953
+    bagged tree: 0.960
+</XMP>
+
+</P>
+<HR>
+
+<H2>References</H2>
+<P>
+JR Quinlan. Boosting, bagging, and C4.5. In Proceedings of 13th National Conference on Artificial Inteligence (AAAI'96). pp. 725-730, 1996.
+</P>
+<P>
+L Breiman. Bagging Predictors. Technical report No. 421. University of California, Berkeley, 1994.
+</P>
+<P>
+Y Freund, RE Schapire. Experiments with a New Boosting Algorithm. Machine Learning: Proceedings of the Thirteenth International Conference (ICML'96), 1996.
+</P>
+
+</BODY>
+</HTML> 

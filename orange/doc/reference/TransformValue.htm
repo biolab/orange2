@@ -1,0 +1,23 @@
+<html> <HEAD> 
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+<LINK REL=StyleSheet HREF="style-print.css" TYPE="text/css" MEDIA=print>
+</HEAD> <body>
+
+<h1>Value Transformers</h1>
+
+<P>Class <CODE>TransformValue</CODE> is a base class for a small hierarchy of tiny classes that are use throughout Orange at the places where a simple transformation of values is needed. Some of such occasions are
+
+<UL style="margin-top: 0cm">
+<LI><A href="discretization.htm">discretization</A>, where the class <CODE>Discretizer</CODE> defines a base class for a hierarchy of classes that turn continuous values into discrete by checking thresholds or interval cutoffs</LI>
+
+<LI>SVM preprocessing, where <CODE>Discrete2Continuous</CODE> and <CODE>NormalizeContinuous</CODE> change discrete and continuous values into values from interval [0.0, 1.0]</LI>
+
+<LI>decision trees with binarization (or subsetting), where <CODE>MapIntValue</CODE> computes a branch index from a discrete value.
+</UL>
+
+<P>Various classes derived from <CODE>TransformValue</CODE> are covered on pages with the corresponding topic.</P>
+
+<P>It is possible to subtype this class in Python. An example of that is given in examples for <a href="classifierFromVar.htm">Classifiers from Attribute</a>.
+
+</BODY>
+</HTML> 

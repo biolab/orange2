@@ -1,0 +1,146 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+
+<p class="links">
+Prev: <a href="c_pythonlearner.htm">Build Your Own Learner</a>,
+Next: <a href="c_nb.htm">Naive Bayes in Python</a>,
+Up: <a href="c_pythonlearner.htm">Build Your Own Learner</a>,
+<br><br><hr></p>
+
+<H1>Naive Bayes with Discretization</H1>
+
+<br>
+
+<p>Let us build a learner/classifier that is an extension of
+build-in naive Bayes that before learning categorizes the data (see
+also the lesson on <a href=
+"o_categorization.htm">Categorization</a>). We will define a module
+<a href="nbdisc.py">nbdisc.py</a> that will implement our
+method. As we have explained in the <a href=
+"c_pythonlearner.htm">introductory text on
+learners/classifiers</a>, it will implement a function Learner, and
+classes Learner_Class and Classifier. We have already discussed the
+first part of the module:</p>
+
+<p class="header">function <code>Learner</code> from <a href=
+"nbdisc.py">nbdisc.py</a></p>
+<xmp class="code">
+import orange
+
+def Learner(examples=None, **kwds):
+    learner = apply(Learner_Class, (), kwds)
+    if examples:
+        return learner(examples)
+    else:
+        return learner
+</xmp>
+
+<p>Now, we have to implement the class Learner_Class. First, let us
+look at its code:</p>
+
+<p class="header">class Learner_Class from <a href=
+"nbdisc.py">nbdisc.py</a></p>
+<xmp class="code">
+class Learner_Class:
+    def __init__(self, name='discretized bayes'):
+        self.name = name
+
+    def __call__(self, data, weight=None):
+        disc = tablen=orange.Preprocessor_discretize( \
+            data, method=orange.EntropyDiscretization())
+        model = orange.BayesLearner(disc, weight=weight)
+            
+        return Classifier(classifier = model)
+</xmp>
+
+<p>Learner_Class has two methods. Method <code>__init__</code> is invoked every
+time the class is called for the first time. Notice that all it
+does is remembers the only argument that this class can be called
+with, i.e. the argument <code>name</code> which defaults to &lsquo;discretized
+bayes&rsquo;. If you would expect any other arguments for your
+learners, you should handle them here (store them as class&rsquo;
+attributes using the keyword <code>self</code>).</p>
+
+<p>When the learner is called, a method <code>__call__</code> is invoked, where
+the essence of our learner is implemented. Notice also that we have included an attribute for vector of instance weights, which is passed to naive Bayesian learner. In our learner, we first discretize the
+data using Fayyad &amp; Irani&rsquo;s technique, then build a naive
+Bayesian model and finally pass it to a class <code>Classifier</code>. You may expect
+that at its first invocation all the <code>Classifier</code> will do is to
+remember the model we have called it with.</p>
+
+<p class="header">class Classifier from <a href=
+"nbdisc.py">nbdisc.py</a></p>
+<xmp class="code">
+class Classifier:
+    def __init__(self, **kwds):
+        self.__dict__ = kwds
+
+    def __call__(self, example, resultType = orange.GetValue):
+        return self.classifier(example, resultType)
+</xmp>
+
+
+<p>The method <code>__init__</code> is rather general: it makes <code>Classifier</code>
+remember all arguments it was called with. They are then accessed
+through <code>Classifiers</code>&rsquo; arguments (<code>self.argument_name</code>). When
+Classifier is called, it expects an example and an optional
+argument that specifies the type of result to be returned.</p>
+
+<p>By this, our code for naive Bayesian classifier that, prior to
+the learning, discretizes the data, is complete. You can see that
+the code is fairly short (just above 20 lines), and it can be
+easily extended or changed if we want to do something else as well
+(have a feature subset selection, for instance, &hellip;).</p>
+
+<p>Here are now a few lines to test our code:</p>
+
+<p class="header">uses <a href="iris.tab">iris.tab</a> and <a href=
+"nbdisc.py">nbdisc.py</a></p>
+<pre class="code">
+> <code>python</code>
+>>> <code>import orange, nbdisc</code>
+>>> <code>data = orange.ExampleTable("iris")</code>
+>>> <code>classifier = nbdisc.Learner(data)</code>
+>>> <code>classifier(data[100])</code>
+Iris-virginica
+>>> <code>classifier(data[100], orange.GetBoth)</code>
+(Iris-virginica, [0.0, 0.00097844051197171211, 0.99902158975601196])
+>>>
+</pre>
+
+<p>For a more elaborate test that also shows the use of a learner
+(that is not given the data at its initialization), here is a
+script that does 10-fold cross validation:</p>
+
+<p class="header">
+<a href=
+"nbdisc_test.py">nbdisc_test.py</a>
+(uses <a href="iris.tab">iris.tab</a> and
+<a href="nbdisc.py">nbdisc.py</a>)</p>
+<xmp class="code">
+import orange, orngEval, nbdisc
+data = orange.ExampleTable("iris")
+results = orngEval.CrossValidation([nbdisc.Learner()], data)
+print "Accuracy = %5.3f" % orngEval.CA(results)[0]
+</xmp>
+
+<p>The accuracy on this data set is about 92%. You may try to raise
+that by using some other type of discretization, or try some other
+learner on this data (hint: k-NN should perform better).</p>
+
+<p>You can now read on to see how the same schema of developing
+your own classifier was used for to assemble all-in-python <a href=
+"c_nb.htm">naive Bayesian method</a> and see how it is very easy to
+implement <a href="c_bagging.htm">bagging</a>.</p>
+
+<p class="links"><hr><br>
+Prev: <a href="c_pythonlearner.htm">Build Your Own Learner</a>,
+Next: <a href="c_nb.htm">Naive Bayes in Python</a>,
+Up: <a href="c_pythonlearner.htm">Build Your Own Learner</a>,
+</p>
+
+</body>
+</html>
+

@@ -1,0 +1,122 @@
+<html><HEAD>
+<LINK REL=StyleSheet HREF="style.css" TYPE="text/css" MEDIA=screen>
+</HEAD>
+<body>
+
+<p class="links">
+Prev: <a href="c_performance.htm">Testing and Evaluating</a>,
+Next: <a href="c_nb_disc.htm">Naive Bayes with Discretization</a>,
+Up: <a href="classification.htm">Classification</a>
+<br><br><hr></p>
+
+<H1>Build Your Own Learner</H1>
+
+<br>
+
+<p>This part of tutorial will show how to build learners and
+classifiers in Python, that is, how to build your own learners and
+classifiers. Especially for those of you that want to test some of
+your methods or want to combine existing techniques in Orange, this
+is a very important topic. We view it as a crucial essence of
+Orange, since it makes prototyping of new methods fast and
+enjoyable.</p>
+
+<p>There are different ways to build learners/classifiers in
+Python. We will take the route that shows how to do this correctly,
+in a sense that you will be able to use your learner, as it would
+be any learner that Orange provides as such. What are the specifics
+of Orange learners and classifiers? Mainly, the ways they are
+invoked and what the return. Let us say that Learner() is some
+learner in Orange. Essentially, it can be called in two different
+ways:</p>
+
+<xmp class="code">
+learner = Learner()<br>
+classifier = Learner(data)
+</xmp>
+
+<p>In first, it is invoked without the data set and in that case it
+should return an instance of learner, such that later you may say
+<code>classifier = learner(data)</code> or you may call some validation
+procedure with a <code>learner</code> itself (say
+<code>orngEval.CrossValidation([learner], data)</code>). In second, learner is
+called with the data and returns a classifier.</p>
+
+<p>Classifiers should be called with a data instance to classify,
+and should return either a class value (by default), probability of
+classes or both:</p>
+
+<xmp class="code">
+value = classifier(instance)<br>
+value = classifier(instance, orange.GetValue)<br>
+probabilities = classifier(instance, orange.GetProbabilities)<br>
+value, probabilities = classifier(instance, orange.GetBoth)<br>
+</xmp>
+
+<p>Here is a short example:</p>
+
+<pre class="code">
+> <strong>python</strong>
+>>> <strong>import orange</strong>
+>>> <strong>data = orange.ExampleTable("voting")</strong>
+>>> <strong>learner = orange.BayesLearner()</strong>
+>>> <strong>classifier = learner(data)</strong>
+>>> <strong>classifier(data[0])</strong>
+republican
+>>> <strong>classifier(data[0], orange.GetBoth)</strong>
+(republican, [0.99999994039535522, 7.9730767765795463e-008])
+>>> <strong>classifier(data[0], orange.GetProbabilities)</strong>
+[0.99999994039535522, 7.9730767765795463e-008]
+>>> 
+>>> <strong>c = orange.BayesLearner(data)</strong>
+>>> <strong>c(data[12])</strong>
+democrat
+>>>
+</pre>
+
+<p>Throughout our examples, we will assume that our learner and
+corresponding classifier will be defined in a single file (module)
+that will not contain any other code. This helps for code reuse, so
+that if you want to use your new method anywhere else, you just
+import it from that file. Each such module will contain a function
+<code>Learner</code>, a class <code>Learner_Class</code> and a class <code>Classifier</code> (read on to
+see why).</p>
+
+<p></p>
+
+<p>Let us start with a first trick. In order to allow your learner
+to be called with or without data (training examples), a function
+<code>Learner</code> will be used:</p>
+
+<xmp class="code">
+def Learner(examples=None, **kwds):
+    learner = apply(Learner_Class, (), kwds)
+    if examples:
+        return learner(examples)
+    else:
+        return learner
+</xmp>
+
+<p>Notice that <code>**kwds</code> is a Python&rsquo;s dictionary that stores
+the parameters that learner was invoked with. An
+&ldquo;empty&rdquo; <code>learner</code> is first build by calling <code>Learner_Class</code>
+without the data, and then if the data was supplied to the learner, the
+resulting learner is called again, this time with data only.</p>
+
+<p>We will use this schema to define a learner that will use <a
+href="c_nb_disc.htm">naive Bayesian method but will categorize the
+data</a> before learning. We will then show how to write <a href=
+"c_nb.htm">your own naive Bayesian method</a> in Python (that is,
+from scratch), and we will conclude with an example of how to use
+the schema presented here for a <a href="c_bagging.htm">bagged
+learner</a>.</p>
+
+<p class="links"><hr><br>
+Prev: <a href="c_performance.htm">Testing and Evaluating</a>,
+Next: <a href="c_nb_disc.htm">Naive Bayes with Discretization</a>,
+Up: <a href="classification.htm">Classification</a>
+</p>
+
+</body>
+</html>
+

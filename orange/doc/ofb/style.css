@@ -1,0 +1,13 @@
+BODY, P, UL, TABLE { font-family: "Verdana", "Geneva", sans-serif}
+BODY, P, UL, TABLE { font-size: 10pt }
+H1 { font-size: large; font-weight: bold }
+H2 { font-size: medium; font-weight: normal}
+H3 { font-size: medium; font-weight: bold}
+H4 { font-size: normal; font-weight: bold}
+HR { color: "#ffbb00"; height: 1.3pt }
+IMT { border: 0}
+
+.code { background-color: "#ffffcc"; font-size: 9pt}
+.xcode { background-color: "#ffbb00"; font-size: 9pt}
+.header { margin-bottom: -4mm}
+.links {}
