@@ -54,7 +54,10 @@ def loadARFF(filename):
                     r.append('?')
             data.append(r[:len(attributes)])
         else:
-            y = string.split(x,sep=' ')
+            y = []
+            for cy in string.split(x,sep=' '):
+                if len(cy) > 0:
+                    y.append(cy)
             if string.lower(y[0][1:]) == 'data':
                 state = 1
             elif string.lower(y[0][1:]) == 'relation':
