@@ -145,7 +145,6 @@ class OWNaiveBayes(OWWidget):
             return
         
         self.learner = orange.BayesLearner()
-<<<<<<< OWNaiveBayes.py
         # set the probability estimation!!!
         if 1:
             self.m_estimator.m = self.m
@@ -155,8 +154,6 @@ class OWNaiveBayes(OWWidget):
             if self.condProbContEstimation:
                 self.learner.conditionalEstimatorConstructorContinuous = self.condEstContMethods[self.condProbContEstimation][1]
                 
-=======
-
         for attr, cons in ( ("estimatorConstructor", self.estMethods[self.probEstimation][1]),
                             ("conditionalEstimatorConstructor", self.condEstMethods[self.condProbEstimation][1]),
                             ("conditionalEstimatorConstructorContinuous", self.condEstContMethods[self.condProbContEstimation][1])):
@@ -164,9 +161,8 @@ class OWNaiveBayes(OWWidget):
                 setattr(self.learner, attr, cons)
                 if hasattr(cons, "m"):
                     setattr(cons, "m", self.m)
-            
->>>>>>> 1.2
-        self.learner.name = self.name
+                    self.learner.name = self.name
+                    
         self.send("Learner", self.learner)
         if self.data <> None:
             self.classifier = self.learner(self.data)
