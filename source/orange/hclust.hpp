@@ -49,6 +49,12 @@ public:
     THierarchicalCluster();
     THierarchicalCluster(PIntList els, const int &elementIndex);
     THierarchicalCluster(PIntList els, PHierarchicalCluster left, PHierarchicalCluster right, const float &h, const int &f, const int &l);
+
+    void swap();
+    void permute(const TIntList &newOrder);
+
+protected:
+    void recursiveMove(const int &offset);
 };
 
 

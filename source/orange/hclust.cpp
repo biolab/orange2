@@ -141,6 +141,75 @@ THierarchicalCluster::THierarchicalCluster(PIntList els, PHierarchicalCluster le
 }
 
 
+void THierarchicalCluster::swap()
+{
+  if (!branches || (branches->size()<2))
+    return;
+  if (branches->size() > 2)
+    raiseError("cannot swap multiple branches (use method 'permutation' instead)");
+
+  const TIntList::iterator beg0 = mapping->begin() + branches->at(0)->first;
+  const TIntList::iterator beg1 = mapping->begin() + branches->at(1)->first;
+  const TIntList::iterator end1 = mapping->begin() + branches->at(1)->last;
+
+  if ((branches->at(0)->first > branches->at(1)->first) || (branches->at(1)->first > branches->at(1)->last))
+    raiseError("internal inconsistency in clustering structure: invalid ordering of left's and right's 'first' and 'last'");
+
+  TIntList::iterator li0, li1;
+
+  int *temp = new int [beg1 - beg0], *t;
+  for(li0 = beg0, t = temp; li0 != beg1; *t++ = *li0++);
+  for(li0 = beg0, li1 = beg1; li1 != end1; *li0++ = *li1++);
+  for(t = temp; li0 != end1; *li0++ = *t++);
+  delete temp;
+
+  branches->at(0)->recursiveMove(end1 - beg1);
+  branches->at(1)->recursiveMove(beg0 - beg1);
+
+  PHierarchicalCluster tbr = branches->at(0);
+  branches->at(0) = branches->at(1);
+  branches->at(1) = tbr;
+}
+
+
+void THierarchicalCluster::permute(const TIntList &neworder)
+{
+  if ((!branches && neworder.size()) || (branches->size() != neworder.size()))
+    raiseError("the number of clusters does not match the lenght of the permutation vector");
+
+  int *temp = new int [last - first], *t = temp;
+  TIntList::const_iterator pi = neworder.begin();
+  THierarchicalClusterList::iterator bi(branches->begin()), be(branches->end());
+  THierarchicalClusterList newBranches;
+
+  for(; bi != be; bi++, pi++) {
+    PHierarchicalCluster branch = branches->at(*pi);
+    newBranches.push_back(branch);
+    TIntList::const_iterator bei(mapping->begin() + branch->first), bee(mapping->begin() + branch->last);
+    const int offset = (t - temp) - (branch->first - first);
+    for(; bei != bee; *t++ = *bei++);
+    if (offset)
+      branch->recursiveMove(offset);
+  }
+
+  TIntList::iterator bei(mapping->begin() + first), bee(mapping->begin() + last);
+  for(t = temp; bei!=bee; *bei++ = *t++);
+
+  bi = branches->begin();
+  THierarchicalClusterList::const_iterator nbi(newBranches.begin());
+  for(; bi != be; *bi++ = *nbi++);
+}
+
+
+void THierarchicalCluster::recursiveMove(const int &offset)
+{
+  first += offset;
+  last += offset;
+  if (branches)
+    PITERATE(THierarchicalClusterList, bi, branches)
+      (*bi)->recursiveMove(offset);
+}
+
 
 THierarchicalClustering::THierarchicalClustering()
 : linkage(Single),

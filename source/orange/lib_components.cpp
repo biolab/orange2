@@ -2291,17 +2291,104 @@ PYCLASSCONSTANT_INT(SymMatrix, Symmetric, 2)
 PYCLASSCONSTANT_INT(SymMatrix, Lower_Filled, 3)
 PYCLASSCONSTANT_INT(SymMatrix, Upper_Filled, 4)
 
-PyObject *SymMatrix_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(dimension[, initialElement=0])")
+PyObject *SymMatrix_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(dimension[, initialElement=0] | a list of lists)")
 {
   PyTRY
     int dim;
     float init = 0;
-    if (!PyArg_ParseTuple(args, "i|f:SymMatrix.__new__", &dim, &init))
-      return PYNULL;
-    if (dim<1)
-      PYERROR(PyExc_TypeError, "matrix dimension must be positive", PYNULL);
+    if (PyArg_ParseTuple(args, "i|f", &dim, &init)) {
+      if (dim<1)
+        PYERROR(PyExc_TypeError, "matrix dimension must be positive", PYNULL);
 
-    return WrapNewOrange(mlnew TSymMatrix(dim, init), type);
+      return WrapNewOrange(mlnew TSymMatrix(dim, init), type);
+    }
+
+    PyErr_Clear();
+
+    PyObject *arg;
+    if (PyArg_ParseTuple(args, "O|f", &arg, &init)) {
+      dim = PySequence_Size(arg);
+      PyObject *iter = PyObject_GetIter(arg);
+      if ((dim<0) || !iter)
+        PYERROR(PyExc_TypeError, "SymMatrix.__init__ expects a list of lists or the dimension, and an optional default element", PYNULL);
+
+      #define UNKNOWN_F -1e30f
+
+      TSymMatrix *symmatrix = mlnew TSymMatrix(dim, UNKNOWN_F);
+      PyObject *subiter = NULL;
+
+      #define FREE_ALL  Py_DECREF(iter); delete symmatrix; Py_XDECREF(subiter);
+
+      int i, j;
+
+      for(i = 0; i<dim; i++) {
+        PyObject *item = PyIter_Next(iter);
+        if (!item) {
+          FREE_ALL
+          PYERROR(PyExc_SystemError, "matrix is shorter than promissed ('len' returned more elements than there actuall are)", PYNULL);
+        }
+
+        PyObject *subiter = PyObject_GetIter(item);
+        Py_DECREF(item);
+
+        if (!subiter) {
+          FREE_ALL
+          PyErr_Format(PyExc_TypeError, "row %i is not a sequence", i);
+          return PYNULL;
+        }
+
+        for(j = 0;; j++) {
+          PyObject *subitem = PyIter_Next(subiter);
+          if (!subitem)
+            break;
+
+          float f;
+          bool ok = PyNumber_ToFloat(subitem, f);
+          Py_DECREF(subitem);
+          if (!ok) {
+            FREE_ALL
+            PyErr_Format(PyExc_TypeError, "element at (%i, %i) is not a number", i, j);
+            return PYNULL;
+          }
+
+      
+          try {
+            float &mae = symmatrix->getref(i, j);
+
+            if ((mae != UNKNOWN_F) && (mae!=f)) {
+              FREE_ALL
+              PyErr_Format(PyExc_TypeError, "the element at (%i, %i) is asymmetric", i, j);
+              return PYNULL;
+            }
+
+            mae = f;
+          }
+          catch (...) {
+            FREE_ALL
+            throw;
+          }
+        }
+
+        Py_DECREF(subiter);
+        subiter = NULL;
+      }
+      Py_DECREF(iter);
+
+      float *e = symmatrix->elements;
+      for(i = ((dim+1)*(dim+2)) >> 1; i--; e++)
+        if (*e == UNKNOWN_F)
+          *e = init;
+
+      return WrapNewOrange(symmatrix, type);
+
+      #undef UNKNOWN_F
+      #undef FREE_ALL
+    }
+
+    PyErr_Clear();
+
+    PYERROR(PyExc_TypeError, "SymMatrix.__init__ expects a list of lists or the dimension and the initial element", PYNULL);
+
   PyCATCH
 }
 
@@ -2531,79 +2618,87 @@ int HierarchicalCluster_len_sq(PyObject *self)
 
 PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
 { 
-  CAST_TO(THierarchicalCluster, cluster);
+  PyTRY
+    CAST_TO(THierarchicalCluster, cluster);
 
-  if (!cluster->mapping)
-    PYERROR(PyExc_SystemError, "'HierarchicalCluster' misses 'mapping'", PYNULL);
+    if (!cluster->mapping)
+      PYERROR(PyExc_SystemError, "'HierarchicalCluster' misses 'mapping'", PYNULL);
 
-  i += (i>=0) ? cluster->first : cluster->last;
-  if ((i < cluster->first) || (i >= cluster->last)) {
-    PyErr_Format(PyExc_IndexError, "index out of range 0-%i", cluster->last - cluster->first - 1);
-    return PYNULL;
-  }
+    i += (i>=0) ? cluster->first : cluster->last;
+    if ((i < cluster->first) || (i >= cluster->last)) {
+      PyErr_Format(PyExc_IndexError, "index out of range 0-%i", cluster->last - cluster->first - 1);
+      return PYNULL;
+    }
 
-  if (i >= cluster->mapping->size())
-    PYERROR(PyExc_SystemError, "internal inconsistency in instance of 'HierarchicalCluster' ('mapping' too short)", PYNULL);
+    if (i >= cluster->mapping->size())
+      PYERROR(PyExc_SystemError, "internal inconsistency in instance of 'HierarchicalCluster' ('mapping' too short)", PYNULL);
 
-  const int elindex = cluster->mapping->at(i);
+    const int elindex = cluster->mapping->at(i);
 
-  if (cluster->mapping->myWrapper->orange_dict) {
-    PyObject *objs = PyDict_GetItemString(cluster->mapping->myWrapper->orange_dict, "objects");
-    if (objs)
-      return PySequence_GetItem(objs, elindex);
-  }
+    if (cluster->mapping->myWrapper->orange_dict) {
+      PyObject *objs = PyDict_GetItemString(cluster->mapping->myWrapper->orange_dict, "objects");
+      if (objs)
+        return PySequence_GetItem(objs, elindex);
+    }
 
-  return PyInt_FromLong(elindex);
+    return PyInt_FromLong(elindex);
+  PyCATCH
 }
 
 
 PyObject *HierarchicalCluster_get_left(PyObject *self)
 { 
-  CAST_TO(THierarchicalCluster, cluster);
+  PyTRY
+    CAST_TO(THierarchicalCluster, cluster);
 
-  if (!cluster->branches)
-    RETURN_NONE
+    if (!cluster->branches)
+      RETURN_NONE
 
-  if (cluster->branches->size() > 2)
-    PYERROR(PyExc_AttributeError, "'left' not defined (cluster has more than two subclusters)", PYNULL);
+    if (cluster->branches->size() > 2)
+      PYERROR(PyExc_AttributeError, "'left' not defined (cluster has more than two subclusters)", PYNULL);
 
-  return WrapOrange(cluster->branches->front());
+    return WrapOrange(cluster->branches->front());
+  PyCATCH
 }
 
 
 PyObject *HierarchicalCluster_get_right(PyObject *self)
 { 
-  CAST_TO(THierarchicalCluster, cluster);
+  PyTRY
+    CAST_TO(THierarchicalCluster, cluster);
 
-  if (!cluster->branches || (cluster->branches->size() < 2))
-    RETURN_NONE;
+    if (!cluster->branches || (cluster->branches->size() < 2))
+      RETURN_NONE;
 
-  if (cluster->branches->size() > 2)
-    PYERROR(PyExc_AttributeError, "'right' not defined (cluster has more than two subclusters", PYNULL);
+    if (cluster->branches->size() > 2)
+      PYERROR(PyExc_AttributeError, "'right' not defined (cluster has more than two subclusters", PYNULL);
 
-  return WrapOrange(cluster->branches->back());
+    return WrapOrange(cluster->branches->back());
+  PyCATCH
 }
 
 
 int HierarchicalClusterLowSet(PyObject *self, PyObject *arg, const int side)
 {
-  static const char *sides[2] = {"left", "right"};
+  PyTRY
+    static const char *sides[2] = {"left", "right"};
 
-  if (!PyOrHierarchicalCluster_Check(arg)) {
-    PyErr_Format(PyExc_TypeError, "'HierarchicalCluster.%s' should be of type 'HierarchicalCluster' (got '%s')", sides[side], arg->ob_type->tp_name);
-    return -1;
-  }
+    if (!PyOrHierarchicalCluster_Check(arg)) {
+      PyErr_Format(PyExc_TypeError, "'HierarchicalCluster.%s' should be of type 'HierarchicalCluster' (got '%s')", sides[side], arg->ob_type->tp_name);
+      return -1;
+    }
 
-  CAST_TO_err(THierarchicalCluster, cluster, -1);
+    CAST_TO_err(THierarchicalCluster, cluster, -1);
 
-  if (!cluster->branches)
-    cluster->branches = mlnew THierarchicalClusterList(2);
-  else 
-    if (cluster->branches->size() != 2)
-      PYERROR(PyExc_AttributeError, "'left' not defined (clusters does not have (exactly) two subclusters", -1);
+    if (!cluster->branches)
+      cluster->branches = mlnew THierarchicalClusterList(2);
+    else 
+      if (cluster->branches->size() != 2)
+        PYERROR(PyExc_AttributeError, "'left' not defined (clusters does not have (exactly) two subclusters", -1);
 
-  cluster->branches->at(side) = PyOrange_AsHierarchicalCluster(arg);
-  return 0;
+    cluster->branches->at(side) = PyOrange_AsHierarchicalCluster(arg);
+    return 0;
+  PyCATCH_1
 }
 
 
@@ -2615,6 +2710,27 @@ int HierarchicalCluster_set_left(PyObject *self, PyObject *arg)
 int HierarchicalCluster_set_right(PyObject *self, PyObject *arg)
 {
   return HierarchicalClusterLowSet(self, arg, 1);
+}
+
+
+PyObject *HierarchicalCluster_swap(PyObject *self, PyObject *arg, PyObject *keyw) PYARGS(METH_NOARGS, "() -> None; swaps the sub clusters")
+{
+  PyTRY
+    SELF_AS(THierarchicalCluster).swap();
+    RETURN_NONE;
+  PyCATCH
+}
+
+PyObject *HierarchicalCluster_permute(PyObject *self, PyObject *arg, PyObject *keys) PYARGS(METH_O, "(permutation) -> None")
+{
+  PyTRY
+    PIntList ilist = ListOfUnwrappedMethods<PIntList, TIntList, int>::P_FromArguments(arg);
+    if (!ilist)
+      return PYNULL;
+
+    SELF_AS(THierarchicalCluster).permute(ilist.getReference());
+    RETURN_NONE;
+  PyCATCH
 }
 
 PHierarchicalClusterList PHierarchicalClusterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::P_FromArguments(arg); }

@@ -5,9 +5,35 @@
 
 <h1>Symmetric Matrices</h1>
 
-<P>Symmetric matrix, <CODE>SymMatrix</CODE> is a symmetric (square) matrix of size fixed at construction time (and stored to the attribute <CODE>dim</CODE>). With an optional argument, we can also specify the number that the matrix is initially filled with; default is 0.</P>
+<P>Symmetric matrix, <CODE>SymMatrix</CODE> is a symmetric (square) matrix of size fixed at construction time (and stored to the attribute <CODE>dim</CODE>). The constructor expects a sequence of sequences (eg. a list of lists, a list of tuples...) or the matrix dimension. An optional additional argument gives the default value; the default is 0.</P>
 
-<P>Indexing is implemented so that order of indices is unimportant (unless set otherwise, see below), eg, if <CODE>m</CODE> is an instance of <CODE>SymMatrix</CODE>, then <CODE>m[2, 4]</CODE> addresses the same element as <CODE>m[4, 2]</CODE>.</P>
+<P>For instance, a nice list to initialize the matrix with looks like this</P>
+<P class="header"><A href="hclust_art.py">hclust_art.py</A></P>
+<XMP class=code>
+m = [[],
+     [ 3],
+     [ 2,  4],
+     [17,  5,  4],
+     [ 2,  8,  3,  8],
+     [ 7,  5, 10, 11, 2],
+     [ 8,  4,  1,  5, 11, 13],
+     [ 4,  7, 12,  8, 10,  1,  5],
+     [13,  9, 14, 15,  7,  8,  4,  6],
+     [12, 10, 11, 15,  2,  5,  7,  3,  1]]
+matrix = orange.SymMatrix(m)
+</XMP>
+
+<P>This matrix, meant as a distance matrix, is used in example from the description of <a href="clustering.htm">hierarchical clustering</a>. <CODE>SymMatrix</CODE> also stores the diagonal elements; here they are not specified, so they are set to 0. The matrix needn't by so nice. If any line was shorter, the missing elements would be set to 0 as well. Any line could also be longer, spreading across the diagonal, in which case the constructor would check for asymmetries. For instance, if the matrix started by</P>
+<XMP class=CODE>
+m = [[],
+     [ 3,  0, f],
+     [ 2,  4],
+</XMP>
+<P>this would only be OK if <CODE>f</CODE> equals 2; otherwise, the matrix would be asymmetric.</P>
+
+<P>Finally, no line can be longer than the total number of lines. Here we have 10 rows, so no row may have more than 10 columns.</P>
+
+<P>So much for construction. Indexing is implemented so that order of indices is unimportant (unless set otherwise, see below), eg, if <CODE>m</CODE> is an instance of <CODE>SymMatrix</CODE>, then <CODE>m[2, 4]</CODE> addresses the same element as <CODE>m[4, 2]</CODE>.</P>
 
 <p class="header"><A href="randomclassifier.py">symmatrix.py</a></p>
 <XMP class=code>
@@ -72,7 +98,7 @@ for i in range(4):
 
 <P>Slicing also works, but what you get by taking, for instance, <CODE>m[:3]</CODE> is a tuple containing the first three lines of the matrix (again represented as tuples).</P>
 
-<P>Started to wonder why always those annoying tuples and not lists that you can change as you will? To clearly tell you about one thing you cannot do with the matrix: you cannot change its contents by manipulating the rows you get by row indexing or slicing. Also, you cannot assign whole rows to matrices:</P>
+<P>Started to wonder why always those annoying tuples and not lists that you can change as you will? To give you a clear message about one thing you cannot do with the matrix: you cannot change its contents by manipulating the rows you get by row indexing or slicing. Also, you cannot assign whole rows to matrices:</P>
 <XMP class=code>
 >>> m[1] = (0, 0, 0, 0)
 Traceback (most recent call last):

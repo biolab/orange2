@@ -1607,22 +1607,34 @@ inline PyObject *ExampleGeneratorList_sort(TPyOrange *self, PyObject *args) PYAR
 TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore);
 
 TExampleTable *readListOfExamples(PyObject *args)
-{ if (PyList_Check(args)) {
-    int size=PyList_Size(args);
+{ if (PySequence_Check(args)) {
+    int size=PySequence_Size(args);
     if (!size)
-      PYERROR(PyExc_TypeError, "can't construct a table from an empty list", (TExampleTable *)NULL);
+      PYERROR(PyExc_TypeError, "can't construct a table from an empty sequence", (TExampleTable *)NULL);
 
     TExampleTable *table=NULL;
+    PyObject *pex = NULL;
  
-    for(int i=0; i<size; i++) {
-      PyObject *pex = PyList_GetItem(args, i);
-      if (!PyOrExample_Check(pex)) {
-        mldelete table;
-        PYERROR(PyExc_TypeError, "example list is expected to consist of Example's", NULL);
+    try {
+      for(int i=0; i<size; i++) {
+        PyObject *pex = PySequence_GetItem(args, i);
+        if (!pex || !PyOrExample_Check(pex)) {
+          Py_XDECREF(pex);
+          mldelete table;
+          PyErr_Format(PyExc_TypeError, "invalid sequence element at %i", i);
+          return NULL;
+        }
+        if (!i)
+          table = mlnew TExampleTable(PyExample_AS_Example(pex)->domain);
+        table->addExample(PyExample_AS_ExampleReference(pex));
+        Py_DECREF(pex);
+        pex = NULL;
       }
-      if (!i)
-        table = mlnew TExampleTable(PyExample_AS_Example(pex)->domain);
-      table->addExample(PyExample_AS_ExampleReference(pex));
+    }
+    catch (...) {
+      delete table;
+      Py_XDECREF(pex);
+      throw;
     }
 
     return table;
@@ -1710,32 +1722,31 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
         if (PyOrExampleGenerator_Check(args))
           return WrapNewOrange(mlnew TExampleTable(PyOrange_AsExampleGenerator(args)), type);
       }
-      else {
-        TExampleTable *res = readListOfExamples(args);
-        if (res)
-          return WrapNewOrange(res, type);
-        PyErr_Clear();
 
-        // check if it's a list of generators
-        if (PyList_Check(args)) {
-          TExampleGeneratorList eglist;
-          PyObject *iterator = PyObject_GetIter(args);
-          PyObject *item = PyIter_Next(iterator);
-          for(; item; item = PyIter_Next(iterator)) {
-            if (!PyOrExampleGenerator_Check(item)) {
-              Py_DECREF(item);
-              break;
-            }
-            eglist.push_back(PyOrange_AsExampleGenerator(item));
+      TExampleTable *res = readListOfExamples(args);
+      if (res)
+        return WrapNewOrange(res, type);
+      PyErr_Clear();
+
+      // check if it's a list of generators
+      if (PyList_Check(args)) {
+        TExampleGeneratorList eglist;
+        PyObject *iterator = PyObject_GetIter(args);
+        PyObject *item = PyIter_Next(iterator);
+        for(; item; item = PyIter_Next(iterator)) {
+          if (!PyOrExampleGenerator_Check(item)) {
             Py_DECREF(item);
+            break;
           }
-          Py_DECREF(iterator);
-          if (!item)
-            return WrapNewOrange(mlnew TExampleTable(PExampleGeneratorList(eglist)), type);
+          eglist.push_back(PyOrange_AsExampleGenerator(item));
+          Py_DECREF(item);
         }
-
-        PYERROR(PyExc_TypeError, "invalid arguments for constructor (domain or examples or both expected)", PYNULL);
+        Py_DECREF(iterator);
+        if (!item)
+          return WrapNewOrange(mlnew TExampleTable(PExampleGeneratorList(eglist)), type);
       }
+
+      PYERROR(PyExc_TypeError, "invalid arguments for constructor (domain or examples or both expected)", PYNULL);
     }
 
     PyErr_Clear();
@@ -1752,7 +1763,7 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
       }
     }
 
-    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+    PYERROR(PyExc_TypeError, "invalid arguments for ExampleTable.__init__", PYNULL);
 
   PyCATCH
 }
