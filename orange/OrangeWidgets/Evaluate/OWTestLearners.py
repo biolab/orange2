@@ -129,7 +129,7 @@ class OWTestLearners(OWWidget):
             learners = self.learnDict.values()
 
         if self.sampleMethod==0:
-            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=1, callback=pb.advance)
+            res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=orange.MakeRandomIndices.StratifiedIfPossible, callback=pb.advance)
         elif self.sampleMethod==1:
             res = orngTest.leaveOneOut(learners, self.data)
         elif self.sampleMethod==2:
