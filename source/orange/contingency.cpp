@@ -358,7 +358,7 @@ TContingencyClassAttr::TContingencyClassAttr(PExampleGenerator gen, const int &a
   if (attrNo>=int(domain.attributes->size()))
     raiseError("attribute index %i out of range", attrNo, domain.attributes->size()-1);
 
-  PVariable attribute = attrNo>=0 ? domain.attributes->at(attrNo) : gen->domain->getMetaVar(attrNo, false);
+  PVariable attribute = domain.getVar(attrNo, false);
   if (!attribute)
     raiseError("attribute not found");
 
@@ -437,7 +437,7 @@ TContingencyAttrClass::TContingencyAttrClass(PExampleGenerator gen, const int &a
   if (attrNo>=int(gen->domain->attributes->size()))
     raiseError("attribute index %i out of range", attrNo, gen->domain->attributes->size()-1);
 
-  PVariable attribute = attrNo>=0 ? domain.attributes->at(attrNo) : gen->domain->getMetaVar(-attrNo, false);
+  PVariable attribute = domain.getVar(attrNo);
   if (!attribute)
     raiseError("attribute not found");
 

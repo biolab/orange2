@@ -306,7 +306,7 @@ PVariable varFromArg_byDomain(PyObject *obj, PDomain domain, bool checkForInclud
   if (PyOrVariable_Check(obj)) {
     PVariable var(PyOrange_AsVariable(obj));
     if (checkForIncludance)
-      if (!domain || (domain->getMetaNum(var, false)==ILLEGAL_INT))
+      if (!domain || (domain->getVarNum(var, false)==ILLEGAL_INT))
         PYERROR(PyExc_IndexError, "variable does not exist in the domain", PVariable());
     return var;
   }
