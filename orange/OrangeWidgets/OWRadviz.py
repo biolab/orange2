@@ -117,7 +117,6 @@ class OWRadviz(OWWidget):
 
         # add a settings dialog and initialize its values
         self.setOptions()
-        QToolTip.add(self, "asdasdfsdfs asdf asdf")
 
         #self.repaint()
 
