@@ -69,22 +69,32 @@ class BLogisticLearner(orange.Learner):
         
     def __call__(self, examples):
       (model,errorno) = self.getmodel(examples)
-      if errorno == 7:
-        # there exists a perfect discriminant
-        return BDiscriminantClassifier(model, examples)
-      else:
-        return BLogisticClassifier(model)
+      return BLogisticClassifier(model,examples)
 
 
 class BLogisticClassifier(orange.Classifier):
-    def __init__(self, model):
+    def __init__(self, model,examples):
         (self.chisq,self.devnce,self.ndf,self.beta,
         self.se_beta,self.fit,self.stdres,
         self.covbeta,errorno,masking) = model
-        
+
+        # set up the parameters for discrimination
+        sum = 1.0
+        for i in self.beta[1:]:
+            if abs(i) > 1e-6:
+                sum *= abs(i)
+        if sum > 1e100:
+            sum = max(self.beta[1:])
+        if sum < 1e-6:
+            sum = 1e-6
+        scale = 1.0/math.sqrt(sum)
+        self.nbeta = [x*scale for x in self.beta]
+                
     def getmargin(self,example):
-        # returns the actual probability which is not to be fudged with
-        return self.__call__(example)[1]
+        sum = self.nbeta[0]
+        for i in range(len(self.nbeta)-1):
+            sum = sum + example[i]*self.nbeta[i+1]
+        return sum
 
     def description(self,attnames,classname,classv):
         print 'Logistic Regression Report'
@@ -116,40 +126,6 @@ class BLogisticClassifier(orange.Classifier):
                 return (0,1-p)
             else:
                 return (1,p)
-
-
-class BDiscriminantClassifier(BLogisticClassifier):
-    def __init__(self, model, examples):
-        (self.chisq,self.devnce,self.ndf,self.beta,
-        self.se_beta,self.fit,self.stdres,
-        self.covbeta,errorno,masking) = model
-
-        # set up the parameters for discrimination
-        sum = 1.0
-        for i in self.beta[1:]:
-            if abs(i) > 1e-6:
-                sum *= abs(i)
-        if sum > 1e100:
-            sum = max(self.beta[1:])
-        if sum < 1e-6:
-            sum = 1e-6
-        scale = math.sqrt(sum)
-        self.nbeta = [x/scale for x in self.beta]
-
-    def getmargin(self,example):
-        sum = self.nbeta[0]
-        for i in range(len(self.nbeta)-1):
-            sum = sum + example[i]*self.nbeta[i+1]
-        return sum
-
-    def __call__(self, example):
-        sum = self.getmargin(example)
-        # linear discriminant
-        if sum < 0.0:
-            return (0,1.0)
-        else:
-            return (1,1.0)
-
 
 class RedundanceException:
   def __init__(self,redundant_vars):
