@@ -96,6 +96,9 @@ public:
 
   TContingencyClass(PVariable variable=PVariable(), PVariable innervar=PVariable());
 
+  virtual PVariable getClassVar() = 0;
+  virtual PVariable getAttribute() = 0;
+
   virtual void add_attrclass(const TValue &varValue, const TValue &classValue, const float &p) = 0;
   virtual float p_class(const TValue &varValue, const TValue &classValue) const;
   virtual float p_attr(const TValue &varValue, const TValue &classValue) const;
@@ -118,6 +121,9 @@ public:
   TContingencyClassAttr(PExampleGenerator gen, const int &attrNo, const long &weightID);
   TContingencyClassAttr(PExampleGenerator gen, PVariable var, const long &weightID);
 
+  virtual PVariable getClassVar();
+  virtual PVariable getAttribute();
+
   virtual void add_attrclass(const TValue &varValue, const TValue &classValue, const float &p);
   virtual float p_attr(const TValue &varValue, const TValue &classValue) const;
   virtual PDistribution p_attrs(const TValue &classValue) const;
@@ -135,6 +141,9 @@ public:
   TContingencyAttrClass(PVariable variable=PVariable(), PVariable innervar=PVariable());
   TContingencyAttrClass(PExampleGenerator gen, PVariable var, const long &weightID);
   TContingencyAttrClass(PExampleGenerator gen, const int &attrNo, const long &weightID);
+
+  virtual PVariable getClassVar();
+  virtual PVariable getAttribute();
 
   virtual void add_attrclass(const TValue &varValue, const TValue &classValue, const float &p);
   virtual float p_class(const TValue &varValue, const TValue &classValue) const;
@@ -154,6 +163,9 @@ public:
   TContingencyAttrAttr(const int &var, const int &innervar, PExampleGenerator, const long weightID=0);
 
   void operator()(PExampleGenerator, const long =0);
+
+  virtual float p_attr(const TValue &outerValue, const TValue &innerValue) const;
+  virtual PDistribution p_attrs(const TValue &outerValue) const;
 };
 
 

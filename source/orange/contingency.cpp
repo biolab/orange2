@@ -382,6 +382,14 @@ TContingencyClassAttr::TContingencyClassAttr(PExampleGenerator gen, PVariable va
 }
 
 
+PVariable TContingencyClassAttr::getClassVar()
+{ return outerVariable; }
+
+
+PVariable TContingencyClassAttr::getAttribute()
+{ return innerVariable; }
+
+
 void TContingencyClassAttr::add_gen(PExampleGenerator gen, const long &weightID)
 { checkProperty(innerVariable);
   int attrNo = gen->domain->getVarNum(innerVariable, false);
@@ -449,6 +457,14 @@ TContingencyAttrClass::TContingencyAttrClass(PExampleGenerator gen, const int &a
 
   constructFromGenerator(attribute, domain.classVar, gen, weightID, attrNo);
 }
+
+
+PVariable TContingencyAttrClass::getClassVar()
+{ return innerVariable; }
+
+
+PVariable TContingencyAttrClass::getAttribute()
+{ return outerVariable; }
 
 
 void TContingencyAttrClass::add_gen(PExampleGenerator gen, const long &weightID)
@@ -530,6 +546,13 @@ void TContingencyAttrAttr::operator()(PExampleGenerator gen, const long weightID
         add((*ei)[var], (*ei)[invar], WEIGHT(*ei));
 }
 
+
+float TContingencyAttrAttr::p_attr(const TValue &outerValue, const TValue &innerValue) const
+{ return p(outerValue)->p(innerValue); }
+
+
+PDistribution TContingencyAttrAttr::p_attrs(const TValue &outerValue) const
+{ return p(outerValue); }
 
 
 TDomainContingency::TDomainContingency(bool acout)

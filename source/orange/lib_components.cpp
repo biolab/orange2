@@ -289,6 +289,43 @@ int DomainBasicAttrStat_setitem(PyObject *self, PyObject *args, PyObject *obj)
 #include "contingency.hpp"
 #include "estimateprob.hpp"
 
+BASED_ON(ContingencyClass, Contingency)
+
+PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
+{ CAST_TO_err(TContingency, cont, (PDistribution *)NULL);
+  if (!cont->outerVariable)
+    PYERROR(PyExc_SystemError, "invalid contingency (no variable)", (PDistribution *)NULL);
+
+  if (cont->outerVariable->varType==TValue::INTVAR) {
+    int ind=-1;
+    if (PyInt_Check(index))
+      ind=(int)PyInt_AsLong(index);
+    else {
+      TValue val;
+      if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial()) 
+        ind=int(val);
+    }
+
+    if ((ind>=0) && (ind<int(cont->discrete->size())))
+      return &cont->discrete->at(ind);
+  }
+  else if (cont->outerVariable->varType==TValue::FLOATVAR) {
+    float ind = numeric_limits<float>::quiet_NaN();
+    if (!PyNumber_ToFloat(index, ind)) {
+      TValue val;
+      if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial())
+        ind = float(val);
+    }
+
+    TDistributionMap::iterator mi=cont->continuous->find(ind);
+    if (mi!=cont->continuous->end())
+      return &(*mi).second;
+  }
+
+  PYERROR(PyExc_IndexError, "invalid index", (PDistribution *)NULL);
+}
+
+
 PyObject *Contingency_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(outer_desc, inner_desc)")
 { PyTRY
     PVariable var1, var2;
@@ -298,6 +335,64 @@ PyObject *Contingency_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
     return WrapNewOrange(mlnew TContingency(var1, var2), type);
   PyCATCH
 }
+
+
+PyObject *Contingency_add(PyObject *self, PyObject *args)  PYARGS(METH_VARARGS, "(outer_value, inner_value[, w=1]) -> None")
+{
+  PyTRY
+    PyObject *pyouter, *pyinner;
+    float w = 1.0;
+    if (!PyArg_ParseTuple(args, "OO|f:Contingency.add", &pyouter, &pyinner, &w))
+      return PYNULL;
+
+   CAST_TO(TContingency, cont)
+
+   TValue inval, outval;
+    if (   !convertFromPython(pyinner, inval, cont->innerVariable)
+        || !convertFromPython(pyouter, outval, cont->outerVariable))
+      PYERROR(PyExc_TypeError, "invalid values", PYNULL);
+
+    cont->add(outval, inval, w);
+    RETURN_NONE;
+  PyCATCH
+}
+
+
+bool ContingencyClass_getValuePair(TContingencyClass *cont, PyObject *pyattr, PyObject *pyclass, TValue &attrval, TValue &classval)
+{
+  if (   !convertFromPython(pyattr, attrval, cont->getAttribute())
+      || !convertFromPython(pyclass, classval, cont->getClassVar()))
+    PYERROR(PyExc_TypeError, "invalid values", false);
+
+  return true;
+}
+
+
+bool ContingencyClass_getValuePair(TContingencyClass *cont, PyObject *args, char *s, TValue &attrval, TValue &classval)
+{
+  PyObject *pyattr, *pyclass;
+  return    PyArg_ParseTuple(args, s, &pyattr, &pyclass)
+         && ContingencyClass_getValuePair(cont, pyattr, pyclass, attrval, classval);
+}
+
+
+PyObject *ContingencyClass_add_attrclass(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(attribute_value, class_value[, w=1]) -> None")
+{
+  PyTRY
+    CAST_TO(TContingencyClass, cont)
+
+    PyObject *pyattr, *pyclass;
+    TValue attrval, classval;
+    float w = 1.0;
+    if (   !PyArg_ParseTuple(args, "OO|f:ContingencyClass.add_attrclass", &pyattr, &pyclass, &w)
+        || !ContingencyClass_getValuePair(cont, pyattr, pyclass, attrval, classval))
+      return PYNULL;
+
+    cont->add_attrclass(attrval, classval, w);
+    RETURN_NONE;
+  PyCATCH
+}
+
 
 
 PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Contingency, "(attribute, class attribute) | (attribute, examples[, weightID])")
@@ -322,6 +417,30 @@ PyObject *ContingencyAttrClass_new(PyTypeObject *type, PyObject *args, PyObject 
           
     PYERROR(PyExc_TypeError, "invalid type for ContingencyAttrClass constructor", PYNULL);   
 
+  PyCATCH
+}
+
+
+PyObject *ContingencyAttrClass_p_class(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(attr_value[, class_value]) -> p | distribution of classes")
+{
+  PyTRY
+    CAST_TO(TContingencyClass, cont);
+
+    if (PyTuple_Size(args) == 1) {
+      TValue attrval;
+      if (!convertFromPython(PyTuple_GET_ITEM(args, 0), attrval, cont->outerVariable))
+        return PYNULL;
+
+      return WrapOrange(cont->p_classes(attrval));
+    }
+
+    else {
+      TValue attrval, classval;
+      if (!ContingencyClass_getValuePair(cont, args, "OO:ContingencyAttrClass.p_class", attrval, classval))
+        return PYNULL;
+
+      return PyFloat_FromDouble(cont->p_class(attrval, classval));
+    }
   PyCATCH
 }
 
@@ -361,6 +480,30 @@ PyObject *ContingencyClassAttr_new(PyTypeObject *type, PyObject *args, PyObject 
 }
 
 
+PyObject *ContingencyClassAttr_p_attr(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "([attr_value, ]class_value) -> p | distribution of values")
+{
+  PyTRY
+    CAST_TO(TContingencyClass, cont);
+
+    if (PyTuple_Size(args) == 1) {
+      TValue classval;
+      if (!convertFromPython(PyTuple_GET_ITEM(args, 0), classval, cont->outerVariable))
+        return PYNULL;
+
+      return WrapOrange(cont->p_attrs(classval));
+    }
+
+    else {
+      TValue attrval, classval;
+      if (!ContingencyClass_getValuePair(cont, args, "OO:ContingencyClassAttr.p_attr", attrval, classval))
+        return PYNULL;
+
+      return PyFloat_FromDouble(cont->p_attr(attrval, classval));
+    }
+  PyCATCH
+}
+
+
 PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Contingency, "(outer_attr, inner_attr, examples [, weight-id])")
 { PyTRY
     PyObject *pyvar, *pyinvar, *pygen;
@@ -384,46 +527,35 @@ PyObject *ContingencyAttrAttr_new(PyTypeObject *type, PyObject *args, PyObject *
 
 
 
+PyObject *ContingencyAttrAttr_p_attr(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(outer_value[, inner_value]) -> p | distribution of values")
+{
+  PyTRY
+    CAST_TO(TContingencyClass, cont);
+
+    PyObject *pyouter, *pyinner = PYNULL;
+    TValue outerval, innerval;
+    if (   !PyArg_ParseTuple(args, "O|O:ContingencyAttrAttr.p_attr", &pyinner, &pyouter)
+        || !convertFromPython(pyouter, outerval, cont->outerVariable))
+      return PYNULL;
+
+    if (!pyinner)
+      return WrapOrange(cont->p_attrs(outerval));
+
+    else {
+      if (!convertFromPython(pyinner, innerval, cont->innerVariable))
+        return PYNULL;
+
+      return PyFloat_FromDouble(cont->p_attr(outerval, innerval));
+    }
+  PyCATCH
+}
+
+
 PyObject *Contingency_normalize(PyObject *self, PyObject *) PYARGS(0,"() -> None")
 { PyTRY
     SELF_AS(TContingency).normalize();
     RETURN_NONE
   PyCATCH
-}
-
-
-PDistribution *Contingency_getItemRef(PyObject *self, PyObject *index)
-{ CAST_TO_err(TContingency, cont, (PDistribution *)NULL);
-  if (!cont->outerVariable)
-    PYERROR(PyExc_SystemError, "invalid contingency (no variable)", (PDistribution *)NULL);
-
-  if (cont->outerVariable->varType==TValue::INTVAR) {
-    int ind=-1;
-    if (PyInt_Check(index))
-      ind=(int)PyInt_AsLong(index);
-    else {
-      TValue val;
-      if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial()) 
-        ind=int(val);
-    }
-
-    if ((ind>=0) && (ind<int(cont->discrete->size())))
-      return &cont->discrete->at(ind);
-  }
-  else if (cont->outerVariable->varType==TValue::FLOATVAR) {
-    float ind = numeric_limits<float>::quiet_NaN();
-    if (!PyNumber_ToFloat(index, ind)) {
-      TValue val;
-      if (convertFromPython(index, val, cont->outerVariable) && !val.isSpecial())
-        ind = float(val);
-    }
-
-    TDistributionMap::iterator mi=cont->continuous->find(ind);
-    if (mi!=cont->continuous->end())
-      return &(*mi).second;
-  }
-
-  PYERROR(PyExc_IndexError, "invalid index", (PDistribution *)NULL);
 }
 
 
