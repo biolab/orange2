@@ -61,7 +61,9 @@ shows interactions of two attributes
         self.addInput("cdata")
         self.data = None
         self.xAxis = 0
+        self.xAxisType = orange.VarTypes.Discrete
         self.yAxis = 1
+        self.yAxisType = orange.VarTypes.Discrete
         self.outcome = 0
         self.outcomenames = []
         self.visibleOutcomes = []
@@ -284,8 +286,10 @@ shows interactions of two attributes
             self.xAxis = self.data.getVarNames().index(xa) 
 
             if self.data.data.domain[xa].varType == orange.VarTypes.Continuous:
+                self.xAxisType = orange.VarTypes.Continuous
                 self.graph.setXlabels(None)
             else:
+                self.xAxisType = orange.VarTypes.Discrete
                 xlabels = self.data.getVarValues(self.data.getVarNames().index(xa))
                 self.graph.setXlabels(xlabels)
                 # reset the xAxis so all values (+- 0.5) changed by rndCorrection() are shown on graph
@@ -302,8 +306,10 @@ shows interactions of two attributes
             self.yAxis = self.data.getVarNames().index(ya)
 
             if self.data.data.domain[ya].varType == orange.VarTypes.Continuous:
+                self.yAxisType = orange.VarTypes.Continuous
                 self.graph.setYLlabels(None)
             else:
+                self.yAxisType = orange.VarTypes.Discrete
                 ylabels = self.data.getVarValues(self.data.getVarNames().index(ya))
                 self.graph.setYLlabels(ylabels)
                 # reset the yAxis so all values (+- 0.5) changef by rndCorrection() are shown on graph
@@ -341,8 +347,14 @@ shows interactions of two attributes
                 continue
             if i[self.yAxis].isSpecial():
                 continue
-            curveDataPoints[ins]['x'].append( i[self.xAxis] + self.rndCorrection() )
-            curveDataPoints[ins]['y'].append( i[self.yAxis] + self.rndCorrection() )
+            if self.xAxisType == orange.VarTypes.Discrete:
+                curveDataPoints[ins]['x'].append( i[self.xAxis] + self.rndCorrection() )
+            else:
+                curveDataPoints[ins]['x'].append( i[self.xAxis] )
+            if self.yAxisType == orange.VarTypes.Discrete:
+                curveDataPoints[ins]['y'].append( i[self.yAxis] + self.rndCorrection() )
+            else:
+                curveDataPoints[ins]['y'].append( i[self.yAxis] )
 
         # put data into curves
         for curveIndex in range(len(self.curveKeys)):
