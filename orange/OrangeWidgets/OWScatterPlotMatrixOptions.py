@@ -49,6 +49,7 @@ class OWScatterPlotMatrixOptions(OWOptions):
         self.gSetXaxisCB = QCheckBox('X axis title ', self.graphSettings)
         self.gSetYaxisCB = QCheckBox('Y axis title ', self.graphSettings)
         self.gShowFilledSymbolsCB = QCheckBox('show filled symbols', self.graphSettings)
+        self.gShowDistributions = QCheckBox('Show distributions', self.graphSettings)
 
         self.apply = QPushButton("Apply changes", self.top)
         self.gSetGridColorB = QPushButton("Grid Color", self.top)
