@@ -2054,6 +2054,211 @@ PyObject *ThresholdCA_call(PyObject *self, PyObject *args, PyObject *keywords) P
   PyCATCH
 }
 
+
+#include "symmatrix.hpp"
+
+PYCLASSCONSTANT_INT(SymMatrix, Lower, 0)
+PYCLASSCONSTANT_INT(SymMatrix, Upper, 1)
+PYCLASSCONSTANT_INT(SymMatrix, Symmetric, 2)
+PYCLASSCONSTANT_INT(SymMatrix, Lower_Filled, 3)
+PYCLASSCONSTANT_INT(SymMatrix, Upper_Filled, 4)
+
+PyObject *SymMatrix_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(Orange, "(dimension[, initialElement=0])")
+{
+  PyTRY
+    int dim;
+    float init = 0;
+    if (!PyArg_ParseTuple(args, "i|f:SymMatrix.__new__", &dim, &init))
+      return PYNULL;
+    if (dim<1)
+      PYERROR(PyExc_TypeError, "matrix dimension must be positive", PYNULL);
+
+    return WrapNewOrange(mlnew TSymMatrix(dim, init), type);
+  PyCATCH
+}
+
+
+PyObject *SymMatrix_getitem_sq(PyObject *self, int i)
+{
+  PyTRY
+    CAST_TO(TSymMatrix, matrix)
+    int dim = matrix->dim;
+
+    if (i >= matrix->dim) {
+      PyErr_Format(PyExc_IndexError, "index %i out of range 0-%i", i, matrix->dim-1);
+      return PYNULL;
+    }
+
+    int j;
+    PyObject *row;    
+    switch (matrix->matrixType) {
+      case TSymMatrix::LOWER:
+        row = PyTuple_New(i+1);
+        for(j = 0; j<=i; j++)
+          PyTuple_SetItem(row, j, PyFloat_FromDouble((double)matrix->getitem(i, j)));
+        return row;
+
+      case TSymMatrix::UPPER:
+        row = PyTuple_New(matrix->dim - i);
+        for(j = i; j<dim; j++)
+          PyTuple_SetItem(row, j-i, PyFloat_FromDouble((double)matrix->getitem(i, j)));
+        return row;
+
+      default:
+        row = PyTuple_New(matrix->dim);
+        for(int j = 0; j<dim; j++)
+          PyTuple_SetItem(row, j, PyFloat_FromDouble((double)matrix->getitem(i, j)));
+        return row;
+    }
+  PyCATCH
+}
+
+
+
+PyObject *SymMatrix_getitem(PyObject *self, PyObject *args)
+{
+  PyTRY
+    CAST_TO(TSymMatrix, matrix)
+
+    if ((PyTuple_Check(args) && (PyTuple_Size(args) == 1)) || PyInt_Check(args)) {
+      if (PyTuple_Check(args)) {
+        args = PyTuple_GET_ITEM(args, 0);
+        if (!PyInt_Check(args))
+          PYERROR(PyExc_IndexError, "integer index expected", PYNULL);
+      }
+
+      return SymMatrix_getitem_sq(self, (int)PyInt_AsLong(args));
+    }
+
+    else if (PyTuple_Size(args) == 2) {
+      if (!PyInt_Check(PyTuple_GET_ITEM(args, 0)) || !PyInt_Check(PyTuple_GET_ITEM(args, 1)))
+        PYERROR(PyExc_IndexError, "integer indices expected", PYNULL);
+
+      const int i = PyInt_AsLong(PyTuple_GET_ITEM(args, 0));
+      const int j = PyInt_AsLong(PyTuple_GET_ITEM(args, 1));
+      if ((j>i) && (matrix->matrixType == TSymMatrix::LOWER))
+        PYERROR(PyExc_IndexError, "index out of range for lower triangular matrix", PYNULL);
+
+      if ((j<i) && (matrix->matrixType == TSymMatrix::UPPER))
+        PYERROR(PyExc_IndexError, "index out of range for upper triangular matrix", PYNULL);
+
+      return PyFloat_FromDouble(matrix->getitem(i, j));
+    }
+
+    PYERROR(PyExc_IndexError, "one or two integer indices expected", PYNULL);
+  PyCATCH
+}
+
+
+int SymMatrix_setitem(PyObject *self, PyObject *args, PyObject *obj)
+{
+  PyTRY
+    if (PyTuple_Size(args) == 1)
+      PYERROR(PyExc_AttributeError, "cannot set entire matrix row", -1);
+
+    if (PyTuple_Size(args) != 2)
+      PYERROR(PyExc_IndexError, "two integer indices expected", -1);
+
+    PyObject *pyfl = PyNumber_Float(obj);
+    if (!pyfl)
+      PYERROR(PyExc_TypeError, "invalid matrix elements; a number expected", -1);
+    float f = PyFloat_AsDouble(pyfl);
+    Py_DECREF(pyfl);
+
+    const int i = PyInt_AsLong(PyTuple_GET_ITEM(args, 0));
+    const int j = PyInt_AsLong(PyTuple_GET_ITEM(args, 1));
+
+    SELF_AS(TSymMatrix).getref(i, j) = f;
+    return 0;
+  PyCATCH_1
+}
+
+
+PyObject *SymMatrix_getslice(PyObject *self, int start, int stop)
+{
+  PyTRY
+    CAST_TO(TSymMatrix, matrix)
+    const int dim = matrix->dim;
+
+    if (start>dim) 
+      start = dim;
+    else if (start<0)
+      start = 0;
+
+    if (stop>dim)
+      stop=dim;
+
+    PyObject *res = PyTuple_New(stop - start);
+    int i = 0;
+    while(start<stop)
+      PyTuple_SetItem(res, i++, SymMatrix_getitem_sq(self, start++));
+
+    return res;
+  PyCATCH
+}
+
+
+PyObject *SymMatrix_str(PyObject *self)
+{ PyTRY
+    CAST_TO(TSymMatrix, matrix)
+    const int dim = matrix->dim;
+    const int mattype = matrix->matrixType;
+
+    float matmax = 0.0;
+    for(float *ei = matrix->elements, *ee = matrix->elements + ((dim*(dim+1))>>1); ei != ee; ei++) {
+      const tei = *ei<0 ? abs(10* *ei) : *ei;
+      if (tei > matmax)
+        matmax = tei;
+    }
+
+    const int plac = 4 + (matmax==0 ? 1 : int(ceil(log10((double)matmax))));
+    const int elements = (matrix->matrixType == TSymMatrix::LOWER) ? (dim*(dim+1))>>1 : dim * dim;
+    char *smatr = new char[3 * dim + (plac+2) * elements];
+    char *sptr = smatr;
+    *(sptr++) = '(';
+    *(sptr++) = '(';
+
+    int i, j;
+    for(i = 0; i<dim; i++) {
+      switch (mattype) {
+        case TSymMatrix::LOWER:
+          for(j = 0; j<i; j++, sptr += (plac+2))
+            sprintf(sptr, "%*.3f, ", plac, matrix->getitem(i, j));
+          break;
+
+        case TSymMatrix::UPPER:
+          for(j = i * (plac+2); j--; *(sptr++) = ' ');
+          for(j = i; j < dim-1; j++, sptr += (plac+2))
+            sprintf(sptr, "%*.3f, ", plac, matrix->getitem(i, j));
+          break;
+
+        default:
+          for(j = 0; j<dim-1; j++, sptr += (plac+2))
+            sprintf(sptr, "%*.3f, ", plac, matrix->getitem(i, j));
+      }
+
+      sprintf(sptr, "%*.3f)", plac, matrix->getitem(i, j));
+      sptr += (plac+1);
+
+      if (i!=dim-1) {
+        sprintf(sptr, ",\n (");
+        sptr += 4;
+      }
+    }
+
+    sprintf(sptr, ")");
+
+    PyObject *res = PyString_FromString(smatr);
+    mldelete smatr;
+    return res;
+  PyCATCH
+}
+
+
+PyObject *SymMatrix_repr(PyObject *self)
+{ return SymMatrix_str(self); }
+
+
 #include "heatmap.hpp"
 
 PyObject *HeatmapConstructor_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BASED_ON(Orange, "(ExampleTable[, baseHeatmap=None [, disregardClass=0]])")
