@@ -3,9 +3,8 @@
 #	tab for showing widgets and widget button class
 #
 from qt import *
-import sys
-import os
-import string
+import os.path
+from string import strip
 import orngDoc
 from xml.dom.minidom import Document, parse
 
@@ -163,7 +162,7 @@ class WidgetTabs(QTabWidget):
 						if n2.nodeType == node.TEXT_NODE:
 							description = description + n2.nodeValue
 
-			description = string.strip(description)
+			description = strip(description)
 			i = 0
 			while i < len(priorityList) and priority > priorityList[i]:
 				i = i + 1

@@ -81,7 +81,7 @@ class OWBaseWidget(QDialog):
         self.outputs = []    # signalName: dataType
         self.wrappers =[]    # stored wrappers for widget events
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
-        self.linksOut = {}       # signalName: signalData
+        self.linksOut = {}       # signalName: (signalData, id)
         self.progressBarHandler = None  # handler for progress bar events
     
         #the map with settings
@@ -110,9 +110,9 @@ class OWBaseWidget(QDialog):
         self.hide()
         self.show()
 
-    def send(self, signalName, value):
-        self.linksOut[signalName] = value
-        signalManager.send(self, signalName, value)
+    def send(self, signalName, value, id = None):
+        self.linksOut[signalName] = (value, id)
+        signalManager.send(self, signalName, value, id)
        
     def setSettings(self,settings):
         """
@@ -164,6 +164,7 @@ class OWBaseWidget(QDialog):
         """
         Loads settings from string str which is compatible with cPickle
         """
+        if str == None: return
         if hasattr(self, "settingsList"):
             settings = cPickle.loads(str)
             self.__dict__.update(settings)
@@ -208,6 +209,10 @@ class OWBaseWidget(QDialog):
             if signalName == signal: return dataType
         return None
 
+    def signalIsOnlySingleConnection(self, signalName):
+        for (signal, dataType, handler, onlySingleConnection) in self.inputs:
+            if signal == signalName: return onlySingleConnection
+
     def addInputConnection(self, widgetFrom, signalName):
         handler = None
         for (signal, dataType, h, onlySingle) in self.inputs:
@@ -215,7 +220,7 @@ class OWBaseWidget(QDialog):
             
         existing = []
         if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
-        self.linksIn[signalName] = existing + [(0, widgetFrom, handler, None)]    # (dirty, handler, signalData)
+        self.linksIn[signalName] = existing + [(0, widgetFrom, handler, None, None)]    # (dirty, handler, signalData, idValue)
     
 
     # return list of signal names, that are single and already connected to other widgets        
@@ -240,21 +245,29 @@ class OWBaseWidget(QDialog):
         # we define only a way to handle signals that have defined a handler function
         for key in self.linksIn.keys():
             for i in range(len(self.linksIn[key])):
-                (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
+                (dirty, widgetFrom, handler, signalData, idValue) = self.linksIn[key][i]
                 if handler != None and dirty:
                     #print "processing ", self.name()," , handler = ", str(handler)[13:30]
-                    self.linksIn[key][i] = (0, widgetFrom, handler, signalData) # clear the dirty flag
-                    handler(signalData)
+                    self.linksIn[key][i] = (0, widgetFrom, handler, signalData, idValue) # clear the dirty flag
+                    if self.signalIsOnlySingleConnection(key):
+                        handler(signalData)
+                    else:
+                        # if one widget sends signal using send("signal name", value, id), where id != None.
+                        # this is used in cases where one widget sends more signals of same "signal name"
+                        if idValue != None:     
+                            handler(signalData, (widgetFrom, idValue))
+                        else:                   
+                            handler(signalData, widgetFrom)
 
         self.needProcessing = 0
 
     # set new data from widget widgetFrom for a signal with name signalName
-    def updateNewSignalData(self, widgetFrom, signalName, value):
+    def updateNewSignalData(self, widgetFrom, signalName, value, id):
         if not self.linksIn.has_key(signalName): return
         for i in range(len(self.linksIn[signalName])):
-            (dirty, widget, handler, oldValue) = self.linksIn[signalName][i]
+            (dirty, widget, handler, oldValue, idValue) = self.linksIn[signalName][i]
             if widget == widgetFrom:
-                self.linksIn[signalName][i] = (1, widget, handler, value)
+                self.linksIn[signalName][i] = (1, widget, handler, value, id)
         self.needProcessing = 1
 
 

@@ -5,7 +5,6 @@
 from qt import *
 import sys
 import os
-import string
 import orngTabs
 import orngDoc
 import orngDlgs
@@ -13,7 +12,6 @@ import orngOutput
 import orngResources
 import xmlParse
 import cPickle
-from orngSignalManager import *
 
 TRUE  = 1
 FALSE = 0

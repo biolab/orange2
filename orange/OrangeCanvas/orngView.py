@@ -4,9 +4,7 @@
 #
 from qt import *
 from qtcanvas import *
-import orngTabs
 import orngCanvasItems
-from orngSignalManager import *
 TRUE  = 1
 FALSE = 0
 
@@ -93,8 +91,8 @@ class SchemaView(QCanvasView):
     # popMenuAction - enable/disable link between two widgets
     def toggleEnabledLink(self):
         if self.selectedLine != None:
-            oldEnabled = signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance)
-            signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, not oldEnabled)
+            oldEnabled = self.doc.signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance)
+            self.doc.signalManager.setLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance, not oldEnabled)
             self.selectedLine.setEnabled(not oldEnabled)
             self.selectedLine.repaintLine(self)
             self.selectedLine.inWidget.updateTooltip()
@@ -357,7 +355,7 @@ class SchemaView(QCanvasView):
             self.tempWidget = widget
             self.openActiveWidget()
         elif line != None:
-            self.doc.resetActiveSignals(line, enabled = signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
+            self.doc.resetActiveSignals(line, enabled = self.doc.signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
 
 
     # if we scroll the view, we have to update tooltips for widgets

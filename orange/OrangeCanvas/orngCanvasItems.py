@@ -7,7 +7,6 @@ from qtcanvas import *
 import os
 import sys
 import traceback
-from orngSignalManager import *
 TRUE  = 1
 FALSE = 0
 
@@ -60,8 +59,9 @@ class TempCanvasLine(QCanvasLine):
 # # CANVAS LINE
 # #######################################
 class CanvasLine(QCanvasLine):
-    def __init__(self, canvasDlg, outWidget, inWidget, canvas, *args):
+    def __init__(self, signalManager, canvasDlg, outWidget, inWidget, canvas, *args):
         apply(QCanvasLine.__init__,(self,canvas)+ args)
+        self.signalManager = signalManager
         self.canvasDlg = canvasDlg
         self.outWidget = outWidget
         self.inWidget = inWidget
@@ -78,8 +78,8 @@ class CanvasLine(QCanvasLine):
         self.setCanvas(None)
 
     def getEnabled(self):
-        signals = signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
-        if signals!= [] and signalManager.isSignalEnabled(self.outWidget.instance, self.inWidget.instance, signals[0][0], signals[0][1]):
+        signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
+        if signals!= [] and self.signalManager.isSignalEnabled(self.outWidget.instance, self.inWidget.instance, signals[0][0], signals[0][1]):
             return 1
         else: return 0
 
@@ -191,8 +191,9 @@ class CanvasLine(QCanvasLine):
 # # CANVAS WIDGET
 # #######################################
 class CanvasWidget(QCanvasRectangle):
-    def __init__(self, canvas, view, widget, defaultPic, canvasDlg):
+    def __init__(self, signalManager, canvas, view, widget, defaultPic, canvasDlg):
         apply(QCanvasRectangle.__init__, (self,canvas))
+        self.signalManager = signalManager
         self.widget = widget
         self.canvas = canvas
         self.view = view
@@ -449,7 +450,7 @@ class CanvasWidget(QCanvasRectangle):
         else:
             string += "<ul>"
             for (signal, type, handler, single) in self.widget.inList:
-                count = signalManager.getLinkNumberIn(self.instance, signal)
+                count = self.signalManager.getLinkNumberIn(self.instance, signal)
                 if count > 0:
                    string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b>"
                    if count > 1: string += ' (' + str(count) +')'
@@ -463,7 +464,7 @@ class CanvasWidget(QCanvasRectangle):
         else:
             string += "<ul>"
             for (signal, type) in self.widget.outList:
-                count = signalManager.getLinkNumberOut(self.instance, signal)
+                count = self.signalManager.getLinkNumberOut(self.instance, signal)
                 if count > 0:
                    string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b>"
                    if count > 1: string += ' (' + str(count) +')'

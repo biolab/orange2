@@ -1,12 +1,11 @@
 # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
-
+# 	print system output and exceptions into a window. Enables copy/paste
 #
 from qt import *
 import sys
-import os
 import string
-import time
+from time import localtime
 import traceback
 import os.path
 import orngResources
@@ -80,7 +79,7 @@ class OutputWindow(QMainWindow):
 		if self.focusOnCatchException:
 			self.canvasDlg.menuItemShowOutputWindow()
 			
-		t = time.localtime()
+		t = localtime()
 		self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))
 		self.textOutput.append("<nobr>Traceback:</nobr>")
 		if self.printException:

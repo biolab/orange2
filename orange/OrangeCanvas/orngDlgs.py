@@ -1,18 +1,18 @@
 # Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
 # Description:
-#	dialogs 
+#	signal dialog, canvas options dialog
 
 from qt import *
 from qtcanvas import *
-from copy import *
+from copy import copy
 from string import strip
-import os
 import sys
 from orngCanvasItems import *
 
 TRUE  = 1
 FALSE = 0
 
+# only needed if we have here definitions of ExampleTable(WithClass)
 import orange
 
 ##################
@@ -38,7 +38,7 @@ class QCanvasIcon(QCanvasRectangle):
         if self.pixmap:
             painter.drawPixmap(self.x, self.y, self.pixmap)
 
-
+# this class is needed by signalDialog to show widgets and lines
 class SignalCanvasView(QCanvasView):
     def __init__(self, dlg, *args):
         apply(QCanvasView.__init__,(self,) + args)

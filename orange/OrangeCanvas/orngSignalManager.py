@@ -1,3 +1,7 @@
+# Author: Gregor Leban (gregor.leban@fri.uni-lj.si)
+# Description:
+#	manager, that handles correct processing of widget signals
+#
 
 class SignalManager:
     widgets = []    # topologically sorted list of widgets
@@ -58,7 +62,7 @@ class SignalManager:
 
         widgetTo.addInputConnection(widgetFrom, signalNameTo)
         if widgetFrom.linksOut.has_key(signalNameFrom) and enabled:
-            widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom])
+            widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
 
         # update topology
         currentIndex = self.widgets.index(widgetTo)+1
@@ -104,7 +108,7 @@ class SignalManager:
                 (widget, nameFrom, nameTo, e) = links[i]
                 if widget == widgetTo:
                     links[i] = (widget, nameFrom, nameTo, enabled)
-                    if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom])
+                    if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
         if enabled:
             self.processNewSignals(widgetTo)
 
@@ -116,14 +120,14 @@ class SignalManager:
 
 
     # widget widgetFrom sends signal with name signalName and value value
-    def send(self, widgetFrom, signalNameFrom, value):
+    def send(self, widgetFrom, signalNameFrom, value, id):
         # add all target widgets new value and mark them as dirty
         # if not freezed -> process dirty widgets
 
         if not self.links.has_key(widgetFrom): return
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
-                widgetTo.updateNewSignalData(widgetFrom, signalTo, value)
+                widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id)
 
         if not self.freezing and not self.signalProcessingInProgress:
             self.processNewSignals(widgetFrom)
@@ -131,7 +135,7 @@ class SignalManager:
     # when a new link is created, we have to 
     def sendOnNewLink(self, widgetFrom, widgetTo, signals):
         for (outName, inName) in signals:
-            widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName])
+            widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][0], widgetFrom.linksOut[signalNameFrom][1])
 
 
     def processNewSignals(self, firstWidget):
