@@ -206,7 +206,7 @@ class CanvasLine(QCanvasLine):
         string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
         for i in range(len(self.signals)):
             (outSignal, inSignal) = self.signals[i]
-            string += "<nobr>- " + outSignal + " --> " + inSignal + "</nobr><br>"
+            string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
 
         xDiff = p2.x() - p1.x()
         yDiff = p2.y() - p1.y()
@@ -506,30 +506,30 @@ class CanvasWidget(QCanvasRectangle):
         self.removeTooltip()
         string = "<nobr><b>" + self.caption + "</b></nobr><br><hr>Inputs:<br>"
 
-        if self.widget.getInputs() == []: string += "None<br>"
+        if self.widget.getInputs() == []: string += "&nbsp &nbsp None<br>"
         else:
             for signal in self.widget.getInputs():
                 widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
+                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (from "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr>- " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
 
         string += "<hr>Outputs:<br>"
-        if self.widget.getOutputs() == []: string += "None<br>"
+        if self.widget.getOutputs() == []: string += "&nbsp &nbsp None<br>"
         else:
             for signal in self.widget.getOutputs():
                 widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal.name)
                 if len(widgets) > 0:
-                    string += "<nobr>- <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
+                    string += "<nobr> &nbsp &nbsp - <b>" + self.canvasDlg.getChannelName(signal.name) + "</b> (to "
                     for i in range(len(widgets)-1):
                         string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
                     string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</nobr><br>"
                 else:
-                    string += "<nobr>- " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
+                    string += "<nobr> &nbsp &nbsp - " + self.canvasDlg.getChannelName(signal.name) + "</nobr><br>"
         string = string[:-4]
         self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)
