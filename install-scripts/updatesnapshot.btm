@@ -6,6 +6,7 @@ set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
 
 set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
 set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
+set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
 
 pushd
 
@@ -71,4 +72,5 @@ call updateVersionsPy__.btm
 
 popd
 
-rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0
+start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 0;  bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
+
