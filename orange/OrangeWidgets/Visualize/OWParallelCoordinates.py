@@ -80,7 +80,6 @@ class OWParallelCoordinates(OWWidget):
         self.box.addWidget(self.graph)
         self.box.addWidget(self.slider)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveData)
 
         #add controls to self.controlArea widget
         self.targetGroup = QVGroupBox(self.GeneralTab)
@@ -160,10 +159,6 @@ class OWParallelCoordinates(OWWidget):
         self.activateLoadedSettings()
         self.resize(900, 900)
 
-
-    def saveData(self):
-        data = self.data.select(self.getShownAttributeList())
-        orange.saveTabDelimited("current.tab", data)
 
     # #########################
     # OPTIONS
