@@ -3,6 +3,6 @@
 return 50
 
 test
-test3
+test300
 
 kr neki od testa
