@@ -36,6 +36,41 @@ class RadvizSolver(DESolver.DESolver):
         E = orangeom.computeEnergy(self.data, self.classes, anchorData, self.attrIndices, self.radviz.attractG, -self.radviz.repelG)
         return E, 0
 
+
+# #############################################################################
+# class that represents kNN classifier that classifies examples based on top evaluated projections
+class FreeVizClassifier(orange.Classifier):
+    def __init__(self, radvizWidget, data):
+        self.radvizWidget = radvizWidget
+
+        keepMinMaxVals = self.radvizWidget.data != None and str(self.radvizWidget.data.domain.attributes) == str(data.domain.attributes)
+        self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
+
+        self.radvizWidget.optimize()
+        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData)
+
+    # for a given example run argumentation and find out to which class it most often fall        
+    def __call__(self, example, returnType):
+        example.setclass(0)
+        v = self.classifier(example, returnType)
+        print "XX", v, v[0], v[1], type(v[0]), type(v[1]), "YY"
+        return v
+        
+        
+
+# #############################################################################
+# learner that builds VizRankClassifier
+class FreeVizLearner(orange.Learner):
+    def __init__(self, radvizWidget):
+        self.radvizWidget = radvizWidget
+        self.name = "FreeViz"
+        
+    def __call__(self, examples, weightID = 0):
+        return FreeVizClassifier(self.radvizWidget, examples)
+
+
+
+
 ###########################################################################################
 ##### WIDGET : Radviz visualization
 ###########################################################################################
@@ -53,7 +88,7 @@ class OWRadviz(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner), ("FreeViz learner", orange.Learner)]
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -68,7 +103,7 @@ class OWRadviz(OWWidget):
         self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Radviz")
         self.graph.kNNOptimization = self.optimizationDlg
         self.optimizationDlg.optimizeGivenProjectionButton.show()
-
+        self.freeVizLearner = FreeVizLearner(self)
 
         # variables
         self.pointWidth = 4
@@ -242,6 +277,7 @@ class OWRadviz(OWWidget):
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.resize(900, 700)
+        self.send("FreeViz learner", self.freeVizLearner)
 
 
     # #########################
