@@ -3,7 +3,7 @@ import re, os, os.path, sys
 
 propbegindef=re.compile(r'\s*class\s+(?P<name>\w+)(\s*:\s*public\s+(?P<parent>\w+))?')
 oranstuffdef=re.compile(r'\s*__REGISTER(?P<abstract>_ABSTRACT)?_CLASS')
-propdef=re.compile(r'\s*(?P<ctype>\w+)\s+(?P<cname>\w+)\s*;\s*//P(?P<flags>\w+)?\s*(\([>+](?P<pname>\w+)\s*\))?(?P<pdesc>[^\r\n]*)')
+propdef=re.compile(r'\s*(?P<ctype>\w+)\s+(?P<cname>\w+)\s*;\s*//P(?P<flags>\w+)?\s*(\((?P<pnameflag>[>+])(?P<pname>\w+)\s*\))?(?P<pdesc>[^\r\n]*)')
 compdef=re.compile(r'\s*(?P<ctype>\w+)\s+(?P<cname>\w+)\s*;\s*//C')
 
 propwarndef=re.compile(r'\\\\P')
@@ -100,11 +100,16 @@ def detectBuiltInProperties(hppfile):
         if not currentClass:
             print "%s(%i): Warning: property definition out of scope. Ignoring." % (hppfile, lcount)
         else:
-            ctype, cname, flags, pname, pdesc = found.group("ctype", "cname", "flags", "pname", "pdesc")
+            ctype, cname, flags, pnameflag, pname, pdesc = found.group("ctype", "cname", "flags", "pnameflag", "pname", "pdesc")
             normal = ctype in normalTypes
             if not normal and ctype[0]=="P":
               ctype = "T"+ctype[1:]
-            currentClass.properties.append((ctype, cname, pname or cname, pdesc, flags and ("R" in flags) or 0, flags and ("O" in flags) or 0, normal))
+            if pname:
+              if pnameflag=="+":
+                pname = (cname, pname)
+            else:
+              pname = cname
+            currentClass.properties.append((ctype, cname, pname, pdesc, flags and ("R" in flags) or 0, flags and ("O" in flags) or 0, normal))
         continue
 
       found = compdef.match(line)
@@ -160,11 +165,19 @@ def writeFile(hppfile):
         off.write("TPropertyDescription %s_properties[] = {\n" % classname)
         for ctype, cname, pname, pdesc, ro, ob, builtin in classdef.properties:
             if builtin or (ctype=="TExample"):
-                off.write('  {"%s", "%s", &typeid(%s), NULL, offsetof(%s, %s), %s, %s},\n' % (pname, pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                if type(pname)==tuple:
+                  off.write('  {"%s", "%s", &typeid(%s), NULL, offsetof(%s, %s), %s, %s},\n' % (pname[0], pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                  off.write('  {"%s", "%s", &typeid(%s), NULL, offsetof(%s, %s), %s, %s},\n' % (pname[1], pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                else:
+                  off.write('  {"%s", "%s", &typeid(%s), NULL, offsetof(%s, %s), %s, %s},\n' % (pname, pdesc, ctype, classname, cname, tf(ro), tf(ob)))
             else:
                 if not classes.has_key(ctype) and not ctype in noclasswarnings:
                     print "Warning: type %s, required by %s.%s not registered" % (ctype, classname, pname)
-                off.write('  {"%s", "%s", &typeid(POrange), &%s::st_classDescription, offsetof(%s, %s), %s, %s},\n' % (pname, pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                if type(pname)==tuple:
+                  off.write('  {"%s", "%s", &typeid(POrange), &%s::st_classDescription, offsetof(%s, %s), %s, %s},\n' % (pname[0], pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                  off.write('  {"%s", "%s", &typeid(POrange), &%s::st_classDescription, offsetof(%s, %s), %s, %s},\n' % (pname[1], pdesc, ctype, classname, cname, tf(ro), tf(ob)))
+                else:
+                  off.write('  {"%s", "%s", &typeid(POrange), &%s::st_classDescription, offsetof(%s, %s), %s, %s},\n' % (pname, pdesc, ctype, classname, cname, tf(ro), tf(ob)))
         off.write('  {NULL}\n};\n\n')
 
         off.write("size_t const %s_components[] = { " % classname)
