@@ -44,7 +44,7 @@
 template<class K, class V>
 class TOrangeMap : public TOrange
 { public:
-    MAP_INTERFACE(K, V, __ormap);
+    MAP_INTERFACE(K, V, __ormap, typedef typename);
 
     TOrangeMap()
       {}
@@ -109,7 +109,7 @@ class TOrangeMap_V : public TOrangeMap<K, V>
 template<class K, class V>
 class TOrangeMap_KV : public TOrangeMap<K, V>
 { public:
-    MAP_INTERFACE(K, V, __ormap);
+    MAP_INTERFACE(K, V, __ormap, typedef typename);
 
     int traverse(visitproc visit, void *arg) const
     { TRAVERSE(TOrange::traverse);

@@ -217,7 +217,7 @@ public:
 class TContDistribution : public TDistribution {
 public:
   __REGISTER_CLASS
-  MAP_INTERFACE_WOUT_OP(float, float, distribution)
+  MAP_INTERFACE_WOUT_OP(float, float, distribution, typedef)
   PFloatList variances; //P variances
   float sum; //PR weighted sum of elements (i.e. N*average)
   float sum2; //PR weighted sum of squares of elements

@@ -275,26 +275,19 @@ reference       operator[](vector<type>::size_type i)  { return (field)->operato
 const_reference operator[](vector<type>::size_type i) const { return (field)->operator[](i); } 
 
 
-#ifdef _MSC_VER
-  #define MAP_INTERFACE_TYPES(type1,type2,field) \
-  map<type1, type2> field; \
-  typedef map<type1, type2>::iterator iterator; \
-  typedef map<type1, type2>::const_iterator const_iterator; \
-  typedef pair<const type1, type2> value_type; \
-  typedef map<type1, type2>::size_type size_type; \
-  typedef pair<iterator, bool> _Pairib;
-#else
-  #define MAP_INTERFACE_TYPES(type1,type2,field) \
-  map<type1, type2> field; \
-  typedef typename map<type1, type2>::iterator iterator; \
-  typedef typename map<type1, type2>::const_iterator const_iterator; \
-  typedef pair<const type1, type2> value_type; \
-  typedef typename map<type1, type2>::size_type size_type; \
-  typedef pair<iterator, bool> _Pairib;
-#endif
+/* tpdef below should be either "typedef typename" if the macro is used inside a template
+   or only "typedef" if it's not */
+#define MAP_INTERFACE_TYPES(type1,type2,field,tpdef) \
+map<type1, type2> field; \
+tpdef map<type1, type2>::iterator iterator; \
+tpdef map<type1, type2>::const_iterator const_iterator; \
+typedef pair<const type1, type2> value_type; \
+tpdef map<type1, type2>::size_type size_type; \
+typedef pair<iterator, bool> _Pairib;
 
-#define MAP_INTERFACE_WOUT_OP(type1, type2, field) \
-MAP_INTERFACE_TYPES(type1,type2,field) \
+
+#define MAP_INTERFACE_WOUT_OP(type1, type2, field, tpname) \
+MAP_INTERFACE_TYPES(type1,type2,field, tpname) \
 \
 iterator        begin() { return (field).begin(); } \
 const_iterator  begin() const { return (field).begin(); } \
@@ -316,8 +309,8 @@ const_iterator  lower_bound(const type1& i_Kv) const { return (field).lower_boun
 iterator        upper_bound(const type1& i_Kv) { return (field).upper_bound(i_Kv); } \
 const_iterator  upper_bound(const type1& i_Kv) const { return (field).upper_bound(i_Kv); }
 
-#define MAP_INTERFACE(type1, type2, field) \
-MAP_INTERFACE_WOUT_OP(type1, type2, field) \
+#define MAP_INTERFACE(type1, type2, field, tpname) \
+MAP_INTERFACE_WOUT_OP(type1, type2, field, tpname) \
 type2           operator[](const type1& i_Kv) { return (field)[i_Kv]; }
 
 #endif
