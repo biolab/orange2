@@ -651,16 +651,21 @@ class ParallelOptimization(OWBaseWidget):
             file.close()
             return
         
-        line = file.readline()[:-1]; ind = 0
+        if type(eval(file.readline()[:-1])) != list:    # second line must contain a list of classes that we tried to separate
+            QMessageBox.critical(None,'Old version of projection file','This file was saved with an older version of k-NN Optimization Dialog. The new version of dialog offers \nsome additional functionality and therefore you have to compute the projection quality again.',QMessageBox.Ok)
+            file.close()
+            return
 
+        line = file.readline()[:-1]; ind = 0    # first line is a settings line
         try:
-            (acc, lenTable, attrList, strList) = eval(line)
+            (acc, other_results, lenTable, attrList, strList) = eval(line)
             if len(attrList) != 2:
                 QMessageBox.information(self, "Incorrect file", "File should contain projections with 2 attributes!", QMessageBox.Ok)
+                file.close()
                 return
             
             while (line != ""):
-                (acc, lenTable, attrList, strList) = eval(line)
+                (acc, other_results, lenTable, attrList, strList) = eval(line)
                 self.projections += [(acc, attrList)]
                 line = file.readline()[:-1]
         except:
