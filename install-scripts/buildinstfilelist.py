@@ -1,4 +1,4 @@
-import os, re, sys
+import os, re, sys, md5
 
 basedir = sys.argv[1]
 fileprefix = sys.argv[2]
@@ -13,7 +13,11 @@ exclude = [x.lower().replace("/", "\\")[:-1] for x in open(basedir+"orange\\excl
 file_re = re.compile(r'/(?P<fname>.*)/(?P<version>.*)/(?P<date>.*)/[^/]*/')
 
 def computeMD(filename):
-    return "<MD>"
+    existing = open(filename, "rb")
+    currmd = md5.new()
+    currmd.update(existing.read())
+    existing.close()
+    return currmd
 
 def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
     if not os.path.exists(root_dir+here_dir):
@@ -44,7 +48,7 @@ def buildListLow(root_dir, here_dir, there_dir, regexp, outf, recursive):
                     entriesfile.close()
                                                 
                 outf.write('File "%s"\n' % tfle)
-                outf.write('FileWrite $6 "%s:%s=%s$\\r$\\n"\n' % whatsDownEntries[fle])
+                outf.write('FileWrite $6 "%s=%s:%s$\\r$\\n"\n' % whatsDownEntries[fle])
 
     for here_dir, there_dir, fle in directories:
         buildListLow(root_dir, here_dir+fle+"\\", there_dir+fle+"\\", regexp, outf, recursive)
