@@ -29,7 +29,7 @@ preprocessors to filter/change the data.
         self.callbackDeposit = []
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
-        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Classifier", orange.C45Classifier)]
+        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Tree", orange.C45Classifier)]
 
         # Settings
         self.name = 'C45 Tree'
@@ -88,7 +88,10 @@ preprocessors to filter/change the data.
             self.classifier = self.learner(self.data)
             self.classifier.name = self.name
             self.send("Classifier", self.classifier)
-            self.send("Classification Tree", self.classifier)
+            if self.convertToOrange:
+                self.send("Classification Tree", self.classifier)
+            else:
+                self.send("C45 Tree", self.classifier)
 
         
     def cdata(self,data):
