@@ -88,6 +88,7 @@ class DendrogramPlot:
             for v in im.gains:
                 gains.append(v*mv) # normalize with respect to the best attribute from correlation analysis.
                 
+        if len(gains) > 0:
             # fix the widths
             gain_l = []
             for i in xrange(self.n):
@@ -407,7 +408,7 @@ class DendrogramPlot:
         canvas.flush()
         return canvas
 
-def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, block = None, line_size = 2.0, color_mode=0, sizing2 = [], canvas = None, multiplier = 1.0):
+def Matrix(diss = [], hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, block = None, line_size = 2.0, color_mode=0, sizing2 = [], canvas = None, multiplier = 1.0):
     # prevent divide-by-zero...
     if len(hlabels) < 2:
         return canvas
@@ -421,8 +422,30 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
 
     normal = piddle.Font(face="Courier")
 
+    square = 0
+    if len(diss) > 0:
+        yd = len(diss)
+        if len(diss) == len(diss[0]):
+            square = 1
+            xd = yd
+        else:
+            xd = len(diss[0])
+    else:
+        yd = len(sizing)
+        if len(sizing) == len(sizing[0]):
+            square = 1
+            xd = yd
+        else:
+            xd = len(sizing[0])
+
+    if len(hlabels) == 0:
+        hlabels = ["" for i in xrange(yd)]
+
     if len(vlabels) == 0:
-        vlabels = hlabels # vertical labels...
+        if square:
+            vlabels = hlabels # vertical labels...
+        else:
+            vlabels = ["" for i in xrange(xd)]
 
     # compute the height
     lineskip = int(line_size*tcanvas.fontHeight(normal)+1)
@@ -460,7 +483,6 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
         y = offsety + lineskip*(i+1)
         canvas.drawString(hlabels[i], x, y,font=normal)
         for j in range(len(vlabels)):
-            colo = _colorize(diss[i,j])
             x = offsetx+hook+lineskip*(j)+block
             y = offsety+lineskip*(i+1)
             if len(sizing) == 0:
@@ -468,7 +490,9 @@ def Matrix(diss, hlabels=[], vlabels=[], sizing = [], margin = 10, hook = 10, bl
             else:
                 ss = min(1,sizing[i][j])
             ss *= multiplier
-            canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=colo,fillColor=colo,edgeWidth=0.5)
+            if len(diss) > 0:
+                colo = _colorize(diss[i][j])
+                canvas.drawRect(x-ss*block,y-ss*block,x+ss*block,y+ss*block,edgeColor=colo,fillColor=colo,edgeWidth=0.5)
             if len(sizing2) > 0:
                 ss = sizing2[i][j]
                 ss *= multiplier
@@ -547,12 +571,12 @@ class ViewCanvas:
 # this class interpolates between the 11 steps
 class RdBu:
     def __init__(self,darken=0):
-        profile = [[103,0,31],[178,24,43],[214,96,77],[244,165,130],[253,219,199],[247,247,247],[209,229,240],[146,197,222],[67,147,195],[33,102,172],[5,48,97]]
+        profile = [[103,0,31],[178,24,43],[214,96,77],[244,165,130],[253,219,199],[255,255,255],[209,229,240],[146,197,222],[67,147,195],[33,102,172],[5,48,97]]
         profile.append(profile[-1]) # terminator...
         profile.append(profile[-1]) # terminator...
         self.LUT = []
-        for i in xrange(256):
-            a = i/255.0
+        for i in xrange(255):
+            a = i/254.0 # keep it even so that it's white in the middle
             b = a*(len(profile)-3)
             bi = int(b) # round down
             db = b-bi   # difference
@@ -561,13 +585,13 @@ class RdBu:
                 idb = (1.0-db)/270.0
                 db /= 270.0
             else:
-                idb = (1.0-db)/255.0
-                db /= 255.0
+                idb = (1.0-db)/254.0
+                db /= 254.0
             rgb = [profile[bi][x]*idb+profile[bi+1][x]*db for x in xrange(3)]
             self.LUT.append(piddle.Color(rgb[0],rgb[1],rgb[2]))
                             
     def __call__(self, x):
-        return self.LUT[int(round(max(0.0,min(1.0,x))*255.0))]
+        return self.LUT[int(round(max(0.0,min(1.0,x))*254.0))]
 
 def _color_picker(color_mode):
     if color_mode==1:
@@ -582,6 +606,8 @@ def _color_picker(color_mode):
         _colorize = RdBu()
     elif color_mode==5:
         _colorize = RdBu(darken=1)
+    elif color_mode==6:
+        _colorize = _bw3        # plain grayscale
     return _colorize
 
 
