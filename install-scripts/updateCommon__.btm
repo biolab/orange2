@@ -1,5 +1,14 @@
 pushd
 
+set WIN="orange-win-%verstr.exe"
+set WIN_PYTHON="orange-w-python-%verstr.exe"
+set SOURCE="orange-source-%verstr.zip"
+set VERSION="%verstr"
+set STABLE_DATE="%nicedate"
+set TAG=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
+
+set PLINK_LINUX="orange-linux-%verstr.exe"
+set PLINK_MACINTOSH="orange-mac-%verstr.exe"
 
 rem ************************************************
 rem *** CHANGE THE DIRECTORY, TERMINATE IF CAN'T
@@ -15,46 +24,49 @@ cancel
 rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
-del /qsyfx orange >& nul:
-rem cvs -d :cvso:cvs@estelle.fri.uni-lj.si:d:/CVS login
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f orange
-cd orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f source
-cd orangeWidgets
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f Genomics
-
+rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q update -r stable -f
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS update -r stable -f
+cdd %SCRIPTDIR
+python buildInstFileList.py %STABLEDIR\orange
+cancel
 
 rem ************************************************
 rem *** REMOVE UNNEEDED FILES FROM THE DOCUMENTATION
 rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
 cd %STABLEDIR/orange/doc
-del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
+rem del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
 del %DOWNLOADDIR\orange-doc-snap-*.zip
 "c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
 
 rem ************************************************
 rem *** COMPILE NEW INSTALLATIONS
 
+cdd %SCRIPTDIR
+python buildInstFileList.py %STABLEDIR\orange
+
 set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR install3.nsi
 
 del %DOWNLOADDIR\orange-win-*.exe
-cdd %SCRIPTDIR
-nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-%verstr.exe" %COMMON_NSI_OPTIONS
+nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN" %COMMON_NSI_OPTIONS
 
 del %DOWNLOADDIR\orange-w-python-*.exe
-nsis /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR\orange-w-python.%verstr.exe" %COMMON_NSI_OPTIONS
+nsis /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR\%WIN_PYTHON" %COMMON_NSI_OPTIONS
 
 pushd
 del %DOWNLOADDIR\orange-source-*.zip
-cdd %STABLEDIR\orange
-winrar a -r "%DOWNLOADDIR\orange-source-%verstr.zip" source
+cdd %STABLEDIR
+winrar a -r "%DOWNLOADDIR\%SOURCE" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
+winrar a "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/*.py orange/COPYING
 popd
+
+cdd %SCRIPTDIR
+call updateVersionsPy__.btm
 
 cancel
 rem ************************************************
 rem *** TAG THE FILES ON CVS AND UPDATE versions.set
 
-set tag=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
-cvs -d :sspi:cvs@estelle.fri.uni-lj.si:d:/CVS rtag -r stable -f %tag orange source
+cvs -d :sspi:cvs@estelle.fri.uni-lj.si:/CVS rtag -r stable -f %TAG orange source
 set | grep  orange.*Version > %SCRIPTDIR\versions.set
+

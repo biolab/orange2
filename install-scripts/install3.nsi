@@ -11,14 +11,13 @@ UninstallIcon OrangeInstall.ico
 		OutFile "Orange-complete.exe"
 	!endif
 	!define INCLUDEPYTHON
-	!define INCLUDEPYTHONWIN
+;	!define INCLUDEPYTHONWIN
 	!define INCLUDEPYQT
 	!define INCLUDEPYQWT
 	!define INCLUDENUMERIC
 	!define INCLUDEQT
 	!define INCLUDESCRIPTDOC
 	!define INCLUDEDATASETS
-	!define INCLUDEGENOMICS
 !else
 !ifdef STANDARD		; orange (*.py *.pyd) and doc only
   !ifndef OUTFILENAME
@@ -101,6 +100,7 @@ Page instfiles
 
 
 Section "Orange Modules"
+    !include 
 	SetOutPath $INSTDIR
 	File ${ORANGEDIR}\*.py
 	File ${ORANGEDIR}\*.pyd
@@ -129,20 +129,12 @@ Section "Genomic Data"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets For Functional Genomics.lnk" "$INSTDIR\doc\Orange Genomics.pdf"
 
 	SetOutPath $INSTDIR\OrangeWidgets\Genomics
-	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\GO
-	File /r ${ORANGEDIR}\OrangeWidgets\Genomics\Annotation
-	File /r "${ORANGEDIR}\OrangeWidgets\Genomics\Genome Map"
+	File /r ${ORANGEDIR}\..\Genomics\GO
+	File /r ${ORANGEDIR}\..\Genomics\Annotation
+	File /r "${ORANGEDIR}\..\Genomics\Genome Map"
 	SetOutPath "$INSTDIR\OrangeCanvas"
 	File various\bi-visprog\*.tab
 	File various\bi-visprog\*.ows
-	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
-	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
-	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
-	Delete $INSTDIR\OrangeWidgets\Classify\OWCalibratedClassifier.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWExampleBuilder.py
-	Delete $INSTDIR\OrangeWidgets\Data\OWSubsetGenerator.py
-	Delete $INSTDIR\OrangeWidgets\Other\OWITree.py
 SectionEnd
 !endif
 	
@@ -193,6 +185,16 @@ SectionEnd
 
 Section ""
 	SetOutPath $INSTDIR
+	
+	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
+	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
+	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
+	Delete $INSTDIR\OrangeWidgets\Classify\OWCalibratedClassifier.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWExampleBuilder.py
+	Delete $INSTDIR\OrangeWidgets\Data\OWSubsetGenerator.py
+	Delete $INSTDIR\OrangeWidgets\Other\OWITree.py
+	
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
@@ -309,9 +311,9 @@ Function .onGUIInit
 		${If} $8 S== ""
 			MessageBox MB_YESNO "Do you want to install PythonWin?$\r$\n(recommended if you plan programming scripts)" IDNO dontinstallpythonwin
 			SetOutPath $DESKTOP
-			File various\win32all-159.exe
+			File various\win32all-163.exe
 			StrCpy $PythonOnDesktop 1
-			ExecWait "$DESKTOP\win32all-159.exe"
+			ExecWait "$DESKTOP\win32all-163.exe"
 
 			ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
 			${If} $8 S== ""
