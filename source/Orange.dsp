@@ -654,10 +654,6 @@ SOURCE=.\orange\lib_kernel.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\linreg.hpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\orange\logfit.hpp
 # End Source File
 # Begin Source File
@@ -666,15 +662,7 @@ SOURCE=.\orange\logistic.hpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\external\logreg\logreg.hpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\orange\lookup.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\external\logreg\lsq.h
 # End Source File
 # Begin Source File
 
@@ -699,11 +687,6 @@ SOURCE=.\orange\minimal_complexity.hpp
 # Begin Source File
 
 SOURCE=.\orange\minimal_error.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\mod_list_plugins.cpp
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 
@@ -732,10 +715,6 @@ SOURCE=.\orange\pqueue_i.hpp
 # Begin Source File
 
 SOURCE=.\orange\preprocessors.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\pywrapper.hpp
 # End Source File
 # Begin Source File
 
@@ -1168,11 +1147,6 @@ SOURCE=.\orange\px\lib_preprocess.px
 # Begin Source File
 
 SOURCE=.\orange\px\lib_vectors.px
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\px\mod_list_plugins.cpp
-# PROP Exclude_From_Build 1
 # End Source File
 # Begin Source File
 

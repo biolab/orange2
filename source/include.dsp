@@ -103,10 +103,6 @@ SOURCE=.\include\lcomb.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\include\primes.c
-# End Source File
-# Begin Source File
-
 SOURCE=.\include\stat.cpp
 
 !IF  "$(CFG)" == "include - Win32 Release"
