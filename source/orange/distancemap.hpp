@@ -35,14 +35,14 @@ public:
   __REGISTER_CLASS
   float *cells;
 
-  int dim; //P bitmap dimension (in cells)
+  int dim; //PR bitmap dimension (in cells)
   int matrixType; //P 0 lower, 1 upper, 2 symmetric
   PIntList elementIndices; //PR indices to elements (one for row + one at the end)
 
   TDistanceMap(const int &);
   ~TDistanceMap();
 
-  unsigned char *distancemap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const;
+  unsigned char *distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const;
 
   float getCellIntensity(const int &y, const int &x) const;
   void getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max);
@@ -58,10 +58,10 @@ class TDistanceMapConstructor : public TOrange {
 public:
   __REGISTER_CLASS
 
-  PSymMatrix distanceMatrix;
-  PIntList order;
+  PSymMatrix distanceMatrix; //P distance matrix
+  PIntList order; //P order of elements
 
-  TDistanceMapConstructor(PSymMatrix);
+  TDistanceMapConstructor(PSymMatrix = PSymMatrix());
 
   PDistanceMap operator ()(const float &squeeze, float &absLow, float &absHigh);
   unsigned char *getLegend(const int &width, const int &height, const float &gamma, int &size) const;

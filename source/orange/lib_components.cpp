@@ -2417,4 +2417,98 @@ PyObject *HeatmapList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(He
 PyObject *HeatmapList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::_reverse(self); }
 PyObject *HeatmapList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PHeatmapList, THeatmapList, PHeatmap, (PyTypeObject *)&PyOrHeatmap_Type>::_sort(self, args); }
 
+
+
+
+#include "distancemap.hpp"
+
+C_NAMED(DistanceMapConstructor, Orange, "(distanceMatrix=, order=)")
+
+
+
+PyObject *DistanceMapConstructor_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(squeeze) -> DistanceMap")
+{
+  PyTRY
+    float squeeze = 1.0;
+    if (!PyArg_ParseTuple(args, "|f:DistanceMapConstructor.__call__", &squeeze))
+      return NULL;
+
+    SETATTRIBUTES
+
+    float absLow, absHigh;
+    PDistanceMap dm = SELF_AS(TDistanceMapConstructor).call(squeeze, absLow, absHigh);
+    return Py_BuildValue("Nff", WrapOrange(dm), absLow, absHigh);
+  PyCATCH
+}
+
+
+PyObject *DistanceMapConstructor_getLegend(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(width, height, gamma) -> bitmap")
+{ 
+  PyTRY
+    int width, height;
+    float gamma;
+    if (!PyArg_ParseTuple(args, "iif:DistanceMapConstructor.getLegend", &width, &height, &gamma))
+      return NULL;
+
+    int size;
+    unsigned char *bitmap = SELF_AS(TDistanceMapConstructor).getLegend(width, height, gamma, size);
+    PyObject *res = PyString_FromStringAndSize((const char *)bitmap, size);
+    delete bitmap;
+    return res;
+  PyCATCH
+}
+
+
+BASED_ON(DistanceMap, Orange)
+
+PyObject *DistanceMap_getBitmap(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(cell_width, cell_height, lowerBound, upperBound, gamma) -> bitmap")
+{
+  PyTRY
+    int cellWidth, cellHeight;
+    float absLow, absHigh, gamma;
+    int grid = 1;
+    if (!PyArg_ParseTuple(args, "iifff|i:Heatmap.getBitmap", &cellWidth, &cellHeight, &absLow, &absHigh, &gamma, &grid))
+      return NULL;
+
+    CAST_TO(TDistanceMap, dm)
+
+    int size;
+    unsigned char *bitmap = dm->distanceMap2string(cellWidth, cellHeight, absLow, absHigh, gamma, grid, size);
+    PyObject *res = Py_BuildValue("Nii", PyString_FromStringAndSize((const char *)bitmap, size), cellWidth * dm->dim, cellHeight * dm->dim);
+    delete bitmap;
+    return res;
+  PyCATCH
+}
+
+
+PyObject *DistanceMap_getCellIntensity(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(row, column) -> float")
+{
+  PyTRY
+    int row, column;
+    if (!PyArg_ParseTuple(args, "ii:DistanceMap.getCellIntensity", &row, &column))
+      return NULL;
+
+    const float ci = SELF_AS(TDistanceMap).getCellIntensity(row, column);
+    if (ci == UNKNOWN_F)
+      RETURN_NONE;
+
+    return PyFloat_FromDouble(ci);
+  PyCATCH
+}
+
+
+PyObject *DistanceMap_getPercentileInterval(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(lower_percentile, upper_percentile) -> (min, max)")
+{
+  PyTRY
+    float lowperc, highperc;
+    if (!PyArg_ParseTuple(args, "ff:DistanceMap_percentileInterval", &lowperc, &highperc))
+      return PYNULL;
+
+    float minv, maxv;
+    SELF_AS(TDistanceMap).getPercentileInterval(lowperc, highperc, minv, maxv);
+    return Py_BuildValue("ff", minv, maxv);
+  PyCATCH
+}
+
+
 #include "lib_components.px"

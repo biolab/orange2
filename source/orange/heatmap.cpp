@@ -49,7 +49,7 @@ DEFINE_TOrangeVector_classDescription(PHeatmap, "THeatmapList")
    this does not necessarily equal cellWidth * cellHeight * width * height.
 */
 
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma)
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma, bool grid = true)
 {
   const int lineWidth = width * cellWidth;
   const int fill = (4 - lineWidth & 3) & 3;
@@ -59,12 +59,16 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
   unsigned char *res = new unsigned char[size];
   unsigned char *resi = res;
 
+  if (grid && ((cellHeight<3) || (cellWidth < 3)))
+    grid = false;
+
   if (gamma == 1.0) {
     const float colorFact = 249.0/(absHigh - absLow);
 
     for(int line = 0; line<height; line++) {
-      unsigned char *thisline = resi;
       int xpoints;
+
+      unsigned char *thisline = resi;
       for(xpoints = width; xpoints--; intensity++) {
         unsigned char col;
         if (*intensity == UNKNOWN_F)
@@ -77,11 +81,18 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
           col = int(floor(colorFact * (*intensity - absLow)));
 
         for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
+        if (grid)
+          resi[-1] = 252;
       }
 
       resi += fill;
-      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
+      for(xpoints = grid ? cellHeight-2 : cellHeight-1; xpoints--; resi += rowSize)
         memcpy(resi, thisline, lineWidth);
+
+      if (grid) {
+        memset(resi, 252, rowSize);
+        resi += rowSize;
+      }
     }
   }
   else {
@@ -116,11 +127,18 @@ unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &s
         }
 
         for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
+        if (grid)
+          resi[-1] = 252;
       }
 
       resi += fill;
-      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
+      for(xpoints = grid ? cellHeight-2 : cellHeight-1; xpoints--; resi += rowSize)
         memcpy(resi, thisline, lineWidth);
+
+      if (grid) {
+        memset(resi, 252, rowSize);
+        resi += rowSize;
+      }
     }
   }
 

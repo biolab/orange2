@@ -35,96 +35,7 @@
 #endif
 
 
-/* Expands the bitmap 
-   Each pixel in bitmap 'smmp' is replaced by a square with
-     given 'cellWidth' and 'cellHeight'
-   The original bitmaps width and height are given by arguments
-     'width' and 'height'
-
-   Beside returning the bitmap, the function return its size
-   in bytes (argument '&size'). Due to alignment of rows to 4 bytes,
-   this does not necessarily equal cellWidth * cellHeight * width * height.
-*/
-
-unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma)
-{
-  const int lineWidth = width * cellWidth;
-  const int fill = (4 - lineWidth & 3) & 3;
-  const int rowSize = lineWidth + fill;
-  size = rowSize * height * cellHeight;
-
-  unsigned char *res = new unsigned char[size];
-  unsigned char *resi = res;
-
-  if (gamma == 1.0) {
-    const float colorFact = 249.0/(absHigh - absLow);
-
-    for(int line = 0; line<height; line++) {
-      unsigned char *thisline = resi;
-      int xpoints;
-      for(xpoints = width; xpoints--; intensity++) {
-        unsigned char col;
-        if (*intensity == UNKNOWN_F)
-          col = 255;
-        else if (*intensity < absLow)
-          col = 253;
-        else if (*intensity > absHigh)
-          col = 254;
-        else
-          col = int(floor(colorFact * (*intensity - absLow)));
-
-        for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
-      }
-
-      resi += fill;
-      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
-        memcpy(resi, thisline, lineWidth);
-    }
-  }
-  else {
-    const float colorBase = (absLow + absHigh) / 2;
-    const float colorFact = 2 / (absHigh - absLow);
-
-    for(int line = 0; line<height; line++) {
-      unsigned char *thisline = resi;
-      int xpoints;
-      for(xpoints = width; xpoints--; intensity++) {
-        unsigned char col;
-
-        if (*intensity == UNKNOWN_F)
-          col = 255;
-        else if (*intensity < absLow)
-          col = 253;
-        else if (*intensity > absHigh)
-          col = 254;
-        else {
-          float norm = colorFact * (*intensity - colorBase);
-          if ((norm > -0.008) && (norm < 0.008))
-            norm = 125;
-          else
-            norm = 124.5 * (1 + (norm<0 ? -exp(gamma * log(-norm)) : exp(gamma * log(norm))));
-
-          if (norm<0)
-            col = 0;
-          else if (norm>249)
-            col = 249;
-          else  
-            col = int(floor(norm));
-        }
-
-        for(int inpoints = cellWidth; inpoints--; *(resi++) = col);
-      }
-
-      resi += fill;
-      for(xpoints = cellHeight-1; xpoints--; resi += rowSize)
-        memcpy(resi, thisline, lineWidth);
-    }
-  }
-
-  return res;
-}
-
-
+unsigned char *bitmap2string(const int &cellWidth, const int &cellHeight, int &size, float *intensity, const int &width, const int &height, const float &absLow, const float &absHigh, const float &gamma, bool grid = true);
 
 #define UNKNOWN_F -1e30f
 
@@ -141,13 +52,13 @@ TDistanceMap::~TDistanceMap()
 }
 
 
-unsigned char *TDistanceMap::distancemap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, int &size) const
+unsigned char *TDistanceMap::distanceMap2string(const int &cellWidth, const int &cellHeight, const float &absLow, const float &absHigh, const float &gamma, bool grid, int &size) const
 {
-  return bitmap2string(cellWidth, cellHeight, size, cells, dim, dim, absLow, absHigh, gamma);
+  return bitmap2string(cellWidth, cellHeight, size, cells, dim, dim, absLow, absHigh, gamma, grid);
 }
 
 
-void getPercentileInterval(float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
+void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 
 void TDistanceMap::getPercentileInterval(const float &lowperc, const float &highperc, float &min, float &max)
 { ::getPercentileInterval(cells, dim*dim, lowperc, highperc, min, max); }
@@ -184,72 +95,176 @@ void computeSqueezedIndices(const int &n, const float &squeeze, vector<int> &ind
   }
 }
 
+#define UPDATE_LOW_HIGH if (incell > abshigh) abshigh = incell; if (incell < abslow) abslow = incell;
+
 PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze, float &abslow, float &abshigh)
 {
+  checkProperty(distanceMatrix);
+
+  const TSymMatrix &distMat = distanceMatrix.getReference();
   abshigh = -1e30f;
   abslow = 1e30f;
   
+  if (order) {
+    if (order->size() != distMat.dim)
+      raiseError("size of 'order' does not match the size of the distance matrix");
+
+    if (unadjustedSqueeze < 1.0 - 1e-5) {
+      int nLines = int(floor(0.5 + order->size() * unadjustedSqueeze));
+      if (!nLines)
+        nLines++;
+      const float squeeze = float(nLines) / order->size();
   
-  int nLines = int(floor(0.5 + order->size() * unadjustedSqueeze));
-  if (!nLines)
-    nLines++;
-  const float squeeze = float(nLines) / order->size();
-  
-  vector<int> &squeezedIndices = dm->elementIndices->__orvector;
-  computeSqueezedIndices(nLines, squeeze, squeezedIndices);
+      PIntList psqi = new TIntList();
+      vector<int> &squeezedIndices = psqi->__orvector;
+      computeSqueezedIndices(nLines, squeeze, squeezedIndices);
 
-  nLines = squeezedIndices.size() - 1;
+      nLines = squeezedIndices.size() - 1;
 
-  PDistanceMap dm = mlnew TDistanceMap(nLines);
+      PDistanceMap dm = mlnew TDistanceMap(nLines);
+      dm->elementIndices = psqi;
 
-  float *ri, *fmi = dm->cells;
-  int *si, *spec = new int[nLines];
+      vector<int>::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
+      for(int row = 0; row_squeezen != squeezee; row_squeezei++, row_squeezen++, row++) {
+        // this needs to be float (to avoid int division)
+        float row_elements = *row_squeezen - *row_squeezei;
 
-  float *matrixi = distanceMatrix->elements;
+        // to diagonal, exclusive
+        vector<int>::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
+        for(int column = 0; col_squeezei != row_squeezei; col_squeezei++, col_squeezen++, column++) {
 
-  float inThisRow = 0;
-  int xpoint;
-
-  for(vector<int>::const_iterator squeezei(squeezedIndices.begin()), squeezen(squezeu+1), squeezee(squeezedIndices.end());
-      squeezen != squeezee;
-      squeezei++, squeezen++,
-      fmi += n)
-
-  for(int line = 0; line<nLines; cnt--; inThisRow-=1.0, ami++, fmi+=nLines) {
-    for(xpoint = nColumns, ri = fmi, si = spec; xpoint--; *(ri++) = 0.0, *(si++) = 0);
-
-    for(; (line < nLines) && (inThisRow < 1.0); inThisRow += squeeze, line++) {
-      for(xpoint = 0, ri = fmi, si = spec; xpoint--; fri++, ri++, si++)
-          if (*fri != UNKNOWN_F) {
-            *ri += *fri;
-            (*si)++;
+          float incell = 0.0;
+          vector<int>::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
+          for(; row_orderi != row_ordere; row_orderi++) {
+            vector<int>::const_iterator col_orderi(order->begin()+*col_squeezei), col_ordere(order->begin()+*col_squeezen);
+            for(; col_orderi != col_ordere; col_orderi++)
+              incell += distMat.getitem(*row_orderi, *col_orderi);
           }
-
-      }
-
-      hm->exampleIndices->push_back(exampleIndex);
-      for(xpoint = nColumns, si = spec, ri = fmi; xpoint--; ri++, si++) {
-        if (*si) {
-          *ri = *ri / *si;
-          if (*ri < abslow)
-            abslow = *ri;
-          if (*ri > abshigh)
-            abshigh = *ri;
+      
+          incell /= row_elements * (*col_squeezen - *col_squeezei);
+          dm->cells[row*nLines+column] = dm->cells[column*nLines+row] = incell;
+          UPDATE_LOW_HIGH;
         }
-        else
-          *ri = UNKNOWN_F;
+
+        // diagonal
+        {
+          float incell = 0.0;
+          vector<int>::const_iterator row_orderi(order->begin()+*row_squeezei), row_ordere(order->begin()+*row_squeezen);
+          for(; row_orderi != row_ordere; row_orderi++) {
+            vector<int>::const_iterator col_orderi(order->begin()+*row_squeezei);
+            for(; col_orderi != row_orderi; col_orderi++)
+              incell += distMat.getitem(*row_orderi, *col_orderi);
+            incell += distMat.getitem(*row_orderi, *row_orderi);
+          }
+      
+          incell /= row_elements * (row_elements+1) / 2.0;
+          dm->cells[row*(nLines+1)] = incell;
+          UPDATE_LOW_HIGH;
+        }
+      }
+  
+      return dm;
+    }
+
+    else { // order && no squeeze
+      const int &dim = distMat.dim;
+      PDistanceMap dm = mlnew TDistanceMap(dim);
+
+      vector<int>::const_iterator row_orderi(order->begin()), row_ordere(order->end());
+      for(int row = 0; row_orderi != row_ordere; row_orderi++, row++) {
+        vector<int>::const_iterator col_orderi(order->begin());
+        for(int column = 0; col_orderi != row_orderi; col_orderi++, column++) {
+          const float &incell = distMat.getref(*row_orderi, *col_orderi);
+          dm->cells[row*dim+column] = dm->cells[column*dim+row] = incell;
+          UPDATE_LOW_HIGH;
+        }
+        const float &incell = distMat.getref(*row_orderi, *row_orderi);
+        dm->cells[row*(dim+1)] = incell;
+        UPDATE_LOW_HIGH;
       }
 
+      return dm;
     }
   }
 
-  delete spec;
+  else { // no order
+    if (unadjustedSqueeze < 1 - 1e-5) {
+      int nLines = int(floor(0.5 + distMat.dim * unadjustedSqueeze));
+      if (!nLines)
+        nLines++;
+      const float squeeze = float(nLines) / distMat.dim;
+  
+      PIntList psqi = new TIntList();
+      vector<int> &squeezedIndices = psqi->__orvector;
+      computeSqueezedIndices(nLines, squeeze, squeezedIndices);
 
-  return hml;
+      nLines = squeezedIndices.size() - 1;
+
+      PDistanceMap dm = mlnew TDistanceMap(nLines);
+      dm->elementIndices = psqi;
+
+      vector<int>::const_iterator row_squeezei(squeezedIndices.begin()), row_squeezen(row_squeezei+1), squeezee(squeezedIndices.end());
+      for(int row = 0; row_squeezen != squeezee; row_squeezei++, row_squeezen++, row++) {
+        // this needs to be float (to avoid int division)
+        float row_elements = *row_squeezen - *row_squeezei;
+
+        // to diagonal, exclusive
+        vector<int>::const_iterator col_squeezei(squeezedIndices.begin()), col_squeezen(col_squeezei+1);
+        for(int column = 0; col_squeezei != row_squeezei; col_squeezei++, col_squeezen++, column++) {
+          int col_elements = *col_squeezen - *col_squeezei;
+
+          float incell = 0.0;
+          int origrow = *row_squeezei, origrowe = *row_squeezen;
+          for(; origrow != origrowe; origrow++) {
+            const float *origval = &distMat.getref(origrow, *col_squeezei);
+            for(int ce = col_elements; ce--; incell += *(origval++));
+          }
+      
+          incell /= row_elements * col_elements;
+          dm->cells[row*nLines+column] = dm->cells[column*nLines+row] = incell;
+          UPDATE_LOW_HIGH;
+        }
+
+        // diagonal
+        {
+          float incell = 0.0;
+          int origrow = *row_squeezei, origrowe = *row_squeezen;
+          for(; origrow != origrowe; origrow++) {
+            const float *origval = &distMat.getref(origrow, *col_squeezei);
+            for(int ce = origrow - *row_squeezei+1; ce--; incell += *(origval++));
+          }
+      
+          incell /= row_elements * (row_elements+1) / 2.0;
+          dm->cells[row*(nLines+1)] = incell;
+          UPDATE_LOW_HIGH;
+        }
+      }
+  
+      return dm;
+
+    }
+
+    else {// no order && no squeeze
+      const int &dim = distMat.dim;
+      PDistanceMap dm = mlnew TDistanceMap(dim);
+      for(int row = 0; row < dim; row++) {
+        for(int column = 0; column < row; column++) {
+          const float &incell = distMat.getref(row, column);
+          dm->cells[row*dim+column] = dm->cells[column*dim+row] = incell;
+          UPDATE_LOW_HIGH;
+        }
+        const float &incell = distMat.getref(row, row);
+        dm->cells[row*(dim+1)] = incell;
+        UPDATE_LOW_HIGH;
+      }
+
+      return dm;
+    }
+  }
 }
 
 
-unsigned char *THeatmapConstructor::getLegend(const int &width, const int &height, const float &gamma, int &size) const
+unsigned char *TDistanceMapConstructor::getLegend(const int &width, const int &height, const float &gamma, int &size) const
 {
   float *fmp = new float[width], *fmpi = fmp;
 

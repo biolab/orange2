@@ -29,7 +29,7 @@ WRAPPER(ExampleTable)
 
 #define UNKNOWN_F -1e30f
 
-void getPercentileInterval(float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
+void getPercentileInterval(const float *cells, const int &ncells, const float &lowperc, const float &highperc, float &min, float &max);
 
 class THeatmap : public TOrange {
 public:
