@@ -24,8 +24,8 @@ class OWScatterPlot(OWWidget):
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols", "kNeighbours"]
     spreadType=["none","uniform","triangle","beta"]
-    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
-    jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+    jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
+    jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
 
@@ -270,7 +270,6 @@ class OWScatterPlot(OWWidget):
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
         if self.data != None:
-            self.graph.scaleDataNoJittering()
             self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             fullList = self.graph.getOptimalSeparation(None, self.data.domain.classVar.name, self.kNeighbours, self.updateProgress)
             if fullList == []: return

@@ -50,6 +50,8 @@ class OWVisGraph(OWGraph):
         self.setCanvasColor(QColor(Qt.white.name()))
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
         self.ypos = 0
+        self.zoomStack = []
+        self.noJitteringScaledData = []
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -73,20 +75,20 @@ class OWVisGraph(OWGraph):
         self.rawdata = data
         self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.scaledData = []
+        self.noJitteringScaledData = []
         self.attrValues = {}
         self.attributeNames = []
         for attr in data.domain: self.attributeNames.append(attr.name)
-        
         if data == None: return
-
-        min = -1; max = -1
+        
         if self.globalValueScaling == 1:
-            (min, max) =  self.getMinMaxValDomain(data, self.attributeNames)
-            
-        for index in range(len(data.domain)):
-            scaled, values = self.scaleData(data, index, min, max)
-            self.scaledData.append(scaled)
-            self.attrValues[data.domain[index].name] = values
+            self.rescaleAttributesGlobaly(data, self.attributeNames)
+        else:
+            for index in range(len(data.domain)):
+                scaled, values = self.scaleData(data, index)
+                self.scaledData.append(scaled)
+                self.attrValues[data.domain[index].name] = values
+        self.scaleDataNoJittering()
     #####################################################################
     #####################################################################
 
@@ -138,6 +140,8 @@ class OWVisGraph(OWGraph):
             variableValueIndices = self.getVariableValueIndices(data, index)
             count = float(len(attr.values))
             values = [0, count-1]
+            countx2 = float(2*count)	# we compute this value here, so that we don't have to compute it in the loop
+            count100 = float(100.0*count) # same
 
             if forColoring == 1:
                 for i in range(len(data)):
@@ -147,12 +151,12 @@ class OWVisGraph(OWGraph):
             elif jitteringEnabled == 1:
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count) + self.rndCorrection(self.jitterSize/(100.0*count))
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / countx2 + self.rndCorrection(self.jitterSize/count100)
                     temp.append(val)
             else:
                 for i in range(len(data)):
                     if data[i][index].isSpecial() == 1: temp.append("?"); continue
-                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / float(2*count)
+                    val = (1.0 + 2.0*float(variableValueIndices[data[i][index].value])) / countx2
                     temp.append(val)
                     
         # is the attribute continuous
@@ -178,17 +182,9 @@ class OWVisGraph(OWGraph):
     def scaleDataNoJittering(self):
         # we have to create a copy of scaled data, because we don't know if the data in self.scaledData was made with jittering
         self.noJitteringScaledData = []
-        for i in range(len(self.rawdata.domain)): self.noJitteringScaledData.append([])        
-
-        # if global value scaling is selected, compute min and max values
-        min = -1; max = -1
-        if self.globalValueScaling == 1:
-            (min, max) = self.getMinMaxValDomain(self.rawdata, self.attributeNames)
-
-        # compute scaled data
         for i in range(len(self.rawdata.domain)):
             scaled, vals = self.scaleData(self.rawdata, i, jitteringEnabled = 0)
-            self.noJitteringScaledData[i] = scaled
+            self.noJitteringScaledData.append(scaled)
 
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):

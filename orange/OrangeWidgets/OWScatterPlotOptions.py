@@ -17,7 +17,7 @@ class OWScatterPlotOptions(OWOptions):
         # point width
         widthBox = QHGroupBox("Point Width", self.top)
         QToolTip.add(widthBox, "The width of points")
-        self.widthSlider = QSlider(2, 20, 1, 3, QSlider.Horizontal, widthBox)
+        self.widthSlider = QSlider(2, 9, 1, 3, QSlider.Horizontal, widthBox)
         self.widthSlider.setTickmarks(QSlider.Below)
         self.widthLCD = QLCDNumber(2, widthBox)
 

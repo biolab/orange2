@@ -220,11 +220,14 @@ class OWGraph(QwtPlot):
             print "error"
             return
 
-        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
+        qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
         (fil,ext) = os.path.splitext(fileName)
         ext = ext.replace(".","")
+        if ext == "":	
+        	ext = "PNG"  	# if no format was specified, we choose png
+        	fileName = fileName + ".png"
         ext = ext.upper()
         self.saveToFileDirect(fileName, ext, size)
         

@@ -57,7 +57,6 @@ class OWPolyvizGraph(OWVisGraph):
     def __init__(self, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
-        self.localScaledData = []
         self.attrLocalValues = {}
         self.lineLength = 2*0.05
         self.totalPossibilities = 0 # a variable used in optimization - tells us the total number of different attribute positions
@@ -72,6 +71,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.dataMap = {}		# each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
         self.tooltipMarkers   = []
+        self.validData = []
 
     def setEnhancedTooltips(self, enhanced):
         self.enhancedTooltips = enhanced
@@ -112,14 +112,12 @@ class OWPolyvizGraph(OWVisGraph):
         # first call the original function to scale data
         OWVisGraph.setData(self, data)
 
-        if data == None: return
-
-        self.localScaledData = []        
-        if self.jitteringType != 'none':
-            for index in range(len(data.domain)):
-                scaled, values = self.scaleData(data, index, jitteringEnabled = 0)
-                self.localScaledData.append(scaled)
-                self.attrLocalValues[data.domain[index].name] = values
+        for index in range(len(data.domain)):
+            if data.domain[index].varType == orange.VarTypes.Discrete:
+                values = [0, len(data.domain[index].values)-1]
+            else:
+                values = [self.domainDataStat[index].min, self.domainDataStat[index].max]
+            self.attrLocalValues[data.domain[index].name] = values
 
     #
     # update shown data. Set labels, coloring by className ....
@@ -134,7 +132,7 @@ class OWPolyvizGraph(OWVisGraph):
 
         self.statusBar = statusBar        
 
-        if len(self.scaledData) == 0 or len(self.localScaledData) == 0 or len(labels) == 0: self.updateLayout(); return
+        if len(self.scaledData) == 0 or len(self.noJitteringScaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -149,12 +147,14 @@ class OWPolyvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
         length = len(labels)
-        indices = []
+        dataSize = len(self.rawdata)
+        
         xs = []
 
         if self.exLabelData[0] != labels:
             # ##########
             # create a table of indices that stores the sequence of variable indices
+            indices = []
             for label in labels:
                 index = self.attributeNames.index(label)
                 indices.append(index)
@@ -171,6 +171,11 @@ class OWPolyvizGraph(OWVisGraph):
                 x2 = math.cos(2*math.pi * float(i+1) / float(length)); strX2 = "%.4f" % (x2)
                 y2 = math.sin(2*math.pi * float(i+1) / float(length)); strY2 = "%.4f" % (y2)
                 self.exAnchorData.append((float(strX1), float(strY1), float(strX2), float(strY2), labels[i]))
+
+            self.validData = [1] * dataSize
+            for i in range(dataSize):
+                for j in range(length):
+                    if self.scaledData[indices[j]][i] == "?": self.validData[i] = 0
         else:
             indices = self.exLabelData[1]
 
@@ -244,23 +249,17 @@ class OWPolyvizGraph(OWVisGraph):
             if className != "(One color)" and className != '':
                 scaledClassData, vals = self.scaleData(self.rawdata, className, forColoring = 1) # scale class data for coloring
 
-        dataSize = len(self.scaledData[0])
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
         contData = []    # list to store color, x and y position of data items in case of continuous class
 
-        validData = [1] * dataSize
-        for i in range(dataSize):
-            for j in range(length):
-                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
-
-        sum = self.calculateAttrValuesSum(self.scaledData, len(self.rawdata), indices, validData)
+        sum = self.calculateAttrValuesSum(self.scaledData, len(self.rawdata), indices, self.validData)
 
         # ##########
         #  create data curves
         RECT_SIZE = 0.01    # size of tooltip rectangle in percents of graph size
         for i in range(dataSize):
-            if validData[i] == 0: continue
+            if self.validData[i] == 0: continue
             
             # #########
             # calculate the position of the data point
@@ -268,7 +267,7 @@ class OWPolyvizGraph(OWVisGraph):
             xDataAnchors = []; yDataAnchors = []
             for j in range(length):
                 index = indices[j]
-                val = self.localScaledData[index][i]
+                val = self.noJitteringScaledData[index][i]
                 if attributeReverse[labels[j]] == 1: val = 1-val
                 xDataAnchor = self.exAnchorData[j][0]*(1-val) + self.exAnchorData[j][2]*val
                 yDataAnchor = self.exAnchorData[j][1]*(1-val) + self.exAnchorData[j][3]*val
@@ -356,6 +355,8 @@ class OWPolyvizGraph(OWVisGraph):
     def onMouseMoved(self, e):
         for key in self.tooltipCurveKeys:  self.removeCurve(key)
         for marker in self.tooltipMarkers: self.removeMarker(marker)
+        self.tooltipCurveKeys = []
+        self.tooltipMarkers = []
             
         x = self.invTransform(QwtPlot.xBottom, e.x())
         y = self.invTransform(QwtPlot.yLeft, e.y())
@@ -387,7 +388,8 @@ class OWPolyvizGraph(OWVisGraph):
                     self.marker(marker).setYValue((y_i + yAnchors[i])/2.0)
                     self.marker(marker).setLabelAlignment(Qt.AlignVCenter + Qt.AlignHCenter)
 
-        OWVisGraph.onMouseMoved(self, e)    
+        OWVisGraph.onMouseMoved(self, e)
+        self.update()
         # -----------------------------------------------------------
         # -----------------------------------------------------------
 

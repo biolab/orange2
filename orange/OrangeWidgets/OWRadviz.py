@@ -27,8 +27,8 @@ class OWRadviz(OWWidget):
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
-    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
-    jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+    jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
+    jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
         
@@ -127,6 +127,10 @@ class OWRadviz(OWWidget):
         self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
         self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
         self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
+
+        self.saveProjectionAsTabButton = QPushButton("Save projection as TAB", self.space)
+        self.connect(self.saveProjectionAsTabButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
+        self.currentFileIndex = 1
             
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
@@ -144,6 +148,10 @@ class OWRadviz(OWWidget):
         self.activateLoadedSettings()
 
         self.resize(900, 700)
+
+    def saveProjectionAsTab(self):
+        self.graph.saveProjectionAsTabData(self.getShownAttributeList(), str(self.classCombo.currentText()), "tabData" + str(self.currentFileIndex)+".tab")
+        self.currentFileIndex+=1
 
 
     def drawGnuplot(self):
@@ -231,7 +239,6 @@ class OWRadviz(OWWidget):
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-            self.graph.scaleDataNoJittering()
 
             self.graph.percentDataUsed = self.optimizationDlg.percentDataUsed
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
@@ -270,7 +277,7 @@ class OWRadviz(OWWidget):
             if len(self.getShownAttributeList()) > 7:
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
-            self.graph.scaleDataNoJittering()
+
             text = str(self.optimizationDlg.maxLenCombo.currentText())
             if text == "ALL":
                 maxLen = len(self.getShownAttributeList())

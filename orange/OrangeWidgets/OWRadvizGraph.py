@@ -189,7 +189,73 @@ class OWRadvizGraph(OWVisGraph):
         self.dataMap = {}
         self.exLabelData = [[],[]]
         self.exAnchorData = []
+
+
+
+    def saveProjectionAsTabData(self, labels, className, fileName):
+        if len(self.scaledData) == 0 or len(labels) == 0: return
+
+        length = len(labels)
+        indices = []
+        xs = []
+
+   
+        # ##########
+        # create a table of indices that stores the sequence of variable indices
+        for label in labels:
+            index = self.attributeNames.index(label)
+            indices.append(index)
+        exLabelData = [labels, indices]
+        exAnchorData = []
+        dataMap = {}
+
+        # ##########
+        # create anchor for every attribute
+        for i in range(length):
+            x = math.cos(2*math.pi * float(i) / float(length)); strX = "%.4f" % (x)
+            y = math.sin(2*math.pi * float(i) / float(length)); strY = "%.4f" % (y)
+            exAnchorData.append((float(strX), float(strY), labels[i]))
+
+
+        valLen = len(self.rawdata.domain[className].values)
+        classValueIndices = self.getVariableValueIndices(self.rawdata, className)	# we create a hash table of variable values and their indices            
+    
+        dataSize = len(self.scaledData[0])
+        curveData = []
+        for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
+
+        validData = [1] * dataSize
+        for i in range(dataSize):
+            for j in range(length):
+                if self.scaledData[indices[j]][i] == "?": validData[i] = 0
+
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+        table = orange.ExampleTable(domain)
+
+        for i in range(dataSize):
+            if validData[i] == 0: continue
             
+            sum_i = 0.0
+            for j in range(length):
+                sum_i += self.noJitteringScaledData[indices[j]][i]
+            if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
+
+            
+            ##########
+            # calculate the position of the data point
+            x_i = 0.0; y_i = 0.0
+            for j in range(length):
+                index = indices[j]
+                x_i += exAnchorData[j][0]*(self.noJitteringScaledData[index][i] / sum_i)
+                y_i += exAnchorData[j][1]*(self.noJitteringScaledData[index][i] / sum_i)
+
+            example = orange.Example(domain, [x_i, y_i, self.rawdata[i][className]])
+            table.append(example)
+
+        orange.saveTabDelimited(fileName, table)
+
 
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
@@ -215,15 +281,16 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
         length = len(labels)
-        indices = []
         xs = []
 
         if self.exLabelData[0] != labels:
-            # ##########
-            # create a table of indices that stores the sequence of variable indices
+            indices = []
             for label in labels:
                 index = self.attributeNames.index(label)
                 indices.append(index)
+
+            # ##########
+            # create a table of indices that stores the sequence of variable indices
             self.exLabelData = [labels, indices]
             self.exAnchorData = []
             self.dataMap = {}
@@ -234,6 +301,8 @@ class OWRadvizGraph(OWVisGraph):
                 x = math.cos(2*math.pi * float(i) / float(length)); strX = "%.4f" % (x)
                 y = math.sin(2*math.pi * float(i) / float(length)); strY = "%.4f" % (y)
                 self.exAnchorData.append((float(strX), float(strY), labels[i]))
+        else:
+            indices = self.exLabelData[1]
 
         # ##########
         # draw "circle"
@@ -376,6 +445,8 @@ class OWRadvizGraph(OWVisGraph):
     def onMouseMoved(self, e):
         for key in self.tooltipCurveKeys:  self.removeCurve(key)
         for marker in self.tooltipMarkers: self.removeMarker(marker)
+        self.tooltipCurveKeys = []
+        self.tooltipMarkers = []
             
         x = self.invTransform(QwtPlot.xBottom, e.x())
         y = self.invTransform(QwtPlot.yLeft, e.y())
@@ -407,7 +478,7 @@ class OWRadvizGraph(OWVisGraph):
                     
 
         OWVisGraph.onMouseMoved(self, e)
-
+        self.update()
 
     # #######################################
     # try to find the optimal attribute order by trying all diferent circular permutations

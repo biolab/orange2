@@ -28,8 +28,8 @@ class OWPolyviz(OWWidget):
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
     attributeOrdering  = ["Original", "Optimized class separation"]
-    jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
-    jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+    jitterSizeList = ['0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
+    jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
         
@@ -246,8 +246,6 @@ class OWPolyviz(OWWidget):
                 res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
 
-            self.graph.scaleDataNoJittering()
-
             text = str(self.optimizationDlg.exactlyLenCombo.currentText())
             if self.tryReverse.isChecked() == 1: reverseList = None
             else: reverseList = self.attributeReverse
@@ -288,7 +286,6 @@ class OWPolyviz(OWWidget):
                 res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
 
-            self.graph.scaleDataNoJittering()
             text = str(self.optimizationDlg.maxLenCombo.currentText())
 
             if text == "ALL": maxLen = len(self.getShownAttributeList())
@@ -385,11 +382,6 @@ class OWPolyviz(OWWidget):
         self.globalValueScaling = self.options.globalValueScaling.isChecked()
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)
-
-        # this is not optimal, because we do the rescaling twice (TO DO)
-        if self.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-
         self.updateGraph()
         
     # ####################
@@ -448,7 +440,7 @@ class OWPolyviz(OWWidget):
 
     def updateGraph(self):
         self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()), self.attributeReverse, self.statusBar)
-        self.graph.update()
+        #self.graph.update()
         self.repaint()
 
     # set combo box values with attributes that can be used for coloring the data
