@@ -44,7 +44,7 @@ class TestedExample:
 
 
 class ExperimentResults:
-    def __init__(self, iterations, learners, weights, baseClass, **argkw):
+    def __init__(self, iterations, learners, weights, baseClass=-1, **argkw):
         self.numberOfIterations = iterations
         self.numberOfLearners = learners
         self.results = []

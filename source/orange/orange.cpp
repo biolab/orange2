@@ -107,13 +107,15 @@ bool initExceptions()
   /* I won't DECREF warningModule (I don't want to unload it)
      filterFunction is borrowed anyway */
   PyObject *warningModule = PyImport_ImportModule("warnings");
+  if (!warningModule)
+    return false;
   PyObject *filterFunction = PyDict_GetItemString(PyModule_GetDict(warningModule), "filterwarnings");
   if (   !filterFunction
       || !setFilterWarnings(filterFunction, "ignore", "orng.*", PyExc_OrangeAttributeWarning)
       || !setFilterWarnings(filterFunction, "always", ".*", PyExc_OrangeKernelWarning))
     return false;
-  
   return true;
+
 }
 
 
