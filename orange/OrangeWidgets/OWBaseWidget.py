@@ -116,13 +116,13 @@ class OWBaseWidget(QDialog):
     def send(self, signalName, value, id = None):
         self.linksOut[signalName] = (value, id)
         signalManager.send(self, signalName, value, id)
-       
+
+    # Set all settings
+    # settings - the map with the settings       
     def setSettings(self,settings):
-        """
-        Set all settings
-        settings - the map with the settings
-        """
-        self.__dict__.update(settings)
+        for key in settings:
+            self.__setattr__(key, settings[key])
+        #self.__dict__.update(settings)
 
     def getSettings(self):
         """
@@ -148,7 +148,7 @@ class OWBaseWidget(QDialog):
             else:
                 settings = cPickle.load(file)
             
-            self.__dict__.update(settings)
+            self.setSettings(settings)
 
         
     def saveSettings(self, file = None):
@@ -170,7 +170,7 @@ class OWBaseWidget(QDialog):
         if str == None: return
         if hasattr(self, "settingsList"):
             settings = cPickle.loads(str)
-            self.__dict__.update(settings)
+            self.setSettings(settings)
 
     def saveSettingsStr(self):
         """
