@@ -145,17 +145,17 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
         if (*si==-1)
           if (pos==classPos) { // if this is class value
             TValue cval;
-            domain->classVar->filestr2val(valstr, cval);
+            domain->classVar->filestr2val(valstr, cval, exam);
             exam.setClass(cval);
           }
           else { // if this is a normal value
-            (*vi++)->filestr2val(valstr, *ei++);
+            (*vi++)->filestr2val(valstr, *ei++, exam);
           }
         else { // if this is a meta value
           TMetaDescriptor *md = domain->metas[*si];
           _ASSERT(md!=NULL);
           TValue mval;
-          md->variable->filestr2val(valstr, mval);
+          md->variable->filestr2val(valstr, mval, exam);
 
           exam.setMeta(*si, mval);
         }
@@ -166,7 +166,7 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
     }
 
   if (pos==classPos) // if class is the last value in the line, it is set here
-    domain->classVar->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1]);
+    domain->classVar->filestr2val(ai==atoms.end() ? "?" : *(ai++), exam[domain->variables->size()-1], exam);
 
   while ((ai!=atoms.end()) && !(*ai).length()) ai++; // line must be empty from now on
 
@@ -825,13 +825,13 @@ void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
   bool ho = false;
   for(; vi!=ve; vi++, ri++) {
     PUTDELIM;
-    (*vi)->val2filestr(*ri, st);
+    (*vi)->val2filestr(*ri, st, ex);
     fprintf(file, st.c_str());
   }
 
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
     PUTDELIM;
-    (*mi).variable->val2filestr(ex[(*mi).id], st);
+    (*mi).variable->val2filestr(ex[(*mi).id], st, ex);
     fprintf(file, "%s", st.c_str());
   }
   fprintf(file, "\n");

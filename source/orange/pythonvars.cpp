@@ -30,6 +30,7 @@
 #include "pythonvars.ppp"
 
 #include "cls_orange.hpp"
+#include "cls_example.hpp"
 #include "cls_value.hpp"
 #include "externs.px"
 
@@ -274,14 +275,14 @@ void TPythonVariable::str2val_add(const string &valname, TValue &valu)
 }
 
 
-void TPythonVariable::val2filestr(const TValue &val, string &str) const
+void TPythonVariable::val2filestr(const TValue &val, string &str, const TExample &example) const
 {
   if (special2str(val, str))
     return;
 
   if (isOverloaded("val2filestr")) {
     PyObject *pyvalue = toPyObject(val);
-    PyObject *reprs = PyObject_CallMethod(MYSELF, "val2filestr", "O", pyvalue);
+    PyObject *reprs = PyObject_CallMethod(MYSELF, "val2filestr", "ON", pyvalue, Example_FromWrappedExample(PExample(const_cast<TExample &>(example))));
     Py_DECREF(pyvalue);
     if (!reprs)
       throw pyexception();
@@ -335,13 +336,13 @@ void TPythonVariable::val2filestr(const TValue &val, string &str) const
 }
 
 
-void TPythonVariable::filestr2val(const string &valname, TValue &valu)
+void TPythonVariable::filestr2val(const string &valname, TValue &valu, TExample &ex)
 {
   if (str2special(valname, valu))
     return;
 
   if (isOverloaded("filestr2val")) {
-    valu = toValue(PyObject_CallMethod(MYSELF, "filestr2val", "s", valname.c_str()));
+    valu = toValue(PyObject_CallMethod(MYSELF, "filestr2val", "sN", valname.c_str(), Example_FromWrappedExample(PExample(ex))));
     return;
   }
 
@@ -376,7 +377,15 @@ void TPythonVariable::filestr2val(const string &valname, TValue &valu)
 
   PyObject *globals = PyEval_GetGlobals();
   PyObject *locals = PyEval_GetLocals();
+
+  PyObject *fdoms = PyString_FromString("__fileDomain");
+  PyObject *wo = WrapOrange(PExample(ex));
+  PyDict_SetItem(locals, fdoms, wo);
+  Py_DECREF(wo);
   res = PyRun_String(valname.c_str(), Py_eval_input, globals, locals);
+  PyDict_DelItem(locals, fdoms);
+  Py_DECREF(fdoms);
+
   if (!res) {
     PyErr_Clear();
     raiseError("cannot read the attribute value");

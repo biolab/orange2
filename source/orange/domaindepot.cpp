@@ -216,7 +216,7 @@ bool TDomainDepot::checkDomain(const TDomain *domain,
       PVariable var = domain->getMetaVar((*mi).name, false);
       if (    !var
            || (((*mi).varType > 0) && ((*mi).varType != var->varType))
-           || (((*mi).varType==PYTHONVAR) && !pythonDeclarationMatches((*mi).typeDeclaration, *vi))
+           || (((*mi).varType==PYTHONVAR) && !pythonDeclarationMatches((*mi).typeDeclaration, var))
          )
         return false;
       if (metaIDs)

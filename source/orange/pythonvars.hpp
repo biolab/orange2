@@ -73,8 +73,8 @@ public:
   virtual void str2val(const string &valname, TValue &valu);
   virtual void str2val_add(const string &valname, TValue &valu);
 
-  virtual void val2filestr(const TValue &val, string &str) const;
-  virtual void filestr2val(const string &valname, TValue &valu);
+  virtual void val2filestr(const TValue &val, string &str, const TExample &) const;
+  virtual void filestr2val(const string &valname, TValue &valu, TExample &);
 
   virtual bool   firstValue(TValue &val) const;
   virtual bool   nextValue(TValue &val) const;

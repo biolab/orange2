@@ -137,11 +137,11 @@ void TVariable::str2val_add(const string &valname, TValue &valu)
 { str2val(valname, valu); }
 
 
-void TVariable::filestr2val(const string &valname, TValue &valu)
+void TVariable::filestr2val(const string &valname, TValue &valu, TExample &)
 { str2val_add(valname, valu); }
 
 
-void TVariable::val2filestr(const TValue &val, string &str) const
+void TVariable::val2filestr(const TValue &val, string &str, const TExample &) const
 { val2str(val, str); }
 
 
