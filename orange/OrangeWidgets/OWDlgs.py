@@ -3,34 +3,7 @@ from qwt import QwtPlot
 from qtcanvas import QCanvas
 from OWBaseWidget import *
 import OWGUI
-import OWVisAttrSelection
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant())]
-discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief()), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
-
-class OWAttributeOrder(OWBaseWidget):
-    def __init__(self, cont, disc):
-        OWBaseWidget.__init__(self, None, "Attribute Order", "Choose heuristics to sort attributes by their information", TRUE, FALSE, FALSE, modal = TRUE)
-
-        self.attrCont = cont
-        self.attrDisc = disc
-                
-        self.grid=QGridLayout(self)
-        space=QVBox(self)
-        self.grid.addWidget(space,0,0)
-
-        self.topText = QLabel("\n  Select the measures of attribute usefulness that  \n  will determine the order of projection evaluation  \n", space)
-        
-        OWGUI.radioButtonsInBox(space, self, "attrCont", [val for (val, measure) in contMeasures], box = " Ordering of continuous attributes")
-        OWGUI.radioButtonsInBox(space, self, "attrDisc", [val for (val, measure) in discMeasures], box = " Ordering of discrete attributes")
-
-        self.okButton = OWGUI.button(space, self, "OK", callback = self.accept)
-        self.cancelButton = OWGUI.button(space, self, "Cancel", callback = self.reject)
-    
-    def evaluateAttributes(self, data):
-        return OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-
-        
         
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "lastSaveDirName"]
