@@ -93,47 +93,49 @@ TFilter_sameValue::TFilter_sameValue(const TValue &aval, int apos, bool aneg, PD
 
 // Chooses an example if position-th attribute's value equals (or not) the specified value
 bool TFilter_sameValue::operator()(const TExample &example)
-{ if (position<0) return negate;
-  signed char equ=(domain ? TExample(domain, example)[position] : example[position])==value;
-  return (equ!=-1) && (negate!=true);
+{ signed char equ = (domain ? TExample(domain, example)[position] : example[position]) == value;
+  return equ==-1 ? negate : ((equ!=0) != negate);
 }
 
 
-TValueFilter::TValueFilter(const int &accs)
-: acceptSpecial(accs)
+TValueFilter::TValueFilter(const int &pos, const int &accs)
+: position(pos),
+  acceptSpecial(accs)
 {}
 
 
-TValueFilter_continuous::TValueFilter_continuous(const float &amin, const float &amax, const bool &outs, const int &accs)
-: TValueFilter(accs),
+TValueFilter_continuous::TValueFilter_continuous(const int &pos, const float &amin, const float &amax, const bool &outs, const int &accs)
+: TValueFilter(pos, accs),
   min(amin),
   max(amax),
   outside(outs)
 {}
 
 
-int TValueFilter_continuous::operator()(const TValue &val) const
-{ if (val.isSpecial())
+int TValueFilter_continuous::operator()(const TExample &example) const
+{ const TValue &val = example[position];
+  if (val.isSpecial())
     return acceptSpecial;
 
   return ((val.floatV>=min) && (val.floatV<=max)) != outside ? 1 : 0;
 }
 
 
-TValueFilter_discrete::TValueFilter_discrete(PValueList bl, const int &accs)
-: TValueFilter(accs),
+TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs)
+: TValueFilter(pos, accs),
   acceptableValues(bl)
 {}
 
 
-TValueFilter_discrete::TValueFilter_discrete(PVariable var, const int &accs)
-: TValueFilter(accs),
+TValueFilter_discrete::TValueFilter_discrete(const int &pos, PVariable var, const int &accs)
+: TValueFilter(pos, accs),
   acceptableValues(mlnew TValueList(var))
 {}
 
 
-int TValueFilter_discrete::operator()(const TValue &val) const
-{ if (val.isSpecial())
+int TValueFilter_discrete::operator()(const TExample &example) const
+{ const TValue &val = example[position];
+  if (val.isSpecial())
     return acceptSpecial;
 
   const_PITERATE(TValueList, vi, acceptableValues)
@@ -146,7 +148,7 @@ int TValueFilter_discrete::operator()(const TValue &val) const
 
 TFilter_Values::TFilter_Values(bool anAnd, bool aneg, PDomain dom)
 : TFilter(aneg, dom),
-  values(dom ? PValueFilterList(mlnew TValueFilterList(dom->variables->size(), PValueFilter())) : PValueFilterList()),
+  values(mlnew TValueFilterList()),
   doAnd(anAnd)
 {}
 
@@ -165,16 +167,14 @@ bool TFilter_Values::operator()(const TExample &exam)
     raiseError("invalid size of 'values'");
 
   TExample example(domain, exam);
-  TExample::const_iterator ei(example.begin());
 
-  for(vector<PValueFilter>::const_iterator fi(values->begin()), fe(values->end()); fi!=fe; fi++, ei++)
-    if (*fi) {
-      const int r = (*fi)->call(*ei);
-      if ((r==0) && doAnd)
-        return negate;
-      if ((r==1) && !doAnd)
-        return !negate; // if this one is OK, we should return true if negate=false and vice versa
-    }
+  PITERATE(TValueFilterList, fi, values) {
+    const int r = (*fi)->call(example);
+    if ((r==0) && doAnd)
+      return negate;
+    if ((r==1) && !doAnd)
+      return !negate; // if this one is OK, we should return true if negate=false and vice versa
+  }
 
   // If we've come this far; if doAnd==true, all were OK; doAnd==false, none were OK
   return doAnd!=negate;

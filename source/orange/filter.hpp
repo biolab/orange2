@@ -95,10 +95,11 @@ class TValueFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
+  int position; //P attribute's position in domain
   int acceptSpecial; //P tells whether a special value (DK, DC...) is accepted (1), rejected (0) or ignored (-1)
 
-  TValueFilter(const int & = -1);
-  virtual int operator()(const TValue &) const = 0; // Returns 1 for accept, 0 for reject, -1 for ignore
+  TValueFilter(const int &pos = ILLEGAL_INT, const int & = -1);
+  virtual int operator()(const TExample &) const = 0; // Returns 1 for accept, 0 for reject, -1 for ignore
 };
 
 WRAPPER(ValueFilter)
@@ -111,8 +112,8 @@ public:
   float max; //P maximal acceptable value
   bool outside; //P it true, the filter accepts the values outside the interval, not inside
 
-  TValueFilter_continuous(const float &min=0.0, const float &max=0.0, const bool &neg = false, const int &accs = -1);
-  virtual int operator()(const TValue &) const;
+  TValueFilter_continuous(const int &pos = ILLEGAL_INT, const float &min=0.0, const float &max=0.0, const bool &neg = false, const int &accs = -1);
+  virtual int operator()(const TExample &) const;
 };
 
 
@@ -122,9 +123,9 @@ public:
 
   PValueList acceptableValues; //P acceptable values
 
-  TValueFilter_discrete(PValueList = PValueList(), const int &accs = -1);
-  TValueFilter_discrete(PVariable, const int &accs = -1);
-  virtual int operator()(const TValue &) const;
+  TValueFilter_discrete(const int &pos = ILLEGAL_INT, PValueList = PValueList(), const int &accs = -1);
+  TValueFilter_discrete(const int &pos, PVariable, const int &accs = -1);
+  virtual int operator()(const TExample &) const;
 };
 
 

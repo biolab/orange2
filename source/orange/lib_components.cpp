@@ -929,8 +929,8 @@ PyObject *FindNearest_call(PyObject *self, PyObject *args, PyObject *keywords) P
 #include "filter.hpp"
 
 BASED_ON(ValueFilter, Orange)
-C_NAMED(ValueFilter_discrete, ValueFilter, "([acceptableValues=, acceptSpecial=])")
-C_NAMED(ValueFilter_continuous, ValueFilter, "([min=, max=, acceptSpecial=])")
+C_NAMED(ValueFilter_discrete, ValueFilter, "([position=, acceptableValues=, acceptSpecial=])")
+C_NAMED(ValueFilter_continuous, ValueFilter, "([position=, min=, max=, acceptSpecial=])")
 
 BASED_ON(Filter, Orange)
 C_CALL(Filter_random, Filter, "([examples], [negate=..., p=...]) -/-> ExampleTable")
