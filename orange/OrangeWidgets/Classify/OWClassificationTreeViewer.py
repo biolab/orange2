@@ -93,7 +93,6 @@ class OWClassificationTreeViewer(OWWidget):
         self.connect(self.v, SIGNAL("selectionChanged(QListViewItem *)"), self.viewSelectionChanged)
         self.connect(self.slider, SIGNAL("valueChanged(int)"), self.sliderChanged)
 
-
     # main part:         
 
     def setTreeView(self, updateonly = 0):

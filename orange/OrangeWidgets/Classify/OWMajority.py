@@ -30,6 +30,7 @@ class OWMajority(OWWidget):
         OWGUI.button(self.controlArea, self, "&Apply Setting", callback = self.setLearner, disabled=0)
 
         self.learner = orange.MajorityLearner()
+        self.setLearner()
         self.resize(100,100)
 
     def setLearner(self):

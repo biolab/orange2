@@ -13,7 +13,7 @@
 #
 
 from OWWidget import *
-import OWGUI
+import OWGUI, string, os.path
 
 class OWFile(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
@@ -112,12 +112,12 @@ class OWFile(OWWidget):
             self.selectedFileName = fn
             
             # make new data and send it
-            data.name = fn
+            data.name = string.split(os.path.split(fn)[1], '.')[0]
             self.send("Examples", data)
             if data.domain.classVar:
                     self.send("Classified Examples", data)
         else:
-            self.send("Classified Examples",None)
+            self.send("Classified Examples", None)
             self.send("Examples", None)
 
     def addFileToList(self,fn):
