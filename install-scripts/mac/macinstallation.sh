@@ -1,23 +1,24 @@
 #!/bin/bash
 ##cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs login
 
-if [ $# -lt 2 ]; then
-        echo "parameters not given: version RPMfile CVStag"
+if [ $# -ne 4 ]; then
+        echo "parameters not given: CVStag DMGfile VARname INCLUDEgenomics"
         exit 1
 fi
 
-VER=$1
+TAG=$1
 DMGFILE=$2
-TAG=${3:-stable}
+VARNAME=$3
+INCGENOMICS=$4
 
-echo Version: $VER
+echo Tag: $TAG
 echo DMGFILE: $DMGFILE
-echo TAG: $TAG
+echo VARNAME: $VARNAME
+echo INCGENOMICS: $INCGENOMICS
 echo
 
 COMPILEORANGE=0
 COMPILECRS=0
-GEN=0
 
 ## check out orange source and compile orange
 mkdir compiledOrange
@@ -43,24 +44,22 @@ if [ $COMPILECRS == 1 ]; then
 fi
 
 ## check out orange modules
-rm -Rf orange doc
+rm -Rf orange
 cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f orange
 
-if [ $GEN == 1 ]; then
+if [ $INCGENOMICS == 1 ]; then
   cvs -d :pserver:tomazc@estelle.fri.uni-lj.si:/cvs export -r $TAG -f -d orange/OrangeWidgets/Genomics Genomics
 fi
 
 rm -R orange/doc
 
 # remove files we don't want in the installation
-rm orange/OrangeWidgets/Visualize/OWLinViz.py
-rm orange/OrangeWidgets/Visualize/OWLinVizGraph.py
-rm orange/OrangeWidgets/Classify/OWCalibratedClassifier.py
-rm orange/OrangeWidgets/Data/OWExampleBuilder.py
-rm orange/OrangeWidgets/Data/OWSubsetGenerator.py
-rm orange/OrangeWidgets/OWLin_Results.py
-rm orange/OrangeWidgets/Other/OWITree.py
-rm orange/c45.dll
+for f in `cat orange/exclude.lst`; do
+  rm orange/$f
+done
+
+## rm orange/OrangeWidgets/Visualize/OWLinVizGraph.py
+## rm orange/c45.dll
 
 
 ## after compiling orange, move it out of the path and into the orange directory
@@ -79,5 +78,11 @@ hdiutil unmount /Volumes/Orange
 hdiutil convert -format UDZO tmp.dmg -o $DMGFILE
 rm tmp.dmg
 
-## mkdir estelle.mount
-##mount_smbfs -W AI //Administrator@estelle.fri.uni-lj.si/wwwUsers estelle.mount
+## copy file to estelle and change version
+~/mount_estelle
+grep -v $VARNAME ~/estelleDownload/filenames.set > filenames.new.set
+echo $VARNAME=$DMGFILE >> filenames.new.set
+cp $DMGFILE ~/estelleDownload
+cp filenames.new.set ~/estelleDownload/filenames.set
+~/umount_estelle
+
