@@ -398,13 +398,13 @@ class OWScatterPlot(OWWidget):
     # ATTRIBUTE SELECTION
     # #############################
     def initAttrValues(self):
-        if self.data == None: return
-
         self.attrX.clear()
         self.attrY.clear()
         self.attrColor.clear()
         self.attrShape.clear()
         self.attrSizeShape.clear()
+
+        if self.data == None: return
 
         self.attrColor.insertItem("(One color)")
         self.attrShape.insertItem("(One shape)")
@@ -439,7 +439,7 @@ class OWScatterPlot(OWWidget):
                 return
 
     def updateGraph(self, *args):
-        if self.data == None: return
+        #if self.data == None: return
         xAttr = str(self.attrX.currentText())
         yAttr = str(self.attrY.currentText())
         colorAttr = ""
@@ -451,20 +451,14 @@ class OWScatterPlot(OWWidget):
 
         self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn(), self.statusBar)
         self.graph.update()
-        #self.repaint()
-        self.graph.replot()
+        #self.graph.replot()
 
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        if data == None:
-            self.data = None
-            self.repaint()
-            return
-        
-        #self.data = orange.Preprocessor_dropMissing(data)
-        self.optimizationDlg.clear()
         self.data = data
+       
+        self.optimizationDlg.clear()
         self.initAttrValues()
         self.graph.setData(self.data)
         self.updateGraph()

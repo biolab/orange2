@@ -368,12 +368,13 @@ class OWScatterPlotMatrix(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = orange.Preprocessor_dropMissing(data)
-
-        if data == None: return
-
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
+        
+        if data == None:
+            self.removeAllGraphs()
+            return
+        self.data = orange.Preprocessor_dropMissing(data)
 
         for attr in self.data.domain.attributes:
             self.shownAttribsLB.insertItem(attr.name)

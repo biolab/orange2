@@ -138,7 +138,7 @@ class OWSieveMultigram(OWWidget):
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -149,7 +149,7 @@ class OWSieveMultigram(OWWidget):
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
@@ -173,14 +173,11 @@ class OWSieveMultigram(OWWidget):
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):
-        self.data = orange.Preprocessor_dropMissing(data)
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
+        self.data = None
+        if data:
+            self.data = orange.Preprocessor_dropMissing(data)
         self.computeProbabilities()        
 
-        if self.data == None: return
-        
         self.setShownAttributeList(self.data)
         self.updateGraph()
         

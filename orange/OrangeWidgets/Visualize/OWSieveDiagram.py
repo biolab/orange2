@@ -218,7 +218,8 @@ class OWSieveDiagram(OWWidget):
         self.conditionAttr.clear()
         self.conditionAttrValues.clear()
         self.conditionAttr.insertItem("[None]")
-    
+
+        if not data: return
         for attr in data.domain:
             if attr.varType == orange.VarTypes.Discrete:
                 self.attrX.insertItem(attr.name)
@@ -259,14 +260,24 @@ class OWSieveDiagram(OWWidget):
     # receive new data and update all fields
     def data(self, data):
         self.interestingList.clear()
-        self.data = orange.Preprocessor_dropMissing(data)
+        self.data = None
+        if data: self.data = orange.Preprocessor_dropMissing(data)
         self.initCombos(self.data)
         self.updateData()
+
+    def clearGraph(self):
+        for rect in self.rects: rect.hide()
+        for text in self.texts: text.hide()
+        for line in self.lines: line.hide()
+        for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
+        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
+    
 
 
     ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
+        self.clearGraph()
         if self.data == None : return
 
         self.showLines = self.showLinesCB.isOn()
@@ -274,13 +285,6 @@ class OWSieveDiagram(OWWidget):
         attrX = str(self.attrX.currentText())
         attrY = str(self.attrY.currentText())
 
-        # hide all rectangles
-        for rect in self.rects: rect.hide()
-        for text in self.texts: text.hide()
-        for line in self.lines: line.hide()
-        for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
-        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
-    
         if attrX == "" or attrY == "": return
         data = self.getConditionalData()
 

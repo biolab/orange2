@@ -102,6 +102,11 @@ class OWRadvizGraph(OWVisGraph):
         self.showCorrect = 1
         self.__dict__.update(args)
 
+        length = len(labels)
+        xs = []
+        self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
+        indices = []
+
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
         
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
@@ -115,11 +120,6 @@ class OWRadvizGraph(OWVisGraph):
                 
         self.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
-
-        length = len(labels)
-        xs = []
-        self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
-        indices = []
 
         for label in labels:
             index = self.attributeNames.index(label)
@@ -335,7 +335,7 @@ class OWRadvizGraph(OWVisGraph):
                     nearestPoint = (x_i, y_i, color, data)
            
             if dist < 0.05:
-                x_i = nearestPoint[0]; y_i = nearestPoint[1]; color = nearestPoint[2]; data = nearestPoint[3]
+                (x_i, y_i, color, data) = nearestPoint
                 for (xAnchor,yAnchor,label) in self.anchorData:
                     # draw lines
                     key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])

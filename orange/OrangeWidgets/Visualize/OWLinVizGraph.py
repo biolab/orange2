@@ -83,7 +83,7 @@ class OWLinVizGraph(OWVisGraph):
 
         """
         OWVisGraph.onMouseMoved(self, e)
-        self.update()
+        #self.update()
 
 if __name__== "__main__":
     #Draw a simple graph

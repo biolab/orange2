@@ -567,7 +567,7 @@ class OWPolyviz(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -580,7 +580,7 @@ class OWPolyviz(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     # #####################
 
@@ -634,17 +634,13 @@ class OWPolyviz(OWWidget):
     def cdata(self, data):
         self.optimizationDlg.clear()
         self.attributeReverse = {}
-        #self.data = orange.Preprocessor_dropMissing(data.data)
         self.data = data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        if self.data == None:
-            self.repaint()
-            return
-
-        for attr in self.data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
+        if data:
+            for attr in self.data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
         self.setShownAttributeList(self.data)
         self.updateGraph()
     #################################################

@@ -54,13 +54,16 @@ class OWParallelGraph(OWVisGraph):
 
         self.curvePoints = []
 
-        if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
-
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-        if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[labels[len(labels)-1]].varType == orange.VarTypes.Discrete:
+        
+        if len(self.scaledData) == 0 or len(labels) == 0:
+            return
+
+        if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[labels[-1]].varType == orange.VarTypes.Discrete:
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-0.5, 1)
-        else:   self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
+        else:
+            self.setAxisScale(QwtPlot.xBottom, 0, len(labels)-1.0, 1)
 
         if self.showAttrValues or self.showCorrelations:
             self.setAxisScale(QwtPlot.yLeft, -0.04, 1.04, 1)

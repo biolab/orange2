@@ -65,10 +65,18 @@ class OWScatterPlotGraph(OWVisGraph):
     #########################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, statusBar = None, **args):
-        self.clear()
+        self.removeDrawingCurves()  # my function, that doesn't delete selection curves
+        self.removeMarkers()
         self.tips.removeAll()
         self.enableLegend(0)
         self.removeTooltips()
+
+        if len(self.scaledData) == 0:
+            self.setAxisScale(QwtPlot.xBottom, 0, 1, 1)
+            self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+            self.setXaxisTitle(""); self.setYLaxisTitle("")
+            return
+        
         self.statusBar = statusBar
         toolTipList = [xAttr, yAttr]
         if shapeAttr != "" and shapeAttr != "(One shape)": toolTipList.append(shapeAttr)
@@ -87,16 +95,13 @@ class OWScatterPlotGraph(OWVisGraph):
         MIN_SHAPE_SIZE = 6
         MAX_SHAPE_DIFF = self.pointWidth
 
-        if len(self.scaledData) == 0: self.updateLayout(); return
-
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
             self.setXlabels(None)
             if self.showManualAxisScale: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
         else:
             self.setXlabels(self.getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
-            #else: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 50.0), xVarMax + (self.jitterSize * xVar / 50.0) + showColorLegend * xVar/20, 1)
-            else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + +0.5 + showColorLegend * xVar/20, 1)            
+            else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)            
 
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous:
             self.setYLlabels(None)
@@ -104,7 +109,6 @@ class OWScatterPlotGraph(OWVisGraph):
         else:
             self.setYLlabels(self.getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
-            #else: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
             else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
@@ -214,7 +218,6 @@ class OWScatterPlotGraph(OWVisGraph):
                     key = self.addCurve(str(j), newColor, dataColor, self.pointWidth, xData = [x], yData = [y])
 
             else:
-                self.curveKeys = []
                 for i in range(len(self.rawdata)):
                     if self.rawdata[i][xAttr].isSpecial() == 1: continue
                     if self.rawdata[i][yAttr].isSpecial() == 1: continue

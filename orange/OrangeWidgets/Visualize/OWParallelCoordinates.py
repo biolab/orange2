@@ -333,7 +333,7 @@ class OWParallelCoordinates(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -346,7 +346,7 @@ class OWParallelCoordinates(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     # #####################
 
@@ -373,8 +373,8 @@ class OWParallelCoordinates(OWWidget):
         if targetVal == "(None)": targetVal = None
         self.graph.updateData(attrs[start:start+maxAttrs], targetVal)
         self.slider.repaint()
-        self.graph.update()
-        self.repaint()
+        #self.graph.update()
+        #self.repaint()
 
 
     # ###### SHOWN ATTRIBUTE LIST ##############
@@ -405,23 +405,19 @@ class OWParallelCoordinates(OWWidget):
     ####### DATA ################################
     # receive new data and update all fields
     def data(self, data):
-        #self.data = orange.Preprocessor_dropMissing(data.data)
         self.data = data
         self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        if self.data == None:
-            self.repaint()
-            return
-
-        # update target combo
         self.targetValueCombo.clear()
         self.targetValueCombo.insertItem("(None)")
-        if self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+
+        # update target combo
+        if data and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
             for val in self.data.domain.classVar.values:
                 self.targetValueCombo.insertItem(val)
-        self.targetValueCombo.setCurrentItem(0)
+            self.targetValueCombo.setCurrentItem(0)
         
         self.setShownAttributeList(self.data)
         self.updateGraph()

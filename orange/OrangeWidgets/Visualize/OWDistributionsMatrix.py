@@ -120,10 +120,6 @@ class OWDistributionsMatrix(OWWidget):
  
  
     def cdata(self, data):
-        if data == None:
-            self.data = None
-            return
-
         # if we got the same domain than the last dataset we only update the data in graphs
         if self.data and data and str(data.domain) == str(self.data.domain):
             self.data = data
@@ -138,7 +134,7 @@ class OWDistributionsMatrix(OWWidget):
             self.graphs = []
         
             self.data = data
-            if not self.data.domain.classVar: return
+            if (not data) or (not self.data.domain.classVar): return
             
             i = 0
             for val in self.data.domain.classVar.values.native():
@@ -249,7 +245,7 @@ class OWDistributionsMatrix(OWWidget):
         for graph in self.graphs:
             graph.showProbabilities = n
             graph.refreshProbGraph()
-            graph.replot()
+            #graph.replot()
         self.repaint()
 
     def setNumberOfBars(self, n):
@@ -271,7 +267,7 @@ class OWDistributionsMatrix(OWWidget):
         for graph in self.graphs:
             graph.showConfidenceIntervals = value
             graph.refreshProbGraph()
-            graph.replot()
+            #graph.replot()
         self.repaint()
 
 

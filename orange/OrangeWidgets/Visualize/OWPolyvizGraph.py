@@ -136,10 +136,17 @@ class OWPolyvizGraph(OWVisGraph):
         self.showCorrect = 1
         self.__dict__.update(args)
 
-
+        length = len(labels)
+        self.dataMap = {}               # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
+        indices = []
+        self.anchorData = []
+        polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
+        classIsDiscrete = 0
+        classNameIndex = -1
+    
         # we must have at least 3 attributes to be able to show anything
-        if len(labels) < 3: return
-        if len(self.rawdata) == 0 or len(labels) == 0: self.updateLayout(); return
+        if not self.rawdata or len(self.rawdata) == 0 or len(labels) < 3: self.updateLayout(); return
+        dataSize = len(self.rawdata)
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -149,20 +156,11 @@ class OWPolyvizGraph(OWVisGraph):
         scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
         scaleDraw.setOptions(0) 
         scaleDraw.setTickLength(0, 0, 0)
-        
+
         if self.showLegend: self.setAxisScale(QwtPlot.xBottom, -1.20, 1.25, 1)
         else:               self.setAxisScale(QwtPlot.xBottom, -1.20, 1.20, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.20, 1.20, 1)
 
-        length = len(labels)
-        dataSize = len(self.rawdata)
-        self.dataMap = {}               # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
-        indices = []
-        self.anchorData = []
-        polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
-        classIsDiscrete = 0
-        classNameIndex = -1
-        
         for label in labels:
             index = self.attributeNames.index(label)
             indices.append(index)

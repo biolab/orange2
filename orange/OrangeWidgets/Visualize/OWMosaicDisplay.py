@@ -156,10 +156,9 @@ class OWMosaicDisplay(OWWidget):
     ## DATA signal
     # receive new data and update all fields
     def cdata(self, data):
+        self.data = None
         if data:
             self.data = orange.Preprocessor_dropMissing(data)
-        else:
-            self.data = data
         self.initCombos(self.data)
         self.updateData()
 
@@ -167,6 +166,13 @@ class OWMosaicDisplay(OWWidget):
     ######################################################################
     ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
+        # hide all rectangles
+        for rect in self.rects: rect.hide()
+        for text in self.texts: text.hide()
+        for line in self.lines: line.hide()
+        for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
+        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
+        
         if self.data == None : return
 
         self.showLines = self.showLinesCB.isOn()
@@ -175,13 +181,6 @@ class OWMosaicDisplay(OWWidget):
         attrList = [str(self.attr1.currentText()), str(self.attr2.currentText())]
         if str(self.attr3.currentText()) != "(none)": attrList.append(str(self.attr3.currentText()))
         if str(self.attr4.currentText()) != "(none)": attrList.append(str(self.attr4.currentText()))
-
-        # hide all rectangles
-        for rect in self.rects: rect.hide()
-        for text in self.texts: text.hide()
-        for line in self.lines: line.hide()
-        for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
-        self.rects = []; self.texts = [];  self.lines = []; self.tooltips = []
 
         # get the maximum width of rectangle
         text = QCanvasText(self.data.domain[attrList[1]].name, self.canvas);

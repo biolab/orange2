@@ -116,13 +116,13 @@ class OWDistributionGraph(OWVisGraph):
         if self.variableContinuous:
             self.calcHistogramAndProbGraph()
             self.refreshVisibleOutcomes()
-            self.replot()
+            #self.replot()
 
     def setBarSize(self, n):
         self.barSize = n
         if not(self.variableContinuous):
             self.refreshVisibleOutcomes()
-            self.replot()
+            #self.replot()
             self.repaint()
         
     def calcHistogramAndProbGraph(self):
@@ -269,7 +269,7 @@ class OWDistributionGraph(OWVisGraph):
         self.curve(self.probCurveKey).itemChanged()
         self.curve(self.probCurveUpperCIKey).itemChanged()
         self.curve(self.probCurveLowerCIKey).itemChanged()
-        self.replot()
+        #self.replot()
 
         
         
@@ -428,7 +428,7 @@ distribution of classes for each attribute.
         self.ShowProbabilities = n
         self.graph.showProbabilities = n
         self.graph.refreshProbGraph()
-        self.graph.replot()
+        #self.graph.replot()
         self.repaint()
 
     def setNumberOfBars(self, n):
@@ -454,7 +454,7 @@ distribution of classes for each attribute.
         self.graph.showConfidenceIntervals = value
         #self.updateGraphSettings()
         self.graph.refreshProbGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     def activateLoadedSettings(self):
         "Sets options in the settings dialog"
@@ -554,7 +554,7 @@ distribution of classes for each attribute.
         self.visibleOutcomes = visibleOutcomes
         self.graph.visibleOutcomes = visibleOutcomes
         self.graph.refreshVisibleOutcomes()
-        self.graph.replot()
+        #self.graph.replot()
         #self.repaint()
 
     def setVariable(self, varName):

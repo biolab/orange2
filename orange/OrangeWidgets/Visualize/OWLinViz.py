@@ -146,8 +146,8 @@ class OWLinViz(OWWidget):
                 color.setHsv(self.graph.colorHueValues[i]*360,255,255)
                 self.graph.addCurve(self.data.domain.classVar.name + " = " + classValues[i], color, color, 4, symbol = QwtSymbol.Ellipse, xData = xs[i], yData = ys[i], enableLegend = 1)
             
-        self.graph.update()
-        self.repaint()
+        #self.graph.update()
+        #self.repaint()
 
 
     

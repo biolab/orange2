@@ -29,9 +29,6 @@ class OWSieveMultigramGraph(OWVisGraph):
         self.removeMarkers()
         self.tips.removeAll()
 
-        # we must have at least 3 attributes to be able to show anything
-        if len(labels) < 3: return
-
         self.statusBar = statusBar        
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
@@ -45,6 +42,10 @@ class OWSieveMultigramGraph(OWVisGraph):
         
         self.setAxisScale(QwtPlot.xBottom, -1.25, 1.25, 1)
         self.setAxisScale(QwtPlot.yLeft, -1.25, 1.25, 1)
+
+        # we must have at least 3 attributes to be able to show anything
+        if len(labels) < 3: return
+
 
         length = len(labels)
         indices = []

@@ -574,10 +574,6 @@ class OWRadviz(OWWidget):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
         
-        if self.data == None:
-            self.repaint()
-            return
-        
         self.setShownAttributeList(self.data)
         self.updateGraph()
     # ################################################

@@ -19,15 +19,18 @@ class OWSurveyPlotGraph(OWVisGraph):
     # update shown data. Set labels, coloring by className ....
     #
     def updateData(self, labels, statusBar = None):
-        self.removeCurves()
         self.statusBar = statusBar
+        self.removeCurves()
         self.tips.removeAll()
-        if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
-
-        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
+        
         self.length = len(labels)
         indices = []
         xs = []
+
+        if len(self.scaledData) == 0 or len(labels) == 0:
+            self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+            self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+            return
 
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
@@ -40,13 +43,13 @@ class OWSurveyPlotGraph(OWVisGraph):
                 if self.scaledData[indices[j]][i] == "?": validData[i] = 0
         totalValid = 0
         for val in validData: totalValid += val
-        
-        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+
         self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-
+        self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        #self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
         
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
@@ -55,7 +58,8 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
-            
+
+        classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         xs = range(self.length)
         count = len(self.rawdata)
         pos = 0
@@ -99,7 +103,7 @@ class OWSurveyPlotGraph(OWVisGraph):
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):
-        if self.mouseCurrentlyPressed: return
+        if self.mouseCurrentlyPressed or not self.rawData: return
         else:
             self.hideSelectedRectangle()
             if not self.exampleTracking:

@@ -206,7 +206,7 @@ class OWSurveyPlot(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
@@ -219,12 +219,13 @@ class OWSurveyPlot(OWWidget):
         if self.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
-        self.graph.replot()
+        #self.graph.replot()
 
     # #####################
     def setSortCombo(self):
         self.primaryAttr.clear()
         self.secondaryAttr.clear()
+        if not self.data: return
         for i in range(len(self.data.domain)):
             self.primaryAttr.insertItem(self.data.domain[i].name)
             self.secondaryAttr.insertItem(self.data.domain[i].name)
@@ -233,16 +234,17 @@ class OWSurveyPlot(OWWidget):
     
 
     def sortData2(self, primaryAttr, secondaryAttr, data):
+        if not data: return None
         data.sort([primaryAttr, secondaryAttr])
         return data
 
     def sortData1(self, primaryAttr, data):
+        if not data: return None
         data.sort(primaryAttr)
         return data
         
     def updateGraph(self, *args):
         self.graph.updateData(self.getShownAttributeList(), self.statusBar)
-        #self.graph.replot()
         self.graph.update()
         self.repaint()
 
@@ -258,8 +260,6 @@ class OWSurveyPlot(OWWidget):
             primaryOn = 1
             self.primarySortCB.setChecked(1)
             
-        if self.data == None: return
-
         if primaryOn == 1 and secondaryOn == 1 and primaryAttr != "" and secondaryAttr != "":
             self.data = self.sortData2(primaryAttr, secondaryAttr, self.data)
         elif primaryOn == 1 and primaryAttr != "":
@@ -294,14 +294,9 @@ class OWSurveyPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        #self.data = orange.Preprocessor_dropMissing(data)
         self.data = data
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
-
-        if self.data == None:
-            self.repaint()
-            return
 
         self.setSortCombo()
         self.setShownAttributeList(self.data)
