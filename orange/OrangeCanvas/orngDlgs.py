@@ -324,8 +324,7 @@ class SignalDialog(QDialog):
                             canConnect = 1
                             canConnectCount += 1
                             
-                        if outName == inName and issubclass(eval(outType), eval(inType)):
-                        #if issubclass(eval(outType), eval(inType)):
+                        if issubclass(eval(outType), eval(inType)) and (outName == inName or (inName, inType) not in self.outList):
                             self.addLink(outName, inName)
                             
                     except:

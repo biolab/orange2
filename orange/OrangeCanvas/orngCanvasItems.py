@@ -43,7 +43,13 @@ class TempCanvasLine(QCanvasLine):
     # we don't print temp lines
     def printShape(self, painter):
         pass
-        
+
+    def removeTooltip(self):
+        pass
+
+    def updateTooltip(self):
+        pass
+    
     # redraw the line
     def repaintLine(self, canvasView):
         p1 = self.startPoint()
@@ -59,12 +65,13 @@ class TempCanvasLine(QCanvasLine):
 # # CANVAS LINE
 # #######################################
 class CanvasLine(QCanvasLine):
-    def __init__(self, signalManager, canvasDlg, outWidget, inWidget, canvas, *args):
+    def __init__(self, signalManager, canvasDlg, view, outWidget, inWidget, canvas, *args):
         apply(QCanvasLine.__init__,(self,canvas)+ args)
         self.signalManager = signalManager
         self.canvasDlg = canvasDlg
         self.outWidget = outWidget
         self.inWidget = inWidget
+        self.view = view
         self.setZ(-10)
         self.signals = []
         self.colors = []
@@ -72,10 +79,12 @@ class CanvasLine(QCanvasLine):
         inPoint = inWidget.getLeftEdgePoint()
         self.setPoints(outPoint.x(), outPoint.y(), inPoint.x(), inPoint.y())
         self.setPen(QPen(QColor("green"), 5, Qt.SolidLine))
+        self.tooltipRects = []
         
     def remove(self):
         self.hide()
         self.setCanvas(None)
+        self.removeTooltip()
 
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
@@ -86,10 +95,12 @@ class CanvasLine(QCanvasLine):
     def setEnabled(self, enabled):
         if enabled: self.setPen(QPen(QColor("green"), 5, Qt.SolidLine))
         else:       self.setPen(QPen(QColor("green"), 5, Qt.DashLine))
+        self.updateTooltip()
 
 
     def setSignals(self, signals):
         self.signals = signals
+        self.updateTooltip()
 
     def getSignals(self):
         return self.signals
@@ -176,12 +187,43 @@ class CanvasLine(QCanvasLine):
         x2 = self.inWidget.x() + 2
         y2 = self.inWidget.y() + 26
         self.setPoints(x1, y1, x2, y2)
+        self.updateTooltip()
 
     # redraw the line
     def repaintLine(self, canvasView):
         p1 = self.startPoint()
         p2 = self.endPoint()
         canvasView.repaintContents(QRect(min(p1.x(), p2.x())-55, min(p1.y(), p2.y())-55, abs(p1.x()-p2.x())+100,abs(p1.y()-p2.y())+100))
+
+    def removeTooltip(self):
+        for rect in self.tooltipRects:
+            QToolTip.remove(self.view, rect)
+        self.tooltipRects = []
+
+    def updateTooltip(self):
+        self.removeTooltip()
+        p1 = self.startPoint()
+        p2 = self.endPoint()
+
+        string = "<b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b><br><hr>Signals:<ul>"
+        for i in range(len(self.signals)):
+            (outSignal, inSignal) = self.signals[i]
+            string += "<li>" + outSignal + " --> " + inSignal + "</li>"
+        string += "</ul>"
+
+        xDiff = p2.x() - p1.x()
+        yDiff = p2.y() - p1.y()
+        count = max(xDiff, yDiff) / 20
+        for i in range(count):
+            x1 = p1.x() + (i/float(count))*xDiff - 5
+            y1 = p1.y() + (i/float(count))*yDiff - 5
+            x2 = p1.x() + ((i+1)/float(count))*xDiff + 5
+            y2 = p1.y() + ((i+1)/float(count))*yDiff + 5
+            
+            rect = QRect(min(x1, x2), min(y1,y2), abs(x1-x2), abs(y1-y2))
+            self.tooltipRects.append(rect)
+            QToolTip.add(self.view, rect, string)
+
 
     # we need this to separate line objects and widget objects
     def rtti(self):
@@ -444,17 +486,18 @@ class CanvasWidget(QCanvasRectangle):
 
     def updateTooltip(self):
         self.removeTooltip()
-        string = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br><hr><u>Inputs</u>:"
+        string = "<b>" + self.caption + "</b><br><hr><u>Inputs</u>:"
 
         if self.widget.inList == []: string += "<br>None<br>"
         else:
             string += "<ul>"
             for (signal, type, handler, single) in self.widget.inList:
-                count = self.signalManager.getLinkNumberIn(self.instance, signal)
-                if count > 0:
-                   string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b>"
-                   if count > 1: string += ' (' + str(count) +')'
-                   string += "</li>"
+                widgets = self.signalManager.getLinkWidgetsIn(self.instance, signal)
+                if len(widgets) > 0:
+                    string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b> (from "
+                    for i in range(len(widgets)-1):
+                        string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
+                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</li>"
                 else:
                     string += "<li>" + self.canvasDlg.getChannelName(signal) + "</li>"
             string += "</ul>"
@@ -464,11 +507,12 @@ class CanvasWidget(QCanvasRectangle):
         else:
             string += "<ul>"
             for (signal, type) in self.widget.outList:
-                count = self.signalManager.getLinkNumberOut(self.instance, signal)
-                if count > 0:
-                   string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b>"
-                   if count > 1: string += ' (' + str(count) +')'
-                   string += "</li>"
+                widgets = self.signalManager.getLinkWidgetsOut(self.instance, signal)
+                if len(widgets) > 0:
+                    string += "<li><b>" + self.canvasDlg.getChannelName(signal) + "</b> (to "
+                    for i in range(len(widgets)-1):
+                        string += self.view.doc.getWidgetCaption(widgets[i]) + ", "
+                    string += self.view.doc.getWidgetCaption(widgets[-1]) + ")</li>"
                 else:
                     string += "<li>" + self.canvasDlg.getChannelName(signal) + "</li>"
             string += "</ul>"

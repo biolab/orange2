@@ -66,6 +66,7 @@ class OutputWindow(QMainWindow):
 	def write(self, text):
 		if self.focusOnCatchOutput:
 			self.canvasDlg.menuItemShowOutputWindow()
+			self.canvasDlg.workspace.cascade()	# cascade shown windows
 		self.textOutput.append(str(text))
 		self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 		if self.printOutput:
@@ -85,7 +86,7 @@ class OutputWindow(QMainWindow):
 	def exceptionHandler(self, type, value, tracebackInfo):
 		if self.focusOnCatchException:
 			self.canvasDlg.menuItemShowOutputWindow()
-			#self.canvasDlg.workspace.cascade()	# tile shown windows
+			self.canvasDlg.workspace.cascade()	# cascade shown windows
 			
 		t = localtime()
 		self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))

@@ -25,23 +25,23 @@ class SignalManager:
     def removeWidget(self, widget):
         self.widgets.remove(widget)
 
-    # how many widgets send their signal to widget's signalName
-    def getLinkNumberIn(self, widget, signalName):
-        count = 0
+    # send list of widgets, that send their signal to widget's signalName
+    def getLinkWidgetsIn(self, widget, signalName):
+        widgets = []
         for key in self.links.keys():
             links = self.links[key]
             for (widgetTo, signalFrom, signalTo, enabled) in links:
-                if widget == widgetTo and signalName == signalTo: count += 1
-        return count
+                if widget == widgetTo and signalName == signalTo: widgets.append(key)
+        return widgets
 
-    # to how many widgets widget "widget" sends his signal "signalName"
-    def getLinkNumberOut(self, widget, signalName):
-        if not self.links.has_key(widget): return 0
+    # send list of widgets, that widget "widget" sends his signal "signalName"
+    def getLinkWidgetsOut(self, widget, signalName):
+        widgets = []
+        if not self.links.has_key(widget): return widgets
         links = self.links[widget]
-        count = 0
         for (widgetTo, signalFrom, signalTo, enabled) in links:
-            if signalName == signalFrom: count += 1
-        return count
+            if signalName == signalFrom: widgets.append(widgetTo)
+        return widgets
 
     # can we connect widgetFrom with widgetTo, so that there is no cycle?    
     def canConnect(self, widgetFrom, widgetTo):
@@ -108,7 +108,7 @@ class SignalManager:
                 (widget, nameFrom, nameTo, e) = links[i]
                 if widget == widgetTo:
                     links[i] = (widget, nameFrom, nameTo, enabled)
-                    if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
+                    if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[nameFrom][1])
         if enabled:
             self.processNewSignals(widgetTo)
 

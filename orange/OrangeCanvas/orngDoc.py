@@ -24,7 +24,7 @@ class SchemaDoc(QMainWindow):
         self.resize(700,500)
         self.showNormal()
         self.canvasDlg = canvasDlg
-        self.setCaption("Schema" + str(orngResources.iDocIndex))
+        self.setCaption("Schema " + str(orngResources.iDocIndex))
         orngResources.iDocIndex = orngResources.iDocIndex + 1
         self.hasChanged = FALSE
         self.canvasDlg.enableSave(FALSE)
@@ -67,7 +67,7 @@ class SchemaDoc(QMainWindow):
                 QMessageBox.information( None, "Orange Canvas", "This connection already exists.", QMessageBox.Ok + QMessageBox.Default )
                 return None
 
-        line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, outWidget, inWidget, self.canvas)
+        line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
         line.setEnabled(enabled)
         if setSignals:
             dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
@@ -278,7 +278,11 @@ class SchemaDoc(QMainWindow):
             if widget.fileName == widgetName:
                 return self.addWidget(widget)
         return None
-        
+
+    def getWidgetCaption(self, widgetInstance):
+        for widget in self.widgets:
+            if widget.instance == widgetInstance:
+                return widget.caption
 
     # ###########################################
     # SAVING, LOADING, ....
