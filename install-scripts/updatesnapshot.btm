@@ -9,11 +9,11 @@ pushd
 rem ************************************************
 rem *** CHANGE THE DIRECTORY, TERMINATE IF CAN'T
 
-md %SNAPCHECKOUTDIR
-cdd %SNAPCHECKOUTDIR
+md %SNAPSHOTDIR
+cdd %SNAPSHOTDIR
 if errorlevel == 0 goto changedirok
 popd
-@pause "Cannot change directory to %SNAPCHECKOUTDIR, terminating"
+@pause "Cannot change directory to %SNAPSHOTDIR, terminating"
 cancel
 
 :changedirok
@@ -22,15 +22,15 @@ rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
 del /qsyfx orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r HEAD orange
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
 cd orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q export -r HEAD source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD source
 
 
 rem ************************************************
 rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
-cd %SNAPCHECKOUTDIR\orange\doc
+cd %SNAPSHOTDIR\orange\doc
 del %DOWNLOADDIR\orange-doc-snap-*.zip
 "c:\program files\winrar\winrar.exe" a %DOWNLOADDIR\orange-doc-snap-%daystr.zip style.css reference/* ofb/* modules/*
 cd ..\..
@@ -40,20 +40,28 @@ rem ************************************************
 rem *** COMPILE NEW SNAPSHOT
 
 cdd %SCRIPTDIR
-python buildInstFileList.py %STABLEDIR
+python buildInstFileList.py %SNAPSHOTDIR snapshotfiles
+python removeCVS.py %SNAPSHOTDIR
+pause
 del %DOWNLOADDIR\orange-win-snap-*.exe
-nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR install3.nsi
+nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANGEDIR=%SNAPCHECKOUTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
+del snapshotfiles_*.inc
 
 pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
-cdd %SNAPCHECKOUTDIR
+cdd %SNAPSHOTDIR
 winrar a -r "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
 winrar a "%DOWNLOADDIR\orange-source-snap-%daystr.zip" orange/*.py orange/COPYING
 popd
 
-cdd %SNAPCHECKOUTDIR
-cd ..
-del /sfqyx tempcheckout
+cdd %SNAPSHOTDIR
+if errorlevel == 0 goto changedirok2
+popd
+@pause "Cannot change directory to %SNAPSHOTDIR, terminating"
+cancel
+
+:changedirok2
+del * /sfqyx 
 
 cdd %SCRIPTDIR
 call updateVersionsPy__.btm

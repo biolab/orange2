@@ -34,9 +34,9 @@ rem ************************************************
 rem *** COMPILE NEW INSTALLATIONS
 
 cdd %SCRIPTDIR
-python buildInstFileList.py %STABLEDIR
+python buildInstFileList.py %STABLEDIR files
 
-set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR install3.nsi
+set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=files install3.nsi
 
 rem del %DOWNLOADDIR\orange-win-*.exe
 nsis /Onsis_standard.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN" %COMMON_NSI_OPTIONS

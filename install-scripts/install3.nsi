@@ -98,11 +98,15 @@ Page instfiles
 	SectionEnd
 !endif
 
+Section ""
+    SetOutPath $INSTDIR ; just to make sure it exists
+    FileOpen $6 $INSTDIR\whatsdown.txt w
+SectionEnd
 
 Section "Orange Modules"
-    !include "files_base.inc"
-    !include "files_widgets.inc"
-    !include "files_canvas.inc"
+    !include ${INCLUDEPREFIX}_base.inc
+    !include ${INCLUDEPREFIX}_widgets.inc
+    !include ${INCLUDEPREFIX}_canvas.inc
 
 	SetOutPath $INSTDIR\icons
 	File Orange.ico
@@ -113,7 +117,7 @@ SectionEnd
 
 !ifdef INCLUDEGENOMICS
 Section "Genomic Data"
-    !include "files_genomics.inc"
+    !include ${INCLUDEPREFIX}_genomics.inc
     
 	SetOutPath $INSTDIR\doc
 	File "various\Orange Genomics.pdf"
@@ -138,7 +142,7 @@ SectionEnd
 			File "various\Orange White Paper.pdf"
 			File "various\Orange Widgets White Paper.pdf"
 
-            !include "files_doc.inc"
+            !include ${INCLUDEPREFIX}_doc.inc
 
 			SetOutPath $INSTDIR
             CreateDirectory "$SMPROGRAMS\Orange"
@@ -168,6 +172,7 @@ SectionEnd
 !endif
 
 Section ""
+    FileClose $6
 	SetOutPath $INSTDIR
 	
 	CreateDirectory "$SMPROGRAMS\Orange"
@@ -191,7 +196,7 @@ Section ""
 SectionEnd  
 
 Section Uninstall
-	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n(This won't remove any 3rd party software possibly installed with Orange, such as Python or Qt)?$\r$\n$\r$\nMake sure you have not left any of your files in Orange's directories!" IDNO abort
+	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" IDNO abort
 	RmDir /R "$INSTDIR"
 	RmDir /R "$SMPROGRAMS\Orange"
 	DeleteRegKey HKEY_LOCAL_MACHINE "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"

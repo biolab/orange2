@@ -2,9 +2,9 @@ set WEBDIR=c:\inetpub\wwwusers\orange
 set DOWNLOADDIR=%WEBDIR\download
 set SCRIPTDIR=%WEBDIR\scripts
 set WEBDOCDIR=%WEBDIR\doc
-set STABLEDIR=%DOWNLOADDIR\lastStable
 
-set SNAPCHECKOUTDIR=%SCRIPTDIR\tempcheckout
+set STABLEDIR=%DOWNLOADDIR\lastStable
+set SNAPSHOTDIR=%DOWNLOADDIR\snapshot
 
 set MNT_DOWNLOAD=/wwwUsers/orange/download
 
