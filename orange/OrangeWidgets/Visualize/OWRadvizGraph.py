@@ -255,7 +255,7 @@ class OWRadvizGraph(OWVisGraph):
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = curveData[i][XPOS], yData = curveData[i][YPOS])
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveData[i][SYMBOL], xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
                 self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
                 self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], newColor, i)
 
@@ -339,8 +339,8 @@ class OWRadvizGraph(OWVisGraph):
 
                 # add markers for min and max value of color attribute
                 [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available
