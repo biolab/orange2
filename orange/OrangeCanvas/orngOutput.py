@@ -32,7 +32,7 @@ class OutputWindow(QMainWindow):
         self.printException = 1
         self.writeLogFile = 1
 
-        self.logFile = open(os.path.join(canvasDlg.canvasDir, "outputLog.htm"), "w") # create the log file
+        self.logFile = open(os.path.join(canvasDlg.outputDir, "outputLog.htm"), "w") # create the log file
         #self.printExtraOutput = 0
         
         #sys.excepthook = self.exceptionHandler

@@ -12,7 +12,7 @@ import cPickle
 from OWTools import *
 from OWAbout import *
 from orngSignalManager import *
-import time
+import time, user
 
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
@@ -45,6 +45,12 @@ class OWBaseWidget(QDialog):
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
+
+        # create output directory for widget settings
+        self.outputDir = os.path.join(user.home, "Orange")
+        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
+        self.outputDir = os.path.join(self.outputDir, "widgetSettings")
+        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
         
         self.title = title.replace("&","")          # used for ini file
         self.captionTitle = title.replace("&","")     # used for widget caption
@@ -129,10 +135,8 @@ class OWBaseWidget(QDialog):
     def loadSettings(self, file = None):
         if hasattr(self, "settingsList"):
             if file==None:
-                if os.path.exists(self.widgetDir + "widgetSettings/" + self.title + ".ini"):
-                    file = self.widgetDir + "widgetSettings/" + self.title + ".ini"
-                elif os.path.exists(self.widgetDir + self.title + ".ini"):
-                    file = self.widgetDir + self.title + ".ini"
+                if os.path.exists(self.outputDir + self.title + ".ini"):
+                    file = os.path.join(self.outputDir, self.title + ".ini")
                 else:
                     return
             if type(file) == str:
@@ -156,10 +160,7 @@ class OWBaseWidget(QDialog):
                 if hasattr(self, name): settings[name] =  getattr(self, name)
                 else:                   print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
                     
-            if file==None:
-                if not os.path.exists(self.widgetDir + "widgetSettings/"):
-                    os.mkdir(self.widgetDir + "widgetSettings")
-                file = self.widgetDir + "widgetSettings/" + self.title + ".ini"
+            if file==None: file = os.path.join(self.outputDir, self.title + ".ini")
             if type(file) == str:
                 file = open(file, "w")
                 cPickle.dump(settings, file)

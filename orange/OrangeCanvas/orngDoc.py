@@ -34,9 +34,9 @@ class SchemaDoc(QMainWindow):
         self.widgets = []                       # list of orngCanvasItems.CanvasWidget items
         self.signalManager = SignalManager()    # signal manager to correctly process signals
 
-        self.documentpath = os.getcwd()
+        self.documentpath = canvasDlg.settings["saveSchemaDir"]
         self.documentname = str(self.caption())
-        self.applicationpath = os.getcwd()
+        self.applicationpath = canvasDlg.settings["saveApplicationDir"]
         self.applicationname = str(self.caption())
         self.documentnameValid = FALSE
         self.canvas = QCanvas(2000,2000)
@@ -366,8 +366,8 @@ class SchemaDoc(QMainWindow):
         if os.path.splitext(name)[1] == "": name = name + ".ows"
 
         (self.documentpath, self.documentname) = os.path.split(name)
-        (self.applicationpath, self.applicationname) = os.path.split(name)
-        self.applicationname = os.path.splitext(self.applicationname)[0] + ".py"
+        self.canvasDlg.settings["saveSchemaDir"] = self.documentpath
+        self.applicationname = os.path.splitext(os.path.split(name)[1])[0] + ".py"
         self.setCaption(self.documentname)
         self.documentnameValid = TRUE
         self.save()        
@@ -722,6 +722,7 @@ ow.saveSettings()
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
+        self.canvasDlg.settings["saveApplicationDir"] = self.applicationpath
         fileApp.write(whole)
         fileApp.flush()
         fileApp.close()

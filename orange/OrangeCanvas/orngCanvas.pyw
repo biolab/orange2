@@ -5,7 +5,7 @@
 from qt import *
 import sys, os, cPickle, webbrowser
 import orngTabs, orngDoc, orngDlgs, orngOutput, orngResources, xmlParse
-import orange
+import orange, user
 
 TRUE  = 1
 FALSE = 0
@@ -28,6 +28,10 @@ class OrangeCanvasDlg(QMainWindow):
             print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
         
         self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
+        self.outputDir = os.path.join(user.home, "Orange")                  # directory for saving settings and stuff
+        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
+        self.outputDir = os.path.join(self.outputDir, "OrangeCanvas")
+        if not os.path.exists(self.outputDir): os.mkdir(self.outputDir)
         
         # add all directories with widgets to the path
         if os.path.exists(self.widgetDir):
@@ -36,7 +40,7 @@ class OrangeCanvasDlg(QMainWindow):
                 if os.path.isdir(fullName): 
                     sys.path.append(fullName)
 
-        self.registryFileName = os.path.join(self.canvasDir, "widgetregistry.xml")
+        self.registryFileName = os.path.join(self.outputDir, "widgetregistry.xml")
         self.defaultPic = os.path.join(self.picsDir, "Unknown.png")
 
         canvasIconName = os.path.join(self.canvasDir, "icons/CanvasIcon.png")
@@ -136,7 +140,7 @@ class OrangeCanvasDlg(QMainWindow):
         # if registry doesn't exist yet, we create it
         if rebuildRegistry == 1:
             parse = xmlParse.WidgetsToXML()
-            parse.ParseWidgetRoot(self.widgetDir, self.canvasDir)
+            parse.ParseWidgetRoot(self.widgetDir, self.outputDir)
             
         # if registry still doesn't exist then something is very wrong...
         if not os.path.exists(self.registryFileName):
@@ -168,8 +172,8 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.menuFile = QPopupMenu( self )
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_new)), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
-        self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
-        self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
+        #self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
+        #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         self.menuFile.insertItem( "&Close", self.menuItemClose )
         self.menuFile.insertSeparator()
@@ -292,7 +296,7 @@ class OrangeCanvasDlg(QMainWindow):
         return
 
     def menuItemOpen(self):
-        name = QFileDialog.getOpenFileName( os.getcwd(), "Orange Widget Scripts (*.ows)", self, "", "Open File")
+        name = QFileDialog.getOpenFileName( self.settings["saveSchemaDir"], "Orange Widget Scripts (*.ows)", self, "", "Open File")
         if name.isEmpty():
             return
         win = self.menuItemNewSchema()
@@ -659,6 +663,8 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 1
         if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
         if not self.settings.has_key("showSignalNames"): self.settings["showSignalNames"] = 0
+        if not self.settings.has_key("saveSchemaDir"): self.settings["saveSchemaDir"] = os.path.join(user.home, "Orange")
+        if not self.settings.has_key("saveApplicationDir"): self.settings["saveApplicationDir"] = os.path.join(user.home, "Orange")
                 
 
     # Saves settings to this widget's .ini file
