@@ -135,36 +135,41 @@ class updateOrangeDlg(QMainWindow):
         versions = {}
         updateGroups = []; dontUpdateGroups = []
         for line in data:
-            if line:
-                line = line.replace("\r", "")   # replace \r in case of linux files
-                line = line.replace("\n", "")
-                if line[0] == "+":
-                    updateGroups.append(line[1:])
-                elif line[0] == "-":
-                    dontUpdateGroups.append(line[1:])
-                else:
-                    fnd = self.re_vLocalLine.match(line)
-                    if fnd:
-                        fname, version, md = fnd.group("fname", "version", "md5")
-                        versions[fname] = ([int(x) for x in version.split(".")], md)
+            if not line: continue
+            line = line.replace("\r", "")   # replace \r in case of linux files
+            line = line.replace("\n", "")
+            if not line: continue
+            
+            if line[0] == "+":
+                updateGroups.append(line[1:])
+            elif line[0] == "-":
+                dontUpdateGroups.append(line[1:])
+            else:
+                fnd = self.re_vLocalLine.match(line)
+                if fnd:
+                    fname, version, md = fnd.group("fname", "version", "md5")
+                    versions[fname] = ([int(x) for x in version.split(".")], md)
+
         return versions, updateGroups, dontUpdateGroups
 
     def readInternetVersionFile(self, data, updateGroups = 1):
         versions = {}
         updateGroups = []; dontUpdateGroups = []
         for line in data:
-            if line:
-                line = line.replace("\r", "")   # replace \r in case of linux files
-                line = line.replace("\n", "")
-                if line[0] == "+":
-                    updateGroups.append(line[1:])
-                elif line[0] == "-":
-                    dontUpdateGroups.append(line[1:])
-                else:
-                    fnd = self.re_vInternetLine.match(line)
-                    if fnd:
-                        fname, version, location = fnd.group("fname", "version", "location")
-                        versions[fname] = ([int(x) for x in version.split(".")], location)
+            if not line: continue
+            line = line.replace("\r", "")   # replace \r in case of linux files
+            line = line.replace("\n", "")
+            if not line: continue
+
+            if line[0] == "+":
+                updateGroups.append(line[1:])
+            elif line[0] == "-":
+                dontUpdateGroups.append(line[1:])
+            else:
+                fnd = self.re_vInternetLine.match(line)
+                if fnd:
+                    fname, version, location = fnd.group("fname", "version", "location")                
+                    versions[fname] = ([int(x) for x in version.split(".")], location)
         return versions, updateGroups, dontUpdateGroups
 
     def writeVersionFile(self):
@@ -234,12 +239,11 @@ class updateOrangeDlg(QMainWindow):
         self.statusBar.message("Updating files")
         for fname, (version, location) in itms:
             qApp.processEvents()
-            print fname, location
             cat = self.findFileCategory(fname)
             if self.downstuff.has_key(fname):
                 # there is a newer version
                 if self.downstuff[fname][0] < upstuff[fname][0] and cat in self.updateGroups:
-                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1])
+                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "updating")
             else:
                 if cat in self.updateGroups:
                     self.updatefile(fname, location, version, "")
@@ -283,19 +287,16 @@ class updateOrangeDlg(QMainWindow):
     # location = location on the web, where the file can be found
     # version = the newest file version
     # md = hash value of the local file when it was downloaded from the internet - needed to compare if the user has changed the local version of the file
-    def updatefile(self, fname, location, version, md):
-        dname = os.path.dirname(fname)
-        if dname and not os.path.exists(dname):
-            os.makedirs(dname)
-
-        self.addText("downloading <b>%s</b>" % fname)
+    def updatefile(self, fname, location, version, md, type = "downloading"):
+        self.addText(type + " <b>%s</b>" % fname)
         try:
             newscript = self.download("/orange/download/lastStable/"+location)
         except:
             return 0
         
-        if not os.path.exists(os.path.dirname(fname)):
-            os.makedirs(os.path.dirname(fname))
+        dname = os.path.dirname(fname)
+        if dname and not os.path.exists(dname):
+            os.makedirs(dname)
 
         # read existing file
         saveFile = 1

@@ -28,8 +28,23 @@ def listfiles(baseurl, basedir, subdir):
                     listfiles(baseurl, basedir, subdir+dname+"/")
         f.close()
 
+def listgroups(basedir, exclude, basetext):
+    for dir in os.listdir(basedir):
+        if not os.path.isdir(os.path.join(basedir, dir)) or dir.lower() in exclude: continue
+        outf.write("+" + basetext + dir + "\n")
+
     
 outf = open(r"../whatsup.txt", "wt")
-listfiles("orange/", "orange/", "")
-listfiles("Genomics/", "orange/orangeWidgets/Genomics/", "")
+
+
+# find groups
+outf.write("+Orange Root\n")
+outf.write("+Orange Documentation\n")
+
+listgroups(".\\orange", ["orangewidgets", "doc", "cvs"] , "")
+listgroups(".\\orange\\orangeWidgets", ["cvs"] , "OrangeWidgets\\")      # add default groups of widgets
+listgroups(".", ["orange", "source"], "OrangeWidgets\\")    # directories in the \laststable are widget groups
+
+listfiles("orange/", "", "")
+listfiles("Genomics/", "orangeWidgets/Genomics/", "")
 outf.close()
