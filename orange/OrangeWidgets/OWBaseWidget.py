@@ -5,7 +5,7 @@
 #
 
 import sys
-import ConfigParser,os
+import ConfigParser, os, os.path
 import orange
 from string import *
 import cPickle
@@ -57,15 +57,12 @@ class OWBaseWidget(QDialog):
             logo - the logo file
         """
         # directories are better defined this way, otherwise .ini files get written in many places
-        import os.path
         self.widgetDir = os.path.dirname(__file__) + "/"
         fullIcon = self.widgetDir + "icons/" + icon 
         logo = self.widgetDir + "icons/" + logo
-        #fullIcon = os.path.realpath("./icons") + "/" + icon
-        #logo = os.path.realpath("./icons") + "/" +logo
-        #self.widgetDir = os.path.realpath(".") + "/"
-        self.title = title.replace("&","")
-        self.captionTitle=title.replace("&","")
+
+        self.title = title.replace("&","")          # used for ini file
+        self.captionTitle=title.replace("&","")     # used for widget caption
 
         # if we want the widget to show the title then the title must start with "Qt"
         if self.captionTitle[:2].upper != "QT":
@@ -76,7 +73,7 @@ class OWBaseWidget(QDialog):
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
         #self.stackHeight = 0
-        self.needProcessing = 0
+        self.needProcessing = 0     # used by signalManager
 
         self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
         self.outputs = []    # signalName: dataType
@@ -102,9 +99,10 @@ class OWBaseWidget(QDialog):
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
-        #self.mainArea=QWidget(self)
-        #self.controlArea=QVBox(self)
-        #self.space=QVBox(self)
+
+    def setCaptionTitle(self, caption):
+        self.captionTitle = caption     # we have to save caption title in case progressbar will change it
+        QDialog.setCaption(self, caption)
         
     # put this widget on top of all windows
     def reshow(self):
@@ -285,12 +283,15 @@ class OWBaseWidget(QDialog):
     # ############################################
     # PROGRESS BAR FUNCTIONS
     def progressBarInit(self):
+        self.setCaption(self.captionTitle + " (0% complete)")
         if self.progressBarHandler: self.progressBarHandler(self, -1)
-
+        
     def progressBarSet(self, value):
+        self.setCaption(self.captionTitle + " (%d%% complete)" % (value))
         if self.progressBarHandler: self.progressBarHandler(self, value)
 
     def progressBarFinished(self):
+        self.setCaption(self.captionTitle)
         if self.progressBarHandler: self.progressBarHandler(self, 101)
 
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101

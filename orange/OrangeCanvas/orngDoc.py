@@ -250,7 +250,7 @@ class SchemaDoc(QMainWindow):
             while self.getWidgetByCaption(caption + " (" + str(i) + ")"): i+=1
             caption = caption + " (" + str(i) + ")"
         newwidget.updateText(caption)
-        newwidget.instance.setCaption("Qt " + caption)
+        newwidget.instance.setCaptionTitle("Qt " + caption)
 
         self.signalManager.addWidget(newwidget.instance)
         newwidget.show()
@@ -529,7 +529,7 @@ class SchemaDoc(QMainWindow):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
-                captions  += "self.ow%s.setCaption('Qt %s')\n" %(name, widget.caption) +t+t
+                captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
@@ -621,7 +621,7 @@ class SchemaDoc(QMainWindow):
         handlerFunct = """
     def progressHandler(self, widget, val):
         if val < 0:
-            self.caption.setText("<nobr>Processing: <b>" + str(widget.caption()) + "</b></nobr>")
+            self.caption.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
             self.caption.show()
             self.progress.setProgress(0)
             self.progress.show()
