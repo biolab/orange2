@@ -36,14 +36,14 @@ class mlexception : public exception {
 public:
    string err_desc;
 
-   mlexception(const string &des)
+   mlexception(const string &desc)
    : err_desc(desc)
    {}
 
    ~mlexception() throw()
    {}
 
-   virtual const char* what () const throw();
+   virtual const char* what () const throw()
    { return err_desc.c_str(); };
 };
 #endif
