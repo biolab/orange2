@@ -20,6 +20,7 @@ class OWWidget(OWBaseWidget):
     description="This a general Orange Widget\n from which all the other Orange Widgets are derived.",
     wantSettings=FALSE,
     wantGraph=FALSE,
+    wantAbout=FALSE,
     icon="OrangeWidgetsIcon.png",
     logo="OrangeWidgetsLogo.png",
     ):
@@ -35,7 +36,7 @@ class OWWidget(OWBaseWidget):
             parent - parent of the widget if needed
         """
 
-        apply(OWBaseWidget.__init__, (self, parent, title, description, wantSettings, wantGraph, 1, icon, logo))
+        apply(OWBaseWidget.__init__, (self, parent, title, description, wantSettings, wantGraph, wantAbout, icon, logo))
         #OWBaseWidget.__init__(self, parent, )
 
         self.mainArea=QWidget(self)
