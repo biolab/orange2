@@ -441,8 +441,8 @@ class MarginMetaLearner:
                   learn_data = examples.selectref(selection, fold, negate=1)
                   test_data  = examples.selectref(selection, fold)
               else:
-                  learn_data = selection
-                  test_data  = selection
+                  learn_data = examples
+                  test_data  = examples
                   
 
               if weight!=0:
@@ -465,8 +465,6 @@ class MarginMetaLearner:
                 return self.learner(examples)
             else:
                 return self.learner(examples,weight)
-        for x in mistakes:
-            print x
         if weight != 0:
             # learn a classifier to estimate the probabilities from margins
             # learn a classifier for the whole training set
@@ -475,6 +473,10 @@ class MarginMetaLearner:
         else:
             estimate = self.metalearner(mistakes)
             classifier = self.learner(examples)
+
+        #print estimate.classifier.classifier
+        #for x in mistakes:
+        #    print x,estimate(x,orange.GetBoth)
 
         return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain)
 
@@ -486,7 +488,7 @@ class MarginMetaClassifier:
         self.domain = domain
         self.estdomain = estdomain
         self.cv = self.estdomain.classVar(0)
-        self.name = 'MarginMetaClassifier'        
+        self.name = 'MarginMetaClassifier'
 
     def __call__(self, example, format = orange.GetValue):
         r = self.classifier.getmargin(example)

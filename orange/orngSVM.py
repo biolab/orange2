@@ -150,7 +150,11 @@ class BasicSVMClassifier:
       assert(self.model['nr_class'] <= 2) # this should work only with 2-class problems
       if self.model['nr_class'] == 2:
         td = self.translate.extransform(example)
-        margin = -orngCRS.SVMClassifyM(self.cmodel,td)
+        if self.model["label"][0] == 1:
+          margin = orngCRS.SVMClassifyM(self.cmodel,td)
+        else:
+          margin = -orngCRS.SVMClassifyM(self.cmodel,td)
+        return margin
       else:
         # it can happen that there is a single class
         return 0.0

@@ -25,7 +25,12 @@ class PCA:
         self.variance = d               # principal components' variance
         self.factors = v                # the principal basis
         d2 = Numeric.power(d,2)
-        self.R_squared = d2/Numeric.sum(d2) # percentage of total variance explained by individual components
+        s = Numeric.sum(d2)
+        if s > 1e-6:
+            s = d2/s
+        else:
+            s = 1.0
+        self.R_squared = s # percentage of total variance explained by individual components
 
 def Centering(vector):
     assert(len(Numeric.shape(vector))==1) # this must be a vector

@@ -85,9 +85,9 @@ class _parseLR(_parse):
 
 
 def _treshold(x):
-    if x < 0.0:
+    if x > 0.0:
         return 1.0
-    elif x > 0.0:
+    elif x < 0.0:
         return 0.0
     return 0.5
 
@@ -137,7 +137,7 @@ class _parseSVM(_parse):
                 coeffs[j] += coef*csv[j+1][1]
 
         # reverse the betas if the labels got switched
-        if classifier.model["label"][0] == 1:
+        if classifier.model["label"][0] == 0:
             beta = -beta
             coeffs = [-x for x in coeffs]
 
@@ -232,7 +232,7 @@ class Visualizer:
         # U' = U*D*V
         # N' * V^-1 * D^-1 = N
         # N = N' * (D*V)^-1
-        DV = Numeric.dot(Numeric.identity(len(coeffs),Numeric.Float)*pca.variance,pca.factors)
+        DV = Numeric.dot(Numeric.identity(len(coeffs),Numeric.Float)*Numeric.clip(pca.variance,1e-6,1e6),pca.factors)
         nbasis = Numeric.dot(basis_proj,LinearAlgebra.inverse(DV))
 
         self.coeff_names = coeff_names
@@ -270,34 +270,33 @@ if __name__== "__main__":
         if printexamples:
             print "\nexamples:"
             for i in range(len(t)):
-                print t[i],'->',m.example_c[i], c(t[i],orange.GetProbabilities), m.probfunc(m.example_c[i][0])
+                print t[i],'->',m.example_c[i], c(t[i],orange.GetBoth), m.probfunc(m.example_c[i][0])
 
         print "\nprobability:"
         print "-0.5:",m.probfunc(-0.5)
         print " 0.0:",m.probfunc(0.0)
         print "+0.5:",m.probfunc(+0.5)
 
-    def test():
-        print "NAIVE BAYES"
-        print "==========="
-        c = orange.BayesLearner(t)
-        printmodel(t,c,printexamples=1)
+    print "NAIVE BAYES"
+    print "==========="
+    c = orange.BayesLearner(t)
+    printmodel(t,c,printexamples=0)
 
-        print "\n\nLOGISTIC REGRESSION"
-        print     "==================="
-        c = orngLR_Jakulin.BasicLogisticLearner()(t)
-        printmodel(t,c,printexamples=0)
+    print "\n\nLOGISTIC REGRESSION"
+    print     "==================="
+    c = orngLR_Jakulin.BasicLogisticLearner()(t)
+    printmodel(t,c,printexamples=0)
 
     print "\n\nLINEAR SVM"
     print     "=========="
     l = orngSVM.BasicSVMLearner()
     l.kernel = 0 # linear SVM
     c = l(t)
-    printmodel(t,c,printexamples=1)
+    printmodel(t,c,printexamples=0)
 
     print "\n\nMARGIN SVM"
     print     "=========="
     l = orngSVM.BasicSVMLearner()
     l.kernel = 0 # linear SVM
     c = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(t)
-    printmodel(t,c,printexamples=1)
+    printmodel(t,c,printexamples=0)
