@@ -171,8 +171,8 @@ class Standardizer:
         print "standardizer: "
         print "\tattr:",self.attr
         print "\tidx: ",self.idx
-        print "\tmin: ",self.min
-        print "\tmax: ",self.max
+        print "\taverage: ",self.avg
+        print "\tstddev: ",self.stddev
             
     def prep(self):
         self.avg /= len(self.values)
@@ -193,6 +193,8 @@ class Standardizer:
 
     def prepareLR(self):
         self.prep()
+        self.mult = 1.0
+        self.missing = 0.0
         
     def apply(self,ex,list):
         (value,spec) = _getattr(ex,self.attr)

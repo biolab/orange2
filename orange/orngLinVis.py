@@ -30,13 +30,13 @@ class _parse:
     def bucketize(self, examples, attribute, buckets, getbuckets = 0):
         assert(attribute.varType == 2) # continuous
         l = [float(x[attribute]) for x in examples]
-        sort(l)
+        l.sort()
         m = len(l)/buckets
         if m == 0:
             buckets = 1
-        sets = [l[:m*buckets]]
-        for x in range(1,buckets+1):
-            sets.append(l[m*buckets:m*buckets+1])
+        sets = [l[:m]]
+        for x in range(1,buckets):
+            sets.append(l[m*x:m*(x+1)])
         values = [_avg(x) for x in sets]
         if getbuckets:
             return (values,sets)
@@ -47,14 +47,13 @@ class _parse:
         pv = values[0]
         pi = 0
         for k in xrange(1,len(values)):
-            if cv <= values[k]:
-                if values[k]-cv < cv-pv:
-                    pi = k-1
+            if x <= values[k]:
+                if values[k]-x < x-pv:
                     return k
+                return pi
             pv = values[k]
             pi = k
-        return len(values)-1
-        
+        return len(values)-1        
         
     def __init__(self):
         pass
@@ -77,9 +76,11 @@ class _parseNB(_parse):
         offsets = []
         setss = []
         runi = 0
+        transfvalues = [] # true conditional probability for each continuous value that appears in the data
         for i in range(len(classifier.domain.attributes)):
             tc = ["%s"%classifier.domain.attributes[i].name]
             offsets.append(runi)
+            LUT = {}
             if classifier.domain.attributes[i].varType == 1:
                 # discrete attribute
                 for j in range(len(classifier.domain.attributes[i].values)):
@@ -91,34 +92,49 @@ class _parseNB(_parse):
                 setss.append(0)
             elif classifier.domain.attributes[i].varType == 2:
                 # continuous attribute
-                (val,sets,avg,stddev) = self._bucketize(examples,classifier.domain.attributes[i],buckets,1)
+                (val,sets) = self.bucketize(examples,classifier.domain.attributes[i],buckets,1)
                 p1 = 0.0
                 p0 = 0.0
                 # fill in the sum of probabilities, finding the nearest probability
                 l = 0
+                pp = -1e200
+                pv = -1e200
                 mm = classifier.conditionalDistributions[i].items()
                 for j in xrange(len(val)):
+#                    print sets[j][0],sets[j][-1],l
                     tc.append(val[j])
-                    pp = -1e200
-                    pv = -1e200
                     k = 0
                     while k < len(sets[j]) and l < len(mm):
                         # find the two nearest points to the given example value
-                        while l < len(mm) and mm[l][0] <= sets[j][k]:
-                            pv = mm[l][0]
-                            pp = mm[l][1]
-                            l += 1
+                        if l < len(mm):
+                            while mm[l][0] <= sets[j][k]:
+                                pv = mm[l][0]
+                                pp = mm[l][1]
+                                l += 1
+                                if l >= len(mm):
+                                    break
                         # mark example values that are closer to the previous point
-                        while k < len(sets[j]) and sets[j][k]-pv <= mm[l][0]-sets[j][k]:
-                            p1 += pp[1]
-                            p0 += pp[0]
-                            k += 1
+                        if k < len(sets[j]) and l < len(mm):
+                            while sets[j][k]-pv <= mm[l][0]-sets[j][k]:
+                                LUT[sets[j][k]] = self._safeRatio(pp[1],pp[0])+beta
+                                p1 += pp[1]
+                                p0 += pp[0]
+                                k += 1
+                                if k >= len(sets[j]):
+                                    break
+                    while k < len(sets[j]):
+                        LUT[sets[j][k]] = self._safeRatio(pp[1],pp[0])+beta
+                        p1 += pp[1]
+                        p0 += pp[0]
+                        k += 1                                                  
+                    #print l, k, pv, mm[l][0], sets[j][k], len(mm), len(sets[j])
                     coeffs.append(self._safeRatio(p1,p0)+beta)
                     runi += 1
                 setss.append(sets)
             else:
                 raise "unknown attribute type"
             coeff_names.append(tc)
+            transfvalues.append(LUT)
             
 
         # create the basis vectors for each attribute
@@ -138,11 +154,16 @@ class _parseNB(_parse):
                         m[i][offsets[j]+int(examples[i][classifier.domain.attributes[j]])] = 1.0
                 else:
                     # quantize
-                    cv = float(examples[i][classifier.domain.attributes[j]])
-                    k = self._quantize(coeff_names[j][1:],cv)
-                    m[i][offsets[j]+k] = cv
-                                    
-                
+                    cv = float(examples[i][classifier.domain.attributes[j]]) # obtain the attribute value
+                    k = self.quantize(coeff_names[j][1:],cv) # obtain the right bucket
+                    tm = transfvalues[j][cv]  # true margin
+                    mu = coeffs[offsets[j]+k] # multiplier for the bucket
+                    if abs(mu)>1e-6:
+                        ac = tm/mu
+                    else:
+                        ac = tm
+                    m[i][offsets[j]+k] = ac
+
         return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
 
 class _parseLR(_parse):
@@ -155,8 +176,8 @@ class _parseLR(_parse):
             d = t.description()
             #print tc[0],d
             if d[0]==0:
-                # continuous                
-                values = bucketize(self, examples, t.attr, buckets)
+                # continuous
+                values = self.bucketize(examples, t.attr, buckets) 
                 tc += values
                 descriptors.append((i,-1))
             else:
@@ -185,14 +206,14 @@ class _parseLR(_parse):
                     # continuous
                     contins.append(len(coeff_names))
                     coeff_names.append(tcoeff_names[a])
-                    total += len(coeff_names[-1] - 1)
+                    total += len(coeff_names[-1]) - 1
                 else:
                     coeff_names.append([tcoeff_names[a][0],tcoeff_names[a][1+b]])
                     total += 1
                     cur_i = a
         return coeff_names,total,contins
 
-    def getBasis(self, total,xcoeffs,contins):
+    def getBasis(self, total,xcoeffs,contins, coeff_names):
         # create the basis vectors for each attribute
         basis = Numeric.identity((total), Numeric.Float)
         
@@ -200,43 +221,53 @@ class _parseLR(_parse):
         x = Numeric.ones((total,), Numeric.Float)
         coeffs = []
         lookup = []
-        offset = 0
-        prev = 0
-        for i in contins:
-            for j in range(prev,i-1):
-                # copy from coeffs, do not copy the current value
+        conti = 0
+        j = 0
+        jj = 0
+        contins.append(-1) # sentry
+        nlookup = []
+        for i in xrange(len(coeff_names)):
+            nlookup.append(len(coeffs))
+            if i==contins[conti]:
+                # continuous
+                conti += 1
                 lookup.append(len(coeffs))
-                coeffs.append(xcoeffs[j])
-            prev = i
-            vals = coeff_names[i][1:]
-            for j in range(len(vals)):
-                x[offset+i+j] = vals[j]
-            offset += len(vals)-1
+                for k in xrange(len(coeff_names[i])-1):
+                    coeffs.append(xcoeffs[jj])
+                    v = coeff_names[i][k+1]
+                    x[j] = v
+                    j += 1
+                jj += 1
+            else:
+                # discrete
+                for k in xrange(len(coeff_names[i])-1):
+                    lookup.append(len(coeffs))
+                    coeffs.append(xcoeffs[jj])
+                    j += 1
+                    jj += 1
         basis *= x
-        for j in range(prev,len(xcoeffs)):
-            # copy from coeffs, do not copy the current value
-            lookup.append(len(coeffs))
-            coeffs.append(xcoeffs[j])
-        return (basis,lookup,coeffs)
+        return (basis,lookup,nlookup,coeffs)
 
-    def getExamples(self,tex,dim,classifier,lookup,contins):
+    def getExamples(self,exx,tex,dim,classifier,lookup,nlookup,contins, coeff_names):
         # create the example matrix (only attributes)
         m = Numeric.zeros((len(tex),dim), Numeric.Float)
-        for i in xrange(len(tex)):
-            tv = tex[i]
+        for j in xrange(len(tex)):
+            tv = tex[j]
             # do the insertion and quantization
             # copy all coefficients
             for i in xrange(len(lookup)):
-                m[i][lookup[i]] = tv[i]
+                m[j][lookup[i]] = tv[i]
 
             # quantize the continuous attributes
-            for i in contins:
+            for i in contins[:-1]:
                 # obtain the marker
                 vals = coeff_names[i][1:]
-                x = tv[i]
-                newi = self._quantize(vals,x)
-                m[i][lookup[i]] = 0.0
-                m[i][lookup[i]+newi] = x
+                x = float(exx[j][coeff_names[i][0]]) # get the untransformed value of the attribute
+                newi = self.quantize(vals,x)
+                # move the value to the right bucket
+                v = m[j][nlookup[i]]
+                m[j][nlookup[i]] = 0.0
+                m[j][nlookup[i]+newi] = v
         return m
 
     def __call__(self,classifier,examples, buckets):
@@ -254,13 +285,13 @@ class _parseLR(_parse):
         
         xcoeffs = primitivec.beta[1:]
 
-        (basis,lookup,coeffs) = self.getBasis(total, xcoeffs, contins)
+        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names)
 
         tex = []
         for ex in examples:
             tex.append(robustc.translate(classifier.translator.extransform(ex)))
-            
-        m = self.getExamples(tex,len(basis),classifier,lookup,contins)
+
+        m = self.getExamples(examples,tex,len(basis),classifier,lookup,nlookup,contins, coeff_names)
 
         return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
 
@@ -293,13 +324,13 @@ class _parseSVM(_parseLR):
             beta = -beta
             xcoeffs = [-x for x in xcoeffs]
 
-        (basis,lookup,coeffs) = self.getBasis(total, xcoeffs, contins)
+        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names)
 
         tex = []
         for i in range(len(examples)):
             tex.append(classifier.translate.extransform(examples[i]))
  
-        m = self.getExamples(tex,len(basis),classifier,lookup,contins)
+        m = self.getExamples(examples,tex,len(basis),classifier,lookup,nlookup,contins, coeff_names)
 
         return (beta, coeffs, coeff_names, basis, m, _treshold)
 
@@ -345,7 +376,7 @@ class Visualizer:
             except:
                 raise "Unrecognized classifier: %s"%classifier
     
-    def __init__(self, examples, classifier, dimensions = 2, buckets = 3):
+    def __init__(self, examples, classifier, dimensions = 2, buckets = 3, getpies = 0):
         # error detection        
         if len(examples.domain.classVar.values) != 2:
             raise "The domain does not have a binary class. Binary class is required."
@@ -372,29 +403,44 @@ class Visualizer:
         n *= ilength
         beta *= ilength
         self.probfunc = lambda x:probfunc(x*length)
-        #self.probfunc = lambda x:probfunc(x)
         
-        #if len(basis) > len(examples):
-        #    raise "Too few examples for that many attribute values. This can be handled, ask Aleks to eliminate null spaces."
-
         # project the example matrix on the separating hyperplane, removing the displacement
         h_dist = Numeric.dot(m,n)
         h_proj = m - Numeric.dot(Numeric.reshape(h_dist,(len(examples),1)),Numeric.reshape(n,(1,len(coeffs))))
         h_dist -= beta # correct distance
 
+        # perform classification for all examples
+        if getpies:
+            self.pies = []
+            for j in range(len(examples)):
+                p1 = self.probfunc(h_dist[j])
+                p0 = 1-p1
+                t = []
+                # calculate for all coefficients, prior (beta) is last
+                projj = m[j]*n # projection in the space defined by the basis and the hyperplane
+                tn = Numeric.concatenate((projj,[beta-h_dist[j]]))
+                evidence0 = -Numeric.clip(tn,-1e200,0.0)
+                evidence1 = Numeric.clip(tn,0.0,1e200)
+                # evidence for label 0
+                evidence0 *= p0/max(Numeric.sum(evidence0),1e-6)
+                # evidence for label 1
+                evidence1 *= p1/max(Numeric.sum(evidence1),1e-6)
+                self.pies.append((evidence0,evidence1,projj))
+                
         basis_dist = Numeric.dot(basis,n)
         basis_proj = basis - Numeric.dot(Numeric.reshape(basis_dist,(len(coeffs),1)),Numeric.reshape(n,(1,len(coeffs))))
         basis_dist -= beta
 
-        # perform standardization of attributes
+        # perform standardization of attributes; the pa
         for i in xrange(len(coeffs)):
             # standardize the examples and return parameters
             (h_proj[:,i],transf) = orngDimRed.VarianceScaling(h_proj[:,i])
-            # now transform the basis with the same parameters
+            # now transform the basis and the examples with the same parameters, so that nothing changes
             (basis_proj[:,i],transf) = orngDimRed.VarianceScaling(basis_proj[:,i],transf)
+            #(m[:,i],transf) = orngDimRed.VarianceScaling(m[:,i],transf)
 
-        # obtain the second dimension using PCA, but we only need a single principal vector
-        pca = orngDimRed.PCA(h_proj,1)
+        # obtain the second dimension using PCA
+        pca = orngDimRed.PCA(h_proj,dimensions-1)
         # now transform the basis using the same matrix (need N)
         # U' = U*D*V
         # N' * V^-1 * D^-1 = N
@@ -415,16 +461,16 @@ class Visualizer:
             for i in range(len(examples)):
                 self.example_c[i].append(pca.loading[i][j-1])
             for i in range(len(coeffs)):
-                self.basis_c[i].append(nbasis[i][j-1])
+                self.basis_c[i].append(nbasis[i][j-1])            
 
 
 if __name__== "__main__":
     import orngLR_Jakulin, orngSVM, orngMultiClass
-    t = orange.ExampleTable('x_cmc.tab')
-    #t = orange.ExampleTable('test.tab')
+    #t = orange.ExampleTable('x_cmc.tab') # discrete
+    t = orange.ExampleTable('c_cmc.tab') # continuous
 
     def printmodel(t,c,printexamples=1):
-        m = Visualizer(t,c,buckets=3)
+        m = Visualizer(t,c,buckets=3,getpies=1)
         print "Linear model:"
         print t.domain.classVar.name,':',m.beta
         j = 0
@@ -452,6 +498,37 @@ if __name__== "__main__":
         print " 0.0:",m.probfunc(0.0)
         print "+0.5:",m.probfunc(+0.5)
 
+        idx = 0
+        print "\npie for example",idx,':',t[idx]
+        (e0,e1,vector) = m.pies[idx]
+        def printpie(e,p):
+            x = 0
+            for i in range(len(m.coeff_names)):
+                for j in m.coeff_names[i][1:]:
+                    if e[x] > 0.001:
+                        print '\t%2.1f%% : '%(100*e[x]),m.coeff_names[i][0],'=',
+                        if type(j)==type(1.0):
+                            print t[idx][m.coeff_names[i][0]] # continuous
+                        else:
+                            print j # discrete
+                    x += 1
+            if e[x] > 0.001:
+                print '\t%2.1f%% : '%(100*e[x]),"BASELINE"
+        print "Attributes in favor of %s = %s [%f]"%(t.domain.classVar.name,t.domain.classVar.values[0],1-m.probfunc(m.example_c[idx][0]))
+        printpie(e0,1-m.probfunc(m.example_c[idx][0]))
+        print "Attributes in favor of %s = %s [%f]"%(t.domain.classVar.name,t.domain.classVar.values[1],m.probfunc(m.example_c[idx][0]))
+        printpie(e1,m.probfunc(m.example_c[idx][0]))
+        
+        print "\nProjection of the example in the basis space:"
+        j = 0
+        for i in range(len(m.coeff_names)):
+            print m.coeff_names[i][0],':'
+            for x in m.coeff_names[i][1:]:
+                print '\t',x,'=',vector[j]
+                j += 1
+        print "beta:",-m.beta
+
+
     print "NAIVE BAYES"
     print "==========="
     bl = orange.BayesLearner()
@@ -467,12 +544,13 @@ if __name__== "__main__":
     c = orngLR_Jakulin.BasicLogisticLearner()(t)
     printmodel(t,c,printexamples=0)
 
-    print "\n\nLINEAR SVM"
-    print     "=========="
-    l = orngSVM.BasicSVMLearner()
-    l.kernel = 0 # linear SVM
-    c = l(t)
-    printmodel(t,c,printexamples=0)
+    def deactivated():
+        print "\n\nLINEAR SVM"
+        print     "=========="
+        l = orngSVM.BasicSVMLearner()
+        l.kernel = 0 # linear SVM
+        c = l(t)
+        printmodel(t,c,printexamples=0)
 
     print "\n\nMARGIN SVM"
     print     "=========="
