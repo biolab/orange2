@@ -138,7 +138,7 @@ def countLeaves(tree):
 	if tree:
 		return __countLeaves(tree)
 
-def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major="", el=-1, depth=10000, bi=-1,\
+def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major="", examples = 0, el=-1, depth=10000, bi=-1,\
 				bsn="", bstr="", lshp="plaintext",inshp="box", iNF=[], lF=[], dP=3, z=0.95):
 	s=""
 	if node:
@@ -157,6 +157,8 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 					else:
 						if "confidenceInterval" in iNF:
 							iNFString = " ("+cont[e:]+")"
+					if "examples" in iNF:
+						iNFString += " (%i)" % examples
 				else:
 					if outputFormat=='TXT':
 						iNFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("distribution",cont),("baseValue",bstr)] if i[0] in iNF])+")"
@@ -198,10 +200,10 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 							if outputFormat=='DOT': majorString+="\\n"
 					if outputFormat=='TXT':
 						s+= "\n"+"|   "*lev + "%s%s %s: " % (node.branchSelector.classVar.name, iNFString, node.branchDescriptions[i])
-						s+= __printNode(outputFormat,node.branches[i], lev+1, new_name,continuous, cont, majorString, el,\
+						s+= __printNode(outputFormat,node.branches[i], lev+1, new_name,continuous, cont, majorString, node.branches[i].distribution.abs, el,\
 									depth, bi, bsn, bstr,lshp,inshp,iNF,lF,dP,z)
 					else:
-						s+= __printNode(outputFormat,node.branches[i], lev, new_name,continuous, cont, majorString, el,\
+						s+= __printNode(outputFormat,node.branches[i], lev, new_name,continuous, cont, majorString, node.branches[i].distribution.abs, el,\
 									depth, bi, bsn, bstr,lshp,inshp,iNF,lF,dP,z)
 		else: # print a leaf
 			if outputFormat=='TXT' and lev>=depth:
@@ -217,13 +219,15 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 				else:
 					if "confidenceInterval" in lF:
 						lFString = cont[e:]
+				if "examples" in lF:
+					lFString += " (%i)" % examples
 				if outputFormat=='DOT':
 					s+="\tn%s [shape=%s, label = \"%s\"]\n" % (str(name), lshp, lFString)
 				else:
-					s+=lFString
+					s += lFString
 			else:
 				if outputFormat=='TXT':
-					lFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("distribution",cont),("baseValue",bstr)] if i[0] in lF])+")"
+					lFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("distribution",cont),("baseValue",bstr),("examples",examples)] if i[0] in lF])+")"
 					if lFString == " ()":
 						lFString=""
 					s+= "%s%s" % (node.nodeClassifier.defaultValue, lFString)
@@ -285,7 +289,7 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
 		l = __maxx(tree.distribution)
 		majorString = "%s%s" % (str(l[0][0]*100 / tree.distribution.abs)[0:5], '%')
 
-	s = __printNode('TXT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, \
+	s = __printNode('TXT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, examples=tree.distribution.abs, \
 					el=examplesLimit, depth=depthLimit, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
 					lshp="", inshp="", iNF=internalNodeFields, lF=leafFields, dP=decimalPlaces,z=confidenceLevel)
 	if out:
