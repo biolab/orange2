@@ -4,9 +4,7 @@ from qwt import *
 import sys
 import cPickle
 import os
-import orange
-import orngTest
-import orngStat
+import orange, orngTest, orngStat
 from copy import copy
 
 
@@ -16,12 +14,12 @@ BRIER_SCORE = 2
 
 class kNNOptimization(OWBaseWidget):
     settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "qualityMeasure", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut", "lastSaveDirName"]
-    resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000', '4000', '8000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ,  4000,   8000 ]
-    percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
-    kNeighboursList = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
+    resultsListLenList = [str(x) for x in resultsListLenNums]
+    percentDataList = [str(x) for x in percentDataNums]
+    kNeighboursList = [str(x) for x in kNeighboursNums]
 
     def __init__(self,parent=None):
         #QWidget.__init__(self, parent)
@@ -52,6 +50,7 @@ class kNNOptimization(OWBaseWidget):
         self.attrLenDict = {}
 
         self.loadSettings()
+        self.useLeaveOneOut = 1
         
         self.optimizeButtonBox =QVGroupBox("Optimize toolbox", self)
         self.manageResultsBox = QVGroupBox ("Manage projections", self)
@@ -397,7 +396,7 @@ class kNNOptimization(OWBaseWidget):
         self.minExamples = int(file.readline()[:-1])
         self.percentDataUsed = int(file.readline()[:-1])
         self.qualityMeasure = int(file.readline()[:-1])
-        self.useHeuristics = int(file.readline()[:-1])
+        self.useHeuristics = int(file.readline()[:-1]); self.useHeuristics = 0; # we never want to use heuristics. not enough testing done.
         self.bestSubsets = int(file.readline()[:-1])
         line = file.readline()[:-1]
         while (line != ""):
@@ -422,100 +421,55 @@ class kNNOptimization(OWBaseWidget):
     # ###########################
     # kNNEvaluate - compute classification accuracy or brier score for data in table in percents
     def kNNComputeAccuracy(self, table):
-        temp = 0.0
+        # select a subset of the data if necessary
         percentDataUsed = int(str(self.percentDataUsedCombo.currentText()))
-        experiments = 0            
-        knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0)
-        selection = orange.MakeRandomIndices2(table, 1.0-float(percentDataUsed)/100.0)
-
+        if percentDataUsed != 100:
+            indices = orange.MakeRandomIndices2(table, 1.0-float(percentDataUsed)/100.0)
+            testTable = table.select(indices)
+        else: testTable = table
+        
         qApp.processEvents()        # allow processing of other events
 
-        # continuous class value
-        if table.domain.classVar.varType == orange.VarTypes.Continuous:
-            for j in range(len(table)):
-                if selection[j] == 0: continue
-                temp += pow(table[j].getclass() - knn(table[j]), 2)
-                experiments += 1
-            accuracy = temp/float(experiments)
-            return 100.0*accuracy
-    
-        if not self.useLeaveOneOut:
-            for j in range(len(table)):
-                if selection[j] == 0: continue
-                out = knn(table[j], orange.GetProbabilities)
-                if self.qualityMeasure == AVERAGE_CORRECT:
-                    temp += out[table[j].getclass()]
-                elif self.qualityMeasure == CLASS_ACCURACY:
-                    temp += out[table[j].getclass()] == max(out)
-                else:
-                    sum = 0
-                    for val in out: sum += val*val
-                    temp += sum - 2*out[table[j].getclass()]
-                experiments += 1
+        # compute accuracy
+        knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+        results = orngTest.leaveOneOut([knn], testTable)
 
-            if self.qualityMeasure == BRIER_SCORE:
-                return (temp + experiments)/(float(len(list(table.domain.classVar.values))*experiments))
-            else:
-                return 100.0 * temp / float(experiments)
-        else:
-            results = orngTest.leaveOneOut([orange.kNNLearner(k=self.kValue, rankWeight=0)], table)
+        if self.qualityMeasure == AVERAGE_CORRECT:
+            val = 0.0
             for res in results.results:
-                if self.qualityMeasure == AVERAGE_CORRECT:
-                    temp += res.probabilities[0][res.actualClass]
-                elif self.qualityMeasure == CLASS_ACCURACY:
-                    temp += res.probabilities[0][res.actualClass] == max(res.probabilities[0])
-                else:
-                    sum = 0
-                    for val in res.probabilities[0]: sum += val*val
-                    temp += sum - 2*res.probabilities[0][res.actualClass]
-            if self.qualityMeasure == BRIER_SCORE:
-                return (temp + len(results.results))/(float(len(list(table.domain.classVar.values)) * len(results.results)))
-            else:
-                return 100.0 * temp / len(results.results)
+                val += res.probabilities[0][res.actualClass]
+            val/= float(len(results.results))
+            return val
+        elif self.qualityMeasure == BRIER_SCORE:
+            return orngStat.BrierScore(results)[0]
+        elif self.qualityMeasure == CLASS_ACCURACY:
+            return 100*orngStat.CA(results)[0]
 
         
     # #############################
     # kNNClassifyData - compute classification error for every example in table
     def kNNClassifyData(self, table):
-        knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0)
+        knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+        results = orngTest.leaveOneOut([knn], table)
         
         qApp.processEvents()        # allow processing of other events
-
-        # continuous class variable
-        if table.domain.classVar.varType == orange.VarTypes.Continuous:
-            for j in range(len(table)):
-                returnTable.append(pow(table[j][2].value - knn(table[j]), 2))
-            # normalize the data to the 0-1 interval
-            maxError = max(returnTable)
-            return [val/maxError for val in returnTable]
-
-        lenClassValues = len(list(table.domain.classVar.values))
         returnTable = []
-        if not self.useLeaveOneOut:
-            for j in range(len(table)):
-                out = knn(table[j], orange.GetProbabilities)
-                if self.qualityMeasure == AVERAGE_CORRECT:
-                    returnTable.append(out[table[j].getclass()])
-                elif self.qualityMeasure == CLASS_ACCURACY:
-                    returnTable.append(int(out[table[j].getclass()] == max(out)))
-                else:
-                    sum = 0
-                    for val in out: sum += val*val
-                    returnTable.append((sum + 1 - 2*out[table[j].getclass()])/float(lenClassValues))
-
-        else:
-            results = orngTest.leaveOneOut([orange.kNNLearner(k=self.kValue, rankWeight=0)], table)
+        lenClassValues = len(list(table.domain.classVar.values))
+        if self.qualityMeasure == AVERAGE_CORRECT:
             for res in results.results:
-                if self.qualityMeasure == AVERAGE_CORRECT:
-                    returnTable.append(res.probabilities[0][res.actualClass])
-                elif self.qualityMeasure == CLASS_ACCURACY:
-                    returnTable.append(int(res.probabilities[0][res.actualClass] == max(res.probabilities[0])))
-                else:
-                    sum = 0
-                    for val in res.probabilities[0]: sum += val*val
-                    returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+                returnTable.append(out[table[j].getclass()])
+        elif self.qualityMeasure == BRIER_SCORE:
+            for res in results.results:
+                sum = 0
+                for val in res.probabilities[0]: sum += val*val
+                returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+        elif self.qualityMeasure == CLASS_ACCURACY:
+            for res in results.results:
+                returnTable.append(max(res.probabilities[0][res.actualClass] == max(res.probabilities[0])))
+
         return returnTable
 
+    # TEST TEST TEST TEST !!!
     # from a given dataset return list of (acc, attrs), where attrs are subsets of lenght subsetSize of attributes from table
     # that give the best kNN prediction on table
     def kNNGetInterestingSubsets(self, subsetSize, attributes, returnListSize, table, testingList = []):
