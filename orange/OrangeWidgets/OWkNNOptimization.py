@@ -65,7 +65,7 @@ class kNNOptimization(OWBaseWidget):
         self.percentDataUsed = 100
         self.qualityMeasure = 1
         self.testingMethod = 1
-        self.optimizationType = 0
+        self.optimizationType = 1
         self.attributeCountIndex = 0
         self.evaluationAlgorithm = 0
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
@@ -171,7 +171,7 @@ class kNNOptimization(OWBaseWidget):
         for i in range(3,15):
             self.attributeCountCombo.insertItem(str(i))
         self.attributeCountCombo.insertItem("ALL")
-        self.attributeCountIndex = 0
+        self.attributeCountIndex = 1
 
         self.resultList = QListBox(self.resultsBox)
         #self.resultList.setSelectionMode(QListBox.Extended)   # this would be nice if could be enabled, but it has a bug - currentItem doesn't return the correct value if this is on
