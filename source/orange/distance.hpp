@@ -96,7 +96,7 @@ public:
 
   PFloatList normalizers; //P normalizing factors for attributes
   PFloatList bases; //P lowest values for attributes
-  PFloatList averages; //P average values for continuous attribute values
+  PAttributedFloatList averages; //P average values for continuous attribute values
   PFloatList variances; //P variations for continuous attribute values
   int domainVersion; //P version of domain on which the ranges were computed
   bool normalize; //P tells whether to normalize distances between attributes

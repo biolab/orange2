@@ -236,7 +236,6 @@ class _TOrangeVector<TValue> : public TOrange
 VWRAPPER(ValueList)
 
 
-
 template<class T>
 class TOrangeVector : public TOrange
 { public:
@@ -318,5 +317,41 @@ class TOrangeVector : public TOrange
     virtual TOrange *clone() const
       { return mlnew TOrangeVector<T>(*this); }
 };
+
+
+#define TVarList TOrangeVector<PVariable> 
+VWRAPPER(VarList)
+
+class TAttributedFloatList : public _TOrangeVector<float>
+{
+public:
+  PVarList attributes;
+
+  TAttributedFloatList()
+  {}
+
+  TAttributedFloatList(PVarList vlist)
+  : attributes(vlist)
+  {}
+
+  TAttributedFloatList(PVarList vlist, const size_type &i_N, const float & = 0.0)
+  : _TOrangeVector<float>(i_N, 0.0),
+    attributes(vlist)
+  {}
+
+  TAttributedFloatList(PVarList vlist, const vector<float> &i_X)
+  : _TOrangeVector<float>(i_X),
+    attributes(vlist)
+  {}
+
+  static TClassDescription st_classDescription;
+  virtual TClassDescription const *classDescription() const;
+  virtual TOrange *clone() const;
+};
+
+/* This is to fool pyprops.py
+#define TAttributedFloatList _TOrangeVector<float>
+*/
+VWRAPPER(AttributedFloatList)
 
 #endif

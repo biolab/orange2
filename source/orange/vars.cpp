@@ -34,12 +34,27 @@
 #include "classify.hpp"
 #include "domain.hpp"
 #include "random.hpp"
+#include "orvector.hpp"
+
 
 #include "vars.ppp"
 
 
 DEFINE_TOrangeVector_classDescription(PVariable, "TVarList")
 DEFINE_TOrangeVector_classDescription(PVarList, "TVarListList")
+
+
+TPropertyDescription TAttributedFloatList_properties[] = {
+  {"attributes", "The list of attributes that corresponds to elements of the list", &typeid(POrange), &TVarList::st_classDescription, offsetof(TAttributedFloatList, attributes), false, false},
+  {NULL}
+};
+
+size_t const TAttributedFloatList_components[] = { 0};
+TClassDescription TAttributedFloatList::st_classDescription = { "TAttributedFloatList", &typeid(TAttributedFloatList), &TOrange::st_classDescription, TAttributedFloatList_properties, TAttributedFloatList_components };
+TClassDescription const *TAttributedFloatList::classDescription() const { return &TAttributedFloatList::st_classDescription; }
+TOrange *TAttributedFloatList::clone() const { return mlnew TAttributedFloatList(*this); }
+
+
 
 TPropertyDescription TValueList_properties[] = {
   {"variable", "The attribute to which the list applies", &typeid(POrange), &TVariable::st_classDescription, offsetof(TValueList, variable), false, false},

@@ -35,6 +35,7 @@ DEFINE__TOrangeVector_classDescription(double, "TDoubleList")
 DEFINE__TOrangeVector_classDescription(string, "TStringList")
 
 // TValueList's properties are defined in vars.cpp
+// TAttributeFloatList's properties are defined in vars.cpp
 
 #define pff pair<float, float>
 DEFINE__TOrangeVector_classDescription(pff, "TFloatFloatList")

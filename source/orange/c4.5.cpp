@@ -686,6 +686,7 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
 { 
   PTreeNode newNode = mlnew TTreeNode();
   newNode->distribution = classDist;
+  newNode->distribution->normalize();
 
   if (items > 0)
     newNode->nodeClassifier = mlnew TDefaultClassifier(examples->domain->classVar, leaf, classDist);
@@ -788,5 +789,5 @@ PTreeClassifier TC45Classifier::asTreeClassifier(PExampleGenerator examples, con
   PExampleTable exampleTable = toExampleTable(examples);
 
   PTreeNode orangeTree = tree->asTreeNode(examples, weightID, storeContingencies, storeExamples);
-  return mlnew TTreeClassifier(PDomain(), orangeTree, mlnew TTreeDescender_UnknownMergeAsBranchSizes());
+  return mlnew TTreeClassifier(examples->domain, orangeTree, mlnew TTreeDescender_UnknownMergeAsBranchSizes());
 }

@@ -30,6 +30,7 @@
 #include "distvars.hpp"
 #include "contingency.hpp"
 #include "basstat.hpp"
+#include "orvector.hpp"
 
 #include "distance.ppp"
 
@@ -94,7 +95,7 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized()
 TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreClass, const bool &no, const bool &iu, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat bstat)
 : normalizers(mlnew TFloatList()),
   bases(mlnew TFloatList()),
-  averages(mlnew TFloatList()),
+  averages(mlnew TAttributedFloatList()),
   variances(mlnew TFloatList()),
   domainVersion(egen ? egen->domain->version : -1),
   normalize(no),
@@ -105,6 +106,8 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
     bstat = mlnew TDomainBasicAttrStat(egen, weightID);
 
   if (bstat && egen) {
+    averages->attributes  = ignoreClass ? egen->domain->attributes : egen->domain->variables;
+
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
     TVarList::const_iterator vi (egen->domain->variables->begin()), evi(egen->domain->variables->end());
 
@@ -152,10 +155,14 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
       raiseError("lengths of domain and basic attribute statistics do not match");
   }
 
-  else if (ddist)
+  else if (ddist) {
+    averages->attributes = mlnew TVarList;
+
     PITERATE(TDomainDistributions, ci, ddist) {
       if (*ci) {
         const PVariable &vi = (*ci)->variable;
+        averages->attributes->push_back(vi);
+
         if (vi->varType==TValue::FLOATVAR) {
           TContDistribution *dcont = (*ci).AS(TContDistribution);
           if (dcont && (dcont->begin() != dcont->end())) {
@@ -197,8 +204,11 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
         variances->push_back(0.0);
       }
     }
+  }
 
   else if (bstat) {
+    averages->attributes = mlnew TVarList;
+
     TDomainBasicAttrStat::const_iterator si(bstat->begin()), ei(bstat->end());
 
     if (ignoreClass) // can't check it, but suppose there is a class attribute
@@ -207,6 +217,8 @@ TExamplesDistance_Normalized::TExamplesDistance_Normalized(const bool &ignoreCla
     for(; si!=ei; si++) {
       if (!*si)
         raiseError("cannot compute normalizers from BasicAttrStat in presence of non-continuous attributes");
+
+      averages->attributes->push_back((*si)->variable);
       if (((*si)->n>0) && ((*si)->max!=(*si)->min)) {
         normalizers->push_back(1.0/((*si)->max-(*si)->min));
         bases->push_back((*si)->min);

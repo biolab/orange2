@@ -497,6 +497,80 @@ PyObject *StringValue_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_
 }
 
 
+/* ************ ATTRIBUTED FLOAT LIST ************ */
+
+PyObject *AttributedFloatList_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(FloatList, "(attributes, list)")
+{
+  PYERROR(PyExc_AttributeError, "not implemented", PYNULL);
+}
+
+
+PyObject * /*no pyxtract!*/ FloatList_getitem_sq(TPyOrange *self, int index);
+int        /*no pyxtract!*/ FloatList_setitem_sq(TPyOrange *self, int index, PyObject *item);
+
+int AttributeFloatList_getIndex(TPyOrange *self, PyObject *index)
+{
+  if (PyInt_Check(index))
+    return (int)PyInt_AsLong(index);
+
+  CAST_TO_err(TAttributedFloatList, aflist, ILLEGAL_INT)
+  if (!aflist->attributes)
+    PYERROR(PyExc_AttributeError, "variable list not defined, need integer indices", ILLEGAL_INT);
+  if (aflist->attributes->size() != aflist->size())
+    PYERROR(PyExc_AttributeError, "variable list size does not match the size of the list", ILLEGAL_INT);
+
+  if (PyOrVariable_Check(index)) {
+    PVariable &var = PyOrange_AsVariable(self);
+    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
+    int ind = 0;
+    for(; vi!=ve; vi++, ind++)
+      if (*vi == var)
+        return ind;
+
+    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", var->name.c_str());
+    return ILLEGAL_INT;
+  }
+    
+  if (PyString_Check(index)) {
+    const char *name = PyString_AsString(index);
+    TVarList::const_iterator vi(aflist->attributes->begin()), ve(aflist->attributes->end());
+    int ind = 0;
+    for(; vi!=ve; vi++, ind++)
+      if ((*vi)->name == name)
+        return ind;
+
+    PyErr_Format(PyExc_AttributeError, "attribute '%s' not found in the list", name);
+    return ILLEGAL_INT;
+  }
+
+  PyErr_Format(PyExc_TypeError, "cannot index AttributedFloatList by '%s'", index->ob_type->tp_name);
+  return ILLEGAL_INT;
+}
+
+
+PyObject *AttributedFloatList_getitem(TPyOrange *self, PyObject *index)
+{
+  PyTRY 
+    const int ind = AttributeFloatList_getIndex(self, index);
+    if (ind == ILLEGAL_INT)
+      return PYNULL;
+
+    return FloatList_getitem_sq(self, ind);
+  PyCATCH
+}
+
+
+int AttributedFloatList_setitem(TPyOrange *self, PyObject *index, PyObject *value)
+{
+  PyTRY 
+    const int ind = AttributeFloatList_getIndex(self, index);
+    if (ind == ILLEGAL_INT)
+      return -1;
+
+    return FloatList_setitem_sq(self, ind, value);
+  PyCATCH_1
+}
+
 
 /* ************ DOMAIN ************ */
 
