@@ -41,7 +41,7 @@ class IntGraphView(QCanvasView):
 ##### WIDGET : Interaction graph
 ###########################################################################################
 class OWInteractionGraph(OWWidget):
-    settingsList = ["onlyImportantAttrs", "onlyImportantInteractions"]
+    settingsList = ["onlyImportantInteractions"]
     
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Interaction graph", 'show interaction graph', FALSE, FALSE)
@@ -60,7 +60,6 @@ class OWInteractionGraph(OWWidget):
         self.viewXPos = 0       # next two variables are used at setting tooltip position
         self.viewYPos = 0       # inside canvasView
 
-        self.onlyImportantAttrs = 1
         self.onlyImportantInteractions = 1
         self.mergeAttributes = 0
 
@@ -91,8 +90,8 @@ class OWInteractionGraph(OWWidget):
         self.shownAttribsGroup = QVGroupBox(self.space)
         self.addRemoveGroup = QHButtonGroup(self.space)
         self.hiddenAttribsGroup = QVGroupBox(self.space)
-        self.shownAttribsGroup.setTitle("Shown attributes")
-        self.hiddenAttribsGroup.setTitle("Hidden attributes")
+        self.shownAttribsGroup.setTitle("Selected attributes")
+        self.hiddenAttribsGroup.setTitle("Unselected attributes")
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -104,7 +103,6 @@ class OWInteractionGraph(OWWidget):
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
         self.mergeAttributesCB = QCheckBox('Merge attributes', self.space)
-        self.importantAttrsCB = QCheckBox('Show only important attributes', self.space)
         self.importantInteractionsCB = QCheckBox('Show only important interactions', self.space)
         
         self.selectionButton = QPushButton("Show selection", self.space)
@@ -119,7 +117,6 @@ class OWInteractionGraph(OWWidget):
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttributeClick)
         self.connect(self.selectionButton, SIGNAL("clicked()"), self.selectionClick)
         self.connect(self.mergeAttributesCB, SIGNAL("toggled(bool)"), self.mergeAttributesEvent)
-        self.connect(self.importantAttrsCB, SIGNAL("toggled(bool)"), self.showImportantAttrs)
         self.connect(self.importantInteractionsCB, SIGNAL("toggled(bool)"), self.showImportantInteractions)
 
         #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
@@ -127,29 +124,24 @@ class OWInteractionGraph(OWWidget):
         self.activateLoadedSettings()
 
     def mergeAttributesEvent(self, b):
+        """
         if b == 1:
-            self.importantAttrsCB.setEnabled(0)
             self.importantInteractionsCB.setEnabled(0)
         else:
-            self.importantAttrsCB.setEnabled(1)
             self.importantInteractionsCB.setEnabled(1)
 
             self.updateNewData(self.originalData)
-            
+        """ 
         self.mergeAttributes = b
-        self.showInteractionRects(self.data)
+        if b == 1:
+            self.showInteractionRects(self.data)
         
 
-    def showImportantAttrs(self, b):
-        self.onlyImportantAttrs = b
-        self.showInteractionRects(self.data)
-        
     def showImportantInteractions(self, b):
         self.onlyImportantInteractions = b
         self.showInteractionRects(self.data)
 
     def activateLoadedSettings(self):
-        self.importantAttrsCB.setChecked(self.onlyImportantAttrs)
         self.importantInteractionsCB.setChecked(self.onlyImportantInteractions)
 
     # did we click inside the rect rectangle
@@ -363,10 +355,9 @@ class OWInteractionGraph(OWWidget):
                 if item in list2: return 0
             for item in list2:
                 if item in list1: return 0
-            return 1
+            #return 1
         
-        if self.onlyImportantAttrs == 1:
-            if self.getAttrVisible(attrName1) == 0 or self.getAttrVisible(attrName2) == 0: return 0
+        if self.getAttrVisible(attrName1) == 0 or self.getAttrVisible(attrName2) == 0: return 0
         if self.onlyImportantInteractions == 1:
             for (attr1, attr2, rect) in self.lines:
                 if (attr1 == attrName1 and attr2 == attrName2) or (attr1 == attrName2 and attr2 == attrName1): return 1
@@ -616,8 +607,6 @@ class OWInteractionGraph(OWWidget):
             for i in range(self.hiddenAttribsLB.count()):
                 if str(self.hiddenAttribsLB.text(i)) in names: return 0
             
-        for i in range(self.shownAttribsLB.count()):
-            if str(self.shownAttribsLB.text(i)) == name: return 1
         return 1
 
     #################################################
