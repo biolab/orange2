@@ -52,6 +52,7 @@ class OWParallelGraph(OWVisGraph):
         blackColor = QColor(0, 0, 0)
         
         if self.scaledData == None:  return
+        if len(attributes) == 0: return
 
         if (self.showDistributions == 1 or self.showAttrValues == 1) and self.rawdata.domain[attributes[-1]].varType == orange.VarTypes.Discrete:
             #self.setAxisScale(QwtPlot.xBottom, 0, len(attributes)-0.5, 1)
@@ -131,7 +132,7 @@ class OWParallelGraph(OWVisGraph):
         if targetValue != None:
             curves = [[],[]]
 
-        #############################################
+        # ############################################
         # draw the data
         validData = [1] * dataSize
         for i in range(dataSize):
@@ -177,7 +178,7 @@ class OWParallelGraph(OWVisGraph):
             for curve in curves[1]: self.insertCurve(curve)
 
 
-        #############################################
+        # ############################################
         # do we want to show distributions with discrete attributes
         if self.showDistributions and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
             self.showDistributionValues(targetValue, validData, indices, dataStop, colorPalette)
@@ -189,7 +190,7 @@ class OWParallelGraph(OWVisGraph):
         self.setCurveStyle(ckey, QwtCurve.UserCurve)
         self.setCurveData(ckey, [1,1], [2,2])
 
-        #############################################
+        # ############################################
         # draw vertical lines that represent attributes
         for i in range(len(attributes)):
             newCurveKey = self.insertCurve(attributes[i])
@@ -391,7 +392,7 @@ class OWParallelGraph(OWVisGraph):
             (key, foo1, x, y, foo2) = self.closestCurve(e.pos().x(), e.pos().y())
             dist = abs(x-self.invTransform(QwtPlot.xBottom, e.x())) + abs(y-self.invTransform(QwtPlot.yLeft, e.y()))
 
-            if self.lineTracking and self.rawdata.domain.classVar:
+            if self.lineTracking and self.rawdata and self.rawdata.domain.classVar:
                 if (dist >= 0.1 or key != self.lastSelectedKey) and self.lastSelectedKey in self.dataKeys:
                     ind = self.dataKeys.index(self.lastSelectedKey)
                     colorPalette = ColorPaletteHSV(len(self.rawdata.domain.classVar.values), 150)
@@ -416,25 +417,29 @@ class OWParallelGraph(OWVisGraph):
 
     # ####################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    def getSelectionsAsExampleTables(self):
+    def getSelectionsAsExampleTables(self, tableLen, targetValue = None):
         if not self.rawdata:
             print "no data"
-            return (None, None, None)
+            return (None, None, None, None)
         selected = orange.ExampleTable(self.rawdata.domain)
         unselected = orange.ExampleTable(self.rawdata.domain)
+        indices = [0 for i in range(tableLen)]
 
         for i in range(len(self.curvePoints)):
             inside = 0
             for j in range(len(self.curvePoints[i])):
                 if self.isPointSelected(j, self.curvePoints[i][j]): inside = 1
             
-            if inside: selected.append(self.rawdata[i])
+            if inside:
+                if targetValue and targetValue != int(self.rawdata[i].getclass()): continue
+                selected.append(self.rawdata[i])
+                indices[i] = 1
             else:      unselected.append(self.rawdata[i])
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
-        return (selected, unselected, merged)
+        return (selected, unselected, merged, indices)
 
     
     

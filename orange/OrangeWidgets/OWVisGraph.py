@@ -176,6 +176,12 @@ class OWVisGraph(OWGraph):
         self.attrValues = {}
         
         self.rawdata = data
+
+        # reset the fliping information    
+        if data != None:
+            for attr in data.domain:
+                self.attributeFlipInfo[attr.name] = 0
+        
         if data == None or len(data) == 0:
             self.scaledData = self.noJitteringScaledData = self.coloringScaledData = self.validDataArray = None
             return
@@ -192,13 +198,12 @@ class OWVisGraph(OWGraph):
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        #
+        # ################################################
         # scale all data
         # scale all data with no jittering
         # scale all data for coloring
         for index in range(len(data.domain)):
             attr = data.domain[index]
-            self.attributeFlipInfo[attr.name] = 0
 
             # is the attribute discrete
             if attr.varType == orange.VarTypes.Discrete:
@@ -338,6 +343,7 @@ class OWVisGraph(OWGraph):
 
         # scale data values inside min and max
         for attr in attrList:
+            if data.domain[attr].varType == orange.VarTypes.Discrete: continue  # don't scale discrete attributes
             index = self.attributeNames.index(attr)
             scaled, values = self.scaleData(data, index, Min, Max, jitteringEnabled = jittering)
             self.scaledData[index] = scaled
@@ -348,8 +354,9 @@ class OWVisGraph(OWGraph):
         return attrName
 
     def flipAttribute(self, attrName):
-        if attrName not in self.attributeNames: return
-        if self.globalValueScaling: return
+        if attrName not in self.attributeNames: return 0
+        if self.rawdata.domain[attrName].varType == orange.VarTypes.Discrete: return 0
+        if self.globalValueScaling: return 0
             
         index = self.attributeNames.index(attrName)
         self.attributeFlipInfo[attrName] = not self.attributeFlipInfo[attrName]
@@ -359,6 +366,7 @@ class OWVisGraph(OWGraph):
         self.scaledData[index] = 1 - self.scaledData[index]
         self.noJitteringScaledData[index] = 1 - self.noJitteringScaledData[index]
         self.coloringScaledData[index] = 1 - self.coloringScaledData[index]
+        return 1
 
 
     # get array of 0 and 1 of len = len(self.rawdata). if there is a missing value at any attribute in indices return 0 for that example

@@ -21,7 +21,7 @@ from sys import getrecursionlimit, setrecursionlimit
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes", "toolbarSelection"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -31,8 +31,8 @@ class OWParallelCoordinates(OWWidget):
         OWWidget.__init__(self, parent, "Parallel Coordinates", "Show data using parallel coordinates visualization method", FALSE, TRUE, icon = "ParallelCoordinates.png")
         self.resize(700,700)
 
-        self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute selection", list)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Selection", list, self.selection)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Example selection", list)]
     
         #set default settings
         self.data = None
@@ -56,6 +56,8 @@ class OWParallelCoordinates(OWWidget):
         self.projections = None
         self.correlationDict = {}
         self.middleLabels = "Correlations"
+        self.selectionList = None
+        self.toolbarSelection = 0
 
         self.setSliderIndex = -1
 
@@ -174,6 +176,11 @@ class OWParallelCoordinates(OWWidget):
         self.graph.globalValueScaling = self.globalValueScaling
         self.graph.jitterSize = self.jitterSize
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
+        apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+
+    def targetValueChanged(self):
+        self.updateGraph()
+        if self.selectionList: self.sendSelections()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -182,12 +189,16 @@ class OWParallelCoordinates(OWWidget):
             self.send("Unselected Examples", None)
             self.send("Example Distribution", None)
             return
-        
-        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables()
+
+        targetVal = str(self.targetValueCombo.currentText())
+        if targetVal == "(None)": targetVal = None
+        else: targetVal = self.data.domain.classVar.values.index(targetVal)
+        (selected, unselected, merged, indices) = self.graph.getSelectionsAsExampleTables(len(self.data), targetVal)
         if not self.sendShownAttributes:
             self.send("Selected Examples", selected)
             self.send("Unselected Examples", unselected)
             self.send("Example Distribution", merged)
+            self.send("Example selection", indices)
         else:
             attrs = self.getShownAttributeList()
             if self.data.domain.classVar: attrs += [self.data.domain.classVar.name]
@@ -254,8 +265,10 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
 
     def flipAttribute(self, item):
-        self.graph.flipAttribute(str(item.text()))
-        self.updateGraph()
+        if self.graph.flipAttribute(str(item.text())):
+            self.updateGraph()
+        else:
+            self.information("Didn't flip the attribute. To flip a continuous attribute uncheck 'Global value scaling' checkbox.")
         
 
     # #####################
@@ -295,7 +308,7 @@ class OWParallelCoordinates(OWWidget):
     # build a list of strings that will be shown in the middle of the parallel axis
     def buildMidLabels(self, attrs):
         labels = []
-        if self.middleLabels == "Off": return None
+        if self.middleLabels == "Off" or self.data == None or len(self.data) == 0: return None
         elif self.middleLabels == "Correlations":
             for i in range(len(attrs)-1):
                 corr = None
@@ -304,7 +317,7 @@ class OWParallelCoordinates(OWWidget):
                 else:
                     corr = OWVisAttrSelection.computeCorrelation(self.data, attrs[i], attrs[i+1])
                     self.correlationDict[attrs[i] + "-" + attrs[i+1]] = corr
-                if corr and (self.graph.attributeFlipInfo[attrs[i]] + self.graph.attributeFlipInfo[attrs[i+1]]) % 2 == 1: corr = 0.0 - corr
+                if corr and len(self.graph.attributeFlipInfo.keys()) > 0 and (self.graph.attributeFlipInfo[attrs[i]] == self.graph.attributeFlipInfo[attrs[i+1]]): corr = - corr
                 if corr != None: labels.append("%2.3f" % (corr))
                 else: labels.append("")
         elif self.middleLabels == "VizRank":
@@ -377,14 +390,24 @@ class OWParallelCoordinates(OWWidget):
     
     # ###### DATA ################################
     # receive new data and update all fields
-    def data(self, data):
+    def cdata(self, data):
         self.projections = None
         self.correlationDict = {}
         
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
-        self.graph.setData(self.data)
+
+        if self.selectionList and data and len(data) == len(self.selectionList):
+            self.graph.setData(data.select(self.selectionList))
+            self.warning(None)
+        else:
+            if self.selectionList and data:
+                self.warning("Full data set is shown. Table with selected indices is not of the same size as the data set")
+            else:
+                self.warning(None)
+            self.graph.setData(self.data)
+            
         self.optimizationDlg.setData(data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
@@ -409,17 +432,11 @@ class OWParallelCoordinates(OWWidget):
     
     # ###### SELECTION ################################
     # receive a list of attributes we wish to show
-    def selection(self, list):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+    def selection(self, selectionList):
+        self.selectionList = selectionList
+        self.cdata(self.data)
 
-        if self.data == None: return
-
-        for attr in self.data.domain:
-            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
-            else:                 self.hiddenAttribsLB.insertItem(attr.name)
-                
-        self.updateGraph()
+        
     #################################################
 
     def updateValues(self):
@@ -443,9 +460,10 @@ class OWParallelCoordinates(OWWidget):
     def setGlobalValueScaling(self):
         self.isResizing = 0
         self.graph.globalValueScaling = self.globalValueScaling
-        self.graph.setData(self.data)
+        if not self.selectionList: self.graph.setData(self.data)
+        else: self.graph.setData(self.data.select(self.selectionList))
         if self.globalValueScaling:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())        # we need to call this so that attributes are really rescaled in respect to the CURRENTLY SHOWN ATTRIBUTES
         self.updateGraph()
 
     # update attribute ordering
