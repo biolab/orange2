@@ -41,10 +41,10 @@ class OWDataTable(OWWidget):
         FALSE,
         FALSE)
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
         self.outputs = []
         
-        self.dataset=None
+        self.data=None
         
         # GUI
         self.layout=QVBoxLayout(self.mainArea)
@@ -52,39 +52,39 @@ class OWDataTable(OWWidget):
         self.table.setSelectionMode(QTable.NoSelection)
         self.layout.add(self.table)
 
-    def data(self,dataset):
-        self.dataset = dataset
+    def dataset(self,data):
+        self.data = data
         self.set_table()
     
     def set_table(self):
-        if self.dataset==None:
+        if self.data==None:
             return
-        if hasattr(self.dataset.domain, 'classVar') and self.dataset.domain.classVar:
-            self.table.setNumCols(len(self.dataset.domain.attributes)+1)
+        if hasattr(self.data.domain, 'classVar') and self.data.domain.classVar:
+            self.table.setNumCols(len(self.data.domain.attributes)+1)
         else:   
-            self.table.setNumCols(len(self.dataset.domain.attributes))
-        self.table.setNumRows(len(self.dataset))
+            self.table.setNumCols(len(self.data.domain.attributes))
+        self.table.setNumRows(len(self.data))
 
         # set the header (attribute names)
         self.header=self.table.horizontalHeader()
-        for i in range(len(self.dataset.domain.attributes)):
-            self.header.setLabel(i, self.dataset.domain.attributes[i].name)
-        if self.dataset.domain.classVar:
-            self.header.setLabel(len(self.dataset.domain.attributes), self.dataset.domain.classVar.name)
+        for i in range(len(self.data.domain.attributes)):
+            self.header.setLabel(i, self.data.domain.attributes[i].name)
+        if self.data.domain.classVar:
+            self.header.setLabel(len(self.data.domain.attributes), self.data.domain.classVar.name)
 
         # set the contents of the table (values of attributes)
-        for i in range(len(self.dataset)):
-            for j in range(len(self.dataset.domain.attributes)):
-                self.table.setText(i, j, str(self.dataset[i][j].native()))
-        if self.dataset.domain.classVar:
-            j = len(self.dataset.domain.attributes)
-            for i in range(len(self.dataset)):
-                item = colorItem(self.table, QTableItem.WhenCurrent, self.dataset[i].getclass().native())
+        for i in range(len(self.data)):
+            for j in range(len(self.data.domain.attributes)):
+                self.table.setText(i, j, str(self.data[i][j].native()))
+        if self.data.domain.classVar:
+            j = len(self.data.domain.attributes)
+            for i in range(len(self.data)):
+                item = colorItem(self.table, QTableItem.WhenCurrent, self.data[i].getclass().native())
                 self.table.setItem(i, j, item)
-#                self.table.setText(i, j, self.dataset[i].getclass().native())
+#                self.table.setText(i, j, self.data[i].getclass().native())
 
         # adjust the width of the table
-        for i in range(len(self.dataset.domain.attributes)):
+        for i in range(len(self.data.domain.attributes)):
             self.table.adjustColumn(i)
 
         # manage sorting (not correct, does not handle real values)
@@ -110,8 +110,7 @@ if __name__=="__main__":
     ow = OWDataTable()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable(r'../imports-85')
-#    dataset = orange.ExampleTable('outcome')
-    ow.data(dataset)
+    data = orange.ExampleTable('adult_sample')
+    ow.dataset(data)
     ow.show()
     a.exec_loop()

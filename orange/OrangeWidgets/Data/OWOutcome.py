@@ -29,7 +29,7 @@ It also provides some basic data statistics.""",
         FALSE
         )
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1)]
+        self.inputs = [("Examples", ExampleTable, self.examples, 1)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("target", int)]
         
         #GUI       
@@ -66,7 +66,7 @@ It also provides some basic data statistics.""",
         self.resize(100,100)
 
 
-    def data(self,data):
+    def examples(self,data):
         """
         Sets the oData and extracts all needed info
         """
@@ -85,7 +85,7 @@ It also provides some basic data statistics.""",
         self.outcome.setCurrentItem(self.outcome.count()-1)
         self.setOutcome(str(self.outcome.currentText()))
     
-    def setOutcome(self,variable):
+    def setOutcome(self, variable):
         variable=str(variable) #if variable was QString
         self.tar.clear()
         for val in self.data.domain[variable].values:
@@ -93,15 +93,23 @@ It also provides some basic data statistics.""",
 
         self.paintStatistics(variable)
         
-        self.send("Classified Examples",self.data)
+        self.send("Classified Examples", self.data)
         self.send("target", 0)   # cross fingers, this part should be written clearly
         
     def setTargets(self, value):
         self.send("target", self.data.domain.classVar.values.index(str(value)))
      
-    def paintStatistics(self, out):
-        """
-        TO DO: repair this code not using OData
+    def paintStatistics(self, name):
+        # set the outcome variable to the outVarName
+        attributes = self.data.domain.attributes.native()
+        if self.data.domain[name] in attributes:
+            attributes.remove(self.data.domain[name])
+            if self.data.domain.classVar:
+                attributes.append(self.data.domain.classVar)
+            attributes.append(self.data.domain[name])
+            self.data = self.data.select(orange.Domain(attributes))
+
+        return
         out = str(out) #QString to string
         self.oData.setOutcomeByName(out)
         instances = self.oData.getInstances()
@@ -121,11 +129,12 @@ It also provides some basic data statistics.""",
           s += '\n'+(ss+'outcomes with label '+outcomes[i])
 
         self.stats.setText(s)
-        """
 
 if __name__ == "__main__":
-    a=QApplication(sys.argv)
-    owo=OWOutcome()
-    a.setMainWidget(owo)
-    owo.show()
+    a = QApplication(sys.argv)
+    ow = OWOutcome()
+    data = orange.ExampleTable("adult_sample")
+    ow.examples(data)
+    a.setMainWidget(ow)
+    ow.show()
     a.exec_loop()
