@@ -3,20 +3,20 @@ ORANGE_OBJECTS =\
 	 obj/boolcnt.o obj/boosting.o obj/c2py.o obj/c4.5.o obj/c45inter.o obj/calibrate.o\
 	 obj/callback.o obj/cartesian.o obj/clas_gen.o obj/classfromvar.o obj/classifier.o obj/cls_example.o\
 	 obj/cls_misc.o obj/cls_orange.o obj/cls_value.o obj/common.o obj/contingency.o obj/converts.o\
-	 obj/cost.o obj/costwrapper.o obj/crc32.o obj/decomposition.o obj/discretize.o obj/dist_clustering.o\
-	 obj/distance.o obj/distance_dtw.o obj/distancemap.o obj/distvars.o obj/domain.o obj/domaindepot.o\
-	 obj/errors.o obj/estimateprob.o obj/exampleclustering.o obj/examplegen.o obj/examples.o obj/excel.o\
-	 obj/filegen.o obj/filter.o obj/functions.o obj/garbage_py_manner.o obj/getarg.o obj/gslconversions.o\
-	 obj/heatmap.o obj/imputation.o obj/induce.o obj/knn.o obj/lcomb.o obj/learn.o\
-	 obj/lib_components.o obj/lib_io.o obj/lib_kernel.o obj/lib_learner.o obj/lib_preprocess.o obj/lib_vectors.o\
-	 obj/linreg.o obj/logfit.o obj/logistic.o obj/logreg.o obj/lookup.o obj/lsq.o\
-	 obj/lwr.o obj/majority.o obj/measures.o obj/meta.o obj/minimal_complexity.o obj/minimal_error.o\
-	 obj/module.o obj/nearest.o obj/obsolete.o obj/orange.o obj/orvector.o obj/preprocessors.o\
-	 obj/random.o obj/readdata.o obj/redundancy.o obj/retisinter.o obj/root.o obj/rule_conditions.o\
-	 obj/spec_contingency.o obj/spec_gen.o obj/stat.o obj/statexceptions.o obj/strings.o obj/stringvars.o\
-	 obj/subsets.o obj/survival.o obj/svm.o obj/symmatrix.o obj/tabdelim.o obj/table.o\
-	 obj/tdidt.o obj/tdidt_split.o obj/tdidt_stop.o obj/transdomain.o obj/transval.o obj/trindex.o\
-	 obj/valuelisttemplate.o obj/values.o obj/vars.o
+	 obj/cost.o obj/costwrapper.o obj/crc32.o obj/decomposition.o obj/dictproxy.o obj/discretize.o\
+	 obj/dist_clustering.o obj/distance.o obj/distance_dtw.o obj/distancemap.o obj/distvars.o obj/domain.o\
+	 obj/domaindepot.o obj/errors.o obj/estimateprob.o obj/exampleclustering.o obj/examplegen.o obj/examples.o\
+	 obj/excel.o obj/filegen.o obj/filter.o obj/functions.o obj/garbage_py_manner.o obj/getarg.o\
+	 obj/gslconversions.o obj/heatmap.o obj/imputation.o obj/induce.o obj/knn.o obj/lcomb.o\
+	 obj/learn.o obj/lib_components.o obj/lib_io.o obj/lib_kernel.o obj/lib_learner.o obj/lib_preprocess.o\
+	 obj/lib_vectors.o obj/linreg.o obj/logfit.o obj/logistic.o obj/logreg.o obj/lookup.o\
+	 obj/lsq.o obj/lwr.o obj/majority.o obj/measures.o obj/meta.o obj/minimal_complexity.o\
+	 obj/minimal_error.o obj/module.o obj/nearest.o obj/obsolete.o obj/orange.o obj/orvector.o\
+	 obj/preprocessors.o obj/random.o obj/readdata.o obj/redundancy.o obj/retisinter.o obj/root.o\
+	 obj/rule_conditions.o obj/spec_contingency.o obj/spec_gen.o obj/stat.o obj/statexceptions.o obj/strings.o\
+	 obj/stringvars.o obj/subsets.o obj/survival.o obj/svm.o obj/symmatrix.o obj/tabdelim.o\
+	 obj/table.o obj/tdidt.o obj/tdidt_split.o obj/tdidt_stop.o obj/transdomain.o obj/transval.o\
+	 obj/trindex.o obj/valuelisttemplate.o obj/values.o obj/vars.o
 
 CORN_OBJECTS = obj/corn.o obj/c2py.o
 
@@ -42,7 +42,7 @@ obj/classifier.o : orange/classifier.cpp cMersenneTwister.h classifier.cpp class
 obj/cls_example.o : orange/cls_example.cpp Python.h c2py.hpp cMersenneTwister.h cls_example.cpp cls_example.hpp cls_orange.hpp cls_value.hpp converts.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp lib_kernel.hpp meta.hpp module.hpp orvector.hpp pyxtract_macros.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
 obj/cls_misc.o : orange/cls_misc.cpp Python.h c2py.hpp cls_misc.cpp cls_misc.hpp domain.hpp domaindepot.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp stringvars.hpp values.hpp vars.hpp
 obj/cls_orange.o : orange/cls_orange.cpp Python.h c2py.hpp cls_example.hpp cls_orange.cpp cls_orange.hpp cls_value.hpp domain.hpp errors.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp values.hpp vars.hpp
-obj/cls_value.o : orange/cls_value.cpp Python.h c2py.hpp cls_orange.hpp cls_value.cpp cls_value.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp stringvars.hpp valuelisttemplate.cpp values.hpp vars.hpp vectortemplates.hpp
+obj/cls_value.o : orange/cls_value.cpp Python.h c2py.hpp cls_orange.hpp cls_value.cpp cls_value.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp stringvars.hpp valuelisttemplate.hpp values.hpp vars.hpp vectortemplates.hpp
 obj/common.o : include/common.cpp common.cpp
 obj/contingency.o : orange/contingency.cpp classify.hpp contingency.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
 obj/converts.o : orange/converts.cpp Python.h c2py.hpp converts.cpp converts.hpp errors.hpp garbage.hpp garbage_py_manner.hpp
@@ -51,6 +51,7 @@ obj/cost.o : orange/cost.cpp cost.cpp cost.hpp distvars.hpp errors.hpp garbage.h
 obj/costwrapper.o : orange/costwrapper.cpp cMersenneTwister.h classify.hpp cost.hpp costwrapper.cpp costwrapper.hpp distvars.hpp domain.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp values.hpp vars.hpp
 obj/crc32.o : include/crc32.cpp crc32.cpp
 obj/decomposition.o : orange/decomposition.cpp basstat.hpp cMersenneTwister.h contingency.hpp decomposition.cpp decomposition.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
+obj/dictproxy.o : orange/dictproxy.cpp Python.h c2py.hpp cls_orange.hpp dictproxy.cpp errors.hpp garbage.hpp garbage_py_manner.hpp module.hpp pyxtract_macros.hpp root.hpp
 obj/discretize.o : orange/discretize.cpp basstat.hpp cMersenneTwister.h classfromvar.hpp classify.hpp contingency.hpp discretize.cpp discretize.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp transval.hpp values.hpp vars.hpp
 obj/dist_clustering.o : orange/dist_clustering.cpp basstat.hpp cMersenneTwister.h classify.hpp contingency.hpp cost.hpp decomposition.hpp dist_clustering.cpp dist_clustering.hpp distance.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp exampleclustering.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp induce.hpp learn.hpp measures.hpp meta.hpp orvector.hpp pqueue_i.hpp random.hpp root.hpp slist.hpp stladdon.hpp table.hpp values.hpp vars.hpp
 obj/distance.o : orange/distance.cpp basstat.hpp contingency.hpp distance.cpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
@@ -77,7 +78,7 @@ obj/induce.o : orange/induce.cpp errors.hpp garbage.hpp garbage_py_manner.hpp ge
 obj/knn.o : orange/knn.cpp basstat.hpp cMersenneTwister.h classify.hpp contingency.hpp distance.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp knn.cpp knn.hpp learn.hpp meta.hpp nearest.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
 obj/lcomb.o : include/lcomb.cpp lcomb.cpp lcomb.hpp
 obj/learn.o : orange/learn.cpp contingency.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.cpp learn.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
-obj/lib_components.o : orange/lib_components.cpp Python.h basstat.hpp c2py.hpp cMersenneTwister.h calibrate.hpp callback.hpp classify.hpp cls_example.hpp cls_orange.hpp cls_value.hpp contingency.hpp converts.hpp cost.hpp decomposition.hpp distance.hpp distance_dtw.hpp distancemap.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp exampleclustering.hpp examplegen.hpp examples.hpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp heatmap.hpp imputation.hpp learn.hpp lib_components.cpp lib_kernel.hpp logfit.hpp measures.hpp meta.hpp module.hpp nearest.hpp orvector.hpp pyxtract_macros.hpp random.hpp relief.hpp root.hpp stladdon.hpp symmatrix.hpp table.hpp tdidt.hpp tdidt_split.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp vectortemplates.hpp
+obj/lib_components.o : orange/lib_components.cpp Python.h basstat.hpp c2py.hpp cMersenneTwister.h calibrate.hpp callback.hpp classify.hpp cls_example.hpp cls_orange.hpp cls_value.hpp contingency.hpp converts.hpp cost.hpp decomposition.hpp distance.hpp distance_dtw.hpp distancemap.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp exampleclustering.hpp examplegen.hpp examples.hpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp heatmap.hpp imputation.hpp learn.hpp lib_components.cpp lib_kernel.hpp logfit.hpp measures.hpp meta.hpp module.hpp nearest.hpp orvector.hpp pyxtract_macros.hpp random.hpp relief.hpp root.hpp stladdon.hpp symmatrix.hpp table.hpp tdidt.hpp tdidt_split.hpp tdidt_stop.hpp transval.hpp trindex.hpp valuelisttemplate.hpp values.hpp vars.hpp vectortemplates.hpp
 obj/lib_io.o : orange/lib_io.cpp Python.h assistant.hpp basket.hpp c2py.hpp c45inter.hpp cMersenneTwister.h cls_orange.hpp contingency.hpp distvars.hpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp lib_io.cpp meta.hpp module.hpp orvector.hpp pyxtract_macros.hpp random.hpp retisinter.hpp root.hpp spec_gen.hpp stladdon.hpp tabdelim.hpp table.hpp trindex.hpp values.hpp vars.hpp
 obj/lib_kernel.o : orange/lib_kernel.cpp Python.h c2py.hpp cMersenneTwister.h callback.hpp cartesian.hpp classfromvar.hpp classify.hpp cls_example.hpp cls_orange.hpp cls_value.hpp contingency.hpp converts.hpp cost.hpp decomposition.hpp discretize.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp examplegen.hpp examples.hpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp lib_kernel.cpp lib_kernel.hpp logfit.hpp lookup.hpp measures.hpp meta.hpp module.hpp ormap.hpp orvector.hpp preprocessors.hpp pyxtract_macros.hpp random.hpp root.hpp stladdon.hpp stringvars.hpp table.hpp tdidt.hpp tdidt_split.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp vectortemplates.hpp
 obj/lib_learner.o : orange/lib_learner.cpp Python.h assoc.hpp basstat.hpp bayes.hpp c2py.hpp c4.5.hpp cMersenneTwister.h callback.hpp classify.hpp cls_example.hpp cls_orange.hpp cls_value.hpp contingency.hpp converts.hpp cost.hpp costwrapper.hpp decomposition.hpp distance.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp examplegen.hpp examples.hpp filter.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp gsl_matrix.h gsl_vector.h imputation.hpp induce.hpp knn.hpp learn.hpp lib_kernel.hpp lib_learner.cpp linreg.hpp logfit.hpp logistic.hpp lwr.hpp majority.hpp measures.hpp meta.hpp module.hpp nearest.hpp orvector.hpp pyxtract_macros.hpp random.hpp root.hpp stladdon.hpp svm.hpp table.hpp tdidt.hpp tdidt_split.hpp tdidt_stop.hpp transval.hpp trindex.hpp values.hpp vars.hpp vectortemplates.hpp
@@ -126,14 +127,14 @@ obj/tdidt_stop.o : orange/tdidt_stop.cpp contingency.hpp distvars.hpp domain.hpp
 obj/transdomain.o : orange/transdomain.cpp domain.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp transdomain.cpp transdomain.hpp transval.hpp values.hpp vars.hpp
 obj/transval.o : orange/transval.cpp basstat.hpp classfromvar.hpp classify.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp transval.cpp transval.hpp values.hpp vars.hpp
 obj/trindex.o : orange/trindex.cpp Python.h c2py.hpp cMersenneTwister.h domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp module.hpp orvector.hpp pyxtract_macros.hpp random.hpp root.hpp stladdon.hpp trindex.cpp trindex.hpp values.hpp vars.hpp
-obj/valuelisttemplate.o : orange/valuelisttemplate.cpp Python.h c2py.hpp cls_orange.hpp cls_value.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp valuelisttemplate.cpp values.hpp vars.hpp vectortemplates.hpp
+obj/valuelisttemplate.o : orange/valuelisttemplate.cpp Python.h c2py.hpp cls_orange.hpp cls_value.hpp errors.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp module.hpp orvector.hpp pyxtract_macros.hpp root.hpp stladdon.hpp valuelisttemplate.cpp valuelisttemplate.hpp values.hpp vars.hpp vectortemplates.hpp
 obj/values.o : orange/values.cpp errors.hpp garbage.hpp garbage_py_manner.hpp root.hpp values.cpp values.hpp
 obj/vars.o : orange/vars.cpp cMersenneTwister.h classify.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp values.hpp vars.cpp vars.hpp
 
 
-orange/ppp/stamp: learn.hpp trindex.hpp basstat.hpp exampleclustering.hpp c4.5.hpp boosting.hpp assistant.hpp values.hpp decomposition.hpp symmatrix.hpp subsets.hpp tabdelim.hpp calibrate.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp stringvars.hpp logistic.hpp cost.hpp estimateprob.hpp knn.hpp linreg.hpp examples.hpp classfromvar.hpp lookup.hpp root.hpp majority.hpp tdidt.hpp heatmap.hpp costwrapper.hpp table.hpp distancemap.hpp transdomain.hpp domain.hpp lwr.hpp contingency.hpp induce.hpp spec_contingency.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp imputation.hpp minimal_error.hpp examplegen.hpp svm.hpp filter.hpp basket.hpp distance_dtw.hpp preprocessors.hpp vars.hpp classify.hpp callback.hpp spec_gen.hpp tdidt_split.hpp transval.hpp filegen.hpp distance.hpp dist_clustering.hpp logfit.hpp assoc.hpp
+orange/ppp/stamp: learn.hpp trindex.hpp basstat.hpp spec_gen.hpp c4.5.hpp boosting.hpp values.hpp symmatrix.hpp filegen.hpp subsets.hpp distance.hpp tabdelim.hpp redundancy.hpp clas_gen.hpp tdidt_stop.hpp c45inter.hpp discretize.hpp stringvars.hpp retisinter.hpp distvars.hpp nearest.hpp cartesian.hpp bayes.hpp cost.hpp transval.hpp knn.hpp linreg.hpp examples.hpp svm.hpp lookup.hpp root.hpp lwr.hpp induce.hpp majority.hpp spec_contingency.hpp heatmap.hpp costwrapper.hpp table.hpp distancemap.hpp transdomain.hpp domain.hpp contingency.hpp exampleclustering.hpp relief.hpp measures.hpp minimal_complexity.hpp random.hpp assistant.hpp minimal_error.hpp calibrate.hpp examplegen.hpp classfromvar.hpp basket.hpp distance_dtw.hpp preprocessors.hpp assoc.hpp tdidt.hpp vars.hpp classify.hpp callback.hpp tdidt_split.hpp estimateprob.hpp filter.hpp imputation.hpp dist_clustering.hpp logfit.hpp logistic.hpp decomposition.hpp
 	python orange/devscripts/pyprops.py orange
 
-orange/px/stamp: lib_io.cpp lib_vectors.cpp cls_orange.cpp orange.cpp cls_misc.cpp cls_example.cpp cls_value.cpp heatmap.cpp distancemap.cpp lib_learner.cpp lib_kernel.cpp lib_components.cpp callback.cpp lib_preprocess.cpp obsolete.cpp
+orange/px/stamp: lib_vectors.cpp lib_io.cpp cls_orange.cpp orange.cpp cls_example.cpp cls_misc.cpp cls_value.cpp lib_learner.cpp heatmap.cpp distancemap.cpp lib_kernel.cpp lib_components.cpp callback.cpp lib_preprocess.cpp obsolete.cpp
 	python orange/devscripts/pyxtract.py orange
 
