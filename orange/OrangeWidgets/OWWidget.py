@@ -39,15 +39,17 @@ class OWWidget(OWBaseWidget):
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)
-        self.controlArea.setMaximumWidth(250)
-        self.space=QVBox(self)
-        self.grid=QGridLayout(self,3,2,5)
-        self.grid.addWidget(self.buttonBackground,2,0)
-        self.grid.addWidget(self.space,1,0)
-        self.grid.setRowStretch(1,10)
-        self.grid.setColStretch(1,10)
+        self.space = self.controlArea
+        #self.controlArea.setMaximumWidth(250)
+        #self.space=QVBox(self)
+        self.grid=QGridLayout(self,2,2,5)
         self.grid.addWidget(self.controlArea,0,0)
-        self.grid.addMultiCellWidget(self.mainArea,0,3,1,1)
+        #self.grid.addWidget(self.space,1,0)
+        self.grid.addWidget(self.buttonBackground,1,0)
+        self.grid.setRowStretch(0,10)
+        self.grid.setColStretch(0,10)
+        self.grid.setColStretch(1,30)
+        self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
         self.resize(640,480)
 
 
