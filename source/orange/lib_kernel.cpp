@@ -53,6 +53,36 @@ This file includes constructors and specialized methods for classes defined in p
 WRAPPER(ExampleTable);
 
 
+/* ************ PROGRESS CALLBACK ************ */
+
+#include "progress.hpp"
+
+PyObject *ProgressCallback_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrProgressCallback_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TProgressCallback_Python(), type), args);
+  else
+    return WrapNewOrange(mlnew TProgressCallback_Python(), type);
+}
+
+
+PyObject *ProgressCallback_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDOC("(float[, Orange]) -> bool")
+{
+  PyTRY
+    SETATTRIBUTES
+
+    if (PyOrange_OrangeBaseClass(self->ob_type) == &PyOrProgressCallback_Type) {
+      PyErr_Format(PyExc_SystemError, "ProgressCallback.call called for '%s': this may lead to stack overflow", self->ob_type->tp_name);
+      return PYNULL;
+    }
+
+    float f;
+    POrange o;
+    if (!PyArg_ParseTuple(targs, "f|O&:ProgressCallback", &f, ccn_Orange, &o))
+      return PYNULL;
+
+    return PyInt_FromLong(SELF_AS(TProgressCallback)(f, o) ? 1 : 0);
+  PyCATCH
+}
 
 /* ************ VARIABLE ************ */
 

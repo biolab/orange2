@@ -426,6 +426,10 @@ SOURCE=.\orange\preprocessors.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\progress.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\random.cpp
 # End Source File
 # Begin Source File
@@ -803,6 +807,10 @@ SOURCE=.\orange\pqueue_i.hpp
 # Begin Source File
 
 SOURCE=.\orange\preprocessors.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\progress.hpp
 # End Source File
 # Begin Source File
 

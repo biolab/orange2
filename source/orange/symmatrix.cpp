@@ -49,4 +49,4 @@ int TSymMatrix::getindex(const int &i, const int &j, bool raiseExceptions) const
       return -1;
   return  ((j*(j+1))>>1) + i;
 }
-  
+

@@ -381,6 +381,14 @@ PTreeNode TTreeDescender_Python::operator()(PTreeNode node, const TExample &ex, 
 }
 
 
+bool TProgressCallback_Python::operator()(const float &f, POrange o)
+{ 
+  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("fN", f, WrapOrange(o)));
+  bool res = PyObject_IsTrue(result) != 0;
+  Py_DECREF(result);
+  return res;
+}
+
 /*
 PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &bound, const TVarList &boundSet, const vector<bool> &free, const int &weightID)
 { if (!gen)

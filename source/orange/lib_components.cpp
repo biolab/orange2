@@ -2492,6 +2492,10 @@ PyObject *SymMatrix_repr(PyObject *self)
 C_NAMED(HierarchicalCluster, Orange, "()")
 C_CALL3(HierarchicalClustering, HierarchicalClustering, Orange, "(linkage=)")
 
+PYCLASSCONSTANT_INT(HierarchicalClustering, Single, 0)
+PYCLASSCONSTANT_INT(HierarchicalClustering, Average, 1)
+PYCLASSCONSTANT_INT(HierarchicalClustering, Complete, 2)
+
 PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(distance matrix) -> HierarchicalCluster")
 {
   PyTRY
@@ -2502,8 +2506,115 @@ PyObject *HierarchicalClustering_call(PyObject *self, PyObject *args, PyObject *
 
     SETATTRIBUTES
 
-    return WrapOrange(SELF_AS(THierarchicalClustering)(symmatrix));
+    PHierarchicalCluster root = SELF_AS(THierarchicalClustering)(symmatrix);
+
+    if (symmatrix->myWrapper->orange_dict) {
+      PyObject *objects = PyDict_GetItemString(symmatrix->myWrapper->orange_dict, "objects");
+      TPyOrange *pymapping = root->mapping->myWrapper;
+      if (objects) {
+        if (!pymapping->orange_dict)
+          pymapping->orange_dict = PyOrange_DictProxy_New(pymapping);
+        PyDict_SetItemString(pymapping->orange_dict, "objects", objects);
+      }
+    }
+    return WrapOrange(root);
   PyCATCH
+}
+
+
+int HierarchicalCluster_len_sq(PyObject *self)
+{ 
+  CAST_TO_err(THierarchicalCluster, cluster, -1);
+  return cluster->last - cluster->first;
+}
+
+
+PyObject *HierarchicalCluster_getitem_sq(PyObject *self, int i)
+{ 
+  CAST_TO(THierarchicalCluster, cluster);
+
+  if (!cluster->mapping)
+    PYERROR(PyExc_SystemError, "'HierarchicalCluster' misses 'mapping'", PYNULL);
+
+  i += (i>=0) ? cluster->first : cluster->last;
+  if ((i < cluster->first) || (i >= cluster->last)) {
+    PyErr_Format(PyExc_IndexError, "index out of range 0-%i", cluster->last - cluster->first - 1);
+    return PYNULL;
+  }
+
+  if (i >= cluster->mapping->size())
+    PYERROR(PyExc_SystemError, "internal inconsistency in instance of 'HierarchicalCluster' ('mapping' too short)", PYNULL);
+
+  const int elindex = cluster->mapping->at(i);
+
+  if (cluster->mapping->myWrapper->orange_dict) {
+    PyObject *objs = PyDict_GetItemString(cluster->mapping->myWrapper->orange_dict, "objects");
+    if (objs)
+      return PySequence_GetItem(objs, elindex);
+  }
+
+  return PyInt_FromLong(elindex);
+}
+
+
+PyObject *HierarchicalCluster_get_left(PyObject *self)
+{ 
+  CAST_TO(THierarchicalCluster, cluster);
+
+  if (!cluster->branches)
+    RETURN_NONE
+
+  if (cluster->branches->size() > 2)
+    PYERROR(PyExc_AttributeError, "'left' not defined (cluster has more than two subclusters)", PYNULL);
+
+  return WrapOrange(cluster->branches->front());
+}
+
+
+PyObject *HierarchicalCluster_get_right(PyObject *self)
+{ 
+  CAST_TO(THierarchicalCluster, cluster);
+
+  if (!cluster->branches || (cluster->branches->size() < 2))
+    RETURN_NONE;
+
+  if (cluster->branches->size() > 2)
+    PYERROR(PyExc_AttributeError, "'right' not defined (cluster has more than two subclusters", PYNULL);
+
+  return WrapOrange(cluster->branches->back());
+}
+
+
+int HierarchicalClusterLowSet(PyObject *self, PyObject *arg, const int side)
+{
+  static const char *sides[2] = {"left", "right"};
+
+  if (!PyOrHierarchicalCluster_Check(arg)) {
+    PyErr_Format(PyExc_TypeError, "'HierarchicalCluster.%s' should be of type 'HierarchicalCluster' (got '%s')", sides[side], arg->ob_type->tp_name);
+    return -1;
+  }
+
+  CAST_TO_err(THierarchicalCluster, cluster, -1);
+
+  if (!cluster->branches)
+    cluster->branches = mlnew THierarchicalClusterList(2);
+  else 
+    if (cluster->branches->size() != 2)
+      PYERROR(PyExc_AttributeError, "'left' not defined (clusters does not have (exactly) two subclusters", -1);
+
+  cluster->branches->at(side) = PyOrange_AsHierarchicalCluster(arg);
+  return 0;
+}
+
+
+int HierarchicalCluster_set_left(PyObject *self, PyObject *arg)
+{
+  return HierarchicalClusterLowSet(self, arg, 0);
+}
+
+int HierarchicalCluster_set_right(PyObject *self, PyObject *arg)
+{
+  return HierarchicalClusterLowSet(self, arg, 1);
 }
 
 PHierarchicalClusterList PHierarchicalClusterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PHierarchicalClusterList, THierarchicalClusterList, PHierarchicalCluster, (PyTypeObject *)&PyOrHierarchicalCluster_Type>::P_FromArguments(arg); }

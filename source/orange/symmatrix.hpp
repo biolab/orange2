@@ -58,6 +58,15 @@ public:
   { const int index = getindex(i, j, false);
     return index<0 ? float(0.0) : elements[getindex(i, j)];
   }
+
+  void index2coordinates(const float *f, int &x, int &y) const
+  { index2coordinates(f-elements, x, y); }
+
+  static void index2coordinates(const int &index, int &x, int &y)
+  {
+    x = int(floor( (sqrt(float(1+8*index)) -1) / 2));
+    y = index - (x*(x+1))/2;
+  }
 };
 
 WRAPPER(SymMatrix)

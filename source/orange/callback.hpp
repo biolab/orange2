@@ -114,6 +114,15 @@ public:
   virtual PExampleGeneratorList operator() (PTreeNode node, PExampleGenerator generator, const int &weightID, vector<int> &weights);
 };
 
+
+#include "progress.hpp"
+
+class TProgressCallback_Python : public TProgressCallback {
+public:
+  __REGISTER_CLASS
+  virtual bool operator()(const float &, POrange);
+};
+
 /*
 Not verified yet:
 
