@@ -208,24 +208,66 @@ def selectAttributes(data, attrContOrder, attrDiscOrder, projections = None):
     return (shown, hidden, maxIndex)
 
 
+def computeCorrelationInsideClasses(data, attr1, attr2):
+    if data.domain[attr1].varType != orange.VarTypes.Continuous: return None
+    if data.domain[attr2].varType != orange.VarTypes.Continuous: return None
+
+    table = data.select([attr1, attr2, data.domain.classVar])
+    table = orange.Preprocessor_dropMissing(table)
+    lengths = []; corrs = []
+    for val in table.domain.classVar.values:
+        tab = table.filter({table.domain.classVar: val})
+        a1 = [tab[k][attr1].value for k in range(len(tab))]
+        a2 = [tab[k][attr2].value for k in range(len(tab))]
+        if len(a1) == 0: continue
+        val, prob = statc.pearsonr(a1, a2)
+        lengths.append(len(a1))
+        corrs.append(val)
+    corr = 0
+    for ind in range(len(corrs)): corr += abs(corrs[ind])*lengths[ind]
+    corr /= sum(lengths)
+    return corr, corrs, lengths
+
+def computeCorrelation(data, attr1, attr2):
+    if data.domain[attr1].varType != orange.VarTypes.Continuous: return None
+    if data.domain[attr2].varType != orange.VarTypes.Continuous: return None
+
+    table = data.select([attr1, attr2])
+    table = orange.Preprocessor_dropMissing(table)
+    a1 = [table[k][attr1].value for k in range(len(table))]
+    a2 = [table[k][attr2].value for k in range(len(table))]
+    
+    val, prob = statc.pearsonr(a1, a2)
+    return val
+
 def computeCorrelationBetweenAttributes(data, attrList, minCorrelation = 0.0):
     correlations = []
     for i in range(len(attrList)):
         if data.domain.attributes[i].varType != orange.VarTypes.Continuous: continue
         for j in range(i+1, len(attrList)):
             if data.domain.attributes[j].varType != orange.VarTypes.Continuous: continue
-            table = data.select([attrList[i], attrList[j]])
-            table = orange.Preprocessor_dropMissing(table)
-            attr1 = [table[k][attrList[i]].value for k in range(len(table))]
-            attr2 = [table[k][attrList[j]].value for k in range(len(table))]
-            
-            val, prob = statc.pearsonr(attr1, attr2)
-            if abs(val) >= minCorrelation: correlations.append((abs(val), attrList[i], attrList[j]))
+            val = abs(computeCorrelation(data, attrList[i], attrList[j]))
+            if val >= minCorrelation: correlations.append((val, attrList[i], attrList[j]))
 
     correlations.sort()
     correlations.reverse()
     return correlations
-    
+
+
+def computeCorrelationInsideClassesBetweenAttributes(data, attrList, minCorrelation = 0.0):
+    if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous: return []
+    correlations = []
+    for i in range(len(attrList)):
+        if data.domain.attributes[i].varType != orange.VarTypes.Continuous: continue
+        for j in range(i+1, len(attrList)):
+            if data.domain.attributes[j].varType != orange.VarTypes.Continuous: continue
+            corr, corrs, lengths = computeCorrelationInsideClasses(data, attrList[i], attrList[j])
+            if corr >= minCorrelation: correlations.append((corr, attrList[i], attrList[j]))
+
+    correlations.sort()
+    correlations.reverse()
+    return correlations
+
 
 def addBestToCurrentProj(currentProj, attrInfo):
     for (val, a1, a2) in attrInfo:

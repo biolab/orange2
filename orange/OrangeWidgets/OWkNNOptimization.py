@@ -105,7 +105,11 @@ class kNNOptimization(OWBaseWidget):
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start evaluating projections")
+        f = self.startOptimizationButton.font()
+        f.setBold(1)
+        self.startOptimizationButton.setFont(f)
         self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation")
+        self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
 
