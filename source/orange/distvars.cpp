@@ -200,8 +200,8 @@ NOT_IMPLEMENTED("error()")
 float TDistribution::percentile(const float &) const
 NOT_IMPLEMENTED("percentile(float)")
 
-float TDistribution::density(const float &) const
-NOT_IMPLEMENTED("density(float)")
+float TDistribution::p(const float &) const
+NOT_IMPLEMENTED("p(float)")
 
 
 
@@ -320,7 +320,7 @@ float TDistribution::p(const TValue &val) const
       raiseError("undefined attribute value");
   }
   CHECKVALTYPE(val.varType);
-  return (val.varType==TValue::INTVAR) ? p(int(val)) : density(float(val));
+  return (val.varType==TValue::INTVAR) ? p(int(val)) : p(float(val));
 }
 
 
@@ -1111,7 +1111,7 @@ float TContDistribution::randomFloat() const
   return (*di).second;
 }
 
-float TContDistribution::density(const float &x) const
+float TContDistribution::p(const float &x) const
 { const_iterator rb = upper_bound(x);
   if (rb==end())
     return 0.0;
@@ -1182,7 +1182,7 @@ float TGaussianDistribution::randomFloat() const
 { return (float)gasdev((double)mean, (double)sigma, *_globalRandom); }
 
 
-float TGaussianDistribution::density(const float &x) const
+float TGaussianDistribution::p(const float &x) const
 { return abs * exp(-sqr((x-mean)/2/sigma)) / (sigma*sqrt(2*pi)); }
 
 

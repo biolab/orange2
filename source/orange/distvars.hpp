@@ -109,7 +109,7 @@ public:
   virtual float var() const;
   virtual float percentile(const float &) const;
   virtual float error() const;
-  virtual float density(const float &) const;
+  virtual float p(const float &) const;
 
   /* The below methods may be redefined (they are not implemented in TDistribution) */
 
@@ -225,7 +225,7 @@ public:
   virtual const float &atfloat (const float &v) const;
   virtual void  addfloat(const float &f, const float &w = 1.0);
   virtual void  setfloat(const float &v, const float &w);
-  virtual float density(const float &) const;
+  virtual float p(const float &) const;
 
   virtual float average() const;
   virtual float dev() const;
@@ -262,7 +262,7 @@ public:
   virtual float highestProb() const;
   virtual float randomFloat() const;
 
-  virtual float density(const float &) const;
+  virtual float p(const float &) const;
   virtual bool  noDeviation() const;
 };
 

@@ -294,7 +294,7 @@ PyObject *Example_removeweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O
 
     int index = (int)PyInt_AsLong(pyindex);
 
-    if (!index)
+    if (index>0)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
 
     PyExample_AS_Example(pex)->removeMeta(index);

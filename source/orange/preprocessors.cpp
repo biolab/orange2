@@ -310,7 +310,11 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
   
   if (deviations)
     PITERATE(TVariableFloatMap, vi, deviations) {
-      const int pos = domain.getVarNum((*vi).first);
+      PVariable var = (*vi).first;
+      if (var->varType != TValue::FLOATVAR)
+        raiseError("attribute '%s' is not continuous", var->name.c_str());
+
+      const int pos = domain.getVarNum(var);
       ps.push_back(pair<int, float>(pos, (*vi).second));
 
       if ((pos >= 0) && (pos < attributeUsed.size()))
@@ -318,7 +322,7 @@ PExampleGenerator TPreprocessor_addGaussianNoise::operator()(PExampleGenerator g
     }
   
   if (defaultDeviation) {
-    TVarList::const_iterator vi(domain.variables->begin());
+    TVarList::const_iterator vi(domain.attributes->begin());
     const vector<bool>::const_iterator bb = attributeUsed.begin();
     const_ITERATE(vector<bool>, bi, attributeUsed) {
       if (!*bi && ((*vi)->varType == TValue::FLOATVAR))
@@ -444,8 +448,12 @@ TPreprocessor_addGaussianClassNoise::TPreprocessor_addGaussianClassNoise(const f
 
 PExampleGenerator TPreprocessor_addGaussianClassNoise::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
 {
-  if (!gen->domain->classVar)
+  PVariable classVar = gen->domain->classVar;
+
+  if (!classVar)
     raiseError("Class-less domain");
+  if (classVar->varType != TValue::FLOATVAR)
+    raiseError("Class '%s' is not continuous", gen->domain->classVar->name.c_str());
 
   newWeight = weightID;
 
@@ -733,14 +741,14 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
 
 TPreprocessor_discretize::TPreprocessor_discretize()
 : attributes(),
-  notClass(true),
+  discretizeClass(false),
   method()
 {}
 
 
 TPreprocessor_discretize::TPreprocessor_discretize(PVarList attrs, const bool &nocl, PDiscretization meth)
 : attributes(attrs),
-  notClass(nocl),
+  discretizeClass(nocl),
   method(meth)
 {}
 
@@ -763,7 +771,7 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
         discretizeId.push_back(idx);
       idx++;
     }
-    if (!notClass && (domain.classVar->varType == TValue::FLOATVAR))
+    if (discretizeClass && (domain.classVar->varType == TValue::FLOATVAR))
       discretizeId.push_back(idx);
   }
 

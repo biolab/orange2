@@ -258,13 +258,13 @@ public:
   __REGISTER_CLASS
 
   PVarList attributes; //P attributes to be discretized (all, if not defined or empty)
-  bool notClass; //P do not discretize the class attribute (default: true)
+  bool discretizeClass; //P also discretize the class attribute (default: false)
   PDiscretization method; //P discretization method
 
   PDomain discretizedDomain(PExampleGenerator, int &);
 
   TPreprocessor_discretize();
-  TPreprocessor_discretize(PVarList, const bool & = true, PDiscretization = PDiscretization());
+  TPreprocessor_discretize(PVarList, const bool & = false, PDiscretization = PDiscretization());
   virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
 };
 

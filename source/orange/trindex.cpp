@@ -218,7 +218,13 @@ PRandomIndices TMakeRandomIndicesN::operator()(PExampleGenerator gen, PFloatList
 
 PRandomIndices TMakeRandomIndicesN::operator()(const int &n, PFloatList ap)
 { if (!ap || !ap->size())
-    raiseError("invalid (empty) vector of probabilities");
+    raiseError("'p' not defined or empty");
+
+  float sum = 0;
+  for(vector<float>::const_iterator pis(ap->begin()), pie(ap->end()); pis!=pie; sum += (*(pis++)));
+  if (sum>=1.0)
+    raiseError("elements of 'p' sum to 1 or more");
+
   if (stratified==TMakeRandomIndices::STRATIFIED)
     raiseError("stratification not implemented");
 
