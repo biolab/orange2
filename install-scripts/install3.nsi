@@ -124,10 +124,6 @@ Section "Genomic Data"
 	File various\bi-visprog\*.tab
 	File various\bi-visprog\*.ows
 	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
-	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesPrint.py
-	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesViewer.py
-	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesFilter.py
-	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRules.py
 	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
 	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
 	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py

@@ -1,0 +1,12 @@
+pushd
+
+cdd %SCRIPTDIR
+python process_doc.py %1 %SCRIPTDIR\tempdoc %WEBDOCDIR 0
+
+cdd %SCRIPTDIR\tempdoc
+del %DOWNLOADDIR\orange-doc-snap-*.zip
+winrar a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
+cd  ..
+del /eyqfsx tempdoc
+
+popd

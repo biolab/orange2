@@ -1,0 +1,13 @@
+set WEBDIR=d:\webMagix\orange
+set DOWNLOADDIR=%WEBDIR\download2
+set SCRIPTDIR=%WEBDIR\scripts
+set WEBDOCDIR=%WEBDIR\doc
+set STABLEDIR=%DOWNLOADDIR\lastStable
+
+set SNAPCHECKOUTDIR=%SCRIPTDIR\tempcheckout
+
+alias nsis="c:\program files\nsis\makensis.exe"
+
+set daystr=%_YEAR-%@format[02,%_MONTH]-%@format[02,%_DAY]
+
+set /r %SCRIPTDIR\versions.set

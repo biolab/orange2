@@ -1,0 +1,55 @@
+pushd
+
+
+rem ************************************************
+rem *** CHANGE THE DIRECTORY, TERMINATE IF CAN'T
+
+cdd %STABLEDIR
+if errorlevel == 0 goto changedirok
+popd
+@pause "Cannot change directory to %STABLEDIR, terminating"
+cancel
+
+:changedirok
+
+rem ************************************************
+rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
+
+del /eqsyfx orange
+rem cvs -d :janez:cvs@estelle.fri.uni-lj.si:d:/CVS login
+cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f orange
+cd orange
+cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f source
+
+
+rem ************************************************
+rem *** - COMPILE DOCUMENTATION FOR WEB AND LOCAL,
+rem *** - PUT IT ON THE WEB
+rem *** - ZIP THE SNAPSHOT FOR THE WEB
+
+call updateDoc__.btm %STABLEDIR\orange\doc
+
+rem ************************************************
+rem *** COMPILE NEW INSTALLATIONS
+
+set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR install3.nsi
+
+del %DOWNLOADDIR\orange-win-*.exe
+nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-%verstr.exe" %COMMON_NSI_OPTIONS
+
+del %DOWNLOADDIR\orange-w-python-*.exe
+nsis /DCOMPLETE /DOUTFILENAME="%DOWNLOADDIR\orange-w-python.%verstr.exe" %COMMON_NSI_OPTIONS
+
+pushd
+del %DOWNLOADDIR\orange-source-*.zip
+cdd %STABLEDIR\orange
+winrar a -r "%DOWNLOADDIR\orange-source-%verstr.zip" source
+popd
+
+cancel
+rem ************************************************
+rem *** TAG THE FILES ON CVS AND UPDATE versions.set
+
+set tag=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
+cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS rtag -r stable -f %tag orange source
+set | grep  orange.*Version > %SCRIPTDIR\versions.set
