@@ -577,7 +577,53 @@ PyObject *py_compare2ROCs(PyObject *, PyObject *arg)
 }
 
 
+inline float cmphalf(const float &x, const float &y)
+{
+  if (x<y)   return 0;
+  if (x==y)  return 0.25;
+  return 0.5;
+}
 
+PyObject *py_mAUC(PyObject *, PyObject *arg)
+{ PyTRY
+    PyObject *pyresults;
+    PyObject *pyuseweights = PYNULL;
+    if (!PyArg_ParseTuple(arg, "O|O:corn.mAUC", &pyresults, &pyuseweights))
+      PYERROR(PyExc_TypeError, "mAUC: results and optionally use weights flag expected", PYNULL);
+
+    bool useweights = pyuseweights && (PyObject_IsTrue(pyuseweights)!=0);
+    if (useweights)
+      PYERROR(PyExc_SystemError, "mAUC: cannot use weights (weights not implemented yet)", PYNULL);
+
+    ExperimentResults results(pyresults);
+/*    if (results.numberOfIterations>1)
+      PYERROR(PyExc_SystemError, "mAUC: cannot compute CDT for experiments with multiple iterations", PYNULL);
+*/
+
+    const int nLearners = results.numberOfLearners;
+    vector<float> correctPairs(nLearners, 0.0);
+    int usefulPairs = 0;
+
+    for (vector<TestedExample>::const_iterator i1(results.results.begin()), e(results.results.end()); i1!=e; i1++)
+      for (vector<TestedExample>::const_iterator i2(i1); i2!=e; i2++) {
+        const int cls1 = (*i1).actualClass;
+        const int cls2 = (*i2).actualClass;
+        if (cls1 != cls2) {
+          usefulPairs++;
+          vector<float>::iterator cpi(correctPairs.begin());
+          vector<vector<float> >::const_iterator ep1i((*i1).probabilities.begin()), ep2i((*i2).probabilities.begin());
+          for(int cfr = nLearners; cfr--; cpi++, ep1i++, ep2i++)
+            *cpi +=  cmphalf((*ep1i)[cls1], (*ep2i)[cls1])
+                   + cmphalf((*ep2i)[cls2], (*ep1i)[cls2]);
+        }
+      }
+
+    PyObject *res = PyList_New(nLearners);
+    for(int cfr = 0; cfr<nLearners; cfr++)
+      PyList_SetItem(res, cfr, PyFloat_FromDouble(correctPairs[cfr]/usefulPairs));
+    return res;
+  PyCATCH
+}
 
 /* *********** AUXILIARY ROUTINES *************/
 
@@ -674,6 +720,7 @@ PyMethodDef corn_functions[] = {
      DECLARE(computeROCCumulative)
 //     DECLARE(sort_random)
      DECLARE(computeCDT)
+     DECLARE(mAUC)
 
 //     {"ref", py_ref, METH_O},
 
