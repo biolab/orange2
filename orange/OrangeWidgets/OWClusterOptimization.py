@@ -422,9 +422,10 @@ class ClusterOptimization(OWBaseWidget):
 
     settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank",
                     "showValue", "jitterDataBeforeTriangulation", "createSnapshots", "useProjectionValue",
-                    "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes"]
+                    "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes", "classifierName", "argumentCountIndex"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     resultsListLenList = [str(x) for x in resultsListLenNums]
+    argumentCounts = [5, 10, 20, 40, 100, 100000]
 
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "Cluster Dialog")
@@ -454,6 +455,7 @@ class ClusterOptimization(OWBaseWidget):
         self.selectedClasses = []
         self.optimizationType = 0
         self.jitterDataBeforeTriangulation = 0
+        self.classifierName = "Visual cluster classifier"
 
         self.showRank = 0
         self.showValue = 1
@@ -473,6 +475,7 @@ class ClusterOptimization(OWBaseWidget):
         self.evaluationTime = 30
         self.useAlphaShapes = 1
         self.removeDistantPoints = 1
+        self.argumentCountIndex = 1     # when classifying use 10 best arguments 
 
         self.loadSettings()
 
@@ -524,8 +527,11 @@ class ClusterOptimization(OWBaseWidget):
         self.connect(self.argumentList, SIGNAL("selectionChanged()"),self.argumentSelected)
 
         # classification tab
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "evaluationTime", "Time for evaluating projections (sec): ", box = "Evaluating time", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = [10, 20, 30, 40, 60, 80, 100, 120, 150, 200], sendSelectedValue = 1, valueType = int)
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(self.ClassificationTab, self, "argumentCountIndex", "Maximum number of arguments used when classifying: ", box = "Argument count", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = ["5", "10", "20", "40", "100", "All"])
+        
 
 
         # manage tab
@@ -608,12 +614,23 @@ class ClusterOptimization(OWBaseWidget):
         self.statusBar = QStatusBar(self)
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
-        
+
+        self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.classifierNameChanged)
+        self.clusterLearner = clusterLearner(self, self.parentWidget)
+        if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner, 1)
+
+
+    # if we load a schema we have to reset learner name
+    def activateLoadedSettings(self):
+        self.clusterLearner.name = self.classifierName
 
     # ##############################################################
     # EVENTS
     # ##############################################################
-        
+    # when text of vizrank or cluster learners change update their name
+    def classifierNameChanged(self, text):
+        self.clusterLearner.name = self.classifierName
+
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
     # result list must be updated accordingly
@@ -1073,7 +1090,7 @@ class ClusterOptimization(OWBaseWidget):
     # ######################################################
     # Argumentation functions
     # ######################################################
-    def findArguments(self, selectBest = 1):
+    def findArguments(self, selectBest = 1, showClassification = 1):
         self.cancelArgumentation = 0
         self.clearArguments()
         self.arguments = [[] for i in range(self.classValueList.count())]
@@ -1177,6 +1194,15 @@ class ClusterOptimization(OWBaseWidget):
         self.parentWidget.restoreGraphProperties()
         if self.argumentList.count() > 0 and selectBest: self.argumentList.setCurrentItem(0)
 
+        # show classification results
+        if showClassification:
+            classValue, dist = self.classifyExample(example)
+            s = '<nobr>Based on current classification settings, the example would be classified </nobr><br><nobr>to class <b>%s</b> with probability <b>%.2f%%</b>.</nobr><br><nobr>Predicted class distribution is:</nobr><br>' % (classValue, dist[classValue]*100)
+            for key in dist.keys():
+                s += "<nobr>&nbsp &nbsp &nbsp &nbsp %s : %.2f%%</nobr><br>" % (key, dist[key]*100)
+            s = s[:-4]
+            QMessageBox.information(None, "Classification results", s, QMessageBox.Ok + QMessageBox.Default)
+
 
     # use bisection to find correct index
     def findArgumentTargetIndex(self, value, arguments):
@@ -1211,6 +1237,38 @@ class ClusterOptimization(OWBaseWidget):
         self.parentWidget.showAttributes(self.arguments[classInd][ind][2], clusterClosure = self.allResults[self.arguments[classInd][ind][3]][CLOSURE])
         
 
+    # classify the example using current arguments and return the class distribution
+    def classifyExample(self, example):
+        arguments = []
+        for i in range(len(self.arguments)):
+            for j in range(len(self.arguments[i])):
+                arguments.append((self.arguments[i][j][1], i))
+
+        if len(arguments) == 0:
+            print "Unable to find any arguments for the current example. Returning uniform class distribution."
+            dist = orange.DiscDistribution([1/float(len(self.arguments)) for i in range(len(self.arguments))])
+            dist.variable = self.rawdata.domain.classVar
+            return (example.domain.classVar[0], dist)
+
+        arguments.sort()
+        arguments.reverse()
+        arguments = arguments[:self.argumentCounts[self.argumentCountIndex]]
+
+        vals = [0.0 for i in range(len(self.arguments))]
+        if self.useProjectionValue:
+            for (val, i) in arguments: vals[i] += val
+        else:
+            for (val, i) in arguments: vals[i] += 1
+
+        # print argument count and argument values
+        l = [len(self.arguments[i]) for i in range(len(self.arguments))]
+        print "%s, %s" % (str(l), str(vals))
+
+        ind = vals.index(max(vals))
+        s = sum(vals)
+        dist = orange.DiscDistribution([val/float(s) for val in vals]);  dist.variable = self.rawdata.domain.classVar
+        return (example.domain.classVar[ind], dist)
+
 class clusterClassifier(orange.Classifier):
     def __init__(self, clusterOptimizationDlg, visualizationWidget, data):
         self.clusterOptimizationDlg = clusterOptimizationDlg
@@ -1240,29 +1298,14 @@ class clusterClassifier(orange.Classifier):
         self.visualizationWidget.subsetdata(table, 0)
         snapshots = self.clusterOptimizationDlg.createSnapshots
         self.clusterOptimizationDlg.createSnapshots = 0
-        self.clusterOptimizationDlg.findArguments(0)
+        self.clusterOptimizationDlg.findArguments(0, 0)
         self.clusterOptimizationDlg.createSnapshots = snapshots
 
-        vals = [0.0 for i in range(len(self.clusterOptimizationDlg.arguments))]
-        if self.clusterOptimizationDlg.useProjectionValue:
-            for i in range(len(self.clusterOptimizationDlg.arguments)):
-                for j in range(len(self.clusterOptimizationDlg.arguments[i])):
-                    vals[i] += self.clusterOptimizationDlg.arguments[i][j][1]
-        else:
-            for i in range(len(self.clusterOptimizationDlg.arguments)):
-                vals[i] = len(self.clusterOptimizationDlg.arguments[i])
-
-        # print argument count and argument values
-        l = [len(self.clusterOptimizationDlg.arguments[i]) for i in range(len(self.clusterOptimizationDlg.arguments))]
-        print "%s, %s" % (str(l), str(vals))
-
+        classVal, dist = self.clusterOptimizationDlg.classifyExample(example)
+        
         del table
-        ind = vals.index(max(vals))
-        if returnType == orange.GetBoth:
-            s = sum(vals) + len(vals)
-            return (example.domain.classVar[ind], orange.DiscDistribution([(val+1)/float(s) for val in vals]))
-        else:
-            return example.domain.classVar[ind]
+        if returnType == orange.GetBoth: return classVal, dist
+        else:                            return classVal
         
         
 
@@ -1270,7 +1313,7 @@ class clusterLearner(orange.Learner):
     def __init__(self, clusterOptimizationDlg, visualizationWidget):
         self.clusterOptimizationDlg = clusterOptimizationDlg
         self.visualizationWidget = visualizationWidget
-        self.name = "Visual cluster classifier"
+        self.name = self.clusterOptimizationDlg.classifierName
         
     def __call__(self, examples, weightID = 0):
         return clusterClassifier(self.clusterOptimizationDlg, self.visualizationWidget, examples)
