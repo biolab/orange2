@@ -117,7 +117,7 @@ class Gaussianizer:
             m = len(l)
         sets = [l[:m]]
         if self.n_bells > 2:
-            for x in range(1,self.n_bells-1):
+            for x in xrange(1,self.n_bells-1):
                 sets.append(l[m*x:m*(x+1)])
         sets.append(l[m*(self.n_bells-1):])
         self.avg = []
@@ -590,10 +590,10 @@ class Binarizer:
     def apply(self,ex,list):
         (value,spec) = _getattr(ex,self.attr)
         if spec:
-            for i in range(self.idx,self.nidx):
+            for i in xrange(self.idx,self.nidx):
                 list[i] = self.missing
         else:
-            for i in range(self.idx,self.nidx):
+            for i in xrange(self.idx,self.nidx):
                 list[i] = self.min
             list[self.idx+int(value)] = self.max
 
@@ -606,7 +606,7 @@ class Binarizer:
     def inverse(self,list):
         best = -1
         bestv = 1e200
-        for i in range(self.idx,self.nidx):
+        for i in xrange(self.idx,self.nidx):
             val = abs(list[self.idx]-self.max)
             if val < bestv:
                 bestv = val
@@ -634,7 +634,7 @@ class Dummy:
         maxx = max(self.counts)
         self.maxi = -1
         self.lut = [-1]*len(self.counts)
-        for x in range(len(self.counts)):
+        for x in xrange(len(self.counts)):
             if self.counts[x]==maxx and self.maxi < 0:
                 self.maxi = x
             else:
@@ -667,10 +667,10 @@ class Dummy:
         (value,spec) = _getattr(ex,self.attr)
         if spec:
             # missing value handling
-            for i in range(self.idx,self.nidx):
+            for i in xrange(self.idx,self.nidx):
                 list[self.idx] = self.missing
         else:
-            for i in range(self.idx,self.nidx):
+            for i in xrange(self.idx,self.nidx):
                 list[self.idx] = self.min
             i = self.lut[int(value)]
             if i != -1:
@@ -678,14 +678,14 @@ class Dummy:
 
     def descript(self):
         d = []
-        for x in range(len(self.attr.values)):
+        for x in xrange(len(self.attr.values)):
             if self.lut[x] != -1:
                 d.append('%s=%s'%(self.attr.name,self.attr.values[x]))
         return d 
 
     def description(self):
         d = []
-        for x in range(len(self.attr.values)):
+        for x in xrange(len(self.attr.values)):
             if self.lut[x] != -1:
                 d.append('%s'%(self.attr.values[x]))
             else:
@@ -695,7 +695,7 @@ class Dummy:
     def inverse(self,list):
         best = self.nidx
         bestv = 1e200
-        for i in range(self.idx,self.nidx):
+        for i in xrange(self.idx,self.nidx):
             val = abs(list[self.idx]-self.max)
             if val < bestv:
                 bestv = val
@@ -717,7 +717,7 @@ class DomainTranslation:
         self.mode = mode
         self.floatmode = float_mode
 
-    def analyse(self,examples,weight=0):
+    def analyse(self,examples,weight=0,warning=1):
         # attributes
         self.trans = []
         self.weight = weight
@@ -758,18 +758,18 @@ class DomainTranslation:
         else:
             if i.varType == 1:
                 # discrete
-                if len(i.values) > 2:
+                if len(i.values) > 2 and warning:
                     warnings.warn("Simulating classification with regression. It's better to use orngMultiClass!")
                 self.cv = Ordinalizer(0,i,isclass=1)
 
         # learning the properties of transformers
         for j in examples:
-            for i in range(len(self.trans)):
+            for i in xrange(len(self.trans)):
                 self.trans[i].learn(j[i])
             self.cv.learn(j.getclass())
 
         # do the final preparations
-        for i in range(len(self.trans)):
+        for i in xrange(len(self.trans)):
             self.trans[i].activate()
 
     def prepareLR(self):
@@ -804,7 +804,7 @@ class DomainTranslation:
         for j in examples:
             newv = [0.0]*self.trans[-1].nidx
             newc = [0.0]
-            for i in range(len(self.trans)):
+            for i in xrange(len(self.trans)):
                 self.trans[i].apply(j,newv)
             self.cv.apply(j,newc)
 
@@ -817,7 +817,7 @@ class DomainTranslation:
 
     def extransform(self,example):
             newv = [0.0]*self.trans[-1].nidx
-            for i in range(len(self.trans)):
+            for i in xrange(len(self.trans)):
                 self.trans[i].apply(example,newv)
             return newv
 
@@ -835,6 +835,6 @@ class DomainTranslation:
 
     def description(self):
         ds = []
-        for i in range(len(self.trans)):
+        for i in xrange(len(self.trans)):
             ds += self.trans[i].description()
         return (ds,self.cv.description())
