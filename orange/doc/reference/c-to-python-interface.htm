@@ -4,6 +4,212 @@
 </HEAD> <body>
 
 
+<H1>Writing Orange Extensions in C++</H1>
+
+<P>This page starts with a simple example of a C function that gets the data from Orange's example table and computes Delaunay triangulation for a chosen pair of (continuous) attributes. The result is returned as <CODE>orange.Graph</CODE>. Then follows a more complex example that shows how to derive a new class from one of Orange's classes and make it accessible from Python. Finally, there's a more concise description of Orange's interface to Python and the tools we developed for making our lives easier (we don't care about yours :-).</P>
+
+<H2>A simple example: Exporting function(s)</H2>
+
+<P>If you think about developing your own extensions for Orange, you'll need Orange sources. Besides headers, you will certainly need the C files to steal parts of the code from. So download it if you don't already have it. The example shown in this section is in directory orange/orangeom, files triangulate.cpp and orangeom.cpp.</P>
+
+<P>We also assume that you have at least a vague idea of how Python's extensions in C++ look like. If you don't, read the Python documentation on this first; don't be afraid, it is fairly easy.</P>
+
+<P>We shall write a function that gets examples, indices/names/descriptors of two attributes and the number edge types (see documentation on <A href="graph.htm">graphs</A>). The two attributes need to be discrete; the function treats the values of these two attributes for each example as a point in a plane and computes the Delaunay triangulation, which is returned as <CODE>orange.Graph</CODE>.</P>
+
+<P>The function should begin like this:</P>
+<XMP class="code">
+PyObject *triangulate(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph")
+</XMP>
+
+<P>Despite of what your browser may show this: this should be written in a single line. Function arguments and result are like for any Python function, while the macro PYARGS marks the function for export to Python. Later you'll see how this is done.</P>
+
+<P>We shall close the function in <CODE>PyTRY</CODE> - <CODE>PyCATCH</CODE> block. This catches any C++ exceptions that Orange might throw and turns them into Python error messages. You should do this with any function that calls Orange.</P>
+<XMP class=code>
+{
+  PyTRY
+  ...
+  PyCATCH
+}
+</XMP>
+
+<P>First we need to get the arguments and check their types.</P>
+<XMP class=code>
+    PExampleGenerator egen;
+    int nEdgeTypes = 1;
+    PyObject *pyvar1 = NULL, *pyvar2 = NULL;
+    int attr1 = 0, attr2 = 1;
+    if (   !PyArg_ParseTuple(args, "O&|OOi:triangulate", pt_ExampleGenerator, &egen, &pyvar1, &pyvar2, &nEdgeTypes)
+        || pyvar1 && !varNumFromVarDom(pyvar1, egen->domain, attr1)
+        || pyvar2 && !varNumFromVarDom(pyvar2, egen->domain, attr2))
+      return NULL;
+
+    if (  (egen->domain->attributes->at(attr1)->varType != TValue::FLOATVAR)
+	     || (egen->domain->attributes->at(attr2)->varType != TValue::FLOATVAR))
+      PYERROR(PyExc_TypeError, "triangulate expects continuous attributes", NULL);
+</XMP>
+
+<P>For the arguments of <CODE>PyArg_ParseTuple</CODE> see the corresponding Python documentation. Here we accept one to four arguments. The first is a table of examples, which get converted to <CODE>PExampleGenerator</CODE> by a converter function <CODE>pt_ExampleGenerator</CODE>. The next two are read as Python objects and can be, as far as <CODE>PyArg_ParseTuple</CODE> is concerned, of any type. The last argument is an integer.</P> 
+
+<P>We use Orange's function <CODE>varNumFromVarDom</CODE> to convert what the user passed as an attribute to an attribute index. If this is already an integer, it is returned as such; otherwise the example table's domain (<CODE>egen->domain</CODE>) is used to convert a name or an attribute descriptor to an integer index. There are many similar utility functions, but to find them you will need to browse the Orange's code and see how Orange does it. No documentation is provided.</P>
+
+<P>We then check the attribute type and complain if they are not continuous. Macro <CODE>PYERROR</CODE>, defined in Orange, is used to set the error type (<CODE>PyExc_TypeError</CODE>) and message, and to send the corresponding result (in Python <CODE>NULL</CODE> always signifies an error).</P>
+
+<P>Now for the real work. For actual triangulation we shall use Wml, which expects the arguments in a structure <CODE>Vector2&lt;float&gt;</CODE>.</P>
+
+<XMP class=code>
+    const int nofex = egen->numberOfExamples();
+
+    Vector2<float> *points = new Vector2<float>[nofex];
+    Vector2<float> *pi = points;
+
+    PEITERATE(ei, egen) {
+      if ((*ei)[attr1].isSpecial() || (*ei)[attr2].isSpecial())
+        PYERROR(PyExc_AttributeError, "triangulate cannod handle unknown values", NULL);
+
+      *(pi++) = Vector2<float>((*ei)[attr1].floatV, (*ei)[attr2].floatV);
+    }
+
+    int nTriangles;
+    int *triangles, *adjacent;
+    Delaunay2a<float> delaunay(nofex, points, nTriangles, triangles, adjacent);
+    delete adjacent;
+</XMP>
+
+<P>We have used a macro <CODE>PEITERATE(ei, egen)</CODE> for iteration across the example table, where <CODE>egen</CODE> is an example generator and <CODE>ei</CODE> is an iterator (declared inside the macro itself). If we wanted, we could use an equivalent <CODE>for</CODE> loop: <CODE>for(TExampleIterator ei(egen->begin()); ei; ++ei)</CODE>. Of the two results computed by <CODE>Delaunay2a&lt;float&gt;</CODE>, we immediately discard <CODE>adjacent</CODE>, while from <CODE>triangles</CODE> we shall construct the graph.</P>
+
+<XMP class=code>
+    TGraph *graph = new TGraphAsList(nofex, nEdgeTypes, 0);
+    PGraph wgraph = graph;
+    try {
+      for(int *ti = triangles, *te = ti+nTriangles*3; ti!=te; ti+=3) {
+        for(int se = 3; se--; ) {
+          float *gedge = graph->getOrCreateEdge(ti[se], ti[(se+1) % 3]);
+          for(int et = nEdgeTypes; et--; *gedge++ = 1.0);
+        }
+      }
+    }
+    catch (...) {
+      delete triangles;
+      throw;
+    }
+    delete triangles;
+</XMP>
+
+<P>The <CODE>graph</CODE> is immediately wrapped into an instance of <CODE>PGraph</CODE>. If anything fails, for instance, if an exception occurs in the code that follows, <CODE>graph</CODE> will be deallocated automatically so we don't need to (and mustn't!) care about it. However, we have to be careful about the <CODE>triangles</CODE>, we need another <CODE>try</CODE>-<CODE>catch</CODE> to deallocate it in case of errors. The follows copying the data from <CODE>triangles</CODE> into <CODE>graph</CODE> (we won't explain it here, look at Wml's documentation if you need to know everything).</P>
+
+<P><CODE>TGraph</CODE> is Orange's class and <CODE>PGraph</CODE> is a wrapper around it. Python can use neither of them, the only type of result that the function can return is a Python object, so we conclude by:</P>
+<XMP class=code>
+    PyObject *res = WrapOrange(wgraph);
+    return res;
+</XMP>
+
+<P>(Don't worry about double wrappers. <CODE>WrapOrange</CODE>, which wraps Orange objects into <CODE>PyObject *</CODE> technically does the opposite - it partially unwraps <CODE>PGraph</CODE> which already includes a <CODE>PyObject *</CODE>. See the Orange's garbage collector, garbage.hpp, if you need to know.)</P>
+
+<P>There's another detail in the actual function <CODE>triangulate</CODE> which is rather dirty and quite specific and rare, so we won't explain it here. If you're looking at triangulate.cpp and wonder what it means, just ignore it. It's not important.</P>
+
+<P>We have omitted a few #includes above the function. We need a few wml headers. Besides that, all extensions should include orange_api.hpp that defines several macros and similar. In our case, we also need to include graph.hpp and examplegen.hpp which define the classes used in our function.</P>
+
+<P>Now comes the interface to Python. We need to construct a module, it's name will be <CODE>orangeom</CODE> and it will export the function triangulate. We've already mentioned that this has something to do with <CODE>PYARGS</CODE> macro. It has two arguments, the first, <CODE>METH_VARARGS</CODE> giving the number and type of arguments, while the second is the documentation string. We now need to compile an interface. Assuming that <CODE>triangulate.cpp</CODE> is in directory source/orangeom, so source/orange is its neighbour, we need to run ../pyxtract/pyxtract.py like this:</P>
+
+<XMP class=code>
+python ../pyxtract/pyxtract.py -m -n orangeom -l ../orange/px/stamp triangulate.cpp
+</XMP>
+
+<P>Do yourself a favour and put this line in a batch file. See the <CODE>_pyxtract.bat</CODE> files in various Orange's directories.</P>
+
+<P>Option <CODE>-m</CODE> tells pyxtract to <CODE>m</CODE>ake the file, <CODE>-n orangeom</CODE> gives the name of the module to be produced and <CODE>-l ../orange/px/stamp</CODE> is similar to gcc's <CODE>-l</CODE> - it tells pyxtract to include a "library" with all Orange's objects. Then follow the names of the files with any exported functions and classes. In our case, this is a single file, triangulate.cpp.</P>
+
+<P>What do we get from pyxtract? A few files we don't need and one more we don't care about. The only file of real interest is initialization.px. You can see the file for yourself, but omitting a few unimportant points, it looks like this.</P>
+
+<XMP class=code>
+PyMethodDef orangeomFunctions[]={
+     {"triangulate", (binaryfunc)triangulate, METH_VARARGS, "(examples[, attr1, attr2, nEdgeTypes]) -> Graph"},
+     {NULL, NULL}
+};
+
+PyObject *orangeomModule;
+
+extern "C" ORANGEOM_API void initorangeom()
+{ 
+  if (!initExceptions())
+    return;
+
+  gcUnsafeStaticInitialization();
+  orangeomModule = Py_InitModule("orangeom", orangeomFunctions);  
+}
+</XMP>
+
+<P><CODE>initorangeom</CODE> is a function that will be called by Python when the module is initialized. Basically, it calls <CODE>initExceptions</CODE>, <CODE>gcUnsafeInitialization</CODE> and then <CODE>Py_InitModule</CODE> whom it tells the module name and gives it the list of function that the module exports - in our case, <CODE>orangeomFunctions</CODE> has only a pointer to <CODE>triangulate</CODE> we wrote above.</P>
+
+<P>Functions <CODE>initExceptions</CODE>, <CODE>gcUnsafeInitialization</CODE> initialize the exceptions your module will throw to Python and initializes the stuff that cannot be initialized before the class types are ready. Both functions need to be provided by our module, but since we don't have any work for them, we'll just define them empty.</P>
+
+<P>So, the file that will include initialization.px should be like this.</P>
+<XMP class=code>
+#include "orange_api.hpp"
+
+#ifdef _MSC_VER
+    #define ORANGEOM_API __declspec(dllexport)
+#else
+    #define ORANGEOM_API
+#endif
+
+
+bool initExceptions()
+{ return true; }
+
+void gcUnsafeStaticInitialization()
+{}
+
+#include "px/initialization.px"
+</XMP>
+
+<P>We simplified the definition of <CODE>ORANGEOM_API</CODE> for this guide. If you ever wrote a DLL yourself, you probably know what the complete definition would look like, but for our module this will suffice. Then follow the two functions we don't need but they are called by <CODE>initorangeom</CODE>. Finally, we include initialization.px which takes care of the rest.</P>
+
+<P>Setting the compiler options? Eh, just copy them from some project that is delivered together with Orange. If you want to do it yourself, this is complete recipe (unless we've forgotten about something)
+
+<OL> 
+<LI>Add an environment variable <CODE>PYTHON=c:\python23</CODE>, or wherever your
+Python is installed. This will simplify the options and also help
+you upgrade to a newer version. (If you don't want to do this,
+just replace the below reference <CODE>$(PYTHON)</CODE> with <CODE>c:\python23</CODE>.)</LI>
+
+<LI>Open the Orange workspace (sources/orange.dsw) and add your stuff as new projects.
+Add new project into workspace". It will be a "Win32 Dynamic-link
+Library", create is as an empty or simple project.
+This document will suppose you've put it into a subdirectory
+of <CODE>orange/source</CODE> (eg <CODE>orange/source/myproject</CODE>)</LI>
+
+<LI>Edit the project settings. Make sure to edit the settings for
+both Release and Debug version - or for Release, if you don't
+intend to debug.
+  <UL>
+  <LI>In C/C++, Preprocessor add include directories <CODE>../include, 
+      ../orange,px,ppp,$(PYTHON)/include</CODE>.
+      If VC later complains it cannot find Python.h, locate the
+      file yourself and fix the last include directory accordingly.
+  </LI>
+      
+  <LI>In C/C++, C++ Language, check Enable Run-Time Type Information.</LI>
+   
+  <LI>In C/C++, Code generation, under Use run-time library choose
+      Multithread DLL for Release and Debug Multithread DLL for Debug
+      version.</LI>
+
+  <LI>In Link, Input, add <CODE>$(PYTHON)\libs<CODE> and <CODE>../../lib</CODE> to
+      Additional Library Path. (The first is the path to Python.lib,
+      and the second to orange.lib; locate them manually if you need to.)</LI>
+  </UL>
+</OL>
+
+
+<H1>A more complex example: extending Orange class hierarchi</H1>
+
+<P>To demonstrate how to 
+
+
+<H1>General mechanism and tools used in Orange's C to Python interface</H1>
+
+
 <P>This page is not meant to be a comprehensive and self-sufficient guide to exporting C++ classes into Python using the Orange's machinery. To learn how to export your functions and classes to Python, you should open some Orange's files (the .cpp files that begin with lib_ and cls_) and search for examples, while this page will hopefully help you to understand them. The easiest way to write your interfaces will be to copy and modify Orange's code.</P>
 
 <P>If you are writing extension modules for Python, you by no means have to use Orange's scripts for interfacing. Compile your interface with any tool you want. The only possible complications would arise if you are deriving and exporting new C++ classes from Orange's classes (to those that know something on the topic: Orange uses a slightly extended version of <CODE>PyTypeObject</CODE>, and the derived classes can't return to the original). If need be, ask and we shall provide some more insight and help to overcome them.</P>

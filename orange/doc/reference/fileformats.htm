@@ -118,8 +118,29 @@
 
 <P>Saving and reusing domain descriptors is handled through instances of class <A href="DomainDepot.htm"><CODE>DomainDepot</CODE></A>. Basically, each file type has its own instance of <CODE>DomainDepot</CODE> that stores all active domains loaded from the files of corresponding type. If need arises, you can create new depots, for instance, if you program routines for reading additional file formats.</P>
 
-<H2>Saving Examples</H2>
 
-<P>Writing examples into files is even simpler - all you need to do is call <CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE> or <CODE>saveTxt</CODE>, passing a filename as the first and the examples as the second argument. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator).</P>
+<H2>Saving Examples</H2>
+<A name="saving">
+
+<P>Saving examples to files is even simpler. <CODE>ExampleTable</CODE> (actually its ancestor, <CODE>ExampleGenerator</CODE>) implements a method <CODE>save</CODE> which accepts a single argument, file name, from which it also deduces the format. For instance, if examples are stored in <CODE>ExampleTable</CODE> <CODE>data</CODE>, we can save them as tab-delimited file by
+
+<XMP class="code">
+>>> data.save("mydata.tab")
+</XMP>
+
+<P>If the file format requires multiple files (such as C4.5, where the attribute definitions and the examples are separate files with different extensions), specify one of them and Orange will make the things right. For instance, to save the data in C4.5, call either
+
+<XMP class="code">
+>>> data.save("mydata.names")
+</XMP>
+or 
+<XMP class="code">
+>>> data.save("mydata.data")
+</XMP>
+
+Orange will write both files, <CODE>mydata.names</CODE> and <CODE>mydata.data</CODE> in both cases.</P>
 
 <P>Some formats are not able to store all types of datasets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
+
+<P>Can I save the files using some other extension than the default? Yes, for each file format there is a separater saving function (<CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE>, <CODE>saveBasket</CODE>, <CODE>saveCsv</CODE> or <CODE>saveTxt</CODE>), which accepts two arguments, a filename and the examples. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator). These functions are otherwise rather obsolete, so you should avoid them when possible.</P>
+
