@@ -15,28 +15,8 @@ from OData import *
 from qt import *
 from qtcanvas import *
 import orngInteract
-import statc
-import os
+from math import sqrt, floor, ceil
 from orngCI import FeatureByCartesianProduct
-
-######################################################################
-## QVERTICALCANVASTEXT - shows verical text in canvas
-## NOTE: rotated text is lower quality
-class QVerticalCanvasText(QCanvasText):
-    def __init__(self, *args):
-        apply(QCanvasText.__init__,(self,)+ args)
-
-    def draw(self, painter):
-        point = QPoint(self.x(),self.y())
-        painter.rotate(-90.0)
-        point = painter.xFormDev(point)
-
-        oldFont= painter.font()
-        painter.setFont(self.font())
-        painter.drawText(point,self.text())
-        painter.setFont(oldFont)
-        painter.rotate(90.0)
-    
 
 ###########################################################################################
 ##### WIDGET : 
@@ -120,8 +100,9 @@ class OWSieveDiagram(OWWidget):
 
         # criteria combo values
         self.criteriaCombo.insertItem("Attribute independence")
+        self.criteriaCombo.insertItem("Attribute independence (Pearson residuals)")
         self.criteriaCombo.insertItem("Attribute interactions")
-        self.criteriaCombo.setCurrentItem(0)
+        self.criteriaCombo.setCurrentItem(1)
         
     ##################################################
     # initialize lists for shown and hidden attributes
@@ -215,10 +196,7 @@ class OWSieveDiagram(OWWidget):
         contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
 
         # compute probabilities
-        sum = 0
         probs = {}
-        for val in valsX: sum += val
-
         for i in range(len(valsX)):
             valx = valsX[i]
             for j in range(len(valsY)):
@@ -227,7 +205,7 @@ class OWSieveDiagram(OWWidget):
                 actualProb = 0
                 for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]:
                     actualProb += val
-                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, sum)
+                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, total)
        
         # get text width of Y attribute name        
         text = QCanvasText(self.data.domain[attrY].name, self.canvas);
@@ -256,6 +234,7 @@ class OWSieveDiagram(OWWidget):
                 self.rects.append(rect)
 
                 if criteriaText == "Attribute independence":  self.addRectIndependence(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                elif criteriaText == "Attribute independence (Pearson residuals)": self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
 
                 currY += height
                 if currX == xOff:
@@ -314,18 +293,66 @@ class OWSieveDiagram(OWWidget):
             g = b = max(g, 50)  # if actual/independent > 10 --> b=g=50     -- we don't go under 50
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
+        self.addTooltip(x,y,w,h, (xAttr, xVal),(yAttr, yVal), actual, sum)
+        if self.showLines == 1 and actualProb > 0 and independentProb > 0: self.addLines(x,y,w,h, independentProb/actualProb, pen)
 
+
+    ######################################################################
+    ## show deviations from attribute independence with standardized pearson residuals
+    def addRectIndependencePearson(self, rect, x, y, w, h, (xAttr, xVal), (yAttr, yVal), actual, sum):
+        expected = float(xVal*yVal)/float(sum)
+        pearson = (actual - expected) / sqrt(expected)
+        
+        if pearson > 0:     # if there are more examples that we would expect under the null hypothesis
+            intPearson = floor(pearson)
+            pen = QPen(QColor(0,0,255)); rect.setPen(pen)
+            b = 255
+            r = g = 255 - intPearson*20
+            r = g = max(r, 55)  #
+        elif pearson < 0:
+            intPearson = ceil(pearson)
+            pen = QPen(QColor(255,0,0)); rect.setPen(pen)
+            r = 255
+            b = g = 255 + intPearson*20
+            b = g = max(b, 55)
+        else:
+            r = g = b = 255         # white            
+        color = QColor(r,g,b)
+        brush = QBrush(color); rect.setBrush(brush)
+        self.addTooltip(x,y,w,h, (xAttr, xVal),(yAttr, yVal), actual, sum)
+        
+        if pearson > 0:
+            pearson = min(pearson, 10)
+            kvoc = 1 - 0.08 * pearson       #  if pearson in [0..10] --> kvoc in [1..0.2]
+        else:
+            pearson = max(pearson, -10)
+            kvoc = 1 - 0.4*pearson
+        if self.showLines == 1: self.addLines(x,y,w,h, kvoc, pen)
+
+
+    #################################################
+    # add tooltips
+    def addTooltip(self, x,y,w,h, (xAttr, xVal), (yAttr, yVal), actual, sum):
+        expected = float(xVal*yVal)/float(sum)
+        pearson = (actual - expected) / sqrt(expected)
+        tooltipText = """<b>X attribute</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><br><hr>
+                        <b>Y attribute</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><br><hr>
+                        <b>Number of examples (probabilities)</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)</b><br>
+                        <hr><b>Statistics:</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), expected, 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum), pearson )
         tipRect = QRect(x, y, w, h)
-        tooltipText = "<b>X attribute</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><br><hr><b>Y attribute</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><br><hr><b>Number of examples (probabilities)</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)<b>" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), float(xVal*yVal)/float(sum), 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum) )
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
 
+    ##################################################
+    # add lines
+    def addLines(self, x,y,w,h, diff, pen):
         if self.showLines == 0: return
-        if (xVal == 0) or (yVal == 0) or (actualProb == 0): return
+        if diff == 0: return
+        #if (xVal == 0) or (yVal == 0) or (actualProb == 0): return
 
         # create lines
         dist = 20   # original distance between two lines in pixels
-        dist = dist * (independentProb/actualProb)
+        dist = dist * diff
         temp = dist
         while (temp < w):
             line = QCanvasLine(self.canvas)
@@ -343,6 +370,7 @@ class OWSieveDiagram(OWWidget):
             line.show()
             self.lines.append(line)
             temp += dist
+
 
     ##################################################
     ## SAVING GRAPHS
