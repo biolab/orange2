@@ -50,7 +50,7 @@ class TClassifierByLookupTable1 : public TClassifierByLookupTable {
 public:
   __REGISTER_CLASS
 
-  PVariable variable1; //PR attribute used for classification
+  PVariable variable1; //PR(+variable) attribute used for classification
 
   TClassifierByLookupTable1(PVariable aclass, PVariable avar);
 

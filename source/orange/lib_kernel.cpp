@@ -3267,6 +3267,7 @@ bool initializeTables(PyObject *pyvlist, PyObject *pydlist, TClassifierByLookupT
         mldelete cblt;
         PYERROR(PyExc_AttributeError, "invalid size for 'lookup' list", false);
       }
+      cblt->lookupTable = tvlist;
     }
 
     if (pydlist && (pydlist != Py_None)) {
@@ -3279,10 +3280,8 @@ bool initializeTables(PyObject *pyvlist, PyObject *pydlist, TClassifierByLookupT
         mldelete cblt;
         PYERROR(PyExc_AttributeError, "invalid size for 'distributions' list", false);
       }
+      cblt->distributions = tdlist;
     }
-
-    cblt->lookupTable = tvlist;
-    cblt->distributions = tdlist;
   }
 
   catch (...) {
