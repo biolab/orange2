@@ -4,12 +4,7 @@
 # A General Orange Widget, from which all the Orange Widgets are derived
 #
 
-import sys
 from OWBaseWidget import *
-import ConfigParser,os
-from string import *
-import cPickle
-from OWTools import *
 
 class OWWidget(OWBaseWidget):
     def __init__(
