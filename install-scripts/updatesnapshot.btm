@@ -18,19 +18,22 @@ cancel
 rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
-del /eqsyfx orange
-rem cvs -d :janez:cvs@estelle.fri.uni-lj.si:d:/CVS login
-cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r HEAD orange
+del /qsyfx orange
+rem cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS login
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r HEAD orange
 cd orange
-cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r HEAD source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r HEAD source
+
 
 rem ************************************************
-rem *** - COMPILE DOCUMENTATION FOR WEB AND LOCAL,
-rem *** - PUT IT ON THE WEB
-rem *** - ZIP THE SNAPSHOT FOR THE WEB
+rem *** REMOVE UNNEEDED FILES FROM THE DOCUMENTATION
+rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
-cdd %SCRIPTDIR
-call updateDoc__.btm %STABLEDIR\orange\doc
+cd orange\doc
+del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
+del %DOWNLOADDIR\orange-doc-snap-*.zip
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
+cd ..\..
 
 
 rem ************************************************
@@ -42,11 +45,11 @@ nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-snap-%daystr.exe" /DORANG
 
 pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
-cdd %STABLEDIR\orange
+cdd %SNAPCHECKOUTDIR\orange
 winrar a -r "%DOWNLOADDIR\orange-source-snap-%daystr.zip" source
 popd
 
 cdd %SNAPCHECKOUTDIR
 cd ..
-del /sfqyex tempcheckout
+del /sfqyx tempcheckout
 popd

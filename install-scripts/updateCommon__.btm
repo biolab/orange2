@@ -15,19 +15,23 @@ cancel
 rem ************************************************
 rem *** EXPORT MODULES AND SOURCE FROM CVS TO %STABLEDIR
 
-del /eqsyfx orange
-rem cvs -d :janez:cvs@estelle.fri.uni-lj.si:d:/CVS login
-cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f orange
+del /qsyfx orange >& nul:
+rem cvs -d :cvso:cvs@estelle.fri.uni-lj.si:d:/CVS login
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f orange
 cd orange
-cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f source
+cd orangeWidgets
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:d:/CVS -Q export -r stable -f Genomics
 
 
 rem ************************************************
-rem *** - COMPILE DOCUMENTATION FOR WEB AND LOCAL,
-rem *** - PUT IT ON THE WEB
-rem *** - ZIP THE SNAPSHOT FOR THE WEB
+rem *** REMOVE UNNEEDED FILES FROM THE DOCUMENTATION
+rem *** PREPARE THE DOCUMENTATION SNAPSHOT
 
-call updateDoc__.btm %STABLEDIR\orange\doc
+cd %STABLEDIR/orange/doc
+del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
+del %DOWNLOADDIR\orange-doc-snap-*.zip
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
 
 rem ************************************************
 rem *** COMPILE NEW INSTALLATIONS
@@ -35,6 +39,7 @@ rem *** COMPILE NEW INSTALLATIONS
 set COMMON_NSI_OPTIONS=/DORANGEDIR=%STABLEDIR\orange /DCWD=%SCRIPTDIR install3.nsi
 
 del %DOWNLOADDIR\orange-win-*.exe
+cdd %SCRIPTDIR
 nsis /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\orange-win-%verstr.exe" %COMMON_NSI_OPTIONS
 
 del %DOWNLOADDIR\orange-w-python-*.exe
@@ -51,5 +56,5 @@ rem ************************************************
 rem *** TAG THE FILES ON CVS AND UPDATE versions.set
 
 set tag=ver%orangeMajorVersion-%orangeReleaseVersion-%orangeMinorVersion
-cvs -d :sspi:janez@estelle.fri.uni-lj.si:d:/CVS rtag -r stable -f %tag orange source
+cvs -d :sspi:cvs@estelle.fri.uni-lj.si:d:/CVS rtag -r stable -f %tag orange source
 set | grep  orange.*Version > %SCRIPTDIR\versions.set

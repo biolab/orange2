@@ -1,12 +1,16 @@
 pushd
 
 cdd %SCRIPTDIR
-python process_doc.py %1 %SCRIPTDIR\tempdoc %WEBDOCDIR 0
+del /yqfsx tempdoc
 
-cdd %SCRIPTDIR\tempdoc
+copy /sq %WEBDOCDIR tempdoc
+cd tempdoc
+
+del /qyfsx links.htm path.htm "writing documentation.txt" ofb\formulas\* >& nul:
+
 del %DOWNLOADDIR\orange-doc-snap-*.zip
-winrar a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
+"c:\program files\winrar\winrar.exe" a -r %DOWNLOADDIR\orange-doc-snap-%daystr.zip *
 cd  ..
-del /eyqfsx tempdoc
+del /yqfsx tempdoc
 
 popd

@@ -48,9 +48,9 @@ else:
     os.mkdir(filedir)
 
     os.chdir("D:\\webMagix\\orange\\scripts")
-    args += ' /DORANGEDIR=D:\\webMagix\\orange\\download2\\lastStable\\orange'
+    args += ' /DORANGEDIR=c:\\inetpub\\wwwusers\\orange\\download\\lastStable\\orange'
     args += ' /DCWD=%s' % os.getcwd()
-    args += ' /DOUTFILENAME=d:\\webMagix\\orange\\download\\custom\\%s\\%s' % (filedir, filename)
+    args += ' /DOUTFILENAME=c:\\inetpub\\wwwusers\\orange\\download\\custom\\%s\\%s' % (filedir, filename)
     
     args += ' install3.nsi'
 #    os.spawnv(os.P_WAIT, "C:\\Program Files\\NSIS\\makensis.exe", [args])
