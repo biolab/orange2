@@ -6,7 +6,204 @@
 </head>
 <body>
 
-<p>We are working on this section, please check back in the first week
-of January.</p>
+<h1>OWGUI: Library of Common GUI Controls</h1>
+ 
+<p>Orange Widgets are about wrapping Orange functionality in a easy to
+use interactive graphical interface. As such, much of the code is
+about the interface, event control and maintaining the state of the GUI
+controls such that are set to the same state after the widget is
+closed and then reopened. OWGUI library is provides some most
+frequently used controls where we have tried to address all of the
+issues above. The library is still evolving, but the new functionality
+are added with a special care on backward compatibility.</p>
+
+<hr>
+
+<h2>Common Attributes</h2>
+
+<DL class=attributes>
+<DT>widget</DT>
+<DD>Widget on which control will be drawn.</DD>
+
+<DT>master</DT>
+<DD>Object which includes an attribute that are used to store control's
+state, most often the object which called the function to that
+initialized the control.</DD>
+
+<DT>value</DT>
+<DD>String with the name of the master's attribute that stores the
+state of the control and should be included in its
+<code>settingsList</code>.</DD>
+
+<DT>box</DT>
+<DD>A string that indicates if there is a box that is drawn around the
+control. The string is used as a label at the top of the box.
+<code>box</code> is <code>None</code>, that no box is drawn. (default:
+None)</DD>  
+
+<DT>callback</DT>
+<DD>A function to be called after the state of the control is
+changed. Can include a single function, or a list of functions that
+will be called in the order provided (default: None)</DD> 
+
+<DT>tooltip</DT>
+<DD>A string that is displayed in a tooltip that appears when mouse is
+over the control (default: None).</DD> 
+
+<DT>label</DT>
+<DD>A string that is displayed as control's label (default: None).</DD> 
+
+<DT>orientation</DT>
+<DD>When label is used, determines the relative placement of the label
+and the control. Label can be above the control, "vertical", or in the
+same line with control, "horizontal" (default: "vertical").</DD> 
+
+<DT>labelWidth</DT>
+<DD>With of the label, only makes sense when orientation is
+horizontal. Useful when vertically aligning several controls with
+labels (default: None).</DD> 
+
+<DT>disabled</DT>
+<DD>Should the control be disabled upon the initialization (default: 0).</DD> 
+
+</DL>
+
+<hr>
+
+<h2>Spin Box</h2>
+
+<DL class=attributes>
+
+<DT>spin(widget, master, value, min, max, step=1, box=None,
+label=None, labelWidth=None, orientation=None, tooltip=None,
+callback=None)</DT> 
+<DD>Spin box control, a wrapper around QSpinBox. <code>label</code>
+can be placed on the top of the control (<code>control=None</code>) or
+in front of the control
+<code>orientation="horizontal"</code>. It may be useful to define
+<code>labelWidth</code> in case of <code>horizontal</code> placement of
+the label and if there is a need to align this widgets with
+others.</p></DD>
+
+<h3>Example</h3>
+
+<P>Following is an excerp of the code in the initialization part of
+the widget. It defines three spin boxes, where the second and third
+invoke the callback which sets the text in the info box.</p>
+
+<p class="header">part of <a href="gui_spin.py">gui_spin.py</a></p>
+<xmp class=code>self.spinval = 10
+OWGUI.spin(self.controlArea, self, "spinval", 0, 100, box="Value A")
+box = QVGroupBox("Options", self.controlArea)
+self.alpha = 30
+self.beta = 4
+OWGUI.spin(box, self, "alpha", 0, 100, label="Alpha:", labelWidth=60,
+           orientation="horizontal", callback=self.setInfo)
+OWGUI.spin(box, self, "beta", -10, 10, label="Beta:", labelWidth=60,
+           orientation="horizontal", callback=self.setInfo)
+
+box = QVGroupBox("Info", self.controlArea)
+self.info = QLabel('', box)
+self.setInfo()
+</xmp>
+
+<p>The callback for setting the info box is simple. Notice that OWGUI
+associates each control's state with some value, which is updated
+automatically on any change of the control.</p>
+
+<xmp class=code>def setInfo(self):
+    self.info.setText("Alpha=%d, Beta=%d" % (self.alpha, self.beta))
+</xmp>
+
+<img src="gui_spin.png">
+
+<h2>Check Box</h2>
+
+<DT>checkBox(widget, master, value, label, box=None, tooltip=None,
+callback=None, disabled=0, labelWidth=None,
+disables = [])</DT> 
+<DD>Check box, a wrapper around QCheckBox. <code>label</code>
+can be placed on the top of the control (<code>control=None</code>) or
+in front of the control
+<code>orientation="horizontal"</code>. It may be useful to define
+<code>labelWidth</code> in case of <code>horizontal</code> placement of
+the label and if there is a need to align this widgets with
+others.</p></DD>
+
+<h3>Example</h3>
+
+<p>In the following code we define two check boxes. The second one
+disables (enabled) the box with the spin box, depending on the state
+of the checkbox.</p>
+
+<p class="header">part of <a href="gui_check.py">gui_check.py</a></p>
+<xmp class=code>self.spinval = 10
+self.chkA = 1
+self.chkB = 0
+self.dx = 15
+
+box = QVGroupBox("Settings", self.controlArea)
+gridbox = QVGroupBox("Grid Opions", self.controlArea)
+gridbox.setEnabled(self.chkB)
+OWGUI.checkBox(box, self, "chkA", "Verbose")
+OWGUI.checkBox(box, self, "chkB", "Display Grid", disables=[gridbox])
+OWGUI.spin(gridbox, self, "dx", 10, 20)
+</xmp>
+
+<img src="gui_check.png">
+
+<h2>Line Edit</h2>
+
+<DT>lineEdit(widget, master, value, label=None, labelWidth=None, orientation='vertical', box=None, tooltip=None, callback=None, valueType = str, validator=None)</DT> 
+<DD>Edit box, a wrapper around QLineEdit. <code>validator</code> is a standard
+Qt validator that can be associated with the control.</p></DD>
+
+<h3>Example</h3>
+
+<p class="header">part of <a href="gui_lineedit.py">gui_lineedit.py</a></p>
+<xmp class=code>self.val1 = "Enter text ..."
+self.val2 = "Some more text ..."
+self.valF = 10.2
+        
+OWGUI.lineEdit(self.controlArea, self, "val1", box="Text Entry")
+box = QVGroupBox("Options (with lineEdit)", self.controlArea)
+OWGUI.lineEdit(box, self, "val2", 
+               label="Name:", orientation="horizontal", labelWidth=40)
+OWGUI.lineEdit(box, self, "valF", label="Float:",
+               orientation="horizontal", labelWidth=40, valueType=float)
+</xmp>
+
+<img src="gui_lineedit.png">
+
+
+<h2>Check Box with Spin</h2>
+
+<DT>checkWithSpin(widget, master, label, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, labelWidth=None)</DT> 
+<DD>Check box with spin, or, essentially, a wrapper around
+OWGUI.checkBox and OWGUI.spin.</DD>
+
+<h3>Example</h3>
+
+<p class="header">part of <a href="gui_checkspin.py">gui_checkspin.py</a></p>
+<xmp class=code>self.val = 20
+self.chk = 1
+OWGUI.checkWithSpin(self.controlArea, self, "Prunning, m=", 0, 100, "chk", "val", posttext = "%")
+</xmp>
+
+<img src="gui_checkspin.png">
+
+<h2>Button</h2>
+
+<DT>button(widget, master, label, callback = None, disabled=0)</dt>
+<DD>A wrapper around QPushButton, just to be able to define a button
+and its callback in a single line.</DD>
+
+<h2>Separator</h2>
+
+<DT>separator(widget, width=0, height=8)</dt>
+<DD>Empty space with defined dimensions. Most often used to provide some extra vertical space between
+groups of widgets.</DD>
+
 </body>
 </html>
+
