@@ -2,9 +2,9 @@ PYTHONINCLUDE = $(shell python -c "import sys; print sys.prefix+'/include/python
 PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.version[:3]")
 PYTHONSITEPKGS = $(PYTHONLIB)/site-packages
 
-DESTDIR = $(PYTHONSITEPKGS)/orange
-DOCDIR = /usr/local/doc/orange
-SCRIPTDIR = /usr/local/bin
+DESTDIR = $(ROOT)$(PYTHONSITEPKGS)/orange
+DOCDIR = $(ROOT)/usr/local/doc/orange
+SCRIPTDIR = $(ROOT)/usr/local/bin
 INSTALL = install
 INSTALL_DATA = $(INSTALL) -m 644
 INSTALL_SCRIPT = $(INSTALL)
@@ -77,7 +77,7 @@ bininstall:
 	$(INSTALL_DATA) ../*.pyc $(DESTDIR)
 	$(INSTALL_DATA) ../COPYING $(DESTDIR)
 	$(INSTALL_SHARED) ../*.so $(DESTDIR)
-	$(INSTALL_DATA) orange.pth $(PYTHONSITEPKGS)
+	$(INSTALL_DATA) orange.pth $(PYTHONSITEPKGS)/..
 	$(INSTALL_SCRIPT) canvas $(SCRIPTDIR)
 	cd $(DESTDIR)/OrangeCanvas; \
 	python xmlParse.py
