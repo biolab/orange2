@@ -95,6 +95,9 @@ class updateOrangeDlg(QMainWindow):
         self.toolbar.addSeparator()
         self.toolFolders = QToolButton(QPixmap(foldersIcon), "Folders" , QString.null, self.showFolders, self.toolbar, 'Show Folders')
         self.toolFolders.setUsesTextLabel (1)
+        self.toolbar.addSeparator()
+        self.updateMissingFilesCB = QCheckBox("Update missing files", self.toolbar)
+        self.updateMissingFilesCB.setChecked(1)
         self.move((qApp.desktop().width()-self.width())/2, (qApp.desktop().height()-self.height())/2)   # center the window
         self.show()
         
@@ -156,11 +159,12 @@ class updateOrangeDlg(QMainWindow):
                 fnd = self.re_vLocalLine.match(line)
                 if fnd:
                     fname, version, md = fnd.group("fname", "version", "md5")
+                    fname = fname.replace("\\", "/")
                     versions[fname] = ([int(x) for x in version.split(".")], md)
                     
                     # add widget category if not already in updateGroups
                     dirs = splitDirs(fname)
-                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups:
+                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups and dirs[1].lower() != "icons":
                         updateGroups.append(dirs[1])
 
         return versions, updateGroups, dontUpdateGroups
@@ -181,12 +185,13 @@ class updateOrangeDlg(QMainWindow):
             else:
                 fnd = self.re_vInternetLine.match(line)
                 if fnd:
-                    fname, version, location = fnd.group("fname", "version", "location")                
+                    fname, version, location = fnd.group("fname", "version", "location")
+                    fname = fname.replace("\\", "/")
                     versions[fname] = ([int(x) for x in version.split(".")], location)
 
                     # add widget category if not already in updateGroups
                     dirs = splitDirs(fname)
-                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups:
+                    if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] not in updateGroups and dirs[1].lower() != "icons":
                         updateGroups.append(dirs[1])
                         
         return versions, updateGroups, dontUpdateGroups
@@ -263,6 +268,13 @@ class updateOrangeDlg(QMainWindow):
             dirs = splitDirs(fname)
             if len(dirs) >= 2 and dirs[0].lower() == "orangewidgets" and dirs[1] in self.dontUpdateGroups: continue
 
+            if not os.path.exists(fname):
+                if self.updateMissingFilesCB.isChecked():
+                    updatedFiles += self.updatefile(fname, location, version, self.downstuff[fname][1], "updating missing file")
+                else:
+                    self.addText("Skipping missing file %s" % (fname))
+                continue
+            
             if self.downstuff.has_key(fname):
                 # there is a newer version
                 if self.downstuff[fname][0] < upstuff[fname][0]:
@@ -302,7 +314,7 @@ class updateOrangeDlg(QMainWindow):
             newscript = self.download("/orange/download/lastStable/"+location)
         except:
             return 0
-        
+
         dname = os.path.dirname(fname)
         if dname and not os.path.exists(dname):
             os.makedirs(dname)
@@ -315,7 +327,7 @@ class updateOrangeDlg(QMainWindow):
             currmd.update(existing.read())
             existing.close()
             if currmd.hexdigest() != md:   # the local file has changed
-                res = QMessageBox.information(self,'Update Orange',"Local file '%s' was changed. Do you wish to overwrite local copy with newest version (a backup of current file will be created) or keep current file?" % (os.path.split(fname)[1]),'Overwrite with newest','Keep current file')
+                res = QMessageBox.information(self,'Update Orange',"Local file '%s' was changed. Do you wish to overwrite local copy \nwith newest version (a backup of current file will be created) or keep current file?" % (os.path.split(fname)[1]),'Overwrite with newest','Keep current file')
                 if res == 0:    # overwrite
                     saveFile = 2
                     currmd = md5.new()
