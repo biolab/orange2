@@ -1,7 +1,8 @@
 import orange, time
 
 def repTime(msg):
-    print "%s: %s" % (time.asctime(), msg)
+    #print "%s: %s" % (time.asctime(), msg)
+    pass
 
 def callback(f, o):
     print int(round(100*f)),

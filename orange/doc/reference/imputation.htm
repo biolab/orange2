@@ -82,7 +82,7 @@ imputer.defaults["LENGTH"] = 1234
 
 <P>The <CODE>Imputer_default</CODE>'s constructor will accept an argument of type <CODE>Domain</CODE> (in which case it will construct an empty example for <CODE>defaults</CODE>) or an example. (Be careful with this: <CODE>Imputer_default</CODE> will have a reference to the example and not a copy. But you can make a copy yourself to avoid problems: instead of <CODE>orange.Imputer_default(data[0])</CODE> you may want to write <CODE>orange.Imputer_default(orange.Example(data[0]))</CODE>.</P>
 
-
+<A name="model">
 <H2>Model-based imputation</H2>
 
 <P>Model-based imputers learn to predict the attribute's value from values of other attributes. <CODE>ImputerConstructor_model</CODE> are given a learning algoritm (two, actually - one for discrete and one for continuous attributes) and they construct a classifier for each attribute. The constructed imputer <CODE>Imputer_model</CODE> stores a list of classifiers which are used when needed.</P>
@@ -260,13 +260,56 @@ TYPE: SIMPLE-T -> SIMPLE-T
 
 <P>The first continuous attribute, "ERECTED" is defined. Its value remains 1874 and the additional attribute "ERECTED_def" has value "def". Not so for "LENGTH". Its undefined value is replaced by the average (1567) and the new attribute has value "undef". The undefined discrete attribute "CLEAR-G" (and all other undefined discrete attributes) is assigned the value "NA".</P>
 
+<A name="use">
 <H2>Using imputers</H2>
 
-<H3>Learners with Imputer as a Component</H3>
-<H3>Module orngImpute</H3>
-<H3>Using Imputers In You Own Code</H3>
+<P>To properly use the imputation classes in learning process, they must be trained on training examples only. Imputing the missing values and subsequently using the data set in cross-validation will give overly optimistic results.</P>
 
+<H3>Learners with Imputer as a Component</H3>
+
+<P>Orange learners that cannot handle missing values will generally provide a slot for the imputer component. An example of such a class is <A href="LogisticLearner.htm">logistic regression learner</A> with an attribute called <CODE>imputerConstructor</CODE>. To it you can assign an imputer constructor - one of the above constructors or a specific constructor you wrote yourself. When given learning examples, <CODE>LogRegLearner</CODE> will pass them to <CODE>imputerConstructor</CODE> to get an imputer (again some of the above or a specific imputer you programmed). It will immediately use the imputer to impute the missing values in the learning data set, so it can be used by the actual learning algorithm. Besides, when the classifier (<CODE>LogRegClassifier</CODE>) is constructed, the imputer will be stored in its attribute <CODE>imputer</CODE>. At classification, the imputer will be used for imputation of missing values in (testing) examples.</P>
+
+<P>Although details may vary from algorithm to algorithm, this is how the imputation is generally used in Orange's learners. Also, if you write your own learners, it is recommended that you use imputation according to the described procedure.</P>
+
+<H3>Module orngImpute</H3>
+
+<P>Most of Orange's learning algorithms do not use imputers, because they can appropriately handle the missing values. Bayesian classifier, for instance, simply skips the corresponding attributes in the formula, while classification/regression trees have components for handling the missing values in various ways.</P>
+
+<P>If for any reason you want to use these algorithms to run on imputed data, you can use the wrappers provide in the module orngImpute. The module's description is a matter of a separate page, but we shall show its code here as another demonstration of how to use the imputers - logistic regression is implemented essentially the same as the below classes.</P>
+
+<P class="header">a simplified code from of module orngImpute.py</A></P>
+<XMP class=code>
+class LearnerWithImputation(orange.Learner):
+    def __init__(self, **argkw):
+        self.__dict__.update(argkw)
+
+    def __call__(self, data, w=0):
+        trained_imputer = self.imputer(data, w)
+        imputed_data = trained_imputer(data, w)
+        baseClassifier = self.baseLearner(imputed_data, w)
+        return ClassifierWithImputation(baseClassifier, trained_imputer)
+
+class ClassifierWithImputation(orange.Classifier):
+    def __init__(self, baseClassifier, imputer):
+        self.baseClassifier = baseClassifier
+        self.imputer = imputer
+
+    def __call__(self, ex, what=orange.GetValue):
+        return self.baseClassifier(self.imputer(ex), what)
+</XMP>
+
+<P><CODE>LearnerWithImputation</CODE> puts the passed keyword arguments to the instance's  dictionary. You are expected to call it like <CODE>LearnerWithImputation(baseLearner=&lt;someLearner&gt;, imputer=&lt;someImputerConstructor&gt;)</CODE>. When the learner is called with examples, it trains the imputer, imputes the data, induces a <CODE>baseClassifier</CODE> by the <CODE>baseLearner</CODE> and constructs <CODE>ClassifierWithImputation</CODE> that stores the <CODE>baseClassifier</CODE> and the <CODE>imputer</CODE>. For classification, the missing values are imputed and the classifier's prediction is returned.</P>
+
+<P>Note that this code is slightly simplified, although the omitted details handle non-essential technical issues that are unrelated to imputation.</P>
+
+
+<A name="callback">
 <H2>Writing Your Own Imputer Constructor</H2>
 
+<P>Imputation classes provide the Python-callback functionality (not all Orange classes do so, refer to the documentation on <A href="callbacks.htm">subtyping the Orange classes in Python</A> for a list). If you want to write your own imputation constructor or an imputer, you need to simply program a Python function that will behave like the built-in Orange classes (and even less, for imputer, you only need to write a function that gets an example as argument, imputation for example tables will then use that function).</P>
+
+<P>You will most often write the imputation constructor when you have a special imputation procedure or separate procedures for various attributes, as we've demonstrated in the description of <A href="#model">ImputerConstructor_model</A>. You basically only need to pack everything we've written there to an imputer constructor that will accept a data set and the id of the weight meta-attribute (ignore it if you will, but you must accept two arguments), and return the imputer (probably <CODE>Imputer_model</CODE>). The benefit of implementing an imputer constructor as opposed to what we did above is that you can use such a constructor as a component for Orange learners (like logistic regression) or for wrappers from module orngImpute, and that way properly use the in classifier testing procedures.</P>
+
+!!! ADD AN EXAMPLE
 
 </BODY></HTML>
