@@ -368,7 +368,7 @@ def readAliases():
       if (len(ss)==1) or (len(ss)==3):
         if actClass and len(aliasList):
           aliases[actClass]=aliasList
-        actClass=ss[1]
+        actClass=ss[0]
         aliasList=[]
 
   if actClass and len(aliasList):
