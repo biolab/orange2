@@ -3,18 +3,6 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "C45"=..\external\C45\C45.dsp - Package Owner=<4>
-
-Package=<5>
-{{{
-}}}
-
-Package=<4>
-{{{
-}}}
-
-###############################################################################
-
 Project: "Corn"=.\Corn.dsp - Package Owner=<4>
 
 Package=<5>
@@ -56,6 +44,18 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name include
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "c45"=.\external\c45\c45.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

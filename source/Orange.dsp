@@ -846,10 +846,6 @@ SOURCE=.\orange\nearest.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=.\orange\Nrutil.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=.\orange\obsolete.cpp
 
 !IF  "$(CFG)" == "Orange - Win32 Release"
@@ -1427,10 +1423,6 @@ SOURCE=.\orange\minimal_error.hpp
 # Begin Source File
 
 SOURCE=.\orange\nearest.hpp
-# End Source File
-# Begin Source File
-
-SOURCE=.\orange\Nrutil.h
 # End Source File
 # Begin Source File
 

@@ -99,11 +99,27 @@ SOURCE=.\include\lcomb.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\Nrutil.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\primes.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\include\pythag.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\include\statexceptions.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\svbksb.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\svdcmp.cpp
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -120,6 +136,10 @@ SOURCE=.\include\cMersenneTwister.h
 # Begin Source File
 
 SOURCE=.\include\lcomb.hpp
+# End Source File
+# Begin Source File
+
+SOURCE=.\include\Nrutil.h
 # End Source File
 # Begin Source File
 
