@@ -32,6 +32,7 @@
 #include "distvars.hpp"
 
 #include "examples.ppp"
+#include "crc.h"
 
 TExample::TExample()
 : values(NULL),
@@ -198,14 +199,16 @@ bool TExample::compatible(const TExample &other) const
 
 
 int TExample::sumValues() const
-{ int sum = 0;
+{ unsigned long crc;
+  INIT_CRC(crc);
+
   TValue *vli = values;
   const_PITERATE(TVarList, vi, domain->attributes) {
     if ((*vi)->varType == TValue::INTVAR)
-      sum += vli->isSpecial() ? (*vi)->noOfValues() : vli->intV;
+      add_CRC((const unsigned char)(vli->isSpecial() ? ((*vi)->noOfValues()) : vli->intV), crc);
     else if (((*vi)->varType == TValue::FLOATVAR) && !vli->isSpecial())
-      sum += *(int *)(&vli->floatV);
-    vli++;
-  }
-  return abs(sum);
+      add_CRC(vli->floatV, crc);
+
+  FINISH_CRC(crc);
+  return abs(crc);
 }
