@@ -481,9 +481,9 @@ class OWScatterPlotGraph(OWVisGraph):
         for i in range(len(self.rawdata)):
             fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
         
+        self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         for (val, attr1, attr2) in projections:
             testIndex += 1
-            self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
             if self.kNNOptimization.isOptimizationCanceled(): return
 
             table = fullData.select([attr1, attr2, self.rawdata.domain.classVar.name])
@@ -498,6 +498,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
             # save the permutation
             if addResultFunct: addResultFunct(self.rawdata, accuracy, len(table), [table.domain[attr1].name, table.domain[attr2].name])
+            self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
 
 
     def addTooltips(self):
