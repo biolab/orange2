@@ -138,6 +138,7 @@ class OWParallelCoordinates(OWWidget):
         #self.repaint()
 
     def resizeEvent(self, e):
+        print "resizeEvent"
         self.isResizing = 1
         self.updateGraph()
 
@@ -312,7 +313,6 @@ class OWParallelCoordinates(OWWidget):
         start = min(self.slider.value(), len(attrs)-maxAttrs)
         self.graph.updateData(attrs[start:start+maxAttrs], str(self.classCombo.currentText()))
         self.slider.repaint()
-        #self.graph.replot()
         self.graph.update()
         self.repaint()
 
@@ -405,6 +405,8 @@ class OWParallelCoordinates(OWWidget):
         self.updateGraph()
     #################################################
 
+    def showEvent(self, e):
+        pass
         
 
 #test widget appearance
