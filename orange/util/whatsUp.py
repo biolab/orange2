@@ -21,6 +21,6 @@ def listfiles(dirname):
                 os.chdir("..")
         f.close()
 
-outf = open(r"c:\inetpub\wwwroot\whatsup.txt", "wt")
+outf = open(r"c:\inetpub\wwwusers\orange\download\whatsup.txt", "wt")
 listfiles("")
 outf.close()

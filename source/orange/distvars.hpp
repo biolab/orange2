@@ -75,7 +75,7 @@ public:
   static TDistribution *fromGenerator(PExampleGenerator gen, const int &position, const int &weightID);
   static TDistribution *fromGenerator(PExampleGenerator gen, PVariable, const int &weightID);
 
-  /* Derived classes must define those */
+  /* Derived classes must define those (if they make sense) */
 
   virtual TDistribution &operator += (const TDistribution &other);
   virtual TDistribution &operator -= (const TDistribution &other);
