@@ -278,7 +278,8 @@ class OWBaseWidget(QDialog):
             for i in range(len(self.linksIn[key])):
                 (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
                 if not (handler and dirty): continue
-    
+                
+                qApp.setOverrideCursor(QWidget.waitCursor)
                 try:                    
                     for (value, id) in signalData:
                         if self.signalIsOnlySingleConnection(key):
@@ -289,6 +290,7 @@ class OWBaseWidget(QDialog):
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
 
+                qApp.restoreOverrideCursor()
                 self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
         if self.processingHandler: self.processingHandler(self, 0)    # remove focus from this widget
