@@ -11,3 +11,4 @@ orange/orangeWidgets/Classify/OWCalibratedClassifier.py
 orange/orangeWidgets/Visualize/OWLinVizGraph.py
 orange/orangeWidgets/Other/OWITree.py
 orange/c45.dll
+orange/orangeWidgets/Genomics/OWRules.py
