@@ -551,7 +551,10 @@ class OWRadvizGraph(OWVisGraph):
     
             accuracy = self.kNNOptimization.kNNComputeAccuracy(table)
             if table.domain.classVar.varType == orange.VarTypes.Discrete:
-                print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, accuracy)
+                if self.kNNOptimization.measureType == CLASS_ACCURACY:
+                    print "permutation %6d / %d. Accuracy: %2.2f%%" % (permutationIndex, totalPermutations, accuracy)
+                else:
+                    print "permutation %6d / %d. Brier score: %.2f" % (permutationIndex, totalPermutations, accuracy)
             else:
                 print "permutation %6d / %d. MSE: %2.2f" % (permutationIndex, totalPermutations, accuracy) 
             
@@ -610,7 +613,7 @@ class OWRadvizGraph(OWVisGraph):
         # find max values in booth lists
         full = full1 + full2
         shortList = []
-        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete or self.kNNOptimization.measureType == CLASS_ACCURACY: funct = max
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and self.kNNOptimization.measureType == CLASS_ACCURACY: funct = max
         else: funct = min
         for i in range(min(self.kNNOptimization.resultListLen, len(full))):
             item = funct(full)

@@ -221,14 +221,19 @@ class OWRadviz(OWWidget):
         self.repaint()
 
     def testCurrentProjections(self):
-        kList = [3,5,10,15,20,30,50,70,100,150,200]
-        #kList = [60]
+        kListStr = "3,5,10,15,20,30,50,70,100,150,200"
+        (Qstring,ok) = QInputDialog.getText("K values", "K values to test (separated with comma)", kListStr)
+        if not ok: return
+        ks = str(Qstring)
+        kListStr = ks.split(",")
+        kList = []
+        for k in kListStr: kList.append(int(k))
+        
         results = []
         for i in range(self.optimizationDlg.interestingList.count()):
-        #for i in range(1):
             (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
             sumAcc = 0.0
-            print "Experiment %2.d - %s" % (i, str(list))
+            print "Experiment %2.d - %s" % (i+1, str(list))
             for k in kList: sumAcc += self.graph.getProjectionQuality(list)
             results.append((sumAcc/float(len(kList)), tableLen, list))
 
@@ -239,7 +244,7 @@ class OWRadviz(OWWidget):
             results.remove((accuracy, tableLen, list))
 
         self.optimizationDlg.updateNewResults()
-        self.optimizationDlg.save("temp.proj")
+        #self.optimizationDlg.save("temp.proj")
         self.optimizationDlg.interestingList.setCurrentItem(0)
 
     # ####################################
