@@ -82,14 +82,6 @@ class SignalManager:
 		if widgetFrom.linksOut.has_key(signalNameFrom) and enabled:
 			widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
 
-		# update topology
-		#currentIndex = self.widgets.index(widgetTo)+1
-		#for i in range(self.widgets.index(widgetTo)+1, self.widgets.index(widgetFrom)+1):
-		#	if self.existsPath(self.widgets[i], widgetTo):
-		#		widget = self.widgets[i]
-		#		self.widgets.remove(widget)
-		#		self.widgets.insert(self.widgets.index(widgetTo), widget)
-
 		if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
 			self.widgets.remove(widgetTo)
 			self.widgets.insert(self.widgets.index(widgetFrom)+1, widgetTo)
@@ -121,6 +113,7 @@ class SignalManager:
 				widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, None)
 				self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
 				if not self.freezing and not self.signalProcessingInProgress: self.processNewSignals(widgetFrom)
+		widgetTo.removeInputConnection(widgetFrom, signalNameTo)
 
 
 	# ############################################
