@@ -221,22 +221,30 @@ class OWBaseWidget(QDialog):
         existing = []
         if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
         self.linksIn[signalName] = existing + [(0, widgetFrom, handler, None, None)]    # (dirty, handler, signalData, idValue)
-    
 
-    # return list of signal names, that are single and already connected to other widgets        
+    # delete a link from widgetFrom and this widget with name signalName
+    def removeInputConnection(self, widgetFrom, signalName):
+        if self.linksIn.has_key(signalName):
+            links = self.linksIn[signalName]
+            for i in range(len(self.linksIn[signalName])):
+                if widgetFrom == self.linksIn[signalName][i][1]:
+                    self.linksIn[signalName].remove(self.linksIn[signalName][i])
+                    return
+
+    # return widget, that is already connected to this singlelink signal. If this widget exists, the connection will be deleted (since this is only single connection link)
     def removeExistingSingleLink(self, signal):
         #(type, handler, single) = self.inputs[signal]
         #if not single: return []
         for (signalName, dataType, handler, onlySingle) in self.inputs:
-            if signalName == signal and not onlySingle: return []
+            if signalName == signal and not onlySingle: return None
             
-        widgets = []
         for signalName in self.linksIn.keys():
             if signalName == signal:
-                widgets.append(self.linksIn[signalName][0][1])
+                widget = self.linksIn[signalName][0][1]
                 del self.linksIn[signalName]
-                
-        return widgets
+                return widget
+               
+        return None
         
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
