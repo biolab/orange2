@@ -37,6 +37,7 @@ class OWDataTable(OWWidget):
         self.table.setSelectionMode(QTable.NoSelection)
         self.layout.add(self.table)
         self.table.hide()
+        self.grid.setColStretch(0,0)
 
     def dataset(self,data):
         self.data = data
