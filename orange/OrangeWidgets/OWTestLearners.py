@@ -1,5 +1,5 @@
 """
-<name>Test learners</name>
+<name>Test Learners</name>
 <description>TestLearners widget can take learners on the input and tests them on a single data set. Alternatively, it can
 evaluate already build classifiers. For testing learners, it implements different sampling techniques.
 It reports on variety of statistics, including accuracy, sensitivity, specificity, information score,
@@ -192,7 +192,9 @@ AUC (area under ROC curve), and Brier score.
     # slots: handle input signals        
         
     def cdata(self,data):
-        self.data = data.table
+        self.data = orange.Filter_hasClassValue(data.table)
+        # XXX here we should give a warning if len(data.table)>len(self.data)
+        # print 'XXX', len(data.table), len(self.data)
         self.classindex = data.targetValIndx
         if len(self.learnDict)>0:
             self.applyBtn.setDisabled(FALSE)
