@@ -38,6 +38,7 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.saveToFile()
         self.saveSettings()
         QDialog.accept(self)
+        self.hide()
 
     def printPic(self):
         self.saveSettings()
