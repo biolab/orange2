@@ -165,7 +165,20 @@ int pt_ExampleGenerator(PyObject *args, void *egen);
 void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t');
 void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t');
 
-PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+
+FILE *openExtended(const char *filename, const char *defaultExtension)
+{
+  const char *extension = getExtension(filename);
+  const char *extended = extension ? filename : replaceExtension(filename, defaultExtension, NULL);
+  FILE *ostr = fopen(extended, "wt");
+  if (!ostr)
+    PyErr_Format(PyExc_SystemError, "cannot open file '%s'", extended);
+  if (extension)
+    mldelete const_cast<char *>(extended);
+  return ostr;
+}
+
+PyObject *tabDelimBasedWrite(PyObject *args, const char *defaultExtension, bool skipAttrTypes, char delim)
 { PyTRY
     char *filename;
     PExampleGenerator gen;
@@ -173,14 +186,12 @@ PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fi
     if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
       PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
   
-    FILE *ostr = fopen(filename, "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
+    FILE *ostr = openExtended(filename, defaultExtension);
+    if (!ostr)
       return PYNULL;
-    }
 
-    tabDelim_writeDomain(ostr, gen->domain, false);
-    tabDelim_writeExamples(ostr, gen);
+    tabDelim_writeDomain(ostr, gen->domain, skipAttrTypes, delim);
+    tabDelim_writeExamples(ostr, gen, delim);
     fclose(ostr);
 
     RETURN_NONE
@@ -188,49 +199,20 @@ PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(fi
 }
 
 
+PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+{
+  return tabDelimBasedWrite(args, "tab", false, '\t');
+}
+
 PyObject *saveTxt(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
-{ PyTRY
-    char *filename;
-    PExampleGenerator gen;
-
-    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
-  
-    FILE *ostr = fopen(filename, "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
-      return PYNULL;
-    }
-
-    tabDelim_writeDomain(ostr, gen->domain, true);
-    tabDelim_writeExamples(ostr, gen);
-    fclose(ostr);
-
-    RETURN_NONE
-  PyCATCH
+{
+  return tabDelimBasedWrite(args, "txt", true, '\t');
 }
 
 
 PyObject *saveCsv(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
-{ PyTRY
-    char *filename;
-    PExampleGenerator gen;
-
-    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
-      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
-  
-    FILE *ostr = fopen(filename, "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
-      return PYNULL;
-    }
-
-    tabDelim_writeDomain(ostr, gen->domain, true, ',');
-    tabDelim_writeExamples(ostr, gen, ',');
-    fclose(ostr);
-
-    RETURN_NONE
-  PyCATCH
+{
+  return tabDelimBasedWrite(args, "csv", true, ',');
 }
 
 
@@ -248,21 +230,23 @@ PyObject *saveC45(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, e
     if (gen->domain->classVar->varType!=TValue::INTVAR)
       PYERROR(PyExc_SystemError, "Class in C4.5 must be discrete.", PYNULL);
 
-    FILE *ostr = fopen((string(filename)+".names").c_str(), "wt");
+    const char *oldExtension = getExtension(filename);
+
+    char *namesname = replaceExtension(filename, "names", oldExtension);
+    FILE *ostr = fopen(namesname, "wt");
     if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s.names'", filename);
+      PyErr_Format(PyExc_SystemError, "cannot create file '%s'", namesname);
+      mldelete namesname;
       return PYNULL;
     }
+    mldelete namesname;
 
     c45_writeDomain(ostr, gen->domain);
     fclose(ostr);
 
-
-    ostr = fopen((string(filename)+".data").c_str(), "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s.data'", filename);
+    ostr = openExtended(filename, "data");
+    if (!ostr)
       return PYNULL;
-    }
 
     c45_writeExamples(ostr, gen);
     fclose(ostr);
@@ -340,12 +324,9 @@ PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename,
     retis_writeDomain(ostr, wnounk->domain);
     fclose(ostr);
 
-
-    ostr = fopen((string(filename)+".rda").c_str(), "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s.rda'", filename);
+    ostr = openExtended(filename, "rda");
+    if (!ostr)
       return PYNULL;
-    }
 
     c45_writeExamples(ostr, wnounk);
     fclose(ostr);
@@ -369,11 +350,9 @@ PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename
     if (gen->domain->variables->size())
       PYERROR(PyExc_TypeError, ".basket format can only store meta-attribute values", PYNULL);
 
-    FILE *ostr = fopen(filename, "wt");
-    if (!ostr) {
-      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
+    FILE *ostr = openExtended(filename, "basket");
+    if (!ostr)
       return PYNULL;
-    }
 
     set<int> missing;
 

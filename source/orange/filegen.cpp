@@ -31,6 +31,36 @@
 #include "filegen.ppp"
 
 
+const char *getExtension(const char *name)
+{
+  for(const char *namee = name + strlen(name); --namee != name;)
+    switch (*namee) {
+      case '.': 
+        return namee;
+
+      case '/':
+#ifdef _MSC_VER
+      case ':':
+      case '\\':
+#endif
+         return NULL;
+    }
+  return NULL;
+}
+
+char *replaceExtension(const char *name, const char *extension, const char *oldExtension)
+{
+  if (!oldExtension)
+    oldExtension = name + strlen(name);
+
+  const int stemlen = oldExtension-name;
+  char *res = mlnew char[stemlen + strlen(extension) + 2];
+  strncpy(res, name, stemlen);
+  res[stemlen] = '.';
+  strcpy(res + stemlen + 1, extension);
+  return res;
+}
+
 
 TFileExampleIteratorData::TFileExampleIteratorData(const string &aname, const int &startDataPos,  const int &startDataLine)
 : file(NULL),

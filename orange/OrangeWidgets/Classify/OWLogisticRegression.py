@@ -61,6 +61,7 @@ preprocessors to filter/change the data.
 
         self.loadSettings()
 
+        print "remove Singular = "+str(self.removeSingular)        
 
         
         #name
@@ -82,14 +83,12 @@ preprocessors to filter/change the data.
         self.univariateCB = QCheckBox("Univariate logistic regression", self.controlArea)
         QToolTip.add(self.univariateCB, "Fit univariate logistic regression.")
         self.connect(self.univariateCB, SIGNAL("clicked()"), self.setUnivariate)
-        self.univariateCB.setDisabled(True)
 
         # get 0-point betas ?
         self.zeroCB = QCheckBox("Calculate 0-point for nomograms", self.controlArea)
         QToolTip.add(self.zeroCB, "Basic logistic regression does not compute prior contribution of each attribute to class \
                                    If nomograms are used to visualize logistic regression model, this could be very helpful.")
         self.connect(self.zeroCB, SIGNAL("clicked()"), self.setZeroPoint)
-        self.zeroCB.setDisabled(True)
 
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", items=self.imputationMethodsStr)
         
@@ -149,7 +148,8 @@ preprocessors to filter/change the data.
 
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
-        else:            
+        else:
+            print self.removeSingular
             self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing)
             if self.stepwiseLR:
                 self.learner.stepwiseLR = 1
@@ -164,16 +164,10 @@ preprocessors to filter/change the data.
                 self.classifier, betas_ap = LogRegLearner_getPriors(self.data)
                 self.classifier.betas_ap = betas_ap
             else:
-                try:
-                    self.classifier = self.learner(self.data)
-                except orange.KernelException, (errValue):
-                    self.classifier = None
-                    QMessageBox("LogRegFitter error:", str(errValue), QMessageBox.Warning,
-                                QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
-                    return
-            self.classifier.betas_ap = None
-                    
+                self.classifier = self.learner(self.data)
+                self.classifier.betas_ap = None
             self.classifier.name = self.name
+            printOUT(self.classifier)
             self.send("Classifier", self.classifier)
 
     def activateLoadedSettings(self):
@@ -188,7 +182,9 @@ preprocessors to filter/change the data.
         
         
     def cdata(self,data):
+        print "cdata"
         self.data=data
+        print "self data v cdata = " + str(self.data)
         self.setLearner()
 
     def pp():

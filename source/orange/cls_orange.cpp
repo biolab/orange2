@@ -632,7 +632,7 @@ PyObject *Orange_getattr(TPyOrange *self, PyObject *name)
 }
 
 
-int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
+int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn)
 // This calls setattr1; first with the given, than with the translated name
 { PyTRY
     // Try to set it as C++ class member
@@ -661,7 +661,7 @@ int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
        or the instance's class is defined in Python and merely inherits this
        method from Orange class) */
     char *name = PyString_AsString(pyname);
-    if (strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description") && PyOrange_CheckType(self->ob_type)) {
+    if (warn && strcmp(name, "name") && strcmp(name, "shortDescription") && strcmp(name, "description") && PyOrange_CheckType(self->ob_type)) {
       char sbuf[255];
       sprintf(sbuf, "'%s' is not a builtin attribute of '%s'", name, self->ob_type->tp_name);
       if (PyErr_Warn(PyExc_OrangeAttributeWarning, sbuf))
@@ -672,6 +672,9 @@ int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
   PyCATCH_1
 }
 
+
+int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
+{ return Orange_setattrLow(self, pyname, args, true); }
 
 
 PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
@@ -792,6 +795,19 @@ int Orange_nonzero(PyObject *self)
  
 int Orange_hash(TPyOrange *self)
 { return _Py_HashPointer(self); }
+
+
+PyObject *Orange_setattr_force(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(name, value) -> None") //>setattr
+{ 
+  PyObject *pyname, *pyvalue;
+  if (!PyArg_ParseTuple(args, "OO:Orange.setattr", &pyname, &pyvalue))
+    return PYNULL;
+  if (!PyString_Check(pyname))
+    PYERROR(PyExc_TypeError, "attribute name must be a string", PYNULL);
+  if (Orange_setattrLow(self, pyname, pyvalue, false) == -1)
+    return PYNULL;
+  RETURN_NONE;
+}
 
 
 PyObject *Orange_enableattributes(PyObject *, PyObject *)

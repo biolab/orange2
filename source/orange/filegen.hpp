@@ -31,6 +31,9 @@
 
 bool skipNonEmptyLine(FILE *file, const char *filename, const char &commentChar);
 
+const char *getExtension(const char *filename);
+char *replaceExtension(const char *filename, const char *extension, const char *oldExtension);
+
 class TFileExampleIteratorData {
 public:
   FILE *file;

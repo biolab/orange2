@@ -207,10 +207,12 @@ def learningCurve(learners, examples, cv=None, pick=None, proportions=orange.fra
                 # testing
                 for i in range(len(examples)):
                     if (folds[i]==fold):
-                        ex = examples[i]
+                        # This is to prevent cheating:
+                        ex = orange.Example(examples[i])
+                        ex.setclass("?")
                         for cl in range(nLrn):
                             if not cache or not testResults.loaded[cl]:
-                                cls, pro = classifiers[cl](examples[i], orange.GetBoth)
+                                cls, pro = classifiers[cl](ex, orange.GetBoth)
                                 testResults.results[i].setResult(cl, cls, pro)
             if cache:
                 testResults.saveToFiles(learners, fnstr)
@@ -313,6 +315,8 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
             classifiers = [None]*nLrn
             for i in range(nLrn):
                 if not cache or not testResults.loaded[i]:
+
+
                     classifiers[i] = learners[i](learnset, weight)
             if storeclassifiers:    
                 testResults.classifiers.append(classifiers)
@@ -321,7 +325,9 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
             tcn = 0
             for i in range(len(examples)):
                 if (indices[i]==fold):
-                    ex = testset[tcn]
+                    # This is to prevent cheating:
+                    ex = orange.Example(testset[tcn])
+                    ex.setclass("?")
                     tcn += 1
                     for cl in range(nLrn):
                         if not cache or not testResults.loaded[cl]:
@@ -406,7 +412,10 @@ def testOnData(classifiers, testset, testResults=None, iterationNumber=0, **argk
         te = TestedExample(iterationNumber, int(ex.getclass()), 0, ex.getweight(testweight))
         
         for classifier in classifiers:
-            cr = classifier(ex, orange.GetBoth)
+            # This is to prevent cheating:
+            ex2 = orange.Example(ex)
+            ex2.setclass("?")
+            cr = classifier(ex2, orange.GetBoth)
             te.addResult(cr[0], cr[1])
         testResults.results.append(te)
         

@@ -116,7 +116,7 @@
 
 <H2>Saving Examples</H2>
 
-<P>Writing examples into files is even simpler - all you need to do is call <CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE> or <CODE>saveTxt</CODE>, passing a filename as the first and the examples as the second argument. The function will decorate the file name according to the format's customs. For instance, while saving in Assistant's format, the domain description file will be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>.</P>
+<P>Writing examples into files is even simpler - all you need to do is call <CODE>saveAssistant</CODE>, <CODE>saveC45</CODE>, <CODE>saveRetis</CODE> <CODE>saveTabDelimited</CODE> or <CODE>saveTxt</CODE>, passing a filename as the first and the examples as the second argument. The function will decorate the file name according to the format's customs. One-file formats (such as tab-delimited or basket) will be given the default extension (such as .tab or .basket) unless you provide one. For Assistant's format, the domain description file will always be prefixed with <CODE>asdo</CODE> and the data file with <CODE>asda</CODE>. For C45 and Retis, the domain definition files will be given extension .names and .rdo, respectively, while data files will be given the standard extensions (.data, .rda) only if the filename that you've given as argument doesn't have an extension (ie, doesn't have any dots to the left of the last path separator).</P>
 
 <P>Some formats are not able to store all types of datasets. For instance, Retis can only store examples where the outcome is continuous. You cannot store the iris data with its three-valued discrete outcome as Retis file.</P>
 

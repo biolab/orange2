@@ -117,7 +117,7 @@ if 1: ### Definitions of regular expressions
   calldocdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_call\s*\([^)]*\)\s*PYDOC\s*\(\s*"(?P<doc>[^"]*)"\s*\)')
   getdef=re.compile(r'PyObject\s*\*(?P<typename>\w*)_(?P<method>get)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
   setdef=re.compile(r'int\s*(?P<typename>\w*)_(?P<method>set)_(?P<attrname>\w*)\s*\([^)]*\)\s*(PYDOC\(\s*"(?P<doc>[^"]*)"\s*\))?')
-  methoddef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)_(?P<methodname>\w*)\s*\([^)]*\)\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
+  methoddef=re.compile(r'PyObject\s*\*(?P<typename>\w\w+)_(?P<cname>\w*)\s*\([^)]*\)\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)(\s*//>(?P<methodname>\w\w+))?')
 
   funcdef=re.compile(r'PYFUNCTION\((?P<pyname>\w*)\s*,\s*(?P<cname>\w*)\s*,\s*(?P<argkw>[^,]*)\s*(,\s*"(?P<doc>[^"]*)"\))?[\s;]*$')
   funcdef2=re.compile(r'(?P<defpart>PyObject\s*\*(?P<pyname>\w*)\s*\([^)]*\))\s*;?\s*PYARGS\((?P<argkw>[^),]*)\s*(,\s*"(?P<doc>[^"]*)")?\s*\)')
@@ -200,16 +200,19 @@ def detectMethods(line, classdefs):
     
   found=methoddef.search(line)
   if found:
-    typename, methodname, argkw, doc = found.group("typename", "methodname", "argkw", "doc")
+    typename, cname, methodname, argkw, doc = found.group("typename", "cname", "methodname", "argkw", "doc")
 
     if not classdefs.has_key(typename) and "_" in typename:
       com = typename.split("_")
       if len(com)==2 and classdefs.has_key(com[0]):
         typename = com[0]
-        methodname = com[1] + "_" + methodname
+        cname = com[1] + "_" + cname
+
+    if not methodname:
+      methodname = cname
       
     addClassDef(classdefs, typename, parsedFile)
-    classdefs[typename].methods[methodname]=MethodDefinition(argkw=argkw, arguments=doc)
+    classdefs[typename].methods[methodname]=MethodDefinition(argkw=argkw, arguments=doc, cname=cname)
     return 1
 
 def detectHierarchy(line, classdefs):
@@ -440,9 +443,9 @@ def writeAppendix(filename, targetname, classdefs, aliases):
       for methodname in methodnames:
         method=fields.methods[methodname]
         if method.arguments:
-          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+methodname+", "+method.argkw+", \""+method.arguments+"\"},\n")
+          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+method.cname+", "+method.argkw+", \""+method.arguments+"\"},\n")
         else:
-          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+methodname+", "+method.argkw+"},\n")
+          outfile.write('     {"'+methodname+'", (binaryfunc)'+type+"_"+method.cname+", "+method.argkw+"},\n")
       outfile.write("     {NULL, NULL}\n};\n\n")
       
 

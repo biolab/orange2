@@ -155,7 +155,7 @@ class LogRegLearnerClass:
             attributes = examples.domain.attributes[:]
             attributes.remove(lr)
             examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
-            lr = learner.fitModel(nexamples, weight)
+            lr = learner.fitModel(examples, weight)
         return lr
 
 def LogRegStepwiseLearner(examples = None, weightID=0, **kwds):
