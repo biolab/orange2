@@ -19,6 +19,7 @@ CFG=orangeom - Win32 Debug
 !MESSAGE 
 !MESSAGE "orangeom - Win32 Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "orangeom - Win32 Debug" (based on "Win32 (x86) Dynamic-Link Library")
+!MESSAGE "orangeom - Win32 Release_Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE 
 
 # Begin Project
@@ -89,12 +90,44 @@ SOURCE="$(InputPath)"
 PostBuild_Cmds=copy obj\Debug\orangeom_d.lib ..\..\lib\orangeom_d.lib
 # End Special Build Tool
 
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+# PROP BASE Use_MFC 0
+# PROP BASE Use_Debug_Libraries 0
+# PROP BASE Output_Dir "orangeom___Win32_Release_Debug"
+# PROP BASE Intermediate_Dir "orangeom___Win32_Release_Debug"
+# PROP BASE Ignore_Export_Lib 0
+# PROP BASE Target_Dir ""
+# PROP Use_MFC 0
+# PROP Use_Debug_Libraries 0
+# PROP Output_Dir "obj/Release_Debug"
+# PROP Intermediate_Dir "obj/Release_Debug"
+# PROP Ignore_Export_Lib 0
+# PROP Target_Dir ""
+# ADD BASE CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../orange" /I "../include" /I "px" /I "$(PYTHON)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGEOM_EXPORTS" /YX /FD /c
+# ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
+# ADD BASE RSC /l 0x409 /d "NDEBUG"
+# ADD RSC /l 0x409 /d "NDEBUG"
+BSC32=bscmake.exe
+# ADD BASE BSC32 /nologo
+# ADD BSC32 /nologo
+LINK32=link.exe
+# ADD BASE LINK32 orange.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386 /out:"obj/release/orangeom.pyd" /libpath:"$(PYTHON)\libs" /libpath:"../../lib"
+# ADD LINK32 orange.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"obj/release_debug/orangeom.pyd" /libpath:"$(PYTHON)\libs" /libpath:"../../lib"
+# Begin Special Build Tool
+SOURCE="$(InputPath)"
+PostBuild_Cmds=del ..\..\orangeom.pyd	copy "obj\release_debug\orangeom.pyd" "..\..\orangeom.pyd"	copy obj\Release_debug\orangeom.lib ..\..\lib\orangeom.lib
+# End Special Build Tool
+
 !ENDIF 
 
 # Begin Target
 
 # Name "orangeom - Win32 Release"
 # Name "orangeom - Win32 Debug"
+# Name "orangeom - Win32 Release_Debug"
 # Begin Group "Source Files"
 
 # PROP Default_Filter "cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
@@ -165,6 +198,19 @@ SOURCE=.\wml\WmlVector3.inl
 # Begin Source File
 
 SOURCE=.\optimizeAnchors.cpp
+
+!IF  "$(CFG)" == "orangeom - Win32 Release"
+
+# SUBTRACT CPP /FA<none>
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+# ADD CPP /Zi /Od
+
+!ENDIF 
+
 # End Source File
 # Begin Source File
 
@@ -175,6 +221,11 @@ SOURCE=.\orangeom.cpp
 # SUBTRACT CPP /nologo /YX
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
+
+!ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"
+
+# SUBTRACT BASE CPP /nologo /YX
+# SUBTRACT CPP /nologo /YX
 
 !ENDIF 
 

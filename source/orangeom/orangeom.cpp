@@ -36,8 +36,6 @@
     #define ORANGEOM_API
 #endif
 
-/* dopolnjen komentar */
-
 bool initorangeomExceptions()
 { return true; }
 
@@ -45,5 +43,3 @@ void gcorangeomUnsafeStaticInitialization()
 {}
 
 #include "px/initialization.px"
-
-/* se en komentar */

@@ -195,6 +195,8 @@ class OWRadvizGraph(OWVisGraph):
         sum_i = self._getSum_i(selectedData)
         XAnchors = [a[0] for a in self.anchorData]
         YAnchors = [a[1] for a in self.anchorData]
+        print XAnchors
+        print self.scaleFactor
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
         validData = self.getValidList(indices)
@@ -457,9 +459,14 @@ class OWRadvizGraph(OWVisGraph):
 
             if self.radvizWidget.manualPositioningButton.isOn():
                 if self.selectedAnchorIndex != None:
+                    if self.radvizWidget.lockToCircle:
+                        rad = math.sqrt(xFloat**2 + yFloat**2)
+                        xFloat /= rad
+                        yFloat /= rad
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
                     self.updateData(self.shownAttributes)
                     self.repaint()
+                    self.radvizWidget.recomputeEnergy()
             return 
             
         dictValue = "%.1f-%.1f"%(xFloat, yFloat)

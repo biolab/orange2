@@ -24,7 +24,7 @@ class OWRadviz(OWWidget):
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
                     "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName",
-                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps"]
+                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps", "lockToCircle"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -57,6 +57,7 @@ class OWRadviz(OWWidget):
         self.repelG = 1.0
         self.hideRadius = 0
         self.showAnchors = 1
+        self.lockToCircle = 0
         self.showOptimizationSteps = 0
         self.globalValueScaling = 0
         self.jitterSize = 1
@@ -166,6 +167,7 @@ class OWRadviz(OWWidget):
         self.randomAnchorsButton = OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(vbox, self, "Manual positioning")
         self.manualPositioningButton.setToggleButton(1)
+        self.lockCheckbox = OWGUI.checkBox(vbox, self, "lockToCircle", "Restrain anchors to circle", callback = self.setLockToCircle)
 
         box = OWGUI.widgetBox(self.AnchorsTab, "Anchor Optimization")
         inbox = box #QHBox(box)
@@ -175,8 +177,8 @@ class OWRadviz(OWWidget):
         self.freeAttributesButton = OWGUI.button(inbox, self, "Slow Animate", callback = self.slowAnimate)
         #self.setAnchorsButton = OWGUI.button(box, self, "Cheat", callback = self.setAnchors)
 
-        OWGUI.qwtHSlider(box, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0)
-        OWGUI.qwtHSlider(box, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0)
+        OWGUI.qwtHSlider(box, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
+        OWGUI.qwtHSlider(box, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
 #        OWGUI.comboBoxWithCaption(box, self, "showOptimizationSteps", 'Show optimization', items = ["Yes", "Every 10", "No"])
 
         box = OWGUI.widgetBox(self.AnchorsTab, "Show Anchors")
@@ -184,7 +186,8 @@ class OWRadviz(OWWidget):
         OWGUI.qwtHSlider(box, self, "hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateValues)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attriubtes", callback = self.removeHidden)
         
-
+        self.energyLabel = QLabel(self.AnchorsTab, "Energy: ")
+        
         # ####################################
         # K-NN OPTIMIZATION functionality
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
@@ -397,7 +400,8 @@ class OWRadviz(OWWidget):
         
     def ranch(self, label):
         import random
-        r = 0.3+0.7*random.random()
+        r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
+        print r
         phi = 2*pi*random.random()
         return (r*math.cos(phi), r*math.sin(phi), label)
 
@@ -405,15 +409,23 @@ class OWRadviz(OWWidget):
         import random
         attrList = self.getShownAttributeList()
         self.graph.anchorData = [self.ranch(a) for a in attrList]
-        self.singleStep() # this won't do much, it's just for normalization
+        if not self.lockToCircle:
+            self.singleStep() # this won't do much, it's just for normalization
+        else:
+            self.graph.updateData(self.getShownAttributeList())
+            self.graph.repaint()
+            self.recomputeEnergy()
 
     def freeAttributes(self, iterations, steps):
         attrList = self.getShownAttributeList()
         classes = [int(x.getclass()) for x in self.graph.rawdata]
+        optimizer = self.lockToCircle and orangeom.optimizeAnchorsRadial or orangeom.optimizeAnchors
+        ai = self.graph.attributeNameIndex
+        attrIndices = [ai[label] for label in self.getShownAttributeList()]
         for i in range(iterations):
-            ai = self.graph.attributeNameIndex
-            attrIndices = [ai[label] for label in self.getShownAttributeList()]
-            self.graph.anchorData = orangeom.optimizeAnchors(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
+            self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
+            self.energyLabel.setText("Energy: %.3f" % E)
+            self.energyLabel.repaint()
             self.graph.updateData(attrList)
             self.graph.repaint()
 
@@ -437,7 +449,27 @@ class OWRadviz(OWWidget):
         attrList = self.getShownAttributeList()
         self.graph.updateData(attrList, 0)
         self.graph.repaint()
-        
+        self.recomputeEnergy()
+
+    def setLockToCircle(self):
+        if self.lockToCircle:
+            anchorData = self.graph.anchorData
+            for i, anchor in enumerate(anchorData):
+                rad = math.sqrt(anchor[0]**2 + anchor[1]**2)
+                anchorData[i] = (anchor[0]/rad, anchor[1]/rad) + anchor[2:]
+            self.graph.updateData(self.getShownAttributeList(), 0)
+            self.graph.repaint()
+        self.recomputeEnergy()
+
+    def recomputeEnergy(self):
+        classes = [int(x.getclass()) for x in self.graph.rawdata]
+        ai = self.graph.attributeNameIndex
+        attrIndices = [ai[label] for label in self.getShownAttributeList()]
+        E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+        print E
+        self.energyLabel.setText("Energy: %.3f" % E)
+        self.energyLabel.repaint()
+
     # ####################################
     # show selected interesting projection
     def showSelectedAttributes(self):
