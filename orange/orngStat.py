@@ -949,6 +949,7 @@ def Friedman(res, stat=CA):
     """
     res_split = splitByIterations(res)
     res = [stat(r) for r in res_split]
+    
     N = len(res)
     k = len(res[0])
     sums = [0.0]*k
