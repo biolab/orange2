@@ -43,7 +43,6 @@ public:
 
 	TdtwElement() : dist2(-1), minSumDist2(-1), K(-1), pParent(NULL) {};
 	TdtwElement(float newDist) : dist2(newDist), minSumDist2(-1), K(-1), pParent(NULL) {};
-	//~TdtwElement() { if ( pParent != NULL ) free(pParent); };
 
 /*    TdtwElement &operator = (const TdtwElement &old)
     { dist2 = old.dist2;
@@ -90,62 +89,135 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2)
   vector<float> seq1, seq2;
   getNormalized(e1, seq1);
   getNormalized(e2, seq2);
-
   TdtwMatrix mtrx;
   initMatrix(seq1,seq2, mtrx);
   float dtwDistance = calcDistance(mtrx);
-  //destructMatrix(mtrx);
   return dtwDistance;
 }
 
 
-float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, PWarpPath &path) const
+float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, const int distance = DTW_EUCLIDEAN) const
 { 
-  vector<float> seq1, seq2;
+  vector<float> seq1, seq2, der1, der2;
   getNormalized(e1, seq1);
   getNormalized(e2, seq2);
-
   TdtwMatrix mtrx;
-  initMatrix(seq1, seq2, mtrx);
+  switch (distance) {
+	case DTW_EUCLIDEAN: {
+	  initMatrix(seq1, seq2, mtrx);
+	  break;
+						}
+	case DTW_DERIVATIVE: {
+		getDerivatives(seq1, der1);
+		getDerivatives(seq2, der2);
+		initMatrix(der1, der2, mtrx);
+		break;
+						 }
+	case DTW_DERIVATIVE_SMOOTH: {
+		getDerivatives(seq1, der1);
+		getDerivatives(seq2, der2);
+		initMatrix(der1, der2, mtrx);
+		break;
+								}
+  }
+  float dtwDistance = calcDistance(mtrx);
+  return dtwDistance;
+}
+
+
+float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2, PWarpPath &path, const int distance = DTW_EUCLIDEAN) const
+{ 
+  vector<float> seq1, seq2, der1, der2;
+  getNormalized(e1, seq1);
+  getNormalized(e2, seq2);
+  TdtwMatrix mtrx;
+  switch (distance) {
+	case DTW_EUCLIDEAN: {
+	  initMatrix(seq1, seq2, mtrx);
+	  break;
+						}
+	case DTW_DERIVATIVE: {
+		getDerivatives(seq1, der1);
+		getDerivatives(seq2, der2);
+		initMatrix(der1, der2, mtrx);
+		break;
+						 }
+	case DTW_DERIVATIVE_SMOOTH: {
+		getDerivatives(seq1, der1);
+		getDerivatives(seq2, der2);
+		initMatrix(der1, der2, mtrx);
+		break;
+								}
+  }
   float dtwDistance = calcDistance(mtrx);
   path = setWarpPath(mtrx);
-  //destructMatrix(mtrx);
   return dtwDistance;
+}
+
+
+void TExamplesDistance_DTW::getDerivativesSmooth(vector<float> &seq, vector<float> &der) const
+{
+}
+
+
+void TExamplesDistance_DTW::getDerivatives(vector<float> &seq, vector<float> &der) const
+{
+  TFloatList::const_iterator sbegin(seq.begin()), sip(sbegin), si(sip+1), sin(si+1), send(seq.end()), sendp(send-1);
+  der.clear();
+  if ( send - sbegin > 2 ) {
+	  // TODO: der.push_back(1st_element)
+	  for(; si != sendp; si++) {
+		if ((*si) == numeric_limits<float>::signaling_NaN() ){
+		}
+		else
+		{
+		}
+	  }
+	  // TODO: normalized.push_back(last_element)
+  }
+  else {
+	  // TODO
+  }
 }
 
 
 void TExamplesDistance_DTW::initMatrix(const vector<float> &p, const vector<float> &q, TdtwMatrix &mtrx) const
 {
-	// build matrix, calculate dist2
 	vector <float>::const_iterator iter_p, iter_q, iter_pe, iter_qe;
+	// find max difference between p and q
+	float minp = numeric_limits<float>::max(), maxp = numeric_limits<float>::min();
+	float minq = numeric_limits<float>::max(), maxq = numeric_limits<float>::min();
+	for ( iter_p = p.begin(), iter_pe = p.end(); iter_p != iter_pe; iter_p++ ) {
+		if ((*iter_p) < minp ) minp = (*iter_p);
+		if ((*iter_p) > maxp ) maxp = (*iter_p);
+	}
+	for ( iter_q = q.begin(), iter_qe = q.end(); iter_q != iter_qe; iter_q++ ) {
+		if ((*iter_q) < minq ) minq = (*iter_q);
+		if ((*iter_q) > maxq ) maxq = (*iter_q);
+	}
+	const float maxDiff = _MAX<float>(fabs(maxp-minq),fabs(maxq-minp));
+	//printf("minp:%5.5f maxp:%5.5f minq:%5.5f maxq:%5.5f maxDiff:%5.5f\n", minp,maxp,minq,maxq,maxDiff);
+	// build matrix, calculate dist2
 	float diff;
 	for ( iter_p = p.begin(), iter_pe = p.end(); iter_p != iter_pe; iter_p++ )
 	{
         TdtwVector v;
 		for ( iter_q = q.begin(), iter_qe = q.end(); iter_q != iter_qe; iter_q++ )
 		{
-			diff = (*iter_p) - (*iter_q);
+			if ((*iter_p) == numeric_limits<float>::signaling_NaN() || (*iter_q) == numeric_limits<float>::signaling_NaN()) {
+				// set to max in order to avoid the missing points
+				diff = maxDiff;
+			}
+			else {
+				diff = (*iter_p) - (*iter_q);
+			}
 			v.push_back( TdtwElement( diff * diff ) );
+			//printf("p:%5.5f, q:%5.5f, diff:%5.5f\n", *iter_p,*iter_q,diff);
 		}
 		mtrx.push_back(v);
+		//printf("\n");
 	}
 }
-
-
-/*
-void TExamplesDistance_DTW::destructMatrix(TdtwMatrix &mtrx) const
-{
-	TdtwVector::iterator vi, vie;
-	TdtwMatrix::iterator mi(mtrx.begin()), mie(mtrx.end());
-	for ( ; mi != mie; mi++ )
-	{
-		for ( vi = mi->begin(), vie = mi->end(); vi != vie; vi ++ )
-		{
-			free(vi);
-		}
-	}
-}
-*/
 
 
 float TExamplesDistance_DTW::calcDistance(TdtwMatrix &mtrx) const

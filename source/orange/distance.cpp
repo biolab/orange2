@@ -238,6 +238,8 @@ void TExamplesDistance_Normalized::getNormalized(const TExample &e1, vector<floa
   normalized.clear();
   TExample::const_iterator ei(e1.begin());
   for(TFloatList::const_iterator normi(normalizers->begin()), norme(normalizers->end()), basi(bases->begin()); normi!=norme; ei++, normi++, basi++) {
+// changed by PJ
+/*
     if ((*ei).isSpecial())
       normalized.push_back(numeric_limits<float>::quiet_NaN());
     else
@@ -245,6 +247,14 @@ void TExamplesDistance_Normalized::getNormalized(const TExample &e1, vector<floa
         normalized.push_back(normalize ? ((*ei).floatV - *basi) / *normi : (*ei).floatV);
       else
         normalized.push_back(-1.0);
+*/
+	if ((*ei).isSpecial() || ei->varType != TValue::FLOATVAR)
+		normalized.push_back(numeric_limits<float>::signaling_NaN());
+    else
+      if (*normi>0 && normalize)
+        normalized.push_back(((*ei).floatV - *basi) * (*normi));
+      else
+        normalized.push_back((*ei).floatV);
   }
 }
 

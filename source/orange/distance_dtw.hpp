@@ -27,6 +27,8 @@ typedef vector<TdtwElement> TdtwVector;
 typedef vector<TdtwElement*> PdtwVector;
 typedef vector<TdtwVector> TdtwMatrix;
 
+enum { DTW_EUCLIDEAN, DTW_DERIVATIVE, DTW_DERIVATIVE_SMOOTH };
+
 class TExamplesDistance_DTW : public TExamplesDistance_Normalized
 {
 public:
@@ -36,9 +38,12 @@ public:
     TExamplesDistance_DTW(const bool &ignoreClass, PExampleGenerator egen, PDomainDistributions ddist, PDomainBasicAttrStat dstat);
   
     virtual float operator()(const TExample &, const TExample &) const;
-    virtual float operator()(const TExample &, const TExample &, PWarpPath &) const;
+    virtual float operator()(const TExample &, const TExample &, const int) const;
+    virtual float operator()(const TExample &, const TExample &, PWarpPath &, const int) const;
 
 private:
+	void TExamplesDistance_DTW::getDerivatives(vector<float> &seq1, vector<float> &der1) const;
+	void TExamplesDistance_DTW::getDerivativesSmooth(vector<float> &seq1, vector<float> &der1) const;
 	void initMatrix(const vector<float> &seq1, const vector<float> &seq2, TdtwMatrix &mtrx) const;
 	float calcDistance(TdtwMatrix &mtrx) const;
 	PWarpPath setWarpPath(const TdtwMatrix &mtrx) const;

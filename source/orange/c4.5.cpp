@@ -1,6 +1,7 @@
 /*
     This file is part of Orange.
 
+
     Orange is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation; either version 2 of the License, or
@@ -431,7 +432,7 @@ bool TC45Learner::parseCommandLine(const string &line)
         }
         break;
 
-	    case 'w':  
+      case 'w':  
         window = atoi((*oi).second.c_str());
         batch = false;
         if ((window<1) || (window>1000000)) {
