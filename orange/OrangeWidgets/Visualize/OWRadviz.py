@@ -15,8 +15,7 @@ from OWRadvizGraph import *
 from OWkNNOptimization import *
 from OWClusterOptimization import *
 import time
-import OWToolbars
-import OWGUI
+import OWToolbars, OWGUI, orngTest, orangeom
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -34,7 +33,7 @@ class OWRadviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Selection", list, self.selection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
         
         #add a graph widget
@@ -77,6 +76,7 @@ class OWRadviz(OWWidget):
         self.showClusters = 0
         self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
         self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
+        self.classificationResults = None
 
         #load settings
         self.loadSettings()
@@ -222,7 +222,7 @@ class OWRadviz(OWWidget):
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
         self.optimizationDlg.classifierName = self.VizRankClassifierName
-        self.optimizationDlg.classifierNameChanged(self.VizRankClassifierName)
+        self.optimizationDlg.updateClassifierChanges()
         self.clusterDlg.classifierName = self.clusterClassifierName
         self.clusterDlg.classifierNameChanged(self.clusterClassifierName)
 
@@ -423,15 +423,15 @@ class OWRadviz(OWWidget):
         if not val: return
         (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
         
-        kNNValues = None
+        values = self.classificationResults
         if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
             shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNames.index(attr) for attr in attrList])
-            kNNValues = self.optimizationDlg.kNNClassifyData(shortData)
-            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNValues = [1.0 - val for val in kNNValues]
+            values = self.optimizationDlg.kNNClassifyData(shortData)
+            if self.optimizationDlg.showKNNCorrectButton.isOn(): values = [1.0 - val for val in values]
             clusterClosure = self.graph.clusterClosure
         else: clusterClosure = None
 
-        self.showAttributes(attrList, kNNValues, clusterClosure)
+        self.showAttributes(attrList, values, clusterClosure)
 
 
     def showSelectedCluster(self):
@@ -456,9 +456,8 @@ class OWRadviz(OWWidget):
         
 
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
-        if not self.setShownAttributes(attrList): return
-        
-        self.graph.updateData(attrList, insideColors = insideColors, clusterClosure = clusterClosure)
+        self.setShownAttributes(attrList)
+        self.graph.updateData(attrList, setAnchors = 1, insideColors = insideColors, clusterClosure = clusterClosure)
         self.graph.repaint()
         self.sendShownAttributes()
 
@@ -476,6 +475,8 @@ class OWRadviz(OWWidget):
     def setShownAttributes(self, attributes):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
+        if self.data == None: return 0
+        
         for attr in attributes: self.shownAttribsLB.insertItem(attr)
         for attr in self.data.domain:
             if attr.name not in attributes: self.hiddenAttribsLB.insertItem(attr.name)
@@ -572,7 +573,8 @@ class OWRadviz(OWWidget):
             self.hiddenAttribsLB.clear()
             if data:
                 for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(attr.name)
-                for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
+                if len(data.domain.attributes) > 10:
+                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
         self.updateGraph(1)
@@ -600,6 +602,17 @@ class OWRadviz(OWWidget):
             else:                 self.hiddenAttribsLB.insertItem(attr.name)
 
         self.updateGraph()
+
+
+    def test_results(self, results):
+        if results == None:
+            self.classificationResults = None
+        elif isinstance(results, orngTest.ExperimentResults):
+            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
+                
+        self.showAttributes(self.getShownAttributeList(), self.classificationResults, clusterClosure)
+        
+        
     # ################################################
 
     # #########################
