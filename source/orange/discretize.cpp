@@ -509,8 +509,7 @@ PVariable TEquiNDiscretization::operator()(PExampleGenerator gen, PVariable var,
 
 
 
-/* This is defined in measures.cpp.
-   No need to include it all... */
+// Defined in measures.cpp
 float getEntropy(const vector<float> &);
 
 

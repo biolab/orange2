@@ -71,61 +71,6 @@ PYXTRACT_IGNORE C_NAMED(LinRegClassifier, ClassifierFD, "([classifier=, costs=])
 C_CALL(CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
 C_NAMED(CostWrapperClassifier, Classifier, "([classifier=, costs=])")
 
-PyObject *CostLearner_get_costs(PyObject *self) PYDOC("Cost matrix")
-{ PyTRY
-    return convertToPython(SELF_AS(TCostLearner).cost);
-  PyCATCH
-}
-
-int CostLearner_set_costs(PyObject *self, PyObject *args)
-{ PyTRY
-    PCostMatrix cost;
-    if (!convertFromPython(args, cost))
-      return -1;
-
-    SELF_AS(TCostLearner).cost=cost;
-    return 0;
-  PyCATCH_1
-}
-
-
-
-
-PyObject *CostWrapperLearner_get_costs(PyObject *self) PYDOC("Cost matrix")
-{ PyTRY
-    return convertToPython(SELF_AS(TCostWrapperLearner).costMatrix);
-  PyCATCH
-}
-
-int CostWrapperLearner_set_costs(PyObject *self, PyObject *args)
-{ PyTRY
-    PCostMatrix cost;
-    if (!convertFromPython(args, cost))
-      return -1;
-    SELF_AS(TCostWrapperLearner).costMatrix=cost;
-    return 0;
-  PyCATCH_1
-}
-
-
-
-PyObject *CostWrapperClassifier_get_costs(PyObject *self) PYDOC("Cost matrix")
-{ PyTRY
-    return convertToPython(SELF_AS(TCostWrapperClassifier).costMatrix);
-  PyCATCH
-}
-
-int CostWrapperClassifier_set_costs(PyObject *self, PyObject *args)
-{ PyTRY
-    PCostMatrix cost;
-    if (!convertFromPython(args, cost))
-      return -1;
-    SELF_AS(TCostWrapperClassifier).costMatrix=cost;
-    return 0;
-  PyCATCH_1
-}
-
-
 
 /************* ASSOCIATION RULES ************/
 

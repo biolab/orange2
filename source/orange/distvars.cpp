@@ -21,6 +21,7 @@
 
 
 #include <math.h>
+#include "crc.h"
 
 #include "stat.hpp"
 #include "random.hpp"
@@ -707,11 +708,13 @@ int TDiscDistribution::highestProbIntIndex() const
   int best = 0;
   float bestP = operator[](0);
   int i, e;
-  long sum = 0;
+
+  unsigned long crc;
+  INIT_CRC(crc);
 
   for(i = 1, e = int(size()); --e; i++) {
     const float &P = operator[](i);
-    sum += *(const long *)(&P);
+    add_CRC(P, crc);
 
     if (P > bestP) {
       best = i;
@@ -725,7 +728,10 @@ int TDiscDistribution::highestProbIntIndex() const
   if (wins==1)
     return best;
 
-  for(i = 0, wins = 1 + labs(sum>>23) % wins; wins; i++)
+  FINISH_CRC(crc);
+  crc &= 0x7fffffff;
+
+  for(i = 0, wins = 1 + crc % wins; wins; i++)
     if (operator[](i)==bestP)
       wins--;
 
@@ -849,6 +855,17 @@ float TDiscDistribution::p(const int &x) const
 int TDiscDistribution::noOfElements() const
 { return size(); }
 
+
+int TDiscDistribution::sumValues() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+
+  const_this_ITERATE(dvi)
+      add_CRC(*dvi, crc);
+
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}
 
 
 TContDistribution::TContDistribution()
@@ -1024,6 +1041,7 @@ TDistribution &TContDistribution::operator *=(const float &weight)
 
 float TContDistribution::highestProbFloatIndex() const
 {
+  // Could use sumValues here, but it's too expensive; this should work for distributions that are distributed enough
   long sum = 0;
   { const_this_ITERATE(i)
       sum += *(long *)(&(*i).first) + *(long *)(&(*i).second);
@@ -1184,6 +1202,19 @@ float TContDistribution::p(const float &x) const
 }
 
 
+int TContDistribution::sumValues() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+
+  const_this_ITERATE(dvi) {
+    add_CRC((*dvi).first, crc);
+    add_CRC((*dvi).second, crc);
+  }
+
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}
+
 
 TGaussianDistribution::TGaussianDistribution(const float &amean, const float &asigma, const float &anabs)
 : mean(amean),
@@ -1252,13 +1283,22 @@ float TGaussianDistribution::randomFloat(const long &random)
 }
 
 
-
 float TGaussianDistribution::p(const float &x) const
 { return abs * exp(-sqr((x-mean)/2/sigma)) / (sigma*sqrt(2*pi)); }
 
 
 bool TGaussianDistribution::noDeviation() const
 { return sigma==0.0; }
+
+
+int TGaussianDistribution::sumValues() const
+{ unsigned long crc;
+  INIT_CRC(crc);
+  add_CRC(mean, crc);
+  add_CRC(sigma, crc);
+  FINISH_CRC(crc);
+  return int(crc & 0x7fffffff);
+}
 
 
 TDomainDistributions::TDomainDistributions()

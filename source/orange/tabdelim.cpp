@@ -701,7 +701,7 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
 // ********* Output ********* //
 
 
-void tabDelim_writeExample(FILE *file, const TExample &ex)
+void tabDelim_writeExample(FILE *file, const TExample &ex, char delim)
 { TVarList::const_iterator vi(ex.domain->variables->begin()), ve(ex.domain->variables->end());
   TExample::const_iterator ri(ex.begin());
   string st;
@@ -709,20 +709,20 @@ void tabDelim_writeExample(FILE *file, const TExample &ex)
   fprintf(file, "%s", st.c_str());
   for(; vi!=ve; vi++, ri++) {
     (*vi)->val2str(*ri, st);
-    fprintf(file, "\t%s", st.c_str());
+    fprintf(file, "%c%s", delim, st.c_str());
   }
 
   const_ITERATE(TMetaVector, mi, ex.domain->metas) {
     (*mi).variable->val2str(ex[(*mi).id], st);
-    fprintf(file, "\t%s", st.c_str());
+    fprintf(file, "%c%s", delim, st.c_str());
   }
   fprintf(file, "\n");
 }
 
 
-void tabDelim_writeExamples(FILE *file, PExampleGenerator rg)
+void tabDelim_writeExamples(FILE *file, PExampleGenerator rg, char delim)
 { PEITERATE(gi, rg)
-    tabDelim_writeExample(file, *gi);
+    tabDelim_writeExample(file, *gi, delim);
 }
 
 string escSpaces(const string &s)
@@ -762,19 +762,21 @@ void printVarType(FILE *file, PVariable var)
 }
 
 
-void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom)
+void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
 { 
+  char delims[2] = {delim, 0};
+
   { int notFirst = 0;
     const_PITERATE(TVarList, vi, dom->variables) {
       if (notFirst++)
-        fprintf(file, "\t%s", (*vi)->name.c_str());
+        fprintf(file, "%c%s", delim, (*vi)->name.c_str());
       else
         fprintf(file, "%s", (*vi)->name.c_str());
     }
 
     const_ITERATE(TMetaVector, mi, dom->metas) {
       if (notFirst++)
-        fprintf(file, "\t%s", (*mi).variable->name.c_str());
+        fprintf(file, "%c%s", delim, (*mi).variable->name.c_str());
       else
         fprintf(file, "%s", (*mi).variable->name.c_str());
     }
@@ -784,12 +786,12 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom)
   { int notFirst=0;
     const_PITERATE(TVarList, vi, dom->variables) {
       if (notFirst++)
-        fprintf(file, "\t");
+        fprintf(file, delims);
       printVarType(file, *vi);
     }
     const_ITERATE(TMetaVector, mi, dom->metas) {
       if (notFirst++)
-        fprintf(file, "\t");
+        fprintf(file, delims);
       printVarType(file, (*mi).variable);
     }
     fprintf(file, "\n");
@@ -797,16 +799,16 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom)
 
   { if (dom->attributes->size())
       for(int i = dom->attributes->size()-1; i--; )
-        fprintf(file, "\t");
+        fprintf(file, delims);
 
     if (dom->classVar)
-      fprintf(file, "\tclass");
+      fprintf(file, "%cclass", delim);
 
     int notFirst=dom->variables->size();
     
     { const_ITERATE(TMetaVector, mi, dom->metas) {
         if (notFirst++)
-          fprintf(file, "\t");
+          fprintf(file, delims);
         fprintf(file, "meta");
       }
     }
@@ -859,25 +861,27 @@ bool tabDelim_checkNeedsD(PVariable var)
 }
 
 
-void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom)
+void tabDelim_writeDomainWithDetection(FILE *file, PDomain dom, char delim)
 {
+  char delims[2] = {delim, 0};
+
   int notFirst = 0;
   const_PITERATE(TVarList, vi, dom->attributes)
-    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
+    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD(*vi) ? "D#" : ""), (*vi)->name.c_str());
   
   if (dom->classVar)
-    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
+    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD(dom->classVar) ? "cD#" : "c#"), dom->classVar->name.c_str());
 
   const_ITERATE(TMetaVector, mi, dom->metas)
-    fprintf(file, "%s%s%s", (notFirst++ ? "\t" : ""), (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
+    fprintf(file, "%s%s%s", (notFirst++ ? delims : ""), (tabDelim_checkNeedsD((*mi).variable) ? "mD#" : "m#"), (*mi).variable->name.c_str());
 
   fprintf(file, "\n");
 }
 
 
-void tabDelim_writeDomain(FILE *file, PDomain dom, bool autodetect)
+void tabDelim_writeDomain(FILE *file, PDomain dom, bool autodetect, char delim)
 { if (autodetect)
-    tabDelim_writeDomainWithDetection(file, dom);
+    tabDelim_writeDomainWithDetection(file, dom, delim);
   else 
-    tabDelim_writeDomainWithoutDetection(file, dom);
+    tabDelim_writeDomainWithoutDetection(file, dom, delim);
 }

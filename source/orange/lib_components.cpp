@@ -55,64 +55,6 @@ This file includes constructors and specialized methods for ML* object, defined 
 
 #include "cost.hpp"
 
-BASED_ON(CostMatrix, Orange)
-
-bool convertFromPython(PyObject *args, PCostMatrix &matrix, bool, PyTypeObject *type)
-{
-  if (!type)
-    type = (PyTypeObject *)&PyOrCostMatrix_Type;
-#ifdef NUMERICAL_PYTHON
-  if (PyArray_Check(args)) {
-    PyArrayObject *pao=(PyArrayObject *)args;
-    if ((pao->nd!=2) || (pao->dimensions[0]!=pao->dimensions[1]))
-      PYERROR(PyExc_TypeError, "invalid matrix dimension", false);
-
-    matrix=mlnew TCostMatrix(pao->dimensions[0]);
-    char *data=pao->data;
-    for(int pred=0; pred<pao->dimensions[0]; pred++) {
-      char *sdata=data;
-      for(int corr=0; corr<pao->dimensions[0]; corr++) {
-        PyObject *el=pao->descr->getitem(sdata);
-        sdata+=pao->strides[1];
-        float f;
-        if (!PyNumber_ToFloat(el, f)) {
-          Py_XDECREF(el);
-          matrix=NULL;
-          PYERROR(PyExc_TypeError, "invalid element in CostMatrix", false);
-        }
-        matrix->setCost(pred, corr, f);
-        Py_DECREF(el);
-      }
-      data+=pao->strides[0];
-    }
-    return true;
-  }
-#endif
-
-  if (PyList_Check(args)) {
-    int dim=PyList_Size(args);
-    matrix=mlnew TCostMatrix(dim);
-    for(int i=0; i<dim; i++) {
-      PyObject *el=PyList_GetItem(args, i);
-      if (!PyList_Check(el) || (PyList_Size(el)!=dim)) {
-        matrix=PCostMatrix();
-        PYERROR(PyExc_TypeError, "invalid element in CostMatrix", false);
-      }
-      for(int j=0; j<dim; j++) {
-        PyObject *elel=PyList_GetItem(el, j);
-        float f;
-        if (!PyNumber_ToFloat(elel, f)) {
-          matrix=PCostMatrix();
-          PYERROR(PyExc_TypeError, "invalid element in CostMatrix", false);
-        }
-        matrix->setCost(i, j, f);
-      }
-    }
-  }
-
-  matrix=PCostMatrix();
-  PYERROR(PyExc_TypeError, "invalid type for CostMatrix", false);
-}
 
 
 PyObject *convertToPython(const PCostMatrix &matrix)
@@ -130,6 +72,192 @@ PyObject *convertToPython(const PCostMatrix &matrix)
 
   return pycost;
 }
+
+
+bool readCostMatrix(PyObject *arg, TCostMatrix *&matrix)
+{
+  int dim;
+  const int arglength = PyObject_Length(arg);
+  if (matrix) {
+    dim = matrix->size();
+    if (dim != arglength) {
+      PyErr_Format(PyExc_TypeError, "invalid sequence length (expected %i, got %i)", dim, arglength);
+      return false;
+    }
+  }
+  else {
+    dim = arglength;
+    matrix = mlnew TCostMatrix(dim);
+  }
+
+  PyObject *iter = PyObject_GetIter(arg);
+  if (!iter)
+    PYERROR(PyExc_TypeError, "sequence expected", false);
+
+  for(int i = 0; i<dim; i++) {
+    PyObject *item = PyIter_Next(iter);
+    if (!item) {
+      PyErr_Format(PyExc_TypeError, "matrix is too short (%i rows expected)", dim);
+      break;
+    }
+
+    PyObject *subiter = PyObject_GetIter(item);
+    Py_DECREF(item);
+
+    if (!subiter) {
+      PyErr_Format(PyExc_TypeError, "element %i is not a sequence", i);
+      break;
+    }
+
+    for(int j = 0; j<dim; j++) {
+      PyObject *subitem = PyIter_Next(subiter);
+      if (!subitem) {
+        PyErr_Format(PyExc_TypeError, "element %i is too short (sequence with %i elements expected)", i, dim);
+        break;
+      }
+
+      float f;
+      bool ok = PyNumber_ToFloat(subitem, f);
+      Py_DECREF(subitem);
+      if (!ok) {
+        PyErr_Format(PyExc_TypeError, "element at (%i, %i) is not a number", i, j);
+        break;
+      }
+      
+      // this cannot fail:
+      matrix->setCost(i, j, f);
+    }
+
+    if (j<dim) {
+      Py_DECREF(subiter);
+      break;
+    }
+
+    PyObject *subitem = PyIter_Next(subiter);
+    Py_DECREF(subiter);
+
+    if (subitem) {
+      PyErr_Format(PyExc_TypeError, "element %i is too long (sequence with %i elements expected)", i, dim);
+      Py_DECREF(subitem);
+      break;
+    }
+  }
+
+  Py_DECREF(iter);
+
+  if (i<dim) {
+    mldelete matrix;
+    return false;
+  }
+
+  return true;
+}
+
+
+PyObject *CostMatrix_new(PyTypeObject *type, PyObject *args) BASED_ON(Orange, "(list-of-list-of-prices) -> CostMatrix")
+{
+  PyTRY
+    if (PyTuple_Size(args) == 1) {
+      PyObject *arg = PyTuple_GET_ITEM(args, 0);
+      
+      if (PyInt_Check(arg))
+        return WrapNewOrange(mlnew TCostMatrix(PyInt_AsLong(arg)), type);
+
+      if (PyOrVariable_Check(arg))
+        return WrapNewOrange(mlnew TCostMatrix(PyOrange_AsVariable(arg)), type);
+
+      TCostMatrix *nm = NULL;
+      return readCostMatrix(arg, nm) ? WrapNewOrange(nm, type) : PYNULL;
+    }
+
+
+    if (PyTuple_Size(args) == 2) {
+      PyObject *arg1, *arg2;
+      arg1 = PyTuple_GetItem(args, 0);
+      arg2 = PyTuple_GetItem(args, 1);
+
+      float inside;
+      if (PyNumber_ToFloat(arg2, inside)) {
+        if (PyInt_Check(arg1))
+          return WrapNewOrange(mlnew TCostMatrix(PyInt_AsLong(arg1), inside), type);
+
+        if (PyOrVariable_Check(arg1))
+          return WrapNewOrange(mlnew TCostMatrix(PyOrange_AsVariable(arg1), inside), type);
+      }
+
+      if (PyOrVariable_Check(arg1)) {
+        TCostMatrix *nm = mlnew TCostMatrix(PyOrange_AsVariable(arg1));
+        return readCostMatrix(arg2, nm) ? WrapNewOrange(nm, type) : PYNULL;
+      }
+    }
+
+    PYERROR(PyExc_TypeError, "invalid arguments", PYNULL);
+  PyCATCH
+}
+
+
+PyObject *CostMatrix_native(PyObject *self) PYARGS(METH_O, "() -> list of lists of floats")
+{ return convertToPython(PyOrange_AsCostMatrix(self)); }
+
+
+int getCostIndex(PyObject *arg, TCostMatrix *matrix, char *error)
+{
+  if (PyInt_Check(arg)) {
+    int pred = PyInt_AsLong(arg);
+    if ((pred<0) || (pred >= matrix->size()))
+      PYERROR(PyExc_IndexError, error, -1);
+    return pred;
+  }
+  else {
+    TValue val;
+    return  convertFromPython(arg, val, matrix->classVar) ? int(val) : -1;
+  }
+}
+
+
+
+PyObject *CostMatrix_getcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(predicted, correct) -> float")
+{ 
+  PyTRY
+    CAST_TO(TCostMatrix, matrix);
+
+    if (PyTuple_Size(args) != 2)
+      PYERROR(PyExc_TypeError, "two arguments expected", PYNULL);
+
+    PyObject *arg1 = PyTuple_GET_ITEM(args, 0);
+    PyObject *arg2 = PyTuple_GET_ITEM(args, 1);
+  
+    int pred = getCostIndex(arg1, matrix, "predicted value out of range");
+    int corr = getCostIndex(arg2, matrix, "correct value out of range");
+    if ((pred==-1) || (corr==-1))
+      return PYNULL;
+
+    return PyFloat_FromDouble(matrix->getCost(pred, corr));
+  PyCATCH
+}
+
+
+PyObject *CostMatrix_setcost(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(predicted, correct, cost) -> float")
+{
+  PyTRY
+    CAST_TO(TCostMatrix, matrix);
+
+    PyObject *arg1, *arg2;
+    float cost;
+
+    if (!PyArg_ParseTuple(args, "OOf:CostMatrix.setcost", &arg1, &arg2, &cost))
+      return PYNULL;
+
+    int pred = getCostIndex(arg1, matrix, "predicted value out of range");
+    int corr = getCostIndex(arg2, matrix, "correct value out of range");
+    if ((pred==-1) || (corr==-1))
+      return PYNULL;
+
+    matrix->setCost(pred, corr, cost);
+    RETURN_NONE;
+  PyCATCH
+}
+
 
 
 /* ************ BASSTAT ************ */
@@ -1548,12 +1676,11 @@ C_CALL(MeasureAttribute_info, MeasureAttributeFromProbabilities, "(estimate=) | 
 C_CALL(MeasureAttribute_gini, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_gainRatio, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
 C_CALL(MeasureAttribute_gainRatioA, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_cheapestClass, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
+C_CALL(MeasureAttribute_cost, MeasureAttributeFromProbabilities, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
+
+C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
 
 C_CALL(MeasureAttribute_relief, MeasureAttribute, "(estimate=, m=, k=) | (attr, examples[, apriori] [,weightID]) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_MSE, MeasureAttribute, "(estimate=, m=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
-C_CALL(MeasureAttribute_Tretis, MeasureAttribute, "(estimate=) | (attr, examples[, apriori] [,weightID]) | (attrno, domain-cont[, apriori]) | (cont, class dist [,apriori]) -/-> (float, meas-type)")
-
 
 PyObject *MeasureNeeds()
 { PyObject *vartypes=PyModule_New("MeasureNeeds");
@@ -1567,9 +1694,9 @@ PYCLASSCONSTANT_INT(MeasureAttribute, NeedsGenerator, TMeasureAttribute::Generat
 PYCLASSCONSTANT_INT(MeasureAttribute, NeedsDomainContingency, TMeasureAttribute::DomainContingency)
 PYCLASSCONSTANT_INT(MeasureAttribute, NeedsContingency_Class, TMeasureAttribute::Contingency_Class)
 
-PYCLASSCONSTANT_INT(MeasureAttribute, IgnoreUnknowns, TMeasureAttributeFromProbabilities::IgnoreUnknowns)
-PYCLASSCONSTANT_INT(MeasureAttribute, ReduceByUnknowns, TMeasureAttributeFromProbabilities::ReduceByUnknowns)
-PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsToCommon, TMeasureAttributeFromProbabilities::UnknownsToCommon)
+PYCLASSCONSTANT_INT(MeasureAttribute, IgnoreUnknowns, TMeasureAttribute::IgnoreUnknowns)
+PYCLASSCONSTANT_INT(MeasureAttribute, ReduceByUnknowns, TMeasureAttribute::ReduceByUnknowns)
+PYCLASSCONSTANT_INT(MeasureAttribute, UnknownsToCommon, TMeasureAttribute::UnknownsToCommon)
 
 PYCLASSCONSTANT_FLOAT(MeasureAttribute, Rejected, ATTRIBUTE_REJECTED)
 

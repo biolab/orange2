@@ -75,7 +75,7 @@ PClassifier TCostLearner::operator()(PExampleGenerator gen, const int &weight)
   
   PClassifier clsfr = TMajorityLearner::operator()(gen, weight);
   float missclassificationCost;
-  TMeasureAttribute_cheapestClass(cost).majorityCost(clsfr.AS(TDefaultClassifier)->defaultDistribution,
+  TMeasureAttribute_cost(cost).majorityCost(clsfr.AS(TDefaultClassifier)->defaultDistribution,
                                                      missclassificationCost,
                                                      clsfr.AS(TDefaultClassifier)->defaultVal);
   return clsfr;

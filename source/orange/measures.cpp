@@ -43,85 +43,38 @@
 #include "measures.ppp"
 
 
-float getEntropy(const vector<float> &vf)
-{ float n = 0.0, sum = 0.0;
-  int noDif0 = 0;
-  const_ITERATE(vector<float>, vi, vf)
-    if (*vi>0) {
-      sum += (*vi)*log(*vi);
-      n += *vi;
-      noDif0++;
-    }
-  return (noDif0>1) ? (log(float(n))-sum/n) / log(2.0) : 0;
-}
-
-
-void checkDiscrete(const PContingency &cont)
+void checkDiscrete(const PContingency &cont, char *measure)
 { if (cont->varType!=TValue::INTVAR)
     if (cont->outerVariable)
-      raiseError("attribute '%s' is not discrete", cont->outerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->name.c_str());
     else
-      raiseError("discrete attribute expected");
+      raiseErrorWho(measure, "cannot evaluate continuous attributes");
 
   if (cont->innerVariable) {
     if (cont->innerVariable->varType != TValue::INTVAR)
-      raiseError("attribute '%s' is not discrete", cont->innerVariable->name.c_str());
+      raiseErrorWho(measure, "cannot work with continuous outcome '%s'", cont->innerVariable->name.c_str());
   }
   else
     if (!cont->innerDistribution.is_derived_from(TDiscDistribution))
-      raiseError("discrete class expected");
+      raiseErrorWho(measure, "expects discrete class attribute");
 }
 
-float getEntropy(PContingency cont, bool unknownsToCommon)
-{ checkDiscrete(cont);
 
-  float sum = 0.0, N = 0.0;
-  const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
-  int mostCommon = unknownsToCommon ? outer.highestProbIntIndex() : -1;
-  int ind =0;
-  const_ITERATE(TDistributionVector, ci, *cont->discrete) {
-    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
-    float cases = (*ci)->cases;
-    if (ind++ == mostCommon)
-      cases += outer.unknowns;
-    N += dist.cases;
-    sum += dist.cases * getEntropy(dist.distribution);
+void checkDiscreteContinuous(const PContingency &cont, char *measure)
+{ if (cont->varType!=TValue::INTVAR)
+    if (cont->outerVariable)
+      raiseErrorWho(measure, "cannot evaluate the non-discrete attribute '%s'", cont->outerVariable->name.c_str());
+    else
+      raiseErrorWho(measure, "cannot evaluate continuous attributes");
+
+  if (cont->innerVariable) {
+    if (cont->innerVariable->varType != TValue::FLOATVAR)
+      raiseErrorWho(measure, "cannot work with discrete outcome '%s'", cont->innerVariable->name.c_str());
   }
-  return N ? sum/N : 0.0;
+  else
+    if (!cont->innerDistribution.is_derived_from(TContDistribution))
+      raiseErrorWho(measure, "expects continuous outcome");
 }
-
-
-
-float getGini(const vector<float> &vf)
-{ float sum = 0.0, N = 0.0;
-  const_ITERATE(vector<float>, vi, vf) {
-    N += *vi;
-    for(vector<float>::const_iterator vj=vi; ++vj!=vf.end(); sum += (*vi)*(*vj) );
-  }
-  return N ? sum/N/N : 0.0;
-}
-
-
-/*  If classEntropy is given (greater than 0), this method computes the gini as
-    gini*p_value_is_known + class_gini*p_value_is_unknown. */
-float getGini(PContingency cont, bool unknownsToCommon)
-{ checkDiscrete(cont);
-
-  float sum = 0.0, N = 0.0;
-  const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
-  int mostCommon = unknownsToCommon ? outer.highestProbIntIndex() : -1;
-  int ind =0;
-  const_ITERATE(TDistributionVector, ci, *cont->discrete) {
-    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
-    float cases = (*ci)->cases;
-    if (ind++ == mostCommon)
-      cases += outer.unknowns;
-    N += dist.cases;
-    sum += dist.cases * getGini(dist.distribution);
-  }
-  return N ? sum/N : 0.0;
-}
-
 
 
 TMeasureAttribute::TMeasureAttribute(const int &aneeds, const bool &hd, const bool &hc)
@@ -155,16 +108,11 @@ float TMeasureAttribute::operator()(int attrNo, PExampleGenerator gen, PDistribu
     raiseError("attribute index out of range");
 
   if (needs==Contingency_Class) {
-    TContingency contingency(gen->domain->getVar(attrNo), gen->domain->classVar);
-    PDistribution classDistribution = TDistribution::create(gen->domain->classVar);
- 
-    PEITERATE(ei, gen) {
-      float xmplWeight=WEIGHT(*ei);
-      if (!(*ei).getClass().isSpecial()) {
-        classDistribution->add((*ei).getClass(), xmplWeight);
-        contingency.add((*ei)[attrNo], (*ei).getClass(), xmplWeight);
-      }
-    }
+    TContingencyAttrClass contingency(gen, attrNo, weightID);
+
+    PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
+    classDistribution->operator+= (contingency.innerDistributionUnknown);
+
     return operator()(PContingency(contingency), classDistribution, apriorClass);
   }
    
@@ -187,22 +135,12 @@ float TMeasureAttribute::operator ()(PVariable var, PExampleGenerator gen, PDist
   if (needs>Contingency_Class)
     raiseError("invalid 'needs'");
 
-  TContingency contingency(var, gen->domain->classVar);
-  PDistribution classDistribution = TDistribution::create(gen->domain->classVar);
-   
-  if (!var->getValueFrom)
-    raiseError("attribute '%s' not in domain, and getValueFrom undefined", var->name.c_str());
+  TContingencyAttrClass contingency(gen, var, weightID);
 
-  PEITERATE(ei, gen) {
-    float xmplWeight=WEIGHT(*ei);
-    if (!(*ei).getClass().isSpecial()) {
-      classDistribution->add((*ei).getClass(), xmplWeight);
-      TValue value(var->computeValue(*ei));
-      contingency.add(value, (*ei).getClass(), xmplWeight);
-    }
-  }
+  PDistribution classDistribution = CLONE(TDistribution, contingency.innerDistribution);
+  classDistribution->operator+= (contingency.innerDistributionUnknown);
 
-  return operator()(PContingency(contingency), classDistribution, apriorClass);
+  return operator()(PContingency(contingency), PDistribution(classDistribution), apriorClass);
 }
 
 
@@ -258,15 +196,66 @@ TMeasureAttributeFromProbabilities::TMeasureAttributeFromProbabilities(const boo
 
 
 float TMeasureAttributeFromProbabilities::operator()(PContingency cont, PDistribution classDistribution, PDistribution aprior)
-{ if (estimator)
+{ 
+  if (estimator) {
     classDistribution = estimator->call(classDistribution, aprior)->call();
-  if (conditionalEstimator)
-    cont = conditionalEstimator->call(cont, aprior)->call();
-  if (!classDistribution || !cont)
-    raiseError("specified estimator(s) cannot construct probabilities as lists");
+    if (!classDistribution)
+      raiseError("'estimator' cannot return the distribution");
+  }
 
-  return operator()(cont, CAST_TO_DISCDISTRIBUTION(classDistribution));
+  if (conditionalEstimator) {
+    cont = conditionalEstimator->call(cont, aprior)->call();
+    if (!cont)
+      raiseError("'conditionalEstimator cannot return contingency matrix");
+  }
+
+  return operator()(cont, CAST_TO_DISCDISTRIBUTION(unknownsTreatment == UnknownsToCommon ? classDistribution : cont->innerDistribution));
 }
+
+
+inline float round0(const float &x)
+{ 
+  return (x > -1e-6) && (x < 1e-6) ? 0.0 : x;
+}
+
+
+float getEntropy(const vector<float> &vf)
+{ 
+  float n = 0.0, sum = 0.0;
+  int noDif0 = 0;
+  const_ITERATE(vector<float>, vi, vf)
+    if (*vi>0) {
+      sum += (*vi)*log(*vi);
+      n += *vi;
+      noDif0++;
+    }
+  return (noDif0>1) ? (log(float(n))-sum/n) / log(2.0) : 0;
+}
+
+
+float getEntropy(PContingency cont, bool unknownsToCommon)
+{ 
+  checkDiscrete(cont, "getEntropy");
+
+  float sum = 0.0, N = 0.0;
+  const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
+  TDistributionVector::const_iterator mostCommon = unknownsToCommon ? cont->discrete->begin() + outer.highestProbIntIndex() : cont->discrete->end();
+  const_ITERATE(TDistributionVector, ci, *cont->discrete) {
+    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
+    if (ci == mostCommon) {
+      TDiscDistribution dist2 = dist;
+      dist2 += cont->innerDistributionUnknown;
+      N += dist2.cases;
+      sum += dist2.cases * getEntropy(dist2);
+    }
+    else {
+      N += dist.cases;
+      sum += dist.cases * getEntropy(dist.distribution);
+    }
+  }
+  return N ? sum/N : 0.0;
+}
+
 
 
 TMeasureAttribute_info::TMeasureAttribute_info(const int &unk)
@@ -275,16 +264,25 @@ TMeasureAttribute_info::TMeasureAttribute_info(const int &unk)
 
 
 float TMeasureAttribute_info::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
-{ const TDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
-  if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
+{ 
+  // checkDiscrete is called by getEntropy
+
+  const TDistribution &outer = probabilities->outerDistribution.getReference();
+  if ((unknownsTreatment == ReduceByUnknowns) && (outer.cases == 0))
     return 0.0;
+
   float info = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment==UnknownsToCommon);
-  return (unknownsTreatment!=ReduceByUnknowns) ? info : info * (1 - outer.unknowns / outer.cases);
+  if (unknownsTreatment == ReduceByUnknowns)
+    info *= outer.cases / (outer.unknowns + outer.cases);
+
+  return round0(info);
 }
 
 
 float TMeasureAttribute_info::operator()(const TDiscDistribution &dist) const
-{ return -getEntropy(dist); }
+{ 
+  return -getEntropy(dist);
+}
 
 
 TMeasureAttribute_gainRatio::TMeasureAttribute_gainRatio(const int &unk)
@@ -292,24 +290,69 @@ TMeasureAttribute_gainRatio::TMeasureAttribute_gainRatio(const int &unk)
 {}
 
 
+
 float TMeasureAttribute_gainRatio::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
-{ const TDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_gainRatio");
+
+  const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
   if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
     return 0.0;
 
-  float poss_gain = getEntropy(CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution).distribution);
-  if (poss_gain<1e-20)
+  float attributeEntropy = getEntropy(outer);
+  if (attributeEntropy<1e-20)
     return 0.0;
+  
+  float gain = getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment==UnknownsToCommon);
+  if (gain<1e-20)
+    return 0.0;
+  
+  gain /= attributeEntropy;
 
-  float gain = (getEntropy(classProbabilities) - getEntropy(probabilities, unknownsTreatment==UnknownsToCommon)) / poss_gain;
-  return (unknownsTreatment!=ReduceByUnknowns) ? gain : gain * (1 - outer.unknowns / outer.cases);
+  if (unknownsTreatment == ReduceByUnknowns)
+    gain *= outer.cases / (outer.unknowns + outer.cases);
+
+  return round0(gain);
 }
 
 
 
 float TMeasureAttribute_gainRatioA::operator()(const TDiscDistribution &dist) const
-{ return -getEntropy(dist) * log(float(dist.size())); }
+{ return round0(-getEntropy(dist) * log(float(dist.size()))); }
 
+
+
+
+float getGini(const vector<float> &vf)
+{ float sum = 0.0, N = 0.0;
+  const_ITERATE(vector<float>, vi, vf) {
+    N += *vi;
+    sum += (*vi)*(*vi);
+  }
+  return N ? 1 - sum/N/N : 0.0;
+}
+
+
+float getGini(PContingency cont, bool unknownsToCommon)
+{ 
+  float sum = 0.0, N = 0.0;
+  const TDiscDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
+  TDistributionVector::const_iterator mostCommon = unknownsToCommon ? cont->discrete->begin() + outer.highestProbIntIndex() : cont->discrete->end();
+  const_ITERATE(TDistributionVector, ci, *cont->discrete) {
+    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
+    if (ci == mostCommon) {
+      TDiscDistribution dist2 = dist;
+      dist2 += cont->innerDistributionUnknown;
+      N += dist2.cases;
+      sum += dist2.cases * getGini(dist2);
+    }
+    else {
+      N += dist.cases;
+      sum += dist.cases * getGini(dist.distribution);
+    }
+  }
+  return N ? sum/N : 0.0;
+}
 
 
 TMeasureAttribute_gini::TMeasureAttribute_gini(const int &unk)
@@ -318,27 +361,33 @@ TMeasureAttribute_gini::TMeasureAttribute_gini(const int &unk)
 
 
 float TMeasureAttribute_gini::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
-{ const TDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_gini");
+  
+  const TDistribution &outer = probabilities->outerDistribution.getReference();
   if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
     return 0.0;
  
   float gini = getGini(classProbabilities) - getGini(probabilities, unknownsTreatment==UnknownsToCommon);
-  return (unknownsTreatment!=ReduceByUnknowns) ? gini : gini * (1 - outer.unknowns / outer.cases);
+  if (unknownsTreatment == ReduceByUnknowns)
+    gini *= (outer.cases / (outer.unknowns + outer.cases));
+
+  return round0(gini);
 }
 
 
 float TMeasureAttribute_gini::operator()(const TDiscDistribution &dist) const
-{ return -getGini(dist); }
+{ return round0(-getGini(dist)); }
 
 
 
-TMeasureAttribute_cheapestClass::TMeasureAttribute_cheapestClass(PCostMatrix costs)
+TMeasureAttribute_cost::TMeasureAttribute_cost(PCostMatrix costs)
 : TMeasureAttributeFromProbabilities(true, false),
   cost(costs)
 {}
 
 
-float TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval)
+float TMeasureAttribute_cost::majorityCost(const TDiscDistribution &dval)
 { float cost;
   TValue cclass;
   majorityCost(dval, cost, cclass);
@@ -346,23 +395,24 @@ float TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dva
 }
 
 
-void TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval, float &ccost, TValue &cclass)
-{ checkProperty(cost);
+void TMeasureAttribute_cost::majorityCost(const TDiscDistribution &dval, float &ccost, TValue &cclass)
+{ 
+  checkProperty(cost);
 
-  int sum = 0;
-  const_ITERATE(TDiscDistribution, di, dval)
-    sum += *(const long *)(&*di);
-  TSimpleRandomGenerator srgen(sum);
-
-  ccost=numeric_limits<float>::max();
-  int wins=0, bestPrediction;
   int dsize = dval.size();
-  for(int predicted=0; predicted<dsize; predicted++) {
-    float thisCost=0;
-    for(int correct=0; correct<dsize; correct++)
-      thisCost += dval[correct]*cost->getCost(predicted, correct);
+  if (dsize>cost->size())
+    raiseError("cost matrix is too small");
 
-    thisCost /= dval.abs;
+  TRandomGenerator srgen(dval.sumValues());
+
+  ccost = numeric_limits<float>::max();
+  int wins = 0, bestPrediction;
+
+  for(int predicted = 0; predicted < dsize; predicted++) {
+    float thisCost = 0;
+    for(int correct = 0; correct < dsize; correct++)
+      thisCost += dval[correct] * cost->getCost(predicted, correct);
+
     if (   (thisCost<ccost) && ((wins=1)==1)
         || (thisCost==ccost) && srgen.randbool(++wins)) {
       bestPrediction = predicted;
@@ -370,31 +420,116 @@ void TMeasureAttribute_cheapestClass::majorityCost(const TDiscDistribution &dval
     }
   }
   
+  ccost /= dval.abs;
   cclass = TValue(bestPrediction);
 }
 
 
-float TMeasureAttribute_cheapestClass::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
-{ const TDistribution &outer = CAST_TO_DISCDISTRIBUTION(probabilities->outerDistribution);
+float TMeasureAttribute_cost::operator()(PContingency probabilities, const TDiscDistribution &classProbabilities)
+{ 
+  checkDiscrete(probabilities, "MeasureAttribute_cost");
+
+  const TDistribution &outer = probabilities->outerDistribution.getReference();
   if ((unknownsTreatment == ReduceByUnknowns) && (outer.unknowns == outer.cases))
     return 0.0;
  
-  checkDiscrete(probabilities);
   checkProperty(cost);
 
   float stopCost = majorityCost(classProbabilities);
   
+  TDistributionVector::const_iterator mostCommon = (unknownsTreatment == UnknownsToCommon)
+    ? probabilities->discrete->begin() + outer.highestProbIntIndex()
+    : probabilities->discrete->end();
+
   float continueCost = 0;
-  int mostCommon = (unknownsTreatment==UnknownsToCommon) ? outer.highestProbIntIndex() : -1;
-  int ind = 0;
-  const_ITERATE(TDistributionVector, di, *probabilities->discrete)
-    if (ind++ == mostCommon)
-      continueCost += ((*di)->cases + outer.unknowns) * majorityCost(CAST_TO_DISCDISTRIBUTION(*di));
-    else
-  	  continueCost += (*di)->cases * majorityCost(CAST_TO_DISCDISTRIBUTION(*di));
-  
+  float N = 0;
+  const_ITERATE(TDistributionVector, ci, *probabilities->discrete) {
+    const TDiscDistribution &dist = CAST_TO_DISCDISTRIBUTION(*ci);
+    if (ci == mostCommon) {
+      TDiscDistribution dist2 = dist;
+      dist2 += probabilities->innerDistributionUnknown;
+      N += dist2.cases;
+      continueCost += dist2.cases * majorityCost(dist2);
+    }
+    else {
+      N += dist.cases;
+      continueCost += dist.cases * majorityCost(dist.distribution);
+    }
+  }
+  continueCost /= N;
+
   float cost = stopCost - continueCost;
-  return (unknownsTreatment!=ReduceByUnknowns) ? cost : cost * (1 - outer.unknowns / outer.cases);
+  if (unknownsTreatment == ReduceByUnknowns)
+    cost *= (outer.cases / (outer.unknowns + outer.cases));
+
+  return round0(cost);
+}
+
+
+
+TMeasureAttribute_MSE::TMeasureAttribute_MSE()
+: TMeasureAttribute(Contingency_Class, false, true),
+  m(0)
+{}
+
+
+float TMeasureAttribute_MSE::operator()(PContingency cont, PDistribution classDistribution, PDistribution apriorClass)
+{
+  checkDiscreteContinuous(cont, "MeasureAttribute_MSE");
+
+  const TDistribution &outer = CAST_TO_DISCDISTRIBUTION(cont->outerDistribution);
+  
+  if (cont->innerVariable->varType!=TValue::FLOATVAR)
+    raiseError("cannot evaluate attribute in domain with discrete classes");
+  if (cont->outerVariable->varType!=TValue::INTVAR)
+    raiseError("cannot evaluate continuous attributes");
+
+  const TContDistribution &classDist = CAST_TO_CONTDISTRIBUTION(classDistribution);
+
+  float W=classDist.abs;
+  if (W<=0)
+    return 0.0;
+
+  float I_orig=(classDist.sum2-classDist.sum*classDist.sum/W)/W;
+  if (I_orig<=0.0)
+    return 0.0;
+
+  TDistributionVector::const_iterator mostCommon = (unknownsTreatment == UnknownsToCommon)
+    ? cont->discrete->begin() + outer.highestProbIntIndex()
+    : cont->discrete->end();
+
+  float I=0;
+  float downW=0;
+  const_ITERATE(TDistributionVector, ci, *cont->discrete) {
+    const TContDistribution &tdist = CAST_TO_CONTDISTRIBUTION(*ci);
+    if (ci==mostCommon) {
+      const float ssum2 = tdist.sum2 + cont->innerDistribution.AS(TContDistribution)->sum2;
+      const float ssum = tdist.sum + cont->innerDistribution.AS(TContDistribution)->sum;
+      const float sabs = tdist.abs + cont->innerDistribution.AS(TContDistribution)->abs;
+      I += ssum2  -  ssum*ssum / sabs;
+      downW += sabs;
+    }
+    else {
+      if (tdist.abs>0) {
+        I += tdist.sum2 - tdist.sum*tdist.sum/tdist.abs;
+       downW += tdist.abs;
+      }
+    }
+  }
+
+  if (apriorClass && (m>0)) {
+    const TContDistribution &tdist = CAST_TO_CONTDISTRIBUTION(apriorClass);
+    I =   (I + m * (tdist.sum2 - tdist.sum * tdist.sum/tdist.abs) / tdist.abs)
+        / (downW + m);
+  }
+  else 
+    I /= downW;
+
+  float mse = (I_orig - I)/I_orig;
+  if (unknownsTreatment == ReduceByUnknowns)
+    mse *= (outer.cases / (outer.unknowns + outer.cases));
+  
+  return round0(mse);
 }
 
 
@@ -616,87 +751,4 @@ float TMeasureAttribute_relief::operator()(int attrNo, PExampleGenerator gen, PD
 
   float me=measures[attrNo];
   return me;
-}
-
-
-
-TMeasureAttribute_MSE::TMeasureAttribute_MSE()
-: TMeasureAttribute(Contingency_Class, false, true),
-  m(0)
-{}
-
-
-float TMeasureAttribute_MSE::operator()(PContingency cont, PDistribution classDistribution, PDistribution apriorClass)
-{
-  if (cont->innerVariable->varType!=TValue::FLOATVAR)
-    raiseError("cannot evaluate attribute in domain with discrete classes");
-  if (cont->outerVariable->varType!=TValue::INTVAR)
-    raiseError("cannot evaluate continuous attributes");
-
-  const TContDistribution &classDist = CAST_TO_CONTDISTRIBUTION(classDistribution);
-
-  float W=classDist.abs;
-  if (W<=0)
-    return 0.0;
-
-  float I_orig=(classDist.sum2-classDist.sum*classDist.sum/W)/W;
-  if (I_orig<=0.0)
-    return 0.0;
-
-  float I=0;
-  float downW=0;
-  const_ITERATE(TDistributionVector, ci, *cont->discrete) 
-    if ((*ci)->abs>0) {
-      const TContDistribution &tdist = CAST_TO_CONTDISTRIBUTION(*ci);
-      I += tdist.sum2 - tdist.sum*tdist.sum/tdist.abs;
-      downW += tdist.abs;
-    }
-
-  if (apriorClass && (m>0)) {
-    const TContDistribution &tdist = CAST_TO_CONTDISTRIBUTION(apriorClass);
-    I =   (I + m * (tdist.sum2 - tdist.sum * tdist.sum/tdist.abs) / tdist.abs)
-        / (downW + m);
-  }
-  else 
-    I /= downW;
-  
-  return (I_orig - I)/I_orig;
-}
-
-
-TMeasureAttribute_Tretis::TMeasureAttribute_Tretis()
- : TMeasureAttribute(Contingency_Class, false, true)
-{}
-
-
-float TMeasureAttribute_Tretis::operator()(PContingency cont, PDistribution classDistribution, PDistribution apriorClass)
-{
-  if (cont->innerVariable->varType!=TValue::FLOATVAR)
-    raiseError("cannot evaluate attribute in domain with discrete classes");
-  if (cont->outerVariable->varType!=TValue::INTVAR)
-    raiseError("cannot evaluate continuous attributes");
-
-  float bestT=0;
-  const_ITERATE(TDistributionVector, cix, *cont->discrete)
-    if ((*cix)->abs>1) {
-      const TContDistribution &cixc=CAST_TO_CONTDISTRIBUTION(*cix);
-      float cixn=cixc.abs;
-      float avgx=cixc.sum/cixn;
-      float Sx2=cixc.sum2/cixn - avgx*avgx;
-      for(TDistributionVector::const_iterator ciy=cix; ciy!=cont->discrete->end(); ciy++)
-        if ((*ciy)->abs>1) {
-          const TContDistribution &ciyc=CAST_TO_CONTDISTRIBUTION(*ciy);
-          float ciyn=ciyc.abs;
-          float avgy=ciyc.sum/ciyn;
-          float Sy2=ciyc.sum2/ciyn - avgy*avgy;
-
-          float S2 = Sx2*(cixn-1)/(cixn+ciyn-2) + Sy2*(ciyn-1)/(cixn+ciyn-2);
-          float T  = fabs(avgx-avgy)*sqrt( (cixn*ciyn)/(cixn+ciyn)/S2);
-          float thisT = 1-student(T, int(cixn+ciyn+2));
-          if (thisT>bestT)
-            bestT=thisT;
-        }
-    }
-
-  return bestT;
 }

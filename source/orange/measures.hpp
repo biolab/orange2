@@ -69,6 +69,8 @@ public:
   __REGISTER_CLASS
 
   enum {Contingency_Class, DomainContingency, Generator};
+  enum { IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon };
+
   int needs; //P describes what kind of data is needed for computation
   bool handlesDiscrete; //PR tells whether the measure can handle discrete attributes
   bool handlesContinuous; //PR tells whether the measure can handle continuous attributes
@@ -92,8 +94,6 @@ public:
 class TMeasureAttributeFromProbabilities : public TMeasureAttribute {
 public: 
   __REGISTER_ABSTRACT_CLASS
-
-  enum { IgnoreUnknowns, ReduceByUnknowns, UnknownsToCommon };
 
   PProbabilityEstimatorConstructor estimator; //P probability estimator (none by default)
   PConditionalProbabilityEstimatorConstructor conditionalEstimator; //P conditional probability estimator (none by default)
@@ -152,13 +152,13 @@ public:
 
 WRAPPER(CostMatrix)
 
-class TMeasureAttribute_cheapestClass : public TMeasureAttributeFromProbabilities {
+class TMeasureAttribute_cost: public TMeasureAttributeFromProbabilities {
 public:
     __REGISTER_CLASS
 
     PCostMatrix cost; //P cost matrix
 
-    TMeasureAttribute_cheapestClass(PCostMatrix costs=PCostMatrix());
+    TMeasureAttribute_cost(PCostMatrix costs=PCostMatrix());
     
     virtual float operator()(PContingency probabilities, const TDiscDistribution &classProbabilities);
   	float majorityCost(const TDiscDistribution &dval);
@@ -171,18 +171,11 @@ public:
     __REGISTER_CLASS
 
     float m; //P m for m-estimate
+    int unknownsTreatment; //P treatment of unknown values
 
     TMeasureAttribute_MSE();
     virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
 };
 
-
-class TMeasureAttribute_Tretis : public TMeasureAttribute {
-public:
-    __REGISTER_CLASS
-
-    TMeasureAttribute_Tretis();
-    virtual float operator()(PContingency, PDistribution classDistribution, PDistribution apriorClass=PDistribution());
-};
 
 #endif

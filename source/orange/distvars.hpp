@@ -141,6 +141,8 @@ public:
 
   virtual float operator -  (const TSomeValue &v) const;
   virtual float operator || (const TSomeValue &v) const;
+
+  virtual int sumValues() const = 0;
 };
 
 
@@ -200,6 +202,8 @@ public:
   virtual int   randomInt();
   virtual int   randomInt(const long &random);
   virtual bool  noDeviation() const;
+
+  virtual int sumValues() const;
 };
 
 
@@ -246,6 +250,8 @@ public:
   virtual float randomFloat();
   virtual float randomFloat(const long &random);
   virtual bool  noDeviation() const;
+
+  virtual int sumValues() const;
 };
 
 
@@ -273,6 +279,8 @@ public:
 
   virtual float p(const float &) const;
   virtual bool  noDeviation() const;
+
+  virtual int sumValues() const;
 };
 
 

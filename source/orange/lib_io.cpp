@@ -135,8 +135,8 @@ PyObject *AssistantExampleGenerator_new(PyTypeObject *type, PyObject *args, PyOb
 
 int pt_ExampleGenerator(PyObject *args, void *egen);
 
-void tabDelim_writeDomain(FILE *, PDomain, bool autodetect);
-void tabDelim_writeExamples(FILE *, PExampleGenerator);
+void tabDelim_writeDomain(FILE *, PDomain, bool autodetect, char delim = '\t');
+void tabDelim_writeExamples(FILE *, PExampleGenerator, char delim = '\t');
 
 PyObject *saveTabDelimited(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
 { PyTRY
@@ -177,6 +177,29 @@ PyObject *saveTxt(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, e
 
     tabDelim_writeDomain(ostr, gen->domain, true);
     tabDelim_writeExamples(ostr, gen);
+    fclose(ostr);
+
+    RETURN_NONE
+  PyCATCH
+}
+
+
+PyObject *saveCsv(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+{ PyTRY
+    char *filename;
+    PExampleGenerator gen;
+
+    if (!PyArg_ParseTuple(args, "sO&", &filename, pt_ExampleGenerator, &gen))
+      PYERROR(PyExc_TypeError, "string and example generator expected", PYNULL)
+  
+    FILE *ostr = fopen(filename, "wt");
+    if (!ostr) {
+      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
+      return PYNULL;
+    }
+
+    tabDelim_writeDomain(ostr, gen->domain, true, ',');
+    tabDelim_writeExamples(ostr, gen, ',');
     fclose(ostr);
 
     RETURN_NONE
