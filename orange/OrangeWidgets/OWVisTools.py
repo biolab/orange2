@@ -67,29 +67,44 @@ class OptimizationDialog(OWBaseWidget):
         for item in self.resultsListLenList:
             self.resultListCombo.insertItem(item)
         self.resultListCombo.setCurrentItem(self.resultsListLenNums.index(self.resultListLen))
-        self.connect(self.resultListCombo, SIGNAL("activated(int)"), self.setResultListLen)
+
+        self.numberOfAttrBox = QVGroupBox (self.optimizeButtonBox, "Number of attributes")
+        self.numberOfAttrBox.setTitle("Number of attributes")
     
-        self.optimizeSeparationButton = QPushButton('Optimize class separation', self.optimizeButtonBox)
-        self.hbox3 = QHBox(self.optimizeButtonBox)
-        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize separation for subsets', self.hbox3)
-        self.maxLenCombo = QComboBox(self.hbox3)    # maximum number of attributes in subset
+        self.hbox3 = QHBox(self.numberOfAttrBox)
+        self.optimizeSeparationButton = QPushButton('Optimize for exactly', self.hbox3)
+        self.exactlyLenCombo = QComboBox(self.hbox3)    # maximum number of attributes in subset
+        self.exactlyAttrLabel = QLabel('attr', self.hbox3)
+        
+        self.hbox4 = QHBox(self.numberOfAttrBox)
+        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize for max', self.hbox4)
+        self.maxLenCombo = QComboBox(self.hbox4)    # maximum number of attributes in subset
+        self.exactlyAttrLabel2 = QLabel('attr', self.hbox4)
+        
+        self.exactlyLenCombo.insertItem("ALL")
         self.maxLenCombo.insertItem("ALL")
+        
         for i in range(3, 15):
+            self.exactlyLenCombo.insertItem(str(i))
             self.maxLenCombo.insertItem(str(i))
         self.maxLenCombo.setCurrentItem(0)
+        self.exactlyLenCombo.setCurrentItem(0)
         
         #self.resize(200, 500)
         self.attrLenCaption = QLabel('Select attribute count', self.manageResultsBox)
         self.attrLenList = QListBox(self.manageResultsBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
-        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
+        
         self.filterButton = QPushButton("Remove attribute", self.manageResultsBox)
         self.removeSelectedButton = QPushButton("Remove selected projections", self.manageResultsBox)
         self.saveButton = QPushButton("Save", self.manageResultsBox)
         self.loadButton = QPushButton("Load", self.manageResultsBox)
         self.clearButton = QPushButton("Clear results", self.manageResultsBox)
         self.closeButton = QPushButton("Close", self.manageResultsBox)
+        
+        self.connect(self.resultListCombo, SIGNAL("activated(int)"), self.setResultListLen)
+        self.connect(self.attrLenList, SIGNAL("selectionChanged()"), self.attrLenListChanged)
         self.connect(self.filterButton, SIGNAL("clicked()"), self.filter)
         self.connect(self.removeSelectedButton, SIGNAL("clicked()"), self.removeSelected)
         self.connect(self.saveButton, SIGNAL("clicked()"), self.save)
@@ -126,8 +141,10 @@ class OptimizationDialog(OWBaseWidget):
                 strList = strList + ", " + item
 
         for i in range(len(self.optimizedListFull)):
-            (acc, iC, list2, strList2) = self.optimizedListFull[i]
-            if acc < accuracy:
+            (accuracy2, tableLen2, list2, strList2) = self.optimizedListFull[i]
+            if accuracy2 == accuracy and tableLen2 == tableLen and list2 == list and strList2 == strList:
+                return
+            elif accuracy2 < accuracy:
                 self.optimizedListFull.insert(i, (accuracy, tableLen, list, strList))
                 return
         
