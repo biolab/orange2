@@ -35,15 +35,15 @@ class TC45Learner : public TLearner {
 public:
     __REGISTER_CLASS
 
-    bool gainRatio; //P use gain ration (instead of information gain)
-    bool subset; //P use subsetting
-    bool batch; //P batch
-    bool probThresh; //P probability threshold
-    int minObjs; //P minimal number of objects (examples) in leaves
-    int window; //P window
-    int increment; //P increment
-    float cf; //P cf
-    int trials; //P trials
+    bool gainRatio; //P (+g) use gain ratio (instead of information gain)
+    bool subset; //P (+s) use subsetting
+    bool batch; //P (+b) batch
+    bool probThresh; //P (+p) probability threshold
+    int minObjs; //P (+m) minimal number of objects (examples) in leaves
+    int window; //P (+w) window
+    int increment; //P (+i) increment
+    float cf; //P (+c) cf
+    int trials; //P (+t) trials
 
     bool prune; //P return pruned tree
 

@@ -4,7 +4,7 @@
 ORANGEHOME= ..
 
 SOURCEDIR = $(ORANGEHOME)/source
-ODIR = $(ORANGEHOME)/o
+ODIR = /tmp/orange
 BINDIR = $(ORANGEHOME)/bin
 
 ORANGEDIR  = $(SOURCEDIR)/orange
@@ -16,7 +16,7 @@ DEVSCRIPTS= $(ORANGEDIR)/devscripts
 PPPDIR = $(ORANGEDIR)/ppp
 PXDIR = $(ORANGEDIR)/px
 
-EXTERNALDIR = $(ORANGEHOME)/external
+EXTERNALDIR = $(ORANGEHOME)/source/external
 
 # Below is used for determining directory with Python.h.
 # If this does not work, find Python.h yourself and enter
@@ -27,7 +27,7 @@ PYTHONLIB = $(shell python -c "import sys; print sys.prefix+'/lib/python'+sys.ve
 C45D = $(EXTERNALDIR)/c45
 C45_OBJECTS = $(C45D)/besttree.o $(C45D)/build.o $(C45D)/classify.o $(C45D)/confmat.o \
 		$(C45D)/contin.o $(C45D)/discr.o $(C45D)/genlogs.o $(C45D)/getdata.o \
-		$(C45D)/getnames.o $(C45D)/getopt.o $(C45D)/header.o $(C45D)/info.o \
+		$(C45D)/getnames.o $(C45D)/getopt.o $(C45D)/info.o \
 		$(C45D)/prune.o $(C45D)/sort.o $(C45D)/st-thresh.o $(C45D)/stats.o \
 		$(C45D)/subset.o $(C45D)/trees.o
 

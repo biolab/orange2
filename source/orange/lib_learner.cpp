@@ -63,9 +63,9 @@ This file includes constructors and specialized methods for ML* object, defined 
 C_CALL(MajorityLearner, Learner, "([examples] [, weight=, estimate=]) -/-> Classifier")
 C_CALL(CostLearner, Learner, "([examples] [, weight=, estimate=, costs=]) -/-> Classifier")
 
-#include "linreg.hpp"
-C_CALL(LinRegLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
-C_NAMED(LinRegClassifier, ClassifierFD, "([classifier=, costs=])")
+//#include "linreg.hpp"
+PYXTRACT_IGNORE C_CALL(LinRegLearner, Learner, "([examples] [, weight=]) -/-> Classifier")
+PYXTRACT_IGNORE C_NAMED(LinRegClassifier, ClassifierFD, "([classifier=, costs=])")
 
 #include "costwrapper.hpp"
 C_CALL(CostWrapperLearner, Learner, "([examples] [, weight=, costs=]) -/-> Classifier")
@@ -305,7 +305,7 @@ BASED_ON(TreeSplitConstructor_Measure, TreeSplitConstructor)
 C_CALL(TreeSplitConstructor_Attribute, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_ExhaustiveBinary, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
 C_CALL(TreeSplitConstructor_Threshold, TreeSplitConstructor_Measure, "([measure=, worstAcceptable=, minSubset=])")
-C_CALL(TreeSplitConstructor_LR, TreeSplitConstructor, "([minSubset=])")
+PYXTRACT_IGNORE C_CALL(TreeSplitConstructor_LR, TreeSplitConstructor, "([minSubset=])")
 
 BASED_ON(TreeExampleSplitter, Orange)
 
