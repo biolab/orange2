@@ -328,7 +328,7 @@ class InteractionMatrix:
             if not url:
                 f.write("\t%d -> %d [dir=%s,%scolor=%s,label=\"%s\",weight=%d];\n"%(i,j,dir,style,color,mc,(perc/30+1)))
             else:
-                f.write("\t%d -> %d [URL=\"%d-%d\",dir=%s,%scolor=%s,label=\"%s%%\",weight=%d];\n"%(i,j,min(i,j),max(i,j),dir,style,color,mc,(perc/30+1)))
+                f.write("\t%d -> %d [URL=\"%d-%d\",dir=%s,%scolor=%s,label=\"%s\",weight=%d];\n"%(i,j,min(i,j),max(i,j),dir,style,color,mc,(perc/30+1)))
 
         f.write("}\n")
         
