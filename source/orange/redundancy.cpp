@@ -350,7 +350,7 @@ PDomain TRemoveRedundantOneValue::operator()
 }
 
 
-
+/*
 PDomain TRemoveNonexistentValues::operator()(PExampleGenerator gen, PVarList suspicious, PExampleGenerator *nonRedundantResult, int)
 {
   TVarList newVariables;
@@ -417,4 +417,47 @@ PDomain TRemoveNonexistentValues::operator()(PExampleGenerator gen, PVarList sus
       *nonRedundantResult=mlnew TExampleTable(newDomain, gen);
     return newDomain;
   }
+}
+*/
+
+PVariable TRemoveNonexistingValues::operator()(PVariable var, PExampleGenerator gen, const int &weightID)
+{
+  TEnumVariable *evar = var.AS(TEnumVariable);
+  if (!evar)
+    raiseError("'%s' is not a discrete attribute", var->name);
+
+  TDiscDistribution dist(gen, var, weightID);
+  TDiscDistribution::const_iterator dvi, dve;
+
+  int nonull = 0;
+  for(dvi = dist.begin(), dve = dist.end(); dvi!=dve; dvi++)
+    if (*dvi > 1e-20)
+      nonull++;
+
+  if (!nonull)
+    return PVariable();
+
+  if (nonull==int(evar->values->size()))
+    return var;
+
+  TEnumVariable *enewVar = mlnew TEnumVariable("R_"+evar->name);
+  enewVar->values = PStringList(mlnew TStringList(nonull, ""));
+  PVariable newVar(enewVar);
+
+  TClassifierByLookupTable1 *cblt = mlnew TClassifierByLookupTable1(newVar, var);
+  int cnt = 0;
+  TIdList::iterator vali = evar->values->begin();
+  vector<TValue>::iterator lvi(cblt->lookupTable->begin());
+  vector<PDistribution>::iterator ldi(cblt->distributions->begin());
+  for(dvi = dist.begin(), dve = dist.end(); dvi!=dve; dvi++, vali++, lvi++, ldi++)
+    if (*dvi > 1e-20) {
+      enewVar->values->at(cnt) = *vali;
+      *lvi = TValue(cnt);
+      (*ldi)->addint(cnt, 1.0);
+      cnt++;
+    }
+
+  newVar->getValueFrom = cblt;
+
+  return newVar;
 }

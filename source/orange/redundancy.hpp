@@ -75,12 +75,20 @@ public:
   virtual PDomain operator()(PExampleGenerator gen, PVarList suspicious=PVarList(), PExampleGenerator *nonRedundantResult=NULL, int aweightID=0);
 };
 
-
+/*
 class TRemoveNonexistentValues : public TRemoveRedundant {
+public:
+  _ _ R E G I S T E R _ C L A S S 
+
+  virtual PDomain operator()(PExampleGenerator gen, PVarList suspicious=PVarList(), PExampleGenerator *nonRedundantResult=NULL, int aweightID=0);
+};
+*/
+
+class TRemoveNonexistingValues : public TOrange {
 public:
   __REGISTER_CLASS
 
-  virtual PDomain operator()(PExampleGenerator gen, PVarList suspicious=PVarList(), PExampleGenerator *nonRedundantResult=NULL, int aweightID=0);
+  virtual PVariable operator()(PVariable, PExampleGenerator, const int &);
 };
 
 #endif

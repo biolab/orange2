@@ -141,8 +141,9 @@ BASED_ON(RemoveRedundant, Orange)
 C_CALL(RemoveRedundantByInduction, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantByQuality, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 C_CALL(RemoveRedundantOneValue, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
-C_CALL(RemoveNonexistentValues, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
+// C _ C A L L (RemoveNonexistentValues, RemoveRedundant, "([examples[, weightID][, suspicious]) -/-> Domain")
 
+C_CALL3(RemoveNonexistingValues, RemoveNonexistingValues, Orange, "([attribute, examples[, weightId]]) -/-> attribute")
 
 PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("([examples[, weightID][, suspicious]) -/-> Domain")
 {
@@ -151,8 +152,8 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
     PExampleGenerator egen;
     PyObject *suspiciousList=NULL;
     int weight=0;
-    if (!PyArg_ParseTuple(args, "O&|OO&", pt_ExampleGenerator, &egen, &suspiciousList, pt_weightByGen(egen), &weight))
-      PYERROR(PyExc_TypeError, "attribute error", PYNULL);
+    if (!PyArg_ParseTuple(args, "O&|OO&:RemoveRedundant.call", pt_ExampleGenerator, &egen, &suspiciousList, pt_weightByGen(egen), &weight))
+      return PYNULL;
 
     TVarList suspiciousset;
     if (suspiciousList)
@@ -164,6 +165,21 @@ PyObject *RemoveRedundant_call(PyObject *self, PyObject *args, PyObject *keyword
   PyCATCH
 }
 
+
+PyObject *RemoveNonexistingValues_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(attribute, examples[, weightId]) -> attribute")
+{
+  PyTRY
+    SETATTRIBUTES
+
+    PExampleGenerator egen;
+    PVariable var;
+    int weightID = 0;
+    if (!PyArg_ParseTuple(args, "O&O&|O&:RemoveNonexistingValues.call", cc_Variable, &var, pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weightID))
+      return PYNULL;
+
+    return WrapOrange(SELF_AS(TRemoveNonexistingValues)(var, egen, weightID));
+  PyCATCH
+}
 
 
 /* ************ PREPROCESSORS ************ */
