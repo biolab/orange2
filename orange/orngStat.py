@@ -862,6 +862,53 @@ def McNemarOfTwo(res, lrn1, lrn2):
         return 0
 
 
+def Friedman(res, stat=CA):
+    """ Compares classifiers by Friedman test, treating folds as different examles.
+        Returns F, p and average ranks
+    """
+    res_split = splitByIterations(res)
+    res = [stat(r) for r in res_split]
+    
+    N = len(res)
+    k = len(res[0])
+    sums = [0.0]*k
+    for r in res:
+        ranks = [k-x+1 for x in statc.rankdata(r)]
+        sums = [ranks[i]+sums[i] for i in range(k)]
+
+    T = reduce(operator.add, [x*x for x in sums])
+    sums = [x/N for x in sums]
+
+    F = 12.0 / (N*k*(k+1)) * T  - 3 * N * (k+1)
+
+    return F, statc.chisqprob(F, k-1), sums
+
+
+def WilcoxonPairs(res, avgranks, stat=CA):
+    """ Returns a triangular matrix, where element[i][j] stores significance of difference
+        between i-th and j-th classifier, as computed by Wilcoxon test. The element is positive
+        if i-th is better than j-th, negative if it is worse, and 1 if they are equal.
+        Arguments to function are ExperimentResults, average ranks (as returned by Friedman)
+        and, optionally, a statistics; greater values should mean better results.append
+    """
+    res_split = splitByIterations(res)
+    res = [stat(r) for r in res_split]
+
+    k = len(res[0])
+    bt = []
+    for m1 in range(k):
+        nl = []
+        for m2 in range(m1+1, k):
+            t, p = statc.wilcoxont([r[m1] for r in res], [r[m2] for r in res])
+            if avgranks[m1]<avgranks[m2]:
+                nl.append(p)
+            elif avgranks[m2]<avgranks[m1]:
+                nl.append(-p)
+            else:
+                nl.append(1)
+        bt.append(nl)
+    return bt
+
 
 def plotLearningCurveLearners(file, allResults, proportions, learners, noConfidence=0):
     plotLearningCurve(file, allResults, proportions, [orngMisc.getobjectname(learners[i], "Learner %i" % i) for i in range(len(learners))], noConfidence)
