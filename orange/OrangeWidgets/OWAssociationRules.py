@@ -55,7 +55,7 @@ class OWAssociationRules(OWWidget):
 
         # Max Number of Rules
         self.lblNumRules = QLabel("Stop generating at %i rules:" %self.max_rules, self.rulesGB)
-        self.edtNumRules = QSpinBox(100, 10000, 100, self.rulesGB)
+        self.edtNumRules = QSpinBox(100, 100000, 100, self.rulesGB)
         self.edtNumRules.setValue(self.max_rules)
         self.connect(self.edtNumRules, SIGNAL("valueChanged(int)"), self.setNumRules)
 
