@@ -189,30 +189,11 @@ class OWInteractionGraph(OWWidget):
             (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attr1], data.domain[attr2]])
             if cart in data.domain: return  # if this attribute already in domain return
 
-            """            
-            contData = data.select([cart, data.domain.classVar])
-            cont = orange.DomainContingency(contData)
-            todoList = []   # list of attribute pair values that have instances with more than one class value
-            for val in cont[0].keys():
-                contList = list(cont[0][val])
-                if not len(contList) <=  contList.count(0.0) + 1:    # if not all cases belong to the same class then this cases need to be classified by different attribute pair
-                    todoList.append(val)
-            """
-            """
-            newData = data.select(list(data.domain) + [cart])
-            dd = orange.DomainDistributions(newData)
-            i=0; index = 0
-            count = len(cart.values)
-            while index < count:
-                if dd[cart][index] == 0.0:
-                    cart.getValueFrom.lookupTable[i] = "?"
-                    del cart.values[i]
-                    for j in range(i+1, len(cart.values)+1):
-                        cart.getValueFrom.lookupTable[j] -= 1
-                else:
-                    i+= 1
-                index += 1
-            """
+            for attr in data.domain:
+                if cart.name == attr.name:
+                    print "Attribute pair already in the domain"
+                    return
+        
             tempData = data.select(list(data.domain) + [cart])
             dd = orange.DomainDistributions(tempData)
             vals = []
