@@ -41,16 +41,22 @@ class OWFile(OWWidget):
         self.infoa = QLabel('No data loaded.', box)
         self.infob = QLabel('', box)
             
+        self.resize(150,100)
+
+
+    def activateLoadedSettings(self):
+        # remove missing data set names
         self.recentFiles=filter(os.path.exists,self.recentFiles)
         self.setFilelist()
-        self.filecombo.setCurrentItem(0)
-        # this makes no difference, because when the file widget is created there are no connection yet
-        if self.recentFiles!=[]:
-            self.openFile(self.recentFiles[0])
         
+        if self.selectedFileName != "":
+            if os.path.exists(self.selectedFileName):
+                self.openFile(self.selectedFileName)
+            else:
+                self.selectedFileName = ""
+
         # connecting GUI to code
         self.connect(self.filecombo,SIGNAL('activated(int)'),self.selectFile)
-        self.resize(150,100)
 
     def browseFile(self):
         "Display a FileDialog and select a file"
@@ -143,16 +149,11 @@ class OWFile(OWWidget):
         else:
             self.openFile("(none)")
         
-    def activateLoadedSettings(self):
-        if self.selectedFileName != "":
-            if os.path.exists(self.selectedFileName):
-                self.openFile(self.selectedFileName)
-            else:
-                self.selectedFileName = ""
         
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWFile()
+    owf.activateLoadedSettings()
     a.setMainWidget(owf)
     owf.show()
     a.exec_loop()
