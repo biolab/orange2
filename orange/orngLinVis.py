@@ -10,6 +10,7 @@
 # Purpose: Visualize all linear models (NB, LogReg, linear SVM, perceptron, etc.).
 #
 # ChangeLog:
+#   - 2004/05/29: no more normalization, no more flipping for SVM, corrected w/r continuous attributes
 #   - 2003/11/17: project initiated
 
 import orange, orngDimRed
@@ -179,19 +180,25 @@ class _parseNB(_parse):
         return (beta, coeffs, coeff_names, basis, m, lambda x:math.exp(x)/(1.0+math.exp(x)))
 
 class _parseLR(_parse):
-    def getDescriptors(self, trans, examples, buckets):
+    def getDescriptors(self, translator, examples, buckets):
         tcoeff_names = []
         descriptors = [] # used for managing continuous atts
-        for i in range(len(trans)):
-            t = trans[i]
+        proto_example = orange.Example(examples[0]) # used for converting bucket averages into realistic values
+        true_values = []
+        for i in range(len(translator.trans)):
+            t = translator.trans[i]
             tc = ["%s"%t.attr.name]
+            tv = []
             d = t.description()
-            #print tc[0],d
             if d[0]==0:
                 # continuous
                 values = self.bucketize(examples, t.attr, buckets) 
                 tc += values
                 descriptors.append((i,-1))
+                for v in values:
+                    proto_example[t.attr] = v
+                    tp = translator.extransform(proto_example)
+                    tv.append(tp[t.idx])
             else:
                 # nominal
                 x = 0
@@ -200,20 +207,23 @@ class _parseLR(_parse):
                         tc.append(n)
                         descriptors.append((i,x))
                         x += 1
+            true_values.append(tv)
             tcoeff_names.append(tc)
-        return descriptors, tcoeff_names
+        return descriptors, tcoeff_names, true_values
 
-    def getNames(self, descriptors, tcoeff_names):
+    def getNames(self, descriptors, tcoeff_names, true_values):
         # filter the coeff_names using these masked descriptors
         coeff_names = []
         cur_i = -1
         contins = []
+        tr_values = []
         total = 0
         for (a,b) in descriptors:
             if cur_i == a:
                 coeff_names[-1].append(tcoeff_names[a][b+1])
                 total += 1
             else:
+                tr_values.append(true_values[a])
                 if b == -1:
                     # continuous
                     contins.append(len(coeff_names))
@@ -223,9 +233,9 @@ class _parseLR(_parse):
                     coeff_names.append([tcoeff_names[a][0],tcoeff_names[a][1+b]])
                     total += 1
                     cur_i = a
-        return coeff_names,total,contins
+        return coeff_names,total,contins,tr_values
 
-    def getBasis(self, total,xcoeffs,contins, coeff_names):
+    def getBasis(self, total,xcoeffs,contins, coeff_names, tr_values):
         # create the basis vectors for each attribute
         basis = Numeric.identity((total), Numeric.Float)
         
@@ -246,7 +256,7 @@ class _parseLR(_parse):
                 lookup.append(len(coeffs))
                 for k in xrange(len(coeff_names[i])-1):
                     coeffs.append(xcoeffs[jj])
-                    v = coeff_names[i][k+1]
+                    v = tr_values[i][k]
                     x[j] = v
                     j += 1
                 jj += 1
@@ -291,16 +301,16 @@ class _parseLR(_parse):
         primitivec = robustc.classifier
         beta = -primitivec.beta[0]
 
-        (descriptors,prevnames) = self.getDescriptors(classifier.translator.trans,examples,buckets)
+        (descriptors,prevnames,trans_values) = self.getDescriptors(classifier.translator,examples,buckets)
 
         # include robust LR's masking
         descriptors = robustc.translate(descriptors)
-
-        (coeff_names, total, contins) = self.getNames(descriptors, prevnames)
+        
+        (coeff_names, total, contins, tr_values) = self.getNames(descriptors, prevnames, trans_values)
         
         xcoeffs = primitivec.beta[1:]
 
-        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names)
+        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names, tr_values)
 
         tex = []
         for ex in examples:
@@ -320,9 +330,9 @@ class _parseSVM(_parseLR):
         if classifier.model["nr_class"] != 2:
             raise "This is not SVM with a binary class."
 
-        (descriptors,prevnames) = self.getDescriptors(classifier.translate.trans,examples,buckets)
+        (descriptors,prevnames,trans_values) = self.getDescriptors(classifier.translate,examples,buckets)
 
-        (coeff_names, total, contins) = self.getNames(descriptors, prevnames)
+        (coeff_names, total, contins, tr_values) = self.getNames(descriptors, prevnames, trans_values)
         
         beta = classifier.model["rho"][0]
         svs = classifier.model["SV"]
@@ -336,12 +346,12 @@ class _parseSVM(_parseLR):
             for (j,v) in csv[1:]:
                 xcoeffs[j-1] += coef*v
 
-        # reverse the betas if the labels got switched
-        if classifier.model["label"][0] == 0:
-            beta = -beta
-            xcoeffs = [-x for x in xcoeffs]
+        ## reverse the betas if the labels got switched
+        #if classifier.model["label"][0] == 0:
+        #    beta = -beta
+        #    xcoeffs = [-x for x in xcoeffs]
 
-        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names)
+        (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names, tr_values)
 
         tex = []
         for i in range(len(examples)):
@@ -363,7 +373,6 @@ class _marginConverter:
         # got a margin
         ex = orange.Example(self.estdomain,[r*self.coeff,self.cv]) # need a dummy class value
         p = self.estimator(ex,orange.GetProbabilities)
-#        print "&(",r,p,')'
         return p[1]
 
 class _parseMargin(_parse):
@@ -409,15 +418,17 @@ class Visualizer:
         #print m
         #print "basis:"
         #print basis
+        self.basis = basis
         self.m = m
 
         # get the parameters of the hyperplane, and normalize it
         n = Numeric.array(coeffs, Numeric.Float)
-        length = Numeric.sqrt(Numeric.dot(n,n))
-        ilength = 1.0/length
-        n *= ilength
-        beta *= ilength
-        self.probfunc = lambda x:probfunc(x*length)
+        #length = Numeric.sqrt(Numeric.dot(n,n))
+        #ilength = 1.0/length
+        #n *= ilength
+        #beta = ilength*xbeta
+        #self.probfunc = lambda x:probfunc(x*length)
+        self.probfunc = lambda x:probfunc(x)
 
         if getexamples or getpies or dimensions > 1:
             # project the example matrix on the separating hyperplane, removing the displacement
@@ -547,8 +558,7 @@ if __name__== "__main__":
                 j += 1
         print "beta:",-m.beta
 
-
-    t = orange.ExampleTable('c:/proj/domains/breast-miss.tab') # discrete
+    t = orange.ExampleTable('c:/proj/domains/d_pima.tab') # discrete
     #t = orange.ExampleTable('c_cmc.tab') # continuous
     
     print "NAIVE BAYES"
@@ -570,6 +580,7 @@ if __name__== "__main__":
     print     "=========="
     l = orngSVM.BasicSVMLearner()
     l.kernel = 0 # linear SVM
+    l.for_nomogram = 1
     c = l(t)
     printmodel(t,c,printexamples=0)
 
@@ -577,5 +588,6 @@ if __name__== "__main__":
     print     "=========="
     l = orngSVM.BasicSVMLearner()
     l.kernel = 0 # linear SVM
+    l.for_nomogram = 1
     c = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(t)
     printmodel(t,c,printexamples=0)
