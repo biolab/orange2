@@ -237,6 +237,7 @@ class SchemaDoc(QMainWindow):
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
             newwidget.instance.signalManager = self.signalManager   # set signal manager for the widget instance
+            newwidget.instance.setEventHandler(self.canvasDlg.output.widgetEvents)
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas

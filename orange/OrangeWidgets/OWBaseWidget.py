@@ -66,6 +66,7 @@ class OWBaseWidget(QDialog):
         self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
         self.processingHandler = None   # handler for processing events
+        self.eventHandler = None
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
 
@@ -344,6 +345,22 @@ class OWBaseWidget(QDialog):
 
     def setProcessingHandler(self, handler):
         self.processingHandler = handler
+
+    def setEventHandler(self, handler):
+        self.eventHandler = handler
+
+    def printEvent(self, type, text):
+        if not self.eventHandler: return
+        if text == None:
+            self.eventHandler(text)
+        else:                
+            self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
+
+    def warning(self, text = None):
+        self.printEvent("Warning", text)
+
+    def error(self, text = None):
+        self.printEvent("Error", text)
 
     def __setattr__(self, name, value):
         if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms

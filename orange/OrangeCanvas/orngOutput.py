@@ -78,6 +78,23 @@ class OutputWindow(QMainWindow):
     def clear(self):
         self.textOutput.setText("")
     
+
+    # print text produced by warning and error widget calls
+    def widgetEvents(self, text):
+        if self.writeLogFile and text != None:
+            if os.path.exists(self.logFileName):
+                f = open(self.logFileName, "a")
+            else:
+                f = open(self.logFileName, "w")
+            f.write(str(text))
+            f.close()
+            
+        if text != None:
+            self.textOutput.append(str(text))
+            self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
+        self.canvasDlg.statusBar.message(QString(text))        
+
+    # simple printing of text called by print calls
     def write(self, text):
         # is this some extra info for debuging
         #if len(text) > 7 and text[0:7] == "<extra>":
@@ -103,7 +120,7 @@ class OutputWindow(QMainWindow):
         self.textOutput.append(str(text))
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
         if self.printOutput:
-            self.canvasDlg.setStatusBarEvent(str(text))
+            self.canvasDlg.setStatusBarEvent(text)
 
     def writelines(self, lines):
         for line in lines:
