@@ -16,6 +16,7 @@ int       BoolList_setitem_sq(TPyOrange *self, int index, PyObject *item) { retu
 PyObject *BoolList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_getslice(self, start, stop); }
 int       BoolList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_setslice(self, start, stop, item); }
 int       BoolList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_len(self); }
+PyObject *BoolList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_richcmp(self, object, op); }
 PyObject *BoolList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_concat(self, obj); }
 PyObject *BoolList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_repeat(self, times); }
 PyObject *BoolList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_str(self); }
@@ -31,7 +32,6 @@ PyObject *BoolList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *BoolList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(bool) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_remove(self, obj); }
 PyObject *BoolList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_reverse(self); }
 PyObject *BoolList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_sort(self, args); }
-inline PyObject *BoolList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PBoolList, TBoolList, bool>::_str(self); }
 
 
 
@@ -48,6 +48,7 @@ int       IntList_setitem_sq(TPyOrange *self, int index, PyObject *item) { retur
 PyObject *IntList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_getslice(self, start, stop); }
 int       IntList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_setslice(self, start, stop, item); }
 int       IntList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_len(self); }
+PyObject *IntList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_richcmp(self, object, op); }
 PyObject *IntList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_concat(self, obj); }
 PyObject *IntList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_repeat(self, times); }
 PyObject *IntList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_str(self); }
@@ -63,7 +64,6 @@ PyObject *IntList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() 
 PyObject *IntList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(int) -> None") { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_remove(self, obj); }
 PyObject *IntList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_reverse(self); }
 PyObject *IntList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_sort(self, args); }
-inline PyObject *IntList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PIntList, TIntList, int>::_str(self); }
 
 
 
@@ -80,6 +80,7 @@ int       FloatList_setitem_sq(TPyOrange *self, int index, PyObject *item) { ret
 PyObject *FloatList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_getslice(self, start, stop); }
 int       FloatList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_setslice(self, start, stop, item); }
 int       FloatList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_len(self); }
+PyObject *FloatList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_richcmp(self, object, op); }
 PyObject *FloatList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_concat(self, obj); }
 PyObject *FloatList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_repeat(self, times); }
 PyObject *FloatList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_str(self); }
@@ -95,7 +96,6 @@ PyObject *FloatList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(
 PyObject *FloatList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(float) -> None") { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_remove(self, obj); }
 PyObject *FloatList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_reverse(self); }
 PyObject *FloatList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_sort(self, args); }
-inline PyObject *FloatList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PFloatList, TFloatList, float>::_str(self); }
 
 
 
@@ -112,6 +112,7 @@ int       StringList_setitem_sq(TPyOrange *self, int index, PyObject *item) { re
 PyObject *StringList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_getslice(self, start, stop); }
 int       StringList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_setslice(self, start, stop, item); }
 int       StringList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_len(self); }
+PyObject *StringList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_richcmp(self, object, op); }
 PyObject *StringList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_concat(self, obj); }
 PyObject *StringList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_repeat(self, times); }
 PyObject *StringList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_str(self); }
@@ -127,7 +128,6 @@ PyObject *StringList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "
 PyObject *StringList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(string) -> None") { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_remove(self, obj); }
 PyObject *StringList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_reverse(self); }
 PyObject *StringList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_sort(self, args); }
-inline PyObject *StringList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PStringList, TStringList, string>::_str(self); }
 
 
 
@@ -144,6 +144,7 @@ int       LongList_setitem_sq(TPyOrange *self, int index, PyObject *item) { retu
 PyObject *LongList_getslice(TPyOrange *self, int start, int stop) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_getslice(self, start, stop); }
 int       LongList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_setslice(self, start, stop, item); }
 int       LongList_len_sq(TPyOrange *self) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_len(self); }
+PyObject *LongList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_richcmp(self, object, op); }
 PyObject *LongList_concat(TPyOrange *self, PyObject *obj) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_concat(self, obj); }
 PyObject *LongList_repeat(TPyOrange *self, int times) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_repeat(self, times); }
 PyObject *LongList_str(TPyOrange *self) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_str(self); }
@@ -159,7 +160,6 @@ PyObject *LongList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "()
 PyObject *LongList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(int) -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_remove(self, obj); }
 PyObject *LongList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_reverse(self); }
 PyObject *LongList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_sort(self, args); }
-inline PyObject *LongList_repr(TPyOrange *self) { return ListOfUnwrappedMethods<PLongList, TLongList, long>::_str(self); }
 
 
 #include "lib_vectors.px"
