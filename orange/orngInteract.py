@@ -115,7 +115,7 @@ class InteractionMatrix:
             t = orange.ExampleTable(exs)
         return t
         
-    def __init__(self, t, save_data=1, interactions_too = 1, dependencies_too=0, prepare=1, pvalues = 0, iterative_scaling=0,weighting=None):
+    def __init__(self, t, save_data=1, interactions_too = 1, dependencies_too=0, prepare=1, pvalues = 0, simple_too=0,iterative_scaling=0,weighting=None):
         if prepare:
             t = self._prepare(t)
         if save_data:
@@ -139,6 +139,7 @@ class InteractionMatrix:
         self.plut = {}
         self.ents = {}
         self.corr = {}
+        self.simple = {}
         for i in range(NA):
             if weighting != None:
                 atc = orngContingency.get2Int(t,t.domain.attributes[i],t.domain.classVar,wid=weighting)
@@ -150,6 +151,11 @@ class InteractionMatrix:
             self.ents[(i,)] = orngContingency.Entropy(atc.a)
             self.way2[(i,-1,)] = atc
             self.ents[(i,-1)] = orngContingency.Entropy(atc.m)
+            if simple_too:
+                simp = 0.0
+                for k in xrange(min(len(atc.a),len(atc.b))):
+                    simp += atc.pm[k,k]
+                self.simple[(i,-1)] = simp
             # fix the name
             st = '%s'%t.domain.attributes[i].name # copy
             self.names.append(st)
@@ -169,6 +175,11 @@ class InteractionMatrix:
                     gai = c.InteractionInformation()
                     self.ents[(j,i,)] = orngContingency.Entropy(c.m)
                     self.corr[(j,i,)] = gai
+                    if simple_too:
+                        simp = 0.0
+                        for k in xrange(min(len(c.a),len(c.b))):
+                            simp += c.pm[k,k]
+                        self.simple[(j,i)] = simp
                     if pvalues:
                         pv = orngContingency.getPvalue(gai,c)
                         self.plist.append((pv,(gai,j,i)))
@@ -640,7 +651,7 @@ class InteractionMatrix:
                         f.write("\t%d -> %d [%sweight=%d];\n"%(i,j,style,(perc/30+1)))
         f.write("}\n")
 
-    def depExportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, jaccard = 1, color_coding = 0, verbose=0, include_label=0):
+    def depExportDissimilarityMatrix(self, truncation = 1000, pretty_names = 1, jaccard = 1, simple_metric=0,color_coding = 0, verbose=0, include_label=0):
         NA = self.NA
 
         ### BEAUTIFY THE LABELS ###
@@ -691,6 +702,9 @@ class InteractionMatrix:
                 sett = range(x)
             newl = []
             for y in sett:
+                if simple_metric:
+                    t = 1-self.simple[(y,x)]
+                else:
                 t = self.corr[(y,x)]
                 if jaccard:
                     l = self.ents[(y,x)]
