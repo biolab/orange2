@@ -3331,18 +3331,74 @@ PyObject *PyEdge_New(PGraph graph, const int &v1, const int &v2, float *weights)
 
 BASED_ON(Graph, Orange)
 
+
+int Graph_getindex(TGraph *graph, PyObject *index)
+{
+  if (PyInt_Check(index)) {
+    if (!graph->myWrapper->orange_dict)
+      return PyInt_AsLong(index);
+    PyObject *fmap = PyDict_GetItemString(graph->myWrapper->orange_dict, "forceMapping");
+    if (!fmap || PyObject_IsTrue(fmap))
+      return PyInt_AsLong(index);
+  }
+
+  if (graph->myWrapper->orange_dict) {
+    PyObject *objs = PyDict_GetItemString(graph->myWrapper->orange_dict, "objects");
+    if (objs) {
+
+      if (PyDict_Check(objs)) {
+        PyObject *pyidx = PyDict_GetItem(objs, index);
+        if (!pyidx)
+          return -1;
+        if (!PyInt_Check(pyidx))
+          PYERROR(PyExc_IndexError, "vertex index should be an integer", -1);
+        return PyInt_AsLong(pyidx);
+      }
+
+      PyObject *iter = PyObject_GetIter(objs);
+      if (!iter)
+        PYERROR(PyExc_IndexError, "Graph.object should be iterable", -1);
+      int i = 0;
+  
+      for(PyObject *item = PyIter_Next(iter); item; item = PyIter_Next(iter), i++) {
+        int cmp = PyObject_Compare(item, index);
+        Py_DECREF(item);
+        if (PyErr_Occurred())
+          return -1;
+        if (!cmp) {
+          Py_DECREF(iter);
+          return i;
+        }
+      }
+
+      Py_DECREF(iter);
+      PYERROR(PyExc_IndexError, "index not found", -1);
+   }
+  }
+
+  PYERROR(PyExc_IndexError, "invalid index type: should be integer (or 'objects' must be specified)", -1);
+}
+
+
 PyObject *Graph_getitem(PyObject *self, PyObject *args)
 {
   PyTRY
-    int v1, v2;
-    if (PyArg_ParseTuple(args, "ii", &v1, &v2)) {
+    CAST_TO(TGraph, graph);
+
+    PyObject *py1, *py2;
+    int v1, v2, type = -1;
+
+    if (   !PyArg_ParseTuple(args, "OO|i", &py1, &py2, &type)
+        || ((v1 = Graph_getindex(graph, py1)) < 0)
+        || ((v2 = Graph_getindex(graph, py2)) < 0))
+      return PYNULL;
+
+    if (PyTuple_Size(args) == 2) {
       PGraph graph = PyOrange_AS_Orange(self);
       return PyEdge_New(graph, v1, v2, graph->getEdge(v1, v2));
     }
 
-    PyErr_Clear();
-    int type;
-    if (PyArg_ParseTuple(args, "iii", &v1, &v2, &type)) {
+    else {
       PGraph graph = PyOrange_AS_Orange(self);
       if ((type >= graph->nEdgeTypes) || (type < 0)) {
         PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
@@ -3354,9 +3410,6 @@ PyObject *Graph_getitem(PyObject *self, PyObject *args)
       else
         return PyFloat_FromDouble(weights[type]);
     }
-
-    PYERROR(PyExc_IndexError, "Graph is indexed by two or three integers (two vertices and a edge type)", PYNULL);
-
   PyCATCH
 }
 
@@ -3365,8 +3418,15 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
   PyTRY
     CAST_TO_err(TGraph, graph, -1);
 
-    int v1, v2, type;
-    if (PyArg_ParseTuple(args, "iii", &v1, &v2, &type)) {
+    PyObject *py1, *py2;
+    int v1, v2, type = -1;
+
+    if (   !PyArg_ParseTuple(args, "OO|i", &py1, &py2, &type)
+        || ((v1 = Graph_getindex(graph, py1)) < 0)
+        || ((v2 = Graph_getindex(graph, py2)) < 0))
+      return -1;
+
+    if (PyTuple_Size(args) == 2) {
       if ((type >= graph->nEdgeTypes) || (type < 0)) {
         PyErr_Format(PyExc_IndexError, "type %s out of range (0-%i)", type, graph->nEdgeTypes);
         return -1;
@@ -3393,9 +3453,7 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
       return 0;
     }
 
-    PyErr_Clear();
-    if (PyArg_ParseTuple(args, "ii", &v1, &v2)) {
-
+    else {
       if (!item || (item == Py_None)) {
         graph->removeEdge(v1, v2);
         return 0;
@@ -3447,15 +3505,19 @@ int Graph_setitem(PyObject *self, PyObject *args, PyObject *item)
 PyObject *Graph_getNeighbours(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
 {
   PyTRY
+    CAST_TO(TGraph, graph);
+
+    PyObject *pyv;
     int vertex, edgeType = -1;
-    if (!PyArg_ParseTuple(args, "i|i:Graph.getNeighbours", &vertex, &edgeType))
+    if (   !PyArg_ParseTuple(args, "O|i:Graph.getNeighbours", &pyv, &edgeType)
+        || ((vertex = Graph_getindex(graph, pyv)) < 0))
       return PYNULL;
 
     vector<int> neighbours;
-    if (edgeType == -1)
-      SELF_AS(TGraph).getNeighbours(vertex, neighbours);
+    if (PyTuple_Size(args) == 1)
+      graph->getNeighbours(vertex, neighbours);
     else
-      SELF_AS(TGraph).getNeighbours(vertex, edgeType, neighbours);
+      graph->getNeighbours(vertex, edgeType, neighbours);
 
     return convertToPython(neighbours);
   PyCATCH
@@ -3465,15 +3527,19 @@ PyObject *Graph_getNeighbours(PyObject *self, PyObject *args, PyObject *) PYARGS
 PyObject *Graph_getEdgesFrom(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
 {
   PyTRY
+    CAST_TO(TGraph, graph);
+
+    PyObject *pyv;
     int vertex, edgeType = -1;
-    if (!PyArg_ParseTuple(args, "i|i:Graph.getEdgesFrom", &vertex, &edgeType))
+    if (   !PyArg_ParseTuple(args, "O|i:Graph.getNeighbours", &pyv, &edgeType)
+        || ((vertex = Graph_getindex(graph, pyv)) < 0))
       return PYNULL;
 
     vector<int> neighbours;
-    if (edgeType == -1)
-      SELF_AS(TGraph).getNeighboursFrom(vertex, neighbours);
+    if (PyTuple_Size(args) == 1)
+      graph->getNeighboursFrom(vertex, neighbours);
     else
-      SELF_AS(TGraph).getNeighboursFrom(vertex, edgeType, neighbours);
+      graph->getNeighboursFrom(vertex, edgeType, neighbours);
 
     return convertToPython(neighbours);
   PyCATCH
@@ -3483,15 +3549,19 @@ PyObject *Graph_getEdgesFrom(PyObject *self, PyObject *args, PyObject *) PYARGS(
 PyObject *Graph_getEdgesTo(PyObject *self, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(vertex[, edgeType])")
 {
   PyTRY
+    CAST_TO(TGraph, graph);
+
+    PyObject *pyv;
     int vertex, edgeType = -1;
-    if (!PyArg_ParseTuple(args, "i|i:Graph.getEdgesTo", &vertex, &edgeType))
+    if (   !PyArg_ParseTuple(args, "O|i:Graph.getNeighbours", &pyv, &edgeType)
+        || ((vertex = Graph_getindex(graph, pyv)) < 0))
       return PYNULL;
 
     vector<int> neighbours;
-    if (edgeType == -1)
-      SELF_AS(TGraph).getNeighboursTo(vertex, neighbours);
+    if (PyTuple_Size(args) == 1)
+      graph->getNeighboursTo(vertex, neighbours);
     else
-      SELF_AS(TGraph).getNeighboursTo(vertex, edgeType, neighbours);
+      graph->getNeighboursTo(vertex, edgeType, neighbours);
 
     return convertToPython(neighbours);
   PyCATCH
@@ -3503,7 +3573,7 @@ PyObject *GraphAsMatrix_new(PyTypeObject *type, PyObject *args, PyObject *kwds) 
 {
   PyTRY
     int nVertices, directed, nEdgeTypes = 1;
-    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+    if (!PyArg_ParseTuple(args, "ii|i", &nVertices, &directed, &nEdgeTypes))
       PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 
     return WrapNewOrange(mlnew TGraphAsMatrix(nVertices, nEdgeTypes, directed != 0), type);
@@ -3514,7 +3584,7 @@ PyObject *GraphAsList_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
 {
   PyTRY
     int nVertices, directed, nEdgeTypes = 1;
-    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+    if (!PyArg_ParseTuple(args, "ii|i", &nVertices, &directed, &nEdgeTypes))
       PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 
     return WrapNewOrange(mlnew TGraphAsList(nVertices, nEdgeTypes, directed != 0), type);
@@ -3525,7 +3595,7 @@ PyObject *GraphAsTree_new(PyTypeObject *type, PyObject *args, PyObject *kwds) BA
 {
   PyTRY
     int nVertices, directed, nEdgeTypes = 1;
-    if (!PyArg_ParseTuple(args, "iii", &nVertices, &directed, &nEdgeTypes))
+    if (!PyArg_ParseTuple(args, "ii|i", &nVertices, &directed, &nEdgeTypes))
       PYERROR(PyExc_TypeError, "Graph.__new__: number of vertices directedness and optionaly, number of edge types expected", PYNULL);
 
     return WrapNewOrange(mlnew TGraphAsTree(nVertices, nEdgeTypes, directed != 0), type);
