@@ -187,6 +187,7 @@ extern "C" {
   Tree CopyTree(Tree), Iterate(ItemNo, ItemNo);
   Boolean Prune(Tree);
   int FormTarget(ItemNo), FormInitialWindow();
+  void ReleaseTree(Tree Node, bool clearSubsets = true);
 
   int InitialiseTreeData();
   int InitialiseWeights();
