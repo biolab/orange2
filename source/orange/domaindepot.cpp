@@ -291,7 +291,7 @@ PVariable TDomainDepot::createVariable_Python(const string &typeDeclaration, con
   }
 
 
-  const char *vartypename = typeDeclaration.c_str()+7;
+  char *vartypename = const_cast<char *>(typeDeclaration.c_str()+7);
   char *parpos = strchr(vartypename, '(');
   PyObject *var = NULL;
 
