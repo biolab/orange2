@@ -232,15 +232,16 @@ class SchemaDoc(QMainWindow):
     def removeWidget(self, widget):
         if widget.instance:
             widget.instance.saveSettings()
+            
+        while widget.inLines != []: self.removeLine1(widget.inLines[0])
+        while widget.outLines != []:  self.removeLine1(widget.outLines[0])
+                
         self.signalManager.removeWidget(widget.instance)
         self.widgets.remove(widget)
         widget.remove()
 
         self.hasChanged = TRUE
         self.canvasDlg.enableSave(TRUE)
-
-        while widget.inLines != []: self.removeLine1(widget.inLines[0])
-        while widget.outLines != []:  self.removeLine1(widget.outLines[0])
 
     def clear(self):
         while self.widgets != []:
