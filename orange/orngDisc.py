@@ -48,16 +48,23 @@ def DiscretizedLearner(baseLearner, examples=None, weight=0, **kwds):
 class DiscretizedLearner_Class:
   def __init__(self, baseLearner, discretizer=EntropyDiscretization(), **kwds):
     self.baseLearner = baseLearner
+    if hasattr(baseLearner, "name"):
+      learner.name = baseLearner.name
     self.discretizer = discretizer
     self.__dict__.update(kwds)
   def __call__(self, data, weight=None):
     # filter the data and then learn
     ddata = self.discretizer(data)
     if weight<>None:
-      model = self.baseLearner(ddata, weight=weight)
+      model = self.baseLearner(ddata, weight)
     else:
       model = self.baseLearner(ddata)
-    return DiscretizedClassifier(classifier = model, domain = model.domain)
+    dcl = DiscretizedClassifier(classifier = model)
+    if hasattr(model, "domain"):
+      dcl.domain = model.domain
+    if hasattr(model, "name"):
+      dcl.name = model.name
+    return dcl
 
 class DiscretizedClassifier:
   def __init__(self, **kwds):

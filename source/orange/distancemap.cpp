@@ -184,10 +184,10 @@ void computeSqueezedIndices(const int &n, const float &squeeze, vector<int> &ind
   int ind = 0;
   indices.push_back(ind);
   while(ind<n) {
-    float toThis = (1.0 - inThis) / squeeze;
+    float toThis = (1.0 + inThis) / squeeze;
     ind += floor(toThis);
     indices.push_back(ind);
-    inThis = fmod(inThis, toThis);
+    inThis = fmod(toThis, 1);
   }
 }
 

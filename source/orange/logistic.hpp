@@ -32,6 +32,7 @@
 #include "learn.hpp"
 #include "logfit.hpp"
 #include "imputation.hpp"
+#include "transval.hpp"
 
 // TODO: add other includings
 
@@ -44,7 +45,8 @@ public:
 	// fitter
 	PLogRegFitter fitter; //P fits beta coefficients and calculates beta errors.
 
-  PImputerConstructor imputerConstructor; //P if present, it constructs an imputer for unknown values
+    PImputerConstructor imputerConstructor; //P if present, it constructs an imputer for unknown values
+    PDomainContinuizer domainContinuizer; //P if present, it constructs continuous domain if needed; if absent, default is used
 
 	// constructors
 	TLogRegLearner();
@@ -67,6 +69,8 @@ public:
 class TLogRegClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
+
+    PDomain continuizedDomain; //P if absent, there is no continuous attributes in original domain
 
 	// coeficients
 	PAttributedFloatList beta; //P estimated beta coefficients for logistic regression

@@ -789,7 +789,7 @@ def computeCalibrationCurve(res, classIndex=-1):
         maxnPoints = 100
         if len(curve) >= 3:
 #            loessCurve = statc.loess(curve, -3, 0.6)
-            loessCurve = statc.loess(curve, maxnPoints, 10, 0.5)
+            loessCurve = statc.loess(curve, maxnPoints, 0.5, 3)
         else:
             loessCurve = curve
         clen = len(loessCurve)

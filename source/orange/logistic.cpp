@@ -21,6 +21,7 @@
 
 #include "examples.hpp"
 #include "classify.hpp"
+#include "table.hpp"
 #include "logistic.ppp"
 #include <math.h>
 
@@ -81,15 +82,34 @@ PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
 }
 
 
+TDomainContinuizer *constructDefaultLRContinuizer()
+{ 
+  TDomainContinuizer *def = mlnew TDomainContinuizer();
+  def->zeroBased = false;
+  def->normalizeContinuous = false;
+  def->multinomialTreatment = TDomainContinuizer::FrequentIsBase;
+  def->classTreatment = TDomainContinuizer::Ignore;
+  return def;
+}
+
+
+TDomainContinuizer *logisticRegressionDomainContinuizer = constructDefaultLRContinuizer();
+
 PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, int &error, PVariable &errorAt)
 { 
   PImputer imputer = imputerConstructor ? imputerConstructor->call(gen, weight) : PImputer();
   PExampleGenerator imputed = imputer ? imputer->call(gen, weight) : gen;
-  
+
   // construct classifier	
   TLogRegClassifier *lrc = mlnew TLogRegClassifier(imputed->domain);
   PClassifier cl = lrc;
   lrc->imputer = imputer;
+
+  if (imputed->domain->hasDiscreteAttributes(false)) {
+    lrc->continuizedDomain = domainContinuizer ? domainContinuizer->call(imputed, weight) : (*logisticRegressionDomainContinuizer)(imputed, weight);
+    imputed = mlnew TExampleTable(lrc->continuizedDomain, imputed);
+  }
+  
 
   // construct a LR fitter
   fitter = fitter ? fitter : PLogRegFitter(mlnew TLogRegFitter_Cholesky());
@@ -120,9 +140,11 @@ TLogRegClassifier::TLogRegClassifier(PDomain dom)
 
 PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
 {   
-	checkProperty(domain);
-	TExample cexample(domain, origexam);
-  TExample *example = imputer ? imputer->call(cexample) : &cexample;
+  checkProperty(domain);
+  TExample cexample(domain, origexam);
+
+  TExample *example2 = imputer ? imputer->call(cexample) : &cexample;
+  TExample *example = continuizedDomain ? mlnew TExample(continuizedDomain, *example2) : example2;
 
   float prob1;
   try {
@@ -145,11 +167,15 @@ PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
   }
   catch (...) {
     if (imputer)
+      mldelete example2;
+    if (continuizedDomain)
       mldelete example;
     throw;
   }
 
   if (imputer)
+    mldelete example2;
+  if (continuizedDomain)
     mldelete example;
 
   TDiscDistribution *dist = mlnew TDiscDistribution(classVar);

@@ -65,7 +65,7 @@ class TDiscrete2Continuous : public TTransformValue {
 public:
   __REGISTER_CLASS
 
-  int value; //P tvearget value
+  int value; //P target value
   bool invert; //P give 1.0 to values not equal to the target
   bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined
 
@@ -123,6 +123,8 @@ public:
   PDomain operator()(PExampleGenerator, const int &weightID, const int &targetClass = -1) const;
 };
 
+
+WRAPPER(DomainContinuizer)
 
 #endif
 

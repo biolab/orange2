@@ -32,7 +32,7 @@ class TClassifierFromVar : public TClassifier {
 public:
   __REGISTER_CLASS
 
-  PVariable whichVar; //P variable
+  PVariable whichVar; //P(+variable) variable
   PTransformValue transformer; //P transformer
   PDistribution distributionForUnknown; //P distribution for unknown value
   bool transformUnknowns; //P if false (default), unknowns stay unknown or are changed into distribution if given
