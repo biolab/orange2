@@ -453,7 +453,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.statusBar.message("")
 
     def menuItemSaveOutputWindow(self):
-        qname = QFileDialog.getSaveFileName( self.canvasDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
+        qname = QFileDialog.getSaveFileName( self.outputDir + "/Output.htm", "HTML Document (*.htm)", self, "", "Save Output To File")
         if qname.isEmpty(): return
         name = str(qname)
 
@@ -644,7 +644,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Loads settings from the widget's .ini file    
     def loadSettings(self):
-        filename = os.path.join(self.canvasDir, "orngCanvas.ini")
+        filename = os.path.join(self.outputDir, "orngCanvas.ini")
         if os.path.exists(filename):
             file = open(filename, "rb")
             self.settings = cPickle.load(file)
@@ -669,7 +669,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Saves settings to this widget's .ini file
     def saveSettings(self):
-        filename = os.path.join(self.canvasDir, "orngCanvas.ini")
+        filename = os.path.join(self.outputDir, "orngCanvas.ini")
         file=open(filename, "wb")
         cPickle.dump(self.settings, file)
         file.close()
