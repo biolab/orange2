@@ -890,6 +890,10 @@ SOURCE=.\orange\trindex.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\valuelisttemplate.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\values.hpp
 # End Source File
 # Begin Source File
