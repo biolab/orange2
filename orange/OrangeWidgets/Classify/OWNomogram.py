@@ -242,7 +242,7 @@ class OWNomogram(OWWidget):
                 d = maxAtValue-minAtValue
                 d = getDiff(d/numOfPartitions)
 
-                # get curr_num = starting point for continuous att. sampling                
+                # get curr_num = starting point for continuous att. sampling
                 curr_num = getStartingPoint(d, minAtValue)
                 rndFac = getRounding(d)                
 
@@ -263,7 +263,6 @@ class OWNomogram(OWWidget):
                             try:
                                 # compute error of loess in logistic space
                                 standard_error= math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.TargetClassIndex])
-                         #       print "predse", standard_error, math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.notTargetClassIndex])
                                 lbconditional0 = max(conditional0-standard_error, aproxZero)
                                 lbconditional1 = max(conditional1-standard_error, aproxZero)
                                 
@@ -277,7 +276,9 @@ class OWNomogram(OWWidget):
                             except:
                                 pass
                 a.continuous = True
-            self.bnomogram.addAttribute(a)        
+            # if there are more than 1 value in the attribute, add it to the nomogram
+            if len(a.attValues)>1:
+                self.bnomogram.addAttribute(a)
 
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
@@ -327,7 +328,9 @@ class OWNomogram(OWWidget):
                     a.addAttValue(AttValue("("+listOfExcludedValues[0]+","+listOfExcludedValues[1]+")", 0, error = aprox_prior_error))
                 elif len(listOfExcludedValues) > 2:
                     a.addAttValue(AttValue("Other", 0, error = aprox_prior_error))
-                self.bnomogram.addAttribute(a)    
+                # if there are more than 1 value in the attribute, add it to the nomogram
+                if len(a.attValues)>1:
+                    self.bnomogram.addAttribute(a)
                     
                 
             elif at.visited==0:
@@ -356,7 +359,9 @@ class OWNomogram(OWWidget):
                     curr_num += d
                 a.continuous = True
                 at.setattr("visited", 1)
-                self.bnomogram.addAttribute(a)
+                # if there are more than 1 value in the attribute, add it to the nomogram
+                if len(a.attValues)>1:
+                    self.bnomogram.addAttribute(a)
 
 
 
@@ -387,7 +392,7 @@ class OWNomogram(OWWidget):
         
         self.bnomogram = BasicNomogram(self, AttValue('Constant', -mult*math.log((1.0/min(max(visualizer.probfunc(0.0),aproxZero),0.9999))-1), 0))
 
-        # get maximum and minimum values in visualizer.m        
+        # get maximum and minimum values in visualizer.m
         maxMap = reduce(Numeric.maximum, visualizer.m)
         minMap = reduce(Numeric.minimum, visualizer.m)
 
@@ -441,7 +446,9 @@ class OWNomogram(OWWidget):
                 coeff = coeff + 1
                 a.continuous = True
                 
-            self.bnomogram.addAttribute(a)
+            # if there are more than 1 value in the attribute, add it to the nomogram
+            if len(a.attValues)>1:
+                self.bnomogram.addAttribute(a)
         self.cl.domain = orange.Domain(self.data.domain.classVar)
         self.graph.setCanvas(self.bnomogram)
         self.bnomogram.show()
@@ -728,17 +735,18 @@ if __name__=="__main__":
     a.setMainWidget(ow)
     data = orange.ExampleTable("titanic")
 
-    discretizer = orange.EntropyDiscretization()
-    catData = orange.Preprocessor_discretize(data, method=discretizer)
+    #discretizer = orange.EntropyDiscretization()
+    #catData = orange.Preprocessor_discretize(data, method=discretizer)
 
     bayes = orange.BayesLearner(data)
+    bayes.setattr("data",data)
     #l = orngSVM.BasicSVMLearner()
     #l.kernel = 0 # linear SVM
     #l.for_nomogram = 1
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
     #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
     ow.classifier(bayes)
-    ow.cdata(data)
+#    ow.cdata(data)
 
     # here you can test setting some stuff
     ow.show()
