@@ -62,6 +62,14 @@ STATC_API void initstatc()
     return;
 
   PyObject *me = Py_InitModule("statc", statc_functions);
+
+  PyObject *pdm = PyModule_New("pointDistribution");
+  PyModule_AddObject(pdm, "Minimal", PyInt_FromLong(DISTRIBUTE_MINIMAL));
+  PyModule_AddObject(pdm, "Factor", PyInt_FromLong(DISTRIBUTE_FACTOR));
+  PyModule_AddObject(pdm, "Fixed", PyInt_FromLong(DISTRIBUTE_FIXED));
+  PyModule_AddObject(pdm, "Uniform", PyInt_FromLong(DISTRIBUTE_UNIFORM));
+
+  PyModule_AddObject(me, "pointDistribution", pdm);
 }
 
 
@@ -1260,8 +1268,12 @@ PyObject *py_loess(PyObject *, PyObject *args)
     PyObject *pypoints;
     int nPoints;
     float windowProp;
-    if (!PyArg_ParseTuple(args, "Oif:loess", &pypoints, &nPoints, &windowProp))
+    int distMethod;
+    if (!PyArg_ParseTuple(args, "Oifi:loess", &pypoints, &nPoints, &windowProp, &distMethod))
       return PYNULL;
+
+    if ((distMethod < DISTRIBUTE_MINIMAL) || (distMethod > DISTRIBUTE_UNIFORM))
+      PYERROR(PyExc_TypeError, "invalid point distribution method", PYNULL);
 
     PyObject *iter = PyObject_GetIter(pypoints);
     if (!iter)
@@ -1292,7 +1304,7 @@ PyObject *py_loess(PyObject *, PyObject *args)
     Py_DECREF(iter);
 
     map<double, double> loess_curve;
-    loess(points, nPoints, windowProp, loess_curve);
+    loess(points, nPoints, windowProp, loess_curve, distMethod);
 
     pypoints = PyList_New(loess_curve.size());
     i = 0;

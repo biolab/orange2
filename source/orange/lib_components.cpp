@@ -2025,7 +2025,11 @@ PyObject *Heatmap_getCellIntensity(PyObject *self, PyObject *args, PyObject *) P
     if (!PyArg_ParseTuple(args, "ii:Heatmap.getCellIntensity", &row, &column))
       return NULL;
 
-    return PyFloat_FromDouble(SELF_AS(THeatmap).getCellIntensity(row, column));
+    const float ci = SELF_AS(THeatmap).getCellIntensity(row, column);
+    if (ci == UNKNOWN_F)
+      RETURN_NONE;
+
+    return PyFloat_FromDouble(ci);
   PyCATCH
 }
 
@@ -2037,7 +2041,11 @@ PyObject *Heatmap_getRowIntensity(PyObject *self, PyObject *args, PyObject *) PY
     if (!PyArg_ParseTuple(args, "i:Heatmap.getRowIntensity", &row))
       return NULL;
 
-    return PyFloat_FromDouble(SELF_AS(THeatmap).getRowIntensity(row));
+    const float ri = SELF_AS(THeatmap).getRowIntensity(row);
+    if (ri == UNKNOWN_F)
+      RETURN_NONE;
+
+    return PyFloat_FromDouble(ri);
   PyCATCH
 }
 
