@@ -26,8 +26,8 @@ class OWParallelCoordinates(OWWidget):
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
     linesDistanceNums = [20, 30, 40, 50, 60, 70, 80, 100, 120, 150]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Parallel Coordinates", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
         self.resize(700,700)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
@@ -110,7 +110,7 @@ class OWParallelCoordinates(OWWidget):
         self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
         self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
 
-        self.optimizationDlg = ParallelOptimization(self)
+        self.optimizationDlg = ParallelOptimization(self, signalManager = self.signalManager)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
         self.optimizationDlgButton = OWGUI.button(self.GeneralTab, self, "Optimization dialog", callback = self.optimizationDlg.reshow)
 
@@ -365,6 +365,8 @@ class OWParallelCoordinates(OWWidget):
     # ###### DATA ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        
         self.projections = None
         self.correlationDict = {}
         
@@ -513,8 +515,8 @@ class ParallelOptimization(OWBaseWidget):
     qualityMeasure =  ["Classification accuracy", "Average correct", "Brier score"]
     testingMethod = ["Leave one out", "10-fold cross validation", "Test on learning set"]
 
-    def __init__(self, parallelWidget, parent=None):
-        OWBaseWidget.__init__(self, parent, "Parallel Optimization Dialog", FALSE)
+    def __init__(self, parallelWidget, parent=None, signalManager = None):
+        OWBaseWidget.__init__(self, parent, signalManager, "Parallel Optimization Dialog", FALSE)
 
         self.setCaption("Qt Parallel Optimization Dialog")
         self.topLayout = QVBoxLayout( self, 10 ) 

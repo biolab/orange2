@@ -17,8 +17,8 @@ import OWGUI, string, os.path
 class OWFile(OWWidget):
     settingsList=["recentFiles", "selectedFileName"]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "File Widget")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "File Widget")
 
         self.inputs = []
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]

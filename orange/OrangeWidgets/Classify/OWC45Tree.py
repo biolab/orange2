@@ -16,8 +16,8 @@ class OWC45Tree(OWWidget):
                     "iterative", "manualWindow", "window", "manualIncrement", "increment", "trials",
                     "convertToOrange"]
 
-    def __init__(self, parent=None, name='C4.5'):
-        OWWidget.__init__(self, parent, name, "Construct a C4.5 classification tree")
+    def __init__(self, parent=None, signalManager = None, name='C4.5'):
+        OWWidget.__init__(self, parent, signalManager, name, "Construct a C4.5 classification tree")
         
         self.callbackDeposit = []
 

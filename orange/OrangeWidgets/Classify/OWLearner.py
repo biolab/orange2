@@ -36,16 +36,14 @@ class OWLearnerLearner:
 class OWLearner(OWWidget):
     settingsList = ["name", "lastPath", "functionName", "script"]
 
-    def __init__(self, parent=None, name='Learner'):
-        OWWidget.__init__(self, parent, name)
+    def __init__(self, parent=None, signalManager = None, name='Learner'):
+        OWWidget.__init__(self, parent, signalManager, name)
         
         self.callbackDeposit = []
 
-        self.addInput("cdata")
-        self.addInput("pp")
-        self.addOutput("learner")
-        self.addOutput("classifier")
-
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
+        self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
+        
         # Settings
         self.name = 'Learner'
         self.lastPath = '.'
@@ -176,11 +174,11 @@ class OWLearner(OWWidget):
             exec(str(t), r)
             self.learner = OWLearnerLearner(self.functionName, r, self)
             self.learner.name = self.name                                                                               
-            self.send("learner", self.learner)
+            self.send("Learner", self.learner)
             if self.data:
                 self.classifier = self.learner(self.data)
                 #self.classifier.name = self.name
-                self.send("classifier", self.classifier)
+                self.send("Classifier", self.classifier)
                 print self.classifier
     
     # slots: handle input signals        

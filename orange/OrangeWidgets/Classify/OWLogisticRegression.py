@@ -15,10 +15,10 @@ import OWGUI
 class OWLogisticRegression(OWWidget):
     settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation"]
 
-    def __init__ (self, parent=None, name = "Logistic regression"):    
+    def __init__ (self, parent=None, signalManager = None, name = "Logistic regression"):    
         # tu pridejo vse nastavitve
         # nastavitve: doloci = TODO
-        OWWidget.__init__(self, parent, name)
+        OWWidget.__init__(self, parent, signalManager, name)
 
         from orngTree import TreeLearner
         imputeByModel = orange.ImputerConstructor_model()
@@ -28,8 +28,6 @@ class OWLogisticRegression(OWWidget):
         self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
 
         # inputs / outputs
-        #self.addInput("cdata")
-        #self.addInput("pp")
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
         #self.addOutput("learner")

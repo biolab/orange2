@@ -18,8 +18,8 @@ from OWTools import *
 
 
 class OWAssociationRulesPrint(OWWidget):
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Association rules viewer")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
         
         self.inputs = [("AssociationRules", orange.AssociationRules, self.arules, 1)]
         self.outputs = []

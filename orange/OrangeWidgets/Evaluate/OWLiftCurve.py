@@ -10,7 +10,6 @@ from OWWidget import *
 from OWGraph import *
 from OWGUI import *
 from OWROC import *
-from OWLiftCurveOptions import *
 
 import orngEval
 import statc, math
@@ -170,8 +169,8 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Lift Curve Analysis", 1)
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Lift Curve Analysis", 1)
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]

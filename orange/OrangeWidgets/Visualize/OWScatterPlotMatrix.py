@@ -38,8 +38,8 @@ class OWScatterPlotMatrix(OWWidget):
     jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
     jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Scatterplot matrix", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Scatterplot matrix", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Attribute selection", list)] 

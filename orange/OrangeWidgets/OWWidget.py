@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent=None, title="Qt Orange Widget", wantGraph=FALSE):
+    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE):
         """
         Initialization
         Parameters: 
@@ -15,7 +15,7 @@ class OWWidget(OWBaseWidget):
             wantGraph - displays a save graph button or not
         """
 
-        apply(OWBaseWidget.__init__, (self, parent, title, wantGraph))
+        apply(OWBaseWidget.__init__, (self, parent, signalManager, title, wantGraph))
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)

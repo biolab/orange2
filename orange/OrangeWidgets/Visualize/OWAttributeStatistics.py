@@ -16,8 +16,8 @@ from OWGUI import *
 class OWAttributeStatistics(OWWidget):
     settingsList=["LastAttributeSelected"]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "AttributeStatistics", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "AttributeStatistics", TRUE)
 
         self.callbackDeposit = []
 

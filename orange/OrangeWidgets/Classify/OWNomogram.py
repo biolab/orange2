@@ -49,8 +49,8 @@ def getRounding(d):
 class OWNomogram(OWWidget):
     settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Nomogram", 1)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Nomogram", 1)
         
         self.setWFlags(Qt.WResizeNoErase | Qt.WRepaintNoErase) #this works like magic.. no flicker during repaint!
         self.parent = parent        

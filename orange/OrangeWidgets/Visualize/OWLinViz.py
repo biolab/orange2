@@ -21,8 +21,8 @@ import orngLinVis
 class OWLinViz(OWWidget):
     settingsList = []
        
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "LinViz", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "LinViz", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.newdata, 1), ("Classifier", orange.Classifier, self.learner, 0)]
         self.outputs = [] 

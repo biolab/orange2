@@ -21,9 +21,9 @@ warnings.filterwarnings("ignore", module="orngInteract")
 class OWAttributeDistance(OWWidget):	
     settingsList = ["ClassInteractions"]
 
-    def __init__(self, parent=None, name='AttributeDistance'):
+    def __init__(self, parent=None, signalManager = None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, name, 'Attribute Distance') 
+        OWWidget.__init__(self, parent, signalManager, name, 'Attribute Distance') 
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]

@@ -45,8 +45,8 @@ class OWNaiveBayesSave(OWWidget):
 #    settingsList = ["nbName", "nbDesc", "nbOutcome", "info"]
     settingsList = ["info", "fileName"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "SaveNaiveBayes")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "SaveNaiveBayes")
         
         self.dataset = None
         self.tmpWidgets = []

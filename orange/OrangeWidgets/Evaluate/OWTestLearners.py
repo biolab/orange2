@@ -26,8 +26,8 @@ class OWTestLearners(OWWidget):
              ('Brier Score', 'Brier', 'BrierScore(res)')
            )
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "TestLearners")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "TestLearners")
         
         self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
@@ -158,7 +158,13 @@ class OWTestLearners(OWWidget):
             self.results = res
             self.scores = []
             for i in range(len(self.stat)):
-                self.scores.append(eval('orngStat.' + self.stat[i][2]))
+                try:
+                    self.scores.append(eval('orngStat.' + self.stat[i][2]))
+                except:
+                    self.scores.append([-1 for c in range(len(self.learners))]) # handle the exception
+                    type, val, traceback = sys.exc_info()
+                    sys.excepthook(type, val, traceback)  # print the exception
+                    self.error("Caught an exception while evaluating classifiers")
 
         # update the tables that show the results
         self.setStatTable()

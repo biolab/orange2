@@ -64,7 +64,6 @@ class OWScatterPlotGraph(OWVisGraph):
         self.showAxisScale = 1
         self.kNNOptimization = None
         self.clusterOptimization = None
-        self.subsetData = None
         self.insideColors = None
         self.clusterClosure = None
 
@@ -82,9 +81,12 @@ class OWScatterPlotGraph(OWVisGraph):
         self.tooltipData = []
 
         # if we have some subset data then we show the examples in the data set with full symbols, others with empty
-        if self.subsetData:
+        haveSubsetData = 0
+        if self.subsetData and self.subsetData.domain == self.rawdata.domain:
             oldShowFilledSymbols = self.showFilledSymbols
             self.showFilledSymbols = 1
+            haveSubsetData = 1
+            
 
         if self.scaledData == None or len(self.scaledData) == 0:
             #self.setAxisScale(QwtPlot.xBottom, 0, 1, 1); self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
@@ -185,7 +187,8 @@ class OWScatterPlotGraph(OWVisGraph):
                 if not polygonVerticesDict.has_key(key): continue
                 for (i,j) in closureDict[key]:
                     color = classIndices[graph.objects[i].getclass().value]
-                    self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = graph[i,j][0])
+                    #self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = graph[i,j][0])
+                    self.addCurve("", classColors[color], classColors[color], 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[indices[i]][xAttr].value, self.rawdata[indices[j]][xAttr].value], yData = [self.rawdata[indices[i]][yAttr].value, self.rawdata[indices[j]][yAttr].value], lineWidth = 1)
 
             """
             self.removeMarkers()
@@ -195,7 +198,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 self.marker(mkey).setYValue(float(self.rawdata[i][yAttr].value))
                 self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
             """
-        elif self.clusterClosure: self.showClusterLines(xAttr, yAttr)        
+        elif self.clusterClosure: self.showClusterLines(xAttr, yAttr)
 
         # ##############################################################
         # show the distributions
@@ -264,7 +267,7 @@ class OWScatterPlotGraph(OWVisGraph):
             # ##############################################################
             # create a small number of curves which will make drawing much faster
             # ##############################################################
-            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not self.subsetData:
+            elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not haveSubsetData:
                 if colorIndex != -1:
                     classCount = len(colorIndices)
                     classColors = ColorPaletteHSV(classCount)
@@ -317,9 +320,6 @@ class OWScatterPlotGraph(OWVisGraph):
                     if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
-                    selected = 1
-                    if self.subsetData != None and self.rawdata[i] not in self.subsetData: selected = 0
-
                     if colorIndex != -1:
                         if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
                         else: newColor = classColors[colorIndices[self.rawdata[i][colorIndex].value]]
@@ -331,7 +331,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     size = self.pointWidth
                     if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
 
-                    if self.subsetData:  self.showFilledSymbols = selected
+                    selected = 1
+                    if haveSubsetData and self.rawdata[i] not in self.subsetData: selected = 0
+                    if haveSubsetData:  self.showFilledSymbols = selected
                     shownSubsetCount += selected
 
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
@@ -340,7 +342,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addTip(x, y, toolTipList, i)
 
                 # if we have a data subset that contains examples that don't exist in the original dataset we show them here
-                if self.subsetData != None and len(self.subsetData) != shownSubsetCount:
+                if haveSubsetData and len(self.subsetData) != shownSubsetCount:
                     self.showFilledSymbols = 1
                     for i in range(len(self.subsetData)):
                         if self.subsetData[i] in self.rawdata: continue
@@ -431,10 +433,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
 
         # restore the correct showFilledSymbols
-        if self.subsetData:
-            self.showFilledSymbols = oldShowFilledSymbols 
+        if haveSubsetData:  self.showFilledSymbols = oldShowFilledSymbols 
 
-    def showClusterLines(self, xAttr, yAttr, width = 2):
+    def showClusterLines(self, xAttr, yAttr, width = 1):
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         classIndices = getVariableValueIndices(self.rawdata, self.attributeNames.index(self.rawdata.domain.classVar.name))
 
@@ -610,6 +611,7 @@ class OWScatterPlotGraph(OWVisGraph):
             addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
             
             self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+            del valid, table
 
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %d projections)" % (testIndex))
             
@@ -646,6 +648,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 #print "evaluated projection %d" % testIndex
                 self.clusterOptimization.setStatusBarText("Evaluated %d projections..." % (testIndex))
                 self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
+                del data
             except:
                 type, val, traceback = sys.exc_info()
                 sys.excepthook(type, val, traceback)  # print the exception

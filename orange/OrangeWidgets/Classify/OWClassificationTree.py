@@ -25,8 +25,8 @@ class OWClassificationTree(OWWidget):
                 ("Gini Index", "gini"),
                 ("ReliefF", "relief"))
     
-    def __init__(self, parent=None, name='Classification Tree'):
-        OWWidget.__init__(self, parent, name)
+    def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
+        OWWidget.__init__(self, parent, signalManager, name)
         
         self.callbackDeposit = []
         self.controledAttributes = []

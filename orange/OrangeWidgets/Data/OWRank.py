@@ -20,8 +20,8 @@ from OWWidget import *
 
 class OWRank(OWWidget):
     settingsList=["Precision","ReliefK","ReliefN","DiscretizationMethod","DisplayReliefF","DisplayInfoGain","DisplayGainRatio","DisplayGini"]
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Rank")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Rank")
         
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
         self.outputs = [] 
@@ -46,7 +46,7 @@ class OWRank(OWWidget):
         self.activateLoadedSettings()
         
         #connect settingsbutton to show options
-        self.connect(self.settingsButton,SIGNAL("clicked()"),self.options.show),
+        #self.connect(self.settingsButton,SIGNAL("clicked()"),self.options.show),
                
         #connect GUI controls of options in options dialog to settings
         self.connect(self.options.displayReliefF,SIGNAL("stateChanged(int)"),self.displayReliefF) 

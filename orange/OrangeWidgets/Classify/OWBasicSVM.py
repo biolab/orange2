@@ -14,8 +14,8 @@ import orngLR_Jakulin
 class OWBasicSVM(OWWidget):
     settingsList = ["kernelMethod", "polyD", "polyG", "polyC", "rbfG", "sigmaG", "sigmaC", "nu", "p", "c", "eps", "shrinking", "nuOptionEnabled", "methodIsOneClass"]
     
-    def __init__(self, parent=None, name='Support Vector Machine'):
-        OWWidget.__init__(self, parent, name)
+    def __init__(self, parent=None, signalManager = None, name='Support Vector Machine'):
+        OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Support Vectors", ExampleTable)]

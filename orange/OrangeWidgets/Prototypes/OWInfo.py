@@ -30,10 +30,9 @@ class MyMultiLineEdit(QMultiLineEdit):
 class OWInfo(OWWidget):
     settingsList=["text"]
 
-    def __init__(self, parent=None):
-        OWBaseWidget.__init__(self, parent, "Info Widget") 
-        self.title = title.replace("&","")
-        self.captionTitle=title.replace("&","")
+    def __init__(self, parent=None, signalManager = None):
+        OWBaseWidget.__init__(self, parent, signalManager, "Info Widget") 
+        self.title = self.captionTitle = "Info Widget"
 
         # if we want the widget to show the title then the title must start with "Qt"
         if self.captionTitle[:2].upper != "QT": self.captionTitle = "Qt " + self.captionTitle

@@ -29,8 +29,8 @@ def checkColumn(widget, master, text, value):
 class OWClassificationTreeViewer(OWWidget):
     settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
 
-    def __init__(self, parent=None, name='Classification Tree Viewer'):
-        OWWidget.__init__(self, parent, name)
+    def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
+        OWWidget.__init__(self, parent, signalManager, name)
 
         self.dataLabels = (('Majority class', 'Class'),
                   ('Probability of majority class', 'P(Class)'),

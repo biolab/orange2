@@ -6,9 +6,9 @@ import orngEnsemble, orngTree
 class OWEnsemble(OWWidget):
     emlist = ["Bagging", "Boosting"]
     
-    def __init__(self, parent=None, name='Ensemble'):
+    def __init__(self, parent=None, signalManager = None, name='Ensemble'):
         OWWidget.__init__(self,
-        parent,
+        parent, signalManager, 
         name,
         """Ensemble widget.""",
         FALSE,

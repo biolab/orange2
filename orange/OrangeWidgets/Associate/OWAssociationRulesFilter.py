@@ -182,8 +182,8 @@ class AssociationRulesFilterBrowser(QCanvasView):
             self.emit(PYSIGNAL("sigNewGridAreaSelected"),(self.startX, self.startY, self.endX, self.endY, ))                                                                                                                                              
         
 class OWAssociationRulesFilter(OWWidget):
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "AssociationRulesFilter")
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "AssociationRulesFilter")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules, 1)]
         self.outputs = [("Association Rules", orange.AssociationRules)]

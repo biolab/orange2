@@ -18,9 +18,9 @@ import random
 class OWExampleDistance(OWWidget):	
     settingsList = ["Metrics"]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, 'ExampleDistance') 
+        OWWidget.__init__(self, parent, signalManager, 'ExampleDistance') 
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]

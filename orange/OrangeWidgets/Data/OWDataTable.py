@@ -21,8 +21,8 @@ import OWGUI
 class OWDataTable(OWWidget):
     settingsList = []
 
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Data Table")
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Data Table")
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = []

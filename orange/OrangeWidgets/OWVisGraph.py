@@ -94,6 +94,7 @@ class OWVisGraph(OWGraph):
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
         self.tooltip = MyQToolTip(self)
+        self.subsetData = None
 
         self.state = ZOOMING
         self.tempSelectionCurve = None
@@ -325,15 +326,17 @@ class OWVisGraph(OWGraph):
                 arr = arr * colors.maxHueVal
         return (arr, values)
 
+    # scale example's value at index index to a range between 0 and 1 with respect to self.rawdata
     def scaleExampleValue(self, example, index):
         if example[index].isSpecial(): return 0
         if example.domain[index].varType == orange.VarTypes.Discrete:
-            return getVariableValueIndices(example, index)[example[index].value]
+            d = getVariableValueIndices(example, index)
+            return (d[example[index].value]*2 + 1) / float(2*len(d))
         else:
             [min, max] = self.attrValues[example.domain[index].name]
-            if example[index] < min: return 0
+            if example[index] < min:   return 0
             elif example[index] > max: return 1
-            else: return example[index] - min / float(max - min)
+            else: return (example[index] - min) / float(max - min)
         
 
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):

@@ -39,8 +39,8 @@ class IntGraphView(QCanvasView):
 class OWInteractionGraph(OWWidget):
     settingsList = ["onlyImportantInteractions"]
     
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Interaction graph")
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Examples", ExampleTable), ("view", tuple), ("Selection", list)]

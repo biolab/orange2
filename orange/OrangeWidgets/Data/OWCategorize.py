@@ -25,8 +25,8 @@ from OWWidget import *
 class OWCategorize(OWWidget):
     settingsList = ["Categorization", "NumberOfIntervals", "ShowIntervals"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Categorize")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Categorize")
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]

@@ -188,8 +188,8 @@ class singleClassCalibrationPlotGraph(OWGraph):
 
 class OWCalibrationPlot(OWWidget):
     settingsList = ["CalibrationCurveWidth", "ShowDiagonal", "ShowRugs"]
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Calibration Plot", 1)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Calibration Plot", 1)
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results)] ##, ("Target", int, self.target, 1)]

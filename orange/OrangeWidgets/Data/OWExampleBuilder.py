@@ -16,8 +16,8 @@ from random import *
 class OWExampleBuilder(OWWidget):
     settingsList=["codeStr", "domainStr", "numStr"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self,parent, "ExampleBuilder")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self,parent, signalManager, "ExampleBuilder")
 
         self.inputs = []
         self.outputs = [("Classified Examples", ExampleTableWithClass)]

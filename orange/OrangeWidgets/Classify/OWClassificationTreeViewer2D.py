@@ -316,12 +316,12 @@ class OWClassificationTreeViewer2D(OWWidget):
                     "NodeSize", "NodeInfo", "NodeInfoSorted", "NodeColorMethod",
                     "ShowPies", "TruncateText"]
 
-    def __init__(self, parent=None, name='ClassificationTreeViewer2D'):
+    def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
         self.canvas = None
         self.root = None
         self.selectedNode = None
-        OWWidget.__init__(self, parent, name) 
+        OWWidget.__init__(self, parent, signalManager, name) 
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree), ("Target Class Value", int, self.target)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]

@@ -17,8 +17,8 @@ from OWTools import *
 
 
 class OWAssociationRulesViewer(OWWidget):
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Association rules viewer")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Association rules viewer")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = []

@@ -15,11 +15,8 @@ from random import *
 
 class OWSubsetGenerator(OWWidget):
     settingsList=["applyGenerateExact"]
-    def __init__(self,parent=None):
-        OWWidget.__init__(self,parent,"&SubsetGenerator",
-        "Create exaple table subset",
-        wantSettings = FALSE, wantGraph = FALSE)
-        "Constructor"
+    def __init__(self,parent = None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "&SubsetGenerator")
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)] 

@@ -25,8 +25,8 @@ class colorItem(QTableItem):
 class OWClassifiedDataTable(OWWidget):
     settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod", "sendDataType", "commitOnChange"]
 
-    def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Classifications")
+    def __init__(self, parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Classifications")
 
         self.callbackDeposit = []
         self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, 0)]

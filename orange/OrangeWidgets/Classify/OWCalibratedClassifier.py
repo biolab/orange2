@@ -48,8 +48,8 @@ class ThresholdGraph(OWGraph):
     
 class OWCalibratedClassifier(OWWidget):
     settingsList = ["name", "optimalThreshold", "threshold"]
-    def __init__(self,parent=None, name = "Calibrated Classifier"):
-        OWWidget.__init__(self, parent, name, "Construct a calibration wrapper for classifier")
+    def __init__(self,parent=None, signalManager = None, name = "Calibrated Classifier"):
+        OWWidget.__init__(self, parent, signalManager, name, "Construct a calibration wrapper for classifier")
         
         self.callbackDeposit = []
 

@@ -10,8 +10,8 @@ from OWWidget import *
 import orngAssoc, OWGUI
 
 class OWAssociationRules(OWWidget):
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "AssociationRules")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "AssociationRules")
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Association Rules", orange.AssociationRules),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]

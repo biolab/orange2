@@ -18,8 +18,8 @@ from orngCI import FeatureByCartesianProduct
 class OWSieveMultigram(OWWidget):
     settingsList = ["maxLineWidth", "pearsonMinRes", "pearsonMaxRes"]
             
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve Multigram", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Sieve Multigram", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.data), ("Selection", list, self.selection)]
         self.outputs = [] 

@@ -18,9 +18,9 @@ from OWDistributions import *
 class OWDistributionsMatrix(OWWidget):
     settingsList = ["NumberOfBars", "BarSize", "ShowProbabilities", "ShowConfidenceIntervals", "SmoothLines", "LineWidth", "ShowMainTitle", "ShowXaxisTitle", "ShowYaxisTitle", "ShowYPaxisTitle"]
 
-    def __init__(self,parent=None):
+    def __init__(self,parent=None, signalManager = None):
         "Constructor"
-        OWWidget.__init__(self, parent, "&Distributions Matrix", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "&Distributions Matrix", TRUE)
 
         # inputs
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]

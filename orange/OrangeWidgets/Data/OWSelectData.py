@@ -81,8 +81,8 @@ class OWSelectData(OWWidget):
     ############################################################################################################################################################
     ## Class initialization ####################################################################################################################################
     ############################################################################################################################################################
-    def __init__(self, parent = None, name = "Select data"):
-        OWWidget.__init__(self, parent, name, 'Select Data')  #initialize base class
+    def __init__(self, parent = None, signalManager = None, name = "Select data"):
+        OWWidget.__init__(self, parent, signalManager, name, 'Select Data')  #initialize base class
 
         buttonSize = QSize(80, 40)
 

@@ -281,9 +281,9 @@ class OWDistributionGraph(OWVisGraph):
 class OWDistributions(OWWidget):
     settingsList = ["numberOfBars", "barSize", "showProbabilities", "showConfidenceIntervals", "smoothLines", "lineWidth", "showMainTitle", "showXaxisTitle", "showYaxisTitle", "showYPaxisTitle"]
 
-    def __init__(self,parent=None):
+    def __init__(self,parent=None, signalManager = None):
         "Constructor"
-        OWWidget.__init__(self, parent, "&Distributions", TRUE)
+        OWWidget.__init__(self, parent, signalManager, "&Distributions", TRUE)
         # settings
         self.numberOfBars = 5
         self.barSize = 50

@@ -22,8 +22,8 @@ class OWSurveyPlot(OWWidget):
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Survey Plot", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Selection", list)] 

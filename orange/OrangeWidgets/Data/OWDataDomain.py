@@ -19,8 +19,8 @@ class OWDataDomain(OWWidget):
     ############################################################################################################################################################
     ## Class initialization ####################################################################################################################################
     ############################################################################################################################################################
-    def __init__(self,parent = None):
-        OWWidget.__init__(self, parent, "Data Domain") #initialize base class
+    def __init__(self,parent = None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Data Domain") #initialize base class
 
         buttonSize = QSize(40, 30)
         upDownButtonSize = QSize(37,30)

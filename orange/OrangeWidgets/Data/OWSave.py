@@ -17,8 +17,8 @@ import OWGUI
 class OWSave(OWWidget):
     settingsList=["recentFiles","selectedFileName"]
 
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Save Widget")
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Save Widget")
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = []

@@ -25,8 +25,8 @@ from OWGUI import checkBox
 class OWMosaicDisplay(OWWidget):
     settingsList = ["horizontalDistribution", "showDistribution", "showAprioriDistribution"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Mosaic display", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Mosaic display", TRUE)
 
         #set default settings
         self.data = None

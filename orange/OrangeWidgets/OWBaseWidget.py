@@ -32,6 +32,7 @@ class OWBaseWidget(QDialog):
     def __init__(
     self,
     parent = None,
+    signalManager = None,
     title="Qt Orange BaseWidget",
     wantGraph = FALSE,
     modal=FALSE
@@ -56,9 +57,9 @@ class OWBaseWidget(QDialog):
 
         # number of control signals, that are currently being processed
         # needed by signalWrapper to know when everything was sent
-        #self.stackHeight = 0
         self.needProcessing = 0     # used by signalManager
-        self.signalManager = None
+        if not signalManager: self.signalManager = globalSignalManager        # use the global instance of signalManager  - not advised
+        else:                 self.signalManager = signalManager              # use given instance of signal manager
 
         self.inputs = []     # signalName:(dataType, handler, onlySingleConnection)
         self.outputs = []    # signalName: dataType
@@ -104,10 +105,7 @@ class OWBaseWidget(QDialog):
         else:
             self.linksOut[signalName] = {id:value}
             
-        if self.signalManager:
-            self.signalManager.send(self, signalName, value, id)
-        else:
-            signalManager.send(self, signalName, value, id)
+        self.signalManager.send(self, signalName, value, id)
 
     # Set all settings
     # settings - the map with the settings       
@@ -146,7 +144,12 @@ class OWBaseWidget(QDialog):
         
     def saveSettings(self, file = None):
         if hasattr(self, "settingsList"):
-            settings = dict([(name, getattr(self, name)) for name in self.settingsList])
+            #settings = dict([(name, getattr(self, name)) for name in self.settingsList])
+            settings = {}
+            for name in self.settingsList:
+                if hasattr(self, name): settings[name] =  getattr(self, name)
+                else:                   print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
+                    
             if file==None:
                 if not os.path.exists(self.widgetDir + "widgetSettings/"):
                     os.mkdir(self.widgetDir + "widgetSettings")
@@ -223,14 +226,18 @@ class OWBaseWidget(QDialog):
             if input.name == signalName: return input.single
 
     def addInputConnection(self, widgetFrom, signalName):
-        handler = None
-        for i in self.inputs:
-            input = InputSignal(*i)
-            if signalName == input.name: handler = input.handler
+        for i in range(len(self.inputs)):
+            if self.inputs[i][0] == signalName:
+                handler = self.inputs[i][2]
+                break
             
         existing = []
-        if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
+        if self.linksIn.has_key(signalName):
+            existing = self.linksIn[signalName]
+            for (dirty, widget, handler, data) in existing:
+                if widget == widgetFrom: return             # no need to add new tuple, since one from the same widget already exists
         self.linksIn[signalName] = existing + [(0, widgetFrom, handler, [])]    # (dirty, handler, signalData)
+        #if not self.linksIn.has_key(signalName): self.linksIn[signalName] = [(0, widgetFrom, handler, [])]    # (dirty, handler, signalData)
 
     # delete a link from widgetFrom and this widget with name signalName
     def removeInputConnection(self, widgetFrom, signalName):
@@ -245,8 +252,6 @@ class OWBaseWidget(QDialog):
 
     # return widget, that is already connected to this singlelink signal. If this widget exists, the connection will be deleted (since this is only single connection link)
     def removeExistingSingleLink(self, signal):
-        #(type, handler, single) = self.inputs[signal]
-        #if not single: return []
         for i in self.inputs:
             input = InputSignal(*i)
             if input.name == signal and not input.single: return None
@@ -261,8 +266,6 @@ class OWBaseWidget(QDialog):
         
     # signal manager calls this function when all input signals have updated the data
     def processSignals(self):
-        #if self.stackHeight > 0: return  # if this widet is already processing something return
-
         if self.processingHandler: self.processingHandler(self, 1)    # focus on active widget
         
         # we define only a way to handle signals that have defined a handler function
@@ -294,7 +297,18 @@ class OWBaseWidget(QDialog):
         for i in range(len(self.linksIn[signalName])):
             (dirty, widget, handler, signalData) = self.linksIn[signalName][i]
             if widget == widgetFrom:
-                self.linksIn[signalName][i] = (1, widget, handler, signalData + [(value, id)])
+                if self.linksIn[signalName][i][3] == []:
+                    self.linksIn[signalName][i] = (1, widget, handler, [(value, id)])
+                else:
+                    found = 0
+                    for j in range(len(self.linksIn[signalName][i][3])):
+                        (val, ID) = self.linksIn[signalName][i][3][j]
+                        if ID == id:
+                            print self.linksIn[signalName][i][3][j][0], value
+                            self.linksIn[signalName][i][3][j] = (value, id)
+                            found = 1
+                    if not found:
+                        self.linksIn[signalName][i] = (1, widget, handler, self.linksIn[signalName][i][3] + [(value, id)])
         self.needProcessing = 1
 
 
@@ -342,7 +356,7 @@ class OWBaseWidget(QDialog):
 
     def printEvent(self, type, text):
         # if we are in debug mode print the event into the file
-        if self.signalManager and text: self.signalManager.addEvent(type + " from " + self.captionTitle[3:] + ": " + text)
+        if text: self.signalManager.addEvent(type + " from " + self.captionTitle[3:] + ": " + text)
         
         if not self.eventHandler: return
         if text == None:

@@ -50,9 +50,9 @@ class OWDistanceMap(OWWidget):
     settingsList = ["CellWidth", "CellHeight", "Merge", "Gamma", "CutLow", "CutHigh", "CutEnabled", "Sort",
                     "ShowLegend", "ShowAnnotations", "ShowBalloon", "ShowItemsInBalloon", "SendOnRelease", "ColorSchemas"]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback function
-        OWWidget.__init__(self, parent, 'Distance Map') 
+        OWWidget.__init__(self, parent, signalManager, 'Distance Map') 
 
         self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass),("Attribute List", orange.VarList)]

@@ -16,8 +16,8 @@ from OWWidget import *
 class OWOutcome(OWWidget):
     settingsList = []
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, 'Outcome Widget')
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, 'Outcome Widget')
         
         self.inputs = [("Examples", ExampleTable, self.examples)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("target", int)]

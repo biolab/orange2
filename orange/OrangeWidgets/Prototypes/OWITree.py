@@ -75,8 +75,8 @@ class TL:
 #--------------novo
 
 class OWITree(OWClassificationTreeViewer):
-    def __init__(self,parent = None):
-        OWClassificationTreeViewer.__init__(self, parent, 'I&nteractive Tree Builder')
+    def __init__(self,parent = None, signalManager = None):
+        OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
 
 
         #set default settings
@@ -114,7 +114,7 @@ class OWITree(OWClassificationTreeViewer):
 #        self.connect(self.table, SIGNAL("doubleClicked(int,int,int,const QPoint&)"), self.tableDoubleClick)
 
     def fillBxMeasure(self):
-        self.cmbMeasure = OWGUI.comboBox(self.bxMeasure, self, "attrMeasure", None, ["Information Gain", "Gain Ration", "Gini Index", "ReliefF"], "Measure for ranking the attributes", self.measureChanged, 0)
+        self.cmbMeasure = OWGUI.comboBox(self.bxMeasure, self, "attrMeasure", items = ["Information Gain", "Gain Ration", "Gini Index", "ReliefF"], tooltip = "Measure for ranking the attributes", callback = self.measureChanged)
         if self.attrMeasure == 3:
             self.sldReliefN = OWGUI.qwtHSlider(self.bxMeasure, self, "ReliefN", None, "Reference points ", None, minValue = 20, maxValue = 1000, step = 10, precision = 1, callback = self.measureChanged)
             self.sldReliefK = OWGUI.qwtHSlider(self.bxMeasure, self, "ReliefK", None, "Neighbours ", None, minValue = 1, maxValue = 50, step = 1, precision = 1, callback = self.measureChanged)

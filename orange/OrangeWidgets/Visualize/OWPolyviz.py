@@ -29,8 +29,8 @@ class OWPolyviz(OWWidget):
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
     scaleFactorList = [str(x) for x in scaleFactorNums]
         
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Polyviz", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
@@ -92,8 +92,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
 
-        self.optimizationDlg = kNNOptimization(None, self.graph)
-        self.optimizationDlg.parentName = "Polyviz"
+        self.optimizationDlg = kNNOptimization(None, self.signalManager, self.graph, "Polyviz")
         self.graph.kNNOptimization = self.optimizationDlg
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -444,6 +443,7 @@ class OWPolyviz(OWWidget):
     # ###### CDATA signal ################################
     # receive new data and update all fields
     def cdata(self, data):
+        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
         self.optimizationDlg.clearResults()
         self.optimizationDlg.setData(data)  # set k value to sqrt(n)
         exData = self.data

@@ -20,9 +20,9 @@ from OWWidget import *
 class OWKMeans(OWWidget):	
     settingsList = ["K", "DistanceMeasure"]
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, signalManager = None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, 'k-Means Clustering') 
+        OWWidget.__init__(self, parent, signalManager, 'k-Means Clustering') 
         
         self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]

@@ -21,8 +21,8 @@ from orngCI import FeatureByCartesianProduct
 class OWSieveDiagram(OWWidget):
     settingsList = ["showLines"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve diagram", TRUE)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "Sieve diagram", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.data, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = []

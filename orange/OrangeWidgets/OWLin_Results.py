@@ -20,9 +20,9 @@ from OWWidget import *
 import math, orngLR
 
 class OWLin_Results(OWWidget):
-    def __init__(self,parent=None):
+    def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self,
-        parent,
+        parent, signalManager,
         "Linear Results",
         """Linear Results is an Orange Widget that
 shows regression coeficients of attributes estimated in a regression learner

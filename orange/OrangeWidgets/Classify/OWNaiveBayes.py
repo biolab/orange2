@@ -21,8 +21,8 @@ import OWGUI, orange
 class OWNaiveBayes(OWWidget):
     settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation", "adjustThreshold", "windowProportion"]
     
-    def __init__(self, parent=None, name='NaiveBayes'):
-        OWWidget.__init__(self, parent, name)
+    def __init__(self, parent=None, signalManager = None, name='NaiveBayes'):
+        OWWidget.__init__(self, parent, signalManager, name)
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]

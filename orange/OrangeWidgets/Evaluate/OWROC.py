@@ -585,8 +585,8 @@ class OWROC(OWWidget):
     settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor", "AveragingMethodIndex",
                     "ShowConvexHull", "ShowConvexCurves", "EnablePerformance"]
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "ROC Analysis", 1)
+    def __init__(self,parent=None, signalManager = None):
+        OWWidget.__init__(self, parent, signalManager, "ROC Analysis", 1)
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.test_results, 1), ("Target", int, self.target, 1)]
