@@ -64,6 +64,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.table = 0
         self.verticalSpacing = 40
         self.verticalSpacingContinuous = 100
+        self.diff_between_ordinal = 30
         self.fontSize = 9
         self.lineWidth = 1
         self.bubble = 1
@@ -192,8 +193,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             stat = orange.DomainBasicAttrStat(self.data)
 
         for at in range(len(att)):
-            a = AttrLine(att[at].name, self.bnomogram)
             if att[at].varType == orange.VarTypes.Discrete:
+                if att[at].ordered:
+                    a = AttrLineOrdered(att[at].name, self.bnomogram)
+                else:
+                    a = AttrLine(att[at].name, self.bnomogram)
                 for cd in cl.conditionalDistributions[at].keys():
                     # calculuate thickness
                     conditional0 = max(cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], 0.00000001)
@@ -209,6 +213,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                         
                     a.addAttValue(AttValue(str(cd), beta, lineWidth=thickness, error = se))
             else:
+                a = AttrLineCont(att[at].name, self.bnomogram)
                 numOfPartitions = 50 
 
                 if self.data:
@@ -241,8 +246,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                             d_filter = d_filter[len(d_filter)/2]
                             conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], 0.00000001)
                             conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[self.notTargetClassIndex]], 0.00000001)
-                            a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), math.log(conditional0/conditional1/prior),lineWidth=thickness))
-                        
+                            try:
+                                a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), math.log(conditional0/conditional1/prior),lineWidth=thickness))
+                            except:
+                                pass
                 a.continuous = True
             self.bnomogram.addAttribute(a)        
 
@@ -270,8 +277,10 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if at.getValueFrom and at.visited==0:
                 name = at.getValueFrom.variable.name
                 var = at.getValueFrom.variable
-                print name, var
-                a = AttrLine(name, self.bnomogram)
+                if var.ordered:
+                    a = AttrLineOrdered(name, self.bnomogram)
+                else:
+                    a = AttrLine(name, self.bnomogram)
                 listOfExcludedValues = []
                 for val in var.values:
                     foundValue = False
@@ -294,7 +303,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             elif at.visited==0:
                 name = at.name
                 var = at
-                a = AttrLine(name, self.bnomogram)
+                a = AttrLineCont(name, self.bnomogram)
                 if self.data:
                     bas = orange.DomainBasicAttrStat(self.data)
                     maxAtValue = bas[var].max
@@ -348,13 +357,16 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             if type(c[1])==str:
                 for i in range(len(c)):
                     if i == 0:
-                        a = AttrLine(c[i], self.bnomogram)
+                        if self.data.domain[c[0]].ordered:
+                            a = AttrLineOrdered(c[i], self.bnomogram)
+                        else:
+                            a = AttrLine(c[i], self.bnomogram)                            
                         at_num = at_num + 1
                     else:
                         a.addAttValue(AttValue(c[i], mult*visualizer.coeffs[coeff]))
                         coeff = coeff + 1
             else:
-                a = AttrLine(c[0], self.bnomogram)
+                a = AttrLineCont(c[0], self.bnomogram)
 
                 # get min and max from Data and transform coeff accordingly
                 maxNew=maxMap[coeff]
@@ -385,10 +397,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 
             self.bnomogram.addAttribute(a)
         self.cl.domain = orange.Domain(self.data.domain.classVar)
-#        self.cl.domain.classVar = orange
-#        self.cl.domain.classVar.values = self.data.domain.classVar.values       
         self.graph.setCanvas(self.bnomogram)
-#        self.bnomogram.printOUT()
         self.bnomogram.show()
        
     def classifier(self, cl):
@@ -442,13 +451,12 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         if self.data and self.cl: # and not type(self.cl) == orngLR_Jakulin.MarginMetaClassifier:
             #check domains
             for at in self.cl.domain:
-                if at.getValueFrom and ('variable' in dir(at.getValueFrom)):
-                    if not at.getValueFrom.variable in self.data.domain:
+                if at.getValueFrom and hasattr(at.getValueFrom, "variable"):
+                    if (not at.getValueFrom.variable in self.data.domain) and (not at in self.data.domain):
                         return
                 else:
                     if not at in self.data.domain:
                         return
-
         if type(self.cl) == orange.BayesClassifier:
             if len(self.cl.domain.classVar.values)>2:
                 QMessageBox("OWNomogram:", " Please use only Bayes classifiers that are induced on data with dichotomous class!", QMessageBox.Warning,
@@ -456,7 +464,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             else:
                 self.nbClassifier(self.cl)
         elif type(self.cl) == orngLR_Jakulin.MarginMetaClassifier and self.data:
-                self.svmClassifier(self.cl)
+            self.svmClassifier(self.cl)
 
         elif type(self.cl) == orange.LogRegClassifier:
             # get if there are any continuous attributes in data -> then we need data to compute margins
@@ -494,6 +502,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         def compare_beta_negative(x, y):
             return sign(x.minValue-y.minValue)
 
+        if not self.bnomogram:
+            return
+        
         if self.sort_type == 0 and self.data:
             self.bnomogram.attributes.sort(compare_to_ordering_in_data)               
         if self.sort_type == 1:
@@ -569,7 +580,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         
     # Callbacks
     def showNomogram(self):
-        if self.bnomogram:
+        if self.bnomogram and self.cl:
             self.bnomogram.show()
 
 
@@ -580,13 +591,29 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("d:\\delo\\data\\ionosphere")
-    bayes = orange.BayesLearner(data)
+    data = orange.ExampleTable("titanic")
+
+    discretizer = orange.EntropyDiscretization()
+    catData = orange.Preprocessor_discretize(data, method=discretizer)
+
+    # remove attributes that were discretized to a constant
+    attrlist = []
+    nrem=0
+    for i in catData.domain.attributes:
+        if (len(i.values)>1):
+            attrlist.append(i)
+
+    attrlist.append(catData.domain.classVar)
+    newData = catData.select(attrlist)
+    for at in newData.domain.attributes:
+        at.ordered = True
+    
+    bayes = orange.BayesLearner(newData)
     #l = orngSVM.BasicSVMLearner()
     #l.kernel = 0 # linear SVM
     #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
-    ow.classifier(logistic)
+    #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(titanic)
     ow.cdata(data)
 
     # here you can test setting some stuff

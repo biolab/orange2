@@ -76,7 +76,7 @@ class Descriptor(QCanvasRectangle):
 
     def drawAll(self, x, y):
         def getNearestAtt(selectedBeta):
-            if self.attribute.continuous:
+            if isinstance(self.attribute, AttrLineCont):
                 for i in range(len(self.attribute.attValues)):
                     if self.attribute.attValues[i].betaValue==selectedBeta:
                         nearestRight = self.attribute.attValues[i]
@@ -118,7 +118,7 @@ class Descriptor(QCanvasRectangle):
         
 
         # continuous? --> get attribute value
-        if self.attribute.continuous:
+        if isinstance(self.attribute, AttrLineCont):
             self.valName.setText("Value:")
             if len(self.attribute.selectedValue)==4:
                 self.value.setText(str(round(self.attribute.selectedValue[3],2)))
@@ -345,8 +345,8 @@ class AttValue:
                 self.histogram.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-canvasLength)
             if not self.hideAtValue:
                 self.text.show()
-#            else:
-#                self.text.hide()
+            else:
+                self.text.hide()
             if canvas.parent.histogram:
                 self.histogram.show()
 #            else:
@@ -354,7 +354,7 @@ class AttValue:
         # if value is disabled, draw just a symbolic line        
         else:
             self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/4)
-#            self.text.hide()
+            self.text.hide()
 
         # show confidence interval
         if self.showErr:
@@ -386,75 +386,31 @@ class AttValue:
                         add = -add - 2
                     self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
             self.errorLine.show()
-#        else:
-#            self.errorLine.hide()
-
- #       if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
-  #          self.labelMarker.setPen(QPen(Qt.black, 4))
-   #     else:
-    #        self.labelMarker.setPen(QPen(Qt.black, 1))
         self.labelMarker.show()        
 
     def toString(self):
         return self.name, "beta =", self.betaValue
 
-# this class represent attribute in nomogram
-# Attributes:
-#   * name - name of attribute
-#   * TDposition - line number
-#   * attValues - set of values
-#   * minValue, maxValue - minValues and maxValues of attribute
+
+# This is a base class for representing all different possible attributes in nomogram.
+# Use it only for discrete/non-ordered values
 class AttrLine:
-    def __init__(self, name, canvas, continuous = False):
+    def __init__(self, name, canvas):
         self.name = name
         self.attValues = []
         self.minValue = self.maxValue = 0
-        self.continuous = continuous
         self.selectedValue = None
         self.initialize(canvas)
-        self.initialized = False # complet initialization atm is not possible
-        self.cAtt = None
-
-    def destroy(self):
-        self.label.hide()
-        self.line.hide()
-        self.box.hide()
-        for obj in self.contValues:
-            obj.hide()
-        for obj in self.contLabel:
-            obj.hide()
-        self.marker.hide()
-
-        for at in self.attValues:
-            at.destroy()
 
     def addAttValue(self, attValue):
-        if self.attValues == []:
-            self.minValue = attValue.betaValue
-            self.maxValue = attValue.betaValue
         self.attValues.append(attValue)
-        if attValue.betaValue>self.maxValue:
-            self.maxValue = attValue.betaValue
-        if attValue.betaValue<self.minValue:
-            self.minValue = attValue.betaValue
-            
-    def removeAttValue(self, attValue):
-        self.attValues.remove(attValue)
-        # change max and min value TODO
-        
-    def convertToPercent(self, canvas):
-        minPercent = exp(self.minValue)/(1+exp(self.minValue))
-        maxPercent = exp(self.maxValue)/(1+exp(self.maxValue))
+        self.minValue = min(self.minValue, attValue.betaValue)
+        self.maxValue = max(self.maxValue, attValue.betaValue)
 
-        percentLine = AttrLine(self.name, canvas)
-        percentList = filter(lambda x:x>minPercent and x<maxPercent,arange(0, maxPercent+0.1, 0.05))
-        for p in percentList:
-            if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1, enable = False))
-            else:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
-        return percentLine
+    def getHeight(self, canvas):      
+        return canvas.parent.verticalSpacing
 
+    # Find the closest (selectable) point to mouse-clicked one.
     def updateValueXY(self, x, y):
         oldSelect = self.selectedValue
         minXDiff = 50
@@ -470,8 +426,11 @@ class AttrLine:
             return False
         else:
             self.marker.setPos(self.selectedValue[0], self.selectedValue[1])
-            return True
-                
+            return True    
+
+    # Update position of the marker!
+    # This is usualy necessary after changing types of nomogram, for example left-aligned to center-aligned.
+    # In this situations selected beta should stay the same, but x an y of the marker must change!
     def updateValue(self):
         if not self.selectedValue:
             return
@@ -482,8 +441,7 @@ class AttrLine:
                 self.selectedValue = xyCanvas
                 minBetaDiff = abs(beta-xyCanvas[2])
         self.marker.setPos(self.selectedValue[0], self.selectedValue[1])
-                
-                
+
     def initialize(self, canvas):
         self.label = QCanvasText(canvas)
         self.label.setText(self.name)
@@ -495,47 +453,7 @@ class AttrLine:
         # create blue probability marker
         self.marker = AttValueMarker(self, canvas, 50)
 
-        # continuous attributes        
-        self.box = QCanvasRectangle(canvas)
-        self.box.setPen(QPen(Qt.DotLine))
-        self.contValues = []
-        self.contLabel = []
-
-
-
-    def initializeBeforePaint(self, canvas):
-        if self.continuous:
-            self.atNames = AttrLine(self.name, canvas)
-            for at in self.attValues:
-                self.atNames.addAttValue(AttValue(at.name, float(at.name)))
-            verticalRect = QRect(0, 0, canvas.parent.verticalSpacingContinuous, canvas.parent.verticalSpacingContinuous)
-            verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
-            label = verticalMapper.getHeaderLine(canvas, QRect(0,0,canvas.parent.verticalSpacingContinuous, canvas.parent.verticalSpacingContinuous)) 
-            for val in label.attValues:
-                # draw value
-                a = QCanvasText(val.name, canvas)
-                a.setTextFlags(Qt.AlignRight)
-                a.marker = QCanvasLine(canvas)
-                a.marker.setZ(5)
-                self.contLabel.append(a)
-
-            #line objects
-            for at in self.attValues:
-                a = QCanvasLine(canvas)
-                a.setPen(QPen(Qt.black, at.lineWidth))
-                self.contValues.append(a)
-
-                # for 1d cont space
-                at.setCreation(canvas)
-           
-        self.initialized = True    
-                
-    
-        
-    def paint(self, canvas, rect, mapper):
-        if not self.initialized:
-            self.initializeBeforePaint(canvas)
-        self.label.setText(self.name)
+    def drawAttributeLine(self, canvas, rect, mapper):
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
         self.label.setX(1)
         self.label.setY(rect.bottom()-canvas.fontSize)
@@ -553,75 +471,48 @@ class AttrLine:
         if not self.selectedValue:
             self.selectedValue = self.selectValues[0]
         
-        # continuous attributes are handled differently
-        if self.continuous:
-            #disable all enabled values
- #           for at in self.attValues:
- #               at.hide()
-            self.cAtt = self.shrinkSize(canvas, max_mapped - min_mapped)
-            atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self.cAtt) # return mapped values, errors, min, max --> mapper(self)
-            val = self.cAtt.attValues
-            for i in range(len(val)):
-                # check attribute name that will not cover another name
-                for j in range(i):
-                    if val[j].over==val[i].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
-                        val[i].enable = False
-                val[i].x = atValues_mapped[i]
+    def paint(self, canvas, rect, mapper):
+        self.label.setText(self.name)
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
+
+        self.drawAttributeLine(canvas, rect, mapper)        
+        # draw attributes
+        val = self.attValues
+
+        # draw values
+        for i in range(len(val)):
+            # check attribute name that will not cover another name
+            val[i].x = atValues_mapped[i]
+            val[i].high_errorX = atErrors_mapped[i][1]
+            val[i].low_errorX = atErrors_mapped[i][0]
+            a = time.time()
+            if canvas.parent.confidence_check and val[i].error>0:
+                val[i].showErr = True
+            else:
+                val[i].showErr = False
+
+            val[i].hideAtValue = False                
+            val[i].paint(canvas, rect, mapper)
+
+            #find suitable value position
+            for j in range(i):
+                #if val[j].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
+                if val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
+                    val[i].over = False
+            if not val[i].over:
                 val[i].paint(canvas, rect, mapper)
-                self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
-            
-        else:
-            # draw attributes
-            val = self.attValues
-
-            # hide old confidence intervals, so they wont interact with new ones
-  #          if canvas.parent.confidence_check:
-  #              for v in val:
-  #                  if not v.attCreation:
-  #                      v.errorLine.hide()
-
-            for i in range(len(val)):
-                # check attribute name that will not cover another name
-                val[i].x = atValues_mapped[i]
-                val[i].high_errorX = atErrors_mapped[i][1]
-                val[i].low_errorX = atErrors_mapped[i][0]
-                a = time.time()
-                if canvas.parent.confidence_check and val[i].error>0:
-                    val[i].showErr = True
-                else:
-                    val[i].showErr = False
-
-                val[i].hideAtValue = False                
-                val[i].paint(canvas, rect, mapper)
-
-                #find suitable value position
                 for j in range(i):
-                    #if val[j].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
-                    if val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
-                        val[i].over = False
-                if not val[i].over:
+                    if not val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
+                        val[i].hideAtValue = True
+                if val[i].hideAtValue:
                     val[i].paint(canvas, rect, mapper)
-                    for j in range(i):
-                        if not val[j].over and val[j].enable and not val[j].hideAtValue and val[j].text.collidesWith(val[i].text):
-                            val[i].hideAtValue = True
-                    if val[i].hideAtValue:
-                        val[i].paint(canvas, rect, mapper)
-                    
-                self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
                 
-            for i in range(len(val)):
-                val[i].over = True
-
-        atLine = AttrLine("marker", canvas)
-        if self.continuous:
-            d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/(max_mapped-min_mapped)
-            for xc in arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
-                atLine.addAttValue(AttValue("", xc))
-        else:
-            d = 5*(self.maxValue-self.minValue)/(max_mapped-min_mapped)
-            for xc in arange(self.minValue, self.maxValue+d, d):
-                atLine.addAttValue(AttValue("", xc))
+            self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
             
+        atLine = AttrLine("marker", canvas)
+        d = 5*(self.maxValue-self.minValue)/(max_mapped-min_mapped)
+        for xc in arange(self.minValue, self.maxValue+d, d):
+            atLine.addAttValue(AttValue("", xc))
         
         markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
         for mar in range(len(markers_mapped)):
@@ -630,44 +521,39 @@ class AttrLine:
                 self.selectValues.append([xVal, rect.bottom(), atLine.attValues[mar].betaValue])
 
         self.updateValue()
-                
-#        self.box.hide()
-#        for p in self.contValues:
-#            p.hide()
-#        for l in self.contLabel:
-#            l.hide()
-#            l.marker.hide()
         self.line.show()
         self.label.show()
 
-# in this method is implemented a 2-dimensional continuous attribute representation. It is useful, when att. 
-# distribution is not monotone
-    def paintContinuous(self, canvas, rect, mapper):
-        if not self.initialized:
-            self.initializeBeforePaint(canvas)
-        # rect and att. values initialization
-        verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())
-        verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
-        
-        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
-        sortVal = atValues_mapped[:]
-        sortVal.sort()
-
+    # some supplementary methods for 2d presentation
+    # draw bounding box around cont. attribute
+    def drawBox(self, min_mapped, max_mapped, rect):
         # draw box
-        self.box.setX(sortVal[0])
+        self.box.setX(min_mapped)
         self.box.setY(rect.top()+rect.height()/8)
-        self.box.setSize(sortVal[len(sortVal)-1]-sortVal[0], rect.height()*7/8)
+        self.box.setSize(max_mapped-min_mapped, rect.height()*7/8)
 
         # show att. name
         self.label.setText(self.name)
-        self.label.setX(sortVal[0])
+        self.label.setX(min_mapped)
         self.label.setY(rect.top()+rect.height()/8)
-        
-        # put labels on it
-        label = verticalMapper.getHeaderLine(canvas, verticalRect) 
-        atValues_mapped_vertical, atErrors_mapped_vertical, min_mapped_vertical, max_mapped_vertical = verticalMapper(self.atNames) # return mapped values, errors, min, max --> mapper(self)
-        mapped_labels, error, min_lab, max_lab = verticalMapper(label) # return mapped values, errors, min, max --> mapper(self)        
 
+    # draws a vertical legend on the left side of the bounding box
+    def drawVerticalLabel(self, attLineLabel, min_mapped, mapped_labels, canvas):
+        for at in range(len(attLineLabel.attValues)):
+            # draw value
+            a = self.contLabel[at]
+            a.setX(min_mapped-5)
+            a.setY(mapped_labels[at]-canvas.fontSize/2)
+            if attLineLabel.attValues[at].enable:
+                a.marker.setPoints(min_mapped-2, mapped_labels[at], min_mapped+2, mapped_labels[at])
+                a.show()
+            # if value is disabled, draw just a symbolic line        
+            else:
+                a.marker.setPoints(min_mapped-1, mapped_labels[at], min_mapped+1, mapped_labels[at])                
+            a.marker.show()
+
+    #finds proportionally where zero value is
+    def findZeroValue(self):
         maxPos,zero = 1,0
         while self.attValues[maxPos].betaValue!=0 and self.attValues[maxPos-1].betaValue!=0 and self.attValues[maxPos].betaValue/abs(self.attValues[maxPos].betaValue) == self.attValues[maxPos-1].betaValue/abs(self.attValues[maxPos-1].betaValue):
             maxPos+=1
@@ -675,27 +561,176 @@ class AttrLine:
                 maxPos-=1
                 zero = self.attValues[maxPos].betaValue
                 break
-        #minPos = reduce(lambda x,y: x.betaValue<y.betaValue and x or y, filter(lambda x: x.betaValue>=0, self.attValues))
-        #maxNeg = reduce(lambda x,y: x.betaValue>y.betaValue and x or y, filter(lambda x: x.betaValue<=0, self.attValues))
-        propBeta = (zero-self.attValues[maxPos-1].betaValue)/(self.attValues[maxPos].betaValue - self.attValues[maxPos-1].betaValue)
+        if not self.attValues[maxPos].betaValue == self.attValues[maxPos-1].betaValue:
+            return ((zero-self.attValues[maxPos-1].betaValue)/(self.attValues[maxPos].betaValue - self.attValues[maxPos-1].betaValue),maxPos,zero)
+        else:
+            return (zero,maxPos,zero)
+
+
+    # string representation of attribute
+    def toString(self):
+        return self.name + str([at.toString() for at in self.attValues])        
+        
+
+class AttrLineCont(AttrLine):
+    def __init__(self, name, canvas):
+        AttrLine.__init__(self, name, canvas)
+
+        # continuous attributes        
+        self.cAtt = None
+        self.box = QCanvasRectangle(canvas)
+        self.box.setPen(QPen(Qt.DotLine))
+        self.contValues = []
+        self.contLabel = []
+    
+    def getHeight(self, canvas):
+        if canvas.parent.contType == 1:
+            return canvas.parent.verticalSpacingContinuous
+        return AttrLine.getHeight(self, canvas)
+
+    # initialization before 2d paint
+    def initializeBeforePaint(self, canvas):
+        self.atNames = AttrLine(self.name, canvas)
+        for at in self.attValues:
+            self.atNames.addAttValue(AttValue(at.name, float(at.name)))
+        verticalRect = QRect(0, 0, self.getHeight(canvas), self.getHeight(canvas))
+        verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
+        label = verticalMapper.getHeaderLine(canvas, QRect(0,0,self.getHeight(canvas), self.getHeight(canvas))) 
+        [l.setCanvas(None) for l in self.contLabel]
+        self.contLabel=[]
+        for val in label.attValues:
+            # draw value
+            a = QCanvasText(val.name, canvas)
+            a.setTextFlags(Qt.AlignRight)
+            a.marker = QCanvasLine(canvas)
+            a.marker.setZ(5)
+            self.contLabel.append(a)
+
+        #line objects
+        if len(self.contValues) == 0:
+            for at in self.attValues:
+                a = QCanvasLine(canvas)
+                a.setPen(QPen(Qt.black, at.lineWidth))
+                self.contValues.append(a)
+
+                # for 1d cont space
+                at.setCreation(canvas)
+
+        
+    def paint(self, canvas, rect, mapper):
+        self.label.setText(self.name)
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self, error_factor = norm_factor(1-((1-float(canvas.parent.confidence_percent)/100.)/2.))) # return mapped values, errors, min, max --> mapper(self)
+
+        self.drawAttributeLine(canvas, rect, mapper)  
+        
+        # continuous attributes are handled differently
+        self.cAtt = self.shrinkSize(canvas, rect, mapper)
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self.cAtt) # return mapped values, errors, min, max --> mapper(self)
+        val = self.cAtt.attValues
+        for i in range(len(val)):
+            # check attribute name that will not cover another name
+            val[i].x = atValues_mapped[i]
+            val[i].paint(canvas, rect, mapper)
+            for j in range(i):
+                if val[j].over==val[i].over and val[j].enable and val[i].text.collidesWith(val[j].text):
+                    val[i].enable = False
+            if not val[i].enable:
+                val[i].paint(canvas, rect, mapper)
+            self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
+
+
+        atLine = AttrLine("marker", canvas)
+        d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/(max_mapped-min_mapped)
+        for xc in arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
+            atLine.addAttValue(AttValue("", xc))
+        
+        markers_mapped, mark_errors_mapped, markMin_mapped, markMax_mapped = mapper(atLine)
+        for mar in range(len(markers_mapped)):
+            xVal = markers_mapped[mar]
+            if filter(lambda x: abs(x[0]-xVal)<4, self.selectValues) == [] and xVal<max_mapped:
+                self.selectValues.append([xVal, rect.bottom(), atLine.attValues[mar].betaValue])
+
+        self.updateValue()
+        self.line.show()
+        self.label.show()
+
+
+    # create an AttrLine object from a continuous variable (to many values for a efficient presentation)
+    def shrinkSize(self, canvas, rect, mapper):
+        # get monotone subset of this continuous variable
+        monotone_subsets, curr_subset = [],[]
+        sign=1
+        for at_i in range(len(self.attValues)):
+            if at_i<len(self.attValues)-1 and sign*(self.attValues[at_i].betaValue-self.attValues[at_i+1].betaValue)>0:
+                curr_subset.append(self.attValues[at_i])
+                monotone_subsets.append(curr_subset)
+                curr_subset = [self.attValues[at_i]]
+                sign=-sign
+            else:
+                curr_subset.append(self.attValues[at_i])
+        monotone_subsets.append(curr_subset)                
+            
+        # create retAttr --> values in between can be easily calculated from first left and first right
+        retAttr = AttrLine(self.name, canvas)
+        for at in self.attValues:
+            if at.betaValue == self.minValue or at.betaValue == self.maxValue:
+                at.enable = True
+                retAttr.addAttValue(at)
+        curr_over = False
+
+        # convert monotone subsets to nice step-presentation        
+        for m in monotone_subsets:
+            if len(m)<2:
+                continue
+            curr_over = not curr_over
+            maxValue = max(float(m[0].name), float(m[len(m)-1].name))
+            minValue = min(float(m[0].name), float(m[len(m)-1].name))
+            width = mapper.mapBeta(max(m[0].betaValue, m[len(m)-1].betaValue),self) - mapper.mapBeta(min(m[0].betaValue, m[len(m)-1].betaValue),self)
+            curr_rect = QRect(rect.left(), rect.top(), width, rect.height())
+            mapperCurr = Mapper_Linear_Fixed(minValue, maxValue, curr_rect.left(), curr_rect.right(), maxLinearValue = maxValue, minLinearValue = minValue)
+            label = mapperCurr.getHeaderLine(canvas, curr_rect)
+            for at in label.attValues:
+                if at.betaValue>=minValue and at.betaValue<=maxValue:
+                    for i in range(len(m)):
+                        if i<(len(m)-1):
+                            if float(m[i].name)<=at.betaValue and float(m[i+1].name)>=at.betaValue:
+                                coeff = (at.betaValue-float(m[i].name))/(float(m[i+1].name)-float(m[i].name))
+                                retAttr.addAttValue(AttValue(str(at.betaValue),m[i].betaValue+coeff*(m[i+1].betaValue-m[i].betaValue)))
+                                retAttr.attValues[len(retAttr.attValues)-1].over = curr_over
+
+        return retAttr
+
+    def paint2d(self, canvas, rect, mapper):
+        self.initializeBeforePaint(canvas)
+        self.label.setText(self.name)
+
+        # get all values tranfsormed with current mapper 
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
+
+        # draw a bounding box
+        self.drawBox(min_mapped, max_mapped, rect)
+
+        #draw legend from real values
+        verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())
+        verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
+        label = verticalMapper.getHeaderLine(canvas, verticalRect) 
+        mapped_labels, error, min_lab, max_lab = verticalMapper(label) # return mapped values, errors, min, max --> mapper(self)        
+
+        self.drawVerticalLabel(label, min_mapped, mapped_labels, canvas)            
+            
+        #create a vertical mapper
+        atValues_mapped_vertical, atErrors_mapped_vertical, min_mapped_vertical, max_mapped_vertical = verticalMapper(self.atNames) # return mapped values, errors, min, max --> mapper(self)
+            
+
+        #find and select zero value (beta = 0)
+        (propBeta,maxPos,zero) = self.findZeroValue()
         zeroValue = float(self.attValues[maxPos-1].name) + propBeta*(float(self.attValues[maxPos].name) - float(self.attValues[maxPos-1].name))
         self.selectValues = [[mapper.mapBeta(zero, self),verticalMapper.mapBeta(zeroValue, self.atNames), zero, zeroValue]]
-        if not self.selectedValue:
-            self.selectedValue = self.selectValues[0]
             
-        for at in range(len(label.attValues)):
-            # draw value
-            a = self.contLabel[at]
-            a.setX(min_mapped-5)
-            a.setY(mapped_labels[at]-canvas.fontSize/2)
-            if label.attValues[at].enable:
-                a.marker.setPoints(sortVal[0]-2, mapped_labels[at], sortVal[0]+2, mapped_labels[at])
-                a.show()
-            # if value is disabled, draw just a symbolic line        
-            else:
-                a.marker.setPoints(sortVal[0]-1, mapped_labels[at], sortVal[0]+1, mapped_labels[at])                
-            a.marker.show()
-        
+        if not self.selectedValue:
+            self.selectedValue = self.selectValues[0]            
+
+
         # draw lines
         for i in range(len(atValues_mapped)-1):
             a = self.contValues[i]
@@ -706,6 +741,7 @@ class AttrLine:
             #if self.attValues[i].lineWidth>0:
             a.setPoints(atValues_mapped[i], atValues_mapped_vertical[i], atValues_mapped[i+1], atValues_mapped_vertical[i+1])
             self.selectValues.append([atValues_mapped[i],atValues_mapped_vertical[i], self.attValues[i].betaValue, self.atNames.attValues[i].betaValue])
+
             # if distance between i and i+1 is large, add some select values.
             n = int(math.sqrt(math.pow(atValues_mapped[i+1]-atValues_mapped[i],2)+math.pow(atValues_mapped_vertical[i+1]-atValues_mapped_vertical[i],2)))/5-1
             self.selectValues = self.selectValues + [[atValues_mapped[i]+(float(j+1)/float(n+1))*(atValues_mapped[i+1]-atValues_mapped[i]),
@@ -717,48 +753,112 @@ class AttrLine:
         self.box.show()
         self.label.show()
 
- #       self.line.hide()
- #       for val in self.attValues:
- #           if not val.attCreation:
- #               val.text.hide()
- #               val.labelMarker.hide()
- #               val.errorLine.hide()
+class AttrLineOrdered(AttrLine):
+    def __init__(self, name, canvas):
+        AttrLine.__init__(self, name, canvas)
 
-    # create an AttrLine object from a continuous variable (to many values for a efficient presentation)
-    def shrinkSize(self, canvas, width):
-        def sign(val1, val2):
-            if val1>val2:
-                return True
+        # continuous attributes        
+        self.box = QCanvasRectangle(canvas)
+        self.box.setPen(QPen(Qt.DotLine))
+        self.contValues = []
+        self.contLabel = []
+    
+    def getHeight(self, canvas):
+        if canvas.parent.contType == 1:
+            return len(self.attValues)*canvas.parent.diff_between_ordinal+canvas.parent.diff_between_ordinal
+        return AttrLine.getHeight(self, canvas)
+
+
+    # initialization before 2d paint
+    def initializeBeforePaint(self, canvas):
+        [l.setCanvas(None) for l in self.contLabel]
+        self.contLabel=[]
+        for val in self.attValues:
+            # draw value
+            a = QCanvasText(val.name, canvas)
+            a.setTextFlags(Qt.AlignRight)
+            a.marker = QCanvasLine(canvas)
+            a.marker.setZ(5)
+            self.contLabel.append(a)
+
+        #line objects
+        if len(self.contValues) == 0:
+            for at in self.attValues:
+                a = QCanvasLine(canvas)
+                a.setPen(QPen(Qt.black, at.lineWidth))
+                self.contValues.append(a)
+
+                # for 1d cont space
+                at.setCreation(canvas)
+
+
+    def getVerticalCoordinates(self, rect, val):
+        return rect.bottom() - val.verticalDistance
+
+    def paint2d_fixedDistance(self, canvas, rect, mapper):
+        d = canvas.parent.diff_between_ordinal/2
+        for at in self.attValues:
+            at.verticalDistance = d
+            d += canvas.parent.diff_between_ordinal
+
+        # get all values tranfsormed with current mapper 
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
+            
+        mapped_labels = [self.getVerticalCoordinates(rect,v)-canvas.fontSize/2 for v in self.attValues]
+        self.drawVerticalLabel(self, min_mapped, mapped_labels, canvas)
+            
+        #find and select zero value (beta = 0)
+        (propBeta,maxPos,zero) = self.findZeroValue()
+        self.selectValues = [[mapper.mapBeta(zero, self),self.getVerticalCoordinates(rect, self.attValues[maxPos-1]), zero]]                
+            
+        if not self.selectedValue:
+            self.selectedValue = self.selectValues[0]            
+
+        # draw lines
+        for i in range(len(atValues_mapped)):
+            a = self.contValues[i]
+            if canvas.parent.histogram:
+                a.setPen(QPen(Qt.black, 1+self.attValues[i].lineWidth*canvas.parent.histogram_size))
             else:
-                return False
+                a.setPen(QPen(Qt.black, 1))
+            a.setPoints(atValues_mapped[i], self.getVerticalCoordinates(rect, self.attValues[i])-canvas.parent.diff_between_ordinal/2, atValues_mapped[i], self.getVerticalCoordinates(rect, self.attValues[i])+canvas.parent.diff_between_ordinal/2)
+            self.selectValues.append([atValues_mapped[i],self.getVerticalCoordinates(rect, self.attValues[i]), self.attValues[i].betaValue])
+            if i < len(atValues_mapped)-1:
+                a.connection = QCanvasLine(canvas)
+                a.connection.setPen(QPen(Qt.black, 1))
+                a.connection.setPoints(atValues_mapped[i],
+                                       self.getVerticalCoordinates(rect, self.attValues[i])-canvas.parent.diff_between_ordinal/2,
+                                       atValues_mapped[i+1],
+                                       self.getVerticalCoordinates(rect, self.attValues[i])-canvas.parent.diff_between_ordinal/2)
+                a.connection.setPen(QPen(Qt.DotLine))
+                a.connection.show()
+            # if distance between i and i+1 is large, add some select values.
+            x1 = atValues_mapped[i]
+            y1 = self.getVerticalCoordinates(rect, self.attValues[i])-canvas.parent.diff_between_ordinal/2
+            x2 = atValues_mapped[i]
+            y2 = self.getVerticalCoordinates(rect, self.attValues[i])+canvas.parent.diff_between_ordinal/2
             
-        maxnum = width/(3*canvas.fontSize)
-        if maxnum<2:
-            maxnum=2
+            n = int(y2-y1)/5-1
+            self.selectValues = self.selectValues + [[x1, y1+(float(j+1)/float(n+1))*(y2-y1), self.attValues[i].betaValue] for j in range(n)]
+            a.show()
+        
+    
+    def paint2d(self, canvas, rect, mapper):
+        self.initializeBeforePaint(canvas)
 
-        step = len(self.attValues)/maxnum
-        step = math.floor(step)
-        if step<=1:
-            return self
+        # get all values tranfsormed with current mapper 
+        atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
 
-        curr_over = True        
-        retAttr = AttrLine(self.name, canvas)
-        for at in range(len(self.attValues)):
-            if len(retAttr.attValues)>1:
-                sign_before = sign(retAttr.attValues[len(retAttr.attValues)-1].betaValue, retAttr.attValues[len(retAttr.attValues)-2].betaValue)
-            if at%step == 0:
-                retAttr.addAttValue(self.attValues[at])
-            if len(retAttr.attValues)>2:
-                sign_after = sign(retAttr.attValues[len(retAttr.attValues)-1].betaValue, retAttr.attValues[len(retAttr.attValues)-2].betaValue)
-                if sign_after != sign_before:
-                    retAttr.attValues[len(retAttr.attValues)-1].over = not curr_over
-                    curr_over = not curr_over
-            
-        return retAttr
+        # draw a bounding box
+        self.drawBox(min_mapped, max_mapped+1, rect)
 
-    # string representation of attribute
-    def toString(self):
-        return self.name + str([at.toString() for at in self.attValues])
+        # if fixedDistance:
+        self.paint2d_fixedDistance(canvas, rect, mapper)
+        
+
+        self.updateValue()
+        self.box.show()
+        self.label.show()
 
 class BasicNomogramHeader(QCanvas):
     def __init__(self, nomogram, parent):
@@ -801,7 +901,18 @@ class BasicNomogramFooter(QCanvas):
             obj.setPen(QPen(Qt.blue, 3))
             obj.setZ(100)
         
-    
+    def convertToPercent(self, atLine):
+        minPercent = exp(atLine.minValue)/(1+exp(atLine.minValue))
+        maxPercent = exp(atLine.maxValue)/(1+exp(atLine.maxValue))
+
+        percentLine = AttrLine(atLine.name, self)
+        percentList = filter(lambda x:x>minPercent and x<maxPercent,arange(0, maxPercent+0.1, 0.05))
+        for p in percentList:
+            if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1, enable = False))
+            else:
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", log(p/(1-p)), markerWidth = 1))
+        return percentLine  
         
        
     def paintFooter(self, rect, alignType, yAxis, mapper):
@@ -850,7 +961,7 @@ class BasicNomogramFooter(QCanvas):
         #if self.footerPercent:
         #    self.footerPercent.destroy()
 
-        self.footerPercent = self.footer.convertToPercent(self)
+        self.footerPercent = self.convertToPercent(self.footer)
 
         # create a mapper for footer, BZ CHANGE TO CONSIDER THE TARGET
         self.footerPercent.name = "P(%s)" % self.parent.cl.domain.classVar.values[self.parent.TargetClassIndex]
@@ -872,7 +983,7 @@ class BasicNomogramFooter(QCanvas):
 
         variance = math.pow(self.nomogram.constant.error,2)
         for at in self.nomogram.attributes:
-            if at.continuous == False:
+            if not isinstance(at, AttrLineCont):
                 (nleft, nright) = getNearestAtt(at.selectedValue[2], at)
                 if nright.betaValue>nleft.betaValue:
                     prop = (at.selectedValue[2]-nleft.betaValue)/(nright.betaValue-nleft.betaValue)
@@ -946,10 +1057,6 @@ class BasicNomogramFooter(QCanvas):
     def showCI(self):
         self.errorLine.show()
         self.errorPercentLine.show()
-        #self.leftArc.show()
-        #self.rightArc.show()
-        #self.leftPercentArc.show()
-        #self.rightPercentArc.show()
 
     def hideCI(self):
         self.errorLine.hide()
@@ -1026,42 +1133,39 @@ class BasicNomogram(QCanvas):
         disc = False
 
         for at in self.attributes:
-            if at.continuous and self.parent.contType == 1:
+            if (isinstance(at, AttrLineCont) or isinstance(at, AttrLineOrdered)) and self.parent.contType == 1:
                 if disc:
-                    curr_rect = QRect(rect.left(), curr_rect.bottom()+20, rect.width(), self.parent.verticalSpacingContinuous)
+                    curr_rect = QRect(rect.left(), curr_rect.bottom()+20, rect.width(), at.getHeight(self))
                     disc=False
                 else:
-                    curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), self.parent.verticalSpacingContinuous)
-                at.paintContinuous(self, curr_rect, mapper)
+                    curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), at.getHeight(self))
+                at.paint2d(self, curr_rect, mapper)
             else:
                 disc = True
-                curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), self.parent.verticalSpacing)
+                curr_rect = QRect(rect.left(), curr_rect.bottom(), rect.width(), at.getHeight(self))
                 at.paint(self, curr_rect, mapper)
                 # if histograms are used, a larger rect is required
                 if self.parent.histogram:
-                    curr_rect.setHeight(self.parent.verticalSpacing+self.parent.histogram_size)
+                    curr_rect.setHeight(at.getHeight(self)+self.parent.histogram_size)
             
 
     def setSizes(self, parent):
+        def getBottom():
+            bottom, lastAt = 0, None
+            for at in self.attributes:
+                if lastAt and self.parent.contType == 1 and isinstance(at, AttrLineCont) and not isinstance(lastAt, AttrLineCont):
+                    bottom += 20
+                bottom += at.getHeight(self)
+                lastAt = at
+            return bottom;
+        
         self.pleft, self.pright, self.ptop, self.pbottom = 0, parent.graph.width() - 20, 0, self.parent.verticalSpacing
-        disc = False
-        for at in self.attributes:
-            if self.parent.contType == 1 and at.continuous:
-                if disc:
-                    self.pbottom+=20
-                    disc = False
-                self.pbottom += self.parent.verticalSpacingContinuous
-            elif self.parent.histogram:
-                self.pbottom += self.parent.histogram_size+self.parent.verticalSpacing
-                disc = True
-            else:
-                self.pbottom += self.parent.verticalSpacing
-                disc=True
+        self.pbottom += getBottom()
 
         #graph sizes
         self.gleft = 0
         for at in self.attributes:
-            if not (self.parent.contType == 1 and at.continuous) and at.label.boundingRect().width()>self.gleft:
+            if not (self.parent.contType == 1 and isinstance(at, AttrLineCont)) and at.label.boundingRect().width()>self.gleft:
                 self.gleft = at.label.boundingRect().width()
         #self.gleft = max(self.gleft, 100) # should really test footer width, and with of other lables
         self.gleft = max(self.gleft, 80)
@@ -1069,10 +1173,6 @@ class BasicNomogram(QCanvas):
         self.gright=self.pright-(self.pright-self.pleft)/10
         self.gtop = self.ptop + 10
         self.gbottom = self.pbottom - 10
-        
-        if self.parent.table:
-            self.parent.verticalTableSpace = 0
-            self.gright = self.gright - self.parent.verticalTableSpace
 
         self.gwidth = self.gright-self.gleft
         self.gheight = self.gbottom - self.gtop
@@ -1121,9 +1221,6 @@ class BasicNomogram(QCanvas):
             self.zeroLine.hide()
         self.update()
 
-    def getNumOfAtt(self):
-        return len(self.attributes)
-
     def printOUT(self):
         print "constant:", str(self.constant.betaValue)
         for a in self.attributes:
@@ -1149,8 +1246,9 @@ class BasicNomogram(QCanvas):
 
 
 
-
+# #################################################################### 
 # CANVAS VIEWERS
+# ####################################################################
 class OWNomogramHeader(QCanvasView):
     def __init__(self, canvas, mainArea):
         apply(QCanvasView.__init__,(self,)+(canvas,mainArea))
@@ -1211,6 +1309,7 @@ class OWNomogramGraph(QCanvasView):
                 self.canvas().update()
 
 
+# ###################################################################################################################
 # ------------------------------------------------------------------------------------------------------------------
 # MAPPERS            
 # ------------------------------------------------------------------------------------------------------------------
@@ -1295,7 +1394,7 @@ class Mapper_Linear_Fixed:
         d = (self.maxValue - self.minValue)/maxnum
         dif = getDiff(d)
 
-        dSum = createSetOfVisibleValues(self.minValue, self.maxValue, dif);
+        dSum = createSetOfVisibleValues(self.minValue, self.maxValue, dif)
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
         else:
