@@ -162,15 +162,14 @@ class SignalManager:
     # ENABLE OR DISABLE LINK CONNECTION
 
     def setLinkEnabled(self, widgetFrom, widgetTo, enabled):
-        for key in self.links.keys():
-            links = self.links[key]
-            for i in range(len(links)):
-                (widget, nameFrom, nameTo, e) = links[i]
-                if widget == widgetTo:
-                    links[i] = (widget, nameFrom, nameTo, enabled)
-                    if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[nameFrom][1])
-        if enabled:
-            self.processNewSignals(widgetTo)
+        links = self.links[widgetFrom]
+        for i in range(len(links)):
+            (widget, nameFrom, nameTo, e) = links[i]
+            if widget == widgetTo:
+                links[i] = (widget, nameFrom, nameTo, enabled)
+                if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[nameFrom][1])
+
+        if enabled: self.processNewSignals(widgetTo)
 
     
     def getLinkEnabled(self, widgetFrom, widgetTo):
