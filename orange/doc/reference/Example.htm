@@ -12,7 +12,13 @@
 <p class=section>Attributes</P>
 
 <DL class=attributes>
-<DT>domain <span class=normalfont>(read-only)</SPAN></DT><DD>Each example corresponds to a <A href="Domain.htm">domain</A>. This field is set at construction time and cannot be modified.</DD></DL>
+<DT>domain <span class=normalfont>(read-only)</SPAN></DT><DD>Each example corresponds to a <A href="Domain.htm">domain</A>. This field is set at construction time and cannot be modified.</DD>
+
+<DT>name</DT>
+<DD>Example can be assigned a name. It is not used by Orange methods but is provided to be used in user interfaces.</DD>
+</DL>
+
+<P>Examples cannot be assigned arbitrary attributes like other Python and Orange objects ("attribute" is here meant in the sense "class attribute"). For instance, if <CODE>ex</CODE> is an example, <CODE>ex.xxx=12</CODE> will yield an error.</P>
 
 
 <H2>Construction</H2>
