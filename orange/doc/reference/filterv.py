@@ -1,8 +1,9 @@
 import orange
 
-data = orange.ExampleTable("lenses")
 
 ############ THIS IS WHAT YOU CAN DO WITH DISCRETE ATTRIBUTES
+
+data = orange.ExampleTable("lenses")
 
 print "\nYoung or presbyopic with astigmatism"
 fya = orange.Filter_values(domain = data.domain)
@@ -102,6 +103,18 @@ print "\n\nSetosae and virginicae"
 d = fstr(data)
 print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
+fstr["name"] = ["Iris-setosa", "Iris-viRGInica"]
+fstr["name"].caseSensitive = 1
+print "\n\nSetosae and viRGInicae (case sensitive)"
+d = fstr(data)
+print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
+
+fstr["name"] = ["Iris-setosa", "Iris-viRGInica"]
+fstr["name"].caseSensitive = 0
+print "\n\nSetosae and viRGInicae (case insensitive)"
+d = fstr(data)
+
+print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 fstr["name"] = (orange.Filter_values.Less, "Iris-versicolor")
 print "\n\nLess than versicolor"
 d = fstr(data)
@@ -133,7 +146,7 @@ d = fstr(data)
 print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
 fstr["name"] = (orange.Filter_values.NotContains, "ers")
-print "\n\nDoesn't contains 'ers'"
+print "\n\nDoesn't contain 'ers'"
 d = fstr(data)
 print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
@@ -143,7 +156,7 @@ d = fstr(data)
 print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
 fstr["name"] = (orange.Filter_values.EndsWith, "olor")
-print "\n\nBegins with 'Iris-ve'"
+print "\n\nEnds with with 'olor'"
 d = fstr(data)
 print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
@@ -155,3 +168,51 @@ if not len(d):
 else:
     print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
 
+fstr = orange.Filter_values(domain=data.domain)
+fstr["name"] = (orange.Filter_values.BeginsWith, "Iris-VE")
+fstr["name"].caseSensitive = 1
+print "\n\nBegins with 'Iris-VE' (case sensitive)"
+d = fstr(data)
+if not len(d):
+    print "<empty table>"
+else:
+    print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
+
+fstr["name"] = (orange.Filter_values.BeginsWith, "Iris-VE")
+fstr["name"].caseSensitive = 0
+print "\n\nBegins with 'Iris-VE' (case insensitive)"
+d = fstr(data)
+if not len(d):
+    print "<empty table>"
+else:
+    print "%i examples, starting with %s\n  finishing with %s" % (len(d), d[0], d[-1])
+
+
+
+###### REFERENCES vs. COPIES OF EXAMPLES
+
+data = orange.ExampleTable("lenses")
+
+print "\nYoung or presbyopic with astigmatism - as references"
+fya = orange.Filter_values(domain = data.domain)
+fya["age"] = "young"
+print "\nYoung examples\n"
+d2 = fya(data, 1)
+for ex in fya(d2):
+    print ex
+
+print "\nTesting whether this is really a reference"
+d2[0][0] = "?"
+print data[0]
+
+print "\nTesting that we don't have references when not requested"
+d2 = fya(data)
+d2[1][0] = "?"
+print data[1]
+
+###### COUNTS OF EXAMPLES
+
+data = orange.ExampleTable("lenses")
+fya = orange.Filter_values(domain = data.domain)
+fya["age"] = "young"
+print "The data contains %i young fellows" % fya.count(data)
