@@ -460,6 +460,277 @@ def computeROC(res, classIndex=-1):
 
     return results    
 
+## TC's implementation of algorithms, taken from:
+## T Fawcett: ROC Graphs: Notes and Practical Considerations for Data Mining Researchers, submitted to KDD Journal. 
+def ROCslope((P1x, P1y, P1fscore), (P2x, P2y, P2fscore)):
+    if (P1x == P2x):
+        return 1e300
+    return (P1y - P2y) / (P1x - P2x)
+
+def ROCaddPoint(P, R, keepConcavities=1):
+    if keepConcavities:
+        R.append(P)
+    else:
+        while (1):
+            if len(R) < 2:
+                R.append(P)
+                return R
+            else:
+                T = R.pop()
+                T2 = R[-1]
+                if ROCslope(T2, T) > ROCslope(T, P):
+                    R.append(T)
+                    R.append(P)
+                    return R
+    return R
+
+def TCcomputeROC(res, classIndex=-1, keepConcavities=1):
+    import corn
+    problists, tots = corn.computeROCCumulative(res, classIndex)
+
+    results = []
+    P, N = tots[1], tots[0]
+
+    for plist in problists:
+        ## corn gives an increasing by scores list, we need a decreasing by scores
+        plist.reverse()
+        TP = 0.0
+        FP = 0.0
+        curve=[]
+        fPrev = 10e300 # "infinity" score at 0.0, 0.0
+        for prob in plist:
+            f = prob[0]
+            if f <> fPrev:
+                curve = ROCaddPoint((FP/N, TP/P, fPrev), curve, keepConcavities)
+                fPrev = f
+            thisPos, thisNeg = prob[1][1], prob[1][0]
+            TP += thisPos
+            FP += thisNeg
+        curve = ROCaddPoint((FP/N, TP/P, f), curve, keepConcavities) ## ugly
+        results.append(curve)
+
+    return results
+
+def frange(start, end=None, inc=None):
+    "A range function, that does accept float increments..."
+
+    if end == None:
+        end = start + 0.0
+        start = 0.0
+
+    if inc == None or inc == 0:
+        inc = 1.0
+
+    L = [start]
+    while 1:
+        next = start + len(L) * inc
+        if inc > 0 and next >= end:
+            L.append(end)
+            break
+        elif inc < 0 and next <= end:
+            L.append(end)
+            break
+        L.append(next)
+        
+    return L
+
+## input ROCcurves are of form [ROCcurves1, ROCcurves2, ... ROCcurvesN],
+## where ROCcurvesX is a set of ROC curves,
+## where a (one) ROC curve is a set of (FP, TP) points
+##
+## for each (sub)set of input ROC curves
+## returns the average ROC curve and an array of (vertical) standard deviations
+def TCverticalAverageROC(ROCcurves, samples = 10):
+    def INTERPOLATE((P1x, P1y, P1fscore), (P2x, P2y, P2fscore), X):
+        if (P1x == P2x) or ((X > P1x) and (X > P2x)) or ((X < P1x) and (X < P2x)):
+            raise SystemError, "assumptions for interpolation are not met: P1 = %f,%f P2 = %f,%f X = %f" % (P1x, P1y, P2x, P2y, X)
+        dx = float(P2x) - float(P1x)
+        dy = float(P2y) - float(P1y)
+        m = dy/dx
+        return P1y + m*(X - P1x)
+
+    def TP_FOR_FP(FPsample, ROC, npts):
+        i = 0
+        while i < npts - 1:
+            (fp, _, _) = ROC[i + 1]
+            if (fp <= FPsample):
+                i += 1
+            else:
+                break
+        (fp, tp, _) = ROC[i]
+        if fp == FPsample:
+            return tp
+        elif fp < FPsample:
+            return INTERPOLATE(ROC[i], ROC[i+1], FPsample)
+        raise SystemError, "cannot compute: TP_FOR_FP in TCverticalAverageROC"
+        return 0.0
+
+    average = []
+    stdev = []
+    for ROCS in ROCcurves:
+        npts = []
+        for c in ROCS:
+            npts.append(len(c))
+        nrocs = len(ROCS)
+
+        TPavg = []
+        TPstd = []
+        for FPsample in frange(0.0, 1.0, 1.0/samples):
+            TPsum = []
+            for i in range(nrocs):
+                TPsum.append( TP_FOR_FP(FPsample, ROCS[i], npts[i]) ) ##TPsum = TPsum + TP_FOR_FP(FPsample, ROCS[i], npts[i])
+            TPavg.append( (FPsample, statc.mean(TPsum)) )
+            if len(TPsum) > 1:
+                stdv = statc.std(TPsum)
+            else:
+                stdv = 0.0
+            TPstd.append( stdv )
+
+        average.append(TPavg)
+        stdev.append(TPstd)
+
+    return (average, stdev)
+
+## input ROCcurves are of form [ROCcurves1, ROCcurves2, ... ROCcurvesN],
+## where ROCcurvesX is a set of ROC curves,
+## where a (one) ROC curve is a set of (FP, TP) points
+##
+## for each (sub)set of input ROC curves
+## returns the average ROC curve, an array of vertical standard deviations and an array of horizontal standard deviations
+def TCthresholdlAverageROC(ROCcurves, samples = 10):
+    def POINT_AT_THRESH(ROC, npts, thresh):
+        i = 0
+        while i < npts - 1:
+            (px, py, pfscore) = ROC[i]
+            if (pfscore > thresh):
+                i += 1
+            else:
+                break
+        return ROC[i]
+
+    average = []
+    stdevV = []
+    stdevH = []
+    for ROCS in ROCcurves:
+        npts = []
+        for c in ROCS:
+            npts.append(len(c))
+        nrocs = len(ROCS)
+
+        T = []
+        for c in ROCS:
+            for (px, py, pfscore) in c:
+##                try:
+##                    T.index(pfscore)
+##                except:
+                T.append(pfscore)
+        T.sort()
+        T.reverse() ## ugly
+
+        TPavg = []
+        TPstdV = []
+        TPstdH = []
+        for tidx in frange(0, (len(T) - 1.0), float(len(T))/samples):
+            FPsum = []
+            TPsum = []
+            for i in range(nrocs):
+                (fp, tp, _) = POINT_AT_THRESH(ROCS[i], npts[i], T[int(tidx)])
+                FPsum.append(fp)
+                TPsum.append(tp)
+            TPavg.append( (statc.mean(FPsum), statc.mean(TPsum)) )
+            ## vertical standard deviation
+            if len(TPsum) > 1:
+                stdv = statc.std(TPsum)
+            else:
+                stdv = 0.0
+            TPstdV.append( stdv )
+            ## horizontal standard deviation
+            if len(FPsum) > 1:
+                stdh = statc.std(FPsum)
+            else:
+                stdh = 0.0
+            TPstdH.append( stdh )
+
+        average.append(TPavg)
+        stdevV.append(TPstdV)
+        stdevH.append(TPstdH)
+
+    return (average, stdevV, stdevH)
+
+## Calibration Curve
+## returns an array of (curve, yesClassPredictions, noClassPredictions) elements, where:
+##  - curve is an array of points (x, y) on the calibration curve
+##  - yesClassRugPoints is an array of (x, 1) points
+##  - noClassRugPoints is an array of (x, 0) points
+def computeCalibrationCurve(res, classIndex=-1):
+    import corn
+    ## merge multiple iterations into one
+    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    for te in res.results:
+        mres.results.append( te )
+
+    problists, tots = corn.computeROCCumulative(mres, classIndex)
+
+    results = []
+    P, N = tots[1], tots[0]
+
+    for plist in problists:
+        allP = 0.0
+        allN = 0.0
+        curve = [(0.0, 0.0)]
+        yesClassRugPoints = [] 
+        noClassRugPoints = []
+        for (f, (thisNeg, thisPos)) in plist:
+            allP += thisPos
+            allN += thisNeg
+            yesClassRugPoints.append( (f, 1.0) ) #thisPos
+            noClassRugPoints.append( (f, 1.0) ) #thisNeg
+            curve.append( (f, (allP+allN)/(P + N)) )
+
+        ## smooth the curve
+        maxnPoints = 100
+        loessCurve = statc.loess(curve, -3, 0.7)
+        clen = len(loessCurve)
+        if clen > maxnPoints:
+            df = clen / maxnPoints
+            if df < 1: df = 1
+            curve = [loessCurve[i] for i in range(0, clen, df)]
+        else:
+            curve = loessCurve
+        results.append((curve, yesClassRugPoints, noClassRugPoints))
+
+    return results
+
+
+## Lift Curve
+## returns an array of curve elements, where:
+##  - curve is an array of points ((TP+FP)/(P + N), TP/P, (th, FP/N)) on the Lift Curve
+def computeLiftCurve(res, classIndex=-1):
+    import corn
+    ## merge multiple iterations into one
+    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    for te in res.results:
+        mres.results.append( te )
+
+    problists, tots = corn.computeROCCumulative(mres, classIndex)
+
+    results = []
+    P, N = tots[1], tots[0]
+
+    for plist in problists:
+        ## corn gives an increasing by scores list, we need a decreasing by scores
+        plist.reverse()
+        TP = 0.0
+        FP = 0.0
+        curve = [(0.0, 0.0, (10e300, 0.0))]
+        for (f, (thisNeg, thisPos)) in plist:
+            TP += thisPos
+            FP += thisNeg
+            curve.append( ((TP+FP)/(P + N), TP/P, (f, FP/N)) )
+        results.append(curve)
+
+    return results
+###
 
 class CDT:
   """ Stores number of concordant (C), discordant (D) and tied (T) pairs (used for aROC) """
