@@ -828,6 +828,10 @@ string convertToString(const PContingencyClass &cc)
 
 PyObject *Contingency_str(PyObject *self)
 { PyTRY
+    PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
+    if (result)
+      return result;
+
     return PyString_FromString(convertToString(PyOrange_AsContingency(self)).c_str());
   PyCATCH
 }

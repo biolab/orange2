@@ -808,6 +808,10 @@ string TDomain2string(TPyOrange *self)
 
 PyObject *Domain_repr(TPyOrange *pex)
 { PyTRY
+    PyObject *result = callbackOutput((PyObject *)pex, NULL, NULL, "repr", "str");
+    if (result)
+      return result;
+
     return PyString_FromString(TDomain2string(pex).c_str());
   PyCATCH
 }
@@ -815,6 +819,10 @@ PyObject *Domain_repr(TPyOrange *pex)
 
 PyObject *Domain_str(TPyOrange *pex)
 { PyTRY
+    PyObject *result = callbackOutput((PyObject *)pex, NULL, NULL, "str", "repr");
+    if (result)
+      return result;
+
     return PyString_FromString(TDomain2string(pex).c_str());
   PyCATCH
 }
@@ -2371,6 +2379,10 @@ string convertToString(const PDistribution &distribution)
 
 PyObject *Distribution_str(PyObject *self)
 { PyTRY
+    PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
+    if (result)
+      return result;
+
     return PyString_FromString(convertToString(PyOrange_AsDistribution(self)).c_str());
   PyCATCH
 }
@@ -2378,6 +2390,10 @@ PyObject *Distribution_str(PyObject *self)
 
 PyObject *Distribution_repr(PyObject *self)
 { PyTRY
+    PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "repr", "str");
+    if (result)
+      return result;
+
     return PyString_FromString(convertToString(PyOrange_AsDistribution(self)).c_str());
   PyCATCH
 }

@@ -247,7 +247,12 @@ public:
 
 
   static PyObject *_str(TPyOrange *self)
-  { CAST_TO(_MapType, aMap);
+  { 
+    PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
+    if (result)
+      return result;
+
+    CAST_TO(_MapType, aMap);
     string res("{");
     for(const_iterator bi(aMap->begin()), ei(bi), ee(aMap->end()); ei!=ee; ei++) {
       if (ei!=bi)

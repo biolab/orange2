@@ -68,6 +68,10 @@ inline T &cast_to(PyObject *op, T *)
 }
 
 
+PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
+                         char *formatname1, char *formatname2 = NULL,
+                         PyTypeObject *toBase = (PyTypeObject *)&PyOrOrange_Type);
+
 #define PyOrange_AS(type, op) (cast_to(op, (type *)NULL))
 #define SELF_AS(type)         (cast_to(self, (type *)NULL))
 

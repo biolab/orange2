@@ -258,15 +258,7 @@ SOURCE=.\orange\heatmap.cpp
 # Begin Source File
 
 SOURCE=.\orange\im_col_assess.cpp
-
-!IF  "$(CFG)" == "Orange - Win32 Release"
-
 # PROP Exclude_From_Build 1
-
-!ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
-
-!ENDIF 
-
 # End Source File
 # Begin Source File
 

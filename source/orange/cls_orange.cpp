@@ -675,8 +675,7 @@ int Orange_setattr(TPyOrange *self, PyObject *pyname, PyObject *args)
 
 
 PyObject *callbackOutput(PyObject *self, PyObject *args, PyObject *kwds,
-                         char *formatname1, char *formatname2 = NULL,
-                         PyTypeObject *toBase = (PyTypeObject *)&PyOrOrange_Type)
+                         char *formatname1, char *formatname2, PyTypeObject *toBase)
 { 
   PyObject *output;
 

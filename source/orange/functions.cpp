@@ -66,7 +66,13 @@ PyObject *setoutput(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(type, for
 
   char os[256] = "__output_";
 
-  PyDict_SetItemString(type->tp_dict, strcat(os, formatname), PyMethod_New(function, NULL, (PyObject *)type));
+  PyObject *newmethod = PyMethod_New(function, NULL, (PyObject *)type);
+  if (!newmethod)
+    PYERROR(PyExc_TypeError, "invalid output function", PYNULL);
+
+  PyDict_SetItemString(type->tp_dict, strcat(os, formatname), newmethod);
+  Py_DECREF(newmethod);
+
   RETURN_NONE;
 }
 

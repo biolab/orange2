@@ -66,7 +66,7 @@ public:
 
 
 #include "logfit.hpp"
-class TLogisticFitter_Python : public TLogisticFitter {
+class TLogRegFitter_Python : public TLogRegFitter {
 public:
   __REGISTER_CLASS
   virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);

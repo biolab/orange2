@@ -23,23 +23,23 @@
 #include "converts.hpp"
 #include "logreg.hpp"
 
-TLogisticFitter_Cholesky::TLogisticFitter_Cholesky()
+TLogRegFitter_Cholesky::TLogRegFitter_Cholesky()
 {}
 
 
 // set error values thrown by logistic fitter
-const char *TLogisticFitter_Cholesky::errors[] =
-	{"LogisticFitter: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
-	               "LogisticFitter: n[i]<0",
-				   "LogisticFitter: r[i]<0",
-				   "LogisticFitter: r[i]>n[i]",
-				   "LogisticFitter: constant variable",
-				   "LogisticFitter: singularity",
-				   "LogisticFitter: infinity in beta",
-				   "LogisticFitter: no convergence" };
+const char *TLogRegFitter_Cholesky::errors[] =
+	{"LogRegFitter: ngroups < 2, ndf < 0 -- not enough examples with so many attributes",
+	               "LogRegFitter: n[i]<0",
+				   "LogRegFitter: r[i]<0",
+				   "LogRegFitter: r[i]>n[i]",
+				   "LogRegFitter: constant variable",
+				   "LogRegFitter: singularity",
+				   "LogRegFitter: infinity in beta",
+				   "LogRegFitter: no convergence" };
 
 
-// function used only in Logistic fitter, that returns vector length n
+// function used only in LogReg fitter, that returns vector length n
 // and filled with ones(1)
 double *ones(int n) {
 	// initialize vector
@@ -52,7 +52,7 @@ double *ones(int n) {
 }
 
 
-PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
+PFloatList TLogRegFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att) {
 	// get all needed/necessarily attributes and set
    // check for class variable	
   if (!gen->domain->classVar)
@@ -142,7 +142,7 @@ PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const in
 }
 
 
-double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &numExamples, long &numAttr) {
+double **TLogRegFitter::generateDoubleXMatrix(PExampleGenerator gen, long &numExamples, long &numAttr) {
 	double **matrix;
 	// get number of instances and allocate number of rows
 	numExamples=gen->numberOfExamples();
@@ -182,7 +182,7 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 	return matrix;
 }
 
-double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen, const int &weight) {
+double *TLogRegFitter::generateDoubleYVector(PExampleGenerator gen, const int &weight) {
 	// initialize vector
 	double *Y = new double[gen->numberOfExamples()+1];
     try {
@@ -207,7 +207,7 @@ double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen, const int 
 }
 
 
-double *TLogisticFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weight) {
+double *TLogRegFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weight) {
 	// initialize vector
 	double *T = new double[gen->numberOfExamples()+1];
     try {

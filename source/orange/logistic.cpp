@@ -25,12 +25,12 @@
 #include <math.h>
 
 
-TLogisticLearner::TLogisticLearner() 
+TLogRegLearner::TLogRegLearner() 
 {}
 
 // TODO: najdi pametno mesto za naslednji dve funkciji
 // compute waldZ statistic from beta and beta_se
-PFloatList TLogisticLearner::computeWaldZ(PFloatList &beta, PFloatList &beta_se) 
+PFloatList TLogRegLearner::computeWaldZ(PFloatList &beta, PFloatList &beta_se) 
 {
 	PFloatList waldZ=PFloatList(mlnew TFloatList);
 	TFloatList::const_iterator b(beta->begin()), be(beta->end());
@@ -41,7 +41,7 @@ PFloatList TLogisticLearner::computeWaldZ(PFloatList &beta, PFloatList &beta_se)
 }
 
 // compute P from waldZ statistic
-PFloatList TLogisticLearner::computeP(PFloatList &waldZ) 
+PFloatList TLogRegLearner::computeP(PFloatList &waldZ) 
 {
 	PFloatList Pstat=PFloatList(mlnew TFloatList);
 	TFloatList::const_iterator z(waldZ->begin()), ze(waldZ->end());
@@ -68,17 +68,17 @@ PFloatList TLogisticLearner::computeP(PFloatList &waldZ)
 }
 
 
-PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weight)
+PClassifier TLogRegLearner::operator()(PExampleGenerator gen, const int &weight)
 { 
   int error;
   PVariable var;
   PClassifier cl = fitModel(gen, weight, error, var);
 
-  if (error >= TLogisticFitter::Constant) {
-    raiseError("%s in %s", error==TLogisticFitter::Constant?"constant":"singularity", var->name.c_str());
+  if (error >= TLogRegFitter::Constant) {
+    raiseError("%s in %s", error==TLogRegFitter::Constant?"constant":"singularity", var->name.c_str());
 /*    
     string error_str;
-    if (error == TLogisticFitter::Singularity)
+    if (error == TLogRegFitter::Singularity)
 			error_str = "singularity in ";
 		else
 			error_str = "constant variable in ";
@@ -90,22 +90,22 @@ PClassifier TLogisticLearner::operator()(PExampleGenerator gen, const int &weigh
 }
 
 
-PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight, int &error, PVariable &errorAt)
+PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, int &error, PVariable &errorAt)
 { 
   
   // construct result classifier	
-  TLogisticClassifier *lrc = mlnew TLogisticClassifier(gen->domain);
+  TLogRegClassifier *lrc = mlnew TLogRegClassifier(gen->domain);
   PClassifier cl = lrc;
 
   // construct a LR fitter
-  fitter = fitter?fitter:PLogisticFitter(mlnew TLogisticFitter_Cholesky());
+  fitter = fitter?fitter:PLogRegFitter(mlnew TLogRegFitter_Cholesky());
 
   // fit logistic regression 
   // mogoce bi bilo bolje poslati kar celotni classifier fitterju ?	
   lrc->beta = fitter->call(gen, weight, lrc->beta_se, lrc->likelihood, error, errorAt);
   lrc->fit_status = error;
 
-  if (error >= TLogisticFitter::Constant) 
+  if (error >= TLogRegFitter::Constant) 
     return cl;
 
   lrc->wald_Z = computeWaldZ(lrc->beta, lrc->beta_se);
@@ -116,16 +116,16 @@ PClassifier TLogisticLearner::fitModel(PExampleGenerator gen, const int &weight,
 }
 
 
-TLogisticClassifier::TLogisticClassifier() 
+TLogRegClassifier::TLogRegClassifier() 
 {}
 
 
-TLogisticClassifier::TLogisticClassifier(PDomain dom) 
+TLogRegClassifier::TLogRegClassifier(PDomain dom) 
 : TClassifierFD(dom, true)
 {};
 
 
-PDistribution TLogisticClassifier::classDistribution(const TExample &origexam)
+PDistribution TLogRegClassifier::classDistribution(const TExample &origexam)
 {   
 	// domain has to exist, otherwise construction
 	// of new example is impossible

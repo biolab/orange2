@@ -36,15 +36,15 @@
 
 
 // Logistic regression learner
-class TLogisticLearner : public TLearner {
+class TLogRegLearner : public TLearner {
 public:
 	__REGISTER_CLASS
 
 	// fitter
-	PLogisticFitter fitter; //P fits beta coefficients and calculates beta errors.
+	PLogRegFitter fitter; //P fits beta coefficients and calculates beta errors.
 
 	// constructors
-	TLogisticLearner();
+	TLogRegLearner();
 
 	// statistics computation 
 	// Wald Z statistic (PFloatList beta, PFloatList beta_se)
@@ -52,7 +52,7 @@ public:
 	// P for chi square (PFloatList wald_Z)
 	PFloatList computeP(PFloatList &);
 
-	// Constructs a Logistic classifier 
+	// Constructs a LogReg classifier 
 	// weights are not implemented at the moment
 	virtual PClassifier operator()(PExampleGenerator gen, const int & = 0);
 	PClassifier fitModel(PExampleGenerator, const int &, int &, PVariable &);
@@ -62,7 +62,7 @@ public:
 
 // Logistic regression classifier
 // coefficients are needed for each attribute
-class TLogisticClassifier : public TClassifierFD {
+class TLogRegClassifier : public TClassifierFD {
 public:
 	__REGISTER_CLASS
 
@@ -77,11 +77,11 @@ public:
 	// likelihood
 	float likelihood; //P Likelihood: The likelihood function is the function which specifies the probability of the sample observed on the basis of a known model, as a function of the model's parameters. 
 	// 
-	int fit_status; //P Tells how the model fitting ended - either regularly (LogisticFitter.OK), or it was interrupted due to one of beta coefficients escaping towards infinity (LogisticFitter.Infinity) or since the values didn't converge (LogisticFitter.Divergence).
+	int fit_status; //P Tells how the model fitting ended - either regularly (LogRegFitter.OK), or it was interrupted due to one of beta coefficients escaping towards infinity (LogRegFitter.Infinity) or since the values didn't converge (LogRegFitter.Divergence).
 
 	// constructors
-	TLogisticClassifier();
-	TLogisticClassifier(PDomain);
+	TLogRegClassifier();
+	TLogRegClassifier(PDomain);
 
 	virtual PDistribution classDistribution(const TExample &ex);
 /*	{ TExample example(domain, ex);

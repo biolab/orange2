@@ -149,7 +149,7 @@ PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)
 
 #include "vectortemplates.hpp"
 #include "converts.hpp"
-PFloatList TLogisticFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute)
+PFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, const int &weightID, PFloatList &beta_se, float &likelihood, int &status, PVariable &attribute)
 {
   if (!eg)
     raiseError("invalid example generator");
@@ -160,7 +160,7 @@ PFloatList TLogisticFitter_Python::operator()(PExampleGenerator eg, const int &w
     raiseError("invalid result from __call__");
 
   status = (int)PyInt_AsLong(PyTuple_GET_ITEM(res, 0));
-  if (status <= TLogisticFitter::Divergence) {
+  if (status <= TLogRegFitter::Divergence) {
     if (PyTuple_Size(res) != 4)
       raiseError("invalid result from __call__");
 

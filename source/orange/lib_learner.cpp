@@ -240,13 +240,23 @@ string side2string(PExample ex)
 }
 
 PyObject *AssociationRule_str(TPyOrange *self)
-{ CAST_TO(TAssociationRule, rule);
+{ 
+  PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
+  if (result)
+    return result;
+
+  CAST_TO(TAssociationRule, rule);
   return PyString_FromFormat("%s -> %s", side2string(rule->left).c_str(), side2string(rule->right).c_str());
 }
 
 
 PyObject *AssociationRule_repr(TPyOrange *self)
-{ CAST_TO(TAssociationRule, rule);
+{ 
+  PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "repr", "str");
+  if (result)
+    return result;
+
+  CAST_TO(TAssociationRule, rule);
   return PyString_FromFormat("%s -> %s", side2string(rule->left).c_str(), side2string(rule->right).c_str());
 }
 
@@ -657,31 +667,31 @@ C_NAMED(kNNClassifier, ClassifierFD, "([k=, weightID=, findNearest=])")
 /************* Logistic Regression ************/
 
 #include "logistic.hpp"
-C_CALL(LogisticLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
-C_NAMED(LogisticClassifier, ClassifierFD, "([probabilities=])")
+C_CALL(LogRegLearner, Learner, "([examples[, weight=]]) -/-> Classifier")
+C_NAMED(LogRegClassifier, ClassifierFD, "([probabilities=])")
 
 
-PyObject *LogisticFitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
-{ if (type == (PyTypeObject *)&PyOrLogisticFitter_Type)
-    return setCallbackFunction(WrapNewOrange(mlnew TLogisticFitter_Python(), type), args);
+PyObject *LogRegFitter_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Orange, "<abstract>")
+{ if (type == (PyTypeObject *)&PyOrLogRegFitter_Type)
+    return setCallbackFunction(WrapNewOrange(mlnew TLogRegFitter_Python(), type), args);
   else
-    return WrapNewOrange(mlnew TLogisticFitter_Python(), type);
+    return WrapNewOrange(mlnew TLogRegFitter_Python(), type);
 }
 
-C_CALL(LogisticFitter_Cholesky, LogisticFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
+C_CALL(LogRegFitter_Cholesky, LogRegFitter, "([example[, weightID]]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 
-PYCLASSCONSTANT_INT(LogisticFitter, OK, TLogisticFitter::OK)
-PYCLASSCONSTANT_INT(LogisticFitter, Infinity, TLogisticFitter::Infinity)
-PYCLASSCONSTANT_INT(LogisticFitter, Divergence, TLogisticFitter::Divergence)
-PYCLASSCONSTANT_INT(LogisticFitter, Constant, TLogisticFitter::Constant)
-PYCLASSCONSTANT_INT(LogisticFitter, Singularity, TLogisticFitter::Singularity)
+PYCLASSCONSTANT_INT(LogRegFitter, OK, TLogRegFitter::OK)
+PYCLASSCONSTANT_INT(LogRegFitter, Infinity, TLogRegFitter::Infinity)
+PYCLASSCONSTANT_INT(LogRegFitter, Divergence, TLogRegFitter::Divergence)
+PYCLASSCONSTANT_INT(LogRegFitter, Constant, TLogRegFitter::Constant)
+PYCLASSCONSTANT_INT(LogRegFitter, Singularity, TLogRegFitter::Singularity)
 
-PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
+PyObject *LogRegLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(examples[, weight])")
 {
   PyTRY
       PExampleGenerator egen;
       PyObject *pyweight = NULL;
-      if (!PyArg_ParseTuple(args, "O&|O:LogisticLearner", pt_ExampleGenerator, &egen, &pyweight))
+      if (!PyArg_ParseTuple(args, "O&|O:LogRegLearner", pt_ExampleGenerator, &egen, &pyweight))
 	    return PYNULL;
 
       int weight;
@@ -698,14 +708,14 @@ PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_V
 		weight = egen->domain->getVarNum(var);
 	  }
 
-	  CAST_TO(TLogisticLearner, loglearn)
+	  CAST_TO(TLogRegLearner, loglearn)
 
 	  int error;
 	  PVariable variable;
 	  PClassifier classifier;
 
 	  classifier = loglearn->fitModel(egen, weight, error, variable);
-	  if (error <= TLogisticFitter::Divergence)
+	  if (error <= TLogRegFitter::Divergence)
 		  return Py_BuildValue("N", WrapOrange(classifier));
 	  else 
 		  return Py_BuildValue("N", WrapOrange(variable));
@@ -713,14 +723,14 @@ PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_V
 }
 
 
-PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
+PyObject *LogRegFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -/-> (status, beta, beta_se, likelihood) | (status, attribute)")
 {
   PyTRY
     SETATTRIBUTES
 
     PExampleGenerator egen;
     PyObject *pyweight = NULL;
-    if (!PyArg_ParseTuple(args, "O&|O:LogisticFitter.__call__", pt_ExampleGenerator, &egen, &pyweight))
+    if (!PyArg_ParseTuple(args, "O&|O:LogRegFitter.__call__", pt_ExampleGenerator, &egen, &pyweight))
       return PYNULL;
 
     int weight = 0;
@@ -736,7 +746,7 @@ PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords
       weight = egen->domain->getVarNum(var);
     }
 
-    CAST_TO(TLogisticFitter, fitter)
+    CAST_TO(TLogRegFitter, fitter)
 
     PFloatList beta, beta_se;
     float likelihood;
@@ -745,7 +755,7 @@ PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords
     
     beta = (*fitter)(egen, weight, beta_se, likelihood, error, attribute);
 
-    if (error <= TLogisticFitter::Divergence)
+    if (error <= TLogRegFitter::Divergence)
       return Py_BuildValue("iNNf", error, WrapOrange(beta), WrapOrange(beta_se), likelihood);
     else
       return Py_BuildValue("iN", error, WrapOrange(attribute));

@@ -172,7 +172,12 @@ public:
 
 
   static PyObject *_str(TPyOrange *self)
-  { CAST_TO(TValueList, aList);
+  { 
+    PyObject *result = callbackOutput((PyObject *)self, NULL, NULL, "str", "repr");
+    if (result)
+      return result;
+
+    CAST_TO(TValueList, aList);
     string res("<");
     for(const_iterator bi(aList->begin()), ei(bi), ee(aList->end()); ei!=ee; ei++) {
       if (ei!=bi)

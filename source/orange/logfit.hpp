@@ -27,11 +27,11 @@
 #define __LOGFIT_HPP
 
 // WRAPPERS
-WRAPPER(LogisticFitter)
+WRAPPER(LogRegFitter)
 
 // abstract class for LR fitters. 
 // New fitters should be derived from this one
-class TLogisticFitter : public TOrange {
+class TLogRegFitter : public TOrange {
 public:
 	__REGISTER_ABSTRACT_CLASS
 
@@ -88,7 +88,7 @@ public:
 // Logistic regression fitter via minimization of log-likelihood
 // orange integration of Aleks Jakulin version of LR
 // based on Alan Miller's(1992) F90 logistic regression code
-class TLogisticFitter_Cholesky : public TLogisticFitter {
+class TLogRegFitter_Cholesky : public TLogRegFitter {
 public:
 	__REGISTER_CLASS
 
@@ -100,8 +100,8 @@ public:
 				    //model doesnt converge */
 
 	// constructor
-	TLogisticFitter_Cholesky();
-	TLogisticFitter_Cholesky(bool showErrors);
+	TLogRegFitter_Cholesky();
+	TLogRegFitter_Cholesky(bool showErrors);
 
 	// Public main function, use it for fitting LR
 	virtual PFloatList operator()(PExampleGenerator, const int &, PFloatList &, float &, int &, PVariable &);
