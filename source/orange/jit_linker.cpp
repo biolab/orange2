@@ -43,26 +43,39 @@ int jit_link(const char *dllname, TJitLink *functions, TDefaultFunc deffunc)
 #include <dlfcn.h>
 #include <unistd.h>
 
-void *getsym(void *handle, const char *name)
+int jit_link(const char *dllname, TJitLink *functions, TDefaultFunc deffunc)
 {
-  void *sym = dlsym(handle, name);
-  if (!sym)
-    raiseErrorWho("C45Loader", "invalid %s, cannot find symbol %s", C45NAME, name);
-  return sym;
-}
+  TJitLink *function = functions;
 
-void dynloadC45(char pathname[])
-{ 
-  void *handle = dlopen(pathname, 0 /*dlopenflags*/);
-  if (handle == NULL)
-    raiseErrorWho("C45Loader", dlerror());
-  
-  pc45data = getsym(handle, "c45Data");
-  c45learn = (learnFunc *)getsym(handle, "learn");
-  c45garbage = (garbageFunc *)getsym(handle, "guarded_collect");
+  void *jitDll = dlopen(dllname, 0);
+  if (jitDll) {
+    for(; function->address; function++) {
+      void *sym = dlsym(jitDll, function->funcname);
+      if (!sym)
+        break;
+      *function->address = sym;
+    }
+  }
+
+	if (function->address) {
+	  for(function = functions; function->address; function++)
+	    *function->address = deffunc;
+
+    if (jitDll) {
+	    dlfree(jitDll);
+      return -1;
+    }
+    else
+      return -2;
+	}
+
+  return 0;
 }
 
 #elif defined DARWIN
+
+
+THIS CODE NEEDS TO BE REWRITTEN (it is copied directly from C45 loader)
 
 #include <mach-o/dyld.h>
 #include <string.h>
