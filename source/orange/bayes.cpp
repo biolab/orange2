@@ -131,7 +131,8 @@ PClassifier TBayesLearner::operator()(PExampleGenerator gen, const int &weight)
 
 TBayesClassifier::TBayesClassifier(const bool &anP) 
 : TClassifierFD(true),
-  normalizePredictions(anP)
+  normalizePredictions(anP),
+  threshold(0.5)
 {}
 
 
