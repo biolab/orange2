@@ -17,8 +17,9 @@ from OWParallelGraph import *
 from OData import *
 
 class OWParallelCoordinates(OWWidget):
-    settingsList=[]
+    settingsList = ["jitteringType", "GraphCanvasColor"]
     def __init__(self,parent=None):
+        self.spreadType=["none","uniform","triangle","beta"]
         OWWidget.__init__(self,
         parent,
         "Parallel Coordinates",
@@ -26,9 +27,10 @@ class OWParallelCoordinates(OWWidget):
         TRUE,
         TRUE)
 
-        self.data = None
         #set default settings
-        self.settingsList = []
+        self.jitteringType = "uniform"
+        self.GraphCanvasColor = str(Qt.white.name())
+        self.data = None
         self.ShowMainGraphTitle = FALSE
         self.ShowVerticalGridlines = TRUE
         self.ShowHorizontalGridlines = TRUE
@@ -38,6 +40,9 @@ class OWParallelCoordinates(OWWidget):
 
         #load settings
         self.loadSettings()
+
+        # add a settings dialog and initialize its values
+        self.options = OWParallelCoordinatesOptions()        
 
         #GUI
         #add a graph widget
@@ -49,92 +54,123 @@ class OWParallelCoordinates(OWWidget):
         # graph main tmp variables
         self.addInput("cdata")
 
-        # add a settings dialog and initialize its values
-        self.options = OWParallelCoordinatesOptions()
-
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
-    
+        self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options, PYSIGNAL("canvasColorChange(QColor &)"), self.setCanvasColor)
 
         #add controls to self.controlArea widget
         self.selClass = QVGroupBox(self.controlArea)
-        self.selout = QVGroupBox(self.space)
-        self.attrOrder = QVGroupBox(self.space)
+        self.shownAttribsGroup = QVGroupBox(self.space)
+        self.addRemoveGroup = QHButtonGroup(self.space)
+        self.hiddenAttribsGroup = QVGroupBox(self.space)
         self.selClass.setTitle("Class attribute")
-        self.selout.setTitle("Shown attributes")
-        self.attrOrder.setTitle("Attribute order")
+        self.shownAttribsGroup.setTitle("Shown attributes")
+        self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
         self.classCombo = QComboBox(self.selClass)
         self.showContinuousCB = QCheckBox('show continuous', self.selClass)
         self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
 
-        self.attributesLB = QListBox(self.selout)
-        self.attributesLB.setSelectionMode(QListBox.Multi)
+        self.shownAttribsLB = QListBox(self.shownAttribsGroup)
+        self.shownAttribsLB.setSelectionMode(QListBox.Extended)
 
-        self.attributesOrderLB = QListBox(self.attrOrder)
-        self.attrButtonGroup = QHButtonGroup(self.attrOrder)
+        self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
+        self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
+        
+        self.attrButtonGroup = QHButtonGroup(self.shownAttribsGroup)
+        #self.attrButtonGroup.setFrameStyle(QFrame.NoFrame)
+        #self.attrButtonGroup.setMargin(0)
         self.buttonUPAttr = QPushButton("Attr UP", self.attrButtonGroup)
         self.buttonDOWNAttr = QPushButton("Attr DOWN", self.attrButtonGroup)
 
-        
+        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
+        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
-        self.connect(self.attributesLB, SIGNAL("selectionChanged()"), self.updateGraph)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
 
-        self.repaint()
+        self.connect(self.attrAddButton, SIGNAL("clicked()"), self.addAttribute)
+        self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        for i in range(self.attributesOrderLB.count()):
-            if self.attributesOrderLB.isSelected(i) and i != 0:
-                text = self.attributesOrderLB.text(i)
-                self.attributesOrderLB.removeItem(i)
-                self.attributesOrderLB.insertItem(text, i-1)
-                self.attributesOrderLB.setSelected(i-1, TRUE)
+        # add a settings dialog and initialize its values
+        self.setOptions()
+
+        #self.repaint()
+
+    def setOptions(self):
+        self.options.spreadButtons.setButton(self.spreadType.index(self.jitteringType))
+        #self.jitteringType = self.spreadType[self.spreadType.index(self.jitteringType)]
+        self.options.gSetCanvasColor.setNamedColor(str(self.GraphCanvasColor))
+        self.setCanvasColor(self.options.gSetCanvasColor)
+        self.setSpreadType(self.spreadType.index(self.jitteringType))
+
+    # jittering options
+    def setSpreadType(self, n):
+        self.jitteringType = self.spreadType[n]
+        self.graph.setJitteringOption(self.jitteringType)
+        self.graph.setData(self.data)
         self.updateGraph()
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        count = self.attributesOrderLB.count()
-        for i in range(count-2,-1,-1):
-            if self.attributesOrderLB.isSelected(i):
-                text = self.attributesOrderLB.text(i)
-                self.attributesOrderLB.removeItem(i)
-                self.attributesOrderLB.insertItem(text, i+1)
-                self.attributesOrderLB.setSelected(i+1, TRUE)
-        self.updateGraph()
-
-    def updateGraph(self):
-        self.updateGraphData(self.getAttributeList(), str(self.classCombo.currentText()))
-
 
     def setCanvasColor(self, c):
         self.GraphCanvasColor = str(c.name())
         self.graph.setCanvasColor(c)
 
+    # ####################
+    # LIST BOX FUNCTIONS
+    # ####################
 
-    # receive new data and update all fields
-    def cdata(self, data):
-        self.data = data
-        self.graph.setData(data)
-        self.setClassCombo()
-
-        if self.data == None:
-            self.setMainGraphTitle('')
-            self.setAttributeList([])
-            self.repaint()
-            return
-
-        
-        self.setAttributeList(self.data.data.domain)
-        self.setAttributeOrderList(self.data.data.domain)
+    # move selected attribute in "Attribute Order" list one place up
+    def moveAttrUP(self):
+        for i in range(self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i) and i != 0:
+                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.insertItem(text, i-1)
+                self.shownAttribsLB.setSelected(i-1, TRUE)
         self.updateGraph()
 
-  
+    # move selected attribute in "Attribute Order" list one place down  
+    def moveAttrDOWN(self):
+        count = self.shownAttribsLB.count()
+        for i in range(count-2,-1,-1):
+            if self.shownAttribsLB.isSelected(i):
+                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.insertItem(text, i+1)
+                self.shownAttribsLB.setSelected(i+1, TRUE)
+        self.updateGraph()
+
+    def addAttribute(self):
+        count = self.hiddenAttribsLB.count()
+        pos   = self.shownAttribsLB.count()
+        for i in range(count-1, -1, -1):
+            if self.hiddenAttribsLB.isSelected(i):
+                text = self.hiddenAttribsLB.text(i)
+                self.hiddenAttribsLB.removeItem(i)
+                self.shownAttribsLB.insertItem(text, pos)
+        self.updateGraph()
+
+    def removeAttribute(self):
+        count = self.shownAttribsLB.count()
+        pos   = self.hiddenAttribsLB.count()
+        for i in range(count-1, -1, -1):
+            if self.shownAttribsLB.isSelected(i):
+                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.removeItem(i)
+                self.hiddenAttribsLB.insertItem(text, pos)
+        self.updateGraph()
+
+    # #####################
+
+    def updateGraph(self):
+        self.graph.updateData(self.getShownAttributeList(), str(self.classCombo.currentText()))
+        self.graph.replot()
+        self.repaint()
+
     # set combo box values with attributes that can be used for coloring the data
     def setClassCombo(self):
         exText = str(self.classCombo.currentText())
@@ -157,49 +193,36 @@ class OWParallelCoordinates(OWWidget):
 
 
     # set attribute list
-    def setAttributeList(self, list):
+    def setShownAttributeList(self, list):
         self.attributeList = list
 
-        self.attributesLB.clear()
+        self.shownAttribsLB.clear()
         if len(self.attributeList) == 0:
             return
         for item in list:
-            self.attributesLB.insertItem(item.name)
+            self.shownAttribsLB.insertItem(item.name)
 
-        self.attributesLB.selectAll(TRUE)
-
-    # set attribute order list
-    def setAttributeOrderList(self, list):
-        self.attributeOrderList = list
-
-        self.attributesOrderLB.clear()
-        if len(self.attributeOrderList) == 0:
-            return
-        for item in list:
-            self.attributesOrderLB.insertItem(item.name)
-
-
-    # new class attribute was selected - update the graph
-    def classAttributeChange(self, newClass):
-        attributes = []
-        for i in range(self.attributesLB.numRows()):
-            if self.attributesLB.isSelected(i):
-                attributes.append(str(self.attributesLB.text(i)))
-
-        self.updateGraph()
-
-
-    def getAttributeList (self):
+    def getShownAttributeList (self):
         list = []
-        for i in range(self.attributesOrderLB.count()):
-            list.append(str(self.attributesOrderLB.text(i)))
+        for i in range(self.shownAttribsLB.count()):
+            list.append(str(self.shownAttribsLB.text(i)))
         return list
 
+    # receive new data and update all fields
+    def cdata(self, data):
+        self.data = data
+        self.graph.setData(data)
+        self.setClassCombo()
 
-    def updateGraphData(self, attributes, className):
-        self.graph.updateData(attributes, className)
-        self.graph.replot()
-        self.repaint()
+        if self.data == None:
+            self.setMainGraphTitle('')
+            self.setAttributeList([])
+            self.repaint()
+            return
+
+        
+        self.setShownAttributeList(self.data.data.domain)
+        self.updateGraph()
 
 
 #test widget appearance

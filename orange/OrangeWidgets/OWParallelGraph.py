@@ -33,6 +33,7 @@ class OWParallelGraph(QwtPlot):
 
         self.scaledData = []
         self.scaledDataAttributes = []
+        self.jitteringType = 'none'
         
         self.enableAxis(QwtPlot.yLeft, 1)
         self.enableAxis(QwtPlot.xBottom, 1)
@@ -145,16 +146,21 @@ class OWParallelGraph(QwtPlot):
         temp = []
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
-            # TO DO NUJNO: naredi hash tabelo z imeni kategoricnih vrednosti ter indexi
-            if len(attr.values) > 1:
-                num = float(len(attr.values)-1)
-            else:
-                num = float(1)
+            # we create a hash table of variable values and their indices
+            hashTable = {}
+            for i in range(len(attr.values)):
+                hashTable[attr.values[i]] = i
+            
+            count = float(len(attr.values))
+            if len(attr.values) > 1: num = float(len(attr.values)-1)
+            else: num = float(1)
+            
             for i in range(len(data)):
-                if data[i][index].isSpecial():
-                    temp.append(1)
+                if data[i][index].isSpecial(): temp.append(1)
                 else:
-                    temp.append(data.domain[index].values.index(data[i][index].value) / num)
+                    val = 1/(2*count) + ((hashTable[data[i][index].value] / num) * ((count-1.0)/count)) + 0.3 * self.rndCorrection(1.0/count)
+                    temp.append(val)
+                    
         # is the attribute continuous
         else:
             # first find min and max value
@@ -218,7 +224,10 @@ class OWParallelGraph(QwtPlot):
         # create a table of class values that will be used for coloring the lines
         scaledClassData = []
         if className != "(One color)" and className != '':
+            ex_jitter = self.jitteringType
+            self.setJitteringOption('none')
             scaledClassData = self.scaleData(self.rawdata.data, className)
+            self.setJitteringOption(ex_jitter)
 
         xs = range(length)
         dataSize = len(self.scaledData[0])        
@@ -233,7 +242,24 @@ class OWParallelGraph(QwtPlot):
             for index in indices:
                 ys.append(self.scaledData[index][i])
             self.setCurveData(newCurveKey, xs, ys)
-                       
+
+    def setJitteringOption(self, jitteringType):
+        self.jitteringType = jitteringType
+
+    def rndCorrection(self, max):
+        """
+        returns a number from -max to max, self.jitteringType defines which distribution is to be used.
+        function is used to plot data points for categorical variables
+        """    
+        if self.jitteringType == 'none': 
+            return 0.0
+        elif self.jitteringType  == 'uniform': 
+            return (random() - 0.5)*2*max
+        elif self.jitteringType  == 'triangle': 
+            b = (1 - betavariate(1,1)) ; return choice((-b,b))*max
+        elif self.jitteringType  == 'beta': 
+            b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
+             
     
 if __name__== "__main__":
     #Draw a simple graph
