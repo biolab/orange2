@@ -25,6 +25,7 @@ class OWParallelCoordinates(OWWidget):
         TRUE,
         TRUE)
 
+        self.data = None
         #set default settings
         self.settingsList = []
         self.ShowMainGraphTitle = FALSE
@@ -61,14 +62,18 @@ class OWParallelCoordinates(OWWidget):
         self.selClass.setTitle("Class attribute")
         self.selout.setTitle("Shown attributes")
         self.classCombo = QComboBox(self.selClass)
+        self.showContinuousCB = QCheckBox('show continuous', self.selClass)
+        self.connect(self.showContinuousCB, SIGNAL("clicked()"), self.setClassCombo)
+
+
         self.attributesLB = QListBox(self.selout)
         self.attributesLB.setSelectionMode(QListBox.Multi)
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.classAttributeChange)
-        self.connect(self.attributesLB, SIGNAL("selectionChanged()"), self.attributeSelectionChange)
+        self.connect(self.attributesLB, SIGNAL("selectionChanged()"), self.showSelectedAttributes)
 
         self.repaint()
-    
+
     def setCanvasColor(self, c):
         self.GraphCanvasColor = str(c.name())
         self.graph.setCanvasColor(c)
@@ -76,21 +81,15 @@ class OWParallelCoordinates(OWWidget):
     def cdata(self, data):
         self.data = data
         self.graph.setData(data)
+        self.setClassCombo()
 
         if self.data == None:
             self.setMainGraphTitle('')
-            self.setClassCombo(['(One color)'])
             self.setAttributeList([])
             self.repaint()
             return
 
-        # add possible class attributes
-        catAttributes = ['(One color)']
-        for attr in self.data.data.domain:
-            if attr.varType == orange.VarTypes.Discrete:
-                catAttributes.append(attr.name)
-        self.setClassCombo(catAttributes)
-
+        
         self.setAttributeList(self.data.data.domain)
         self.showSelectedAttributes()
 
@@ -100,27 +99,29 @@ class OWParallelCoordinates(OWWidget):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
         
-        self.updateData(attributes, str(self.classCombo.currentText()))
+        self.graph.updateData(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
-
-    def updateData(self, labels, className):
-        self.graph.removeCurves()
-        xs = range(5)
-        ys = range(5)
-        for i in range(100):
-            newCurveKey = self.graph.insertCurve(str(i))
-            if newCurveKey > 0:
-                self.graph.setCurveData(newCurveKey, xs, ys)
-            else:
-                pass
-
-
-    def setClassCombo(self, list):
+   
+    def setClassCombo(self):
+        exText = str(self.classCombo.currentText())
         self.classCombo.clear()
-        for i in list:
-            self.classCombo.insertItem(i)
+        if self.data == None:
+            return
+
+        # add possible class attributes
+        self.classCombo.insertItem('(One color)')
+        for i in range(len(self.data.data.domain)):
+            attr = self.data.data.domain[i]
+            if attr.varType == orange.VarTypes.Discrete or self.showContinuousCB.isOn() == 1:
+                self.classCombo.insertItem(attr.name)
+
+        for i in range(self.classCombo.count()):
+            if str(self.classCombo.text(i)) == exText:
+                self.classCombo.setCurrentItem(i)
+                return
         self.classCombo.setCurrentItem(0)
+        self.showSelectedAttributes()
 
 
     def setAttributeList(self, list):
@@ -133,16 +134,13 @@ class OWParallelCoordinates(OWWidget):
 
         self.attributesLB.selectAll(TRUE)
 
-    def attributeSelectionChange(self):
-        self.showSelectedAttributes()
-        
     def classAttributeChange(self, newClass):
         attributes = []
         for i in range(self.attributesLB.numRows()):
             if self.attributesLB.isSelected(i):
                 attributes.append(str(self.attributesLB.text(i)))
 
-        self.updateData(attributes, str(self.classCombo.currentText()))
+        self.graph.updateData(attributes, str(self.classCombo.currentText()))
         self.graph.replot()
         self.repaint()
 
