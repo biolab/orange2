@@ -14,6 +14,8 @@
 # - treatment of multi-class problems (iris does not load, since
 #   has three classes). Change orngBayes so that it treats target class
 #   accordingly
+# - if it matches, then (A) if 100%, than set to that field, else make
+#   a new instance (copy whatever you can)
 
 from qttable import *
 from OWWidget import *
