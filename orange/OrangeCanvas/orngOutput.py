@@ -66,10 +66,17 @@ class OutputWindow(QMainWindow):
 	def write(self, text):
 		if self.focusOnCatchOutput:
 			self.canvasDlg.menuItemShowOutputWindow()
-		self.textOutput.append(text)
+		self.textOutput.append(str(text))
 		self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
 		if self.printOutput:
-			self.canvasDlg.setStatusBarEvent(text)
+			self.canvasDlg.setStatusBarEvent(str(text))
+
+	def writelines(self, lines):
+		for line in lines:
+			self.write(line)
+
+	def flush(self):
+		pass
 
 	def keyReleaseEvent (self, event):
 		if event.state() & Qt.ControlButton != 0 and event.ascii() == 3:	# user pressed CTRL+"C"
