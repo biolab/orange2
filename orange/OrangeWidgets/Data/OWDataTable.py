@@ -14,14 +14,13 @@
 # output a new table and export it in variety of formats.
 
 from qttable import *
-from OData import *
 from OWWidget import *
 
 ##############################################################################
 
 class colorItem(QTableItem):
     def __init__(self, table, editType, text):
-        QTableItem.__init__(self, table, editType, text)
+        QTableItem.__init__(self, table, editType, str(text))
 
     def paint(self, painter, colorgroup, rect, selected):
         g = QColorGroup(colorgroup)
@@ -33,7 +32,7 @@ class colorItem(QTableItem):
 class OWDataTable(OWWidget):
     settingsList = []
 
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         OWWidget.__init__(self,
         parent,
         "DataTable",
@@ -42,7 +41,7 @@ class OWDataTable(OWWidget):
         FALSE,
         FALSE)
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Classified Examples", ExampleTableWithClass, self.data, 1)]
+        self.inputs = [("Examples", ExampleTable, self.data, 1)]
         self.outputs = []
         
         self.dataset=None
@@ -60,7 +59,7 @@ class OWDataTable(OWWidget):
     def set_table(self):
         if self.dataset==None:
             return
-        if self.dataset.domain.classVar:
+        if hasattr(self.dataset.domain, 'classVar') and self.dataset.domain.classVar:
             self.table.setNumCols(len(self.dataset.domain.attributes)+1)
         else:   
             self.table.setNumCols(len(self.dataset.domain.attributes))
@@ -111,9 +110,8 @@ if __name__=="__main__":
     ow = OWDataTable()
     a.setMainWidget(ow)
 
-#    dataset = orange.ExampleTable('adult_sample')
-    dataset = orange.ExampleTable('outcome')
-    od = OrangeData(dataset)
-    ow.data(od)
+    dataset = orange.ExampleTable(r'../imports-85')
+#    dataset = orange.ExampleTable('outcome')
+    ow.data(dataset)
     ow.show()
     a.exec_loop()
