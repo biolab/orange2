@@ -234,10 +234,10 @@ class kNNOptimization(OWBaseWidget):
         self.clearResults()
 
         self.selectedClasses = self.getSelectedClassValues()
-        if len(self.selectedClasses) == self.classesList.count():
+        if len(self.selectedClasses) in [self.classesList.count(), 0]:
             for result in results:
                 self.addResult(result[OTHER_RESULTS][0], result[OTHER_RESULTS], result[LEN_TABLE], result[ATTR_LIST], result[STR_LIST])
-        else:
+        else: 
             for result in results:
                 acc = 0.0; sum = 0.0
                 for index in self.selectedClasses:
@@ -343,6 +343,7 @@ class kNNOptimization(OWBaseWidget):
         if self.getQualityMeasure() != BRIER_SCORE: funct = max
         else: funct = min
         self.insertItem(accuracy, other_results, lenTable, attrList, self.findTargetIndex(accuracy, funct), strList)
+        qApp.processEvents()        # allow processing of other events
 
     # use bisection to find correct index
     def findTargetIndex(self, accuracy, funct):
@@ -536,7 +537,7 @@ class kNNOptimization(OWBaseWidget):
             testTable = table.select(indices)
         else: testTable = table
         
-        qApp.processEvents()        # allow processing of other events
+        #qApp.processEvents()        # allow processing of other events
 
         knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
 
