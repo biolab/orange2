@@ -38,6 +38,7 @@
 #include "discretize.hpp"
 #include "classfromvar.hpp"
 #include "cost.hpp"
+#include "learn.hpp"
 
 #include <string>
 #include "preprocessors.ppp"
@@ -789,6 +790,81 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
   return mlnew TExampleTable(PDomain(mlnew TDiscretizedDomain(gen, discretizeId, weightID, method)), gen);
 }
 
+
+TImputeClassifier::TImputeClassifier(PVariable newVar, PVariable oldVar)
+: TClassifier(newVar),
+  classifierFromVar(mlnew TClassifierFromVar(newVar, oldVar))
+{}
+
+
+TImputeClassifier::TImputeClassifier(const TImputeClassifier &old)
+: TClassifier(old),
+  classifierFromVar(old.classifierFromVar),
+  imputer(old.imputer)
+{}
+
+
+TValue TImputeClassifier::operator ()(const TExample &ex)
+{
+  checkProperty(classifierFromVar);
+  checkProperty(imputer);
+
+  const TValue res = classifierFromVar->call(ex);
+
+  return res.isSpecial() ? imputer->call(ex) : res;
+}
+
+
+PExampleGenerator TPreprocessor_imputeByLearner::operator()(PExampleGenerator gen, const int &weightID, int &newWeight)
+{
+  checkProperty(learner);
+
+  TDomain &domain = gen->domain.getReference();
+
+  // determine the attributes with unknown values
+  vector<int> knowns;
+  for(int i = 0, e = domain.attributes->size(); i<e; i++)
+    knowns.push_back(i);
+  vector<int> unknowns;
+
+  PEITERATE(ei, gen) {
+    for(int rei = 1; rei--; )
+      ITERATE(vector<int>, ui, knowns)
+        if ((*ei)[*ui].isSpecial()) {
+          unknowns.push_back(*ui);
+          knowns.erase(ui);
+          rei = 1;
+          break; // break out of this ITERATE since the vector has changed, but set rei to 1 to enter it once again...
+        }
+    if (!knowns.size())
+      break;
+  }
+
+  TVarList newVars = domain.attributes.getReference();
+  TVarList::iterator nvi(newVars.begin());
+  ITERATE(vector<int>, ki, unknowns) {
+    PVariable &oldVar = domain.attributes->at(*ki);
+    PVariable newVar = CLONE(TVariable, oldVar);
+
+    TVarList learnAttrs = domain.attributes.getReference();
+    learnAttrs.erase(learnAttrs.begin() + *ki);
+    PDomain learnDomain = mlnew TDomain(oldVar, learnAttrs);
+    PExampleGenerator data = mlnew TExampleTable(learnDomain, gen);
+
+    TImputeClassifier *imputeClassifier = mlnew TImputeClassifier(newVar, oldVar);
+    PClassifier wimputeClassifier = imputeClassifier;
+
+    imputeClassifier->imputer = learner->call(data, weightID);
+
+    newVar->getValueFrom = wimputeClassifier;
+
+    newVars[*ki] = newVar;
+  }
+
+  newWeight = weightID;
+  PDomain newDomain = mlnew TDomain(domain.classVar, newVars);
+  return mlnew TExampleTable(newDomain, gen);
+}
 
 
 

@@ -194,7 +194,10 @@ C_CALL(Preprocessor_addClassWeight, Preprocessor, "([examples[, weightID]] [equa
 C_CALL(Preprocessor_addCensorWeight, Preprocessor, "([examples[, weightID]] [method=0-km, 1-nmr, 2-linear, outcomeVar=, eventValue=, timeID=, maxTime=]) -/-> ExampleTable")
 
 C_CALL(Preprocessor_filter, Preprocessor, "([examples[, weightID]] [filter=]) -/-> ExampleTable")
+C_CALL(Preprocessor_imputeByLearner, Preprocessor, "([examples[, weightID]] [learner=]) -/-> ExampleTable")
 C_CALL(Preprocessor_discretize, Preprocessor, "([examples[, weightID]] [notClass=, method=, attributes=<list-of-strings>]) -/-> ExampleTable")
+
+C_NAMED(ImputeClassifier, Classifier, "([classifierFromVar=][imputer=])")
 
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, KM, TPreprocessor_addCensorWeight::km)
 PYCLASSCONSTANT_INT(Preprocessor_addCensorWeight, Linear, TPreprocessor_addCensorWeight::linear)

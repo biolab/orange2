@@ -33,6 +33,7 @@
 
 #include "filter.hpp"
 #include "discretize.hpp"
+#include "classify.hpp"
 
 WRAPPER(Filter);
 class TExampleTable;
@@ -274,7 +275,34 @@ public:
 
   TPreprocessor_discretize();
   TPreprocessor_discretize(PVarList, const bool & = false, PDiscretization = PDiscretization());
-  virtual PExampleGenerator operator()(PExampleGenerator generators, const int &weightID, int &newWeight);
+  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
+};
+
+
+WRAPPER(Learner);
+WRAPPER(ClassifierFromVar);
+
+class TImputeClassifier : public TClassifier {
+public:
+  __REGISTER_CLASS
+
+  PClassifierFromVar classifierFromVar; //P ClassifierFromVar that is used to retrieve defined values
+  PClassifier imputer; //P classifier that is used to determine the missing values 
+
+  TImputeClassifier(PVariable newVar = PVariable(), PVariable oldVar = PVariable());
+  TImputeClassifier(const TImputeClassifier &);
+
+  virtual TValue operator ()(const TExample &ex);
+};
+
+
+class TPreprocessor_imputeByLearner : public TPreprocessor {
+public:
+  __REGISTER_CLASS
+
+  PLearner learner; //P learner used for inducing a model for imputation
+
+  virtual PExampleGenerator operator()(PExampleGenerator, const int &weightID, int &newWeight);
 };
 
 
