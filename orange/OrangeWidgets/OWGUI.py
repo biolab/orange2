@@ -36,7 +36,7 @@ def lineEditOnly(widget, master, text, value):
         hb = QHBox(widget)
         QLabel(text, hb)
     wa = QLineEdit(widget)
-    wa.setText(getattr(master,value))
+    wa.setText(str(getattr(master,value)))
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
     return wa
 

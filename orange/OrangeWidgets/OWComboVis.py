@@ -13,6 +13,7 @@ from OWRank import *
 from OWWidget import *
 
 class OWComboVis(OWWidget):
+    settingsList = []
     def __init__(self, parent=None, name='Classification Tree'):
         OWWidget.__init__(self,
         parent,
