@@ -84,7 +84,7 @@ class BasicSVMLearner(orange.Learner):
       # class weights
       self.classweights = []
 
-      self.translation_mode = 1      
+      self.translation_mode = 2
       
   def getmodel(self,data):
       # make sure that regression is used for continuous classes, and classification

@@ -6,7 +6,7 @@
 # CVS Status: $Id$
 #
 # Version 2.0 (20/11/2003)
-#   - SVM no longer uses -1 for minimum value in categorical attributes
+# *DISABLED*  - SVM no longer uses -1 for minimum value in categorical attributes
 #
 # Version 1.9 (17/11/2003)
 #   - Dummy picks the most frequent value to be the default
@@ -50,6 +50,9 @@ import orange, warnings, math
 # For class, ordinalizer is used instead of dummy
 #
 # if you are unhappy about this, subclass DomainTranslation and fudge with analyse()
+
+SVM_MIN = 0.0
+SVM_MAX = 1.0
 
 def _getattr(ex,attr):
     # a 'smart' function tries to access an attribute first by reference, then by name
@@ -311,8 +314,8 @@ class Binarizer:
         return
             
     def prepareSVM(self):
-        self.min = 0.0
-        self.max = 1.0
+        self.min = SVM_MIN
+        self.max = SVM_MAX
         self.missing = (0,1)
         return
 
@@ -386,8 +389,8 @@ class Dummy:
         print "\tidxn:",self.nidx-self.idx
             
     def prepareSVM(self):
-        self.min = 0.0
-        self.max = 1.0
+        self.min = SVM_MIN
+        self.max = SVM_MAX
         self.missing = (0,1)
         return
 

@@ -11,6 +11,9 @@
 #
 # CVS Status: $Id$
 #
+# Version 1.8 (14/05/2004)
+#   - Normalized calibration
+#
 # Version 1.7 (11/08/2002)
 #   - Support for new Orange (RandomIndices)
 #   - Assertion error was resulting because Orange incorrectly compared the
@@ -80,7 +83,7 @@ class BLogisticClassifier(orange.Classifier):
         
     def getmargin(self,example):
         # returns the actual probability which is not to be fudged with
-        return self.__call__(example)
+        return self.__call__(example)[1]
 
     def description(self,attnames,classname,classv):
         print 'Logistic Regression Report'
@@ -449,8 +452,16 @@ class MarginMetaLearner(orange.Learner):
                   classifier = self.learner(learn_data, weight=weight)
               else:
                   classifier = self.learner(learn_data)
-              for ex in test_data:
+              # normalize the range              
+              mi = 1e100
+              ma = -1e100
+              for ex in learn_data:
                   margin = classifier.getmargin(ex)
+                  mi = min(mi,margin)
+                  ma = max(ma,margin)
+              coeff = 1.0/max(ma-mi,1e-16)
+              for ex in test_data:
+                  margin = coeff*classifier.getmargin(ex)
                   if type(margin)==type(1.0) or type(margin)==type(1):
                       # ignore those examples which are handled with
                       # the actual probability distribution
@@ -474,16 +485,25 @@ class MarginMetaLearner(orange.Learner):
             estimate = self.metalearner(mistakes)
             classifier = self.learner(examples)
 
+        # normalize the range              
+        mi = 1e100
+        ma = -1e100
+        for ex in examples:
+            margin = classifier.getmargin(ex)
+            mi = min(mi,margin)
+            ma = max(ma,margin)
+        coeff = 1.0/max(ma-mi,1e-16)
         #print estimate.classifier.classifier
         #for x in mistakes:
         #    print x,estimate(x,orange.GetBoth)
 
-        return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain)
+        return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain, coeff)
 
 
 class MarginMetaClassifier(orange.Classifier):
-    def __init__(self, classifier, estimator, domain, estdomain):
+    def __init__(self, classifier, estimator, domain, estdomain, coeff):
         self.classifier = classifier
+        self.coeff = coeff
         self.estimator = estimator
         self.domain = domain
         self.estdomain = estdomain
@@ -491,7 +511,7 @@ class MarginMetaClassifier(orange.Classifier):
         self._name = 'MarginMetaClassifier'
 
     def __call__(self, example, format = orange.GetValue):
-        r = self.classifier.getmargin(example)
+        r = self.coeff*self.classifier.getmargin(example)
         if type(r) == type(1.0) or type(r) == type(1):
             # got a margin
             ex = orange.Example(self.estdomain,[r,self.cv]) # need a dummy class value
