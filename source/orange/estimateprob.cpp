@@ -393,13 +393,16 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_ByR
 
   PContingency newcont = mlnew TContingencyAttrClass(frequencies->outerVariable, frequencies->innerVariable);
   TDistributionVector::const_iterator fi(frequencies->discrete->begin()), fe(frequencies->discrete->end());
-  for (; fi!=fe; fi++) {
+  for (int i = 0; fi!=fe; fi++, i++) {
     PProbabilityEstimator est = estimatorConstructor->call(*fi, apriori, PExampleGenerator(), 0, attrNo);
     cpel->push_back(est);
     PDistribution dist = est->call();
     if (!dist)
       break;
-    newcont->discrete->push_back(dist);
+    if (i >= newcont->discrete->size())
+      newcont->discrete->push_back(dist);
+    else
+      newcont->discrete->operator[](i) = dist;
   }
   
 
