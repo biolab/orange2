@@ -4,7 +4,8 @@ MODULENAME=ORANGE
 include ../makefile.defs
 include makefile.deps
 
-r_imports.ipp rimporst.jpp:	r_imporst.hpp
+r_imports.cpp: r_imports.hpp
+r_imports.jpp r_imports.ipp:	r_imports.hpp
 	python ../pyxtract/jitlink_build.py R.so r_imports.hpp
 
 $(OLD)/orange.so:	ppp/stamp px/stamp $(ORANGE_OBJECTS)
