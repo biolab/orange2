@@ -17,7 +17,7 @@ echo VARNAME: $VARNAME
 echo INCGENOMICS: $INCGENOMICS
 echo
 
-COMPILEORANGE=0
+COMPILEORANGE=1
 COMPILECRS=0
 
 ## check out orange source and compile orange
@@ -90,5 +90,7 @@ cp $DMGFILE ~/estelleDownload
 cp filenames.new.set ~/estelleDownload/filenames.set
 # remove old file
 rm ~/estelleDownload/$OLDDMGFILE
-# ~/umount_estelle
+rm *.dmg
+
+~/umount_estelle
 
