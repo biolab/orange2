@@ -76,6 +76,9 @@ class OWC45Tree(OWWidget):
 
         self.resize(100,350)
 
+    def activateLoadedSettings(self):
+        self.setLearner()    
+
     # main part:         
 
     def cdata(self,data):
