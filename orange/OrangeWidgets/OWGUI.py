@@ -56,13 +56,20 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
 		master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
 	return b
 
-def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0):
+def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None, getwidget=None, id=None, disabled=0, labelWidth=None, disables = []):
 	b = widgetBox(widget, box, orientation=None)
 	wa = QCheckBox(text, b)
+	if labelWidth:
+		wa.setFixedSize(labelWidth, wa.sizeHint().height())
 	wa.setChecked(getattr(master, value))
 	if disabled: wa.setDisabled(1)
 	master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
 	master.controledAttributes.append((value, CallFront_checkBox(wa)))
+	
+	wa.disables = disables
+	wa.makeConsistent = Disabler(wa, master, value)
+	master.connect(wa, SIGNAL("toggled(bool)"), wa.makeConsistent)
+
 	if tooltip: QToolTip.add(wa, tooltip)
 	if callback:
 		master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
@@ -83,23 +90,22 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
 	wa.box = b
 	return wa
 
-def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None):
+def checkWithSpin(widget, master, text, min, max, checked, value, posttext = None, step = 1, tooltip=None, checkCallback=None, spinCallback=None, getwidget=None, labelWidth=None):
 	hb = QHBox(widget)
-	wa = QCheckBox(text, hb)
-	wa.setChecked(getattr(master, checked))
+	wa = checkBox(hb, master, checked, text, callback = checkCallback, labelWidth = labelWidth)
+
 	wb = QSpinBox(min, max, step, hb)
 	wb.setValue(getattr(master, value))
 	if posttext <> None:
 		QLabel(posttext, hb)
 	# HANDLE TOOLTIP XXX
 
-	master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, checked))
+	wa.disables = [wb]
+	wa.makeConsistent()
+	
 	master.connect(wb, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-	master.controledAttributes.append((checked, CallFront_checkBox(wa)))
 	master.controledAttributes.append((value, CallFront_spin(wb)))
 
-	if checkCallback:
-		master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, checkCallback, widget=wa, getwidget=getwidget))
 	if spinCallback:
 		master.connect(wb, SIGNAL("valueChanged(int)"), FunctionCallback(master, spinCallback, widget=wb, getwidget=getwidget))
 	
@@ -368,6 +374,41 @@ class CallFront_radioButtons:
 
 	def __call__(self, value):
 		self.control.buttons[value].setOn(1)
+
+##############################################################################
+## Disabler is a call-back class for check box that can disable/enable other
+## widgets according to state (checked/unchecked, enabled/disable) of the
+## given check box
+##
+## Tricky: if self.propagateState is True (default), then if check box is
+## disabled, the related widgets will be disabled (even if the checkbox is
+## checked). If self.propagateState is False, the related widgets will be
+## disabled/enabled if check box is checked/clear, disregarding whether the
+## check box itself is enabled or not. (If you don't understand, see the code :-)
+
+class Disabler:
+	def __init__(self, widget, master, valueName, propagateState = 1):
+		self.widget = widget
+		self.master = master
+		self.valueName = valueName
+		self.propagateState = propagateState
+		
+	def __call__(self, *value):
+		if self.widget.isEnabled() or not self.propagateState:
+			if len(value):
+				disabled = not value[0]
+			else:
+				disabled = not getattr(self.master, self.valueName)
+		else:
+			disabled = 1
+			
+		for w in self.widget.disables:
+			if type(w) == tuple:
+				w[0].setDisabled(disabled)
+				if hasattr(w[0], "makeConsistent"):
+					w[0].makeConsistent()
+			else:
+				w.setDisabled(disabled)
 		
 ##############################################################################
 # some table related widgets
