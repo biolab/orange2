@@ -18,8 +18,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.resize(900,800)
         self.setCaption("Qt Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
-        
-        self.widgetDir = os.path.join(os.path.split(os.path.abspath(orange.__file__))[0], "OrangeWidgets")
+
+        self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
+        self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
         if not os.path.exists(self.widgetDir): 
             print "Error. Directory %s not found. Unable to locate widgets." % (self.widgetDir)
         
@@ -27,7 +28,7 @@ class OrangeCanvasDlg(QMainWindow):
         if not os.path.exists(self.picsDir):
             print "Error. Directory %s not found. Unable to locate widget icons." % (self.picsDir)
         
-        self.canvasDir = os.path.join(os.path.split(os.path.abspath(orange.__file__))[0], "OrangeCanvas")
+        self.canvasDir = os.path.join(self.orangeDir, "OrangeCanvas")
         
         # add all directories with widgets to the path
         if os.path.exists(self.widgetDir):
@@ -234,9 +235,9 @@ class OrangeCanvasDlg(QMainWindow):
 
         localHelp = 0
         self.menuHelp = QPopupMenu( self )
-        if os.path.exists("../doc/reference/default.htm") or os.path.exists("../doc/canvas/default.htm"):
-            if os.path.exists("../doc/reference/default.htm"): self.menuHelp.insertItem("Orange help", self.menuOpenLocalOrangeHelp)
-            if os.path.exists("../doc/canvas/default.htm"): self.menuHelp.insertItem("Orange Canvas help", self.menuOpenLocalCanvasHelp)
+        if os.path.exists(os.path.join(self.orangeDir, "doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, "doc/canvas/default.htm")):
+            if os.path.exists(os.path.join(self.orangeDir, "doc/reference/default.htm")): self.menuHelp.insertItem("Orange help", self.menuOpenLocalOrangeHelp)
+            if os.path.exists(os.path.join(self.orangeDir, "doc/canvas/default.htm")): self.menuHelp.insertItem("Orange Canvas help", self.menuOpenLocalCanvasHelp)
             self.menuHelp.insertSeparator()
         
         self.menuHelp.insertItem("Orange On-line help", self.menuOpenOnlineOrangeHelp)
@@ -486,10 +487,10 @@ class OrangeCanvasDlg(QMainWindow):
         win.showNormal()
 
     def menuOpenLocalOrangeHelp(self):
-        webbrowser.open("../doc/reference/default.htm")
+        webbrowser.open(os.path.join(self.orangeDir, "doc/reference/default.htm"))
 
     def menuOpenLocalCanvasHelp(self):
-        webbrowser.open("../doc/canvas/default.htm")
+        webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
 
     def menuOpenOnlineOrangeHelp(self):
         webbrowser.open("http://magix.fri.uni-lj.si/orange")
@@ -521,7 +522,6 @@ class OrangeCanvasDlg(QMainWindow):
 
     def focusDocument(self, w):    
         if w: w.setFocus()
-
 
     def menuItemCanvasOptions(self):
         dlg = orngDlgs.CanvasOptionsDlg(self, None, "", TRUE)
@@ -593,7 +593,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Loads settings from the widget's .ini file    
     def loadSettings(self):
-        filename = self.canvasDir + "orngCanvas.ini"
+        filename = os.path.join(self.canvasDir, "orngCanvas.ini")
         if os.path.exists(filename):
             file = open(filename, "rb")
             self.settings = cPickle.load(file)
@@ -609,7 +609,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     # Saves settings to this widget's .ini file
     def saveSettings(self):
-        filename = self.canvasDir + "orngCanvas.ini"
+        filename = os.path.join(self.canvasDir, "orngCanvas.ini")
         file=open(filename, "wb")
         cPickle.dump(self.settings, file)
         file.close()
