@@ -6,11 +6,6 @@
 inline double sqr(const double &x)
 { return x*x; }
 
-template<class T>
-inline void tomax(T &x, const T &y)
-{ if (y>x)
-    x = y;
-}
 
 typedef struct {double x, y; } TPoint;
 
@@ -446,6 +441,169 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
 
     free(anc);
     free(dphi);
+    free(pts);
+    free(ll);
+    free(classes);
+    free(X);
+    free(sum);
+    free(K);
+
+    return Py_BuildValue("Od", anchors, E);
+      
+  PyCATCH;
+}
+
+
+PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0]) -> new-anchors")
+{
+  PyTRY
+    PyObject *scaledData;
+    PyObject *pyclasses;
+    PyObject *anchors;
+    PyObject *pyattrIndices;
+    double attractG = 1.0, repelG = -1.0;
+    int steps = 1;
+
+    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps))
+      return NULL;
+
+    double *Xi, *X;
+    int *classes;;
+    TPoint *anci, *anc, *ance;
+    PyObject **lli, **ll;
+    int nAttrs, nExamples;
+
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, X, classes, anc, ll))
+      return PYNULL;
+
+    ance = anc + nAttrs;
+
+    int i, u, v;
+    double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
+    double *dri, *dr = (double *)malloc(nAttrs * sizeof(double)), *dre = dr + nAttrs;
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
+    double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
+    TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
+
+    while (steps--) {
+      for(anci = anc, radi = rad; anci != ance; anci++, radi++)
+        *radi = sqrt(sqr(anci->x) + sqr(anci->y));
+
+      for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
+        ptsi->x = ptsi->y = *sumi = 0.0;
+        for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
+          ptsi->x += *Xi * anci->x;
+          ptsi->y += *Xi * anci->y;
+          *sumi += *Xi * *radi;
+        }
+        if (*sumi == 0.0)
+          *sumi = 1.0;
+        ptsi->x /= *sumi;
+        ptsi->y /= *sumi;
+      }
+
+
+/* XXX   TO OPTIMIZE:
+       - use pointers instead of indexing
+       - sort the examples by classes so you don't have to compare them all the time
+       - if attractive force are 0, you can gain some time by checking only the examples from different classes
+*/
+                     
+      for(Ki = K; Ki != Ke; Ki++)
+        Ki->x = Ki-> y = 0.0;
+
+      for(dri = dr; dri != dre; *(dri++) = 0.0);
+
+      for(u = 0; u < nExamples; u++) {
+        for(v = u+1; v < nExamples; v++) {
+          const double duv = classes[u] == classes[v] ? attractG : repelG;
+          if (duv == 0.0)
+            continue;
+
+          double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
+          if (ruv < 1e-15)
+            ruv = 1e-15;
+
+          //const double druv = duv / exp(0.3 * log(ruv));
+          //const double druv = duv / sqrt(ruv);
+          const double druv = duv / ruv;
+
+          const double druvx = druv * (pts[u].x - pts[v].x);
+          K[u].x += druvx;
+          K[v].x -= druvx;
+
+          const double druvy = druv * (pts[u].y - pts[v].y);
+          K[u].y += druvy;
+          K[v].y -= druvy;
+        }
+
+        K[u].x /= sum[u];
+        K[u].y /= sum[u];
+
+        double *Xu = X + u * nAttrs;
+        for(i = 0; i < nAttrs; i++, Xu++)
+          dr[i] -= *Xu/sum[u] * (K[u].x * anc[i].x + K[u].y * anc[i].y);
+      }
+
+
+      double scaling = 1e10;
+      for(anci = anc, dri = dr; dri != dre; anci++, dri++) {
+        double maxdr = 0.1 * sqrt(sqr(anci->x) + sqr(anci->y));
+        if ((maxdr > 1e-5) && (*dri > 1e-5)) {
+          if (scaling * *dri > maxdr)
+            scaling = maxdr / *dri;
+        }
+      }
+
+      for(dri = dr; dri != dre; *dri++ *= scaling);
+
+  // Move anchors
+      for(anci = anc, dri = dr, radi = rad; dri != dre; dri++, anci++, radi++) {
+        double rat = (*radi + *dri) / *radi;
+        anci->x *= rat;
+        anci->y *= rat;
+      }
+
+       //Centering and scaling
+      double aax = 0.0, aay = 0.0;
+      for(anci = anc; anci != ance; anci++) {
+        aax += anci->x;
+        aay += anci->y;
+      }
+
+      aax /= nAttrs;
+      aay /= nAttrs;
+
+      for(anci = anc; anci != ance; anci++) {
+        anci->x -= aax;
+        anci->y -= aay;
+      }
+
+
+      double maxr = 0.0;
+      for(anci = anc; anci != ance; anci++) {
+        const double r = sqr(anci->x) + sqr(anci->y);
+        if (r > maxr)
+          maxr = r;
+      }
+
+      if (maxr > 0) {
+        maxr = sqrt(maxr);
+        for(anci = anc; anci != ance; anci++) {
+          anci->x /= maxr;
+          anci->y /= maxr;
+        }
+      }
+     }
+
+    anchors = PyList_New(nAttrs);
+    for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
+      PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
+      
+    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG);
+
+    free(anc);
+    free(dr);
     free(pts);
     free(ll);
     free(classes);
