@@ -328,6 +328,7 @@ class OWBaseWidget(QDialog):
             for attrname, func in self.controledAttributes:
                 if attrname == name:
                     func(value)
+                    return
 
     
 if __name__ == "__main__":  

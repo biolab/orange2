@@ -108,7 +108,7 @@ class OWParallelGraph(OWVisGraph):
         #############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
         # we do this by adding a integer meta attribute, that for each example stores attribute index, where we stop drawing lines
-        lastIndex = indices[length-1]
+        lastIndex = indices[-1]
         dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
         
         if self.hidePureExamples == 1 and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
