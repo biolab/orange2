@@ -6,12 +6,10 @@
 <priority>1030</priority>
 """
 
-from OData import *
 from OWTools import *
 from OWWidget import *
 from OWGraph import *
-from OWGUI import *
-from OWCalibrationPlotOptions import *
+import OWGUI
 
 import orngTest, orngStat
 import statc, math
@@ -192,16 +190,25 @@ class singleClassCalibrationPlotGraph(OWGraph):
 class OWCalibrationPlot(OWWidget):
     settingsList = ["CalibrationCurveWidth", "ShowDiagonal", "ShowRugs"]
     def __init__(self,parent=None):
-        "Constructor"
-        OWWidget.__init__(self, parent, "Calibration Plot", "None.", TRUE, TRUE)
+        OWWidget.__init__(self, parent, "Calibration Plot", "None.", FALSE, TRUE)
+
+        # inputs
+        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results)] ##, ("Target", int, self.target, 1)]
 
         #set default settings
         self.CalibrationCurveWidth = 3
         self.ShowDiagonal = TRUE
         self.ShowRugs = TRUE
-
         #load settings
         self.loadSettings()
+
+        # temp variables
+        self.dres = None
+        self.targetClass = None
+        self.numberOfClasses = 0
+        self.graphs = []
+        self.classifierColor = None
+        self.numberOfClassifiers = 0
 
         # GUI
         self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
@@ -209,68 +216,40 @@ class OWCalibrationPlot(OWWidget):
         self.graph = None
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFile)
 
-        # inputs
-        # data and graph temp variables
-        self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results, 1), ("Target", int, self.target, 1)]
-
-        # temp variables
-        self.dres = None
-        self.targetClass = None
-        self.numberOfClasses = 0
-        self.graphs = []
-
-        self.classifierColor = None
-        self.numberOfClassifiers = 0
-
-        self.options = OWCalibrationPlotOptions()
-        self.activateLoadedSettings()
-
-        #connect settingsbutton to show options
-        self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
-
-        #connect GUI controls of options in options dialog to settings
-        self.connect(self.options.lineWidthSlider, SIGNAL("valueChanged(int)"), self.setCalibrationCurveWidth)
-        self.connect(self.options.showDiagonalQCB, SIGNAL("toggled(bool)"), self.setShowDiagonal)
-        self.connect(self.options.showRugsQCB, SIGNAL("toggled(bool)"), self.setShowRugs)
-
-        # GUI connections
+        ## general tab
+        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
+        self.generalTab = QVGroupBox(self)
         self.splitQS = QSplitter()
         self.splitQS.setOrientation(Qt.Vertical)
 
         ## classifiers selection (classifiersQLB)
-        self.classifiersQVGB = QVGroupBox(self.space)
+        self.classifiersQVGB = QVGroupBox(self.generalTab)
         self.classifiersQVGB.setTitle("Classifiers")
         self.classifiersQLB = QListBox(self.classifiersQVGB)
         self.classifiersQLB.setSelectionMode(QListBox.Multi)
-        self.connect(self.classifiersQLB, SIGNAL("selectionChanged()"), self.classifiersSelectionChange)
         self.unselectAllClassifiersQLB = QPushButton("(Un)select all", self.classifiersQVGB)
+        self.connect(self.classifiersQLB, SIGNAL("selectionChanged()"), self.classifiersSelectionChange)
         self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
+        self.tabs.insertTab(self.generalTab, "General")
 
-    def setCalibrationCurveWidth(self, v):
-        self.CalibrationCurveWidth = v
+        ## settings tab
+        self.settingsTab = QVGroupBox(self)
+        OWGUI.hSlider(self.settingsTab, self, 'CalibrationCurveWidth', box='Calibration Curve Width', minValue=1, maxValue=9, step=1, callback=self.setCalibrationCurveWidth, ticks=1)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowDiagonal', 'Show Diagonal Line', tooltip='', callback=self.setShowDiagonal)
+        OWGUI.checkBox(self.settingsTab, self, 'ShowRugs', 'Show Rugs', tooltip='', callback=self.setShowRugs)
+        self.tabs.insertTab(self.settingsTab, "Settings")
+
+    def setCalibrationCurveWidth(self):
         for g in self.graphs:
-            g.setCalibrationCurveWidth(v)
+            g.setCalibrationCurveWidth(self.CalibrationCurveWidth)
 
-    def setShowDiagonal(self, v):
-        self.ShowDiagonal = v
+    def setShowDiagonal(self):
         for g in self.graphs:
-            g.setShowDiagonal(v)
+            g.setShowDiagonal(self.ShowDiagonal)
 
-    def setShowRugs(self, v):
-        self.ShowRugs = v
+    def setShowRugs(self):
         for g in self.graphs:
-            g.setShowRugs(v)
-
-    def activateLoadedSettings(self):
-        self.options.lineWidthSlider.setValue(self.CalibrationCurveWidth)
-        self.options.lineWidthLCD.display(self.CalibrationCurveWidth)
-        self.setCalibrationCurveWidth(self.CalibrationCurveWidth)
-        #
-        self.options.showDiagonalQCB.setChecked(self.ShowDiagonal)
-        self.setShowDiagonal(self.ShowDiagonal)
-        #
-        self.options.showRugsQCB.setChecked(self.ShowRugs)
-        self.setShowRugs(self.ShowRugs)
+            g.setShowRugs(self.ShowRugs)
 
     ##
     def selectUnselectAll(self, qlb):
@@ -283,9 +262,7 @@ class OWCalibrationPlot(OWWidget):
 
     def SUAclassifiersQLB(self):
         self.selectUnselectAll(self.classifiersQLB)
-    ##
 
-    ## classifiers selection (classifiersQLB)
     def classifiersSelectionChange(self):
         list = []
         for i in range(self.classifiersQLB.count()):
@@ -306,7 +283,6 @@ class OWCalibrationPlot(OWWidget):
             g.setCalibrationCurveWidth(self.CalibrationCurveWidth)
             g.setShowDiagonal(self.ShowDiagonal)
             g.setShowRugs(self.ShowRugs)
-
             cl += 1
 
     def removeGraphs(self):
@@ -320,7 +296,7 @@ class OWCalibrationPlot(OWWidget):
     def target(self, targetClass):
         self.targetClass = targetClass
 
-        for g in self.graphs:
+        for g in self.graphs: 
             g.hide()
 
         if (self.targetClass <> None) and (len(self.graphs) > 0):
@@ -336,14 +312,12 @@ class OWCalibrationPlot(OWWidget):
 
     def results(self, dres):
         self.dres = dres
-
         self.classifiersQLB.clear()
         self.removeGraphs()
 
         self.graphs = []
         if self.dres <> None:
             self.numberOfClasses = len(self.dres.classValues)
-
             ## one graph for each class
             for i in range(self.numberOfClasses):
                 graph = singleClassCalibrationPlotGraph(self.mainArea)
@@ -384,6 +358,3 @@ if __name__ == "__main__":
     a.setMainWidget(owdm)
     owdm.show()
     a.exec_loop()
-    owdm.saveSettings()
-
-
