@@ -219,8 +219,12 @@ public:
     }
 
 
-  inline int TValue::compare(const TValue &v) const       
-  CASES((sign(intV-v.intV)), (sign(floatV-v.floatV)), (svalV->compare(v.svalV.getReference())), -1)
+  inline int TValue::compare(const TValue &v) const
+  { if (isSpecial())
+      return v.isSpecial() ? 0 : 1;
+    // -1 in cases now corresponds to this being regular and v special
+    CASES((sign(intV-v.intV)), (sign(floatV-v.floatV)), (svalV->compare(v.svalV.getReference())), -1)
+  }
 
   inline bool TValue::compatible(const TValue &v) const
   CASES((intV==v.intV), (floatV==v.floatV), (svalV->compatible(v.svalV.getReference())), true)

@@ -479,6 +479,8 @@ PDomain TTabDelimExampleGenerator::domainWithoutDetection(const string &stem, bo
     ::raiseError("mismatching number of attributes and their types.");
   if (varNames.size() < varFlags.size())
     ::raiseError("too many flags (third line too long)");
+  while (varFlags.size() < varNames.size())
+    varFlags.push_back("");
 
   TAttributeDescriptions attributeDescriptions, metas;
   TAttributeDescription classDescription("", 0);

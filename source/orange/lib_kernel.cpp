@@ -294,7 +294,7 @@ bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, 
     return true;
   }
   
-  if (!PyMapping_Check(boundList)) {
+  if (PySequence_Check(boundList)) {
     PyObject *iterator = PyObject_GetIter(boundList);
     if (iterator) {
       for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {

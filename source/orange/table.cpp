@@ -642,40 +642,47 @@ void TExampleTable::sort(vector<int> &sortOrder)
   int lastOfs = _Last - examples;
   TExample **temp = (TExample **)malloc(ssize * sizeof(TExample *));
 
-  const_ITERATE(vector<int>, bi, sortOrder) {
-    int noVal = domain->getVar(*bi)->noOfValues();
-    if (noVal>0) {
-      vector<int> valf(noVal+1, 0);
-      TExample **t;
-      int id = 0;
+  try {
+    const_ITERATE(vector<int>, bi, sortOrder) {
+      int noVal = domain->getVar(*bi)->noOfValues();
+      if (noVal>0) {
+        vector<int> valf(noVal+1, 0);
+        TExample **t;
+        int id = 0;
 
-      for(t = examples; t!= _Last; t++) {
-        const TValue &val = (**t)[*bi];
-        const int intV = val.isSpecial() ? noVal : val.intV;
-        if (intV > noVal) {
-          free(temp);
-          raiseError("value out attribute '%s' of range", domain->variables->operator[](*bi)->name.c_str());
+        for(t = examples; t!= _Last; t++) {
+          const TValue &val = (**t)[*bi];
+          const int intV = val.isSpecial() ? noVal : val.intV;
+          if (intV > noVal) {
+            free(temp);
+            raiseError("value out attribute '%s' of range", domain->variables->operator[](*bi)->name.c_str());
+          }
+          valf[intV]++;
         }
-        valf[intV]++;
+
+        for(vector<int>::iterator ni = valf.begin(); ni!=valf.end(); *(ni++)=(id+=*ni)-*ni);
+
+        for(t = examples; t!= _Last; t++) {
+          const TValue &val = (**t)[*bi];
+          const int intV = val.isSpecial() ? noVal : val.intV;
+          temp[valf[intV]++] = *t;
+        }
+
+        t = examples;
+        examples = temp;
+        temp = t;
+        _Last = examples + lastOfs;
+        _EndSpace = examples + ssize;
       }
 
-      for(vector<int>::iterator ni = valf.begin(); ni!=valf.end(); *(ni++)=(id+=*ni)-*ni);
-
-      for(t = examples; t!= _Last; t++) {
-        const TValue &val = (**t)[*bi];
-        const int intV = val.isSpecial() ? noVal : val.intV;
-        temp[valf[intV]++] = *t;
-      }
-
-      t = examples;
-      examples = temp;
-      temp = t;
-      _Last = examples + lastOfs;
-      _EndSpace = examples + ssize;
+      else
+        stable_sort(examples, _Last, TCompVar(*bi));
     }
-
-    else
-      stable_sort(examples, _Last, TCompVar(*bi));
+  }
+  catch (...) {
+    examplesHaveChanged();
+    free(temp);
+    throw;
   }
 
   free(temp);
