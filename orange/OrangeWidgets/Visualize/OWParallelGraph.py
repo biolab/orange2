@@ -257,7 +257,6 @@ class OWParallelGraph(OWVisGraph):
                     curr = []
                     classValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                     for c in range(len(classValues)):
-                        print i, c
                         scaledVal = ((classValueIndices[classValues[c]] * 2) + 1) / float(2*len(classValueIndices))
                         nonMissingValues = Numeric.compress(Numeric.equal(self.validDataArray[indices[i]], 1), self.noJitteringScaledData[classNameIndex])  # remove missing values
                         arr_c = Numeric.compress(Numeric.equal(nonMissingValues, scaledVal), array)
