@@ -68,7 +68,7 @@ def _bw2(cc):
     return piddle.Color(v,v,v)
 
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[]):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
@@ -167,8 +167,8 @@ class DendrogramPlot:
                 
         offset = width-maxlabel-hook-2*margin
         if len(matr)>0:
-            offset -= 2*(len(matr[0])+1)*block # correct the right-hand side
-        hs = (offset-margin)/(height-displacement)         # height scaling
+            offset -= 2*(len(matr[0]))*adwidth*block + 2*block # correct the right-hand side
+        hs = (offset-margin)/(height-displacement)               # height scaling
         if incremental_height:
             hs = -hs
         halfline = canvas.fontAscent(font=normal)/2.0
@@ -179,7 +179,7 @@ class DendrogramPlot:
             y = margin
             s = len(matr[0])
             sx1 = width-margin-block
-            sx2 = width-margin-2*(len(matr[0]))*block-block
+            sx2 = width-margin-2*(len(matr[0]))*adwidth*block-block
             canvas.drawLine(sx1,y-block-1,sx2,y-block-1,colo,width=1)
             x2 = width-margin-block
             for i in range(len(labels)):
@@ -196,8 +196,9 @@ class DendrogramPlot:
                     canvas.drawLine(x1,y,sx2,y,colo,width=1)
                     canvas.drawLine(sx1,y+block+1,sx2,y+block+1,colo,width=1)
                     y += lineskip
+            # vertical guides
             for i in range(len(matr[0])+1):
-                x = width-margin-(2*(i)*block)-block
+                x = width-margin-(2*(i)*adwidth*block)-block
                 canvas.drawLine(x,margin-block,x,y-lineskip+block+1,colo,width=1)
 
         # print names
@@ -224,7 +225,7 @@ class DendrogramPlot:
         y += lineskip*1.5
         for i in range(len(add_tags)):
             wi = tcanvas.stringWidth(add_tags[i],font=normal)
-            x = width-margin-2*(len(add_tags)-i)*block - wi/2            
+            x = width-margin-2*(len(add_tags)-i-0.5)*adwidth*block - block - wi/2
             canvas.drawString(add_tags[i], x, y+halfline,font=bold)
 
         # print lines
@@ -243,20 +244,20 @@ class DendrogramPlot:
                 mm = matr[idx]
                 for j in range(len(mm)):
                     # self.order identifies the label at a particular row
-                    x = width-margin-2*(len(mm)-j)*block
+                    x = width-margin-2*(len(mm)-j-0.5)*adwidth*block - block 
                     v = 1-mm[j]
                     #if v < 254.0/255.0:
                     colo = piddle.Color(v,v,v)
-                    canvas.drawRect(x-block+1,y-block,x+block-1,y+block,edgeColor=colo,fillColor=colo)
+                    canvas.drawRect(x-adwidth*block+1,y-block,x+adwidth*block-1,y+block,edgeColor=colo,fillColor=colo)
                 y += lineskip
             for i in range(len(additional_matr)):
                 y += lineskip
                 mm = additional_matr[i]
                 for j in range(len(mm)):
-                    x = width-margin-2*(len(mm)-j)*block
+                    x = width-margin-2*(len(mm)-j-0.5)*adwidth*block - block 
                     v = 1-mm[j]
                     colo = piddle.Color(v,v,v)
-                    canvas.drawRect(x-block+1,y-block,x+block-1,y+block,edgeColor=colo,fillColor=colo)
+                    canvas.drawRect(x-adwidth*block+1,y-block,x+adwidth*block-1,y+block,edgeColor=colo,fillColor=colo)
             
         canvas.flush()
         return canvas
