@@ -30,6 +30,7 @@ class OWSave(OWWidget):
     
         self.recentFiles=[]
         self.selectedFileName = "None"
+        self.data = None
         self.loadSettings()
         
         vb = OWGUI.widgetBox(self.space, orientation="horizontal")
@@ -59,7 +60,7 @@ class OWSave(OWWidget):
             startfile = self.recentFiles[0]
         else:
             startfile = "."
-        filename = QFileDialog.getOpenFileName(startfile,
+        filename = QFileDialog.getSaveFileName(startfile,
         'Tab-delimited files (*.tab)\nHeaderless tab-delimited (*.txt)\nComma separated (*.csv)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
         None,'Orange Data File')
 
@@ -75,11 +76,8 @@ class OWSave(OWWidget):
         if self.data:
             filename = self.recentFiles[self.filecombo.currentItem()]
             fileExt = lower(os.path.splitext(filename)[1])
-            if not self.savers.has_key(fileExt):
-                QMessageBox.warning( None, "Unrecognized Extension", 'Cannot determine the file format from the given extension ("%s"); cannot save' % fileExt, QMessageBox.Ok)
-                return
-            else:
-                self.savers[fileExt](filename, self.data)
+            if fileExt == "": fileExt = ".tab"
+            self.savers[fileExt](filename, self.data)
 
 
     def addFileToList(self,fn):
