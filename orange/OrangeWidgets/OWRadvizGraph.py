@@ -725,6 +725,7 @@ class OWRadvizGraph(OWVisGraph):
         full = []
 
         self.totalPossibilities = 0
+        self.startTime = time.time()
         for i in range(numOfAttr, 2, -1):
             self.totalPossibilities += combinations(i, len(attrList))
             
