@@ -56,12 +56,12 @@ nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /
 nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 rem del snapshotfiles_*.inc
 
-pushd
 del %DOWNLOADDIR\orange-source-snap-*.zip
-cdd %SNAPSHOTDIR
-winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source orange/OrangeCanvas orange/OrangeWidgets orange/doc
-winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING
-popd
+cdd %STABLEDIR
+winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/OrangeCanvas orange/OrangeWidgets orange/doc
+winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
+winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" -aporange source
+winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
 
 cdd %SNAPSHOTDIR
 if errorlevel == 0 goto changedirok2

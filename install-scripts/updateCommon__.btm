@@ -49,7 +49,7 @@ winrar a -r "%DOWNLOADDIR\%SOURCE" orange/OrangeCanvas orange/OrangeWidgets oran
 winrar d "%DOWNLOADDIR\%SOURCE" @orange\exclude.lst
 winrar d -inul "%DOWNLOADDIR\%SOURCE" Root
 winrar a -r "%DOWNLOADDIR\%SOURCE" -aporange source
-winrar a "%DOWNLOADDIR\%SOURCE" orange/*.py orange/COPYING
+winrar a "%DOWNLOADDIR\%SOURCE" orange/*.py orange/COPYING orange/ensemble.c
 
 popd
 
