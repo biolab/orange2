@@ -163,7 +163,7 @@ class FilteredClassifier:
     return self.domain.attributes
   
 
-import orngStat, orngTest
+import orngStat, orngTest, statc
 
 def FSSWrapperLearner(examples = None, weight = 0, **kwds):
   learner = apply(FSSWrapperLearner_Class, (), kwds)
@@ -201,7 +201,7 @@ class FSSWrapperLearner_Class:
             return self.baseLearner(data, weight)
         print "Removed %s (%5.3f)" % (bestCand.name, bestCA)
         data = orange.Preprocessor_ignore(data, attributes=[bestCand])
-        if cmp(bestCA, startCA)==statsign:
+        if cmp(bestCA, startCA)==self.statsign:
             startCA, startCAs = bestCA, bestCCAs
     return orange.MajorityLearner(origdata, weight)
 
