@@ -5,18 +5,20 @@ import sys
 import cPickle
 import os
 import orange
+import orngTest
+from copy import copy
 
 CLASS_ACCURACY = 0
 BRIER_SCORE = 1
 
 class kNNOptimization(OWBaseWidget):
-    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType"]
+    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
-    kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
-    kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
+    kNeighboursList = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
+    kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
 
     def __init__(self,parent=None):
         #QWidget.__init__(self, parent)
@@ -34,6 +36,7 @@ class kNNOptimization(OWBaseWidget):
         self.measureType = 0
         self.widgetDir = sys.prefix + "/lib/site-packages/Orange/OrangeWidgets/"
         self.parentName = "Projection"
+        self.useHeuristics = 0
         #self.domainName = "Unknown"
         
         self.optimizedListFull = []
@@ -77,14 +80,14 @@ class kNNOptimization(OWBaseWidget):
         self.attrKNeighbour = QComboBox(self.hbox1)
 
         self.hbox2 = QHBox(self.optimizeButtonBox)
-        self.resultListLabel = QLabel('Length of results list: ', self.hbox2)
+        self.resultListLabel = QLabel('Length of results list:  ', self.hbox2)
         self.resultListCombo = QComboBox(self.hbox2)
         
         self.hbox3 = QHBox(self.optimizeButtonBox)
         self.minTableLenLabel = QLabel('Minimum examples in example table: ', self.hbox3)
         self.minTableLenEdit = QLineEdit(self.hbox3)
         self.hbox4 = QHBox (self.optimizeButtonBox)
-        self.percentDataUsedLabel = QLabel('Percent of data used in evaluation: ', self.hbox4)
+        self.percentDataUsedLabel = QLabel('Percent of data used in evaluation:   ', self.hbox4)
         self.percentDataUsedCombo = QComboBox(self.hbox4)
 
         self.measureBox = QHButtonGroup(self.optimizeButtonBox, "Quality measure")
@@ -98,14 +101,18 @@ class kNNOptimization(OWBaseWidget):
         self.numberOfAttrBox.setTitle("Number of attributes")
     
         self.hbox5 = QHBox(self.numberOfAttrBox)
-        self.optimizeSeparationButton = QPushButton('Optimize for exactly', self.hbox5)
+        self.optimizeSeparationButton = QPushButton(' Optimize for exactly  ', self.hbox5)
         self.exactlyLenCombo = QComboBox(self.hbox5)    # maximum number of attributes in subset
-        self.exactlyAttrLabel = QLabel('attr', self.hbox5)
+        self.exactlyAttrLabel = QLabel(' attributes', self.hbox5)
         
         self.hbox6 = QHBox(self.numberOfAttrBox)
-        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize for max', self.hbox6)
+        self.optimizeAllSubsetSeparationButton = QPushButton('Optimize for maximum', self.hbox6)
         self.maxLenCombo = QComboBox(self.hbox6)    # maximum number of attributes in subset
-        self.exactlyAttrLabel2 = QLabel('attr', self.hbox6)
+        self.exactlyAttrLabel2 = QLabel(' attributes', self.hbox6)
+
+        self.useHeuristicsCB = QCheckBox("Use heuristics (experimental)", self.numberOfAttrBox)
+        self.connect(self.useHeuristicsCB, SIGNAL("clicked()"), self.setUseHeuristics)
+        self.useHeuristicsCB.setChecked(self.useHeuristics)        
         
         self.exactlyLenCombo.insertItem("ALL")
         self.maxLenCombo.insertItem("ALL")
@@ -116,7 +123,9 @@ class kNNOptimization(OWBaseWidget):
         self.maxLenCombo.setCurrentItem(0)
         self.exactlyLenCombo.setCurrentItem(0)
 
-        self.evaluateButton = QPushButton("Evaluate current projection", self.evaluateBox)
+        self.hbox10 = QHBox(self.evaluateBox)
+        self.evaluateProjectionButton = QPushButton("Evaluate projection", self.hbox10)
+        self.saveProjectionButton = QPushButton("Save projection", self.hbox10)
         self.hbox7 = QHBox(self.evaluateBox)
         self.showKNNCorrectButton = QPushButton('kNN correct', self.hbox7)
         self.showKNNWrongButton = QPushButton('kNN wrong', self.hbox7)
@@ -181,6 +190,9 @@ class kNNOptimization(OWBaseWidget):
     def setKNeighbours(self, n):
         self.kValue = self.kNeighboursNums[n]
         self.saveSettings()
+
+    def setUseHeuristics(self):
+        self.useHeuristics = self.useHeuristicsCB.isChecked()
 
     # set the length of the list of best projections
     def setResultListLen(self, n):
@@ -398,6 +410,41 @@ class kNNOptimization(OWBaseWidget):
                 returnTable.append((sum + 1 - 2*out[table[j].getclass()])/float(lenClassValues))
         
         return returnTable
+
+    # from a given dataset return list of (acc, attrs), where attrs are subsets of lenght subsetSize of attributes from table
+    # that give the best kNN prediction on table
+    def kNNGetInterestingSubsets(self, subsetSize, attributes, returnListSize, table, testingList = []):
+        if attributes == [] or subsetSize == 0:
+            if len(testingList) != subsetSize: return []
+
+            # do the testing
+            attrs = []
+            for attr in testingList:
+                attrs.append(table.domain[attr])
+            domain = orange.Domain(attrs)
+            shortTable = orange.Preprocessor_dropMissing(table.select(domain))
+            if len(shortTable) < self.minExamples: return []
+            print testingList
+            return [(self.kNNComputeAccuracy(shortTable), testingList)]
+
+        full1 = self.kNNGetInterestingSubsets(subsetSize, attributes[1:], returnListSize, table, testingList)
+        testingList2 = copy(testingList)
+        testingList2.insert(0, attributes[0])
+        full2 = self.kNNGetInterestingSubsets(subsetSize, attributes[1:], returnListSize, table, testingList2)
+
+        # find max values in booth lists
+        full = full1 + full2
+        shortList = []
+        if table.domain.classVar.varType == orange.VarTypes.Discrete and self.measureType == CLASS_ACCURACY: funct = max
+        else: funct = min
+        for i in range(min(returnListSize, len(full))):
+            item = funct(full)
+            shortList.append(item)
+            full.remove(item)
+
+        return shortList
+
+
 
     def disableControls(self):
         self.optimizeButtonBox.setEnabled(0)
