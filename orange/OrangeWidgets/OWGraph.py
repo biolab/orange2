@@ -288,8 +288,7 @@ class OWGraph(QwtPlot):
     def saveToFileDirect(self, fileName, ext, size = QSize()):
         if os.path.exists(fileName):
             res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
-            print res
-            if res == 0: return
+            if res == 1: return
 
         print fileName
         if size.isEmpty(): buffer = QPixmap(self.size()) # any size can do, now using the window size
