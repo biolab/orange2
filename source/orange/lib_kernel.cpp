@@ -3220,6 +3220,13 @@ inline PyObject *DomainDistributions_sort(TPyOrange *self, PyObject *args) PYARG
 */
 PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples[, weightID] | <list of Distribution>) -> DomainDistributions")
 { PyTRY
+    int weightID;
+    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
+    if (gen)
+      return WrapNewOrange(mlnew TDomainDistributions(gen, weightID), type);
+
+    PyErr_Clear();
+
     PyObject *obj = ListOfWrappedMethods<PDomainDistributions, TDomainDistributions, PDistribution, (PyTypeObject *)&PyOrDistribution_Type>::_new(type, args, keywds);
     if (obj)
       if (obj!=Py_None)
@@ -3228,13 +3235,8 @@ PyObject *DomainDistributions_new(PyTypeObject *type, PyObject *args, PyObject *
         Py_DECREF(obj);
 
     PyErr_Clear();
+    PYERROR(PyExc_TypeError, "DomainDistributions.__init__ expect examples or a list of Distributions", PYNULL);
 
-    int weightID;
-    PExampleGenerator gen = exampleGenFromArgs(args, weightID);
-    if (gen)
-      return WrapNewOrange(mlnew TDomainDistributions(gen, weightID), type);
-      
-    return PYNULL;
   PyCATCH
 }
 

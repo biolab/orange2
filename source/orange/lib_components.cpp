@@ -331,17 +331,19 @@ inline PyObject *DomainBasicAttrStat_sort(TPyOrange *self, PyObject *args) PYARG
 */
 PyObject *DomainBasicAttrStat_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples | <list of BasicAttrStat>) -> DomainBasicAttrStat")
 { PyTRY
-    PyObject *obj = ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_new(type, args, keywds);
-    if (obj)
-      return obj;
-    PyErr_Clear();
-
     int weightID;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
     if (gen)
       return WrapNewOrange(mlnew TDomainBasicAttrStat(gen, weightID), type);
-      
-    return PYNULL;
+
+    PyErr_Clear();
+
+    PyObject *obj = ListOfWrappedMethods<PDomainBasicAttrStat, TDomainBasicAttrStat, PBasicAttrStat, (PyTypeObject *)&PyOrBasicAttrStat_Type>::_new(type, args, keywds);
+    if (obj)
+      return obj;
+
+    PyErr_Clear();
+    PYERROR(PyExc_TypeError, "DomainBasicAttrStat.__init__ expects examples or a list of BasicAttrStat", PYNULL);
   PyCATCH
 }
 
@@ -949,30 +951,27 @@ CONSTRUCTOR_KEYWORDS(DomainContingency, "classIsOuter")
 
 PyObject *DomainContingency_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED_ON(Orange, "(examples [, weightID] | <list of Contingency>) -> DomainContingency")
 { PyTRY
-    PyObject *obj = ListOfWrappedMethods<PDomainContingency, TDomainContingency, PDomainContingency, (PyTypeObject *)&PyOrContingency_Type>::_new(type, args, keywds);
-    if (obj)
-      if (obj!=Py_None)
-        return obj;
-      else
-        Py_DECREF(obj);
-
-    PyErr_Clear();
-
     int weightID;
     PExampleGenerator gen = exampleGenFromArgs(args, weightID);
-    if (!gen)
-      return PYNULL;
-
-    bool classOuter = false;
-    if (keywds) {
-      PyObject *couter = PyDict_GetItemString(keywds, "classIsOuter");
-      if (couter) {
-        classOuter = (PyObject_IsTrue(couter) != 0);
-        Py_DECREF(couter);
+    if (gen) {
+      bool classOuter = false;
+      if (keywds) {
+        PyObject *couter = PyDict_GetItemString(keywds, "classIsOuter");
+        if (couter) {
+          classOuter = (PyObject_IsTrue(couter) != 0);
+          Py_DECREF(couter);
+        }
       }
+
+      return WrapNewOrange(mlnew TDomainContingency(gen, weightID, classOuter), type);
     }
 
-    return WrapNewOrange(mlnew TDomainContingency(gen, weightID, classOuter), type);
+    PyObject *obj = ListOfWrappedMethods<PDomainContingency, TDomainContingency, PDomainContingency, (PyTypeObject *)&PyOrContingency_Type>::_new(type, args, keywds);
+    if (obj)
+      return obj;
+
+    PyErr_Clear();
+    PYERROR(PyExc_TypeError, "DomainContingency.__init__ expects examples or a list of Contingencies", PYNULL);
   PyCATCH
 }
 
