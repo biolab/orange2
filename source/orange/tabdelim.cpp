@@ -917,7 +917,7 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim)
   for(vb = vi = dom->attributes->begin(), ve = dom->attributes->end(); vi!=ve; vi++) {
     if (vi!=vb)
       fprintf(file, delims);
-    if ((*vi)->ordered)
+    if (((*vi)->varType == TValue::INTVAR) && (*vi)->ordered)
       fprintf(file, "-ordered");
   }
   if (dom->classVar)

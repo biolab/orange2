@@ -751,6 +751,40 @@ PyObject *Domain_removemeta(TPyOrange *self, PyObject *rar) PYARGS(METH_O, "({id
 }
 
 
+PyObject *Domain_hasDiscreteAttributes(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(includeClass=0) -> int")
+{
+  PyTRY
+      PyObject *includeClass = PYNULL;
+      if (!PyArg_ParseTuple(args, "|O:Domain.hasDiscreteAttributes", &includeClass))
+        return PYNULL;
+
+      return PyInt_FromLong(SELF_AS(TDomain).hasDiscreteAttributes(!includeClass || PyObject_IsTrue(includeClass)!=0) ? 1 : 0);
+  PyCATCH
+}
+
+
+PyObject *Domain_hasContinuousAttributes(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(includeClass=0) -> int")
+{
+  PyTRY
+      PyObject *includeClass = PYNULL;
+      if (!PyArg_ParseTuple(args, "|O:Domain.hasContinuousAttributes", &includeClass))
+        return PYNULL;
+
+      return PyInt_FromLong(SELF_AS(TDomain).hasContinuousAttributes(!includeClass || PyObject_IsTrue(includeClass)!=0) ? 1 : 0);
+  PyCATCH
+}
+
+
+PyObject *Domain_hasOtherAttributes(PyObject *self, PyObject *args) PYARGS(METH_VARARGS, "(includeClass=0) -> int")
+{
+  PyTRY
+      PyObject *includeClass = PYNULL;
+      if (!PyArg_ParseTuple(args, "|O:Domain.hasOtherAttributes", &includeClass))
+        return PYNULL;
+
+      return PyInt_FromLong(SELF_AS(TDomain).hasOtherAttributes(!includeClass || PyObject_IsTrue(includeClass)!=0) ? 1 : 0);
+  PyCATCH
+}
 
 
 int Domain_len(TPyOrange *self)

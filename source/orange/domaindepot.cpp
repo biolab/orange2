@@ -182,7 +182,7 @@ PDomain TDomainDepot::prepareDomain(const TAttributeDescriptions *attributes, bo
   const_PITERATE(TAttributeDescriptions, ai, attributes) {
     PVariable newvar = makeVariable((*ai).name, (*ai).varType, (*ai).values, foo, knownVars, knownMetas, false, false);
     if ((*ai).ordered)
-      newvar.AS(TEnumVariable)->ordered = true;
+      newvar->ordered = true;
     attrList.push_back(newvar);
   }
 

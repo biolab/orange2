@@ -191,7 +191,7 @@ int Example_clear(TPyExample *self)
 
 bool readBoolFlag(PyObject *keywords, char *flag);
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "filterMetas")
+CONSTRUCTOR_KEYWORDS(Example, "filterMetas")
 
 
 PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ROOT, "(domain, [list of values])")
