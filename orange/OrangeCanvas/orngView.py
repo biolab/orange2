@@ -29,6 +29,8 @@ class SchemaView(QCanvasView):
         self.tempWidget = None
         self.selWidgets = []
         self.createPopupMenus()
+        self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
+
 
     def createPopupMenus(self):
         self.widgetPopup = QPopupMenu(self, "Widget")
@@ -78,13 +80,13 @@ class SchemaView(QCanvasView):
 
         for item in self.selWidgets:
             self.doc.widgets.remove(item)
-            item.hideWidget()
             for line in item.inLines:
                 self.selectedLine = line
                 self.deleteLink()
             for line in item.outLines:
                 self.selectedLine = line
                 self.deleteLink()
+            item.hideWidget()
             list = self.canvas().allItems()
             list.remove(item)
 
@@ -400,6 +402,14 @@ class SchemaView(QCanvasView):
             else:
                 line.setEnabled(line.getEnabled())
 
+
+    # if we scroll the view, we have to update tooltips for widgets
+    def contentsMoving(self, x,y):
+        for widget in self.doc.widgets:
+            #QToolTip.remove(self, QRect(0,0, self.canvas().width(), self.canvas().height()))
+            widget.removeTooltip()
+            widget.setViewPos(x,y)
+            widget.updateTooltip()
 
 #    def drawContents(self, painter):
 #        for widget in self.doc.widgets:

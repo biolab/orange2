@@ -226,6 +226,9 @@ class CanvasWidget(QCanvasRectangle):
         self.captionWidth = 0
         self.xPos = 0
         self.yPos = 0
+        self.viewXPos = 0 # this two variables are used as offset for
+        self.viewYPos = 0 # tooltip placement inside canvasView
+        self.lastRect = QRect(0,0,0,0)
 
         self.text = QCanvasText(self.caption, canvas)
         self.text.show()
@@ -378,6 +381,7 @@ class CanvasWidget(QCanvasRectangle):
             line.repaintLine(self.view)
 
     def updateTooltip(self):
+        self.removeTooltip()
         str = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br>Input Signals: "
 
         for signal in self.widget.inList:
@@ -400,11 +404,19 @@ class CanvasWidget(QCanvasRectangle):
 
         if str[-2] == ",": str = str[:-2]
         else:              str += "None"
-        
-        QToolTip.add(self.view, self.rect(), str)
+
+        self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
+        QToolTip.add(self.view, self.lastRect, str)
+
+    def setViewPos(self, x, y):
+        self.viewXPos = x
+        self.viewYPos = y
 
     def removeTooltip(self):
-        QToolTip.remove(self.view, self.rect())
+        #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
+        #QToolTip.remove(self.view, self.rect())
+        QToolTip.remove(self.view, self.lastRect)
+        
 
     def hideWidget(self):
         self.removeTooltip()

@@ -83,6 +83,7 @@ class SchemaDoc(QMainWindow):
             x = x/10*10
         y = 150
         newwidget.setCoords(x,y)
+        newwidget.setViewPos(self.canvasView.contentsX(), self.canvasView.contentsY())
 
         list = []
         for item in self.widgets:
