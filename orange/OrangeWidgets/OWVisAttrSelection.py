@@ -19,15 +19,16 @@ def getFunctionalList(data):
     testAttrs = []
     outList = []
 
+    dataShort = orange.Preprocessor_dropMissing(data)
     # remove continuous attributes from data
     disc = []
-    for i in range(len(data.domain.attributes)):
-        if data.domain.attributes[i].varType == orange.VarTypes.Discrete: disc.append(data.domain.attributes[i])
+    for i in range(len(dataShort.domain.attributes)):
+        if dataShort.domain.attributes[i].varType == orange.VarTypes.Discrete: disc.append(dataShort.domain.attributes[i].name)
     if disc == []: return []
-    discData = data.select(disc + [data.domain.classVar])
+    discData = dataShort.select(disc + [dataShort.domain.classVar.name])
 
     remover = orngCI.AttributeRedundanciesRemover(noMinimization = 1)
-    newData = remover(discData)
+    newData = remover(discData, weight = 0)
 
     # ####
     # compute the best attribute combination
@@ -60,7 +61,10 @@ def getFunctionalList(data):
         outList.append(bestAttrs[1])
         testAttrs.remove(bestAttrs[1])
 
-    outList.reverse()           
+    outList.reverse()
+    # new attributes have "'" at the end of their names. we have to remove that in ored to identify them in the old domain
+    for index in range(len(outList)):
+        if outList[index][-1] == "'": outList[index] = outList[index][:-1]
     return outList
 
 

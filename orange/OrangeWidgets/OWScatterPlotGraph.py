@@ -33,24 +33,6 @@ class OWScatterPlotGraph(OWVisGraph):
 
     def setShowAttributeValues(self, show):
         self.showAttributeValues = show
-        
-    ########################################################
-    # set new data and scale its values
-    def setData(self, data):
-        self.rawdata = data
-        self.domainDataStat = orange.DomainBasicAttrStat(data)
-        self.scaledData = []
-        self.attributeNames = []
-        
-        if data == None: return
-
-        self.attrVariance = []
-        for index in range(len(data.domain)):
-            attr = data.domain[index]
-            self.attributeNames.append(attr.name)
-            (scaled, variance)= self.scaleData(data, index, jitteringEnabled = 0)
-            self.scaledData.append(scaled)
-            self.attrVariance.append(variance)
 
 
     #########################################################
@@ -64,11 +46,10 @@ class OWScatterPlotGraph(OWVisGraph):
         if shapeAttr != "": toolTipList.append(shapeAttr)
         if sizeShapeAttr != "": toolTipList.append(sizeShapeAttr)
 
-        (xVarMin, xVarMax) = self.attrVariance[self.attributeNames.index(xAttr)]
-        (yVarMin, yVarMax) = self.attrVariance[self.attributeNames.index(yAttr)]
+        (xVarMin, xVarMax) = self.attrValues[xAttr]
+        (yVarMin, yVarMax) = self.attrValues[yAttr]
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
-        
         
         MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
         MIN_SHAPE_SIZE = 10
@@ -108,7 +89,6 @@ class OWScatterPlotGraph(OWVisGraph):
         if colorAttr != "" and colorAttr != "(One color)":
             if self.rawdata.domain[colorAttr].varType == orange.VarTypes.Discrete: MAX_HUE_VAL = 360
             colorIndex = self.attributeNames.index(colorAttr)
-            (colorData, vals) = self.scaleData(self.rawdata, colorIndex, forColoring = 1)
             
 
         shapeIndex = -1
@@ -147,22 +127,18 @@ class OWScatterPlotGraph(OWVisGraph):
             
             if discreteX == 1:
                 x = attrXIndices[self.rawdata[i][xAttr].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-            elif self.jitterContinuous == 1:
-                x = self.rawdata[i][xAttr].value + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
             else:
-                x = self.rawdata[i][xAttr].value
+                x = self.rawdata[i][xAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
 
             if discreteY == 1:
                 y = attrYIndices[self.rawdata[i][yAttr].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-            elif self.jitterContinuous == 1:
-                y = self.rawdata[i][yAttr].value + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
             else:
-                y = self.rawdata[i][yAttr].value
+                y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
             newColor = QColor(0,0,0)
             if colorIndex != -1:
                 #newColor.setHsv(self.scaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
-                newColor.setHsv(colorData[i]*MAX_HUE_VAL, 255, 255)
+                newColor.setHsv(self.coloringScaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
                 
             symbol = shapeList[0]
             if shapeIndex != -1:
@@ -195,10 +171,9 @@ class OWScatterPlotGraph(OWVisGraph):
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
                 varName = self.rawdata.domain[colorIndex].name
                 varValues = self.getVariableValuesSorted(self.rawdata, colorIndex)
-                numColors = len(self.rawdata.domain[colorIndex].values)
-                for ind in range(numColors):
+                for ind in range(len(self.rawdata.domain[colorIndex].values)):
                     newColor = QColor()
-                    newColor.setHsv(float(ind) / float(numColors) * MAX_HUE_VAL, 255, 255)
+                    newColor.setHsv(self.colorHueValues[ind] * MAX_HUE_VAL, 255, 255)
                     self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
 
             if shapeIndex != -1 and self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
@@ -226,6 +201,44 @@ class OWScatterPlotGraph(OWVisGraph):
                 self.setCurveData(newCurveKey, [x0,x1], [y,y])
         # -----------------------------------------------------------
         # -----------------------------------------------------------
+
+
+    # compute how good is a specific projection with given xAttr and yAttr
+    def getProjectionQuality(self, xAttr, yAttr, className, kNeighbours):
+        dataSize = len(self.rawdata)
+        attrCount = len(self.rawdata.domain.attributes)
+        classValsCount = len(self.rawdata.domain[className].values)
+        xAttrIndex = self.attributeNames.index(xAttr)
+        yAttrIndex = self.attributeNames.index(yAttr)
+        tempValue= 0
+
+        # variables and domain for the table
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain[className]])
+        table = orange.ExampleTable(domain)
+
+        classValues = list(self.rawdata.domain[className].values)
+        classValNum = len(classValues)
+
+        for i in range(dataSize):
+            xValue = self.noJitteringScaledData[xAttrIndex][i]
+            yValue = self.noJitteringScaledData[yAttrIndex][i]
+            if xValue == '?' or yValue == '?': continue
+            
+            example = orange.Example(domain, [xValue, yValue, self.rawdata[i][className]])
+            table.append(example)
+
+        knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+        for j in range(len(table)):
+            out = knn(table[j], orange.GetProbabilities)
+            index = classValues.index(table[j][2].value)
+            tempValue += out[index]
+
+        print "kNeighbours = %3.d - Accuracy: %2.2f" % (kNeighbours, tempValue*100.0/float(len(table)) )
+        return tempValue*100.0/float(len(table))
+
+
         
     def getOptimalSeparation(self, attrCount, className, kNeighbours, updateProgress = None):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
@@ -253,8 +266,6 @@ class OWScatterPlotGraph(OWVisGraph):
         classValNum = len(classValues)
         t = time.time()
 
-        
-
         for x in range(attrCount):
             for y in range(x+1, attrCount):
                 testIndex += 1
@@ -265,7 +276,8 @@ class OWScatterPlotGraph(OWVisGraph):
                 table = orange.ExampleTable(domain)
 
                 for i in range(dataSize):
-                    self.application.processEvents(5000)
+                    if (self.application != None):
+                        self.application.processEvents(5000)
                     xValue = self.noJitteringScaledData[x][i]
                     yValue = self.noJitteringScaledData[y][i]
                     if xValue == '?' or yValue == '?': continue
@@ -297,17 +309,16 @@ class OWScatterPlotGraph(OWVisGraph):
 
                 # to bo delalo, ko bo popravljen orangov kNNLearner
                 classValues = list(self.rawdata.domain[className].values)
-                knn = orange.kNNLearner(table, k=kNeighbours)
-                selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
+                knn = orange.kNNLearner(table, k=kNeighbours, rankWeight = 0)
+
                 experiments = 0
-                for i in range(len(table)):
-                    if selection[i] == 1: experiments += 1
-                    
+                selection = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
                 for j in range(len(table)):
                     if selection[j] == 0: continue
                     out = knn(table[j], orange.GetProbabilities)
                     index = classValues.index(table[j][2].value)
                     tempValue += out[index]
+                    experiments += 1
 
                 print "possibility %6d / %d. Nr. of examples: %4d (Accuracy: %2.2f)" % (testIndex, totalTestCount, len(table), tempValue*100.0/float(experiments) )
 

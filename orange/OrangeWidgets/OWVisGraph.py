@@ -41,17 +41,23 @@ class OWVisGraph(OWGraph):
 
         self.rawdata = []                   # input data
         self.scaledData = []                # scaled data to the interval 0-1
+        self.noJitteringScaledData = []
+        self.coloringScaledData = []
         self.attributeNames = []      # list of attribute names from self.rawdata
         self.domainDataStat = []
         self.pointWidth = 5
         self.jitteringType = 'none'
         self.jitterSize = 10
+        self.scaleFactor = 1.0
         self.globalValueScaling = 0         # do we want to scale data globally
         self.setCanvasColor(QColor(Qt.white.name()))
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
         self.ypos = 0
         self.zoomStack = []
-        self.noJitteringScaledData = []
+        self.zoomState = ()
+        self.colorHueValues = [240, 0, 120, 60, 180, 300, 30, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
+        self.colorHueValues = [float(x)/36.0 for x in self.colorHueValues]
+
 
         self.enableGridX(FALSE)
         self.enableGridY(FALSE)
@@ -76,19 +82,65 @@ class OWVisGraph(OWGraph):
         self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.scaledData = []
         self.noJitteringScaledData = []
+        self.coloringScaledData = []
         self.attrValues = {}
         self.attributeNames = []
         for attr in data.domain: self.attributeNames.append(attr.name)
         if data == None: return
-        
+
+        min = -1; max = -1
         if self.globalValueScaling == 1:
-            self.rescaleAttributesGlobaly(data, self.attributeNames)
-        else:
-            for index in range(len(data.domain)):
-                scaled, values = self.scaleData(data, index)
-                self.scaledData.append(scaled)
-                self.attrValues[data.domain[index].name] = values
-        self.scaleDataNoJittering()
+            (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
+
+        #
+        # scale all data
+        # scale all data with no jittering
+        # scale all data for coloring
+        for index in range(len(data.domain)):
+            attr = data.domain[index]
+            original = []
+            noJittering = []
+            coloring = []
+            values = []
+
+            # is the attribute discrete
+            if attr.varType == orange.VarTypes.Discrete:
+                # we create a hash table of variable values and their indices
+                variableValueIndices = self.getVariableValueIndices(data, index)
+                count = float(len(attr.values))
+                values = [0, count-1]
+                countx2 = float(2*count)	# we compute this value here, so that we don't have to compute it in the loop
+                count100 = float(100.0*count) # same
+
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: original.append("?"); noJittering.append("?"); coloring.append("?"); continue
+                    val = variableValueIndices[data[i][index].value]
+                    noJittering.append( (1.0 + 2.0 * val)/ countx2 )
+                    original.append( ((1.0 + 2.0 * val)/ countx2) + self.rndCorrection(self.jitterSize/count100))
+                    if count < len(self.colorHueValues): coloring.append(self.colorHueValues[val])
+                    else:                                coloring.append( val / float(count) )
+
+            # is the attribute continuous
+            else:
+                if self.globalValueScaling == 0:
+                    min = self.domainDataStat[index].min
+                    max = self.domainDataStat[index].max
+                diff = max - min
+                values = [min, max]
+
+                for i in range(len(data)):
+                    if data[i][index].isSpecial() == 1: original.append("?"); coloring.append("?"); continue
+                    val = (data[i][attr].value - min) / diff
+                    original.append(val)
+                    coloring.append(val * 0.85)        # we make color palette smaller, because red is in the begining and ending of hsv
+                noJittering = original
+                
+            self.scaledData.append(original)
+            self.noJitteringScaledData.append(noJittering)
+            self.coloringScaledData.append(coloring)
+            self.attrValues[attr.name] = values
+
+        
     #####################################################################
     #####################################################################
 
@@ -246,6 +298,9 @@ class OWVisGraph(OWGraph):
         return dict
 
 
+    def setScaleFactor(self, num):
+        self.scaleFactor = num
+
     def setJitteringOption(self, jitteringType):
         self.jitteringType = jitteringType
 
@@ -344,6 +399,7 @@ class OWVisGraph(OWGraph):
 
     def onMouseReleased(self, e):
         if Qt.LeftButton == e.button():
+            if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
             xmin = min(self.xpos, e.pos().x())
             xmax = max(self.xpos, e.pos().x())
             ymin = min(self.ypos, e.pos().y())

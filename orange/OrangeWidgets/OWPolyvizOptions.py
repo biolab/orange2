@@ -20,6 +20,12 @@ class OWPolyvizOptions(OWOptions):
         self.widthSlider.setTickmarks(QSlider.Below)
         self.widthLCD = QLCDNumber(1, widthBox)
 
+        # scale point position
+        self.positionBox = QHGroupBox("Point scaling", self.top)
+        self.scaleBox= QHBox(self.positionBox, "scale")
+        self.scaleLabel = QLabel("Scale point position by: ", self.scaleBox)
+        self.scaleCombo = QComboBox(self.scaleBox)
+
         # line length
         lengthBox = QHGroupBox("Line Length", self.top)
         QToolTip.add(widthBox, "The length of the line")

@@ -23,7 +23,7 @@ import time
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -31,6 +31,7 @@ class OWRadviz(OWWidget):
     jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
+    scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Radviz", "Show data using Radviz visualization method", TRUE, TRUE)
@@ -45,6 +46,7 @@ class OWRadviz(OWWidget):
         self.globalValueScaling = 1
         self.jitterSize = 1
         self.kNeighbours = 1
+        self.scaleFactor = 1.0
         
         self.graphCanvasColor = str(Qt.white.name())
         self.data = None
@@ -72,6 +74,7 @@ class OWRadviz(OWWidget):
 
         #connect settingsbutton to show options
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
+        self.connect(self.options.scaleCombo, SIGNAL("activated(int)"), self.setScaleFactor)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.spreadButtons, SIGNAL("clicked(int)"), self.setSpreadType)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
@@ -127,9 +130,7 @@ class OWRadviz(OWWidget):
         self.saveGnuplotButton = QPushButton("Save Gnuplot picture", self.space)
         self.connect(self.showGnuplotButton, SIGNAL("clicked()"), self.drawGnuplot)
         self.connect(self.saveGnuplotButton, SIGNAL("clicked()"), self.saveGnuplot)
-
-        self.saveProjectionAsTabButton = QPushButton("Save projection as TAB", self.space)
-        self.connect(self.saveProjectionAsTabButton, SIGNAL("clicked()"), self.saveProjectionAsTab)
+        
         self.currentFileIndex = 1
             
         #connect controls to appropriate functions
@@ -137,6 +138,7 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
         self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
         self.connect(self.buttonDOWNAttr, SIGNAL("clicked()"), self.moveAttrDOWN)
@@ -178,6 +180,10 @@ class OWRadviz(OWWidget):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
 
+        for i in range(len(self.scaleFactorList)):
+            self.options.scaleCombo.insertItem(self.scaleFactorList[i])
+        self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
+
         # set items in k neighbours combo
         for i in range(len(self.kNeighboursList)):
             self.optimizationDlg.attrKNeighbour.insertItem(self.kNeighboursList[i])
@@ -189,6 +195,12 @@ class OWRadviz(OWWidget):
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
+        self.graph.setScaleFactor(self.scaleFactor)
+
+    def setScaleFactor(self, n):
+        self.scaleFactor = float(self.scaleFactorList[n])
+        self.graph.setScaleFactor(self.scaleFactor)
+        self.updateGraph()
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -231,6 +243,30 @@ class OWRadviz(OWWidget):
         if self.data != None:
             self.setShownAttributeList(self.data)
         self.updateGraph()
+
+
+    def testCurrentProjections(self):
+        #kList = [3,5,10,15,20,30,50,70,100,150,200]
+        kList = [10]
+        className = str(self.classCombo.currentText())
+        results = []
+
+        for i in range(self.optimizationDlg.interestingList.count()):
+            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
+            sumAcc = 0.0
+            print "Experiment %2.d - %s" % (i, str(list))
+            for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
+            results.append((sumAcc/float(len(kList)), tableLen, list))
+        
+        self.optimizationDlg.clear()
+        while results != []:
+            (accuracy, tableLen, list) = max(results)
+            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
+            results.remove((accuracy, tableLen, list))
+
+        self.optimizationDlg.updateNewResults()
+        self.optimizationDlg.save("temp.proj")
+        self.optimizationDlg.interestingList.setCurrentItem(0)
 
     # ####################################
     # find optimal class separation for shown attributes

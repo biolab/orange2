@@ -20,6 +20,8 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.tips.removeAll()
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
+        if className != "(One color)": classNameIndex = self.attributeNames.index(className)
+        else:                          classNameIndex = -1
         length = len(labels)
         indices = []
         xs = []
@@ -43,11 +45,6 @@ class OWSurveyPlotGraph(OWVisGraph):
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
 
         
-        # create a table of class values that will be used for coloring the lines
-        scaledClassData = []
-        if className != "(One color)":
-            scaledClassData, vals = self.scaleData(self.rawdata, className, forColoring = 1)
-
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
             newCurveKey = self.insertCurve(labels[i])
@@ -64,18 +61,15 @@ class OWSurveyPlotGraph(OWVisGraph):
             
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
-            if scaledClassData != []:
-                newColor.setHsv(scaledClassData[i]*360, 255, 255)
+            if classNameIndex != -1: newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
                 
             curve.color = newColor
             curve.penColor = newColor
             xData = []; yData = []
             for j in range(length):
                 width = self.scaledData[indices[j]][i] * 0.45
-                xData.append(j-width)
-                xData.append(j+width)
-                yData.append(pos)
-                yData.append(pos+1)
+                xData += [j-width, j+width]
+                yData += [pos, pos+1]
 
             ##########
             # we add a tooltip for this point

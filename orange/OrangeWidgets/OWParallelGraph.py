@@ -69,7 +69,9 @@ class OWParallelGraph(OWVisGraph):
 
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        
+
+        if className != "(One color)": classNameIndex = self.attributeNames.index(className)
+        else:                          classNameIndex = -1
         length = len(labels)
         indices = []
         xs = []
@@ -78,12 +80,6 @@ class OWParallelGraph(OWVisGraph):
         for label in labels:
             index = self.attributeNames.index(label)
             indices.append(index)
-
-        # create a table of class values that will be used for coloring the lines
-        scaledClassData = []
-        classValues = []
-        if className != "(One color)" and className != '':
-            scaledClassData, classValues = self.scaleData(self.rawdata, className, forColoring = 1)
 
         xs = range(length)
         dataSize = len(self.scaledData[0])        
@@ -94,9 +90,6 @@ class OWParallelGraph(OWVisGraph):
         lastIndex = indices[length-1]
         dataStop = dataSize * [lastIndex]  # array where we store index value for each data value where to stop drawing
         
-        if className != "(One color)":
-            classIndex = self.attributeNames.index(className)
-
         if self.hidePureExamples == 1 and className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             # add a meta attribute if it doesn't exist yet
             if self.metaid == -1:
@@ -116,7 +109,7 @@ class OWParallelGraph(OWVisGraph):
                     while ind < len(tempData):
                         index = int(tempData[ind].getmeta(self.metaid))
                         if dataStop[index] == lastIndex:
-                            val = tempData[ind][classIndex]
+                            val = tempData[ind][classNameIndex]
                             break
                         ind += 1
                         
@@ -124,7 +117,7 @@ class OWParallelGraph(OWVisGraph):
                     while ind < len(tempData):
                         index = int(tempData[ind].getmeta(self.metaid))
                         if dataStop[index] != lastIndex: ind += 1; continue
-                        if val != tempData[ind][classIndex]: break
+                        if val != tempData[ind][classNameIndex]: break
                         ind += 1
 
 
@@ -157,8 +150,8 @@ class OWParallelGraph(OWVisGraph):
             newCurveKey = self.insertCurve(str(i))
             self.curveKeys.append(newCurveKey)
             newColor = QColor()
-            if scaledClassData != []:
-                newColor.setHsv(scaledClassData[i]*360, 255, 255)
+            if classNameIndex != -1:
+                newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
             self.setCurvePen(newCurveKey, QPen(newColor))
             ys = []
             for index in indices:
@@ -174,14 +167,12 @@ class OWParallelGraph(OWVisGraph):
             
 
         curve = subBarQwtPlotCurve(self)
-        newColor = QColor()
-        newColor.setRgb(0, 0, 0)
+        newColor = QColor(0, 0, 0)
         curve.color = newColor
         curve.setBrush(QBrush(QBrush.NoBrush))
         ckey = self.insertCurve(curve)
         self.setCurveStyle(ckey, QwtCurve.UserCurve)
         self.setCurveData(ckey, [1,1], [2,2])
-
 
 
         #############################################
@@ -240,9 +231,7 @@ class OWParallelGraph(OWVisGraph):
 
     def showDistributionValues(self, className, data, indices, dataStop):
         # get index of class         
-        classNameIndex = 0
-        for i in range(len(data.domain)):
-            if data.domain[i].name == className: classNameIndex = i
+        classNameIndex = self.attributeNames.index(className)
 
         # create color table            
         count = float(len(data.domain[className].values))
@@ -262,80 +251,80 @@ class OWParallelGraph(OWVisGraph):
         dataValid = [1]*len(data)
         for i in range(len(data)):
             for j in range(indicesLen):
-                if data[i][j].isSpecial(): dataValid[i] = 0
+                if data[i][indices[j]].isSpecial(): dataValid[i] = 0
 
         self.toolInfo = []        
         for graphAttrIndex in range(len(indices)):
             index = indices[graphAttrIndex]
-            if data.domain[index].varType == orange.VarTypes.Discrete:
-                attr = data.domain[index]
-                attrLen = len(attr.values)
-                
-                values = []
-                totals = [0] * attrLen
+            if data.domain[index].varType != orange.VarTypes.Discrete: continue
+            attr = data.domain[index]
+            attrLen = len(attr.values)
+            
+            values = []
+            totals = [0] * attrLen
 
-                # we create a hash table of variable values and their indices
-                variableValueIndices = self.getVariableValueIndices(data, index)
-                variableValueSorted = self.getVariableValuesSorted(data, index)
-                
-                for i in range(count):
-                    values.append([0] * attrLen)
+            # we create a hash table of variable values and their indices
+            variableValueIndices = self.getVariableValueIndices(data, index)
+            variableValueSorted = self.getVariableValuesSorted(data, index)
+            
+            for i in range(count):
+                values.append([0] * attrLen)
 
-                stop = indices[:graphAttrIndex]
-                for i in range(len(data)):
-                    if self.hidePureExamples == 1 and dataStop[i] in stop: continue
-                    if dataValid[i] == 0: continue
-                    if not data[i][index].isSpecial():
-                        # processing for distributions
-                        attrIndex = variableValueIndices[data[i][index].value]
-                        classIndex = classValueIndices[data[i][classNameIndex].value]
-                        totals[attrIndex] += 1
-                        values[classIndex][attrIndex] += 1
+            stop = indices[:graphAttrIndex]
+            for i in range(len(data)):
+                if self.hidePureExamples == 1 and dataStop[i] in stop: continue
+                if dataValid[i] == 0: continue
+                # processing for distributions
+                attrIndex = variableValueIndices[data[i][index].value]
+                classIndex = classValueIndices[data[i][classNameIndex].value]
+                totals[attrIndex] += 1
+                values[classIndex][attrIndex] += 1
 
-                # calculate maximum value of all values - needed for scaling
-                maximum = 1
-                for i in range(len(values)):
-                    for j in range(len(values[i])):
-                        if values[i][j] > maximum: maximum = values[i][j]
+            # calculate maximum value of all values - needed for scaling
+            maximum = 1
+            for i in range(len(values)):
+                for j in range(len(values[i])):
+                    if values[i][j] > maximum: maximum = values[i][j]
 
-                # calculate the sum of totals - needed for tooltips
-                sumTotals = 0
-                for val in totals: sumTotals += val
+            # calculate the sum of totals - needed for tooltips
+            sumTotals = 0
+            for val in totals: sumTotals += val
 
-                # save info for tooltips
-                for i in range(attrLen):
-                    list= []
-                    for j in range(count):
-                        list.append((classValueSorted[j], values[j][i]))
-                    list.reverse()
-                    y_start = float(i+1)/float(attrLen); y_end = float(i)/float(attrLen)
-                    x_start = float(graphAttrIndex) - 0.45; x_end = float(graphAttrIndex) + 0.45
-                    item = (data.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
-                    self.toolInfo.append(item)
+            # save info for tooltips
+            for i in range(attrLen):
+                list= []
+                for j in range(count):
+                    list.append((classValueSorted[j], values[j][i]))
+                list.reverse()
+                y_start = float(i+1)/float(attrLen); y_end = float(i)/float(attrLen)
+                x_start = float(graphAttrIndex) - 0.45; x_end = float(graphAttrIndex) + 0.45
+                item = (data.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
+                self.toolInfo.append(item)
 
-                # create bar curve
-                for i in range(count):
-                    curve = subBarQwtPlotCurve(self)
-                    newColor = QColor()
-                    newColor.setHsv(colors[i]*360, 255, 255)
-                    curve.color = newColor
-                    xData = []
-                    yData = []
-                    for j in range(attrLen):
-                        width = float(values[i][j]*0.5) / float(maximum)
-                        interval = 1.0/float(2*attrLen)
-                        yOff = float(1.0 + 2.0*j)/float(2*attrLen)
-                        height = 0.7/float(count*attrLen)
+            # create bar curve
+            for i in range(count):
+                curve = subBarQwtPlotCurve(self)
+                newColor = QColor()
+                #newColor.setHsv(colors[i]*360, 255, 255)
+                if count < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
+                else:                                newColor.setHsv(float(i)*360/float(count), 255, 255)
+                curve.color = newColor
+                xData = []; yData = []
+                for j in range(attrLen):
+                    width = float(values[i][j]*0.5) / float(maximum)
+                    interval = 1.0/float(2*attrLen)
+                    yOff = float(1.0 + 2.0*j)/float(2*attrLen)
+                    height = 0.7/float(count*attrLen)
 
-                        yLowBott = yOff - float(count*height)/2.0 + i*height
-                        xData.append(graphAttrIndex)
-                        xData.append(graphAttrIndex + width)
-                        yData.append(yLowBott)
-                        yData.append(yLowBott + height)
+                    yLowBott = yOff - float(count*height)/2.0 + i*height
+                    xData.append(graphAttrIndex)
+                    xData.append(graphAttrIndex + width)
+                    yData.append(yLowBott)
+                    yData.append(yLowBott + height)
 
-                    ckey = self.insertCurve(curve)
-                    self.setCurveStyle(ckey, QwtCurve.UserCurve)
-                    self.setCurveData(ckey, xData, yData)
+                ckey = self.insertCurve(curve)
+                self.setCurveStyle(ckey, QwtCurve.UserCurve)
+                self.setCurveData(ckey, xData, yData)
         self.addTooltips()
         
 

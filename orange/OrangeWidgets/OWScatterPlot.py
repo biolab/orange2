@@ -123,6 +123,7 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.maxLenCombo.setEnabled(0)
         self.optimizationDlg.exactlyLenCombo.setEnabled(0)
         self.optimizationDlg.optimizeSeparationButton.setText("Optimize separation")
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
 
         self.progressGroup = QVGroupBox(self.controlArea)
         self.progressGroup.setTitle("Optimization progress")
@@ -140,6 +141,7 @@ class OWScatterPlot(OWWidget):
 
         self.activateLoadedSettings()
         self.resize(900, 700)
+
 
     # #########################
     # OPTIONS
@@ -266,6 +268,31 @@ class OWScatterPlot(OWWidget):
         self.kNeighbours = self.kNeighboursNums[n]
         self.optimizationDlg.kValue = self.kNeighbours
 
+    def testCurrentProjections(self):
+        #kList = [3,5,10,15,20,30,50,70,100,150,200]
+        kList = [10]
+        className = str(self.classCombo.currentText())
+        results = []
+        
+        #for i in range(min(300, self.optimizationDlg.interestingList.count())):
+        for i in range(self.optimizationDlg.interestingList.count()):
+            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
+            sumAcc = 0.0
+            print "Experiment %2.d - %s" % (i, str(list))
+            for k in kList: sumAcc += self.graph.getProjectionQuality(xAttr, yAttr, className, k)
+            results.append((sumAcc/float(len(kList)), tableLen, list))
+        
+        self.optimizationDlg.clear()
+        while results != []:
+            (accuracy, tableLen, list) = max(results)
+            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
+            results.remove((accuracy, tableLen, list))
+
+        self.optimizationDlg.updateNewResults()
+        self.optimizationDlg.save("temp.proj")
+        self.optimizationDlg.interestingList.setCurrentItem(0)
+
+
     # ####################################
     # find optimal class separation for shown attributes
     def optimizeSeparation(self):
@@ -339,24 +366,12 @@ class OWScatterPlot(OWWidget):
             self.attrColor.insertItem(attr.name)
             self.attrSizeShape.insertItem(attr.name)
 
-            if attr.varType == orange.VarTypes.Continuous:
-                contList.append(attr.name)
-            if attr.varType == orange.VarTypes.Discrete:
-                discList.append(attr.name)
-                self.attrShape.insertItem(attr.name)
-            
 
-        if len(contList) == 0:
-            self.setText(self.attrX, discList[0])
-            self.setText(self.attrY, discList[0])
-            if len(discList) > 1:
-                self.setText(self.attrY, discList[1])                
-        elif len(contList) == 1:
-            self.setText(self.attrX, contList[0])
-            self.setText(self.attrY, contList[0])
-
-        if len(contList) >= 2:
-            self.setText(self.attrY, contList[1])
+        self.attrX.setCurrentItem(0)
+        if self.attrY.count() > 1:
+            self.attrY.setCurrentItem(1)
+        else:
+            self.attrY.setCurrentItem(0)
             
         self.setText(self.attrColor, self.data.domain.classVar.name)
         self.attrColorCB.setChecked(1)

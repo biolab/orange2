@@ -20,6 +20,13 @@ class OWRadvizOptions(OWOptions):
         self.widthSlider.setTickmarks(QSlider.Below)
         self.widthLCD = QLCDNumber(1, widthBox)
 
+        # scale point position
+        self.positionBox = QHGroupBox("Point scaling", self.top)
+        self.scaleBox= QHBox(self.positionBox, "scale")
+        self.scaleLabel = QLabel("Scale point position by: ", self.scaleBox)
+        self.scaleCombo = QComboBox(self.scaleBox)
+        
+
         #####
         # jittering
         self.spreadButtons = QVButtonGroup("Jittering type", self.top)

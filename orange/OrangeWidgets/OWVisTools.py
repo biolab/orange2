@@ -106,7 +106,8 @@ class OptimizationDialog(OWBaseWidget):
         self.attrLenList = QListBox(self.manageResultsBox)
         self.attrLenList.setSelectionMode(QListBox.Multi)
         self.attrLenList.setMinimumSize(60,60)
-        
+
+        self.reevaluateResults = QPushButton("Reevaluate results with different k values", self.manageResultsBox)
         self.filterButton = QPushButton("Remove attribute", self.manageResultsBox)
         self.removeSelectedButton = QPushButton("Remove selected projections", self.manageResultsBox)
         self.saveButton = QPushButton("Save", self.manageResultsBox)
@@ -127,6 +128,10 @@ class OptimizationDialog(OWBaseWidget):
         #self.optimizeButtonBox.setMinimumSize(180,150)
         #self.manageResultsBox.setMinimumSize(180,150)
 
+
+    # result list can contain projections with different number of attributes
+    # user clicked in the listbox that shows possible number of attributes of result list
+    # result list must be updated accordingly
     def attrLenListChanged(self):
         self.interestingList.clear()
         self.optimizedListFiltered = []
@@ -146,6 +151,8 @@ class OptimizationDialog(OWBaseWidget):
                 self.optimizedListFiltered.append((accuracy, itemCount, list, strList))
         self.interestingList.setCurrentItem(0)        
 
+    # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
+    # parameter strList can be a pre-formated string containing attribute list (used by polyviz)
     def insertItem(self, accuracy, tableLen, list, strList = None):
         if strList == None:
             strList = list[0]
@@ -162,8 +169,10 @@ class OptimizationDialog(OWBaseWidget):
         
         self.optimizedListFull.append((accuracy, tableLen, list, strList))
 
+    # check result list and update list with number of attributes
+    # + select the first result in the list
     def updateNewResults(self):
-        # update list of attribute lenghts
+        # update list of attribute lengths
         self.attrLenList.clear()
         self.attrLenDict = {}
         found = []
@@ -178,10 +187,12 @@ class OptimizationDialog(OWBaseWidget):
         self.attrLenList.selectAll(1)
         self.interestingList.setCurrentItem(0)
 
+    # set the length of the list of best projections
     def setResultListLen(self, n):
         self.resultListLen = self.resultsListLenNums[n]
         self.saveSettings()
 
+    # we may not want to use all the data when performing projection evaluation.
     def setPercentDataUsed(self, n):
         self.percentDataUsed = self.percentDataNums[n]
         self.saveSettings()
@@ -192,6 +203,7 @@ class OptimizationDialog(OWBaseWidget):
         self.attrLenDict = {}        
         self.interestingList.clear()
 
+    # we can remove projections that have a specific attribute
     def filter(self):
         (Qstring,ok) = QInputDialog.getText("Remove attribute", "Remove projections with attribute:")
         if ok:
@@ -207,6 +219,7 @@ class OptimizationDialog(OWBaseWidget):
                     self.optimizedListFull.remove((accuracy, itemCount, list, strList))
         self.updateNewResults()
 
+    # remove projections that are selected
     def removeSelected(self):
         for i in range(self.interestingList.count()-1, -1, -1):
             if self.interestingList.isSelected(i):
@@ -236,6 +249,7 @@ class OptimizationDialog(OWBaseWidget):
         file.flush()
         file.close()
 
+    # load projections from a file
     def load(self):
         self.clear()
                 

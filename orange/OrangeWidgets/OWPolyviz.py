@@ -23,7 +23,7 @@ from OWVisTools import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "kNeighbours", "enhancedTooltips", "scaleFactor"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -32,6 +32,7 @@ class OWPolyviz(OWWidget):
     jitterSizeNums = [0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     kNeighboursList = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '12', '15', '17', '20', '25', '30', '40', '60', '80', '100', '150', '200']
     kNeighboursNums = [ 1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
+    scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
         
     def __init__(self,parent=None):
         OWWidget.__init__(self, parent, "Polyviz", "Show data using Polyviz visualization method", TRUE, TRUE)
@@ -42,6 +43,7 @@ class OWPolyviz(OWWidget):
         self.attrDiscOrder = "RelieF"
         self.attrContOrder = "RelieF"
         self.jitteringType = "uniform"
+        self.scaleFactor = 1.0
         self.enhancedTooltips = 1
         self.globalValueScaling = 1
         self.jitterSize = 1
@@ -74,6 +76,7 @@ class OWPolyviz(OWWidget):
 
         #connect settingsbutton to show options
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
+        self.connect(self.options.scaleCombo, SIGNAL("activated(int)"), self.setScaleFactor)
         self.connect(self.options.lengthSlider, SIGNAL("valueChanged(int)"), self.setLineLength)
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
@@ -124,13 +127,16 @@ class OWPolyviz(OWWidget):
         self.progressGroup = QVGroupBox(self.space)
         self.progressGroup.setTitle("Optimization progress")
         self.progressBar = QProgressBar(100, self.progressGroup, "progress bar")
-        self.progressBar.setCenterIndicator(1)        
+        self.progressBar.setCenterIndicator(1)
 
         #connect controls to appropriate functions
         self.connect(self.classCombo, SIGNAL('activated ( const QString & )'), self.updateGraph)
         self.connect(self.optimizationDlg.optimizeSeparationButton, SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeAllSubsetSeparationButton, SIGNAL("clicked()"), self.optimizeAllSubsetSeparation)
         self.connect(self.optimizationDlg.attrKNeighbour, SIGNAL("activated(int)"), self.setKNeighbours)
+        self.connect(self.optimizationDlg.reevaluateResults, SIGNAL("clicked()"), self.testCurrentProjections)
+
+        
         self.connect(self.shownAttribsLB, SIGNAL('doubleClicked(QListBoxItem *)'), self.reverseSelectedAttribute)
 
         self.connect(self.buttonUPAttr, SIGNAL("clicked()"), self.moveAttrUP)
@@ -143,6 +149,31 @@ class OWPolyviz(OWWidget):
         self.activateLoadedSettings()
 
         self.resize(900, 700)
+
+
+    def testCurrentProjections(self):
+        #kList = [3,5,10,15,20,30,50,70,100,150,200]
+        kList = [10]
+        className = str(self.classCombo.currentText())
+        results = []
+        
+        #for i in range(min(300, self.optimizationDlg.interestingList.count())):
+        for i in range(self.optimizationDlg.interestingList.count()):
+            (accuracy, tableLen, list, strList) = self.optimizationDlg.optimizedListFull[i]
+            sumAcc = 0.0
+            print "Experiment %2.d - %s" % (i, str(list))
+            for k in kList: sumAcc += self.graph.getProjectionQuality(list, className, k)
+            results.append((sumAcc/float(len(kList)), tableLen, list))
+        
+        self.optimizationDlg.clear()
+        while results != []:
+            (accuracy, tableLen, list) = max(results)
+            self.optimizationDlg.insertItem(accuracy, tableLen, list)  
+            results.remove((accuracy, tableLen, list))
+
+        self.optimizationDlg.updateNewResults()
+        self.optimizationDlg.save("temp.proj")
+        self.optimizationDlg.interestingList.setCurrentItem(0)
 
     def reverseSelectedAttribute(self, item):
         text = str(item.text())
@@ -174,9 +205,14 @@ class OWPolyviz(OWWidget):
         self.options.lengthLCD.display(self.lineLength)
         self.options.useEnhancedTooltips.setChecked(self.enhancedTooltips)
         self.options.globalValueScaling.setChecked(self.globalValueScaling)
+
         for i in range(len(self.jitterSizeList)):
             self.options.jitterSize.insertItem(self.jitterSizeList[i])
         self.options.jitterSize.setCurrentItem(self.jitterSizeNums.index(self.jitterSize))
+
+        for i in range(len(self.scaleFactorList)):
+            self.options.scaleCombo.insertItem(self.scaleFactorList[i])
+        self.options.scaleCombo.setCurrentItem(self.scaleFactorList.index(str(self.scaleFactor)))
         
         # set items in k neighbours combo
         for i in range(len(self.kNeighboursList)):
@@ -189,6 +225,13 @@ class OWPolyviz(OWWidget):
         self.graph.setCanvasColor(self.options.gSetCanvasColor)
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setJitterSize(self.jitterSize)
+        self.graph.setScaleFactor(self.scaleFactor)
+
+
+    def setScaleFactor(self, n):
+        self.scaleFactor = float(self.scaleFactorList[n])
+        self.graph.setScaleFactor(self.scaleFactor)
+        self.updateGraph()
 
     def setUseEnhancedTooltips(self):
         self.enhancedTooltips = self.options.useEnhancedTooltips.isChecked()
@@ -283,7 +326,7 @@ class OWPolyviz(OWWidget):
     def optimizeAllSubsetSeparation(self):
         if self.data != None:
             if len(self.getShownAttributeList()) > 7:
-                res = QMessageBox.information(self,'Radviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
+                res = QMessageBox.information(self,'Polyviz','This operation could take a long time, because of large number of attributes. Continue?','Yes','No', QString.null,0,1)
                 if res != 0: return
 
             text = str(self.optimizationDlg.maxLenCombo.currentText())
