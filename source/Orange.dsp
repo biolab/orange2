@@ -75,7 +75,7 @@ PostBuild_Cmds=del "d:\ai\orange\orange.pyd"	"c:\program files\upx" "c:\temp\ora
 # PROP Ignore_Export_Lib 1
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MTd /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /c
-# ADD CPP /nologo /MTd /W3 /Gm /GR /GX /ZI /Od /I "include" /I "orange/ppp" /I "orange/px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /Zm700 /c
+# ADD CPP /nologo /MTd /Ze /W3 /Gm /GR /GX /ZI /Od /I "include" /I "orange/ppp" /I "orange/px" /I "$(PYTHON)\include" /I "$(GNUWIN32)/include" /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /YX /FD /GZ /Zm700 /c
 # SUBTRACT CPP /Fr
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32

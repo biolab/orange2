@@ -276,7 +276,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 for val in var.values:
                     foundValue = False
                     for same in cl.domain.attributes:
-                        if same.visited==0 and same.getValueFrom and same.originValue==val:
+                        if same.visited==0 and same.getValueFrom and hasattr(same, "originValue") and same.originValue==val:
                             same.setattr("visited", 1)
                             a.addAttValue(AttValue(same.originValue, mult*cl.beta[same], error = cl.beta_se[same]))
                             foundValue = True
