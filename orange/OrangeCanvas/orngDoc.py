@@ -230,12 +230,15 @@ class SchemaDoc(QMainWindow):
 	# ####################################
 	# add new widget
 	def addWidget(self, widget, x= -1, y=-1, caption = ""):
+		self.canvasDlg.setCursor(QWidget.waitCursor)
 		try:
 			newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
 		except:
 			type, val, traceback = sys.exc_info()
 			sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
+			self.canvasDlg.setCursor(QWidget.arrowCursor)
 			return None
+		self.canvasDlg.setCursor(QWidget.arrowCursor)
 		
 		if x==-1 or y==-1:
 			x = self.canvasView.contentsX() + 10
