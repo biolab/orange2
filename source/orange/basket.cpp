@@ -20,6 +20,7 @@
 */
 
 #include "stladdon.hpp"
+#include "strings.hpp"
 #include <map>
 
 #include "domain.hpp"
@@ -43,8 +44,26 @@ void TBasketExampleGenerator::clearCache()
 }
 
 
-void TBasketExampleGenerator::addItem(TExample &example, const string &atom, const float &quantity)
+void TBasketExampleGenerator::addItem(TExample &example, const string &atom2, const int &lineno)
 {
+  string atom;
+  float quantity;
+
+  string::const_iterator bi = atom2.begin();
+  string::size_type ei = atom2.find('=');
+  if (ei == string::npos) {
+    atom = trim(atom2);
+    quantity = 1.0;
+  }
+  else {
+    atom = trim(string(bi, bi+ei));
+    string trimmed = trim(string(bi+ei+1, atom2.end()));
+    char *err;
+    quantity = strtod(trimmed.c_str(), &err);
+    if (*err)
+      raiseError("invalid number after '%s=' in line %i", atom.c_str(), lineno);
+  }
+
   int id = ILLEGAL_INT;
 
   // Have we seen this item in this file already?
@@ -122,7 +141,7 @@ bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExampl
 
     if (*ae) {
       if (atom.length()) {
-        addItem(example, atom);
+        addItem(example, atom, fei.line);
         atom = string();
       }
  
@@ -155,3 +174,42 @@ bool TBasketExampleGenerator::readExample(TFileExampleIteratorData &fei, TExampl
   return !example.meta.empty();
 }
 
+
+void basket_writeExamples(FILE *fle, PExampleGenerator gen, set<int> &missing)
+{
+  const TDomain &domain = gen->domain.getReference();
+
+  PEITERATE(ei, gen) {
+    bool comma = false;
+    ITERATE(TMetaValues, mi, (*ei).meta) {
+      if ((*mi).second.varType != TValue::FLOATVAR)
+        raiseError(".basket files cannot store non-continuous attributes");
+
+      if ((*mi).second.isSpecial() || ((*mi).second.floatV == 0.0))
+        continue;
+        
+      PVariable metaVar = domain.getMetaVar((*mi).first, false);
+      if (metaVar) {
+        if ((*mi).second.floatV == 1.0)
+          if (comma)
+            fprintf(fle, ", %s", metaVar->name.c_str());
+          else {
+            fprintf(fle, metaVar->name.c_str());
+            comma = true;
+          }
+        else
+          if (comma)
+            fprintf(fle, ", %s=%5.3f", metaVar->name.c_str(), (*mi).second.floatV);
+          else {
+            fprintf(fle, "%5s=%5.3f", metaVar->name.c_str(), (*mi).second.floatV);
+            comma = true;
+          }
+      }
+      else
+        missing.insert((*mi).first);
+    }
+
+    if (comma)
+      fprintf(fle, "\n");
+  }
+}

@@ -37,7 +37,7 @@ public:
 
   TBasketExampleGenerator(const string &datafile, PDomain sourceDomain, bool dontCheckStored, bool dontStore);
 
-  void addItem(TExample &example, const string &atom, const float &quantity = 1.0);
+  void addItem(TExample &example, const string &atom, const int &lineno);
   virtual bool readExample(TFileExampleIteratorData &, TExample &);
 
   static void clearCache();

@@ -27,6 +27,7 @@
 #include <math.h>
 #include "stladdon.hpp"
 #include "errors.hpp"
+#include "strings.hpp"
 
 #include "values.hpp"
 #include "vars.hpp"
@@ -612,15 +613,6 @@ bool atomsEmpty(const TIdList &atoms)
   return true;
 }
 
-
-string trim(const string &s)
-{ string::const_iterator si(s.begin()), se(s.end());
-  while ((si!=se) && (*si==' '))
-    si++;
-  while ((si!=se) && (si[-1]==' '))
-    se--;
-  return string(si, se);
-}
 
 /*  Reads a list of atoms from a line of tab or comma delimited file. Atom consists of any characters
     except \n, \r and \t (and ',' if csv=true). Multiple spaces are replaced by a single space. Atoms

@@ -355,4 +355,77 @@ PyObject *saveRetis(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename,
 }
 
 
+void basket_writeExamples(FILE *, PExampleGenerator, set<int> &missing);
+void raiseWarning(const char *s);
+
+PyObject *saveBasket(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(filename, examples) -> None")
+{ PyTRY
+    char *filename;
+    PExampleGenerator gen;
+
+    if (!PyArg_ParseTuple(args, "sO&:saveBasket", &filename, pt_ExampleGenerator, &gen))
+      return PYNULL;
+
+    if (gen->domain->variables->size())
+      PYERROR(PyExc_TypeError, ".basket format can only store meta-attribute values", PYNULL);
+
+    FILE *ostr = fopen(filename, "wt");
+    if (!ostr) {
+      PyErr_Format(PyExc_SystemError, "cannot open file '%s'", filename);
+      return PYNULL;
+    }
+
+    set<int> missing;
+
+    try {
+      basket_writeExamples(ostr, gen, missing);
+    }
+    catch (...) {
+      fclose(ostr);
+      remove(filename);
+      throw;
+    }
+
+    fclose(ostr);
+
+    if (!missing.empty()) {
+      if (missing.size() == 1) {
+        char excbuf[128];
+        snprintf(excbuf, 512, "saveBasket: attribute with id %i was not found in Domain and has not been stored", *(missing.begin()));
+        raiseWarning(excbuf);
+      }
+
+      else {
+        string misss;
+        bool comma = false;
+        const_ITERATE(set<int>, mi, missing) {
+          if (comma)
+            misss += ", ";
+          else
+            comma = true;
+
+          char ns[20];
+          sprintf(ns, "%i", (*mi));
+          misss += ns;
+        }
+
+        char *excbuf = mlnew char[misss.length() + 128];
+        sprintf(excbuf, "saveBasket: attributes with ids not found in Domain have not been stored (%s)", misss.c_str());
+        try {
+          raiseWarning(excbuf);
+        }
+        catch (...) {
+          mldelete excbuf;
+          throw;
+        }
+
+        mldelete excbuf;
+      }
+    }
+
+    RETURN_NONE
+  PyCATCH
+}
+
+
 #include "lib_io.px"
