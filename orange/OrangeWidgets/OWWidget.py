@@ -67,11 +67,11 @@ class OWWidget(QWidget):
             self.settingsButton=QPushButton("&Settings",self.buttonBackground)
         if wantGraph:
             self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
-        if parent==None:
-            self.closeButton=QPushButton("&Close",self.buttonBackground)
+        #if parent==None:
+        #    self.closeButton=QPushButton("&Close",self.buttonBackground)
         self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
-        if parent==None:
-            self.connect(self.closeButton,SIGNAL("clicked()"),self.close)
+        #if parent==None:
+        #    self.connect(self.closeButton,SIGNAL("clicked()"),self.close)
         self.mainArea=QWidget(self)
 #        self.mainArea.setBackgroundColor(Qt.white)
         self.controlArea=QVBox(self)
