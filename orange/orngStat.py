@@ -131,6 +131,9 @@ def CA(res, reportSE=0, **argkw):
         else:
             return [statc.mean(cas) for cas in newFolds]
 
+def CA_se(res, **argkw):
+    return apply(CA, (res, 1), argkw)
+
 def AP(res, **argkw):
     APs=[0.0]*res.numberOfLearners
     if argkw.get("unweighted", 0) or not res.weights:
