@@ -219,19 +219,25 @@ class OWVisGraph(OWGraph):
         if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
         
 
-    def removeAllSelections(self):
+    def removeAllSelections(self, send = 1):
         while self.selectionCurveKeyList != []:
             curve = self.selectionCurveKeyList[0]
             self.removeCurve(curve)
             self.selectionCurveKeyList.remove(curve)
         self.replot()
-        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+        if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
 
 
     #####################################################################
     #####################################################################
     # set new data and scale its values
     def setData(self, data):
+        # clear all curves, markers, tips
+        self.removeAllSelections(0)  # clear all selections
+        self.removeCurves()
+        self.removeMarkers()
+        self.tips.removeAll()
+        
         self.rawdata = data
         self.scaledData = []
         self.noJitteringScaledData = []
