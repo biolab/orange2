@@ -60,7 +60,11 @@ def _colorize1(cc):
     return piddle.Color(cred,cgre,cblu)
 
 def _blackwhite(cc):
-    v = 1.0-(1.0/cc)
+    v = 1.0-(1.0/max(1e-6,cc))
+    return piddle.Color(v,v,v)
+
+def _bw3(cc):
+    v = cc
     return piddle.Color(v,v,v)
 
 def _bw2(cc):
@@ -68,13 +72,43 @@ def _bw2(cc):
     return piddle.Color(v,v,v)
 
 class DendrogramPlot:    
-    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0, gains = [], gain_width = 50):
+    def dendrogram(self,labels,width = 500, height = None, margin = 20, hook = 40, line_size = 2.0, cluster_colors = [], canvas = None, line_width = 1,color_mode=0, incremental_height=1, matr = [], g_lines=0, additional_labels = [], additional_matr=[], add_tags =[], adwidth=1.0, plot_gains = 0, gains = [], gain_width = 70, plot_ints = 0, im = None):
         # prevent divide-by-zero...
         if len(labels) < 2:
             return canvas
 
-        ## ADJUST DIMENSIONS ###        
+        if plot_ints or (plot_gains and len(gains) == 0):
+            # the gains have been proposed but not calculated
+            if len(gains) > 0:
+                warnings.warn('Ignoring the given gains: need to refer to the interaction matrix.')
+            gains = [] # discretized gains
+            mv = 1.0/max(1e-6,max(im.gains))
+            for v in im.gains:
+                gains.append(v*mv) # normalize with respect to the best attribute from correlation analysis.
+                
+            # fix the widths
+            gain_l = []
+            for i in xrange(self.n):
+                gain_l.append(gains[i])
+    
+        if plot_ints:
+            # include the interactions between all pairs
+            intlist = []
+            for i in xrange(self.n-1):
+                idx1 = self.order[i]-1
+                idx2 = self.order[i+1]-1
+                ig = im.way3[(min(idx1,idx2),max(idx1,idx2),-1)].InteractionInformation()
+                if gains[idx1] < gains[idx2]:
+                    idx1,idx2 = idx2,idx1
+                if ig > 0:
+                    gain_l[idx1] += ig*mv # possibly new maximum width
+                    intlist.append((idx1,ig*mv,0.0))
+                else:
+                    intlist.append((idx2,ig*mv,1.0))
+        else:
+            intlist = []
 
+        ## ADJUST DIMENSIONS ###        
         if canvas == None:
             tcanvas = piddlePIL.PILCanvas()
         else:
@@ -100,7 +134,7 @@ class DendrogramPlot:
             swids.append(swid + spacew)
             if len(gains) > 0:
                 assert(len(gains)==len(labels))
-                swid += spacew + gains[i]*gain_width
+                swid += spacew + gain_l[i]*gain_width
             maxlabel = max(maxlabel,swid)
 
         if canvas == None:
@@ -118,9 +152,7 @@ class DendrogramPlot:
         else:
             _colorize = _bw2
 
-
         ### EXTRACT THE DENDROGRAM ###
-        
         vlines = []               # vertical lines (cluster)
         hlines = []               # horizontal lines (clusters)
         origins = [0.0]*self.n    # text positions
@@ -222,13 +254,33 @@ class DendrogramPlot:
             canvas.drawLine(x,y,x+hook*0.8,y,attcolors[idx],width=line_width)
             GSERIF = 1.2*line_width
             MULT = 1.2*line_width
+            XMULT = 0.6*line_width
+            XSERIF = 0.6*line_width
             SWIDTH = 1
             if len(gains) > 0 :
                 # draw the gain line
                 if gain_width*gains[idx] >= 2.0*MULT:
                     canvas.drawLine(hook+x+swids[idx]+MULT,y,hook+x+swids[idx]+gain_width*gains[idx]-MULT,y,piddle.black,width=MULT) # actual line
+                canvas.drawLine(hook+x+swids[idx],y,hook+x+swids[idx]+gain_width*gains[idx],y,piddle.black,width=SWIDTH) # thin line
                 canvas.drawLine(hook+x+swids[idx],y-GSERIF,hook+x+swids[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif 1
                 canvas.drawLine(hook+x+swids[idx]+gain_width*gains[idx],y-GSERIF,hook+x+swids[idx]+gain_width*gains[idx],y+GSERIF,piddle.black,width=SWIDTH) #serif2
+            if len(intlist) > 0 and i > 0:
+                (qidx,width,cc) = intlist[i-1]
+                nx = offset-hs*(origins[qidx])+hook+swids[qidx]+gain_width*gains[qidx]
+                ny = y-0.5*lineskip
+                colo = _colorize(cc)
+                if width > 0:
+                    disp = XMULT
+                    seri = XSERIF
+                else:
+                    disp = -XMULT
+                    seri = -XSERIF
+                if abs(gain_width*width) >= 2.0*XMULT:
+                    canvas.drawLine(nx+disp,ny,nx+gain_width*width-disp,ny,colo,width=XMULT) # actual line
+                    canvas.drawLine(nx+gain_width*width-seri,ny-seri,nx+gain_width*width,ny,colo,width=SWIDTH) # arrowpoint 1
+                    canvas.drawLine(nx+gain_width*width-seri,ny+seri,nx+gain_width*width,ny,colo,width=SWIDTH) # arrowpoint 2
+                canvas.drawLine(nx,ny,nx+gain_width*width,ny,colo,width=SWIDTH) # thin line
+                canvas.drawLine(nx,ny-XSERIF,nx,ny+XSERIF,colo,width=SWIDTH) # serif 1            
             y += lineskip
 
         for i in range(len(additional_labels)):
@@ -309,6 +361,8 @@ class DendrogramPlot:
             _colorize = _colorize1 # gregor
         elif color_mode==0:
             _colorize = _colorize0 # aleks
+        elif color_mode==2:
+            _colorize = _blackwhite # interaction matrices, etc.
         else:
             _colorize = _blackwhite
 
@@ -316,7 +370,6 @@ class DendrogramPlot:
                 
         offset = maxlabel+margin
         halfline = canvas.fontAscent(normal)/2.0
-
         # print names
         for i in range(len(labels)):
             # self.order identifies the label at a particular row
@@ -329,28 +382,29 @@ class DendrogramPlot:
             x2 = offset + lineskip/2
             y2 = offset + lineskip*(i+1)
             # vertical
-            if diagonal and i < len(labels)-1:
+            if diagonal:
                 if len(att_colors)>0:
-                    canvas.drawString(labels[idx], y+lineskip, y2-1.2*lineskip, angle=90,font=normal)
-                else:
-                    canvas.drawString(labels[idx], y+lineskip, y2-0.2*lineskip, angle=90,font=normal)
+                    canvas.drawString(labels[idx], y+lineskip, y2+block-hook-lineskip, angle=90,font=normal)
+                elif i < len(labels)-1:
+                    canvas.drawString(labels[idx], y+lineskip, y2+block-hook, angle=90,font=normal)
             elif not diagonal:
-                canvas.drawString(labels[idx], y2+lineskip, x2-1.2*lineskip, angle=90,font=normal)
+                canvas.drawString(labels[idx], y2+lineskip, x2+block-lineskip, angle=90,font=normal)
             for j in range(i):
                 idx2 = self.order[j]-1
                 colo = _colorize(diss[max(idx,idx2)-1][min(idx,idx2)])
-                x = offset+hook+lineskip*(j+1)
-                y = offset+hook+lineskip*(i)
+                x = offset+hook+lineskip*(j+1)+block
+                y = offset+lineskip*(i+1)-halfline
                 canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
                 if not diagonal:
-                    x -= lineskip
-                    y += lineskip
-                    canvas.drawRect(y-block,x-block,y+block,x+block,edgeColor=colo,fillColor=colo)
+                    x = offset+hook+lineskip*(i+1)+block
+                    y = offset+lineskip*(j+1)-halfline
+                    canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
             if len(att_colors) > 0:
                 # render the gain
-                x = offset+hook+lineskip*(i+1)
+                x = offset+hook+lineskip*(i+1)+block
+                y = offset+lineskip*(i+1)-halfline
                 colo = _colorize(att_colors[idx])
-                canvas.drawRect(x-block,x-block,x+block,x+block,edgeColor=colo,fillColor=colo)
+                canvas.drawRect(x-block,y-block,x+block,y+block,edgeColor=colo,fillColor=colo)
                 
         canvas.flush()
         return canvas
