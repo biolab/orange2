@@ -713,7 +713,7 @@ PyObject *LogisticLearner_fitModel(PyObject *self, PyObject *args) PYARGS(METH_V
 }
 
 
-PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples, weightID) -> Classifier")
+PyObject *LogisticFitter_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(examples[, weightID]) -> Classifier")
 {
   PyTRY
     SETATTRIBUTES

@@ -54,8 +54,8 @@ double *ones(int n) {
 
 PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const int &weight, PFloatList &beta_se, float &likelihood, int &error, PVariable &error_att, const bool &exception_at_singularity) {
 	// get all needed/necessarily attributes and set
-	LRInput input = LRInput();
-	LRInfo O = LRInfo();
+	LRInput input;
+	LRInfo O;
 
 
 	// fill input data
@@ -110,26 +110,20 @@ PFloatList TLogisticFitter_Cholesky::operator ()(PExampleGenerator gen, const in
 			}
 			i++;
 		}
-		if (exception_at_singularity) { // throw singularity error
-			string error_str;
-			if (O.error == 6)
-				error_str = "singularity in ";
-			else
-				error_str = "constant variable in ";
-			error_str.append(error_att->name);
-			raiseError(error_str.c_str());
-		}
+		if (exception_at_singularity) // throw singularity error
+          raiseError(O.error == 6 ? "singularity in '%s'" : "constant variable in '%s'", error_att->name.c_str());
+
 		likelihood = -gen->numberOfExamples(); // set worst possible likelihood. Well not really the worst possible, it is the 
 											    // the likelihood of majority learner	
-		return PFloatList(mlnew TFloatList);
+		return PFloatList();
 	}
 	else if (O.error>0 && O.error<5) {
 		raiseError(errors[O.error-1]);
 	}
 
 	// tranfsorm *beta into a PFloatList
-	PFloatList beta=PFloatList(mlnew TFloatList);
-	beta_se=PFloatList(mlnew TFloatList);
+	PFloatList beta=mlnew TFloatList;
+	beta_se=mlnew TFloatList;
 
 	//TODO: obstaja konstruktor, ki pretvori iz navadnega arraya?
 	for (i=0; i<input.k+1; i++) {
@@ -151,30 +145,39 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 	numAttr=gen->domain->attributes->size();
 	matrix = new double*[numExamples+1];
 
-	// get number of attributes 
-	// TODO
-/*	PITERATE(TVarList, vli, gen->domain->attributes) {
-		numAttr++;
-	} */
-	
-	// copy gen to double matrix
-	int n=0;
-	matrix[n]= new double[numAttr+1];
-	// iteration through examples
-	PEITERATE(first, gen) {	  
-		// row allocation
-		matrix[n+1]= new double[numAttr+1];
+    { for(int i = 0; i<numExamples; matrix[i++] = NULL); }
 
-		int at=0;
-		// iteration through attributes
-		PITERATE(TVarList, vli, gen->domain->attributes) {
-			// copy att. value
-			matrix[n+1][at+1]=(*first)[at].floatV;
+    try {
+	    // get number of attributes 
+	    // TODO
+    /*	PITERATE(TVarList, vli, gen->domain->attributes) {
+		    numAttr++;
+	    } */
+	    
+	    // copy gen to double matrix
+	    int n=0;
+	    matrix[n]= new double[numAttr+1];
+	    // iteration through examples
+	    PEITERATE(first, gen) {	  
+		    // row allocation
+		    matrix[n+1]= new double[numAttr+1];
 
-			at++;
-		}
-		n++;
-	}
+		    int at=0;
+		    // iteration through attributes
+		    PITERATE(TVarList, vli, gen->domain->attributes) {
+			    // copy att. value
+			    matrix[n+1][at+1]=(*first)[at].floatV;
+			    at++;
+		    }
+		    n++;
+	    }
+    }
+    catch (...) {
+        for(int i = 0; i<=numExamples; i++)
+            if (matrix[i])
+                delete matrix[i];
+        delete matrix;
+    }
 
 	return matrix;
 }
@@ -182,18 +185,23 @@ double **TLogisticFitter::generateDoubleXMatrix(PExampleGenerator gen, long &num
 double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen, const int &weight) {
 	// initialize vector
 	double *Y = new double[gen->numberOfExamples()+1];
+    try {
 
-	// copy gen class to vector *Y
-	int n=0;
-	PEITERATE(ei, gen) {
-		// copy class value
-		if (weight!=0) {
-			Y[n+1]=((float)((*ei).getClass().intV)) * (*ei)[weight].floatV;
-		}
-		else
-			Y[n+1]=(*ei).getClass().intV;
-		n++;
-	}    
+	    // copy gen class to vector *Y
+	    int n=0;
+	    PEITERATE(ei, gen) {
+		    // copy class value
+		    if (weight!=0) {
+			    Y[n+1]=((float)((*ei).getClass().intV)) * (*ei)[weight].floatV;
+		    }
+		    else
+			    Y[n+1]=(*ei).getClass().intV;
+		    n++;
+	    }
+    }
+    catch (...) {
+        delete Y;
+    }
 
 	return Y;
 }
@@ -202,19 +210,25 @@ double *TLogisticFitter::generateDoubleYVector(PExampleGenerator gen, const int 
 double *TLogisticFitter::generateDoubleTrialsVector(PExampleGenerator gen, const int &weight) {
 	// initialize vector
 	double *T = new double[gen->numberOfExamples()+1];
+    try {
 
-	// copy gen class to vector *Y
-	int n=0;
-	PEITERATE(ei, gen) {
-		// copy class value
-		if (weight!=0) {
-			T[n+1]=(*ei)[weight].floatV;
-		}
-		else
-			T[n+1]=1.;
+	    // copy gen class to vector *Y
+	    int n=0;
+	    PEITERATE(ei, gen) {
+		    // copy class value
+		    if (weight!=0) {
+			    T[n+1]=(*ei)[weight].floatV;
+		    }
+		    else
+			    T[n+1]=1.;
 
-		n++;
-	}    
+		    n++;
+	    }    
+    }
+    catch (...) {
+      delete T;
+      throw;
+    }
 
 	return T;
 }
