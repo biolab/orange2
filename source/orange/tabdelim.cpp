@@ -632,8 +632,10 @@ bool readTabAtom(TFileExampleIteratorData &fei, TIdList &atoms, bool escapeSpace
 
     if (c==EOF)
       break;
-    if (!col && (c=='|'))
+    if (!col && (c=='|')) {
+      for (c=fgetc(fei.file); (c!='\r') && (c!='\n') && (c!=EOF); c=fgetc(fei.file));
       return false;
+    }
 
     col++;
 

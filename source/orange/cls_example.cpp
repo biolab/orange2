@@ -250,18 +250,34 @@ int getMetaIdFromPy(PExample example, PyObject *index, PVariable &var)
 }
 
 
-PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id) -> weight; Returns example's weight")
-{ PyTRY
-    if (!PyInt_Check(pyindex))
-      PYERROR(PyExc_TypeError, "an integer id expected", PYNULL);
+int weightIndex(const TExample &example, PyObject *pyindex)
+{
+  if (pyindex == Py_None)
+    return 0;
 
-    int index = (int)PyInt_AsLong(pyindex);
+  if (PyInt_Check(pyindex))
+    return (int)PyInt_AsLong(pyindex);
+
+  PVariable var = varFromArg_byDomain(pyindex, example.domain);
+  if (!var) 
+    PYERROR(PyExc_TypeError, "invalid arguments or unknown attribute", ILLEGAL_INT);
+
+  return example.domain->getVarNum(var);
+}
+
+
+PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id) -> weight; Returns example's weight")
+{
+  PyTRY
+    const TExample &example = PyExample_AS_ExampleReference(pex);
+    int index = weightIndex(example, pyindex);
+    if (index == ILLEGAL_INT)
+      return PYNULL;
 
     if (!index)
       return PyFloat_FromDouble(1.0);
 
-    TValue val = PyExample_AS_Example(pex)->getMeta(index);
-
+    TValue val = example.getMeta(index);
     if (val.isSpecial() || (val.varType!=TValue::FLOATVAR))
       PYERROR(PyExc_TypeError, "invalid weight", PYNULL);
 
@@ -272,15 +288,23 @@ PyObject *Example_getweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "
 
 PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS, "(id[, weight]); Sets example's weight to given value")
 { PyTRY
-    int index;
+    PyObject *pyindex;
     float weight = 1;
 
-    if (!PyArg_ParseTuple(args, "i|f:setweight", &index, &weight))
+    if (!PyArg_ParseTuple(args, "O|f:setweight", &pyindex, &weight))
       return PYNULL;
-    if (!index)
+
+    TExample &example = PyExample_AS_ExampleReference(pex);
+    int index = weightIndex(example, pyindex);
+
+    if (index == ILLEGAL_INT)
+      return PYNULL;
+
+    if (index>0)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
 
-    PyExample_AS_Example(pex)->setMeta(index, TValue(weight));
+    if (index)
+      example.setMeta(index, TValue(weight));
 
     RETURN_NONE;
   PyCATCH
@@ -289,15 +313,18 @@ PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS
 
 PyObject *Example_removeweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O, "(id); Removes examples's weight")
 { PyTRY
-    if (!PyInt_Check(pyindex))
-      PYERROR(PyExc_TypeError, "an integer id expected", PYNULL);
+    TExample &example = PyExample_AS_ExampleReference(pex);
+    int index = weightIndex(example, pyindex);
 
-    int index = (int)PyInt_AsLong(pyindex);
+    if (index == ILLEGAL_INT)
+      return PYNULL;
 
     if (index>0)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
 
-    PyExample_AS_Example(pex)->removeMeta(index);
+    if (index)
+      example.removeMeta(index);
+
     RETURN_NONE;
   PyCATCH
 }
@@ -311,6 +338,28 @@ PyObject *Example_getmeta(TPyExample *pex, PyObject *index) PYARGS(METH_O, "(id 
       return PYNULL; 
 
     return convertToPythonNative(PyExample_AS_Example(pex)->getMeta(idx), var);
+  PyCATCH
+}
+
+
+PyObject *Example_setvalue(TPyExample *pex, PyObject *vala) PYARGS(METH_O, "(Value) -> None")
+{ PyTRY
+    if (!PyOrValue_Check(vala))
+      PYERROR(PyExc_TypeError, "Example.setvalue: orange.Value expected", PYNULL);
+
+    PVariable var = PyValue_AS_Variable(vala);
+    if (!var)
+      PYERROR(PyExc_TypeError, "Example.setvalue: values 'variable' should not be None", PYNULL);
+
+    PExample example=PyExample_AS_Example(pex);
+    int idx = example->domain->getVarNum(var);
+
+    if (idx>=0)
+      example->operator[](idx) = PyValue_AS_Value(vala);
+    else
+      example->setMeta(idx, PyValue_AS_Value(vala));
+
+    RETURN_NONE;
   PyCATCH
 }
 
@@ -447,17 +496,24 @@ PyObject *Example_compatible(TPyExample *pex, PyObject *obj) PYARGS(METH_O, "(ex
 }
 
 
+PyObject *PyExampleIter_New(TPyExample *);
+
+PyObject *Example_iter(TPyExample *pex)
+{ return PyExampleIter_New(pex);
+}
+
+
 int getAttributeIndex(PDomain domain, PyObject *vara)
 {
     if (PyInt_Check(vara)) {
       int ind = int(PyInt_AsLong(vara));
-      if (ind<0)
-        ind += domain->variables->size();
-      if ((ind<0) || (ind>=int(domain->variables->size()))) {
-        PyErr_Format(PyExc_IndexError, "index %i out of range 0-%i", ind, domain->variables->size()-1);
+      if (ind >= (int)(domain->variables->size())) {
+        PyErr_Format(PyExc_IndexError, "index %i to large (> %i)", ind, domain->variables->size()-1);
         return ILLEGAL_INT;
       }
-      return ind;
+
+      // Exception: example[-1] gives class value
+      return ind==-1 ? domain->variables->size()-1 : ind;
     }
 
     PVariable var=varFromArg_byDomain(vara, domain);
@@ -476,42 +532,26 @@ PyObject *Example_getitem(TPyExample *pex, PyObject *vara)
     if (ind==ILLEGAL_INT)
       return PYNULL;
 
-    return Value_FromVariableValue(example->domain->getVar(ind), example->operator[](ind));
+    /* getVar will return NULL if ind is meta-attribute not registered with the domain.
+       That's OK - we don't need PVariable (Value_FromValue would do exactly the same).
+       operator[] will raise an exception if meta-value is requested and the example
+       doesn't have it. */
+    return Value_FromVariableValue(example->domain->getVar(ind, false), example->operator[](ind));
   PyCATCH
 }
 
 
-int exampleIndex(PExample example, int ind)
-{ 
-  int attrs = example->domain->variables->size();
-  if (ind<0)
-    ind += attrs;
-  if ((ind<0) || (ind>=int(example->domain->variables->size()))) {
-    PyErr_Format(PyExc_IndexError, "index %i out of range 0-%i", ind, attrs-1);
-    return ILLEGAL_INT;
-  }
-  return ind;
-}
-
-
-PyObject *Example_getitem_sq(TPyExample *pex, int idx)
+int Example_setitem(TPyExample *pex, PyObject *vara, PyObject *vala)
 { PyTRY
     PExample example = PyExample_AS_Example(pex);
-    int ind = exampleIndex(example, idx);
-    if (ind == ILLEGAL_INT)
-      return PYNULL;
+    const int ind = getAttributeIndex(example->domain, vara);
+    if (ind==ILLEGAL_INT)
+      return -1;
 
-    return Value_FromVariableValue(example->domain->getVar(ind), example->operator[](ind));
-  PyCATCH
-}
-
-
-int TPyExample_setItem_lower(PExample example, const int &ind, PyObject *vala)
-{  PyTRY
-    PVariable var = example->domain->getVar(ind);
+    PVariable var = example->domain->getVar(ind, false);
 
     if (PyOrValue_Check(vala)) {
-      if (PyValue_AS_Variable(vala) && (PyValue_AS_Variable(vala)!=var)) {
+      if (PyValue_AS_Variable(vala) && var && (PyValue_AS_Variable(vala)!=var)) {
           string vals;
           PyValue_AS_Variable(vala)->val2str(PyValue_AS_Value(vala), vals);
           if (ind>=0)
@@ -541,28 +581,7 @@ int TPyExample_setItem_lower(PExample example, const int &ind, PyObject *vala)
     }
 
     return 0;
-  PyCATCH_1
-}
 
-
-int Example_setitem(TPyExample *pex, PyObject *vara, PyObject *vala)
-{ PyTRY
-    PExample example = PyExample_AS_Example(pex);
-    const int index = getAttributeIndex(example->domain, vara);
-    if (index==ILLEGAL_INT)
-      return -1;
-    return TPyExample_setItem_lower(example, index, vala);
-  PyCATCH_1
-}
-
-
-int Example_setitem_sq(TPyExample *pex, const int &ind, PyObject *vala)
-{ PyTRY
-    PExample example = PyExample_AS_Example(pex);
-    const int index = exampleIndex(example, ind);
-    if (index == ILLEGAL_INT)
-     return -1;
-    return TPyExample_setItem_lower(example, index, vala);
   PyCATCH_1
 }
 
@@ -689,6 +708,91 @@ int Example_len(TPyExample *pex)
     return PyExample_AS_Example(pex)->domain->variables->size();
   PyCATCH_1
 }
+
+
+
+
+extern PyTypeObject PyExampleIter_Type;
+
+class TPyExampleIter {
+public:
+  PyObject_HEAD
+
+  long index;
+  TPyExample *example; /* Set to NULL when iterator is exhausted */
+};
+
+PyObject *PyExampleIter_New(TPyExample *ex)
+{
+  TPyExampleIter *self = PyObject_GC_New(TPyExampleIter, &PyExampleIter_Type);
+  if (self == NULL)
+    return NULL;
+
+  self->index = 0;
+
+  Py_INCREF(ex);
+	self->example = ex;
+	PyObject_GC_Track(self);
+	return (PyObject *)self;
+}
+
+static void PyExampleIter_Dealloc(TPyExampleIter *self)
+{
+  PyObject_GC_UnTrack(self);
+  Py_XDECREF(self->example);
+  PyObject_GC_Del(self);
+}
+
+static int PyExampleIter_Traverse(TPyExampleIter *self, visitproc visit, void *arg)
+{
+	return self->example ? visit((PyObject *)(self->example), arg) : 0;
+}
+
+
+int PyExampleIter_Clear(TPyExampleIter *self)
+{ Py_XDECREF((PyObject *)(self->example));
+  self->example = NULL;
+  return 0;
+}
+
+
+static PyObject *PyExampleIter_Iternext(TPyExampleIter *self)
+{
+  if (!self->example)
+    return NULL;
+
+  if (self->index >= PyExample_AS_ExampleReference(self->example).domain->variables->size()) {
+    Py_DECREF(self->example);
+    self->example = NULL;
+    PYERROR(PyExc_StopIteration, "", PYNULL);
+  }
+
+  TExample &ex = PyExample_AS_ExampleReference(self->example);
+  PyObject *result = Value_FromVariableValue(ex.domain->getVar(self->index), ex[self->index]);
+  self->index++;
+  return result;
+}
+
+
+
+PyTypeObject PyExampleIter_Type = {
+	PyObject_HEAD_INIT(&PyType_Type)
+	0,
+	"orange.Example iterator",
+	sizeof(TPyExampleIter),
+	0,
+	(destructor)PyExampleIter_Dealloc,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	PyObject_GenericGetAttr,
+	0, 0,
+	Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC,
+ 	0,
+ 	(traverseproc)PyExampleIter_Traverse,
+ 	(inquiry)PyExampleIter_Clear, 0, 0,
+	PyObject_SelfIter,
+	(iternextfunc)PyExampleIter_Iternext,
+	0, 0, 0, 0, 0, 0, 0,
+};
 
 
 #include "cls_example.px"
