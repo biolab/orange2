@@ -439,7 +439,6 @@ class kNNOptimization(OWBaseWidget):
         if table.domain.classVar.varType == orange.VarTypes.Continuous:
             for j in range(len(table)):
                 if selection[j] == 0: continue
-                print table[j].getclass(), knn(table[j])
                 temp += pow(table[j].getclass() - knn(table[j]), 2)
                 experiments += 1
             accuracy = temp/float(experiments)
