@@ -208,6 +208,8 @@ int TExample::sumValues() const
       add_CRC((const unsigned char)(vli->isSpecial() ? ((*vi)->noOfValues()) : vli->intV), crc);
     else if (((*vi)->varType == TValue::FLOATVAR) && !vli->isSpecial())
       add_CRC(vli->floatV, crc);
+    vli++;
+  }
 
   FINISH_CRC(crc);
   return abs(crc);
