@@ -30,7 +30,7 @@
 #include "table.hpp"
 
 TExampleTable *readListOfExamples(PyObject *args);
-TExampleTable *readListOfExamples(PyObject *args, PDomain);
+TExampleTable *readListOfExamples(PyObject *args, PDomain, bool filterMetas = false);
 PExampleGenerator exampleGenFromArgs(PyObject *args, int *weightID = NULL);
 PExampleGenerator exampleGenFromParsedArgs(PyObject *args);
 bool varListFromDomain(PyObject *boundList, PDomain domain, TVarList &boundSet, bool allowSingle=true, bool checkForIncludance=true);

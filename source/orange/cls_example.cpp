@@ -189,14 +189,19 @@ int Example_clear(TPyExample *self)
 }
 
 
-PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *) BASED_ON(ROOT, "(domain, [list of values])")
+bool readBoolFlag(PyObject *keywords, char *flag);
+
+CONSTRUCTOR_KEYWORDS(ExampleTable, "filterMetas")
+
+
+PyObject *Example_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED_ON(ROOT, "(domain, [list of values])")
 { PyTRY
     PyObject *list=PYNULL;
     PDomain dom;
 
     if (PyArg_ParseTuple(args, "O&|O", cc_Domain, &dom, &list)) {
       if (list && PyOrExample_Check(list)) {
-        PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference());
+        PExample ex = mlnew TExample(dom, PyExample_AS_Example(list).getReference(), readBoolFlag(keywords, "filterMetas"));
         return Example_FromWrappedExample(ex);
       }
 

@@ -847,8 +847,13 @@ PyObject *Domain_new(PyTypeObject *type, PyObject *args, PyObject *keywds) BASED
           PYERROR(PyExc_TypeError, "Domain: invalid argument 3", PYNULL);
         }
         else
-          if (PyOrDomain_Check(arg2))
-            source = PyOrange_AsDomain(arg2)->variables;
+          if (PyOrDomain_Check(arg2)) {
+            PDomain sourceDomain = PyOrange_AsDomain(arg2);
+            source = mlnew TVarList(sourceDomain->variables.getReference());
+            ITERATE(TMetaVector, mi, sourceDomain->metas)
+              source->push_back((*mi).variable);
+          }
+
           else if (PyOrVarList_Check(arg2))
             source = PyOrange_AsVarList(arg2);
           else if (PyList_Check(arg2))
@@ -1561,7 +1566,7 @@ TExampleTable *readListOfExamples(PyObject *args)
 }
 
 
-TExampleTable *readListOfExamples(PyObject *args, PDomain domain)
+TExampleTable *readListOfExamples(PyObject *args, PDomain domain, bool filterMetas)
 { if (PyList_Check(args)) {
     int size=PyList_Size(args);
     if (!size)
@@ -1573,7 +1578,7 @@ TExampleTable *readListOfExamples(PyObject *args, PDomain domain)
       for(int i=0; i<size; i++) {
         PyObject *pex = PyList_GetItem(args, i);
         if (PyOrExample_Check(pex))
-          table->addExample(PyExample_AS_ExampleReference(pex));
+          table->addExample(PyExample_AS_ExampleReference(pex), filterMetas);
         else {
           TExample example(domain);
           if (!convertFromPythonExisting(pex, example)) {
@@ -1616,7 +1621,7 @@ bool hasFlag(PyObject *keywords, char *flag)
   return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
 }
 
-CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore")
+CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas")
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
@@ -1671,10 +1676,12 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     PDomain domain;
     if (PyArg_ParseTuple(argstuple, "O&O", cc_Domain, &domain, &args)) {
+      bool filterMetas = readBoolFlag(keywords, "filterMetas");
+
       if (PyOrExampleGenerator_Check(args))
-        return WrapNewOrange(mlnew TExampleTable(domain, PyOrange_AsExampleGenerator(args)), type);
+        return WrapNewOrange(mlnew TExampleTable(domain, PyOrange_AsExampleGenerator(args), filterMetas), type);
       else {
-        TExampleTable *res = readListOfExamples(args, domain);
+        TExampleTable *res = readListOfExamples(args, domain, filterMetas);
         return res ? WrapNewOrange(res, type) : PYNULL;
       }
     }

@@ -57,19 +57,14 @@ TExampleTable::TExampleTable(PExampleGenerator gen, bool owns)
 }
 
 
-TExampleTable::TExampleTable(PDomain dom, PExampleGenerator gen)
+TExampleTable::TExampleTable(PDomain dom, PExampleGenerator gen, bool filterMetas)
 : TExampleGenerator(dom),
   examples(NULL),
   _Last(NULL),
   _EndSpace(NULL),
   ownsExamples(true)
 { 
-  if (!ownsExamples) {
-    lock = fixedExamples(gen);
-    addExamples(lock);
-  }
-  else
-    addExamples(gen);
+  addExamples(gen, filterMetas);
 }
 
 
@@ -418,6 +413,8 @@ void TExampleTable::erase(TExample **fromPtr, TExample **toPtr)
 
 void TExampleTable::insert(const int &sti, const TExample &ex)
 {
+  if (ex.domain != domain)
+    raiseError("examples has invalid domain (ExampleTable.insert doesn't convert)");
   if (sti > _Last-examples)
     raiseError("index %i out of range 0-%i", sti, _Last-examples);
   
@@ -521,13 +518,13 @@ int TExampleTable::numberOfExamples()
 }
 
 
-void TExampleTable::addExample(const TExample &example)
+void TExampleTable::addExample(const TExample &example, bool filterMetas)
 {
   if (ownsExamples)
     if (example.domain == domain)
       push_back(CLONE(TExample, &example));
     else
-      push_back(mlnew TExample(domain, example));
+      push_back(mlnew TExample(domain, example, !filterMetas));
   else
     if (example.domain == domain)
       push_back(const_cast<TExample *>(&example));
@@ -546,7 +543,7 @@ void TExampleTable::addExample(TExample *example)
   examplesHaveChanged();
 }
 
-void TExampleTable::addExamples(PExampleGenerator gen)
+void TExampleTable::addExamples(PExampleGenerator gen, bool filterMetas)
 {
   if (ownsExamples)
     if (gen->domain == domain)
@@ -554,7 +551,7 @@ void TExampleTable::addExamples(PExampleGenerator gen)
         push_back(CLONE(TExample, &*ei)); 
     else
       PEITERATE(ei, gen)
-        push_back(mlnew TExample(domain, *ei)); 
+        push_back(mlnew TExample(domain, *ei, !filterMetas)); 
 
   else {
     if (gen->domain == domain)
@@ -663,19 +660,19 @@ void TExampleTable::removeDuplicates(const int &weightID)
 
 
 // Changes the domain and converts all the examples.
-void TExampleTable::changeDomain(PDomain dom)
+void TExampleTable::changeDomain(PDomain dom, bool filterMetas)
 {
   domain = dom;
   if (ownsExamples)
     for (TExample **ri = examples; ri!=_Last; ri++) {
-      TExample *tmp = mlnew TExample(dom, **ri);
+      TExample *tmp = mlnew TExample(dom, **ri, !filterMetas);
       delete *ri;
       *ri = tmp;
     }
 
   else {
     for (TExample **ri = examples; ri!=_Last; ri++)
-      *ri = mlnew TExample(dom, **ri);
+      *ri = mlnew TExample(dom, **ri, filterMetas);
     ownsExamples = false;
     lock = PExampleGenerator();
   }

@@ -79,7 +79,7 @@ TExample::TExample(const TExample &orig, bool copyMetas)
 
 TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 : domain(dom),
-  meta(copyMetas ? orig.meta : TMetaValues()),
+  meta(),
   name(NULL)
 { if (!dom)
     raiseError("example needs a domain");
@@ -87,7 +87,7 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
   const int attrs = domain->variables->size();
   values = mlnew TValue[attrs];
   values_end = values + attrs;
-  domain->convert(*this, orig);
+  domain->convert(*this, orig, !copyMetas);
 }
 
 

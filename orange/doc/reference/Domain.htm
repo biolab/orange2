@@ -215,7 +215,7 @@ Here, <CODE>d1</CODE> is a classless domain and in <CODE>d2</CODE> we added the 
 data.addMetaAttribute("misses", 0)
 </XMP>
 
-<P>This again works only if "misses" is registered in <CODE>data.domain</CODE>. If not, you should use an id instead of string "misses" and change 0 to 0.0 to prevent the value from being interpreted as a discrete value (if there is no descriptor, orange has not idea about what you mean by 0 - a discrete index or a continuous value):<P>
+<P>This again works only if "misses" is registered in <CODE>data.domain</CODE> (which we did by calling <CODE>data.domain.addmeta(id, misses)</CODE>). If it's not, you should use an id instead of string "misses" and change 0 to 0.0 to prevent the value from being interpreted as a discrete value (if there is no descriptor, orange has not idea about what you mean by 0 - a discrete index or a continuous value):<P>
 
 <XMP class=code>
 >>> data.addMetaAttribute(id, 0.0)

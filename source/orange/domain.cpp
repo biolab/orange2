@@ -403,7 +403,7 @@ PVariable TDomain::operator[](const string &name)
     values are copied. If domain is different a corresponding TDomainMapping is found (or constructed
     if necessary). Converting is done by setting i-th value of 'dest' to position[i]-th value of
     'src' or by asking variable[i]->computeValue to deduce its value from 'src'. */
-void TDomain::convert(TExample &dest, const TExample &src)
+void TDomain::convert(TExample &dest, const TExample &src, bool filterMetas)
 {
   if (src.domain==this) {
     int Nv = variables->size();
@@ -459,10 +459,12 @@ void TDomain::convert(TExample &dest, const TExample &src)
         vpii++, mvi++)
       dest.setMeta((*vpii).first, (*vpii).second==ILLEGAL_INT ? (*mvi).variable->computeValue(src) : src[(*vpii).second]);
 
-    set<int>::iterator mend = (*lastDomain).metasNotToCopy.end();
-    const_ITERATE(TMetaValues, mi, src.meta)
-      if ((*lastDomain).metasNotToCopy.find((*mi).first) == mend)
-        dest.setMeta((*mi).first, (*mi).second);
+    if (!filterMetas) {
+      set<int>::iterator mend = (*lastDomain).metasNotToCopy.end();
+      const_ITERATE(TMetaValues, mi, src.meta)
+        if ((*lastDomain).metasNotToCopy.find((*mi).first) == mend)
+          dest.setMeta((*mi).first, (*mi).second);
+    }
   }
 }
 

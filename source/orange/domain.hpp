@@ -121,7 +121,7 @@ public:
   PVariable operator[](const string &name);
   PVariable operator[](const string &name) const;
 
-  virtual void convert(TExample &dest, const TExample &src);
+  virtual void convert(TExample &dest, const TExample &src, bool filterMetas = false);
   virtual void domainHasChanged();
 
   void afterSet(const string &name);

@@ -44,7 +44,7 @@ public:
 
   TExampleTable(PDomain, bool owns = true);
   TExampleTable(PExampleGenerator orig, bool owns = true); // also copies examples
-  TExampleTable(PDomain, PExampleGenerator orig); // owns = true (cannot change domain of references); copies examples
+  TExampleTable(PDomain, PExampleGenerator orig, bool filterMetas = false); // owns = true (cannot change domain of references); copies examples
   TExampleTable(PExampleGenerator lock, int); // owns = false; pass anything for int; this constructor locks, but does not copy
   TExampleTable(PExampleGeneratorList tables);
   ~TExampleTable();
@@ -83,7 +83,7 @@ public:
   virtual TExampleIterator begin();
   bool randomExample(TExample &);
 
-  virtual void changeDomain(PDomain);
+  virtual void changeDomain(PDomain, bool filterMetas = false);
 
 protected:
   virtual void increaseIterator(TExampleIterator &);
@@ -97,9 +97,9 @@ public:
 
   virtual int  numberOfExamples();
 
-  virtual void addExample(const TExample &);
+  virtual void addExample(const TExample &, bool filterMetas = false);
   virtual void addExample(TExample *);
-  virtual void addExamples(PExampleGenerator orig);
+  virtual void addExamples(PExampleGenerator orig, bool filterMetas = false);
 
   virtual bool removeExamples  (TFilter &); 
   virtual bool removeExample   (TExample &);

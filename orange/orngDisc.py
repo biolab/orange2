@@ -49,7 +49,7 @@ class DiscretizedLearner_Class:
   def __init__(self, baseLearner, discretizer=EntropyDiscretization(), **kwds):
     self.baseLearner = baseLearner
     if hasattr(baseLearner, "name"):
-      learner.name = baseLearner.name
+      self.name = baseLearner.name
     self.discretizer = discretizer
     self.__dict__.update(kwds)
   def __call__(self, data, weight=None):

@@ -178,17 +178,11 @@ TDistanceMapConstructor::TDistanceMapConstructor(PSymMatrix m)
 {}
 
 
-void computeSqueezedIndices(const int &n, const float &squeeze, vector<int> &indices)
+void computeSqueezedIndices(const int &origLines, const int &squeezedLines, vector<int> &indices)
 {
-  float inThis = 0;
-  int ind = 0;
-  indices.push_back(ind);
-  while(ind<n) {
-    float toThis = (1.0 + inThis) / squeeze;
-    ind += floor(toThis);
-    indices.push_back(ind);
-    inThis = fmod(toThis, 1);
-  }
+  float k = float(origLines) / squeezedLines;
+  for(int i = 0; i <= squeezedLines; i++)
+    indices.push_back(floor(0.5+i*k));
 }
 
 #define UPDATE_LOW_HIGH if (incell > abshigh) abshigh = incell; if (incell < abslow) abslow = incell;
@@ -209,11 +203,10 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       int nLines = int(floor(0.5 + order->size() * unadjustedSqueeze));
       if (!nLines)
         nLines++;
-      const float squeeze = float(nLines) / order->size();
   
       PIntList psqi = new TIntList();
       vector<int> &squeezedIndices = psqi->__orvector;
-      computeSqueezedIndices(nLines, squeeze, squeezedIndices);
+      computeSqueezedIndices(distMat.dim, nLines, squeezedIndices);
 
       nLines = squeezedIndices.size() - 1;
 
@@ -288,11 +281,10 @@ PDistanceMap TDistanceMapConstructor::operator ()(const float &unadjustedSqueeze
       int nLines = int(floor(0.5 + distMat.dim * unadjustedSqueeze));
       if (!nLines)
         nLines++;
-      const float squeeze = float(nLines) / distMat.dim;
   
       PIntList psqi = new TIntList();
       vector<int> &squeezedIndices = psqi->__orvector;
-      computeSqueezedIndices(nLines, squeeze, squeezedIndices);
+      computeSqueezedIndices(distMat.dim, nLines, squeezedIndices);
 
       nLines = squeezedIndices.size() - 1;
 
