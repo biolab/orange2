@@ -166,7 +166,10 @@ class OWScatterPlotMatrix(OWWidget):
             graph.setJitterContinuous(self.jitterContinuous)
             graph.setJitteringOption(self.jitteringType)
             graph.scaledData = self.graphs[0].scaledData
-            graph.coloringScaledData = self.graphs[0].coloringScaledData
+            graph.validDataArray = self.graphs[0].validDataArray
+            graph.attributeNameIndex = self.graphs[0].attributeNameIndex
+            graph.domainDataStat = self.graphs[0].domainDataStat
+            graph.attributeNames = self.graphs[0].attributeNames
         self.updateGraph()
     
     def setCanvasColor(self, c):
@@ -233,8 +236,11 @@ class OWScatterPlotMatrix(OWWidget):
                     graph.domainDataStat = self.graphs[0].domainDataStat
                     graph.scaledData = self.graphs[0].scaledData
                     graph.noJitteringScaledData = self.graphs[0].noJitteringScaledData
-                    graph.coloringScaledData = self.graphs[0].coloringScaledData
+                    graph.validDataArray = self.graphs[0].validDataArray
                     graph.attrValues = self.graphs[0].attrValues
+                    graph.attributeNames = self.graphs[0].attributeNames
+                    graph.attributeNameIndex = self.graphs[0].attributeNameIndex
+                    graph.domainDataStat = self.graphs[0].domainDataStat
                     graph.attributeNames = self.graphs[0].attributeNames
 
                 self.setGraphOptions(graph, "")
