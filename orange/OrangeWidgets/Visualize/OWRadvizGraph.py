@@ -171,7 +171,7 @@ class OWRadvizGraph(OWVisGraph):
         classNameIndex = self.attributeNames.index(self.rawdata.domain.classVar.name)
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:    	# if we have a discrete class
             valLen = len(self.rawdata.domain.classVar.values)
-            classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
+            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)	# we create a hash table of variable values and their indices            
         else:	# if we have a continuous class
             valLen = 0
 
@@ -227,6 +227,11 @@ class OWRadvizGraph(OWVisGraph):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
                 if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
+
+            # fill and edge color palettes 
+            bwColors = ColorPaletteBW(-1, 55, 255)
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
+            else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
             
             if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
             else:
@@ -235,13 +240,9 @@ class OWRadvizGraph(OWVisGraph):
                 else:                            preText = "Brier score : "
 
             for j in range(len(table)):
-                newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
-                if table.domain.classVar.varType == orange.VarTypes.Continuous:
-                    dataColor = newColor
-                else:
-                    dataColor = QColor()
-                    dataColor.setHsv(360*self.colorHueValues[classValueIndices[table[j].getclass().value]], 255, 255)
-                key = self.addCurve(str(j), newColor, dataColor , self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                fillColor = bwColors.getColor(kNNValues[j])
+                edgeColor = classColors.getColor(classValueIndices[table[j].getclass().value])
+                key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
                 r = QRectFloat(table[j][0].value - RECT_SIZE, table[j][1].value -RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, preText + "%.2f "%(accuracy[j]))
 
@@ -250,7 +251,7 @@ class OWRadvizGraph(OWVisGraph):
             for i in range(dataSize):
                 if not curveData[i][VALID]: continue
                 newColor = QColor()
-                newColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 curveData[i][PENCOLOR] = newColor
                 curveData[i][BRUSHCOLOR] = newColor
 
@@ -268,11 +269,10 @@ class OWRadvizGraph(OWVisGraph):
                 pos[classValueIndices[self.rawdata[i].getclass().value]][2].append(i)
                 self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
 
+            colors = ColorPaletteHSV(valLen)
             for i in range(valLen):
-                newColor = QColor(0,0,0)
-                if not self.optimizeForPrinting:
-                    if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                    else:                                 newColor.setHsv((i*360)/valLen, 255, 255)
+                newColor = colors.getColor(i)
+                if self.optimizeForPrinting: newColor = QColor(0,0,0)
                 
                 if self.useDifferentSymbols:
                     if self.optimizeForPrinting and valLen < len(self.curveSymbolsPrinting): curveSymbol = self.curveSymbolsPrinting[i]
@@ -297,8 +297,8 @@ class OWRadvizGraph(OWVisGraph):
                 for i in range(dataSize):
                     if not curveData[i][VALID]: continue
                     newColor = QColor(0,0,0)
-                    if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[classValueIndices[self.rawdata[i].getclass().value]]*360, 255, 255)
-                    else:                                 newColor.setHsv((classValueIndices[self.rawdata[i].getclass().value]*360)/valLen, 255, 255)
+                    if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[classValueIndices[self.rawdata[i].getclass().value]], 255, 255)
+                    else:                                 newColor.setHsv((classValueIndices[self.rawdata[i].getclass().value])/valLen, 255, 255)
                     if self.useDifferentSymbols and valLen < len(self.curveSymbols): curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
                     else: curveSymbol = self.curveSymbols[0]
                     self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
@@ -313,13 +313,11 @@ class OWRadvizGraph(OWVisGraph):
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
                     
-                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classColors = ColorPaletteHSV(len(classVariableValues))
                 for index in range(len(classVariableValues)):
-                    newColor = QColor(0,0,0)
-                    if not self.optimizeForPrinting:
-                        if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
-                        else:                                 newColor.setHsv((index*360)/valLen, 255, 255)
-                                    
+                    color = classColors.getColor(index)
+                    if self.optimizeForPrinting: color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
                     if not self.useDifferentSymbols: curveSymbol = self.curveSymbols[0]
@@ -327,17 +325,16 @@ class OWRadvizGraph(OWVisGraph):
                     elif not self.optimizeForPrinting and valLen < len(self.curveSymbols):   curveSymbol = self.curveSymbols[index]
                     else:                                                                     curveSymbol = self.curveSymbols[0]
 
-                    self.addCurve(str(index), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
+                    self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
             # show legend for continuous class
             else:
                 xs = [1.15, 1.20]
+                colors = ColorPaletteHSV(-1)
                 for i in range(1000):
                     y = -1.0 + i*2.0/1000.0
                     newCurveKey = self.insertCurve(str(i))
-                    newColor = QColor()
-                    newColor.setHsv(float(i*self.MAX_HUE_VAL)/1000.0, 255, 255)
-                    self.setCurvePen(newCurveKey, QPen(newColor))
+                    self.setCurvePen(newCurveKey, QPen(colors.getColor(float(i)/1000.0)))
                     self.setCurveData(newCurveKey, xs, [y,y])
 
                 # add markers for min and max value of color attribute

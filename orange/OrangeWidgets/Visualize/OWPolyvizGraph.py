@@ -142,7 +142,7 @@ class OWPolyvizGraph(OWVisGraph):
         indices = []
         self.anchorData = []
         polyvizLineCoordsX = []; polyvizLineCoordsY = []    # if class is discrete we will optimize drawing by storing computed values and adding less data curves to plot
-        classIsDiscrete = 0
+        classIsDiscrete = (self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete)
         classNameIndex = -1
     
         # we must have at least 3 attributes to be able to show anything
@@ -166,7 +166,7 @@ class OWPolyvizGraph(OWVisGraph):
             index = self.attributeNames.index(label)
             indices.append(index)
 
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # ##########
         # create anchor for every attribute
@@ -219,7 +219,7 @@ class OWPolyvizGraph(OWVisGraph):
 
             if self.rawdata.domain[labels[i]].varType == orange.VarTypes.Discrete:
                 # print all possible attribute values
-                values = self.getVariableValuesSorted(self.rawdata, labels[i])
+                values = getVariableValuesSorted(self.rawdata, labels[i])
                 count = len(values)
                 k = 1.08
                 for j in range(count):
@@ -280,15 +280,15 @@ class OWPolyvizGraph(OWVisGraph):
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
-                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
             else:
                 if classIsDiscrete and self.useDifferentSymbols and valLen < len(symbolList) : symbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
                 else: symbol = symbolList[0]
-                contData.append([x_i, y_i, self.coloringScaledData[classNameIndex][i] * 360, symbol]) # store data for drawing
-                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i] * 360, 255, 255)
+                contData.append([x_i, y_i, self.coloringScaledData[classNameIndex][i], symbol]) # store data for drawing
+                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
@@ -337,6 +337,12 @@ class OWPolyvizGraph(OWVisGraph):
                     kNNValues = [1.0 - val for val in kNNValues]
             else:
                 if self.showCorrect: kNNValues = [1.0 - val for val in kNNValues]
+
+            # fill and edge color palettes 
+            bwColors = ColorPaletteBW(-1, 55, 255)
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
+            else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
+                
             
             if table.domain.classVar.varType == orange.VarTypes.Continuous: preText = 'Mean square error : '
             else:
@@ -345,24 +351,22 @@ class OWPolyvizGraph(OWVisGraph):
                 else:                            preText = "Brier score : "
 
             for j in range(len(table)):
-                newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
-                if table.domain.classVar.varType == orange.VarTypes.Continuous:
-                    dataColor = newColor
-                else:
-                    dataColor = QColor()
-                    dataColor.setHsv(360*self.colorHueValues[classValueIndices[table[j].getclass().value]], 255, 255)
-                key = self.addCurve(str(j), newColor, dataColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
+                fillColor = bwColors.getColor(kNNValues[j])
+                edgeColor = classColors.getColor(classValueIndices[table[j].getclass().value])
+                key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [table[j][0].value], yData = [table[j][1].value])
                 r = QRectFloat(table[j][0].value - RECT_SIZE, table[j][1].value -RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, preText + "%.2f "%(accuracy[j]))
                 for i in range(len(polyvizLineCoordsX)):
-                    self.addCurve('line' + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
+                    self.addCurve('line' + str(i), fillColor, edgeColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[i][0][2*j:2*j+2], yData = polyvizLineCoordsY[i][0][2*j:2*j+2])
 
         ###### ONE COLOR OR DISCRETE CLASS ATTRIBUTE
-        elif classIsDiscrete and self.optimizedDrawing:        
+        elif classIsDiscrete and self.optimizedDrawing:
+            colors = ColorPaletteHSV(valLen)
+            if self.optimizeForPrinting: colors.colors = [QColor(0,0,0) for i in range(valLen)]
+            
             # create data curves for dots
             for i in range(valLen):
-                newColor = QColor(0,0,0)
-                if not self.optimizeForPrinting: newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
+                newColor = colors.getColor(i)
                 if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[i]
                 else: curveSymbol = symbolList[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = curveData[i][0], yData = curveData[i][1])
@@ -370,7 +374,7 @@ class OWPolyvizGraph(OWVisGraph):
                     self.addCurve("lines" + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[j][i], yData = polyvizLineCoordsY[j][i])
 
         ###### CONTINUOUS CLASS ATTRIBUTE
-        else:                                       
+        else:
             for i in range(len(contData)):
                 newColor = QColor();  newColor.setHsv(contData[i][2], 255, 255)
                 if classIsDiscrete and self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(symbolList): curveSymbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
@@ -392,14 +396,13 @@ class OWPolyvizGraph(OWVisGraph):
         # draw the legend
         if self.showLegend:
             # show legend for discrete class
-            if classIsDiscrete:
+            if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.addMarker(self.rawdata.domain.classVar.name, 0.87, 1.06, Qt.AlignLeft)
-                classVariableValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+                classColors = ColorPaletteHSV(len(classVariableValues))
                 for index in range(len(classVariableValues)):
                     newColor = QColor(0,0,0)
-                    if not self.optimizeForPrinting:
-                        if len(classVariableValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[index]*360, 255, 255)
-                        else:                                                   newColor.setHsv((index*360)/len(classVariableValues), 255, 255)
+                    if not self.optimizeForPrinting: newColor = classColors.getColor(index)
                     y = 1.0 - index * 0.05
                     if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[index]
                     else: curveSymbol = symbolList[0]
@@ -409,12 +412,11 @@ class OWPolyvizGraph(OWVisGraph):
             # show legend for continuous class
             else:
                 x0 = 1.20; x1 = 1.24
+                classColors = ColorPaletteHSV(-1)
                 for i in range(1000):
                     y = -1.0 + i*2.0/1000.0
                     newCurveKey = self.insertCurve(str(i))
-                    newColor = QColor()
-                    newColor.setHsv(float(i*self.MAX_HUE_VAL)/1000.0, 255, 255)
-                    self.setCurvePen(newCurveKey, QPen(newColor))
+                    self.setCurvePen(newCurveKey, QPen(classColors.getColor(float(i)/1000.0)))
                     self.setCurveData(newCurveKey, [x0,x1], [y,y])
 
                 # add markers for min and max value of color attribute
@@ -523,7 +525,7 @@ class OWPolyvizGraph(OWVisGraph):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # create anchor for every attribute if necessary
         if anchors == None:
@@ -614,7 +616,7 @@ class OWPolyvizGraph(OWVisGraph):
         # define lenghts and variables
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
-        classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # create a table of indices that stores the sequence of variable indices        
         indices = [];

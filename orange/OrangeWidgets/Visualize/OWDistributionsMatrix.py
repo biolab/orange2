@@ -13,7 +13,6 @@
 
 from OWTools import *
 from OWWidget import *
-import OWVisGraph
 import math
 from OWDistributions import *
 
@@ -45,9 +44,6 @@ class OWDistributionsMatrix(OWWidget):
         self.ShowXaxisTitle = 1
         self.ShowYaxisTitle = 1
         self.ShowYPaxisTitle = 1
-
-        self.colorHueValues = [240, 0, 120, 60, 180, 300, 30, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
-        self.colorHueValues = [float(x)/360.0 for x in self.colorHueValues]
 
         #load settings
         self.loadSettings()
@@ -129,20 +125,15 @@ class OWDistributionsMatrix(OWWidget):
             self.outcomesLB.clear()
             self.attributesLB.clear()
             
-            for graph in self.graphs:
-                graph.hide()
-            self.graphs = []
-        
             self.data = data
             if (not data) or (not self.data.domain.classVar): return
             
-            i = 0
-            for val in self.data.domain.classVar.values.native():
-                color = QColor()
-                color.setHsv(self.colorHueValues[i] * 360, 255, 255)
+            classValues = getVariableValuesSorted(data, self.data.domain.classVar.name)
+            colors = ColorPaletteHSV(len(classValues))
+            for val in classValues:
+                color = colors.getColor(classValues.index(val))
                 self.outcomesLB.insertItem(ColorPixmap(color), val)
-                self.outcomesLB.setSelected(i, 1)
-                i += 1
+                self.outcomesLB.setSelected(classValues.index(val), 1)
 
             i = 0
             for attr in self.data.domain.attributes:

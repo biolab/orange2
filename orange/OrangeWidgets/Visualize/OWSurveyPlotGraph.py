@@ -70,7 +70,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             
             curve = subBarQwtPlotCurve(self)
             newColor = QColor(0,0,0)
-            if classNameIndex >= 0: newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
+            if classNameIndex >= 0: newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 
             curve.color = newColor
             curve.penColor = newColor
@@ -93,15 +93,12 @@ class OWSurveyPlotGraph(OWVisGraph):
             self.setCurveData(ckey, xData, yData)
 
         if self.enabledLegend and self.rawdata.domain.classVar and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            varValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            colors = ColorPaletteHSV(len(varValues))
             for ind in range(len(varValues)):
-                newColor = QColor()
-                if len(varValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[ind]*360, 255, 255)
-                else:                                         newColor.setHsv((ind*360)/float(len(valLen), 255, 255))
-                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
+                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colors.getColor(ind), colors.getColor(ind), self.pointWidth, enableLegend = 1)
 
-            
-            
+           
 
     # show rectangle with example shown under mouse cursor
     def onMouseMoved(self, e):
@@ -109,6 +106,7 @@ class OWSurveyPlotGraph(OWVisGraph):
         else:
             self.hideSelectedRectangle()
             if not self.exampleTracking:
+                OWVisGraph.onMouseMoved(self, e)
                 self.replot()
                 return
             width = 0.49

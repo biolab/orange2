@@ -19,17 +19,13 @@ class QwtPlotCurvePieChart(QwtPlotCurve):
         back = p.backgroundMode()
         pen = p.pen()
         brush = p.brush()
+        colors = ColorPaletteHSV(self.dataSize())
 
         p.setBackgroundMode(Qt.OpaqueMode)
         #p.setBackgroundColor(self.color)
         for i in range(1, self.dataSize()):
-            color = QColor()
-            if self.dataSize() < len(self.colorHueValues):
-                color.setHsv(self.colorHueValues[i-1] * 360, 255, 255) 
-            else:
-                color.setHsv(float(i-1*360)/float(self.dataSize()-1), 255, 255)
-            p.setBrush(QBrush(color))
-            p.setPen(QPen(color))
+            p.setBrush(QBrush(colors.getColor(i)))
+            p.setPen(QPen(colors.getColor(i)))
 
             factor = self.percentOfTotalData * self.percentOfTotalData
             px1 = xMap.transform(self.x(0)-0.1 - 0.5*factor)
@@ -101,7 +97,7 @@ class OWScatterPlotGraph(OWVisGraph):
             self.setXlabels(None)
             if self.showManualAxisScale: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
         else:
-            self.setXlabels(self.getVariableValuesSorted(self.rawdata, xAttr))
+            self.setXlabels(getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)            
 
@@ -109,7 +105,7 @@ class OWScatterPlotGraph(OWVisGraph):
             self.setYLlabels(None)
             if self.showManualAxisScale: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)            
         else:
-            self.setYLlabels(self.getVariableValuesSorted(self.rawdata, yAttr))
+            self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
 
@@ -138,7 +134,7 @@ class OWScatterPlotGraph(OWVisGraph):
         shapeIndices = {}
         if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
             shapeIndex = self.attributeNames.index(shapeAttr)
-            shapeIndices = self.getVariableValueIndices(self.rawdata, shapeAttr)
+            shapeIndices = getVariableValueIndices(self.rawdata, shapeAttr)
 
         sizeShapeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
@@ -149,14 +145,14 @@ class OWScatterPlotGraph(OWVisGraph):
         discreteX = 0
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete:
             discreteX = 1
-            attrXIndices = self.getVariableValueIndices(self.rawdata, xAttr)
+            attrXIndices = getVariableValueIndices(self.rawdata, xAttr)
 
         # create hash tables in case of discrete Y axis attribute
         attrYIndices = {}
         discreteY = 0
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete:
             discreteY = 1
-            attrYIndices = self.getVariableValueIndices(self.rawdata, yAttr)
+            attrYIndices = getVariableValueIndices(self.rawdata, yAttr)
 
         #######
         # show the distributions
@@ -164,9 +160,9 @@ class OWScatterPlotGraph(OWVisGraph):
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
             contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
-            xValues = self.getVariableValuesSorted(self.rawdata, xAttr)
-            yValues = self.getVariableValuesSorted(self.rawdata, yAttr)
-            classValuesSorted = self.getVariableValuesSorted(self.rawdata, colorIndex)
+            xValues = getVariableValuesSorted(self.rawdata, xAttr)
+            yValues = getVariableValuesSorted(self.rawdata, yAttr)
+            classValuesSorted = getVariableValuesSorted(self.rawdata, colorIndex)
             classValues = list(self.rawdata.domain[colorIndex].values)
 
             sum = 0
@@ -189,7 +185,6 @@ class OWScatterPlotGraph(OWVisGraph):
                         out += [out[-1] + float(distribution[val])/float(tempSum)]
                         tooltipText += "<br>%s : <b>%d</b> (%.2f%%)" % (classVal, distribution[val], 100.0*distribution[val]/float(tempSum))
                     self.setCurveData(key, [i, j] + [0]*(len(out)-2), out)
-                    self.curve(key).colorHueValues = self.colorHueValues
                     self.curve(key).percentOfTotalData = float(tempSum) / float(sum)
                     self.tooltipData.append((tooltipText, i, j))
 
@@ -198,30 +193,31 @@ class OWScatterPlotGraph(OWVisGraph):
             # show quality of knn model with only 2 selected attributes
             if self.showKNNModel == 1:
                 # variables and domain for the table
-                classValueIndices = self.getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+                classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
                 shortData = self.rawdata.select([self.rawdata.domain[xAttr], self.rawdata.domain[yAttr], self.rawdata.domain.classVar])
                 shortData = orange.Preprocessor_dropMissing(shortData)
                 kNNValues = self.kNNOptimization.kNNClassifyData(shortData)
+                bwColors = ColorPaletteBW(-1, 55, 255)
+                if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
+                else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
                 if self.showCorrect == 1: kNNValues = [1.0 - val for val in kNNValues]
+
                 for j in range(len(kNNValues)):
-                    newColor = QColor(55+kNNValues[j]*200, 55+kNNValues[j]*200, 55+kNNValues[j]*200)
-                    if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
-                        dataColor = newColor
-                    else:
-                        dataColor = QColor()
-                        dataColor.setHsv(360*self.colorHueValues[classValueIndices[shortData[j].getclass().value]], 255, 255)
+                    fillColor = bwColors.getColor(kNNValues[j])
+                    edgeColor = classColors.getColor(classValueIndices[shortData[j].getclass().value])
                     x=0; y=0
                     if discreteX == 1: x = attrXIndices[shortData[j][0].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
                     else:              x = shortData[j][0].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
                     if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
                     else:              y = shortData[j][1].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                    key = self.addCurve(str(j), newColor, dataColor, self.pointWidth, xData = [x], yData = [y])
+                    key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
+            # create a small number of curves which will make drawing much faster
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1:
-                # create a small number of curves which will make drawing much faster
                 if colorIndex != -1:
-                    classIndices = self.getVariableValueIndices(self.rawdata, colorAttr)
+                    classIndices = getVariableValueIndices(self.rawdata, colorAttr)
                     classCount = len(classIndices)
+                    classColors = ColorPaletteHSV(classCount)
                 else: classCount = 1
                 pos = [[ [] , [], [] ] for i in range(classCount)]
                 for i in range(len(self.rawdata)):
@@ -243,14 +239,17 @@ class OWScatterPlotGraph(OWVisGraph):
                     r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
                     text= self.getShortExampleText(self.rawdata, self.rawdata[i], toolTipList)
                     self.tips.addToolTip(r, text)
-
+                
                 for i in range(classCount):
                     newColor = QColor(0,0,0)
-                    if classCount < len(self.colorHueValues) and colorIndex != -1: newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                    elif colorIndex != -1        :                                 newColor.setHsv((i*360)/valLen, 255, 255)
+                    if colorIndex != -1: newColor = classColors.getColor(i)
                     key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = self.curveSymbols[0], xData = pos[i][0], yData = pos[i][1])
 
+            # slow, unoptimized drawing because we use different symbols and/or different sizes of symbols
             else:
+                if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
+                elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
+
                 for i in range(len(self.rawdata)):
                     if self.rawdata[i][xAttr].isSpecial() == 1: continue
                     if self.rawdata[i][yAttr].isSpecial() == 1: continue
@@ -265,7 +264,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     else:              y = self.rawdata[i][yAttr].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
 
                     newColor = QColor(0,0,0)
-                    if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i]*360, 255, 255)
+                    if colorIndex != -1: newColor.setHsv(self.coloringScaledData[colorIndex][i], 255, 255)
                         
                     Symbol = self.curveSymbols[0]
                     if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
@@ -289,18 +288,18 @@ class OWScatterPlotGraph(OWVisGraph):
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
                 num = len(self.rawdata.domain[colorIndex].values)
                 val = [[], [], [self.pointWidth]*num, [QwtSymbol.Ellipse]*num]
-                varValues = self.getVariableValuesSorted(self.rawdata, colorIndex)
+                varValues = getVariableValuesSorted(self.rawdata, colorIndex)
+                colors = ColorPaletteHSV(num)
                 for ind in range(num):
-                    newColor = QColor();  newColor.setHsv(self.colorHueValues[ind] * 360, 255, 255)
-                    val[1].append(newColor)
                     val[0].append(self.rawdata.domain[colorIndex].name + "=" + varValues[ind])
+                    val[1].append(colors.getColor(ind))
                 legendKeys[colorIndex] = val
 
             if shapeIndex != -1 and self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
                 num = len(self.rawdata.domain[shapeIndex].values)
                 if legendKeys.has_key(shapeIndex):  val = legendKeys[shapeIndex]
                 else:                               val = [[], [QColor(0,0,0)]*num, [self.pointWidth]*num, []]
-                varValues = self.getVariableValuesSorted(self.rawdata, shapeIndex)
+                varValues = getVariableValuesSorted(self.rawdata, shapeIndex)
                 val[3] = []; val[0] = []
                 for ind in range(num):
                     val[3].append(self.curveSymbols[ind])
@@ -312,7 +311,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 if legendKeys.has_key(sizeShapeIndex):  val = legendKeys[sizeShapeIndex]
                 else:                               val = [[], [QColor(0,0,0)]*num, [], [QwtSymbol.Ellipse]*num]
                 val[2] = []; val[0] = []
-                varValues = self.getVariableValuesSorted(self.rawdata, sizeShapeIndex)
+                varValues = getVariableValuesSorted(self.rawdata, sizeShapeIndex)
                 for ind in range(num):
                     val[0].append(self.rawdata.domain[sizeShapeIndex].name + "=" + varValues[ind])
                     val[2].append(MIN_SHAPE_SIZE + round(ind*MAX_SHAPE_DIFF/len(varValues)))
@@ -324,15 +323,15 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
             
 
+        # draw color scale for continuous coloring attribute
         if colorAttr != "" and colorAttr != "(One color)" and showColorLegend == 1 and self.showDistributions == 0 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
             x0 = xVarMax + xVar/100
             x1 = x0 + xVar/20
+            colors = ColorPaletteHSV()
             for i in range(1000):
                 y = yVarMin + i*yVar/1000
                 newCurveKey = self.insertCurve(str(i))
-                newColor = QColor()
-                newColor.setHsv(float(i*self.MAX_HUE_VAL)/1000.0, 255, 255)
-                self.setCurvePen(newCurveKey, QPen(newColor))
+                self.setCurvePen(newCurveKey, QPen(colors.getColor(float(i)/1000.0)))
                 self.setCurveData(newCurveKey, [x0,x1], [y,y])
 
             # add markers for min and max value of color attribute

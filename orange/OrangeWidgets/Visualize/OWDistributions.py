@@ -180,18 +180,15 @@ class OWDistributionGraph(OWVisGraph):
         self.removeCurves()
 
         currentBarsHeight = [0] * len(keys)
-        i = 0
+        colors = ColorPaletteHSV(len(self.visibleOutcomes))
         for oi in range(len(self.visibleOutcomes)):
-            newColor = QColor()
-            newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-            i += 1
             if self.visibleOutcomes[oi] == 1:
                 #for all bars insert curve and
                 cn = 0
                 for key in keys:
                     subBarHeight = self.hdata[key][oi]
                     curve = subBarQwtPlotCurve(self)
-                    curve.color = newColor
+                    curve.color = colors.getColor(oi)
                     ckey = self.insertCurve(curve)
                     self.setCurveStyle(ckey, QwtCurve.UserCurve)
                     if self.variableContinuous:
@@ -539,10 +536,9 @@ distribution of classes for each attribute.
     def setOutcomeNames(self, list):
         "Sets the outcome target names."
         self.outcomesQLB.clear()
+        colors = ColorPaletteHSV(len(list))
         for i in range(len(list)):
-            c = QColor()
-            c.setHsv(self.graph.colorHueValues[i]*360, 255, 255)
-            self.outcomesQLB.insertItem(ColorPixmap(c), list[i])
+            self.outcomesQLB.insertItem(ColorPixmap(colors.getColor(i)), list[i])
         self.outcomesQLB.selectAll(TRUE)
 
     def outcomeSelectionChange(self):

@@ -159,7 +159,7 @@ class OWParallelGraph(OWVisGraph):
                     newColor = self.colorNonTargetValue
                     curves[0].append(curve)
             else:
-                newColor.setHsv(self.coloringScaledData[classNameIndex][i]*360, 255, 255)
+                newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 self.insertCurve(curve)
             curve.setPen(QPen(newColor))
             ys = []
@@ -216,7 +216,7 @@ class OWParallelGraph(OWVisGraph):
                         self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
                         self.marker(mkey2).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
                 elif attr.varType == orange.VarTypes.Discrete:
-                    attrVals = self.getVariableValuesSorted(self.rawdata, labels[i])
+                    attrVals = getVariableValuesSorted(self.rawdata, labels[i])
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
                         # show a rectangle behind the marker
@@ -249,13 +249,10 @@ class OWParallelGraph(OWVisGraph):
 
         # show the legend
         if self.enabledLegend == 1 and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            varValues = self.getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            varValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            colors = ColorPaletteHSV(len(varValues))
             for ind in range(len(varValues)):
-                newColor = QColor()
-                if len(varValues) < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[ind]*360, 255, 255)
-                else:                                         newColor.setHsv((ind*360)/float(len(valLen), 255, 255))
-                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
-
+                self.addCurve(self.rawdata.domain.classVar.name + "=" + varValues[ind], colors.getColor(ind), colors.getColor(ind), self.pointWidth, enableLegend = 1)
 
 
     # ##########################################
@@ -269,13 +266,9 @@ class OWParallelGraph(OWVisGraph):
         if count < 1:
             count = 1.0
 
-        colors = []
-        #for i in range(count): colors.append(float(1+2*i)/float(2*count))
-        for i in range(count): colors.append(float(i)/float(count))
-
         # we create a hash table of possible class values (happens only if we have a discrete class)
-        classValueIndices = self.getVariableValueIndices(data, self.rawdata.domain.classVar.name)
-        classValueSorted  = self.getVariableValuesSorted(data, self.rawdata.domain.classVar.name)
+        classValueIndices = getVariableValueIndices(data, self.rawdata.domain.classVar.name)
+        classValueSorted  = getVariableValuesSorted(data, self.rawdata.domain.classVar.name)
 
         # compute what data values are valid
         indicesLen = len(indices)
@@ -295,8 +288,8 @@ class OWParallelGraph(OWVisGraph):
             totals = [0] * attrLen
 
             # we create a hash table of variable values and their indices
-            variableValueIndices = self.getVariableValueIndices(data, index)
-            variableValueSorted = self.getVariableValuesSorted(data, index)
+            variableValueIndices = getVariableValueIndices(data, index)
+            variableValueSorted = getVariableValuesSorted(data, index)
             
             for i in range(count):
                 values.append([0] * attrLen)
@@ -332,16 +325,16 @@ class OWParallelGraph(OWVisGraph):
                 item = (data.domain[index].name, variableValueSorted[i], totals[i], sumTotals, list, (x_start,x_end), (y_start, y_end))
                 self.toolInfo.append(item)
 
+
+            colors = ColorPaletteHSV(count)
             # create bar curve
             for i in range(count):
                 curve = subBarQwtPlotCurve(self)
-                newColor = QColor()
                 if targetValue != None:
                     if classValueSorted[i] == targetValue: newColor = self.colorTargetValue
                     else: newColor = self.colorNonTargetValue
                 else:
-                    if count < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[i]*360, 255, 255)
-                    else:                                newColor.setHsv(float(i)*360/float(count), 255, 255)
+                    newColor = colors.getColor(i)
                 curve.color = newColor
                 xData = []; yData = []
                 for j in range(attrLen):

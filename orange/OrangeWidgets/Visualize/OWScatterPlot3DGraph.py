@@ -79,47 +79,6 @@ class OWScatterPlot3DGraph(QGLWidget):
         elif self.jitteringType  == 'beta': 
             b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
     
-        # return a list of sorted values for attribute at index index
-    def getVariableValuesSorted(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValuesSorted"
-            return []
-        
-        values = list(data.domain[index].values)
-        intValues = []
-        i = 0
-        # do all attribute values containt integers?
-        try:
-            while i < len(values):
-                temp = int(values[i])
-                intValues.append(temp)
-                i += 1
-        except: pass
-
-        # if all values were intergers, we first sort them ascendently
-        if i == len(values):
-            intValues.sort()
-            values = intValues
-        out = []
-        for i in range(len(values)):
-            out.append(str(values[i]))
-
-        return out
-
-    # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
-    # in case all values are integers, we also sort them
-    def getVariableValueIndices(self, data, index):
-        if data.domain[index].varType == orange.VarTypes.Continuous:
-            print "Invalid index for getVariableValueIndices"
-            return {}
-
-        values = self.getVariableValuesSorted(data, index)
-
-        dict = {}
-        for i in range(len(values)):
-            dict[values[i]] = i
-        return dict
-
     #
     # get min and max value of data attribute at index index
     #
@@ -176,7 +135,7 @@ class OWScatterPlot3DGraph(QGLWidget):
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
-            variableValueIndices = self.getVariableValueIndices(data, index)
+            variableValueIndices = getVariableValueIndices(data, index)
 
             count = float(len(attr.values))
             for i in range(len(data)):
@@ -338,21 +297,21 @@ class OWScatterPlot3DGraph(QGLWidget):
         self.discreteX = 0
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete:
             self.discreteX = 1
-            self.attrXIndices = self.getVariableValueIndices(self.rawdata, xAttr)
+            self.attrXIndices = getVariableValueIndices(self.rawdata, xAttr)
 
         # create hash tables in case of discrete Y axis attribute
         self.attrYIndices = {}
         self.discreteY = 0
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete:
             self.discreteY = 1
-            self.attrYIndices = self.getVariableValueIndices(self.rawdata, yAttr)
+            self.attrYIndices = getVariableValueIndices(self.rawdata, yAttr)
 
         # create hash tables in case of discrete Z axis attribute
         self.attrZIndices = {}
         self.discreteZ = 0
         if self.rawdata.domain[zAttr].varType == orange.VarTypes.Discrete:
             self.discreteZ = 1
-            self.attrZIndices = self.getVariableValueIndices(self.rawdata, zAttr)
+            self.attrZIndices = getVariableValueIndices(self.rawdata, zAttr)
 
         self.dataIsPrepared = 1
         self.paintGL()

@@ -134,17 +134,17 @@ class OWLinViz(OWWidget):
                 """
 
             
-            xs = [[] for i in range(len(self.data.domain.classVar.values))]; ys = [[] for i in range(len(self.data.domain.classVar.values))]
-            classValues = self.data.domain.classVar.values
+            xs = [[] for i in range(len(self.data.domain.classVar.values))]
+            ys = [[] for i in range(len(self.data.domain.classVar.values))]
+            classValues = getVariableValuesSorted(self.data, self.data.domain.classVar.name)
             for i in range(len(vis.example_c)):
                 index = classValues.index(self.data[i].getclass().value)
                 xs[index].append(vis.example_c[i][0])
                 ys[index].append(vis.example_c[i][1])
 
+            colors = ColorPaletteHSV(len(xs))
             for i in range(len(xs)):
-                color = QColor()
-                color.setHsv(self.graph.colorHueValues[i]*360,255,255)
-                self.graph.addCurve(self.data.domain.classVar.name + " = " + classValues[i], color, color, 4, symbol = QwtSymbol.Ellipse, xData = xs[i], yData = ys[i], enableLegend = 1)
+                self.graph.addCurve(self.data.domain.classVar.name + " = " + classValues[i], colors.getColor(i), colors.getColor(i), 4, symbol = QwtSymbol.Ellipse, xData = xs[i], yData = ys[i], enableLegend = 1)
             
         #self.graph.update()
         #self.repaint()
