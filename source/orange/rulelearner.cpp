@@ -539,23 +539,26 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
         discretizer->getCutoffs(cutoffs);
         if (cutoffs.size()) {
           TRule *newRule;
-
           newRule = mlnew TRule(rule, false);
-          ruleList->push_back(newRule);
+          PRule wnewRule = newRule;
           newRule->complexity++;
 
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, cutoffs.front(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
+          if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
+            ruleList->push_back(newRule);
 
           for(vector<float>::const_iterator ci(cutoffs.begin()), ce(cutoffs.end()-1); ci != ce; ci++) {
             newRule = mlnew TRule(rule, false);
-            ruleList->push_back(newRule);
+            PRule wnewRule = newRule;
             newRule->complexity++;
 
             filter = newRule->filter.AS(TFilter_values);
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, *ci, 0, 0));
             filter->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::LessEqual, *(ci+1), 0, 0));
             newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
+            if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
+              ruleList->push_back(newRule);
           }
 
           newRule = mlnew TRule(rule, false);
@@ -623,17 +626,17 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
 
   {
   PITERATE(TRuleList, ri, ruleList) {
-    if ((*ri)->quality == ILLEGAL_FLOAT)
-      (*ri)->quality = evaluator->call(*ri, data, weightID, targetClass, apriori);
     if (!(*ri)->examples)
       (*ri)->filterAndStore(data, weightID,targetClass);
+    if ((*ri)->quality == ILLEGAL_FLOAT)
+      (*ri)->quality = evaluator->call(*ri, data, weightID, targetClass, apriori);
   }
   }
 
-  if (bestRule->quality == ILLEGAL_FLOAT)
-    bestRule->quality = evaluator->call(bestRule, data, weightID, targetClass, apriori);
   if (!bestRule->examples)
     bestRule->filterAndStore(data, weightID,targetClass);
+  if (bestRule->quality == ILLEGAL_FLOAT)
+    bestRule->quality = evaluator->call(bestRule, data, weightID, targetClass, apriori);
 
   int bestRuleLength = 0;
   while(ruleList->size()) {
