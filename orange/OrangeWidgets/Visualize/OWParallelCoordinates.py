@@ -378,6 +378,7 @@ class OWParallelCoordinates(OWWidget):
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissingClasses(data)
         self.graph.setData(self.data)
+        self.optimizationDlg.setData(data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
             self.shownAttribsLB.clear()
@@ -482,7 +483,6 @@ class ParallelOptimization(OWBaseWidget):
         self.optimizationMeasure = 0
         self.attributeCount = 5
         self.numberOfAttributes = 6
-        self.resultListLen = 1000
         self.fileName = ""
         self.lastSaveDirName = os.getcwd() + "/"
         self.fileBuffer = []
@@ -491,6 +491,7 @@ class ParallelOptimization(OWBaseWidget):
         self.canOptimize = 0
         self.orderAllAttributes = 1 # do we wish to order all attributes or find just an interesting subset
         self.worstVal = -1  # used in heuristics to stop the search in uninteresting parts of the graph
+        self.datasetName = ""
 
         self.loadSettings()
 
@@ -556,7 +557,6 @@ class ParallelOptimization(OWBaseWidget):
         self.connect(self.stopOptimizationButton , SIGNAL("clicked()"), self.stopOptimizationClick)
 
         
-        self.resultListCombo = OWGUI.comboBoxWithCaption(self.manageBox, self, "resultListLen", "Number of interesting projections: ", tooltip = "Maximum length of the list of interesting projections", items = self.resultListList, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
         self.clearButton = OWGUI.button(self.manageBox, self, "Clear results", self.clearResults)
         self.loadButton = OWGUI.button(self.manageBox, self, "Load", self.loadResults)
         self.saveButton = OWGUI.button(self.manageBox, self, "Save", self.saveResults)
@@ -589,7 +589,12 @@ class ParallelOptimization(OWBaseWidget):
     def getSelectedAttributes(self):
         if self.resultList.count() == 0: return None
         return self.allResults[self.resultList.currentItem()][1]
-        
+
+
+    def setData(self, data):
+        if hasattr(data, "name"):
+            self.datasetName = data.name
+        else: self.datasetName = ""        
         
     # called when optimization is in progress
     def canContinueOptimization(self):
@@ -659,11 +664,20 @@ class ParallelOptimization(OWBaseWidget):
 
         file.close()
 
-        if (shortFileName, name) not in self.fileBuffer:
-            self.fileBuffer.insert(0, (shortFileName, name))
-            self.vizrankFileCombo.insertItem(shortFileName)
-            if len(self.fileBuffer) > 10: self.fileBuffer.remove(self.fileBuffer[-1])
+        if (shortFileName, name) in self.fileBuffer:
+            self.fileBuffer.remove((shortFileName, name))
 
+        self.fileBuffer.insert(0, (shortFileName, name))
+        
+
+        if len(self.fileBuffer) > 10:
+            self.fileBuffer.remove(self.fileBuffer[-1])
+            
+        self.vizrankFileCombo.clear()
+        for i in range(len(self.fileBuffer)):
+            self.vizrankFileCombo.insertItem(self.fileBuffer[i][0])
+        self.fileName = shortFileName
+            
         self.kNeighborsLabel.setText("Number of neighbors (k): %s" % (str(settings["kValue"])))
         self.percentDataUsedLabel.setText("Percent of data used: %d %%" % (settings["percentDataUsed"]))
         self.testingMethodLabel.setText("Testing method used: %s" % (self.testingMethod[settings["testingMethod"]]))
@@ -672,14 +686,9 @@ class ParallelOptimization(OWBaseWidget):
 
     def addProjection(self, val, attrList):
         index = self.findTargetIndex(val, max)
-        if index > self.resultListLen: return
         self.allResults.insert(index, (val, attrList))
         self.resultList.insertItem("%.3f - %s" % (val, str(attrList)), index)
-        if len(self.allResults) > self.resultListLen:
-            self.allResults.remove(self.allResults[-1])
-            self.resultList.removeItem(self.resultList.count()-1)
-            self.worstVal = self.allResults[-1][0]
-        
+       
 
     def findTargetIndex(self, accuracy, funct):
         # use bisection to find correct index
@@ -699,6 +708,7 @@ class ParallelOptimization(OWBaseWidget):
 
     def startOptimization(self):
         self.clearResults()
+        if self.parallelWidget.data == None: return
         
         if self.optimizationMeasure == VIZRANK and self.fileName == "":
             QMessageBox.information(self, "No projection file", "If you wish to optimize using VizRank you first have to load a projection file \ncreated by VizRank using Scatterplot widget.", QMessageBox.Ok)
@@ -716,6 +726,16 @@ class ParallelOptimization(OWBaseWidget):
             for (val, [a1, a2]) in self.projections:
                 attrInfo.append((val, a1, a2))
 
+            # check if all attributes in loaded projection file are actually present in this data set
+            attrs = [attr.name for attr in self.parallelWidget.data.domain.attributes]
+            for (v, a1, a2) in attrInfo:
+                if a1 not in attrs:
+                    print "attribute ", a1, " was not found in the data set. Probably wrong VizRank projections file is loaded."
+                    return
+                if a2 not in attrs:
+                    print "attribute ", a2, " was not found in the data set. Probably wrong VizRank projections file is loaded."
+                    return
+
         if len(attrInfo) == 0:
             print "len(attrInfo) == 0. No attribute pairs. Unable to optimize."; return
 
@@ -723,8 +743,12 @@ class ParallelOptimization(OWBaseWidget):
         self.canOptimize = 1
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
-
-        OWVisAttrSelection.optimizeAttributeOrder(attrInfo, self.numberOfAttributes, self, qApp)
+        qApp.processEvents()        # allow processing of other events
+        
+        if self.orderAllAttributes:
+            OWVisAttrSelection.optimizeAttributeOrder(attrInfo, len(self.parallelWidget.data.domain.attributes), self, qApp)
+        else:
+            OWVisAttrSelection.optimizeAttributeOrder(attrInfo, self.numberOfAttributes, self, qApp)
 
         self.stopOptimizationButton.hide()
         self.startOptimizationButton.show()
@@ -734,7 +758,7 @@ class ParallelOptimization(OWBaseWidget):
     # MANAGE RESULTS
     def updateShownProjections(self, *args):
         self.resultList.clear()
-        for i in range(min(len(self.allResults), self.resultListLen)):
+        for i in range(len(self.allResults)):
             self.resultList.insertItem("%.2f - %s" % (self.allResults[i][0], str(self.allResults[i][1])), i)
         if self.resultList.count() > 0: self.resultList.setCurrentItem(0)  
     
@@ -745,13 +769,19 @@ class ParallelOptimization(OWBaseWidget):
 
     def saveResults(self, filename = None):
         if filename == None:
-            name = str(QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + "Parallel projections", "Parallel projections (*.papr)", self, "", "Save Parallel Projections"))
+            filename = ""
+            if self.datasetName != "":
+                filename = os.path.splitext(os.path.split(self.datasetName)[1])[0]
+            if self.optimizationMeasure == CORRELATION: filename += " - " + "correlation"
+            else:                                       filename += " - " + "vizrank"
+                
+            name = str(QFileDialog.getSaveFileName( os.path.join(self.lastSaveDirName, filename), "Parallel projections (*.papr)", self, "", "Save Parallel Projections"))
             if name == "": return
         else:
             name = filename
 
         # take care of extension
-        if os.path.splitext(name)[1] != ".papr": name = name + ".papr"
+        if os.path.splitext(name)[1] != ".papr": name += ".papr"
 
         dirName, shortFileName = os.path.split(name)
         self.lastSaveDirName = dirName
