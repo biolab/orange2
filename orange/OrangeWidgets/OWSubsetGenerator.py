@@ -41,7 +41,7 @@ class OWSubsetGenerator(OWWidget):
         self.percentSlider = QSlider(1, 100, 10, 50, QSlider.Horizontal, self.hbox1)
         self.percentSlider.setTickmarks(QSlider.Below)
         self.percentLCD = QLCDNumber(3, self.hbox1)
-        self.connect(self.percentSlider, SIGNAL("valueChanged(int)"), self.percentLCD, SLOT("display(int)"))
+        QObject.connect(self.percentSlider, SIGNAL("valueChanged(int)"), self.percentLCD, SLOT("display(int)"))
         self.percentLCD.display(50)
                 
         self.BigHbox2 = QHBox(self)
@@ -109,7 +109,7 @@ class OWSubsetGenerator(OWWidget):
         self.send("Classified Examples", table)
 
     def cdata(self, data):
-        self.data = data.data
+        self.data = data
         self.generate()
 
 
