@@ -58,9 +58,9 @@ class OWBaseWidget(QDialog):
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         import os.path
-        self.widgetDir = os.path.dirname(__file__)
-        fullIcon = self.widgetDir + "/icons/" + icon 
-        logo = self.widgetDir + "/icons/" + logo
+        self.widgetDir = os.path.dirname(__file__) + "/"
+        fullIcon = self.widgetDir + "icons/" + icon 
+        logo = self.widgetDir + "icons/" + logo
         #fullIcon = os.path.realpath("./icons") + "/" + icon
         #logo = os.path.realpath("./icons") + "/" +logo
         #self.widgetDir = os.path.realpath(".") + "/"
