@@ -577,7 +577,11 @@ class kNNOptimization(OWBaseWidget):
             val = 0.0; s = 0.0
             for index in self.selectedClasses:
                 val += prediction[index]; s += currentClassDistribution[index]
-            for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
+            for i in range(len(prediction)):
+                if currentClassDistribution[i] > 0:
+                    prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
+                else:
+                    prediction[i] = 0
 
             if percentDataUsed != 100: del testTable
             del knn, results
