@@ -32,13 +32,16 @@ shows regression coeficients of attributes estimated in a regression learner
         TRUE,
         FALSE)
         
+        self.notTargetClassIndex = 1
+        self.TargetClassIndex = 0
+
         #load settings
         self.loadSettings()
         
         self.data=None
 
         #list inputs and outputs
-        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1), ("Target Class Value", int, self.ctarget, 1)]
         
         #GUI
         
@@ -132,16 +135,21 @@ shows regression coeficients of attributes estimated in a regression learner
             return
 
         if isinstance(self.classifier, orange.LogRegClassifier):
+            if self.notTargetClassIndex == 1 or self.notTargetClassIndex == cl.domain.classVar[1]:
+                mult = -1
+            else:
+                mult = 1
+
             self.table.setNumRows(len(self.classifier.domain.attributes)+1)
             self.table.setText(0,0,"Constant")        
-            self.table.setText(0,1,str(round(self.classifier.beta[0],2)))        
+            self.table.setText(0,1,str(mult*round(self.classifier.beta[0],2)))        
             self.table.setText(0,2,str(round(self.classifier.beta_se[0],2)))        
             self.table.setText(0,3,str(round(self.classifier.wald_Z[0],2)))        
             self.table.setText(0,4,str(abs(round(self.classifier.P[0],2))))
                                   
             for i in range(len(self.classifier.domain.attributes)):
                 self.table.setText(i+1,0,str(self.classifier.domain.attributes[i].name))        
-                self.table.setText(i+1,1,str(round(self.classifier.beta[i+1],2)))        
+                self.table.setText(i+1,1,str(mult*round(self.classifier.beta[i+1],2)))        
                 self.table.setText(i+1,2,str(round(self.classifier.beta_se[i+1],2)))        
                 self.table.setText(i+1,3,str(round(self.classifier.wald_Z[i+1],2)))        
                 self.table.setText(i+1,4,str(abs(round(self.classifier.P[i+1],2))))
@@ -158,8 +166,8 @@ shows regression coeficients of attributes estimated in a regression learner
             
             self.table.setNumRows(numrows)
             
-            dist1 = max(0.00000001, cl.distribution[classVal[1]])
-            dist0 = max(0.00000001, cl.distribution[classVal[0]])
+            dist1 = max(0.00000001, cl.distribution[classVal[self.notTargetClassIndex]])
+            dist0 = max(0.00000001, cl.distribution[classVal[self.TargetClassIndex]])
             prior = dist0/dist1
             logprior = math.log(prior)
             sumd = dist1+dist0
@@ -177,8 +185,8 @@ shows regression coeficients of attributes estimated in a regression learner
                 if at.varType == orange.VarTypes.Discrete:
                     for cd in cl.conditionalDistributions[at].keys():
                         self.table.setText(row,0,str(at.name+"="+cd))
-                        conditional0 = max(cl.conditionalDistributions[at][cd][classVal[0]], 0.00000001)
-                        conditional1 = max(cl.conditionalDistributions[at][cd][classVal[1]], 0.00000001)
+                        conditional0 = max(cl.conditionalDistributions[at][cd][classVal[self.TargetClassIndex]], 0.00000001)
+                        conditional1 = max(cl.conditionalDistributions[at][cd][classVal[self.notTargetClassIndex]], 0.00000001)
                         beta = math.log(conditional0/conditional1/prior)
                         se = err(cl.conditionalDistributions[at][cd], priorError, cd, self.data) # standar error of beta 
                         
@@ -197,6 +205,17 @@ shows regression coeficients of attributes estimated in a regression learner
 
         self.table.adjustColumn(0)        
 
+    def ctarget(self, target):
+        self.TargetClassIndex = target
+        if self.TargetClassIndex == 1:
+            self.notTargetClassIndex = 0
+        else:
+            self.notTargetClassIndex = 1
+        if self.classifier and self.classifier.domain and self.TargetClassIndex == self.self.classifier.classVar[1]:
+            self.notTargetClassIndex = self.cl.domain.classVar[0]
+        elif self.classifier and self.classifier.domain:
+            self.notTargetClassIndex = self.cl.domain.classVar[1]
+            
 #test widget appearance        
 if __name__=="__main__":
     a=QApplication(sys.argv)
