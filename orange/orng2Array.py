@@ -342,9 +342,9 @@ class DomainTranslation:
         else:
             if i.varType == 1:
                 # discrete
-                warnings.warn("Using regression for classification. It's better to use orngMultiClass!")
+                if len(i.values) > 2:
+                    warnings.warn("Simulating classification with regression. It's better to use orngMultiClass!")
                 self.cv = Ordinalizer(0,i,isclass=1)
-                # never ever binarizer!!!!
 
         # learning the properties of transformers
         for j in examples:
