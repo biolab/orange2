@@ -75,13 +75,13 @@ class OWBaseWidget(QDialog):
         #the title
         self.setCaption(self.captionTitle)
         
-        #about box
-        self.about = OWAboutX(title, description, iconName, defaultWidgetIcon, logo)
-        
         self.buttonBackground=QVBox(self)
         if wantSettings: self.settingsButton=QPushButton("&Settings",self.buttonBackground)
         if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
+
+        #about box
         if wantAbout:
+            self.about = OWAboutX(title, description, iconName, defaultWidgetIcon, logo)
             self.aboutButton=QPushButton("&About",self.buttonBackground)
             self.connect(self.aboutButton,SIGNAL("clicked()"),self.about.show)
 
