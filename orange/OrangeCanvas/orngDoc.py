@@ -571,6 +571,8 @@ if os.path.exists(widgetDir):
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
+                tabs += "self.ow%s.captionTitle = '%s'\n" % (name, widget.caption)+t+t
+                tabs += "self.ow%s.setCaption(self.ow%s.captionTitle)\n" % (name, name) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
                 buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
                 loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
