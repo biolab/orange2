@@ -60,7 +60,7 @@ class OWDataTable(OWWidget):
             ml.sort(lambda x,y: cmp(y[0], x[0]))
             metas = [x[1] for x in ml]
             cols += len(metas)
-        print 'atts', len(self.data.domain.attributes), 'meta', len(self.data.domain.getmetas()), 'cols', cols
+##        print 'atts', len(self.data.domain.attributes), 'meta', len(self.data.domain.getmetas()), 'cols', cols
         self.table.setNumCols(cols)
         self.table.setNumRows(len(self.data))
 
