@@ -27,10 +27,6 @@
 #include "learn.hpp"
 
 
-#include "../external/c45/types.i"
-#define __TYPES_I
-
-
 class TC45Learner : public TLearner {
 public:
     __REGISTER_CLASS
@@ -68,6 +64,27 @@ WRAPPER(C45TreeNode)
 
 #define TC45TreeNodeList TOrangeVector<PC45TreeNode> 
 VWRAPPER(C45TreeNodeList)
+
+typedef char Boolean, *String, *Set;
+
+typedef int ItemNo;
+typedef float ItemCount;
+typedef short ClassNo, DiscrValue;
+typedef short Attribute;
+
+typedef  struct _tree_record *Tree;
+
+typedef  struct _tree_record {
+  short NodeType;
+  ClassNo Leaf; /* most frequent class */
+  ItemCount Items, *ClassDist, Errors;
+  Attribute Tested;
+  short Forks;
+  float Cut, Lower, Upper;
+  Set *Subset;
+  Tree *Branch;
+} TreeRec;
+
 
 class TC45TreeNode : public TOrange {
 public:

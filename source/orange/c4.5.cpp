@@ -29,8 +29,6 @@
 
 #include "c4.5.ppp"
 
-#include "../external/c45/defns.i"
-
 DEFINE_TOrangeVector_classDescription(PC45TreeNode, "TC45TreeNodeList")
 
 bool c45Loaded = false;
@@ -39,6 +37,21 @@ typedef void *getDataFunc();
 typedef void *learnFunc(char gainRatio, char subset, char batch, char probThresh,
                        int trials, int minObjs, int window, int increment, float cf, char prune);
 typedef void garbageFunc();
+
+typedef  union  _attribute_value {
+  DiscrValue _discr_val;
+  float _cont_val;
+} AttValue, *Description;
+
+
+#define Unknown  -999
+
+#define BrDiscr 1
+#define ThreshContin 2
+#define BrSubset 3
+
+#define Bit(b) (1 << (b))
+#define In(b,s) ((s[(b) >> 3]) & Bit((b) & 07))
 
 
 struct {
@@ -275,7 +288,7 @@ bool TC45Learner::convertDomain(PDomain dom)
   char *SpecialStatusi = SpecialStatus;
 
   PITERATE(TVarList, vi, dom->attributes) {
-    *(SpecialStatusi++) = Nil;
+    *(SpecialStatusi++) = NULL;
 
     *AttNamei = mlnew char[(*vi)->name.length()+1];
     strcpy(*(AttNamei++), (*vi)->name.c_str());

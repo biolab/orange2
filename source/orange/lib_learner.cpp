@@ -599,8 +599,6 @@ PyObject *TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS
  
 /************* C45 ************/
 
-#ifdef LINK_C45
-
 #include "c4.5.hpp"
 
 C_CALL(C45Learner, Learner, "([examples] [, weight=, gainRatio=, subset=, batch=, probThresh=, minObjs=, window=, increment=, cf=, trials=]) -/-> Classifier")
@@ -649,9 +647,6 @@ PyObject *C45TreeNodeList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARAR
 PyObject *C45TreeNodeList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(C45TreeNode) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_remove(self, obj); }
 PyObject *C45TreeNodeList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_reverse(self); }
 PyObject *C45TreeNodeList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PC45TreeNodeList, TC45TreeNodeList, PC45TreeNode, (PyTypeObject *)&PyOrC45TreeNode_Type>::_sort(self, args); }
-
-
-#endif
 
 /************* kNN ************/
 
