@@ -364,9 +364,9 @@ class OWScatterPlot(OWWidget):
 
         if type(tryIndex[0]) == tuple:
             for vals in tryIndex:
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (self.data.domain.classVar.values[vals[0]], vals[1], vals[2], vals[3], vals[4])
+                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (vals[0], vals[1], vals[2], vals[3], vals[4])
         else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (self.data.domain.classVar.values[tryIndex[0]], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
+            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   area = %.4f\n-------" % (tryIndex[0], tryIndex[1], tryIndex[2], tryIndex[3], tryIndex[4])
         print "---------------------------"
         
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):

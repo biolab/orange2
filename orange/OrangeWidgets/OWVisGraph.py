@@ -206,8 +206,8 @@ class OWVisGraph(OWGraph):
                         self.validDataArray[index][i] = 0
                         continue
                     
-                    #self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
-                    self.noJitteringScaledData[index][i] = int(data[i][index])
+                    self.noJitteringScaledData[index][i] = variableValueIndices[data[i][index].value]
+                    #self.noJitteringScaledData[index][i] = int(data[i][index])
                     self.coloringScaledData[index][i] = colors.getHue(int(self.noJitteringScaledData[index][i]))
 
                 self.noJitteringScaledData[index] = (self.noJitteringScaledData[index]*2 + 1) / float(2*count)
