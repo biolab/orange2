@@ -179,7 +179,8 @@ class SignalManager:
 
         widgetTo.addInputConnection(widgetFrom, signalNameTo)
         if widgetFrom.linksOut.has_key(signalNameFrom) and enabled:
-            widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][0], widgetFrom.linksOut[signalNameFrom][1])
+            for key in widgetFrom.linksOut[signalNameFrom].keys():
+                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key)
 
         if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
             self.widgets.remove(widgetTo)
@@ -210,8 +211,8 @@ class SignalManager:
         # no need to update topology, just remove the link
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
-                #print "signal Manager - remove link. removing ", widgetFrom, widgetTo, signalFrom, signalTo
-                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, None)
+                for key in widgetFrom.linksOut[signalFrom].keys():
+                    widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, key)
                 self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
                 if not self.freezing and not self.signalProcessingInProgress: self.processNewSignals(widgetFrom)
         widgetTo.removeInputConnection(widgetFrom, signalNameTo)
@@ -226,7 +227,9 @@ class SignalManager:
             (widget, nameFrom, nameTo, e) = links[i]
             if widget == widgetTo:
                 links[i] = (widget, nameFrom, nameTo, enabled)
-                if enabled: widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][0], widgetFrom.linksOut[nameFrom][1])
+                if enabled:
+                    for key in widgetFrom.linksOut[nameFrom].keys():
+                        widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][key], key)
 
         if enabled: self.processNewSignals(widgetTo)
 
@@ -257,7 +260,8 @@ class SignalManager:
     # when a new link is created, we have to 
     def sendOnNewLink(self, widgetFrom, widgetTo, signals):
         for (outName, inName) in signals:
-            widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][0], widgetFrom.linksOut[signalNameFrom][1])
+            for key in widgetFrom.linksOut[outName].keys():
+                widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][key], key)
 
 
     def processNewSignals(self, firstWidget):

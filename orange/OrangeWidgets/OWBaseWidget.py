@@ -65,6 +65,7 @@ class OWBaseWidget(QDialog):
         self.connections = {}   # dictionary where keys are (control, signal) and values are wrapper instances. Used in connect/disconnect
         self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
+        self.processingHandler = None   # handler for processing events
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
 
@@ -106,7 +107,11 @@ class OWBaseWidget(QDialog):
         self.show()
 
     def send(self, signalName, value, id = None):
-        self.linksOut[signalName] = (value, id)
+        if self.linksOut.has_key(signalName):
+            self.linksOut[signalName][id] = value
+        else:
+            self.linksOut[signalName] = {id:value}
+            
         if self.signalManager:
             self.signalManager.send(self, signalName, value, id)
         else:
@@ -233,7 +238,7 @@ class OWBaseWidget(QDialog):
             
         existing = []
         if self.linksIn.has_key(signalName): existing = self.linksIn[signalName]
-        self.linksIn[signalName] = existing + [(0, widgetFrom, handler, None, None)]    # (dirty, handler, signalData, idValue)
+        self.linksIn[signalName] = existing + [(0, widgetFrom, handler, [])]    # (dirty, handler, signalData)
 
     # delete a link from widgetFrom and this widget with name signalName
     def removeInputConnection(self, widgetFrom, signalName):
@@ -269,17 +274,20 @@ class OWBaseWidget(QDialog):
         # we define only a way to handle signals that have defined a handler function
         for key in self.linksIn.keys():
             for i in range(len(self.linksIn[key])):
-                (dirty, widgetFrom, handler, signalData, idValue) = self.linksIn[key][i]
+                (dirty, widgetFrom, handler, signalData) = self.linksIn[key][i]
                 if not (handler and dirty): continue
-                    
-                self.linksIn[key][i] = (0, widgetFrom, handler, signalData, idValue) # clear the dirty flag
-                if self.signalIsOnlySingleConnection(key):
-                    handler(signalData)
-                else:
-                    # if one widget sends signal using send("signal name", value, id), where id != None.
-                    # this is used in cases where one widget sends more signals of same "signal name"
-                    if idValue: handler(signalData, (widgetFrom, idValue))
-                    else:       handler(signalData, widgetFrom)
+    
+                try:                    
+                    for (value, id) in signalData:
+                        if self.signalIsOnlySingleConnection(key):
+                            handler(value)
+                        else:
+                            handler(value, (widgetFrom, id))
+                except:
+                    type, val, traceback = sys.exc_info()
+                    sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
+
+                self.linksIn[key][i] = (0, widgetFrom, handler, []) # clear the dirty flag
 
         self.needProcessing = 0
 
@@ -287,9 +295,9 @@ class OWBaseWidget(QDialog):
     def updateNewSignalData(self, widgetFrom, signalName, value, id):
         if not self.linksIn.has_key(signalName): return
         for i in range(len(self.linksIn[signalName])):
-            (dirty, widget, handler, oldValue, idValue) = self.linksIn[signalName][i]
-            if widget == widgetFrom and idValue == id:
-                self.linksIn[signalName][i] = (1, widget, handler, value, id)
+            (dirty, widget, handler, signalData) = self.linksIn[signalName][i]
+            if widget == widgetFrom:
+                self.linksIn[signalName][i] = (1, widget, handler, signalData + [(value, id)])
         self.needProcessing = 1
 
 
@@ -326,8 +334,11 @@ class OWBaseWidget(QDialog):
         if self.progressBarHandler: self.progressBarHandler(self, 101)
 
     # handler must be a function, that receives 2 arguments. First is the widget instance, the second is the value between -1 and 101
-    def progressBarSetHandler(self, handler):
+    def setProgressBarHandler(self, handler):
         self.progressBarHandler = handler
+
+    def setProcessingHandler(self, handler):
+        self.processingHandler = handler
 
     def __setattr__(self, name, value):
         if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
