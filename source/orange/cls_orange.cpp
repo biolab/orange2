@@ -888,6 +888,10 @@ PyObject *Orange_setattr_force(TPyOrange *self, PyObject *args) PYARGS(METH_VARA
 }
 
 
+PyObject *Orange_clone(TPyOrange *self) PYARGS(METH_NOARGS, "() -> a sensibly deep copy of the object")
+{
+  return WrapOrange(POrange(CLONE(TOrange, self->ptr)));
+}
 
 PyObject *Orange_reference(TPyOrange *self) PYARGS(METH_NOARGS, "() -> reference; Returns unique id for an object")
 { PyTRY

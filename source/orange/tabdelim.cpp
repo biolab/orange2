@@ -137,6 +137,9 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
         if (pos==classPos) { // if this is class value
           TValue cval;
           if (domain->classVar->varType == TValue::FLOATVAR) {
+            int cp = valstr.find(',');
+            if (cp!=string::npos)
+              valstr[cp] = '.';
             if (!domain->classVar->str2val_try(valstr, cval))
               raiseError("file '%s', line %i: '%s' is not a legal value for the continuous class", fei.filename.c_str(), fei.line, valstr.c_str());
           }
@@ -165,7 +168,17 @@ bool TTabDelimExampleGenerator::readExample(TFileExampleIteratorData &fei, TExam
         TMetaDescriptor *md = domain->metas[*si];
         _ASSERT(md!=NULL);
         TValue mval;
-        md->variable->str2val_add(valstr, mval);
+
+        if (md->variable->varType == TValue::FLOATVAR) {
+          int cp = valstr.find(',');
+          if (cp!=string::npos)
+            valstr[cp] = '.';
+          if (!md->variable->str2val_try(valstr, mval))
+            raiseError("file '%s', line %i: '%s' is not a legal value for the continuous attribute '%s'", fei.filename.c_str(), fei.line, md->variable->name.c_str());
+        }
+        else
+          md->variable->str2val_add(valstr, mval);
+
         exam.setMeta(*si, mval);
       }
     }
