@@ -482,7 +482,7 @@ class InteractionMatrix:
                         v += self.way2[(i,j)].InteractionInformation()
                     else:
                         if jaccard:
-                            v = self.way2[(i,j)].JaccardInformation() # I(A;B) chow-liu, mutual information
+                            v = self.way2[(i,j)].JaccardInteraction() # I(A;B) chow-liu, mutual information
                         else:
                             v = self.way2[(i,j)].InteractionInformation() # I(A;B) chow-liu, mutual information
                     if ei > ej:
@@ -523,7 +523,7 @@ class InteractionMatrix:
                                 if self.ents[(jj,ii)] == 0.0:
                                     v = 1.0
                                 else:
-                                    v = self.way2[(jj,ii)].JaccardInformation()
+                                    v = self.way2[(jj,ii)].JaccardInteraction()
                                 lmm.append((v,(i,j)))
                             else:
                                 v = self.way2[(jj,ii)].InteractionInformation()

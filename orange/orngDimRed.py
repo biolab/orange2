@@ -95,7 +95,7 @@ def BoxCoxTransform(vector,lambd=None):
         print "best-fitting lambda = ",lambd
     return _BC(v,lambd)
 
-def RankConversion(vector):
+def RankConversion(vector,reverse=0):
     assert(len(Numeric.shape(vector))==1) # this must be a vector
 
     newv = Numeric.zeros(Numeric.size(vector),Numeric.Float)
@@ -103,6 +103,8 @@ def RankConversion(vector):
     for x in xrange(len(vector)):
         l.append((vector[x],x))
     l.sort()
+    if reverse:
+        l.reverse()
     pi = -1
     pv = 'a'
     idx = []

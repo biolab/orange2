@@ -55,7 +55,7 @@ class ContingencyTable3:
         a = (-Entropy(self.a)+Entropy(self.ab)+Entropy(self.ac)-abc)
         return (a,b,c)
 
-    def NormedInteraction(self):
+    def JaccardInteraction(self):
         abc = Entropy(self.m)
         return (-Entropy(self.a)-Entropy(self.b)-Entropy(self.c)+Entropy(self.ab)+Entropy(self.bc)+Entropy(self.ac)-abc)/abc
 
