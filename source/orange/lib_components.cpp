@@ -68,7 +68,7 @@ PyObject *convertToPython(const PCostMatrix &matrix)
     PyObject *el=PyList_New(dim);
     matrix->at(i)->operator[](dim);
     int j=0;
-    const_PITERATE(TDiscDistribution, di, matrix->at(i))
+    const_PITERATE(TFloatList, di, matrix->at(i))
       PyList_SetItem(el, j++, PyFloat_FromDouble(*di));
     PyList_SetItem(pycost, i++, el);
   }

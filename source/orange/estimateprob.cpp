@@ -648,12 +648,12 @@ PConditionalProbabilityEstimator TConditionalProbabilityEstimatorConstructor_loe
     for (; syi!=sye; syi++) {
       if (*syi > 0.9) {
         Sy->abs -= *syi;
-        *syi = 1/(1+exp(-10*((*syi)-0.9)*log(9)-log(9)));
+        *syi = 1/(1+exp(-10*((*syi)-0.9)*log(9.0)-log(9.0)));
         Sy->abs += *syi;
       }
       if (*syi < 0.1) {
         Sy->abs -= *syi;
-        *syi = 1/(1+exp(10*(0.1-(*syi))*log(9)+log(9)));
+        *syi = 1/(1+exp(10*(0.1-(*syi))*log(9.0)+log(9.0)));
         Sy->abs += *syi;
       }
     }

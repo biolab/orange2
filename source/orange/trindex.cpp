@@ -302,7 +302,7 @@ PRandomIndices TMakeRandomIndicesCV::operator()(const int &n, const int &afolds)
 
   TFoldIndices::iterator ii=indices->begin();
   for(int ss=0; ss<afolds; ss++)
-    for(int no=int(floor(n/afolds))+(ss<n%afolds); no--; *(ii++)=ss);
+    for(int no=n/afolds+(ss<n%afolds ? 1 : 0); no--; *(ii++)=ss);
 
   rsrgen rg(randomGenerator, randseed);
   or_random_shuffle(indices->begin(), indices->end(), rg);

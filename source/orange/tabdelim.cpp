@@ -461,7 +461,7 @@ PDomain TTabDelimExampleGenerator::domainWithDetection(const string &stem, PVarL
       if (attributeType == 1) {
         metas.push_back(TDomainDepot::TAttributeDescription(*ni, varType));
         if (varType==-1)
-          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -metas.size()));
+          searchWarranties.push_back(TSearchWarranty(ni-varNames.begin(), -(signed int)(metas.size())));
       }
       else if (attributeType) {
         attributeDescriptions.push_back(TDomainDepot::TAttributeDescription(*ni, varType));

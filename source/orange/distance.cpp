@@ -269,7 +269,7 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
           if ((*i1).varType == TValue::FLOATVAR)
             *di = *si * fabs((*i1).floatV - (*i2).floatV);
           else if ((*i1).varType == TValue::INTVAR)
-            *di = *si * fabs((*i1).intV - (*i2).intV);
+            *di = *si * fabs(float((*i1).intV - (*i2).intV));
         }
         else if (*si<0)
           *di = (*i1).compatible(*i2) ? 0.0 : 1.0;
@@ -281,7 +281,7 @@ void TExamplesDistance_Normalized::getDifs(const TExample &e1, const TExample &e
         else 
           if (*si>0) {
             if ((*i1).varType == TValue::INTVAR)
-              *di = fabs((*i1).intV - (*i2).intV);
+              *di = fabs(float((*i1).intV - (*i2).intV));
             else
               *di = (*i1).compatible(*i2) ? 0.0 : 1.0;
           }

@@ -44,7 +44,7 @@ DEFINE_TOrangeVector_classDescription(pff, "TFloatFloatList", false, ORANGE_API)
 #define pif pair<int, float>
 DEFINE_TOrangeVector_classDescription(pif, "TIntFloatList", false, ORANGE_API)
 
-#ifdef _MSC_VER
+#ifdef _MSC_VER && _MSC_VER < 1300
 TClassDescription template TOrangeVector<TValue, false>::st_classDescription;
 EXPIMP_TEMPLATE template class ORANGE_API TOrangeVector<TValue, false>;
 #else

@@ -36,7 +36,7 @@ WRAPPER(Variable)
 
 #ifdef _MSC_VER
   #pragma warning (push)
-  #pragma warning (disable: 4275)
+  #pragma warning (disable: 4275 4251)
 #endif
 
 // A vector of meta values with id's
