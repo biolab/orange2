@@ -50,7 +50,7 @@ TC45ExampleGenerator::TC45ExampleGenerator(const TC45ExampleGenerator &old)
 
 
 /* Reads one line of the file. Atoms are converted to example values using str2val_add methods of corresponding
-   variables and skipping the attributes with 'skip' flag set ('domain' field is casted to TC45Domain). */
+   variables and skipping the attributes with 'skip' flag set ('domain' field is cast to TC45Domain). */
 bool TC45ExampleGenerator::readExample(TFileExampleIteratorData &fei, TExample &exam)
 {
   TIdList atoms;
