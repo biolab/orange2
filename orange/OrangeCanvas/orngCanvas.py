@@ -101,7 +101,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.move(w,h)
         
         # apply output settings
-        self.output = orngOutput.OutputWindow(self, self.workspace)
+        self.output = orngOutput.OutputWindow(self, self.workspace, "", Qt.WDestructiveClose)
         self.output.show()
         self.output.catchException(self.settings["catchException"])
         self.output.catchOutput(self.settings["catchOutput"])
@@ -274,7 +274,7 @@ class OrangeCanvasDlg(QMainWindow):
                 win.setFocus()
 
     def menuItemNewSchema(self):
-        win = orngDoc.SchemaDoc(self, self.workspace, "", Qt.WDestructiveClose + Qt.WType_TopLevel)
+        win = orngDoc.SchemaDoc(self, self.workspace, "", Qt.WDestructiveClose)
         self.workspace.setDefaultDocPosition(win)
         return win
 
