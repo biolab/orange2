@@ -3,6 +3,9 @@
 #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #
+# Version 1.8 (10/7/2003)
+#   - support for domain disparity
+#
 # Version 1.7 (14/8/2002)
 #   - status functions
 #   - Support for setting the preferred ordinal attribute transformation.
@@ -17,7 +20,7 @@
 #     MDS for this.
 #
 
-import orange
+import orange, warnings
 
 #
 # MAPPERS translate orange domains into primitive python arrays used by the
@@ -38,6 +41,25 @@ import orange
 #
 # if you are unhappy about this, subclass DomainTranslation and fudge with analyse()
 
+def _getattr(ex,attr):
+    # a 'smart' function tries to access an attribute first by reference, then by name
+    spec = 0
+    try:
+        v = ex[attr]
+    except:
+        # perhaps the domain changed
+        try:
+            v = ex[attr.name]
+        except:
+            warnings.warn("Missing attribute %s"%attr.name)
+            v = attr.values[0]
+            spec = 1            
+    if spec == 0:
+        try:
+            spec = value.isSpecial()
+        except:
+            pass
+    return (v,spec)
 
 class Scalizer:
     def __init__(self,idx,attr,isclass=0):
@@ -89,11 +111,7 @@ class Scalizer:
         self.disp = 0
         
     def apply(self,ex,list):
-        value = ex[self.attr]
-        try:
-            spec = value.isSpecial()
-        except:
-            spec = 0
+        (value,spec) = _getattr(ex,self.attr)
         if spec:
             list[self.idx] = self.missing
         else:
@@ -164,11 +182,7 @@ class Ordinalizer:
         return
         
     def apply(self,ex,list):
-        value = ex[self.attr]
-        try:
-            spec = value.isSpecial()
-        except:
-            spec = 0
+        (value,spec) = _getattr(ex,self.attr)
         if spec:
             list[self.idx] = self.missing
         else:
@@ -213,11 +227,7 @@ class Binarizer:
         return
     
     def apply(self,ex,list):
-        value = ex[self.attr]
-        try:
-            spec = value.isSpecial()
-        except:
-            spec = 0
+        (value,spec) = _getattr(ex,self.attr)
         if spec:
             for i in range(self.idx,self.nidx):
                 list[self.idx] = self.missing
@@ -269,11 +279,7 @@ class Dummy:
         return
     
     def apply(self,ex,list):
-        value = ex[self.attr]
-        try:
-            spec = value.isSpecial()
-        except:
-            spec = 0
+        (value,spec) = _getattr(ex,self.attr)
         if spec:
             # missing value handling
             for i in range(self.idx,self.nidx):
@@ -336,7 +342,9 @@ class DomainTranslation:
         else:
             if i.varType == 1:
                 # discrete
-                self.cv = Ordinalizer(0,i,isclass=1) # never ever binarizer!!!!
+                warnings.warn("Using regression for classification. It's better to use orngMultiClass!")
+                self.cv = Ordinalizer(0,i,isclass=1)
+                # never ever binarizer!!!!
 
         # learning the properties of transformers
         for j in examples:
