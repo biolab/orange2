@@ -153,9 +153,8 @@ class S2NMeasure:
             self.attrInfo = {}
             self.data = data
 
-        # if the table has no missing values we can use a fast method to compute signal to noise
-        if self.attrInfo == {} and len(data) == len(orange.Preprocessor_dropMissing(data)):
-            arr = data.toNumeric("ac")[0]
+        if self.attrInfo == {}:
+            arr = data.toNumeric("ac", 0, 1, 1e20)[0]
             arr = Numeric.transpose(arr)
             clsIndex = len(arr)-1
             cls = [Numeric.where(arr[clsIndex]== i, 1, 0) for i in range(len(data.domain.classVar.values))]
@@ -163,7 +162,9 @@ class S2NMeasure:
             for i in range(len(data.domain.attributes)):
                 mis = []; stds = []; ts = []
                 for a in cls:
-                    sel = Numeric.compress(a, arr[i]).tolist()
+                    #sel = Numeric.compress(a, arr[i]).tolist()
+                    sel = Numeric.compress(a, arr[i])
+                    sel = Numeric.compress(Numeric.where(sel != 1e20, 1, 0), sel).tolist()   # remove values 1e20, which represent the missing values
                     mis.append(statc.mean(sel))
                     stds.append(statc.std(sel))
 
@@ -174,32 +175,11 @@ class S2NMeasure:
                 
                 self.attrInfo[data.domain.attributes[i].name] = sum(ts)/float(len(data.domain.classVar.values))
 
-        # missing values.... have to copy value by value
-        elif not self.attrInfo.has_key(attr):
-            mis = []; stds = []; ts = []
-            
-            arrs = [[] for v in range(len(data.domain.classVar.values))]
-            for i in range(len(data)):
-                if data[i].getclass().isSpecial() or data[i][attr].isSpecial(): continue
-                arrs[int(data[i][data.domain.classVar])].append(data[i][attr].value)
-
-            for i in range(len(arrs)):
-                mis.append(statc.mean(arrs[i]))
-                stds.append(statc.std(arrs[i]))
-
-            for i in range(len(data.domain.classVar.values)):
-                for j in range(i+1, len(data.domain.classVar.values)):
-                    t = (mis[i] - mis[j]) / (stds[i] + stds[j])
-                    ts.append(abs(t))
-
-            self.attrInfo[attr] = sum(ts)/float(len(data.domain.classVar.values))
-
         return self.attrInfo[data.domain[attr].name]
 
 # same class as above, just that we can use it to evaluate attribute for each class value
 class S2NMeasureMix(S2NMeasure):
-    def __init__(self):
-        S2NMeasure.__init__(self)
+    pass
     
 
 def mergeClassValues(data, value):
@@ -234,12 +214,13 @@ def evaluateAttributes(data, contMeasure, discMeasure):
         elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
         elif attr.varType == orange.VarTypes.Continuous:
             if not isinstance(contMeasure, S2NMeasureMix): attrs.append((contMeasure(attr.name, data), attr.name))
-            contAttrs.append(attr.name)
+            else: contAttrs.append(attr.name)
         else:
             attrs.append((discMeasure(attr.name, data), attr.name))
     attrs.sort()
     attrs.reverse()
 
+    attrs2 = []
     if isinstance(contMeasure, S2NMeasureMix) and contAttrs != []:
         cls = []
         for c in data.domain.classVar.values:   # for each class value compute how good is each attribute for discriminating this class value against all other
@@ -248,14 +229,17 @@ def evaluateAttributes(data, contMeasure, discMeasure):
             for attr in contAttrs:
                 v.append((contMeasure(attr, data2), attr))
             v.sort()
-            v.reverse()
+            #v.reverse()
             cls.append(v)
-        for i in range(len(cls[0])):        # sort the attributes in order 1a, 1b, 1c, 2a, 2b, 2c, ..., where 1 means the best attribute, 2 second best, and a,b,c represent class values
-            for j in range(len(data.domain.classVar.values)):
-                if cls[j][i][1] not in attrs: attrs.append(cls[j][i])
-    
+        while len(attrs2) < len(contAttrs):
+            for i in range(len(data.domain.classVar.values)):
+                for j in range(len(cls[i])):
+                    (v,attr) = cls[i].pop()
+                    if attr not in attrs2:
+                        attrs2.append(attr)
+                        break
     #return attrs
-    return [attr for (val, attr) in attrs]      # return only the ordered list of attributes and not also their values
+    return [attr for (val, attr) in attrs] + attrs2      # return only the ordered list of attributes and not also their values
         
 
     
