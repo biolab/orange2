@@ -300,8 +300,32 @@ def addBestToCurrentProj(proj, projVal, attrInfo):
             elif a2 == proj[0]: return ([a1] + proj, [val] + projVal, 1)
             elif a1 == proj[-1]: return (proj + [a2], projVal + [val], 1)
             else                       : return (proj + [a1], projVal + [val], 1)
-    return (proj, projVal, 0)
 
+    """
+    for (val, a1, a2) in attrInfo:
+        if a1 in proj and a2 in proj: continue
+        if a1 not in proj and a2 not in proj: continue
+        
+        if (a1 not in proj) and (a2 in proj): placed = a2; place = a1
+        else:                                  placed = a1; place = a2
+            
+        ind = proj.index(placed)
+        if ind > 0:
+            val2, exists = getAttributePairValue(place, proj[ind-1], attrInfo)
+            if exists:
+                proj.insert(ind, place)
+                projVal[ind-1] = val2
+                projVal.insert(ind-1, val)
+                return (proj, projVal, 1)
+        if ind < len(proj)-1:
+            val2, exists = getAttributePairValue(place, proj[ind+1], attrInfo)
+            if exists:
+                proj.insert(ind+1, place)
+                projVal[ind] = val
+                projVal.insert(ind, val2)
+                return (proj, projVal, 1)
+    """
+    return proj, projVal, 0
 
 def getTopAttrs(results, maxSum = 0.95, onlyPositive = 1):
     s = []; h = []
@@ -320,14 +344,14 @@ def getTopAttrs(results, maxSum = 0.95, onlyPositive = 1):
 # ##########################################################################################
 # find interesting attribute order for parallel coordinates
 # attrInfo = [(val1, attr1, attr2), .... ]
-def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app = None):
+def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app):
     while (attrInfo != []):
         proj = []
         projVal = []
         canAddAttribute = 1
         while canAddAttribute:
             if not optimizationDlg.canContinueOptimization(): return
-            if app: app.processEvents()        # allow processing of other events
+            app.processEvents()        # allow processing of other events
     
             if len(proj) == 0:
                 proj = [attrInfo[0][1], attrInfo[0][2]]
@@ -340,7 +364,7 @@ def optimizeAttributeOrder(attrInfo, numberOfAttributes, optimizationDlg, app = 
 
         if len(proj) == numberOfAttributes:
             proj, projVal = fixIntersectingPairs(proj, projVal, attrInfo)
-            for i in range(len(projVal)):
+            for i in range(len(proj)-1):
                 removeAttributePair(proj[i], proj[i+1], attrInfo)
             optimizationDlg.addProjection(sum(projVal)/len(projVal), proj)
         else:
@@ -362,9 +386,9 @@ def fixIntersectingPairs(proj, projVal, attrInfo):
                 if exists1 and exists2 and (val1 + val2 > projVal[i] + projVal[j]):
                     projVal[i] = val1
                     projVal[j] = val2
-                    rev = proj[i:j]
+                    rev = proj[i+1:j+1]
                     rev.reverse()
-                    tempProj = proj[:i] + rev + proj[j:]
+                    tempProj = proj[:i+1] + rev + proj[j+1:]
                     proj = tempProj
                     changed = 1     # we rotated the projection. start checking from the begining
     return proj, projVal
@@ -373,7 +397,7 @@ def fixIntersectingPairs(proj, projVal, attrInfo):
 def getAttributePairValue(attr1, attr2, attrInfo):
     for (val, a1, a2) in attrInfo:
         if (attr1 == a1 and attr2 == a2) or (attr1 == a2 and attr2 == a1): return (val, 1)
-    return (0,0)
+    return (0, 0)
 
 # remove attribute pair (val, attr1, attr2) from attrInfo
 def removeAttributePair(attr1, attr2, attrInfo):
