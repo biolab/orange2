@@ -67,60 +67,66 @@ class SchemaDoc(QMainWindow):
                 QMessageBox.information( None, "Orange Canvas", "This connection already exists.", QMessageBox.Ok + QMessageBox.Default )
                 return None
 
-        line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
-        line.setEnabled(enabled)
-        if setSignals:
-            dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
-            dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
-            canConnect = dialog.addDefaultLinks()
-            if not canConnect:
-                QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
-                line.remove()
-                return None
+        line = None
+        try:
+            line = orngCanvasItems.CanvasLine(self.signalManager, self.canvasDlg, self.canvasView, outWidget, inWidget, self.canvas)
+            self.lines.append(line)
+            outWidget.addOutLine(line)
+            outWidget.updateTooltip()
+            inWidget.addInLine(line)
+            inWidget.updateTooltip()
+            line.show()
+            line.setEnabled(enabled)
 
-            # if there are multiple choices, how to connect this two widget, then show the dialog
-            
-            if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
-                res = dialog.exec_loop()
-                if dialog.result() == QDialog.Rejected:
+            if setSignals:
+                dialog = SignalDialog(self.canvasDlg, None, "", TRUE)
+                dialog.addSignalList(outWidget.caption, inWidget.caption, outWidget.widget.outList, inWidget.widget.inList, outWidget.widget.iconName, inWidget.widget.iconName)
+                canConnect = dialog.addDefaultLinks()
+                if not canConnect:
+                    QMessageBox.information( None, "Orange Canvas", "Selected widgets don't share a common signal type. Unable to connect.", QMessageBox.Ok + QMessageBox.Default )
                     line.remove()
                     return None
+
+                # if there are multiple choices, how to connect this two widget, then show the dialog
                 
-            connected = []
-            self.signalManager.setFreeze(1)
-            signals = dialog.getLinks()
-            for (outName, inName) in signals:
-                widget = inWidget.instance.removeExistingSingleLink(inName)
-                if widget:
-                    existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
-                    existingOutName = None
-                    for (outN, inN) in existingSignals:
-                        if inN == inName: existingOutName = outN
-                    self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
-                ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
-                if ok: connected.append((outName, inName))
+                if len(dialog.getLinks()) > 1 or dialog.multiplePossibleConnections or dialog.getLinks() == []:
+                    res = dialog.exec_loop()
+                    if dialog.result() == QDialog.Rejected:
+                        line.remove()
+                        return None
+                    
+                connected = []
+                self.signalManager.setFreeze(1)
+                signals = dialog.getLinks()
+                for (outName, inName) in signals:
+                    widget = inWidget.instance.removeExistingSingleLink(inName)
+                    if widget:
+                        existingSignals = self.signalManager.findSignals(widget, inWidget.instance)
+                        existingOutName = None
+                        for (outN, inN) in existingSignals:
+                            if inN == inName: existingOutName = outN
+                        self.removeWidgetSignal(widget, inWidget.instance, existingOutName, inName)
+                    ok = self.signalManager.addLink(outWidget.instance, inWidget.instance, outName, inName, enabled)
+                    if ok: connected.append((outName, inName))
 
-            if connected == []:
-                print "Error. No connections were maid."
-                line.remove()
-                self.signalManager.setFreeze(0)
-                return None
+                if connected == []:
+                    print "Error. No connections were maid."
+                    line.remove()
+                    self.signalManager.setFreeze(0)
+                    return None
 
-            line.setSignals(connected)
-            self.signalManager.setFreeze(0, outWidget.instance)
+                line.setSignals(connected)
+                self.signalManager.setFreeze(0, outWidget.instance)
 
-        self.lines.append(line)
-        outWidget.addOutLine(line)
-        outWidget.updateTooltip()
-        inWidget.addInLine(line)
-        inWidget.updateTooltip()
-        line.show()
-        line.setEnabled(enabled)
-
-        self.hasChanged = TRUE
-        self.canvasDlg.enableSave(TRUE)
-        
-        return line
+            self.hasChanged = TRUE
+            self.canvasDlg.enableSave(TRUE)
+            
+            return line
+        except:
+            if line != None:
+                "Failed to connect widgets. Removing connection."
+                self.removeLine1(line)
+            return None
 
 
     def resetActiveSignals(self, line, newSignals = None, enabled = 1):
@@ -283,6 +289,8 @@ class SchemaDoc(QMainWindow):
         for widget in self.widgets:
             if widget.instance == widgetInstance:
                 return widget.caption
+        print "Error. Invalid widget instance : ", widgetInstance
+        return ""
 
     # ###########################################
     # SAVING, LOADING, ....
@@ -298,7 +306,7 @@ class SchemaDoc(QMainWindow):
         if qname.isEmpty():
             return
         name = str(qname)
-        if name[-4] != ".":
+        if len(name) < 4 or name[-4] != ".":
             name = name + ".ows"
         self.documentpath = os.path.dirname(name)
         self.documentname = os.path.basename(name)
@@ -415,6 +423,7 @@ class SchemaDoc(QMainWindow):
                 continue
 
             tempLine = self.addLine(outWidget, inWidget, setSignals = FALSE)
+            if not tempLine: continue
             signalList = eval(signals)
             self.resetActiveSignals(tempLine, signalList, Enabled)
             #tempLine.updateLinePos()
