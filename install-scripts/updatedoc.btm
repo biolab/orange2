@@ -13,11 +13,11 @@ del /eqsfyx orange\doc
 cvs -d :sspi:cvs@estelle.fri.uni-lj.si:d:/CVS export -r HEAD orange/doc
 cdd %ORANGEWEB\scripts
 mkdir %ORANGEWEB\scripts\tmpdoc
-python process_doc.py %ORANGEWEB\recentversion\orange\doc %ORANGEWEB\scripts\tmpdoc %ORANGEWEB\doc2 1
+python process_doc.py %ORANGEWEB\recentversion\orange\doc %ORANGEWEB\scripts\tmpdoc %ORANGEWEB\doc 1
 
 cdd %ORANGEWEB\scripts\tmpdoc
-del %ORANGEWEB\download2\orange-doc.zip
-wzzip -apr %ORANGEWEB\download2\orange-doc.zip *
+del %ORANGEWEB\download\orange-doc.zip
+wzzip -apr %ORANGEWEB\download\orange-doc.zip *
 cdd %ORANGEWEB
 del /eyqfsx scripts\tmpdoc
 popd
