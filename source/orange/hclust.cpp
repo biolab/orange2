@@ -307,7 +307,6 @@ TClusterW *THierarchicalClustering::merge_CompleteLinkage(TClusterW **clusters)
     const int newsize = cluster1->size + cluster2->size;
 
     float *disti1 = cluster1->distances;
-    const float const *minIndex1 = cluster1->distances + cluster1->rawIndexMinDistance;
     float *disti2 = cluster2->distances;
 
     for(int ndi = cluster1->nDistances; ndi--; disti1++, disti2++) {
