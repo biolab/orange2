@@ -728,7 +728,7 @@ T chisquare2d(const vector<vector<T> > &cont,
 
   const T TINY=1.0e-30;
   int ni=cont.size();
-  int nj=cont[1].size();
+  int nj=cont[0].size();
   if (!nj)
     throw StatException("chisquare2d: invalid contingency table");
 
@@ -773,6 +773,103 @@ T chisquare2d(const vector<vector<T> > &cont,
   cramerV = sqrt (chisq/(sum*(min_el(nni, nnj)-1.0)));
   contingency_coeff=sqrt(chisq/(chisq+sum));
   return chisq;
+}
+
+
+template<class T>
+T anova_rel(const vector<vector<T> > &cont, int &df_bt, int &df_err, T &prob)
+{ 
+  int k = cont.size();
+  int n = cont[0].size();
+  if ((n<2) || (k<2))
+    throw StatException("anova_rel: invalid contingency table");
+
+  int N = k*n;
+  T G = T(0.0), SS_wt = T(0.0), SS_total = T(0.0), SS_bt = T(0.0), SS_bs = T(0.0), SS_err;
+  vector<T> Ps(n, T(0.0));
+  vector<T>::iterator Psi, Pse(Ps.end());
+  for(vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti!=conte; conti++) {
+    if ((*conti).size() != n)
+      throw StatException("anova_rel: number of subject is not the same in all groups");
+
+    T t = T(0.0), tt = T(0.0);
+    Psi = Ps.begin();
+    for(vector<T>::const_iterator contii((*conti).begin()), contie((*conti).end()); contii!=contie; contii++, Psi++) {
+      t += (*contii);
+      *Psi += (*contii);
+      tt += (*contii) * (*contii);
+    }
+    G += t;
+    SS_total += tt;
+    SS_wt += tt - t*t/n;
+    SS_bt += t*t;
+  }
+
+  for(Psi = Ps.begin(); Psi != Pse; Psi++)
+    SS_bs += *Psi * *Psi;
+
+  const T GG_N = G*G/N;
+  SS_total -= GG_N;
+  SS_bt = SS_bt/n - GG_N;
+  SS_bs = SS_bs/k - GG_N;
+  SS_err = SS_wt - SS_bs;
+
+  df_bt = (k-1);
+  df_err = (N-k) - (n-1);
+
+  if (SS_err < 1e-20) {
+    prob = 0.0;
+    return T(-1.0);
+  }
+
+  T MS_bt = SS_bt / df_bt;
+  T MS_err = SS_err / df_err;
+  T F = MS_bt / MS_err;
+  prob = fprob(df_bt, df_err, F);
+  return F;
+}
+
+
+template<class T>
+T friedmanf(const vector<vector<T> > &cont, double &chi2, int &dfnum, int &dfden, double &prob)
+{
+  int k = cont.size();
+  int N = cont[0].size();
+  if ((N<2) || (k<2))
+    throw StatException("friedmanf: invalid contingency table");
+
+  vector<vector<T> > transposed;
+  int line;
+  for(line = 0; line < N; line++)
+    transposed.push_back(vector<T>());
+
+  vector<vector<T> >::iterator trani;
+  const vector<vector<T> >::iterator tranb(transposed.begin()), trane(transposed.end());
+  for(vector<vector<T> >::const_iterator conti(cont.begin()), conte(cont.end()); conti != conte; conti++) {
+    if ((*conti).size() != N)
+      throw StatException("friedmanf: number of subject is not the same in all groups");
+
+    trani = tranb;
+    for(vector<T>::const_iterator contii((*conti).begin()); trani!=trane; trani++, contii++)
+      (*trani).push_back(*contii);
+  }
+
+  vector<double> R(k, 0.0), tranks;
+  vector<double>::iterator Ri, Rb(R.begin()), Re(R.end()), tri;
+  for(trani = tranb; trani != trane; trani++) {
+    rankdata(*trani, tranks);
+    for(Ri = Rb, tri = tranks.begin(); Ri != Re; Ri++, tri++)
+      *Ri += *tri;
+  }
+
+  double RR = 0.0;
+  for(Ri = Rb; Ri != Re; Ri++)
+    RR += *Ri * *Ri;
+
+  chi2 = 12 * N / float(k*(k+1)) *  (RR/N/N - k*(k+1)*(k+1) / 4.0);
+  double F = (N-1) * chi2 / (N*(k-1) - chi2);
+  prob = fprob(k-1, (k-1)*(N-1), F);
+  return F;
 }
 
 
@@ -1094,8 +1191,7 @@ T zprob(const T &z)
 }
 
 
-template<class T>
-T fprob(const T &dfnum, const T &dfden, const T &F)
+inline double fprob(const int &dfnum, const int &dfden, const double &F)
 { return betai(dfden*0.5, dfnum*0.5, dfden/(dfden+dfnum*F)); }
 
 

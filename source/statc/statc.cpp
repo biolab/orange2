@@ -685,6 +685,24 @@ PyObject *py_##name(PyObject *, PyObject *args) \
 }
 
 
+#define T_FROM_INT_INT_T(name) \
+PyObject *py_##name(PyObject *, PyObject *args) \
+{ PyTRY \
+    double x; \
+    int i1, i2; \
+    if (PyArg_ParseTuple(args, "iid", &i1, &i2, &x)) \
+      return PyFloat_FromDouble(name(i1, i2, x)); \
+\
+    PyErr_Clear(); \
+\
+    PyObject *pyx; \
+    if (PyArg_ParseTuple(args, "iiO", &i1, &i2, &pyx)) \
+      return (PyObject *)(name(i1, i2, PyWrapper(pyx))); \
+\
+    return PYNULL; \
+  PyCATCH \
+}
+
 
 /* *********** AUXILIARY FUNCTIONS ************/
 
@@ -1147,6 +1165,33 @@ PyObject *py_chisquare2d(PyObject *, PyObject *args)
 }
 
 
+PyObject *py_anova_rel(PyObject *, PyObject *args)
+{ PyTRY
+    vector<vector<double> > x;
+    if (args2flist2d(args, x)) {
+      double F, prob;
+      int df_bt, df_err;
+      F = anova_rel(x, df_bt, df_err, prob);
+      return Py_BuildValue("diid", F, df_bt, df_err, prob);
+    }
+    PYERROR(PyExc_AttributeError, "anova_rel: 2d contingency matrix expected", PYNULL);
+  PyCATCH
+}
+
+
+PyObject *py_friedmanf(PyObject *, PyObject *args)
+{ PyTRY
+    vector<vector<double> > x;
+    if (args2flist2d(args, x)) {
+      double F, prob, chi2;
+      int dfnum, dfden;
+      F = friedmanf(x, chi2, dfnum, dfden, prob);
+      return Py_BuildValue("diidd", F, dfnum, dfden, prob, chi2);
+    }
+    PYERROR(PyExc_AttributeError, "friedmanf: 2d contingency matrix expected", PYNULL);
+  PyCATCH
+}
+
 
 #define WRAPTEST(name) \
 PyObject *py_##name(PyObject *, PyObject *args) \
@@ -1192,11 +1237,22 @@ T_FROM_T(gammln)
 T_FROM_T_T_T(betai)
 T_FROM_T_T_T(betacf)
 T_FROM_T(zprob)
-T_FROM_T_T_T(fprob)
 T_FROM_T(erf)
 T_FROM_T(erfc)
 T_FROM_T(erfcc)
 T_FROM_T_T(chisqprob)
+
+
+PyObject *py_fprob(PyObject *, PyObject *args)
+{ 
+  PyTRY
+    int dfnum, dfden;
+    double F;
+    if (!PyArg_ParseTuple(args, "iid:fprob", &dfnum, &dfden, &F))
+      return NULL;
+    return PyFloat_FromDouble(fprob(dfnum, dfden, F));
+  PyCATCH;
+}
 
 
 /* *********** RANDOM NUMBERS ***************/
@@ -1532,6 +1588,8 @@ PyMethodDef statc_functions[]={
      DECLARE(ttest_rel)
      DECLARE(chisquare)
      DECLARE(chisquare2d)
+     DECLARE(anova_rel)
+     DECLARE(friedmanf)
      DECLARE(mannwhitneyu)
      DECLARE(ranksums)
      DECLARE(wilcoxont)
