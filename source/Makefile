@@ -19,7 +19,7 @@ orange.pth:
 	@echo "orange\\OrangeCanvas" >> orange.pth
 
 canvas:
-	@echo "exec `which python` $(DESTDIR)/OrangeCanvas/orngCanvas.py" > canvas
+	@echo "exec `which python` $(DESTDIR)/OrangeCanvas/orngCanvas.pyw" > canvas
 
 install: all orange.pth canvas bininstall docinstall
 
@@ -43,12 +43,13 @@ bininstall:
 			else	true; \
 			fi; \
 		done; \
-		for f in `find . -type f -name '*.py' -o -name '*.pyc'`; \
+		for f in `find . -type f -name '*.py' -name '*.pyw' -name '*.png' -o -name '*.pyc'`; \
 		do \
 			$(INSTALL_DATA) $$f $(DESTDIR)/$$i/$$f; \
 		done; \
 	done
 	$(INSTALL_DATA) ../*.py $(DESTDIR)
+	$(INSTALL_DATA) ../*.pyw $(DESTDIR)
 	$(INSTALL_DATA) ../*.pyc $(DESTDIR)
 	$(INSTALL_DATA) ../COPYING $(DESTDIR)
 	$(INSTALL_SHARED) ../*.so $(DESTDIR)
