@@ -426,7 +426,7 @@ int Orange_setattr1(TPyOrange *self, PyObject *pyname, PyObject *args)
     
   const TPropertyDescription *propertyDescription;
   try {
-    propertyDescription = self->ptr->propertyDescription(name);
+    propertyDescription = self->ptr->propertyDescription(name, true);
   } catch (exception err)
   { propertyDescription = NULL; }
 

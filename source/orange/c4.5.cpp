@@ -707,7 +707,7 @@ PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weight
   PDistribution branchSizes = mlnew TDiscDistribution;
   int i = 0;
   PITERATE(TC45TreeNodeList, li, branch)
-    branchSizes->addint(i, (*li)->items);
+    branchSizes->addint(i++, (*li)->items);
   newNode->branchSizes = branchSizes;
     
   TEnumVariable *dummyVar = mlnew TEnumVariable(tested->name);

@@ -424,20 +424,27 @@ float TExamplesDistance_Euclidean::operator ()(const TExample &e1, const TExampl
   vector<float>::const_iterator di(difs.begin()), de(difs.end());
   TDomainDistributions::const_iterator disti(distributions->begin());
   TFloatList::const_iterator bsi(bothSpecialDist->begin());
+  TFloatList::const_iterator si(normalizers->begin());
 
-  for(; di!=de; di++, e1i++, e2i++, avgi++, vari++)
+  for(; di!=de; di++, e1i++, e2i++, avgi++, vari++, disti++, si++)
     if ((*e1i).varType == TValue::FLOATVAR) {
       if ((*e1i).isSpecial())
         if ((*e2i).isSpecial())
           dist += 2 * *vari;
         else {
           const float e2a = (*e2i).floatV - *avgi;
-          dist += e2a*e2a + *vari;
+          if (normalize)
+            dist += e2a*e2a + *vari * *si * *si;
+          else
+            dist += e2a*e2a + *vari;
         }
       else // e1i is not special
         if ((*e2i).isSpecial()) {
           const float e2a = (*e1i).floatV - *avgi;
-          dist += e2a*e2a + *vari;
+          if (normalize)
+            dist += e2a*e2a + *vari * *si * *si;
+          else
+            dist += e2a*e2a + *vari;
         }
       else // none is special
         dist += (*di) * (*di);

@@ -447,7 +447,7 @@ const float &TDiscDistribution::atint(const int &v) const
 { if (!size())
     raiseError("empty distribution");
   if ((v < 0) || (v >= int(size()))) 
-    raiseError("value %s out of range 0-%s", v, size()-1);
+    raiseError("value %i out of range 0-%i", v, size()-1);
   return at(v); 
 }
 
@@ -849,6 +849,8 @@ int TDiscDistribution::randomInt()
 float TDiscDistribution::p(const int &x) const
 { if (!abs) 
     return size() ? 1.0/size() : 0.0;
+  if (x>=size())
+    return 0.0;
   return atint(x)/abs; 
 }
 
