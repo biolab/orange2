@@ -5,13 +5,12 @@
 
 import sys
 from qt import *
+import os.path
 
 class OWAbout(QTabDialog):
-    def __init__(self, parent=None, name=None):
+    def __init__(self, defaultIcon, logo, parent=None, name=None):
         QTabDialog.__init__(self,parent,name)
         self.setCaption("Qt About Orange Widgets")
-        self.icon=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeWidgetsIcon.png")
-        self.setIcon(self.icon)
         self.setIconText("Orange Widgets")
 
         #some text about visual orange
@@ -35,14 +34,13 @@ Principal authors of Orange J. Demsar and B. Zupan"""
 
         tab1=QVBox(self)
         tab2=QVBox(self)
-        pixmap1=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeWidgetsLogo.png")
-        pixmap2=QPixmap(sys.prefix + "/lib/site-packages/orange/orangeWidgets/icons/OrangeLogo.png")
+        
         l11=QLabel(orangewidgets,tab1)
         l12=QLabel(tab1)
-        l12.setPixmap(pixmap1)
         l21=QLabel(orange,tab2)
         l22=QLabel(tab2)
-        l22.setPixmap(pixmap2)
+        if os.path.exists(defaultIcon): l12.setPixmap(QPixmap(defaultIcon))
+        if os.path.exists(logo): l22.setPixmap(QPixmap(logo))
         l11.setAlignment(Qt.AlignCenter)
         l12.setAlignment(Qt.AlignCenter)
         l21.setAlignment(Qt.AlignCenter)
@@ -54,10 +52,41 @@ Principal authors of Orange J. Demsar and B. Zupan"""
     def show(self):
         QTabDialog.show(self)
 
+
+class OWAboutX(OWAbout):
+    def __init__(
+    self,
+    title="&X",
+    description="X is an Orange Widget that does nothing.",
+    widgetIcon = "OrangeWidgetsIcon.png", defaultIcon = "OrangeWidgetsLogo.png", logoIcon = "OrangeLogo.png"):
+        """
+        Constructor
+        title - The title of the widget
+        description - The description of the widget, appears in the about box
+        logo - The logo of the widget, OrangeWidgetsLogo.gif if omitted, 
+            pass an empty string if no logo is wanted
+        icon - The icon of the widget, OrangeWidgetsIcon.gif if omitted, 
+            pass an empty string if no icon is wanted
+        """
+        OWAbout.__init__(self, defaultIcon, logoIcon)
+        tabx = QVBox(self)
+        self.insertTab(tabx,title,0)
+        self.showPage(tabx)
+        self.setCaption(title.replace("&",""))
+        
+        if os.path.exists(widgetIcon): self.setIcon(QPixmap(widgetIcon))
+        l1=QLabel(description,tabx)
+        l2=QLabel(tabx)
+        l1.setAlignment(Qt.AlignCenter)
+        l2.setAlignment(Qt.AlignCenter)
+
+        if os.path.exists(logoIcon): l2.setPixmap(QPixmap(logoIcon))
+        
+
 if __name__== "__main__":
     #as a test, simply show the dialog
     a=QApplication(sys.argv)
-    w=OWAbout()
+    w=OWAbout("icons/OrangeWidgetsLogo.png", "icons/OrangeLogo.png")
     a.setMainWidget(w)
     w.show()
     a.exec_loop()
