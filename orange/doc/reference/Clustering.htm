@@ -293,3 +293,4 @@ tables = [orange.ExampleTable(cluster) for cluster in listOfClusters(root)]
 <P>The hierarchy of objects that represent a clustering is open, everything is accessible from Python. You can write your own clustering algorithms that build this same structure, or you can use Orange's clustering and then do we the structure anything you want. For instance prune it, as we have shown earlier. However, it is easy to do things wrong: shuffle the <CODE>mapping</CODE>, for instance, and forget to adjust the <CODE>first</CODE> and <CODE>last</CODE> pointers. Orange does some checking for the internal consistency, but you are surely smarter and can find a way to crash it. For instance, just create a cycle in the structure, call <CODE>swap</CODE> for some cluster above the cycle and you're there. But don't blame it on me then.</P>
 
 
+<P>&nbsp;</P> 
