@@ -705,8 +705,8 @@ class ClusterOptimization(OWBaseWidget):
             
             valueDict[key] = value
             
-            #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, area)
-            otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass().value, value, points, dist, aveDistDict[key])
+            #otherDict[key] = (graph.objects[polygonVerticesDict[key][0]].getclass(), value, points, dist, area)
+            otherDict[key] = (int(graph.objects[polygonVerticesDict[key][0]].getclass()), value, points, dist, aveDistDict[key])
         
 
         #return graph, {}, closureDict, polygonVerticesDict, {}
@@ -1140,7 +1140,7 @@ class clusterClassifier(orange.Classifier):
         #QTimer.singleShot(60*1000, self.stopEvaluation)
         t = QTimer(self.visualizationWidget)
         self.visualizationWidget.connect(t, SIGNAL("timeout()"), self.stopEvaluation)
-        t.start(60*1000, TRUE)
+        t.start(120*1000, 1)
         self.visualizationWidget.optimizeClusters()
         t.stop()
         self.evaluating = 0
@@ -1156,7 +1156,6 @@ class clusterClassifier(orange.Classifier):
         table = orange.ExampleTable(example.domain)
         table.append(example)
         self.visualizationWidget.subsetdata(table)
-        self.clusterOptimizationDlg.createSnapshots = 0
         snapshots = self.clusterOptimizationDlg.createSnapshots
         self.clusterOptimizationDlg.createSnapshots = 0
         self.clusterOptimizationDlg.findArguments()
@@ -1166,14 +1165,18 @@ class clusterClassifier(orange.Classifier):
         for i in range(len(self.clusterOptimizationDlg.arguments)):
             for j in range(len(self.clusterOptimizationDlg.arguments[i])):
                 vals[i] += self.clusterOptimizationDlg.arguments[i][j][1]
+
+        l = [len(self.clusterOptimizationDlg.arguments[i]) for i in range(len(self.clusterOptimizationDlg.arguments))]
+        print l
         
         ind = vals.index(max(vals))
-        if vals.count(max(vals)) > 1:
+        if max(vals) == 0.0:
+            print "no projection contains this example"
             return self.majorityClassifier(example, returnType)
 
         if returnType == orange.GetBoth:
-            s = sum(vals)
-            return (example.domain.classVar[ind], orange.DiscDistribution([val/float(s) for val in vals]))
+            s = sum(vals) + len(vals)
+            return (example.domain.classVar[ind], orange.DiscDistribution([(val+1)/float(s) for val in vals]))
         else:
             return example.domain.classVar[ind]
         
@@ -1183,6 +1186,7 @@ class clusterLearner(orange.Learner):
     def __init__(self, clusterOptimizationDlg, visualizationWidget):
         self.clusterOptimizationDlg = clusterOptimizationDlg
         self.visualizationWidget = visualizationWidget
+        self.name = "Visual classifier"
         
     def __call__(self, examples, weightID = 0):
         return clusterClassifier(self.clusterOptimizationDlg, self.visualizationWidget, examples)
