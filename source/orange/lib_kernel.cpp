@@ -971,7 +971,7 @@ PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, i
 PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS | METH_KEYWORDS, "see the manual for help")
 { 
   PyTRY
-    long weightID=-999;
+    long weightID = 0;
     CAST_TO(TExampleGenerator, eg);
     PExampleGenerator weg = PyOrange_AsExampleGenerator(self);
 
@@ -984,9 +984,7 @@ PyObject *ExampleGenerator_select(TPyOrange *self, PyObject *args, PyObject *key
     if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
       PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate = pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven = (weightID!=-999);
-      if (weightID==-1)
-        weightID=0;
+      bool weightGiven = (PyTuple_Size(args)==2);
 
       /* ***** SELECTION BY VECTOR OF BOOLS ****** */
       if (PyList_Check(mplier) && PyList_Size(mplier) && PyInt_Check(PyList_GetItem(mplier, 0))) {
@@ -1448,7 +1446,7 @@ PyObject *ExampleTable_multipleselectref(TPyOrange *self, PyObject *args)   PYAR
 PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
 { 
   PyTRY
-    int weightID=-999;
+    int weightID = 0;
     CAST_TO(TExampleTable, eg);
     POrange lock = PyOrange_AS_Orange(self);
     PExampleGenerator weg = PExampleGenerator(lock);
@@ -1464,8 +1462,7 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
     if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
       PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate=pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven=(weightID!=-999);
-      if (weightID==-1) weightID=0;
+      bool weightGiven = (PyTuple_Size(args)==2);
 
       if (PyList_Check(mplier)) {
         if (PyList_Size(mplier)!=eg->numberOfExamples())
@@ -1723,7 +1720,7 @@ int ExamplePointerTable_setitem_sq(TPyOrange *self, int idx, TPyExample *pex)
 PyObject *ExamplePointerTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keywords, bool toList)
 { 
   PyTRY
-    int weightID=-999;
+    int weightID = 0;
     CAST_TO(TExamplePointerTable, eg);
     POrange lock=PyOrange_AS_Orange(self);
     PExampleGenerator weg = PExampleGenerator(lock);
@@ -1738,8 +1735,7 @@ PyObject *ExamplePointerTable_selectLow(TPyOrange *self, PyObject *args, PyObjec
     if (PyArg_ParseTuple(args, "O|i", &mplier, &weightID)) {
       PyObject *pyneg= keywords ? PyDict_GetItemString(keywords, "negate") : NULL;
       bool negate=pyneg && PyObject_IsTrue(pyneg);
-      bool weightGiven=(weightID!=-999);
-      if (weightID==-1) weightID=0;
+      bool weightGiven = (PyTuple_Size(args)==2);
 
       if (PyList_Check(mplier)) {
         if (PyList_Size(mplier)!=eg->numberOfExamples())
@@ -2641,7 +2637,7 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
       return PYNULL;
     }
 
-    int weight = -1;
+    int weight = 0;
     PExampleGenerator egen;
 
     if (!PyArg_ParseTuple(targs, "O&|i", pt_ExampleGenerator, &egen, &weight)) {
@@ -2650,9 +2646,7 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
         PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weightID expected", PYNULL);
     }
 
-    if (weight == -1) {
-      weight = 0;
-
+    if (PyTuple_Size(targs)==1) {
       PyObject **odict = _PyObject_GetDictPtr(self);
       if (*odict) {
         PyObject *pyweight = PyDict_GetItemString(*odict, "weight");

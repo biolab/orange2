@@ -24,6 +24,7 @@
 #define __CLASSFROMVAR_HPP
 
 #include "classify.hpp"
+#include "stladdon.hpp"
 
 WRAPPER(TransformValue);
 
@@ -51,7 +52,7 @@ public:
   PTransformValue transformer; //P transformer
   PDistribution distributionForUnknown; //P distribution for unknown value
 
-  TClassifierFromVarFD(PVariable classVar=PVariable(), PDomain =PDomain(), const int & =-1, PDistribution = PDistribution(), PTransformValue = PTransformValue());
+  TClassifierFromVarFD(PVariable classVar=PVariable(), PDomain =PDomain(), const int &position = ILLEGAL_INT, PDistribution = PDistribution(), PTransformValue = PTransformValue());
   TClassifierFromVarFD(const TClassifierFromVarFD &);
 
   virtual TValue operator ()(const TExample &);

@@ -124,7 +124,7 @@ TClassifierFromVarFD::TClassifierFromVarFD(const TClassifierFromVarFD &old)
 TValue TClassifierFromVarFD::operator ()(const TExample &example)
 { if (example.domain!=domain)
     raiseError("wrong domain");
-  if (position<0)
+  if (position==ILLEGAL_INT)
     raiseError("'position' not set");
   
   return processValue(transformer, example[position], distributionForUnknown);

@@ -32,12 +32,15 @@
 #include <map>
 #include <functional>
 #include <string>
+#include <limits>
 
 using namespace std;
 
 inline float sqr(const float &f1) { return f1*f1; }
 
 typedef vector<string> TIdList;
+
+#define ILLEGAL_INT numeric_limits<int>::min()
 
 #define ITERATE(tpe, iter, pna)  for(tpe::iterator iter((pna).begin()), iter##_end((pna).end()); \
                                      iter!=iter##_end; iter++)

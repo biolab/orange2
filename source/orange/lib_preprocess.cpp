@@ -328,7 +328,7 @@ PyObject *kaplanMeier(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(example
     else
       PYERROR(PyExc_AttributeError, "'outcomeVar' not set and the domain is class-less", PYNULL);
 
-  PVariable ovar = (outcomeIndex>=0) ?  egen->domain->variables->at(outcomeIndex) : egen->domain->getMetaVar(outcomeIndex);
+  PVariable ovar = (outcomeIndex>=0) ?  egen->domain->variables->at(outcomeIndex) : egen->domain->getMetaVar(-outcomeIndex);
 
   if (   !convertFromPython(pyfailvalue, failvalue, ovar)
       || failvalue.isSpecial()

@@ -222,7 +222,7 @@ int getMetaIdFromPy(PExample example, PyObject *index, PVariable &var)
   else if (PyOrVariable_Check(index)) {
     var = PyOrange_AsVariable(index);
     int idx = example->domain->getMetaNum(var, false);
-    if (idx==-1)
+    if (!idx)
       PYERROR(PyExc_IndexError, "invalid meta variable", 0);
     return idx;
   }
@@ -258,7 +258,7 @@ PyObject *Example_setweight(TPyExample *pex, PyObject *args) PYARGS(METH_VARARGS
 
     if (!PyArg_ParseTuple(args, "if:setweight", &index, &weight))
       return PYNULL;
-    if (index<=0)
+    if (!index)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
 
     PyExample_AS_Example(pex)->meta.setValue(index, TValue(weight));
@@ -275,7 +275,7 @@ PyObject *Example_removeweight(TPyExample *pex, PyObject *pyindex) PYARGS(METH_O
 
     int index = (int)PyInt_AsLong(pyindex);
 
-    if (index<=0)
+    if (!index)
       PYERROR(PyExc_IndexError, "Example.setweight: invalid weight id", PYNULL);      
 
     PyExample_AS_Example(pex)->meta.removeValue(index);

@@ -29,7 +29,7 @@ const char *_unknownweightexception = "example has undefined weight";
 const char *_noncontinuousweightexception = "example has non-continuous weight";
 const char *_getweightwho = "_getweight";
 
-long metaID=1; // 1 is reserved as the default weight
+long metaID=1;
 
 
 long getMetaID()

@@ -607,7 +607,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
   checkProperty(timeVar);
   int timeIndex = gen->domain->getVarNum(timeVar, false);
   if (timeIndex==-1) {
-    timeIndex = gen->domain->getMetaNum(timeVar, false);
+    timeIndex = -gen->domain->getMetaNum(timeVar, false);
     if (timeIndex>1)
       raiseError("'timeVar' not found in domain");
   }
@@ -643,7 +643,10 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
 
-        (*ei).meta.setValue(newWeight, TValue(tme.isSpecial() ? float(0.0) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
+        if (tme.isSpecial())
+          (*ei).meta.setValue(newWeight, TValue(0.0));
+        else
+          (*ei).meta.setValue(newWeight, TValue(tme.floatV>thisMaxTime ? WEIGHT(*ei) : WEIGHT(*ei) * tme.floatV / thisMaxTime));
       }
     }
   }
@@ -662,7 +665,7 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
       if (!(*ei)[outcomeIndex].isSpecial() && (*ei)[outcomeIndex].intV==failIndex)
         (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
       else {
-        const TValue &tme = metatime ? (*ei).meta[timeIndex] : (*ei)[timeIndex];
+        const TValue &tme = metatime ? (*ei).meta[-timeIndex] : (*ei)[timeIndex];
         if (tme.varType != TValue::FLOATVAR)
           raiseError("invalid time (continuous attribute expected)");
         if (tme.varType != TValue::FLOATVAR)
@@ -674,8 +677,11 @@ PExampleGenerator TPreprocessor_addCensorWeight::operator()(PExampleGenerator ge
             (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei)));
           else {
             float KM_t = KM->p(tme.floatV);
-            if (KM_t>0) // it shouldn't be 0 here - at least this example DID survive; but let's play it safe
-              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * method == km ? (KM_max/KM_t) : KM_t));
+            if (method==km)
+              // KM_t shouldn't be 0 here - at least this example DID survive; but let's play it safe
+              (*ei).meta.setValue(newWeight, TValue((KM_t>0) ? WEIGHT(*ei) * (KM_max/KM_t) : 0.0));
+            else
+              (*ei).meta.setValue(newWeight, TValue(WEIGHT(*ei) * KM_t));
           }
         }
       }
