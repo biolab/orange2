@@ -124,8 +124,6 @@ Section "Genomic Data"
 	File various\bi-visprog\*.tab
 	File various\bi-visprog\*.ows
 	Delete $INSTDIR\OrangeWidgets\OWLin_Results.py
-	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWExampleBuilder.py
-	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWSubsetGenerator.py
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesPrint.py
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesViewer.py
 	Delete $INSTDIR\OrangeWidgets\Associate\OWAssociationRulesFilter.py
@@ -133,9 +131,7 @@ Section "Genomic Data"
 	Delete $INSTDIR\OrangeWidgets\Visualize\OWLinViz.py
 	Delete $INSTDIR\OrangeWidgets\Data\OWSelectAttributes.py
 	Delete $INSTDIR\OrangeWidgets\Classify\OWLearner.py
-	Delete $INSTDIR\OrangeWidgets\Evaluate\OW2DMisclassified.py
 	Delete $INSTDIR\OrangeWidgets\OWITree.py
-	Delete $INSTDIR\OrangeWidgets\Miscelaneous\OWITree.py
 SectionEnd
 !endif
 	
@@ -232,7 +228,7 @@ Function .onGUIInit
 	
 		!ifdef INCLUDEPYTHON
 		  askpython:
-			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.3-1)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
+			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.2-1)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
 			MessageBox MB_YESNO "Orange cannot run without Python.$\r$\nAbort the installation?" IDNO askpython
 			Quit
 		
