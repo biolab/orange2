@@ -34,5 +34,16 @@ for i in data:
 
 
 import orngC45
-reload(orngC45)
 orngC45.printTree(tree)
+
+lrn = orange.C45Learner()
+lrn.commandline("-m 1 -s")
+lrn.convertToOrange = 1
+tree = lrn(data)
+for i in data:
+    if i.getclass() != tree(i):
+        print i, tree(i)
+
+import orngTree
+reload(orngTree)
+orngTree.printTxt(tree, leafFields = ["major", "distribution"])

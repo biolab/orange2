@@ -159,27 +159,27 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 							iNFString = " ("+cont[e:]+")"
 				else:
 					if outputFormat=='TXT':
-						iNFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("contingency",cont),("baseValue",bstr)] if i[0] in iNF])+")"
+						iNFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("distribution",cont),("baseValue",bstr)] if i[0] in iNF])+")"
 					else:
 						iNFString = ""
 						if "major" in iNF:
 							iNFString+=major
-						if "contingency" in iNF:
+						if "distribution" in iNF:
 							iNFString+=cont
 						if "baseValue" in iNF:
 							iNFString+=bstr
 			if outputFormat=='DOT':
 				s = s + "\tn%s [ shape=%s, label = \"%s\\n%s\"]\n" % (str(name), inshp, node.branchSelector.classVar.name, iNFString)
 			for i in range(len(node.branches)):
-				if node.branches[i] and lev<depth and node.branches[i].contingency.classes.abs >= el:
+				if node.branches[i] and lev<depth and node.branches[i].distribution.abs >= el:
 					new_name = "%s_%s" % (name, str(i))
 					if outputFormat=='DOT':
 						s = s + "\tn%s -> n%s [ label = \"%s\"] \n" % (str(name), str(new_name), node.branchDescriptions[i])
 					majorString = ""
 					if continuous:
-						avg = node.branches[i].contingency.classes.average()
+						avg = node.branches[i].distribution.average()
 						try:
-							err = node.branches[i].contingency.classes.error()
+							err = node.branches[i].distribution.error()
 						except:
 							err=1
 						formatstring = "%"+"%d.%df" % (dP+2, dP)
@@ -187,14 +187,14 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 						cont = formatstring % (avg, avg - Z[z]*err, avg + Z[z]*err)
 					else:
 						if bi!=-1 and bsn!="":
-							bstr = "%s: %s%s" % (bsn, str(node.branches[i].contingency.classes[bi]*100 / node.branches[i].contingency.classes.abs)[0:5], '%')
+							bstr = "%s: %s%s" % (bsn, str(node.branches[i].distribution[bi]*100 / node.branches[i].distribution.abs)[0:5], '%')
 							if outputFormat=='DOT': bstr+="\\n"
 						if cont!="":
-							cont = "%s" % __formatContingency(node.branches[i].contingency.classes)
+							cont = "%s" % __formatDistribution(node.branches[i].distribution)
 							if outputFormat=='DOT': cont+="\\n"
 						if major!="":
-							l = __maxx(node.branches[i].contingency.classes)
-							majorString = "%s%s" % (str(l[0][0]*100 / node.branches[i].contingency.classes.abs)[0:5], '%')
+							l = __maxx(node.branches[i].distribution)
+							majorString = "%s%s" % (str(l[0][0]*100 / node.branches[i].distribution.abs)[0:5], '%')
 							if outputFormat=='DOT': majorString+="\\n"
 					if outputFormat=='TXT':
 						s+= "\n"+"|   "*lev + "%s%s %s: " % (node.branchSelector.classVar.name, iNFString, node.branchDescriptions[i])
@@ -223,14 +223,14 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
 					s+=lFString
 			else:
 				if outputFormat=='TXT':
-					lFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("contingency",cont),("baseValue",bstr)] if i[0] in lF])+")"
+					lFString = " ("+reduce(lambda x,y: x+"; "+y, [i[1] for i in [("major",major),("distribution",cont),("baseValue",bstr)] if i[0] in lF])+")"
 					if lFString == " ()":
 						lFString=""
 					s+= "%s%s" % (node.nodeClassifier.defaultValue, lFString)
 				else:
 					if "major" in lF:
 						lFString+=major
-					if "contingency" in lF:
+					if "distribution" in lF:
 						lFString+=cont
 					if "baseValue" in lF:
 						lFString+=bstr
@@ -247,12 +247,11 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
 		tree = tree.tree
 	if confidenceLevel not in Z.keys():
 		confidenceLevel=0.95
-	if not tree.contingency:
-		print "Warning: Contingences not available for tree. Set storeContingencies parameter to 1 or leave as default."
-		return
+	if not tree.distribution:
+		raise "Class distributions haven't been not stored in the tree"
 	if fileName!="":
 		out = open(fileName, 'w')
-	if depthLimit < 1 or tree.contingency and tree.contingency.classes.abs < examplesLimit:
+	if depthLimit < 1 or tree.distribution and tree.distribution.abs < examplesLimit:
 		if out:
 			out.close()
 		return
@@ -264,29 +263,29 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
 
 	baseValueString = ""
 	baseName = ""
-	contingencyString =""
+	distributionString =""
 	majorString = ""
 	continuous = 0
 
-	if tree.contingency.classes.supportsContinuous:
+	if tree.distribution.supportsContinuous:
 		# Continuous class
 		continuous = 1
-		avg = tree.contingency.classes.average()
-		err = tree.contingency.classes.error()
+		avg = tree.distribution.average()
+		err = tree.distribution.error()
 		formatstring = "%"+"%d.%df" % (decimalPlaces+2, decimalPlaces)
 		formatstring = formatstring+" ["+formatstring+", "+formatstring+"]"
-		contingencyString = formatstring % (avg, avg-Z[confidenceLevel]*err, avg+Z[confidenceLevel]*err)
+		distributionString = formatstring % (avg, avg-Z[confidenceLevel]*err, avg+Z[confidenceLevel]*err)
 	else:
 		# Discrete class
 		if baseValueIndex != -1:
 			baseName = tree.distribution.variable.values[baseValueIndex]
-			baseValueString = "%s: %s%s" % (baseName,str(tree.contingency.classes[baseValueIndex]*100/tree.contingency.classes.abs)[0:5],'%')
-		if tree.contingency:
-			contingencyString = "%s" % __formatContingency(tree.contingency.classes)
-			l = __maxx(tree.contingency.classes)
-			majorString = "%s%s" % (str(l[0][0]*100 / tree.contingency.classes.abs)[0:5], '%')
+			baseValueString = "%s: %s%s" % (baseName,str(tree.distribution[baseValueIndex]*100/tree.distribution.abs)[0:5],'%')
 
-	s = __printNode('TXT',tree, 0, continuous=continuous, cont=contingencyString, major=majorString, \
+		distributionString = "%s" % __formatDistribution(tree.distribution)
+		l = __maxx(tree.distribution)
+		majorString = "%s%s" % (str(l[0][0]*100 / tree.distribution.abs)[0:5], '%')
+
+	s = __printNode('TXT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, \
 					el=examplesLimit, depth=depthLimit, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
 					lshp="", inshp="", iNF=internalNodeFields, lF=leafFields, dP=decimalPlaces,z=confidenceLevel)
 	if out:
@@ -299,7 +298,7 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
 # fileName ... the name of the output file in dot format
 # examplesLimit ... recursively write out the tree while there's more (or equal) than examplesLimit examples in the node
 # depthLimit ... recursively write out the tree until depthLimit is reached
-# contingency ... 1=output contingency for each node; 0=no contingency output
+# distribution ... 1=output class distribution for each node; 0=don't
 # pctOfMajor ... 1=output the percentage of majority class for each node; 0=no pct. of majority class output
 # baseValueIndex ... index of the base class; no baseValue pct. output if -1
 # leafShape ... a shape of the leaf node in dot format
@@ -312,11 +311,10 @@ def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseV
 		tree = tree.tree
 	if confidenceLevel not in Z.keys():
 		confidenceLevel=0.95
-	if not tree.contingency:
-		print "Warning: Contingences not available for tree. Set storeContingencies parameter to 1 or leave as default."
-		return
+	if not tree.distribution:
+		raise "Class distributions haven't been not stored in the tree"
 	out = open(fileName, 'w')
-	if depthLimit < 1 or tree.contingency and tree.contingency.classes.abs < examplesLimit:
+	if depthLimit < 1 or tree.distribution and tree.distribution.abs < examplesLimit:
 		out.close()
 		return
 	out.write("digraph G {\n")
@@ -328,35 +326,35 @@ def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseV
 
 	baseValueString = ""
 	baseName = ""
-	contingencyString =""
+	distributionString =""
 	majorString = ""
 	continuous = 0
 
-	if tree.contingency.classes.supportsContinuous:
+	if tree.distribution.supportsContinuous:
 		# Continuous class
 		continuous = 1
-		avg = tree.contingency.classes.average()
-		err = tree.contingency.classes.error()
+		avg = tree.distribution.average()
+		err = tree.distribution.error()
 		formatstring = "%"+"%d.%df" % (decimalPlaces+2, decimalPlaces)
 		formatstring = formatstring+" ["+formatstring+", "+formatstring+"]"
-		contingencyString = formatstring % (avg, avg - Z[confidenceLevel]*err, avg + Z[confidenceLevel]*err)
+		distributionString = formatstring % (avg, avg - Z[confidenceLevel]*err, avg + Z[confidenceLevel]*err)
 	else:
 		# Discrete class
 		if baseValueIndex != -1:
 			baseName = tree.distribution.variable.values[baseValueIndex]
-			baseValueString = "%s: %s%s\\n" % (baseName,str(tree.contingency.classes[baseValueIndex]*100/tree.contingency.classes.abs)[0:5],'%')
-		if tree.contingency:
-			contingencyString = "%s\\n" % __formatContingency(tree.contingency.classes)
-			l = __maxx(tree.contingency.classes)
-			majorString = "%s%s\\n" % (str(l[0][0]*100 / tree.contingency.classes.abs)[0:5], '%')
+			baseValueString = "%s: %s%s\\n" % (baseName,str(tree.distribution[baseValueIndex]*100/tree.distribution.abs)[0:5],'%')
 
-	s = __printNode('DOT',tree, 0, continuous=continuous, cont=contingencyString, major=majorString, \
+		distributionString = "%s\\n" % __formatDistribution(tree.distribution)
+		l = __maxx(tree.distribution)
+		majorString = "%s%s\\n" % (str(l[0][0]*100 / tree.distribution.abs)[0:5], '%')
+
+	s = __printNode('DOT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, \
 					el=examplesLimit, depth=depthLimit, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
 					lshp=leafShape, inshp=internalNodeShape, iNF=internalNodeFields, lF=leafFields, dP=decimalPlaces,z=confidenceLevel)
 	out.write(s+"}\n")
 	out.close()
 
-def __formatContingency(c):
+def __formatDistribution(c):
 	if type(c)==orange.ContDistribution:
 		return str(c)	
 	l=[int(i) for i in c if int(i)==float(i)]
