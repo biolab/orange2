@@ -332,6 +332,7 @@ class WMDS(MDS):
 #                Lt[i][i] = 0.0
 #        MPI = matrixmultiply(transpose(V),matrixmultiply(Lt,transpose(U)))
         self.M = matrixmultiply(generalized_inverse(T),transpose(V))
+        self.iV = generalized_inverse(V)
         #print self.M
 
     def getStress(self,stressf=default_stress):
@@ -428,33 +429,6 @@ class WMDS(MDS):
         self.freshD = 0
         return effect
 
-    def SMACOFstepsimple(self):
-        # compute the R (n*n) matrix
-        self.getDistance()
-        R = resize(array([0.0]),(self.n,self.n))
-        sumv = array([0.0]*self.n)
-        for i in xrange(self.n):
-            for j in xrange(self.n):
-                if i != j:
-                    if self.dist[i][j] > 1e-6:
-                        s = 1.0/self.dist[i][j]
-                    else:
-                        s = 0.0
-                    # the closer the value to 1.0, the better it is
-                    t = (self.W[i][j]*self.O[i][j] + (1-self.W[i][j])*self.dist[i][j])*s
-                    #t = self.O[i][j]*s
-                    #t = self.O[i][j]/max(1e-6,self.dist[i][j])
-                    R[i][j] = -t
-                    sumv[i] += t
-                    
-        for i in range(self.n):
-            R[i][i] = sumv[i]
-        # compute the iteration step
-        self.X = matrixmultiply(R,self.X)/(self.n +0.0)
-        self.freshD = 0
-        self.getDistance()
-        
-    #def SMACOFstep(self):
     def SMACOFstep(self):
         # compute the R (n*n) matrix
         self.getDistance()
@@ -477,6 +451,6 @@ class WMDS(MDS):
         for i in range(self.n):
             R[i][i] = sumv[i]
         # compute the iteration step
-        self.X = matrixmultiply(self.M,matrixmultiply(R,self.X))
+        self.X = matrixmultiply(self.iV,matrixmultiply(self.M,matrixmultiply(R,self.X)))
         self.freshD = 0
         self.getDistance()
