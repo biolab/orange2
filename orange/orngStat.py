@@ -644,6 +644,36 @@ def computeCalibrationCurve(res, classIndex=-1):
         results.append((curve, yesClassRugPoints, noClassRugPoints))
 
     return results
+
+
+## Lift Curve
+## returns an array of curve elements, where:
+##  - curve is an array of points ((TP+FP)/(P + N), TP/P, (th, FP/N)) on the Lift Curve
+def computeLiftCurve(res, classIndex=-1):
+    import corn
+    ## merge multiple iterations into one
+    mres = orngTest.ExperimentResults(1, res.classifierNames, res.classValues, res.weights, classifiers=res.classifiers, loaded=res.loaded)
+    for te in res.results:
+        mres.results.append( te )
+
+    problists, tots = corn.computeROCCumulative(mres, classIndex)
+
+    results = []
+    P, N = tots[1], tots[0]
+
+    for plist in problists:
+        ## corn gives an increasing by scores list, we need a decreasing by scores
+        plist.reverse()
+        TP = 0.0
+        FP = 0.0
+        curve = [(0.0, 0.0, (10e300, 0.0))]
+        for (f, (thisNeg, thisPos)) in plist:
+            TP += thisPos
+            FP += thisNeg
+            curve.append( ((TP+FP)/(P + N), TP/P, (f, FP/N)) )
+        results.append(curve)
+
+    return results
 ###
 
 class CDT:

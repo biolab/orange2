@@ -64,14 +64,17 @@ class singleClassROCgraph(OWGraph):
         self.averagingMethod = None
         self.splitByIterations = None
         self.VTAsamples = 10 ## vertical threshold averaging, number of samples
-        self.FPcost = 500
-        self.FNcost = 500
-        self.pvalue = 400 ##0.400
+        self.FPcost = 500.0
+        self.FNcost = 500.0
+        self.pvalue = 400.0 ##0.400
 
         self.performanceLineSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(Qt.color0), QPen(self.black), QSize(7,7))
         self.convexHullPen = QPen(Qt.yellow, 3)
 
         self.removeCurves()
+
+    def computeCurve(self, res, classIndex=-1, keepConcavities=1):
+        return orngEval.TCcomputeROC(res, classIndex, keepConcavities)
 
     def setNumberOfClassifiersIterationsAndClassifierColors(self, classifierNames, iterationsNum, classifierColor):
         classifiersNum = len(classifierNames)
@@ -132,7 +135,7 @@ class singleClassROCgraph(OWGraph):
         self.showClassifiers = []
         self.showIterations = []
         self.showConvexCurves = 0
-        self.showROCconvexHull = 0
+        self.showConvexHull = 0
         self.showPerformanceLine = 0
         self.showDiagonal = 0
 
@@ -153,7 +156,6 @@ class singleClassROCgraph(OWGraph):
         self.thresholdConvexHullData = []
         self.classifierConvexHullData = []
         self.hullCurveDataForPerfLine = [] ## for performance analysis
-        self.performanceXYpointText = {} ## best classifiers and their cut-off points for each point on convex hull (key is point (x, y) on hull)
 
         ## diagonal curve
         self.diagonalCKey = self.insertCurve('')
@@ -199,11 +201,11 @@ class singleClassROCgraph(OWGraph):
         iteration = 0
         for isplit in splitByIterations:
             # unmodified ROC curve
-            curves = orngEval.TCcomputeROC(isplit, self.targetClass, 1)
+            curves = self.computeCurve(isplit, self.targetClass, 1)
             self.setIterationCurves(iteration, curves)
 
             # convex ROC curve
-            curves = orngEval.TCcomputeROC(isplit, self.targetClass, 0)
+            curves = self.computeCurve(isplit, self.targetClass, 0)
             self.setIterationConvexCurves(iteration, curves)
             iteration += 1
 
@@ -244,19 +246,19 @@ class singleClassROCgraph(OWGraph):
                 b = b and self.showConvexCurves
                 self.curve(self.classifierIterationConvexCKeys[cNum][iNum]).setEnabled(b)
 
-        chb = (showSomething) and (self.averagingMethod == None) and self.showROCconvexHull
+        chb = (showSomething) and (self.averagingMethod == None) and self.showConvexHull
         curve =  self.curve(self.classifierConvexHullCKey)
         if curve <> None: curve.setEnabled(chb)
 
-        chb = (showSomething) and (self.averagingMethod == 'merge') and self.showROCconvexHull
+        chb = (showSomething) and (self.averagingMethod == 'merge') and self.showConvexHull
         curve =  self.curve(self.mergedConvexHullCKey)
         if curve <> None: curve.setEnabled(chb)
 
-        chb = (showSomething) and (self.averagingMethod == 'vertical') and self.showROCconvexHull
+        chb = (showSomething) and (self.averagingMethod == 'vertical') and self.showConvexHull
         curve =  self.curve(self.verticalConvexHullCKey)
         if curve <> None: curve.setEnabled(chb)
 
-        chb = (showSomething) and (self.averagingMethod == 'threshold') and self.showROCconvexHull
+        chb = (showSomething) and (self.averagingMethod == 'threshold') and self.showConvexHull
         curve =  self.curve(self.thresholdConvexHullCKey)
         if curve <> None: curve.setEnabled(chb)
 
@@ -270,12 +272,12 @@ class singleClassROCgraph(OWGraph):
         self.updateLayout()
         self.update()
 
-    def setShowConvexROCcurves(self, b):
+    def setShowConvexCurves(self, b):
         self.showConvexCurves = b
         self.updateCurveDisplay()
 
-    def setShowROCconvexHull(self, b):
-        self.showROCconvexHull = b
+    def setShowConvexHull(self, b):
+        self.showConvexHull = b
         self.updateCurveDisplay()
 
     def setShowPerformanceLine(self, b):
@@ -308,8 +310,8 @@ class singleClassROCgraph(OWGraph):
             i += 1
         self.mergedConvexHullData = []
         if len(mergedIterations.results) > 0:
-            curves = orngEval.TCcomputeROC(mergedIterations, self.targetClass, 1)
-            convexCurves = orngEval.TCcomputeROC(mergedIterations, self.targetClass, 0)
+            curves = self.computeCurve(mergedIterations, self.targetClass, 1)
+            convexCurves = self.computeCurve(mergedIterations, self.targetClass, 0)
             classifier = 0
             for c in curves:
                 x = [px for (px, py, pf) in c]
@@ -430,14 +432,8 @@ class singleClassROCgraph(OWGraph):
                 hullData.append(ncurve)
 
         self.hullCurveDataForPerfLine = TCconvexHull(hullData) # keep data about curve for performance line drawing
-        self.performanceXYpointText = {} ## best classifiers and their cut-off points for each point on convex hull (key is point (x, y) on hull)
-        x = []
-        y = []
-        for (px, py, pf) in self.hullCurveDataForPerfLine:
-            x.append(px)
-            y.append(py)
-            s = ["%1.3f %s" % (pfscore, self.classifierNames[cNum]) for (cNum, pfscore) in pf]
-            self.performanceXYpointText[ str((px, py)) ] = s
+        x = [px for (px, py, pf) in self.hullCurveDataForPerfLine]
+        y = [py for (px, py, pf) in self.hullCurveDataForPerfLine]
         self.setCurveData(self.mergedConvexHullCKey, x, y)
 
         ## self.verticalConvexHullCKey = -1
@@ -468,7 +464,7 @@ class singleClassROCgraph(OWGraph):
 
     ## performance line
     def calcUpdatePerformanceLine(self):
-        m = (float(self.FPcost) * float(1.0 - self.pvalue)) / (float(self.FNcost) * float(self.pvalue))
+        m = (self.FPcost*(1.0 - self.pvalue)) / (self.FNcost*self.pvalue)
 
         ## put the iso-performance line in point (0.0, 1.0)
         x0, y0 = (0.0, 1.0)
@@ -478,18 +474,17 @@ class singleClassROCgraph(OWGraph):
         ## calculate and find the closest point to the line
         firstp = 1
         mind = 0.0
-        bestfscore = 'n/a'
         a = (x0*y1 - x1*y0)
         closestpoints = []
-        for (x, y, fscore) in self.hullCurveDataForPerfLine:
+        for (x, y, fscorelist) in self.hullCurveDataForPerfLine:
             d = ((y0 - y1)*x + (x1 - x0)*y + a) / d01
             d = abs(d)
             if firstp or d < mind:
-                mind, bestfscore, firstp = d, fscore, 0
-                closestpoints = [(x, y)]
+                mind, firstp = d, 0
+                closestpoints = [(x, y, fscorelist)]
             else:
                 if abs(d - mind) <= 0.0001: ## close enough
-                    closestpoints.append( (x, y) )
+                    closestpoints.append( (x, y, fscorelist) )
 
         ## now draw the closest line to the curve
         b = (self.averagingMethod == 'merge') and self.showPerformanceLine
@@ -497,7 +492,7 @@ class singleClassROCgraph(OWGraph):
         lpx = []
         lpy = []
         first = 1
-        for (x, y) in closestpoints:
+        for (x, y, fscorelist) in closestpoints:
             if first:
                 first = 0
                 lpx.append(x - 2.0)
@@ -506,7 +501,8 @@ class singleClassROCgraph(OWGraph):
             lpy.append(y)
             px = x
             py = y
-            for s in self.performanceXYpointText.get(str((x, y)), []):
+            for (cNum, threshold) in fscorelist:
+                s = "%1.3f %s" % (threshold, self.classifierNames[cNum])
                 py = py - 0.05
                 mkey = self.insertMarker(s)
                 self.marker(mkey).setXValue(px)
@@ -522,12 +518,12 @@ class singleClassROCgraph(OWGraph):
         self.update()
 
     def costChanged(self, FPcost, FNcost):
-        self.FPcost = FPcost
-        self.FNcost = FNcost
+        self.FPcost = float(FPcost)
+        self.FNcost = float(FNcost)
         self.calcUpdatePerformanceLine()
 
     def pChanged(self, pvalue):
-        self.pvalue = pvalue
+        self.pvalue = float(pvalue)
         self.calcUpdatePerformanceLine()
 
     def setPointWidth(self, v):
@@ -535,7 +531,7 @@ class singleClassROCgraph(OWGraph):
         self.setCurveSymbol(self.performanceLineCKey, self.performanceLineSymbol)
         self.update()
 
-    def setROCcurveWidth(self, v):
+    def setCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
             self.setCurvePen(self.mergedCKeys[cNum], QPen(self.classifierColor[cNum], v))
             self.setCurvePen(self.verticalCKeys[cNum], QPen(self.classifierColor[cNum], v))
@@ -544,7 +540,7 @@ class singleClassROCgraph(OWGraph):
                 self.setCurvePen(self.classifierIterationCKeys[cNum][iNum], QPen(self.classifierColor[cNum], v))
         self.update()
 
-    def setROCconvexCurveWidth(self, v):
+    def setConvexCurveWidth(self, v):
         for cNum in range(len(self.showClassifiers)):
             self.setCurvePen(self.mergedConvexCKeys[cNum], QPen(self.classifierColor[cNum], v))
             for iNum in range(len(self.showIterations)):
@@ -555,7 +551,7 @@ class singleClassROCgraph(OWGraph):
         self.showDiagonal = v
         self.updateCurveDisplay()
 
-    def setROCconvexHullCurveWidth(self, v):
+    def setConvexHullCurveWidth(self, v):
         self.convexHullPen.setWidth(v)
         self.setCurvePen(self.mergedConvexHullCKey, self.convexHullPen)
         self.setCurvePen(self.verticalConvexHullCKey, self.convexHullPen)
@@ -636,8 +632,8 @@ class CostChange:
         self.parentwidget.costsChanged(self.index)
 
 class OWROC(OWWidget):
-    settingsList = ["PointWidth", "ROCcurveWidth", "ROCconvexCurveWidth", "ShowDiagonal",
-                    "ROCconvexHullCurveWidth", "HullColor"]
+    settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
+                    "ConvexHullCurveWidth", "HullColor"]
     def __init__(self,parent=None):
         "Constructor"
         OWWidget.__init__(self,
@@ -650,10 +646,10 @@ class OWROC(OWWidget):
 
         #set default settings
         self.PointWidth = 7
-        self.ROCcurveWidth = 3
-        self.ROCconvexCurveWidth = 1
+        self.CurveWidth = 3
+        self.ConvexCurveWidth = 1
         self.ShowDiagonal = TRUE
-        self.ROCconvexHullCurveWidth = 3
+        self.ConvexHullCurveWidth = 3
         self.HullColor = str(Qt.yellow.name())
 
         #load settings
@@ -694,10 +690,10 @@ class OWROC(OWWidget):
 
         #connect GUI controls of options in options dialog to settings
         self.connect(self.options.pointWidthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
-        self.connect(self.options.lineWidthSlider, SIGNAL("valueChanged(int)"), self.setROCcurveWidth)
-        self.connect(self.options.convexWidthSlider, SIGNAL("valueChanged(int)"), self.setROCconvexCurveWidth)
+        self.connect(self.options.lineWidthSlider, SIGNAL("valueChanged(int)"), self.setCurveWidth)
+        self.connect(self.options.convexWidthSlider, SIGNAL("valueChanged(int)"), self.setConvexCurveWidth)
         self.connect(self.options.showDiagonalQCB, SIGNAL("toggled(bool)"), self.setShowDiagonal)
-        self.connect(self.options.hullWidthSlider, SIGNAL("valueChanged(int)"), self.setROCconvexHullCurveWidth)
+        self.connect(self.options.hullWidthSlider, SIGNAL("valueChanged(int)"), self.setConvexHullCurveWidth)
         self.connect(self.options, PYSIGNAL("hullColorChange(QColor &)"), self.setHullColor)
 
         # GUI connections
@@ -723,12 +719,12 @@ class OWROC(OWWidget):
         self.connect(self.unselectAllClassifiersQLB, SIGNAL("clicked()"), self.SUAclassifiersQLB)
 
         # show convex ROC curves
-        self.convexROCcurvesQCB = QCheckBox("convex ROC curves", self.classifiersQVGB) ## !!! only in None and Merge average mode
-        self.connect(self.convexROCcurvesQCB, SIGNAL("stateChanged(int)"), self.setShowConvexROCcurves)
+        self.convexCurvesQCB = QCheckBox("convex ROC curves", self.classifiersQVGB) ## !!! only in None and Merge average mode
+        self.connect(self.convexCurvesQCB, SIGNAL("stateChanged(int)"), self.setShowConvexCurves)
 
         # show ROC convex hull
-        self.ROCconvexhullQCB = QCheckBox("ROC convex hull", self.classifiersQVGB)
-        self.connect(self.ROCconvexhullQCB, SIGNAL("stateChanged(int)"), self.setShowROCconvexHull)
+        self.convexhullQCB = QCheckBox("ROC convex hull", self.classifiersQVGB)
+        self.connect(self.convexhullQCB, SIGNAL("stateChanged(int)"), self.setShowConvexHull)
 
         ## test set selection (testSetsQLB)
         self.testSetsQVGB = QVGroupBox(self.splitQS)
@@ -782,25 +778,25 @@ class OWROC(OWWidget):
         for g in self.graphs:
             g.setPointWidth(v)
 
-    def setROCcurveWidth(self, v):
-        self.ROCcurveWidth = v
+    def setCurveWidth(self, v):
+        self.CurveWidth = v
         for g in self.graphs:
-            g.setROCcurveWidth(v)
+            g.setCurveWidth(v)
 
-    def setROCconvexCurveWidth(self, v):
-        self.ROCconvexCurveWidth = v
+    def setConvexCurveWidth(self, v):
+        self.ConvexCurveWidth = v
         for g in self.graphs:
-            g.setROCconvexCurveWidth(v)
+            g.setConvexCurveWidth(v)
 
     def setShowDiagonal(self, v):
         self.ShowDiagonal = v
         for g in self.graphs:
             g.setShowDiagonal(v)
 
-    def setROCconvexHullCurveWidth(self, v):
-        self.ROCconvexHullCurveWidth = v
+    def setConvexHullCurveWidth(self, v):
+        self.ConvexHullCurveWidth = v
         for g in self.graphs:
-            g.setROCconvexHullCurveWidth(v)
+            g.setConvexHullCurveWidth(v)
 
     def setHullColor(self, c):
         self.HullColor = str(c.name())
@@ -812,20 +808,20 @@ class OWROC(OWWidget):
         self.options.pointWidthLCD.display(self.PointWidth)
         self.setPointWidth(self.PointWidth)
         #
-        self.options.lineWidthSlider.setValue(self.ROCcurveWidth)
-        self.options.lineWidthLCD.display(self.ROCcurveWidth)
-        self.setROCcurveWidth(self.ROCcurveWidth)
+        self.options.lineWidthSlider.setValue(self.CurveWidth)
+        self.options.lineWidthLCD.display(self.CurveWidth)
+        self.setCurveWidth(self.CurveWidth)
         #
-        self.options.convexWidthSlider.setValue(self.ROCconvexCurveWidth)
-        self.options.convexWidthLCD.display(self.ROCconvexCurveWidth)
-        self.setROCconvexCurveWidth(self.ROCconvexCurveWidth)
+        self.options.convexWidthSlider.setValue(self.ConvexCurveWidth)
+        self.options.convexWidthLCD.display(self.ConvexCurveWidth)
+        self.setConvexCurveWidth(self.ConvexCurveWidth)
         #
         self.options.showDiagonalQCB.setChecked(self.ShowDiagonal)
         self.setShowDiagonal(self.ShowDiagonal)
         #
-        self.options.hullWidthSlider.setValue(self.ROCconvexHullCurveWidth)
-        self.options.hullWidthLCD.display(self.ROCconvexHullCurveWidth)
-        self.setROCconvexHullCurveWidth(self.ROCconvexHullCurveWidth)
+        self.options.hullWidthSlider.setValue(self.ConvexHullCurveWidth)
+        self.options.hullWidthLCD.display(self.ConvexHullCurveWidth)
+        self.setConvexHullCurveWidth(self.ConvexHullCurveWidth)
         #
         self.options.hullColor.setNamedColor(QString(self.HullColor))
         self.setHullColor(self.options.hullColor)
@@ -863,7 +859,7 @@ class OWROC(OWWidget):
             self.averagingMethod = None
             self.missClassificationCostQVB.hide()
 
-        self.convexROCcurvesQCB.setEnabled(self.averagingMethod == 'merge' or self.averagingMethod == None)
+        self.convexCurvesQCB.setEnabled(self.averagingMethod == 'merge' or self.averagingMethod == None)
         self.missClassificationCostQVB.setEnabled(self.averagingMethod == 'merge')
         self.showPerformanceAnalysisQCB.setEnabled(self.averagingMethod == 'merge')
 
@@ -906,13 +902,13 @@ class OWROC(OWWidget):
         for g in self.graphs:
             g.setShowClassifiers(list)
 
-    def setShowConvexROCcurves(self, v):
+    def setShowConvexCurves(self, v):
         for g in self.graphs:
-            g.setShowConvexROCcurves(v)
+            g.setShowConvexCurves(v)
 
-    def setShowROCconvexHull(self, v):
+    def setShowConvexHull(self, v):
         for g in self.graphs:
-            g.setShowROCconvexHull(v)
+            g.setShowConvexHull(v)
     ##
 
     def setShowPerformanceAnalysis(self, b):
@@ -940,17 +936,17 @@ class OWROC(OWWidget):
         for g in self.graphs:
             g.setNumberOfClassifiersIterationsAndClassifierColors(self.dres.classifierNames, self.numberOfIterations, self.classifierColor)
             g.setTestSetData(self.dresSplitByIterations, cl)
-            g.setShowConvexROCcurves(self.convexROCcurvesQCB.isChecked())
-            g.setShowROCconvexHull(self.ROCconvexhullQCB.isChecked())
+            g.setShowConvexCurves(self.convexCurvesQCB.isChecked())
+            g.setShowConvexHull(self.convexhullQCB.isChecked())
             g.setAveragingMethod(self.averagingMethod)
             g.setShowPerformanceLine(self.showPerformanceAnalysisQCB.isChecked())
 
             ## user settings
             g.setPointWidth(self.PointWidth)
-            g.setROCcurveWidth(self.ROCcurveWidth)
-            g.setROCconvexCurveWidth(self.ROCconvexCurveWidth)
+            g.setCurveWidth(self.CurveWidth)
+            g.setConvexCurveWidth(self.ConvexCurveWidth)
             g.setShowDiagonal(self.ShowDiagonal)
-            g.setROCconvexHullCurveWidth(self.ROCconvexHullCurveWidth)
+            g.setConvexHullCurveWidth(self.ConvexHullCurveWidth)
             g.setHullColor(self.options.hullColor)
 
 ##          g.replot()
