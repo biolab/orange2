@@ -39,8 +39,15 @@ def getFunctionalList(data):
     testAttrs = []
     outList = []
 
+    # remove continuous attributes from data
+    disc = []
+    for i in range(len(data.domain.attributes)):
+        if data.domain.attributes[i].varType == orange.VarTypes.Discrete: disc.append(data.domain.attributes[i])
+    if disc == []: return []
+    discData = data.select(disc + [data.domain.classVar])
+
     remover = orngCI.AttributeRedundanciesRemover(noMinimization = 1)
-    newData = remover(data)
+    newData = remover(discData)
 
     # ####
     # compute the best attribute combination
@@ -49,8 +56,8 @@ def getFunctionalList(data):
         if newData.domain.attributes[i].varType != orange.VarTypes.Discrete: continue
         testAttrs.append(newData.domain.attributes[i].name)
         for j in range(i+1, len(newData.domain.attributes)):
-            if data.domain.attributes[j].varType != orange.VarTypes.Discrete: continue
-            vals, qual = orngCI.FeatureByMinComplexity(data, [newData.domain.attributes[i], newData.domain.attributes[j]])
+            if newData.domain.attributes[j].varType != orange.VarTypes.Discrete: continue
+            vals, qual = orngCI.FeatureByMinComplexity(newData, [newData.domain.attributes[i], newData.domain.attributes[j]])
             if qual > bestQual:
                 bestQual = qual
                 bestAttrs = [newData.domain.attributes[i].name, newData.domain.attributes[j].name, vals]
@@ -72,7 +79,8 @@ def getFunctionalList(data):
         newData = replaceAttributes(0, bestAttrs[1], bestAttrs[2], newData)
         outList.append(bestAttrs[1])
         testAttrs.remove(bestAttrs[1])
-        
+
+    outList.reverse()           
     return outList
 
 

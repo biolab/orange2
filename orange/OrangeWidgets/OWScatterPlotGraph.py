@@ -40,9 +40,7 @@ class OWScatterPlotGraph(OWVisGraph):
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
-            variableValueIndices = {}
-            for i in range(len(attr.values)):
-                variableValueIndices[attr.values[i]] = i
+            variableValueIndices = self.getVariableValueIndices(data, index)
 
             count = float(len(attr.values))
             for i in range(len(data)):
@@ -112,12 +110,12 @@ class OWScatterPlotGraph(OWVisGraph):
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
             self.setXlabels(None)
         else:
-            self.setXlabels(self.rawdata.domain[xAttr].values)
+            self.setXlabels(self.getVariableValuesSorted(self.rawdata, xAttr))
             self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
 
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous: self.setYLlabels(None)
         else:
-            self.setYLlabels(self.rawdata.domain[yAttr].values)
+            self.setYLlabels(self.getVariableValuesSorted(self.rawdata, yAttr))
             self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
@@ -131,10 +129,7 @@ class OWScatterPlotGraph(OWVisGraph):
         shapeIndices = {}
         if shapeAttr != "" and shapeAttr != "(One shape)" and len(self.rawdata.domain[shapeAttr].values) < 11:
             shapeIndex = self.scaledDataAttributes.index(shapeAttr)
-            attr = self.rawdata.domain[shapeAttr]
-            for i in range(len(attr.values)):
-                shapeIndices[attr.values[i]] = i
-
+            shapeIndices = self.getVariableValueIndices(self.rawdata, shapeAttr)
 
         sizeShapeIndex = -1
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
@@ -147,18 +142,14 @@ class OWScatterPlotGraph(OWVisGraph):
         discreteX = 0
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete:
             discreteX = 1
-            attr = self.rawdata.domain[xAttr]
-            for i in range(len(attr.values)):
-                attrXIndices[attr.values[i]] = i
+            attrXIndices = self.getVariableValueIndices(self.rawdata, xAttr)
 
         # create hash tables in case of discrete Y axis attribute
         attrYIndices = {}
         discreteY = 0
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete:
             discreteY = 1
-            attr = self.rawdata.domain[yAttr]
-            for i in range(len(attr.values)):
-                attrYIndices[attr.values[i]] = i
+            attrYIndices = self.getVariableValueIndices(self.rawdata, yAttr)
         
         self.curveKeys = []
         for i in range(len(self.rawdata)):
@@ -201,9 +192,7 @@ class OWScatterPlotGraph(OWVisGraph):
             ##########
             # we add a tooltip for this point
             r = QRectFloat(x-xVar/100.0, y-yVar/100.0, xVar/50.0, yVar/50.0)
-            text= ""
-            for j in range(len(self.rawdata.domain)):
-                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
+            text= self.getExampleText(self.rawdata, self.rawdata[i])
             self.tips.addToolTip(r, text)
             ##########
             
@@ -211,33 +200,25 @@ class OWScatterPlotGraph(OWVisGraph):
         # show legend if necessary
         if self.enabledLegend == 1:
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
-                numColors = len(self.rawdata.domain[colorIndex].values)
                 varName = self.rawdata.domain[colorIndex].name
+                varValues = self.getVariableValuesSorted(self.rawdata, colorIndex)
+                numColors = len(self.rawdata.domain[colorIndex].values)
                 for ind in range(numColors):
-                    newCurveKey = self.insertCurve(varName + "=" + self.rawdata.domain[colorIndex].values[ind])
                     newColor = QColor()
                     newColor.setHsv(float(ind) / float(numColors) * MAX_HUE_VAL, 255, 255)
-                    newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth))
-                    self.setCurveSymbol(newCurveKey, newSymbol)
-                    self.enableLegend(1, newCurveKey)
+                    self.addCurve(varName + "=" + varValues[ind], newColor, newColor, self.pointWidth, enableLegend = 1)
 
             if shapeIndex != -1 and self.rawdata.domain[shapeIndex].varType == orange.VarTypes.Discrete:
-                numShapes = len(self.rawdata.domain[shapeIndex].values)
                 varName = self.rawdata.domain[shapeIndex].name
-                for ind in range(numShapes):
-                    newCurveKey = self.insertCurve(varName + "=" + self.rawdata.domain[shapeIndex].values[ind])
-                    newSymbol = QwtSymbol(shapeList[ind], QBrush(QColor(0,0,0)), QPen(QColor(0,0,0)), QSize(self.pointWidth, self.pointWidth))
-                    self.setCurveSymbol(newCurveKey, newSymbol)
-                    self.enableLegend(1, newCurveKey)
+                varValues = self.getVariableValuesSorted(self.rawdata, shapeIndex)
+                for ind in range(len(self.rawdata.domain[shapeIndex].values)):
+                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), self.pointWidth, shapeList[ind], enableLegend = 1)
+
             if sizeShapeIndex != -1 and self.rawdata.domain[sizeShapeIndex].varType == orange.VarTypes.Discrete:
-                sizeShapes = len(self.rawdata.domain[sizeShapeIndex].values)
                 varName = self.rawdata.domain[sizeShapeIndex].name
-                for ind in range(sizeShapes):
-                    newCurveKey = self.insertCurve(varName + "=" + self.rawdata.domain[sizeShapeIndex].values[ind])
-                    size = 4 + round(float(ind)/float(sizeShapes) * 20)
-                    newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(QColor(0,0,0)), QPen(QColor(0,0,0)), QSize(size, size))
-                    self.setCurveSymbol(newCurveKey, newSymbol)
-                    self.enableLegend(1, newCurveKey)
+                varValues = self.getVariableValuesSorted(self.rawdata, sizeShapeIndex)
+                for ind in range(len(self.rawdata.domain[sizeShapeIndex].values)):
+                    self.addCurve(varName + "=" + varValues[ind], QColor(0,0,0), QColor(0,0,0), size, enableLegend = 1)
 
 
         if colorAttr != "" and showColorLegend == 1:

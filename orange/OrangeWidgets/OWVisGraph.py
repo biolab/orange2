@@ -57,6 +57,65 @@ class OWVisGraph(OWGraph):
             b = (1 - betavariate(1,2)) ; return choice((-b,b))*max
                      
 
+    def addCurve(self, name, brushColor, penColor, size, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, enableLegend = 0):
+        newCurveKey = self.insertCurve(name)
+        newSymbol = QwtSymbol(symbol, QBrush(brushColor), QPen(penColor), QSize(size, size))
+        self.setCurveSymbol(newCurveKey, newSymbol)
+        self.setCurveStyle(newCurveKey, style)
+        self.enableLegend(enableLegend, newCurveKey)
+        return newCurveKey
+
+    # return string with attribute names and their values for example example
+    def getExampleText(self, data, example):
+        text = ""
+        for i in range(len(data.domain)):
+            if data.domain[i].varType == orange.VarTypes.Discrete:
+                text = "%s%s = %s ; " % (text, data.domain[i].name, str(example[i].value))
+            else:
+                text = "%s%s = %.3f ; " % (text, data.domain[i].name, example[i].value)
+        return text
+    
+    # return a list of sorted values for attribute at index index
+    def getVariableValuesSorted(self, data, index):
+        if data.domain[index].varType == orange.VarTypes.Continuous:
+            print "Invalid index for getVariableValuesSorted"
+            return []
+        
+        values = list(data.domain[index].values)
+        intValues = []
+        i = 0
+        # do all attribute values containt integers?
+        try:
+            while i < len(values):
+                temp = int(values[i])
+                intValues.append(temp)
+                i += 1
+        except: pass
+
+        # if all values were intergers, we first sort them ascendently
+        if i == len(values):
+            intValues.sort()
+            values = intValues
+        out = []
+        for i in range(len(values)):
+            out.append(str(values[i]))
+
+        return out
+
+    # create a dictionary with variable at index index. Keys are variable values, key values are indices (transform from string to int)
+    # in case all values are integers, we also sort them
+    def getVariableValueIndices(self, data, index):
+        if data.domain[index].varType == orange.VarTypes.Continuous:
+            print "Invalid index for getVariableValueIndices"
+            return {}
+
+        values = self.getVariableValuesSorted(data, index)
+
+        dict = {}
+        for i in range(len(values)):
+            dict[values[i]] = i
+        return dict
+
     #
     # get min and max value of data attribute at index index
     #
@@ -95,10 +154,7 @@ class OWVisGraph(OWGraph):
         # is the attribute discrete
         if attr.varType == orange.VarTypes.Discrete:
             # we create a hash table of variable values and their indices
-            variableValueIndices = {}
-            for i in range(len(attr.values)):
-                variableValueIndices[attr.values[i]] = i
-                values.append(attr.values[i])
+            variableValueIndices = self.getVariableValueIndices(data, index)
 
             count = float(len(attr.values))
             if len(attr.values) > 1: num = float(len(attr.values)-1)

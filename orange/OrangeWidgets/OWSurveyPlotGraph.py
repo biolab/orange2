@@ -43,8 +43,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             scaledClassData = self.scaleData(self.rawdata, className)
         else:
             classValueCount = len(self.rawdata.domain[className].values)
-            for i in range(classValueCount):
-                classValueIndices[self.rawdata.domain[className].values[i]] = i
+            classValueIndices = self.getVariableValueIndices(self.rawdata, className)
 
         # draw vertical lines that represent attributes
         for i in range(len(labels)):
@@ -78,9 +77,7 @@ class OWSurveyPlotGraph(OWVisGraph):
             ##########
             # we add a tooltip for this point
             r = QRectFloat(-0.5, i, length, 1)
-            text= ""
-            for j in range(len(self.rawdata.domain)):
-                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
+            text = self.getExampleText(self.rawdata, self.rawdata[i])
             self.tips.addToolTip(r, text)
             ##########
 

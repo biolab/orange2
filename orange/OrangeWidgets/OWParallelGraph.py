@@ -28,6 +28,10 @@ class OWParallelGraph(OWVisGraph):
 
     def setHidePureExamples(self, hide):
         self.hidePureExamples = hide
+
+    def setData(self, data):
+        OWVisGraph.setData(self, data)
+        self.metaid = -1
         
     #
     # update shown data. Set labels, coloring by className ....
@@ -70,16 +74,14 @@ class OWParallelGraph(OWVisGraph):
         scaledClassData = []
         classValues = []
         if className != "(One color)" and className != '':
-            ex_jitter = self.jitteringType
-            self.setJitteringOption('none')
             scaledClassData, classValues = self.scaleData(self.rawdata, className, -1,-1, 1)
-            self.setJitteringOption(ex_jitter)
 
         xs = range(length)
         dataSize = len(self.scaledData[0])        
 
         #############################################
         # if self.hidePureExamples == 1 we have to calculate where to stop drawing lines
+        # we do this by adding a integer meta attribute, that for each example stores attribute index, where we stop drawing lines
         dataStop = []
         lastIndex = indices[length-1]
         for i in range(dataSize): dataStop.append(lastIndex)
@@ -169,7 +171,7 @@ class OWParallelGraph(OWVisGraph):
                         self.marker(mkey1).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
                         self.marker(mkey2).setLabelAlignment(Qt.AlignCenter + Qt.AlignTop)
                 elif attr.varType == orange.VarTypes.Discrete:
-                    attrVals = self.attrValues[attr.name]
+                    attrVals = self.getVariableValuesSorted(self.rawdata, labels[i])
                     valsLen = len(attrVals)
                     for pos in range(len(attrVals)):
                         mkey = self.insertMarker(attrVals[pos])
@@ -194,11 +196,9 @@ class OWParallelGraph(OWVisGraph):
         #for i in range(count): colors.append(float(1+2*i)/float(2*count))
         for i in range(count): colors.append(float(i)/float(count))
 
-        classValueIndices = {}
-        # we create a hash table of possible class values (IF we have a discrete class)
-        for i in range(count):
-            classValueIndices[list(data.domain[className].values)[i]] = i
-
+        # we create a hash table of possible class values (happens only if we have a discrete class)
+        classValueIndices = self.getVariableValueIndices(data, className)
+        
         for graphAttrIndex in range(len(indices)):
             index = indices[graphAttrIndex]
             if data.domain[index].varType == orange.VarTypes.Discrete:
@@ -209,9 +209,7 @@ class OWParallelGraph(OWVisGraph):
                 totals = [0] * attrLen
 
                 # we create a hash table of variable values and their indices
-                variableValueIndices = {}
-                for i in range(attrLen):
-                    variableValueIndices[attr.values[i]] = i
+                variableValueIndices = self.getVariableValueIndices(data, index)
                 
                 for i in range(count):
                     values.append([0] * attrLen)
@@ -238,7 +236,6 @@ class OWParallelGraph(OWVisGraph):
                     xData = []
                     yData = []
                     for j in range(attrLen):
-                        #width = float(values[i][j]*0.5) / float(totals[j])
                         width = float(values[i][j]*0.5) / float(maximum)
                         interval = 1.0/float(2*attrLen)
                         yOff = float(1.0 + 2.0*j)/float(2*attrLen)
@@ -253,7 +250,6 @@ class OWParallelGraph(OWVisGraph):
                     ckey = self.insertCurve(curve)
                     self.setCurveStyle(ckey, QwtCurve.UserCurve)
                     self.setCurveData(ckey, xData, yData)
-
 
     
     

@@ -99,11 +99,13 @@ class OWRadvizGraph(OWVisGraph):
         indices = []
         xs = []
 
+        ###########
         # create a table of indices that stores the sequence of variable indices
         for label in labels:
             index = self.scaledDataAttributes.index(label)
             indices.append(index)
 
+        ###########
         # create anchor for every attribute
         anchors = [[],[]]
         for i in range(length):
@@ -112,6 +114,7 @@ class OWRadvizGraph(OWVisGraph):
             anchors[0].append(float(strX))  # this might look stupid, but this way we get rid of rounding errors
             anchors[1].append(float(strY))
 
+        ###########
         # draw "circle"
         xData = []; yData = []
         circResol = 100
@@ -126,6 +129,7 @@ class OWRadvizGraph(OWVisGraph):
         self.setCurveStyle(newCurveKey, QwtCurve.Lines)
         self.setCurveData(newCurveKey, xData, yData) 
 
+        ###########
         # draw dots at anchors
         newCurveKey = self.insertCurve("dots")
         newColor = QColor()
@@ -134,6 +138,7 @@ class OWRadvizGraph(OWVisGraph):
         self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(10, 10)))
         self.setCurveData(newCurveKey, anchors[0]+[anchors[0][0]], anchors[1]+[anchors[1][0]]) 
 
+        ###########
         # draw text at anchors
         for i in range(length):
             mkey = self.insertMarker(labels[i])
@@ -152,24 +157,20 @@ class OWRadvizGraph(OWVisGraph):
         MAX_HUE_COLOR = 360
         if className == "(One color)":      
             valLen = 1
+
         # if we have a discrete class
         elif self.rawdata.domain[className].varType == orange.VarTypes.Discrete:    
             valLen = len(self.rawdata.domain[className].values)
             # we create a hash table of variable values and their indices
-            variableValueIndices = {}
-            attr = self.rawdata.domain[className]
-            for i in range(len(attr.values)):
-                variableValueIndices[attr.values[i]] = i
+            classValueIndices = self.getVariableValueIndices(self.rawdata, className)
+
         # if we have a continuous class
         else:
             valLen = 0
             MAX_HUE_COLOR = 300
             scaledClassData = []
             if className != "(One color)" and className != '':
-                ex_jitter = self.jitteringType
-                self.setJitteringOption('none')
-                scaledClassData = self.scaleData(self.rawdata, className)
-                self.setJitteringOption(ex_jitter)
+                scaledClassData, vals = self.scaleData(self.rawdata, className, -1, -1, 1)
 
         dataSize = len(self.scaledData[0])
         curveData = []
@@ -183,6 +184,8 @@ class OWRadvizGraph(OWVisGraph):
 
             if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
 
+            ##########
+            # calculate the position of the data point
             x_i = 0.0; y_i = 0.0
             for j in range(length):
                 index = indices[j]
@@ -191,50 +194,41 @@ class OWRadvizGraph(OWVisGraph):
 
             ##########
             # we add a tooltip for this point
-            text= ""
-            for j in range(len(self.rawdata.domain)):
-                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + ' ; '
-                #text += self.rawdata.domain[j].name + ' = ' + str(self.scaledData[j][i]) + ' ; '
-            r = QRectFloat(x_i, y_i, RECT_SIZE, RECT_SIZE)
+            text= self.getExampleText(self.rawdata, self.rawdata[i])
+            r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
             self.tips.addToolTip(r, text)
-            ##########
+
 
             if valLen == 1:
                 curveData[0][0].append(x_i)
                 curveData[0][1].append(y_i)
             elif self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-                curveData[variableValueIndices[self.rawdata[i][className].value]][0].append(x_i)
-                curveData[variableValueIndices[self.rawdata[i][className].value]][1].append(y_i)
+                curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
+                curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
             else:
-                newCurveKey = self.insertCurve(str(i))
                 newColor = QColor()
                 newColor.setHsv(scaledClassData[i] * MAX_HUE_COLOR, 255, 255)
-                self.setCurveStyle(newCurveKey, QwtCurve.Dots)
-                self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
-                self.setCurveData(newCurveKey, [x_i], [y_i])
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
+                self.setCurveData(key, [x_i], [y_i])
 
-        self.curveColors = []
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
             for i in range(valLen):
-                newCurveKey = self.insertCurve(str(i))
                 newColor = QColor()
                 newColor.setHsv(i*360/(valLen), 255, 255)
-                self.curveColors.append(newColor)
-                self.setCurveStyle(newCurveKey, QwtCurve.Dots)
-                self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
-                self.setCurveData(newCurveKey, curveData[i][0], curveData[i][1])
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
+                self.setCurveData(key, curveData[i][0], curveData[i][1])
 
+        #################
         # draw the legend
         if className != "(One color)" and self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
-            for index in range(valLen):
-                newCurveKey = self.insertCurve(str(index))
+            classVariableValues = self.getVariableValuesSorted(self.rawdata, className)
+            for index in range(len(classVariableValues)):
                 newColor = QColor()
                 newColor.setHsv(index*360/(valLen), 255, 255)
-                self.setCurveStyle(newCurveKey, QwtCurve.Dots)
-                self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth)
                 y = 1.08 - index * 0.05
-                self.setCurveData(newCurveKey, [0.95, 0.95], [y, y])
-                mkey = self.insertMarker(self.rawdata.domain[className].values[index])
+                self.setCurveData(key, [0.95, 0.95], [y, y])
+                mkey = self.insertMarker(classVariableValues[index])
                 self.marker(mkey).setXValue(0.90)
                 self.marker(mkey).setYValue(y)
                 self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
@@ -245,7 +239,8 @@ class OWRadvizGraph(OWVisGraph):
         
 
     # #######################################
-    # try to find the optimal attribute order
+    # try to find the optimal attribute order by trying all diferent circular permutations
+    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getOptimalAttrOrder(self, attrList, className):
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Continuous:
             print "incorrect class name for computing optimal ordering"
@@ -259,7 +254,6 @@ class OWRadvizGraph(OWVisGraph):
         attrListLength = len(attrList)
         dataSize = len(self.rawdata)
         classValsCount = len(self.rawdata.domain[className].values)
-        variableValueIndices = {}
         attr = self.rawdata.domain[className]
 
         # create a table of indices that stores the sequence of variable indices        
@@ -267,7 +261,7 @@ class OWRadvizGraph(OWVisGraph):
         for label in attrList:
             index = self.scaledDataAttributes.index(label)
             indices.append(index)
-            scaled = self.scaleData(self.rawdata, index)
+            scaled, vals = self.scaleData(self.rawdata, index)
             selectedScaledData[index] = scaled
 
         # create anchor for every attribute
@@ -279,8 +273,7 @@ class OWRadvizGraph(OWVisGraph):
             anchors[1].append(float(strY))
 
         # we create a hash table of variable values and their indices
-        for i in range(classValsCount):
-            variableValueIndices[attr.values[i]] = i
+        classValueIndices = self.getVariableValueIndices(self.rawdata, className)
 
         # store all sums
         sum_i=[]
@@ -310,8 +303,8 @@ class OWRadvizGraph(OWVisGraph):
                     x_i = x_i + anchors[0][j]*(selectedScaledData[index][i] / sum_i[i])
                     y_i = y_i + anchors[1][j]*(selectedScaledData[index][i] / sum_i[i])
                 
-                curveData[variableValueIndices[self.rawdata[i][className].value]][0].append(x_i)
-                curveData[variableValueIndices[self.rawdata[i][className].value]][1].append(y_i)
+                curveData[classValueIndices[self.rawdata[i][className].value]][0].append(x_i)
+                curveData[classValueIndices[self.rawdata[i][className].value]][1].append(y_i)
             
             sumSameClass = 0.0; sumDiffClass = 0.0
             K_NEIGHB = 5

@@ -378,7 +378,7 @@ class OWSurveyPlot(OWWidget):
     ####### CDATA ################################
     # receive new data and update all fields
     def cdata(self, data):
-        self.data = data.data
+        self.data = orange.Preprocessor_dropMissing(data.data)
         self.setClassCombo()
         self.setSortCombo()
         self.shownAttribsLB.clear()
