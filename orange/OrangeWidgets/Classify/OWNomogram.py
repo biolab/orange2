@@ -83,6 +83,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 
         self.pointsName = ["Points","Log Odds"]
         self.totalPointsName = ["Total Points","Log Odds Sum"]
+        self.bnomogram = None
+
 
         #inputs
         self.inputs=[("Classifier", orange.Classifier, self.classifier, 1), ("Examples", ExampleTable, self.cdata, 1)]
@@ -109,13 +111,17 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.tableCheck = OWGUI.checkBox(GeneralTab, self, 'table','Show table',  tooltip='Show table of selected attribute values?')
         self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
         self.tableCheck.setDisabled(True)
-        
+
+        #I gave up development of sorting because of general tendency towards simplification of widgets
+        #This must be implemented somewhere else
+        #self.sortBox = OWGUI.comboBox(GeneralTab, self, "Criteria: ", box="Sort", items=["Base ordering", "Alphabetical", "Absolute length", "Average CI length"], callback = self.showNomogram)
+    
         self.tabs.insertTab(GeneralTab, "General")
         
         # TREE TAB
         NomogramStyleTab = QVGroupBox(self)
 
-        self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 100, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.')
+        self.verticalSpacingLabel = OWGUI.spin(NomogramStyleTab, self, 'verticalSpacing', 15, 100, box = 'Vertical spacing:',  tooltip='Define space (pixels) between adjacent attributes.', callback = self.showNomogram)
         self.verticalSpacingLabel.setDisabled(True)
         self.fontSizeLabel = OWGUI.spin(NomogramStyleTab, self, 'fontSize', 4, 14, box = 'Font size:', tooltip='Font size of nomogram labels.')
         self.fontSizeLabel.setDisabled(True)
@@ -138,7 +144,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.tabs.insertTab(NomogramStyleTab, "Settings")
         
         #add a graph widget
-        self.bnomogram = None
         self.box=QBoxLayout(self.mainArea, QVBoxLayout.TopToBottom, 0)
         self.graph=OWNomogramGraph(self.bnomogram, self.mainArea)
         self.graph.setMinimumWidth(200)
@@ -400,6 +405,9 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
             self.header.setCanvas(None)
             self.graph.setCanvas(None)
 
+        if self.data and self.cl and self.data.domain!=self.cl.domain:
+            return
+            
         if type(self.cl) == orngSVM.BasicSVMClassifier and self.data:
                 self.svmClassifier(self.cl)
         elif type(self.cl) == orange.BayesClassifier:

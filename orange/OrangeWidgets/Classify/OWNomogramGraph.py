@@ -309,7 +309,7 @@ class AttValue:
                 if obj.z() == z:
                     return True
             return False
-        
+
         if self.attCreation:
             self.setCreation(canvas)
         self.text.setX(self.x)
@@ -323,27 +323,45 @@ class AttValue:
             else:
                 self.text.setY(rect.bottom()+4*canvas.fontSize/3)
                 self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-lineLength)
-            if self.showErr:
-                if self.over:
-                    add = 2
-                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
-                    while errorCollision(self.errorLine):
-                        add +=2
-                        self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
-                else:
-                    add = -2
-                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
-                    while errorCollision(self.errorLine):
-                        add +=2
-                        self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
-                self.errorLine.show()
-            else:
-                self.errorLine.hide()
             self.text.show()
         # if value is disabled, draw just a symbolic line        
         else:
-            self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/6)
+            self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/4)
             self.text.hide()
+
+        # show confidence interval
+        if self.showErr:
+            self.low_errorX = max(self.low_errorX, mapper.left - 20)
+            self.high_errorX = min(self.high_errorX, mapper.right + 20)
+            if self.low_errorX == mapper.left - 20 and self.high_errorX == mapper.right + 20:
+                self.errorLine.setPen(QPen(Qt.blue,1,Qt.DotLine))
+            else:
+                self.errorLine.setPen(QPen(Qt.blue))
+            
+            if self.over:
+                add = 2
+                n=0
+                self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                while errorCollision(self.errorLine):
+                    n=n+1
+                    if add>0:
+                        add = -add
+                    else:
+                        add =  -add + 2
+                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+            else:
+                add = -2
+                self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+                while errorCollision(self.errorLine):
+                    if add<0:
+                        add = -add
+                    else:
+                        add = -add - 2
+                    self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
+            self.errorLine.show()
+        else:
+            self.errorLine.hide()
+
         if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
             self.labelMarker.setPen(QPen(Qt.black, 4))
         else:
@@ -526,20 +544,28 @@ class AttrLine:
             for i in range(len(val)):
                 # check attribute name that will not cover another name
                 val[i].x = atValues_mapped[i]
-                val[i].high_errorX = atErrors_mapped[i][0]
-                val[i].low_errorX = atErrors_mapped[i][1]
-                if canvas.parent.confidence_check:
+                val[i].high_errorX = atErrors_mapped[i][1]
+                val[i].low_errorX = atErrors_mapped[i][0]
+                a = time.time()
+                if canvas.parent.confidence_check and val[i].error>0:
                     val[i].showErr = True
                 else:
                     val[i].showErr = False
-                val[i].paint(canvas, rect, mapper)
                 
+                val[i].paint(canvas, rect, mapper)
+
+                #find suitable value position
                 for j in range(i):
                     #if val[j].over and val[j].enable and abs(atValues_mapped[j]-atValues_mapped[i])<(len(val[j].name)*canvas.fontSize/4+len(val[i].name)*canvas.fontSize/4):
                     if val[j].over and val[j].enable and val[j].text.collidesWith(val[i].text):
                         val[i].over = False
                 if not val[i].over:
                     val[i].paint(canvas, rect, mapper)
+                    for j in range(i):
+                        if not val[j].over and val[j].enable and val[j].text.collidesWith(val[i].text):
+                            val[i].enable = False
+                    if not val[i].enable:
+                        val[i].paint(canvas, rect, mapper)
                     
                 self.selectValues.append([atValues_mapped[i], rect.bottom(), val[i].betaValue])
                 
