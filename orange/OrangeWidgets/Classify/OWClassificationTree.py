@@ -8,7 +8,6 @@ a data set) a classification tree classifier.</description>
 """
 
 from OWWidget import *
-##from orngTreeLearner import TreeLearner
 import orngTree
 import OWGUI
 

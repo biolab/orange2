@@ -176,7 +176,7 @@ class DisplayStatistics (QCanvas):
 			self.mean = dist[ind].average()
 			self.stddev = dist[ind].dev()
 			self.drawCStat()
-		self.resize(self.canvasW, self.canvasH)
+		self.resize(self.canvasW+10, self.canvasH)
 
 	def drawCStat(self):
 		# draw the main rectangle 

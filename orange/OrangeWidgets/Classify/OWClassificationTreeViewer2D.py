@@ -15,11 +15,11 @@
 import copy, time
 import orange, orngTree
 import OWGUI
-#from string import *
 from qt import *
 from qtcanvas import *
 from OWWidget import *
 from qwt import *
+from OWGraph import ColorPaletteHSV
 
 ScreenSize = [640, 480]
 
@@ -500,11 +500,7 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.classes = [x[0] for x in self.root.distribution.items()]
         self.numInstances = self.root.distribution.cases
         
-        self.ClassColors = []
-        for i in range(len(self.classes)):
-            newColor = QColor()
-            newColor.setHsv(i*360/len(self.classes), 255, 255)
-            self.ClassColors.append(newColor)
+        self.ClassColors = ColorPaletteHSV(len(self.classes))
 
         # Annotate Orange tree and show it
         self.buildTree2D()

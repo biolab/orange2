@@ -60,9 +60,9 @@ class singleClassROCgraph(OWGraph):
         self.setAxisScale(QwtPlot.xBottom, -0.0, 1.0, 0)
         self.setAxisScale(QwtPlot.yLeft, -0.0, 1.0, 0)
         self.setShowXaxisTitle(1)
-        self.setXaxisTitle("FP Rate")
+        self.setXaxisTitle("FP Rate (1-Specificity)")
         self.setShowYLaxisTitle(1)
-        self.setYLaxisTitle("TP Rate")
+        self.setYLaxisTitle("TP Rate (Sensitivity)")
         self.setShowMainTitle(1)
         self.setMainTitle(title)
         self.targetClass = 0

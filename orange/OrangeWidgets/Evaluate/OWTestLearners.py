@@ -174,11 +174,11 @@ class OWTestLearners(OWWidget):
         self.send("Evaluation Results", self.results)
         pb.finish()
 
-        print 'XXX RESULTS'
-        for r in self.results.results:
-            for p in r.probabilities:
-                print '%1.2f' % p[0],
-            print
+##        print 'XXX RESULTS'
+##        for r in self.results.results:
+##            for p in r.probabilities:
+##                print '%1.2f' % p[0],
+##            print
 
 #        except Exception, msg:
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
