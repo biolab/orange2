@@ -345,16 +345,16 @@ class AttValue:
                 self.histogram.setPoints(self.x, rect.bottom(), self.x, rect.bottom()-canvasLength)
             if not self.hideAtValue:
                 self.text.show()
-            else:
-                self.text.hide()
+#            else:
+#                self.text.hide()
             if canvas.parent.histogram:
                 self.histogram.show()
-            else:
-                self.histogram.hide()
+#            else:
+#                self.histogram.hide()
         # if value is disabled, draw just a symbolic line        
         else:
             self.labelMarker.setPoints(self.x, rect.bottom(), self.x, rect.bottom()+canvas.fontSize/4)
-            self.text.hide()
+#            self.text.hide()
 
         # show confidence interval
         if self.showErr:
@@ -386,8 +386,8 @@ class AttValue:
                         add = -add - 2
                     self.errorLine.setPoints(self.low_errorX, rect.bottom()+add, self.high_errorX , rect.bottom()+add)
             self.errorLine.show()
-        else:
-            self.errorLine.hide()
+#        else:
+#            self.errorLine.hide()
 
  #       if canvas.parent.histogram and isinstance(canvas, BasicNomogram):
   #          self.labelMarker.setPen(QPen(Qt.black, 4))
@@ -543,6 +543,8 @@ class AttrLine:
         # draw attribute line
         self.line.setPoints(min_mapped, rect.bottom(), max_mapped, rect.bottom())
         zero = 0
+        if len([at.betaValue for at in self.attValues]) == 0:
+            return
         if min([at.betaValue for at in self.attValues])>0:
             zero = min([at.betaValue for at in self.attValues])
         if max([at.betaValue for at in self.attValues])<0:
@@ -554,8 +556,8 @@ class AttrLine:
         # continuous attributes are handled differently
         if self.continuous:
             #disable all enabled values
-            for at in self.attValues:
-                at.hide()
+ #           for at in self.attValues:
+ #               at.hide()
             self.cAtt = self.shrinkSize(canvas, max_mapped - min_mapped)
             atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self.cAtt) # return mapped values, errors, min, max --> mapper(self)
             val = self.cAtt.attValues
@@ -573,10 +575,10 @@ class AttrLine:
             val = self.attValues
 
             # hide old confidence intervals, so they wont interact with new ones
-            if canvas.parent.confidence_check:
-                for v in val:
-                    if not v.attCreation:
-                        v.errorLine.hide()
+  #          if canvas.parent.confidence_check:
+  #              for v in val:
+  #                  if not v.attCreation:
+  #                      v.errorLine.hide()
 
             for i in range(len(val)):
                 # check attribute name that will not cover another name
@@ -629,12 +631,12 @@ class AttrLine:
 
         self.updateValue()
                 
-        self.box.hide()
-        for p in self.contValues:
-            p.hide()
-        for l in self.contLabel:
-            l.hide()
-            l.marker.hide()
+#        self.box.hide()
+#        for p in self.contValues:
+#            p.hide()
+#        for l in self.contLabel:
+#            l.hide()
+#            l.marker.hide()
         self.line.show()
         self.label.show()
 
@@ -715,12 +717,12 @@ class AttrLine:
         self.box.show()
         self.label.show()
 
-        self.line.hide()
-        for val in self.attValues:
-            if not val.attCreation:
-                val.text.hide()
-                val.labelMarker.hide()
-                val.errorLine.hide()
+ #       self.line.hide()
+ #       for val in self.attValues:
+ #           if not val.attCreation:
+ #               val.text.hide()
+ #               val.labelMarker.hide()
+ #               val.errorLine.hide()
 
     # create an AttrLine object from a continuous variable (to many values for a efficient presentation)
     def shrinkSize(self, canvas, width):
@@ -767,8 +769,10 @@ class BasicNomogramHeader(QCanvas):
         self.parent = parent
        
     def paintHeader(self, rect, mapper):
-        if self.headerAttrLine:
-            self.headerAttrLine.destroy()
+        #if self.headerAttrLine:
+        #    self.headerAttrLine.destroy()
+        [item.setCanvas(None) for item in self.allItems()]
+        
         self.headerAttrLine = mapper.getHeaderLine(self, rect)
         self.headerAttrLine.name = self.nomogram.parent.pointsName[self.nomogram.parent.yAxis]
         self.headerAttrLine.paint(self, rect, mapper)
@@ -816,27 +820,35 @@ class BasicNomogramFooter(QCanvas):
         # add constant to betas!
         maxSumBeta += self.nomogram.constant.betaValue
         minSumBeta += self.nomogram.constant.betaValue
-        
+
         # show only reasonable values
         k = (maxSum-minSum)/(maxSumBeta-minSumBeta)
-        if maxSumBeta>3:
-            maxSum = (3 - minSumBeta)*k + minSum
-            maxSumBeta = 3
-        if minSumBeta<-3:
-            minSum = (-3 - minSumBeta)*k + minSum
-            minSumBeta = -3
+        if maxSumBeta>4:
+            maxSum = (4 - minSumBeta)*k + minSum
+            maxSumBeta = 4
+        if minSumBeta>3:
+            minSum = (3 - minSumBeta)*k + minSum
+            minSumBeta = 3
+        if minSumBeta<-4:
+            minSum = (-4 - minSumBeta)*k + minSum
+            minSumBeta = -4
+        if maxSumBeta<-3:
+            maxSum = (-3 - minSumBeta)*k + minSum
+            maxSumBeta = -3
+
         # draw continous line with values from min and max sum (still have values!)
         self.m = Mapper_Linear_Fixed(minSumBeta, maxSumBeta, rect.left(), rect.right(), maxLinearValue = maxSum, minLinearValue = minSum)
         if self.footer:
-            self.footer.destroy()
+            [item.setCanvas(None) for item in self.allItems()]
+            #self.footer.destroy()
         self.footer = self.m.getHeaderLine(self, QRect(rect.left(), rect.top(), rect.width(), height))
         self.footer.name = self.nomogram.parent.totalPointsName[self.nomogram.parent.yAxis]
 
         self.footer.paint(self, QRect(rect.left(), rect.top(), rect.width(), height), self.m)
 
         # continous line convert to percent and draw accordingly (minbeta = minsum)
-        if self.footerPercent:
-            self.footerPercent.destroy()
+        #if self.footerPercent:
+        #    self.footerPercent.destroy()
 
         self.footerPercent = self.footer.convertToPercent(self)
 
@@ -1070,6 +1082,8 @@ class BasicNomogram(QCanvas):
            
     def show(self):
         # set sizes
+        [item.hide() for item in self.allItems()]
+        
         self.setSizes(self.parent)
         self.setBackgroundColor(Qt.white)
         self.resize(self.pright, self.pbottom)

@@ -41,7 +41,7 @@ def getRounding(d):
     
 
 class OWNomogram(OWWidget):
-    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent"]
+    settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
 
     def __init__(self,parent=None):
         OWWidget.__init__(self,
@@ -75,7 +75,8 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.confidence_percent = 95
         self.notTargetClassIndex = 1
         self.TargetClassIndex = 0
-
+        self.sort_type = 0
+        
         self.loadSettings()
 
         self.pointsName = ["Points","Log OR"]
@@ -109,9 +110,7 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.bubbleCheck = OWGUI.checkBox(GeneralTab, self, 'bubble', 'Show details bubble',  tooltip='Show details of selected attribute value in a roll-over blob.')
         self.tableCheck.setDisabled(True)
 
-        #I gave up development of sorting because of general tendency towards simplification of widgets
-        #This must be implemented somewhere else
-        #self.sortBox = OWGUI.comboBox(GeneralTab, self, "Criteria: ", box="Sort", items=["Base ordering", "Alphabetical", "Absolute length", "Average CI length"], callback = self.showNomogram)
+        self.sortBox = OWGUI.comboBox(GeneralTab, self, "sort_type", box="Sorting", label="Criteria: ", items=["No sorting", "Absolute importance", "Positive influence", "Negative influence"], callback = self.sortNomogram)
     
         self.tabs.insertTab(GeneralTab, "General")
         
@@ -260,7 +259,6 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
         self.bnomogram = BasicNomogram(self, AttValue('Constant', mult*cl.beta[0], error = 0))
         a = None
 
-        print self.cl
         # After applying feature subset selection on discrete attributes
         # aproximate unknown error for each attribute is math.sqrt(math.pow(cl.beta_se[0],2)/len(at))
         aprox_prior_error = math.sqrt(math.pow(cl.beta_se[0],2)/len(cl.domain.attributes))
@@ -389,11 +387,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
 #        self.cl.domain.classVar = orange
 #        self.cl.domain.classVar.values = self.data.domain.classVar.values       
         self.graph.setCanvas(self.bnomogram)
+#        self.bnomogram.printOUT()
         self.bnomogram.show()
        
     def classifier(self, cl):
         self.cl = cl
-        print self.cl
         self.updateNomogram()
         
     # Input channel: data
@@ -435,17 +433,15 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
     def updateNomogram(self):
         import orngSVM
 
-        print "grem v update!"
-        print self.cl
         def setNone():
             self.footer.setCanvas(None)
             self.header.setCanvas(None)
             self.graph.setCanvas(None)
 
-        if self.data and self.cl and not type(self.cl) == orngLR_Jakulin.MarginMetaClassifier:
+        if self.data and self.cl: # and not type(self.cl) == orngLR_Jakulin.MarginMetaClassifier:
             #check domains
             for at in self.cl.domain:
-                if at.getValueFrom:
+                if at.getValueFrom and ('variable' in dir(at.getValueFrom)):
                     if not at.getValueFrom.variable in self.data.domain:
                         return
                 else:
@@ -471,6 +467,31 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 self.lrClassifier(self.cl)            
         else:
             setNone()
+        if self.sort_type>0:
+            self.sortNomogram()
+
+    def sortNomogram(self):
+        def sign(x):
+            if x<0:
+                return -1;
+            return 1;
+        def compate_beta_difference(x,y):
+            return -sign(x.maxValue-x.minValue-y.maxValue+y.minValue)
+        def compare_beta_positive(x, y):
+            return -sign(x.maxValue-y.maxValue)
+        def compare_beta_negative(x, y):
+            return sign(x.minValue-y.minValue)
+
+        if self.sort_type == 1:
+            self.bnomogram.attributes.sort(compate_beta_difference)               
+        elif self.sort_type == 2:
+            self.bnomogram.attributes.sort(compare_beta_positive)               
+        elif self.sort_type == 3:
+            self.bnomogram.attributes.sort(compare_beta_negative)               
+
+        # update nomogram
+        self.showNomogram()
+        
         
     def setProbability(self):
         if self.probability and self.bnomogram:
@@ -545,14 +566,13 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("titanic")
+    data = orange.ExampleTable("d:\\delo\\data\\ionosphere")
     bayes = orange.BayesLearner(data)
-    l = orngSVM.BasicSVMLearner()
-    l.kernel = 0 # linear SVM
-    svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-    logistic = orngLR.LogRegLearner(data, removeSingular = 1)
-    print logistic
-    ow.classifier(logistic)
+    #l = orngSVM.BasicSVMLearner()
+    #l.kernel = 0 # linear SVM
+    #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
+   # logistic = orngLR.LogRegLearner(data, removeSingular = 1)
+    ow.classifier(bayes)
     ow.cdata(data)
 
     # here you can test setting some stuff
