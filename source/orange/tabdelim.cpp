@@ -918,13 +918,14 @@ void tabDelim_writeDomainWithoutDetection(FILE *file, PDomain dom, char delim, b
     if (((*vi)->varType == TValue::INTVAR) && (*vi)->ordered)
       fprintf(file, "-ordered");
   }
-  PUTDELIM;
-  if (dom->classVar)
+  if (dom->classVar) {
+    PUTDELIM;
     fprintf(file, "class");
+  }
   for(mi = mb; mi!=me; mi++) {
     PUTDELIM;
     fprintf(file, "meta");
-    if (((*vi)->varType == TValue::INTVAR) && (*mi).variable->ordered)
+    if (((*mi).variable->varType == TValue::INTVAR) && (*mi).variable->ordered)
       fprintf(file, " -ordered");
  }
  fprintf(file, "\n");
