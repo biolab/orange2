@@ -37,13 +37,10 @@ class OWWidget(OWBaseWidget):
         """
 
         apply(OWBaseWidget.__init__, (self, parent, title, description, wantSettings, wantGraph, wantAbout, icon, logo))
-        #OWBaseWidget.__init__(self, parent, )
 
         self.mainArea=QWidget(self)
-#        self.mainArea.setBackgroundColor(Qt.white)
         self.controlArea=QVBox(self)
         self.space=QVBox(self)
-#        self.controlArea.setBackgroundColor(Qt.white)
         self.grid=QGridLayout(self,3,2,5)
         self.grid.addWidget(self.buttonBackground,2,0)
         self.grid.addWidget(self.space,1,0)
@@ -53,19 +50,6 @@ class OWWidget(OWBaseWidget):
         self.grid.addMultiCellWidget(self.mainArea,0,3,1,1)
         self.resize(640,480)
 
-    # does widget have a signal with name in inputs
-    def hasInputName(self, name):
-        if hasattr(self, "inputs"):
-            for (n, type, handler, single) in self.inputs:
-                if name == n: return 1
-        return 0
-
-    # does widget have a signal with name in outputs
-    def hasOutputName(self, name):
-        if hasattr(self, "outputs"):
-            for (n, type) in self.outputs:
-                if name == n: return 1
-        return 0
 
     
 if __name__ == "__main__":  

@@ -82,7 +82,7 @@ class OWBaseWidget(QDialog):
         self.linksOut = {}       # signalName: (signalData, id)
         self.controledAttributes = []
         self.progressBarHandler = None  # handler for progress bar events
-        self.callbackDeposit = []
+        self.callbackDeposit = []       # deposit for handlers that synchronize GUI control value and the value of member variable
         self.startTime = time.time()    # used in progressbar
 
     
@@ -198,6 +198,20 @@ class OWBaseWidget(QDialog):
             
     def addOutput(self, signalName, dataType):
         self.outputs.append((signalName, dataType))
+
+    # does widget have a signal with name in inputs
+    def hasInputName(self, name):
+        if hasattr(self, "inputs"):
+            for (n, type, handler, single) in self.inputs:
+                if name == n: return 1
+        return 0
+
+    # does widget have a signal with name in outputs
+    def hasOutputName(self, name):
+        if hasattr(self, "outputs"):
+            for (n, type) in self.outputs:
+                if name == n: return 1
+        return 0
 
     def setOptions(self):
         pass
