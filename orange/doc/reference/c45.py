@@ -34,4 +34,11 @@ for i in data:
 
 
 import orngC45
+tree = orange.C45Learner(data)
 orngC45.printTree(tree)
+print
+
+import orngStat, orngTest
+res = orngTest.crossValidation([orange.C45Learner(), orange.C45Learner(convertToOrange=1)], data)
+print "Classification accuracy: %5.3f (converted to tree: %5.3f)" % tuple(orngStat.CA(res))
+print "Brier score: %5.3f (converted to tree: %5.3f)" % tuple(orngStat.BrierScore(res))
