@@ -2,7 +2,6 @@
 <name>Classification Tree</name>
 <description>Classification Tree widget can construct a classification tree learner or (if given
 a data set) a classification tree classifier.</description>
-<category>Classification</category>
 <icon>icons/ClassificationTree.png</icon>
 <priority>50</priority>
 """
@@ -27,18 +26,12 @@ class OWClassificationTree(OWWidget):
                 ("ReliefF", "relief"))
     
     def __init__(self, parent=None, name='Classification Tree'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """ClassificationTree widget can either \nconstruct a classification tree leraner, or,
-if given a data set, a classification tree classifier. \nIt can also be combined with
-preprocessors to filter/change the data.
-""")
+        OWWidget.__init__(self, parent, name)
         
         self.callbackDeposit = []
         self.controledAttributes = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier)]
 
         # Settings

@@ -1,7 +1,6 @@
 """
 <name>Example Distance</name>
 <description>Creates a distance matrix from a set of examples at the input.</description>
-<category>Test</category>
 <icon>icons/ExampleDistance.png</icon>
 <priority>1050</priority>
 """
@@ -19,11 +18,11 @@ import random
 class OWExampleDistance(OWWidget):	
     settingsList = ["Metrics"]
 
-    def __init__(self, parent=None, name='ExampleDistance'):
+    def __init__(self, parent=None):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, name, 'Example Distance', FALSE, FALSE) 
+        OWWidget.__init__(self, parent, 'ExampleDistance') 
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
         self.Metrics = 0

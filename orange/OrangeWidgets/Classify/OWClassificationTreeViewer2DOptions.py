@@ -7,8 +7,6 @@
 from OWOptions import *
 from OWTools import *
 
-
-
 class VisualTreeOptions(OWOptions):
     def __init__(self,parent=None,name=None):
         global classesNames

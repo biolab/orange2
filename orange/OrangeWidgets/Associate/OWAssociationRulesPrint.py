@@ -19,21 +19,7 @@ from OWTools import *
 
 class OWAssociationRulesPrint(OWWidget):
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "Association rules viewer",
-        """OWAssociationRulesPrint is an Orange Widget that
-        displays the association in a typical way. It
-        allows the user to choose the measures he wants.
-        The user can select and copy/paste the rules to
-        the program of his choise. By pressing the Save rules
-        button the user can save the rules with the selected
-        measures to a file.
-        """,
-        FALSE,
-        FALSE,
-        "OrangeWidgetsIcon.png",
-        "OrangeWidgetsLogo.png")
+        OWWidget.__init__(self, parent, "Association rules viewer")
         
         self.inputs = [("AssociationRules", orange.AssociationRules, self.arules, 1)]
         self.outputs = []

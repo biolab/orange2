@@ -1,7 +1,6 @@
 """
 <name>Calibrated Classifier</name>
 <description>Given a learner, it builds a classifier calibrated for optimal classification accuracy</description>
-<category>Classify</category>
 <icon>CalibratedClassifier.png</icon>
 <priority>1030</priority>
 """
@@ -54,7 +53,7 @@ class OWCalibratedClassifier(OWWidget):
         
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.setData, 1), ("Base Learner", orange.Learner, self.setBaseLearner, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.setData), ("Base Learner", orange.Learner, self.setBaseLearner)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
         # Settings

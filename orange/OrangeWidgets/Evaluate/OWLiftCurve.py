@@ -1,7 +1,6 @@
 """
 <name>Lift Curve</name>
 <description>None.</description>
-<category>Evaluation</category>
 <icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """
@@ -159,15 +158,9 @@ class singleClassLiftCurveGraph(singleClassROCgraph):
 class OWLiftCurve(OWROC):
     settingsList = ["PointWidth", "CurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor"]
-    def __init__(self,parent=None):
+    def __init__(self, parent=None):
         "Constructor"
-        OWWidget.__init__(self,
-        parent,
-        "&Lift Curve",
-        """None.
-        """,
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "Lift Curve", 1)
 
         #set default settings
         self.PointWidth = 7

@@ -3,7 +3,6 @@
 <description>Learner is a widget that allows experienced Python and Orange users to define a script with a
 learning object. This way, using a powerful combination of Python and Orange, one can define sophisticated
 learners and used them in other Orange Widgets.</description>
-<category>Classification</category>
 <icon>icons/Learner.png</icon>
 <priority>100</priority>
 """
@@ -38,16 +37,7 @@ class OWLearner(OWWidget):
     settingsList = ["name", "lastPath", "functionName", "script"]
 
     def __init__(self, parent=None, name='Learner'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """Learner is a widget that allows experienced
-Python and Orange users to define a script with a
-learning object. This way, using a powerful combination
-of Python and Orange, one can define sophisticated
-learners and used them in other Orange Widgets.""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, name)
         
         self.callbackDeposit = []
 

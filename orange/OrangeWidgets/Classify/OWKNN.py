@@ -1,7 +1,6 @@
 """
 <name>k Nearest Neighbours</name>
 <description>Constructs a k nearest neighbours learner</description>
-<category>Classification</category>
 <icon>icons/kNN.png</icon>
 <priority>50</priority>
 """
@@ -13,11 +12,11 @@ class OWKNN(OWWidget):
     settingsList = ["name", "k", "metrics", "ranks", "normalize", "ignoreUnknowns"]
 
     def __init__(self, parent=None, name='kNN'):
-        OWWidget.__init__(self, parent, name, "Construct a k Nearest Neighbours learner", icon="kNN.png")
+        OWWidget.__init__(self, parent, name)
         
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("KNN Classifier", orange.kNNClassifier)]
 
         self.metricsList = [("Euclidean", orange.ExamplesDistanceConstructor_Euclidean),

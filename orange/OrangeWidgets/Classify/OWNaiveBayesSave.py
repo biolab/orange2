@@ -1,7 +1,6 @@
 """
 <name>Save Naive Bayes</name>
 <description>Saves Naive Bayesian classification model to an XML data file.</description>
-<category>Classification</category>
 <icon>icons/NaiveBayesSave.png</icon>
 <priority>4100</priority>
 """
@@ -47,10 +46,7 @@ class OWNaiveBayesSave(OWWidget):
     settingsList = ["info", "fileName"]
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "SaveNaiveBayes",
-        "Saves Naive Bayesian classification model\n to an XML data file.")
+        OWWidget.__init__(self, parent, "SaveNaiveBayes")
         
         self.dataset = None
         self.tmpWidgets = []

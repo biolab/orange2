@@ -1,7 +1,6 @@
 """
 <name>Distance Map</name>
 <description>Displays distance matrix as a heat map.</description>
-<category>Test</category>
 <icon>icons/DistanceMap.png</icon>
 <priority>1500</priority>
 """
@@ -51,11 +50,11 @@ class OWDistanceMap(OWWidget):
     settingsList = ["CellWidth", "CellHeight", "Merge", "Gamma", "CutLow", "CutHigh", "CutEnabled", "Sort",
                     "ShowLegend", "ShowAnnotations", "ShowBalloon", "ShowItemsInBalloon", "SendOnRelease", "ColorSchemas"]
 
-    def __init__(self, parent=None, name='DistanceMap'):
+    def __init__(self, parent=None):
         self.callbackDeposit = [] # deposit for OWGUI callback function
-        OWWidget.__init__(self, parent, name, 'Distance Map', FALSE, FALSE) 
+        OWWidget.__init__(self, parent, 'Distance Map') 
 
-        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix, 1)]
+        self.inputs = [("Distance Matrix", orange.SymMatrix, self.setMatrix)]
         self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass),("Attribute List", orange.VarList)]
 
         self.clicked = False

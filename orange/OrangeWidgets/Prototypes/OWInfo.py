@@ -1,7 +1,6 @@
 """
 <name>Information</name>
 <description>The Info Widget allows users to add text information into canvas schemas.</description>
-<category>Other</category>
 <icon>icons/Info.png</icon>
 <priority>10</priority>
 """
@@ -31,8 +30,8 @@ class MyMultiLineEdit(QMultiLineEdit):
 class OWInfo(OWWidget):
     settingsList=["text"]
 
-    def __init__(self, parent=None, title="&Info Widget", description="The Info Widget allows users to add text information into canvas schemas.", icon="OrangeWidgetsIcon.png", logo="OrangeWidgetsLogo.png"):
-        OWBaseWidget.__init__(self, parent, "Info Widget", "The Info Widget allows users to add text information into canvas schemas.", TRUE, FALSE, FALSE) 
+    def __init__(self, parent=None):
+        OWBaseWidget.__init__(self, parent, "Info Widget") 
         self.title = title.replace("&","")
         self.captionTitle=title.replace("&","")
 

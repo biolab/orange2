@@ -1,7 +1,6 @@
 """
 <name>Attribute Distance</name>
 <description>Creates a attribute distance matrix from a set of examples at the input.</description>
-<category>Test</category>
 <icon>icons/AttributeDistance.png</icon>
 <priority>1100</priority>
 """
@@ -24,9 +23,9 @@ class OWAttributeDistance(OWWidget):
 
     def __init__(self, parent=None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, name, 'Attribute Distance', FALSE, FALSE) 
+        OWWidget.__init__(self, parent, name, 'Attribute Distance') 
 
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1)]
+        self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
 
         self.ClassInteractions = 0

@@ -2,7 +2,6 @@
 <name>Logistic Regression</name>
 <description>LogisticRegression widget can eithet construct a Logistic learner, or (if given a data set)
 a Logistic regression classifier. </description>
-<category>Classification</category>
 <icon>icons/LogisticRegression.png</icon>
 <priority>15</priority>
 """
@@ -19,16 +18,7 @@ class OWLogisticRegression(OWWidget):
     def __init__ (self, parent=None, name = "Logistic regression"):    
         # tu pridejo vse nastavitve
         # nastavitve: doloci = TODO
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """LogisticRegression widget can eithet construct a Logistic learner, or (if given a data set)
-a Logistic regression classifier. \nIt can induce a logistic regression classifier on all
-attriubte, but it can also perform stepwise logistic regression. \nIt can also be combined with
-preprocessors to filter/change the data.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, name)
 
         from orngTree import TreeLearner
         imputeByModel = orange.ImputerConstructor_model()
@@ -40,7 +30,7 @@ preprocessors to filter/change the data.
         # inputs / outputs
         #self.addInput("cdata")
         #self.addInput("pp")
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Attributes", list)]
         #self.addOutput("learner")
         #self.addOutput("classifier")

@@ -1,7 +1,6 @@
 """
 <name>Interactive Tree Builder</name>
 <description>Interactive Tree Builder</description>
-<category>Classification</category>
 <icon>icons/Unknown.png</icon>
 <priority>20</priority>
 """
@@ -77,8 +76,7 @@ class TL:
 
 class OWITree(OWClassificationTreeViewer):
     def __init__(self,parent = None):
-        OWClassificationTreeViewer.__init__(self, parent,
-                          'I&nteractive Tree Builder')
+        OWClassificationTreeViewer.__init__(self, parent, 'I&nteractive Tree Builder')
 
 
         #set default settings

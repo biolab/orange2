@@ -8,8 +8,8 @@ from OWOptions import *
 from OWTools import *
 
 class OWIRankOptions(OWOptions):
-    def __init__(self,parent=None,name=None):
-        OWOptions.__init__(self,"Rank Options","OrangeWidgetsIcon.png",parent,name)  
+    def __init__(self, parent=None):
+        OWOptions.__init__(self, parent, "Rank Options")  
 
         #precision
         precisionBox=QHGroupBox("Precision",self.top)

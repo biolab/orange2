@@ -1,7 +1,6 @@
 """
 <name>Association Rules Filter</name>
 <description>Association rules filter</description>
-<category>Associations</category>
 <icon>icons/AssociationRulesFilter.png</icon>
 <priority>200</priority>
 """
@@ -184,15 +183,7 @@ class AssociationRulesFilterBrowser(QCanvasView):
         
 class OWAssociationRulesFilter(OWWidget):
     def __init__(self, parent=None):
-        OWWidget.__init__(self,
-            parent,
-            "AssociationRulesFilter",
-            """OWAssociationRulesFilter is orange widget for\nadvanced selection of Association rules.\n\n        Authors: Jure Germovsek, Petra Kralj, Matjaz Jursic        \nMay 25, 2003
-            """,
-            FALSE,
-            FALSE,
-            "OrangeWidgetsIcon.png",
-            "OrangeWidgetsLogo.png")
+        OWWidget.__init__(self, parent, "AssociationRulesFilter")
 
         self.inputs = [("Association Rules", orange.AssociationRules, self.arules, 1)]
         self.outputs = [("Association Rules", orange.AssociationRules)]

@@ -1,7 +1,6 @@
 """
 <name>Test Learners</name>
 <description>Estimates the predictive performance of learners on a data set.</description>
-<category>Evaluation</category>
 <icon>icons/TestLearners.png</icon>
 <priority>200</priority>
 """
@@ -28,9 +27,9 @@ class OWTestLearners(OWWidget):
            )
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "TestLearners", "Takes a set of learners and tests\nthem on a single data set.")
+        OWWidget.__init__(self, parent, "TestLearners")
         
-        self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata, 1), ("Learner", orange.Learner, self.learner, 0)]
+        self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings

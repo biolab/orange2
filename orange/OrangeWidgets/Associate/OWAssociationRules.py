@@ -1,7 +1,6 @@
 """
 <name>Association Rules</name>
 <description>Association rules inducer</description>
-<category>Associations</category>
 <icon>icons/AssociationRules.png</icon>
 <priority>100</priority>
 """
@@ -12,16 +11,9 @@ import orngAssoc, OWGUI
 
 class OWAssociationRules(OWWidget):
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-            parent,
-            "AssociationRules",
-            "OWAssociationRules is orange widget\n for building Association rules.\n\nAuthors: J. Germovsek, P. Kralj, M. Jursic, J. Demsar",
-            FALSE,
-            FALSE,
-            "OrangeWidgetsIcon.png",
-            "OrangeWidgetsLogo.png")
+        OWWidget.__init__(self, parent, "AssociationRules")
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Association Rules", orange.AssociationRules),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]
 
         self.settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]

@@ -1,7 +1,6 @@
 """
 <name>Interaction Graph</name>
 <description>Show interaction graph</description>
-<category>Classification</category>
 <icon>icons/InteractionGraph.png</icon>
 <priority>4000</priority>
 """
@@ -40,10 +39,10 @@ class IntGraphView(QCanvasView):
 class OWInteractionGraph(OWWidget):
     settingsList = ["onlyImportantInteractions"]
     
-    def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Interaction graph", 'show interaction graph', FALSE, FALSE)
+    def __init__(self, parent=None):
+        OWWidget.__init__(self, parent, "Interaction graph")
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Examples", ExampleTable), ("view", tuple), ("Selection", list)]
     
 

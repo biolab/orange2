@@ -1,7 +1,6 @@
 """
 <name>Classification Tree Viewer 2D</name>
 <description>Classification Tree</description>
-<category>Classification</category>
 <icon>icons/ClassificationTreeViewer2D.png</icon>
 <priority>2110</priority>
 """
@@ -322,9 +321,9 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.canvas = None
         self.root = None
         self.selectedNode = None
-        OWWidget.__init__(self, parent, name, 'A graphical 2D view of a classification tree.', FALSE, FALSE) 
+        OWWidget.__init__(self, parent, name) 
         
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree, 1), ("Target Class Value", int, self.target, 1)]
+        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree), ("Target Class Value", int, self.target)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
 
         # some globaly used variables (get rid!)

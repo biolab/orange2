@@ -1,7 +1,6 @@
 """
 <name>Classification Tree Viewer</name>
 <description>ClassificationTreeViewer displays a classification tree in a hierarchical list view.</description>
-<category>Classification</category>
 <icon>icons/ClassificationTreeViewer.png</icon>
 <priority>2100</priority>
 """
@@ -31,7 +30,7 @@ class OWClassificationTreeViewer(OWWidget):
     settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
 
     def __init__(self, parent=None, name='Classification Tree Viewer'):
-        OWWidget.__init__(self, parent, name, "ClassificationTreeViewer displays a classification tree in a hierarchical list view.")
+        OWWidget.__init__(self, parent, name)
 
         self.dataLabels = (('Majority class', 'Class'),
                   ('Probability of majority class', 'P(Class)'),
@@ -41,7 +40,7 @@ class OWClassificationTreeViewer(OWWidget):
 
         self.callbackDeposit = []
 
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree, 1), ("Target Class Value", int, self.target, 1)]
+        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree), ("Target Class Value", int, self.target)]
         self.outputs = [("Classified Examples", ExampleTableWithClass)]
 
         # Settings

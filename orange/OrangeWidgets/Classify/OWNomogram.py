@@ -50,13 +50,8 @@ class OWNomogram(OWWidget):
     settingsList = ["alignType", "contType", "bubble", "histogram", "histogram_size", "confidence_percent", "sort_type"]
 
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "&Nomogram",
-        """OWNomogram is an Orange Widget
-        for displaying a nomogram of a Naive Bayesian or logistic regression classifier.""",
-        FALSE,
-        TRUE)
+        OWWidget.__init__(self, parent, "Nomogram", 1)
+        
         self.setWFlags(Qt.WResizeNoErase | Qt.WRepaintNoErase) #this works like magic.. no flicker during repaint!
         self.parent = parent        
 #        self.setWFlags(self.getWFlags()+Qt.WStyle_Maximize)

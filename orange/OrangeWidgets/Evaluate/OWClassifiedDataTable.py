@@ -26,10 +26,10 @@ class OWClassifiedDataTable(OWWidget):
     settingsList = ["ShowProb", "ShowClass", "ShowTrueClass", "ShowAttributeMethod", "sendDataType", "commitOnChange"]
 
     def __init__(self, parent=None):
-        OWWidget.__init__(self, parent, "Classifications", "Shows predictions of one or more classifiers.")
+        OWWidget.__init__(self, parent, "Classifications")
 
         self.callbackDeposit = []
-        self.inputs = [("Examples", ExampleTable, self.dataset, 1),("Classifiers", orange.Classifier, self.classifier, 0)]
+        self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, 0)]
         self.outputs = [("Selected Examples", ExampleTable)]
         self.classifiers = {}
 

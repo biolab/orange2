@@ -1,7 +1,6 @@
 """
 <name>Calibration Plot</name>
 <description>None.</description>
-<category>Evaluation</category>
 <icon>CalibrationPlot.png</icon>
 <priority>1030</priority>
 """
@@ -190,7 +189,7 @@ class singleClassCalibrationPlotGraph(OWGraph):
 class OWCalibrationPlot(OWWidget):
     settingsList = ["CalibrationCurveWidth", "ShowDiagonal", "ShowRugs"]
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Calibration Plot", "None.", FALSE, TRUE)
+        OWWidget.__init__(self, parent, "Calibration Plot", 1)
 
         # inputs
         self.inputs=[("Evaluation Results", orngTest.ExperimentResults, self.results)] ##, ("Target", int, self.target, 1)]

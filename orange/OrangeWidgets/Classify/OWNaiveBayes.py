@@ -2,7 +2,6 @@
 <name>Naive Bayes</name>
 <description>NaiveBayes widget can either construct a Naive Bayesian learner, or 
 (if given a data set) a Naive Bayesian classifier.</description>
-<category>Classification</category>
 <icon>icons/NaiveBayes.png</icon>
 <priority>10</priority>
 """
@@ -23,9 +22,9 @@ class OWNaiveBayes(OWWidget):
     settingsList = ["m", "name", "probEstimation", "condProbEstimation", "condProbContEstimation", "adjustThreshold", "windowProportion"]
     
     def __init__(self, parent=None, name='NaiveBayes'):
-        OWWidget.__init__(self, parent, name, "Constructs a Naive Bayesian learner, or,\nif given a data set, Naive Bayesian classifier.")
+        OWWidget.__init__(self, parent, name)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]
                 
         # Settings

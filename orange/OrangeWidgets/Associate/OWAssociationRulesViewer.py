@@ -1,7 +1,6 @@
 """
 <name>Association Rules Viewer</name>
 <description>Association rules viewer</description>
-<category>Associations</category>
 <icon>icons/AssociationRulesViewer.png</icon>
 <priority>300</priority>
 """
@@ -19,19 +18,9 @@ from OWTools import *
 
 class OWAssociationRulesViewer(OWWidget):
     def __init__(self,parent=None):
-        OWWidget.__init__(self,
-        parent,
-        "Association rules viewer",
-        """Displays the association rules as a table or as a 
-        tree, depending on the choosen number of layers.
-        """,
-        FALSE,
-        FALSE,
-        "OrangeWidgetsIcon.png",
-        "OrangeWidgetsLogo.png")
-        
+        OWWidget.__init__(self, parent, "Association rules viewer")
 
-        self.inputs = [("Association Rules", orange.AssociationRules, self.arules, 1)]
+        self.inputs = [("Association Rules", orange.AssociationRules, self.arules)]
         self.outputs = []
         
         # Settings

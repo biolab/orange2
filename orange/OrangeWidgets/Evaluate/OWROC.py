@@ -1,7 +1,6 @@
 """
 <name>ROC Anaylsis</name>
 <description>None.</description>
-<category>Evaluation</category>
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """
@@ -647,8 +646,7 @@ class OWROC(OWWidget):
     settingsList = ["PointWidth", "CurveWidth", "ConvexCurveWidth", "ShowDiagonal",
                     "ConvexHullCurveWidth", "HullColor"]
     def __init__(self,parent=None):
-        "Constructor"
-        OWWidget.__init__(self, parent, "&ROC", "ROC Analysis", TRUE, TRUE)
+        OWWidget.__init__(self, parent, "ROC Analysis", 1)
 
         #set default settings
         self.PointWidth = 7

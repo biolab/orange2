@@ -2,7 +2,6 @@
 <name>C4.5</name>
 <description>C45 widget constructs a classification tree learner by the original
 Quinlan's C45 algorithm.</description>
-<category>Classification</category>
 <icon>icons/C45.png</icon>
 <priority>50</priority>
 """
@@ -22,7 +21,7 @@ class OWC45Tree(OWWidget):
         
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier), ("C45 Tree", orange.C45Classifier)]
 
         # Settings

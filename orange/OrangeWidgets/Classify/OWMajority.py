@@ -1,7 +1,6 @@
 """
 <name>Majority</name>
 <description>Constructs a learner that always predicts the majority class</description>
-<category>Classification</category>
 <icon>icons/Majority.png</icon>
 <priority>50</priority>
 """
@@ -12,12 +11,12 @@ import OWGUI
 class OWMajority(OWWidget):
     settingsList = ["name"]
 
-    def __init__(self, parent=None, name='Majority'):
-        OWWidget.__init__(self, parent, name, "Constructs a learner that always predicts the majority class", icon="Majority.png")
+    def __init__(self, parent=None):
+        OWWidget.__init__(self, parent, 'Majority')
         
         self.callbackDeposit = []
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier)]
 
         self.name = 'Majority'

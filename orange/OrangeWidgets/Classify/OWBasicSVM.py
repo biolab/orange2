@@ -1,7 +1,6 @@
 """
 <name>SVM</name>
 <description>Basic SVM</description>
-<category>Classification</category>
 <icon>icons/BasicSVM.png</icon>
 <priority>100</priority>
 """
@@ -16,17 +15,9 @@ class OWBasicSVM(OWWidget):
     settingsList = ["kernelMethod", "polyD", "polyG", "polyC", "rbfG", "sigmaG", "sigmaC", "nu", "p", "c", "eps", "shrinking", "nuOptionEnabled", "methodIsOneClass"]
     
     def __init__(self, parent=None, name='Support Vector Machine'):
-        OWWidget.__init__(self,
-        parent,
-        name,
-        """Basic SVM widget can either \nconstruct a learner, or,
-if given a data set, a classifier. \nIt can also be combined with
-preprocessors to filter/change the data.
-""",
-        FALSE,
-        FALSE)
+        OWWidget.__init__(self, parent, name)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Support Vectors", ExampleTable)]
 
         self.kernelMethod = 0                
