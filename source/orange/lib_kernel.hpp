@@ -29,6 +29,18 @@
 #include "examplegen.hpp"
 #include "table.hpp"
 
+class TFiletypeDefinition {
+public:
+  string name;
+  TStringList extensions;
+  PyObject *loader;
+  PyObject *saver;
+
+  TFiletypeDefinition(const char *, PyObject *, PyObject *);
+  TFiletypeDefinition(const TFiletypeDefinition &);
+  ~TFiletypeDefinition();
+};
+
 ORANGE_API TExampleTable *readListOfExamples(PyObject *args);
 ORANGE_API TExampleTable *readListOfExamples(PyObject *args, PDomain, bool filterMetas = false);
 ORANGE_API PExampleGenerator exampleGenFromArgs(PyObject *args, int &weightID);
@@ -59,5 +71,6 @@ ORANGE_API converter pt_weightByGen(PExampleGenerator &peg);
 
 ORANGE_API int pt_DomainContingency(PyObject *args, void *egen);
 
+ORANGE_API registerFileType(const char *, const char *[], PyObject *, PyObject *);
 
 #endif

@@ -1263,6 +1263,112 @@ PYCONSTANTFUNC(globalRandom, stdRandomGenerator)
 
 /* ************ EXAMPLE GENERATOR ************ */
 
+TFiletypeDefinition::TFiletypeDefinition(const char *an, PyObject *al, PyObject *as)
+: name(an),
+  loader(al),
+  saver(as)
+{
+  if (loader == Py_None)
+    loader = PYNULL;
+  else
+    Py_INCREF(loader);
+
+  if (saver == Py_None)
+    saver = PYNULL;
+  else
+    Py_INCREF(saver);
+}
+
+
+TFiletypeDefinition::TFiletypeDefinition(const TFiletypeDefinition &other)
+: name(other.name),
+  extensions(other.extensions),
+  loader(other.loader),
+  saver(other.saver)
+{
+  Py_XINCREF(loader);
+  Py_XINCREF(saver);
+}
+
+
+TFiletypeDefinition::~TFiletypeDefinition()
+{
+  Py_XDECREF(loader);
+  Py_XDECREF(saver);
+}
+
+
+vector<TFiletypeDefinition> filetypeDefinitions;
+
+/* lower case to avoid any ambiguity problems (don't know how various compilers can react when
+   registerFiletype is cast by the code produced by pyxtract */
+ORANGE_API void registerFiletype(const char *name, const vector<string> &extensions, PyObject *loader, PyObject *saver)
+{
+  TFiletypeDefinition ftd(name, loader, saver);
+  ftd.extensions = extensions;
+  filetypeDefinitions.push_back(ftd);
+}
+
+PStringList PStringList_FromArguments(PyObject *arg);
+bool fileExists(const string &s);
+const char *getExtension(const char *name);
+
+
+vector<TFiletypeDefinition>::iterator findFiletypeByExtension(const char *name, bool needLoader, bool needSaver, bool exhaustive)
+{
+  const char *extension = getExtension(name);
+
+  if (extension) {
+    ITERATE(vector<TFiletypeDefinition>, fi, filetypeDefinitions)
+      if ((!needLoader || (*fi).loader) && (!needSaver || (*fi).saver))
+        ITERATE(vector<string>, ei, (*fi).extensions)
+          if (*ei == extension)
+            return fi;
+  }
+
+  else if (exhaustive) {
+    ITERATE(vector<TFiletypeDefinition>, fi, filetypeDefinitions)
+      if ((!needLoader || (*fi).loader) && (!needSaver || (*fi).saver))
+        ITERATE(vector<string>, ei, (*fi).extensions)
+          if (fileExists(name + *ei))
+            return fi;
+  }
+
+  return filetypeDefinitions.end();
+}
+
+
+PyObject *registerFileType(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(name, extensions, loader, saver) -> None")
+{
+  char *name;
+  PyObject *pyextensions, *loader, *saver;
+  if (!PyArg_ParseTuple(args, "sOOO:registerFiletype", &name, &loader, &saver, &pyextensions))
+    return PYNULL;
+
+  TFiletypeDefinition ftd(name, loader, saver);
+
+  if (PyString_Check(pyextensions))
+    ftd.extensions.push_back(PyString_AsString(pyextensions));
+  else {
+    PStringList extensions = PStringList_FromArguments(pyextensions);
+    if (!extensions)
+      return PYNULL;
+    ftd.extensions = extensions.getReference();
+  }
+ 
+  vector<TFiletypeDefinition>::iterator fi(filetypeDefinitions.begin()), fe(filetypeDefinitions.begin());
+  for(; (fi != fe) && ((*fi).name != name); fi++);
+
+  if (fi==fe)
+    filetypeDefinitions.push_back(ftd);
+  else
+    *fi = ftd;
+
+  RETURN_NONE;
+}
+
+
+
 #include "examplegen.hpp"
 BASED_ON(ExampleGenerator, Orange)
 
@@ -1722,6 +1828,69 @@ PyObject *ExampleGenerator_checksum(PyObject *self, PyObject *) PYARGS(METH_NOAR
 { return PyInt_FromLong(SELF_AS(TExampleGenerator).checkSum()); }
 
 
+const char *getExtension(const char *name);
+
+PyObject *saveTabDelimited(PyObject *, PyObject *args, PyObject *keyws);
+PyObject *saveC45(PyObject *, PyObject *args);
+PyObject *saveTxt(PyObject *, PyObject *args, PyObject *keyws);
+PyObject *saveCsv(PyObject *, PyObject *args, PyObject *keyws);
+PyObject *saveRetis(PyObject *, PyObject *args);
+PyObject *saveAssistant(PyObject *, PyObject *args);
+PyObject *saveBasket(PyObject *, PyObject *args);
+
+PyObject *ExampleGenerator_save(PyObject *self, PyObject *args, PyObject *keyws) PYARGS(METH_VARARGS | METH_KEYWORDS, "(filename) -> None")
+{
+  char *filename;
+  if (!PyArg_ParseTuple(args, "s:ExampleGenerator.save", &filename))
+    return PYNULL;
+
+  const char *extension = getExtension(filename);
+  if (!extension)
+    PYERROR(PyExc_TypeError, "file name must have an extension", PYNULL);
+
+
+  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, false, true, false);
+  if (fi != filetypeDefinitions.end()) {
+    PyObject *newargs = PyTuple_New(PyTuple_Size(args) + 1);
+    PyObject *el;
+
+    el = PyTuple_GET_ITEM(args, 0);
+    Py_INCREF(el);
+    PyTuple_SetItem(newargs, 0, el);
+
+    Py_INCREF(self);
+    PyTuple_SetItem(newargs, 1, self);
+
+    for(int i = 1, e = PyTuple_Size(args); i < e; i++) {
+      el = PyTuple_GET_ITEM(args, i);
+      Py_INCREF(el);
+      PyTuple_SetItem(newargs, i+1, el);
+    }
+
+    PyObject *res = PyObject_Call((*fi).saver, newargs, keyws);
+    Py_DECREF(newargs);
+    return res;
+  }
+  
+  if (!strcmp(extension, ".tab"))
+    return saveTabDelimited(NULL, args, keyws);
+  if (!strcmp(extension, ".txt"))
+    return saveTxt(NULL, args, keyws);
+  if (!strcmp(extension, ".csv"))
+    return saveCsv(NULL, args, keyws);
+  if (!strcmp(extension, ".names") || !strcmp(extension, ".data") || !strcmp(extension, ".test"))
+    return saveC45(NULL, args);
+  if (!strcmp(extension, ".rda") || !strcmp(extension, ".rdo"))
+    return saveRetis(NULL, args);
+  if (!strcmp(extension, ".dat"))
+    return saveAssistant(NULL, args);
+  if (!strcmp(extension, ".basket"))
+    return saveAssistant(NULL, args);
+
+  PyErr_Format(PyExc_AttributeError, "unknown file format (%s)", extension);
+  return PYNULL;
+}
+
 PExampleGeneratorList PExampleGeneratorList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::P_FromArguments(arg); }
 PyObject *ExampleGeneratorList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_FromArguments(type, arg); }
 PyObject *ExampleGeneratorList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of ExampleGenerator>)") { return ListOfWrappedMethods<PExampleGeneratorList, TExampleGeneratorList, PExampleGenerator, &PyOrExampleGenerator_Type>::_new(type, arg, kwds); }
@@ -1963,12 +2132,39 @@ bool hasFlag(PyObject *keywords, char *flag)
   return keywords && (PyDict_GetItemString(keywords, flag) != PYNULL);
 }
 
+
 CONSTRUCTOR_KEYWORDS(ExampleTable, "domain use useMetas dontCheckStored dontStore filterMetas DC DK NA")
 
 
+
+PyObject *loadDataByPython(PyTypeObject *type, char *filename, PyObject *argstuple, PyObject *keywords, bool exhaustiveFilesearch)
+{
+  vector<TFiletypeDefinition>::iterator fi = findFiletypeByExtension(filename, true, false, exhaustiveFilesearch);
+  if (fi!=filetypeDefinitions.end()) {
+    PyObject *res = PyObject_Call((*fi).loader, argstuple, keywords);
+    if (!res)
+      throw pyexception();
+
+    if (PyOrExampleTable_Check(res))
+      return res;
+
+    PExampleGenerator gen;
+    if (!exampleGenFromParsedArgs(res, gen))
+      return PYNULL;
+
+    TExampleTable *table = gen.AS(TExampleTable);
+    if (!table)
+      return PYNULL;
+
+    return WrapNewOrange(table, type);
+  }
+
+  return PYNULL;
+}
+
 bool readUndefinedSpecs(PyObject *keyws, char *&DK, char *&DC);
 
-TExampleTable *readData(char *filename, PVarList knownVars, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC);
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false);
 
 PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *keywords) BASED_ON(ExampleGenerator, "(filename | domain[, examples] | examples)")
 {  
@@ -1976,12 +2172,27 @@ PyObject *ExampleTable_new(PyTypeObject *type, PyObject *argstuple, PyObject *ke
 
     char *filename = NULL;
     if (PyArg_ParseTuple(argstuple, "|s", &filename)) {
+      PyObject *res;
+      
+      res = loadDataByPython(type, filename, argstuple, keywords, false);
+      if (res)
+        return res;
+      PyErr_Clear();
+
       bool dontCheckStored = hasFlag(keywords, "dontCheckStored") ? readBoolFlag(keywords, "dontCheckStored") : hasFlag(keywords, "use");
       char *DK = NULL, *DC = NULL;
       if (!readUndefinedSpecs(keywords, DK, DC))
         return PYNULL;
 
-      return WrapNewOrange(readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC), type);
+      TExampleTable *table = readData(filename, knownVars(keywords), knownMetas(keywords), knownDomain(keywords), dontCheckStored, readBoolFlag(keywords, "dontStore"), DK, DC, true);
+      if (table)
+        return WrapNewOrange(table, type);
+
+      res = loadDataByPython(type, filename, argstuple, keywords, true);
+      if (res)
+        return res;
+
+      PYERROR(PyExc_SystemError, "file not found", PYNULL);
     }
 
     PyErr_Clear();

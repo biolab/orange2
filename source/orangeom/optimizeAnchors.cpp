@@ -212,7 +212,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
           if (ruv < 1e-15)
             ruv = 1e-15;
 
-          //const double druv = duv / exp(0.3 * log(ruv));
+          //const double druv = duv / exp(2.5 * log(ruv));
           //const double druv = duv / sqrt(ruv);
           const double druv = duv / ruv;
 

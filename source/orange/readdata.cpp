@@ -63,7 +63,7 @@ typedef enum {UNKNOWN, TXT, CSV, BASKET, TAB, TSV, C45, RETIS, ASSISTANT, EXCEL}
 
 WRAPPER(ExampleTable);
 
-TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC)
+TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false)
 { char *ext, *hash;
   if (filename) {
     for(ext = hash = filename + strlen(filename); ext!=filename; ext--) {
@@ -138,7 +138,10 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
       return readExcelFile(filename, hash, knownVars, knownDomain, dontCheckStored, dontStore);
     #endif
 
-    raiseError("unknown file format for file '%s'", filename);    
+    if (noExcOnUnknown)
+      return NULL;
+    else
+      raiseError("unknown file format for file '%s'", filename);    
   }
 
   /* If no filename is given at all, assume that the stem equals the last
@@ -194,8 +197,12 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
 
   #undef CHECKFF
 
-  if (fileFormat == UNKNOWN)
-    raiseError("file '%s' not found", filename);
+  if (fileFormat == UNKNOWN) {
+    if (noExcOnUnknown)
+      return NULL;
+    else
+      raiseError("file '%s' not found", filename);
+  }
 
 
   /* Assistant is annoying: if path+stem is given, asd[ao] must be inserted in between */
@@ -266,7 +273,10 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
     #endif
 
     default:
-      raiseError("unknown file format for file '%s'", filename);
+      if (noExcOnUnknown)
+        return NULL;
+      else
+        raiseError("unknown file format for file '%s'", filename);
   }
   return NULL;
 }

@@ -527,7 +527,7 @@ int TFloatVariable::str2val_low(const string &valname, TValue &valu)
 void TFloatVariable::str2val(const string &valname, TValue &valu)
 { 
   switch (str2val_low(valname, valu)) {
-    case -1: raiseError("'%s' is not a legal value for the continuous class", valname.c_str());
+    case -1: raiseError("'%s' is not a legal value for continuous attribute '%s'", valname.c_str(), name.c_str());
     case -2: raiseError("value %5.3f out of range %5.3f-%5.3f", valu.floatV, startValue, endValue);
   }
 }
