@@ -69,7 +69,6 @@ class OWSubsetGenerator(OWWidget):
         self.activateLoadedSettings()
 
     def percentRBActivated(self, b):
-        print b
         self.percentRB.setChecked(b)
         self.exactRB.setChecked(not b)
         #self.generate()
@@ -117,7 +116,6 @@ class OWSubsetGenerator(OWWidget):
 
 
     def activateLoadedSettings(self):
-        print self.applyGenerateExact
         self.exactRB.setChecked(self.applyGenerateExact)
         self.percentRB.setChecked(not self.applyGenerateExact)
         

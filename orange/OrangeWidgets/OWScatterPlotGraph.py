@@ -62,6 +62,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.toolRects = []
         self.tooltipData = []
         self.kNeighbours = 0
+        self.showManualAxisScale = 0
 
     def enableGraphLegend(self, enable):
         self.enabledLegend = enable
@@ -107,19 +108,21 @@ class OWScatterPlotGraph(OWVisGraph):
 
         if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
             self.setXlabels(None)
-            self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
+            if self.showManualAxisScale: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
         else:
             self.setXlabels(self.getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
-            else: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
+            #else: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 50.0), xVarMax + (self.jitterSize * xVar / 50.0) + showColorLegend * xVar/20, 1)
+            else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + +0.5 + showColorLegend * xVar/20, 1)            
 
         if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous:
             self.setYLlabels(None)
-            self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)            
+            if self.showManualAxisScale: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)            
         else:
             self.setYLlabels(self.getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
-            else: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
+            #else: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
+            else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
 
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
