@@ -36,9 +36,11 @@ class OWAssociationRulesPrint(OWWidget):
         "OrangeWidgetsIcon.png",
         "OrangeWidgetsLogo.png")
         
-        self.rules=[]          # na zacetku nima vhodnih podatkov -v mainu jih dobi
-        self.addInput("arules")  #declare the channel
+        self.inputs = [("AssociationRules", orange.AssociationRules, self.arules, 1)]
+        self.outputs = []
         
+        self.rules=[]          # na zacetku nima vhodnih podatkov -v mainu jih dobi
+
         # Settings
 
         self.chbSupportValue=1
@@ -180,10 +182,11 @@ if __name__=="__main__":
     ow=OWAssociationRulesPrint()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('lenses.tab')
-    rules=orngAssoc.build(dataset, 0.3, maxItemSets=15000)
+
+    dataset = orange.ExampleTable('car.tab')
+    rules=orange.AssociationRulesInducer(dataset, minSupport = 0.3, maxItemSets=15000)
     ow.arules(rules)
-    
+        
     ow.show()
     a.exec_loop()
     ow.saveSettings()

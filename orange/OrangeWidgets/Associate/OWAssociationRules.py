@@ -9,150 +9,82 @@
 import orange
 from OData import *
 from OWWidget import *
-import orngAssoc
-
-import string
+import orngAssoc, OWGUI
 
 class OWAssociationRules(OWWidget):
     def __init__(self,parent=None):
         OWWidget.__init__(self,
             parent,
             "AssociationRules",
-            """OWAssociationRules is orange widget\n for building Association rules.\n\nAuthors: Jure Germovsek, Petra Kralj, Matjaz Jursic\nMay 25, 2003
-            """,
+            "OWAssociationRules is orange widget\n for building Association rules.\n\nAuthors: J. Germovsek, P. Kralj, M. Jursic, J. Demsar",
             FALSE,
             FALSE,
             "OrangeWidgetsIcon.png",
             "OrangeWidgetsLogo.png")
 
-        # zaèetne vrednosti
-        self.support = 0.5
-        self.max_rules = 1000
-        self.method = 0
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.outputs = [("Association Rules", orange.AssociationRules),("Classifier", orange.Classifier),("Naive Bayesian Classifier", orange.BayesClassifier)]
 
-        self.addInput("cdata")
-        self.addOutput("arules")
-
-        self.settingsList = ["support", "max_rules", "method"]    # list of settings
-        self.loadSettings()                             # function call
+        self.settingsList = ["useSparseAlgorithm", "classificationRules", "minSupport", "minConfidence", "maxRules"]
+        self.loadSettings()
                 
         self.dataset = None
 
-        # Build Method
-        self.rulesGB1 = QGroupBox(1, QGroupBox.Horizontal , 'Build Method', self.controlArea)
-        self.cbBuildMethod = QComboBox(FALSE, self.rulesGB1)
-        self.cbBuildMethod.insertItem("Dense Data")
-        self.cbBuildMethod.insertItem("Sparse Data")
-        self.cbBuildMethod.setCurrentItem(self.method)
-        self.connect(self.cbBuildMethod, SIGNAL("activated(int)"), self.methodSelected)
-        
-        self.rulesGB = QGroupBox(1, QGroupBox.Horizontal , 'Build Settings', self.controlArea)
+        self.useSparseAlgorithm = 0
+        self.classificationRules = 0
+        box = OWGUI.widgetBox(self.space, "Build algorithm")
+        self.cbSparseAlgorithm = OWGUI.checkBox(box, self, 'useSparseAlgorithm', 'Use algorithm for sparse data', tooltip="Use original Agrawal's algorithm", callback = self.checkSparse)
+        self.cbClassificationRules = OWGUI.checkBox(box, self, 'classificationRules', 'Induce classification rules', tooltip="Induce classifaction rules")
 
-        # Min Support
-        self.lblSupport = QLabel("Min Support: %.2f" % self.support, self.rulesGB) 
-        self.sliSupport = QSlider(0, 99, 1, self.support*100, QSlider.Horizontal, self.rulesGB)
-        self.connect(self.sliSupport,SIGNAL("valueChanged(int)"), self.setSupport)       
-
-        # Max Number of Rules
-        self.lblNumRules = QLabel("Stop generating at %i rules:" %self.max_rules, self.rulesGB)
-        self.edtNumRules = QSpinBox(100, 100000, 100, self.rulesGB)
-        self.edtNumRules.setValue(self.max_rules)
-        self.connect(self.edtNumRules, SIGNAL("valueChanged(int)"), self.setNumRules)
-
-        # Comment
-        self.lblComment=QLabel("\nThe building of rules will stop,\n when support will fall to %.2f\n"%self.support + " or the number of rules will exced %i.\n"%self.max_rules, self.controlArea)        
-
+        self.minSupport = 20
+        self.minConfidence = 20
+        self.maxRules = 10000
+        OWGUI.hSlider(self.space, self, 'minSupport', box='Minimal support [%]', minValue=10, maxValue=100, ticks=10, step = 1)
+        OWGUI.hSlider(self.space, self, 'minConfidence', box='Minimal confidence [%]', minValue=10, maxValue=100, ticks=10, step = 1)
+        OWGUI.hSlider(self.space, self, 'maxRules', box='Maximal number of rules', minValue=10000, maxValue=100000, step=10000, ticks=10000)
 
         # Generate button
-        self.btnGenerate = QPushButton("&Build rules", self.controlArea)
-        self.connect(self.btnGenerate,SIGNAL("clicked()"), self.generateAssociations)
+        self.btnGenerate = QPushButton("&Build rules", self.space)
+        self.connect(self.btnGenerate,SIGNAL("clicked()"), self.generateRules)
 
-       
-        # Build Log
-        self.buildLogFrame = QGroupBox(1, QGroupBox.Horizontal , 'Build Log', self.mainArea)
-        self.buildLog = QMultiLineEdit(self.buildLogFrame)
-        self.buildLog.setReadOnly(True)
+        self.resize(150,100)
 
-        # Avtomatski layout
-        self.vbox = QVBoxLayout(self.mainArea)
-        self.hbox = QHBoxLayout(self.vbox)
-        self.hbox.addWidget(self.buildLogFrame)
 
-    def methodSelected(self, value):
-        self.method = value
-
-    def setSupport(self, value):            
-        if str(value) == '':               
-            value = 50
-        v = int(str(value))                 
-        if (v<0) or (v>100):
-            v = 50
-        self.support = float(v)/100         
-        self.lblSupport.setText ("Min Support: %.2f" % self.support)
-        self.lblComment.setText( "\nThe building of rules will stop,\n when support will fall to %.2f\n"%self.support + " or the number of rules will exced %i.\n"%self.max_rules )
-
-    def setNumRules(self, value):
-        self.max_rules = value;
-        self.lblNumRules.setText("Stop generating at %i rules:" %self.max_rules)
-        self.lblComment.setText( "\nThe building of rules will stop,\n when support will fall to %.2f\n"%self.support + " or the number of rules will exced %i.\n"%self.max_rules )
-
-    def generateAssociations(self):
-        self.buildLog.clear()
-        if self.dataset != None:  # èe dataset ni prazen
-            # èe je izbran argawal
-            if self.method == 1:
-                self.buildLog.insertLine('Build with Sparse Data method started.', 0)
-            else:
-                self.buildLog.insertLine('Build with Dense Data method started.', 0)
-            
-            rules = []
-
-            num_of_steps = 20
-
-            # korakaj dokler nimaš dovolj pravil, oziroma ne dosežeš minSupport
-            for i in range(1, num_of_steps + 1):
-                # zgradi pravila
-                build_support = 1 - float(i) / num_of_steps * (1 - self.support)
-                try:
-                    # èe je izbran Sparse Data
-                    if self.method == 1:
-                        rules=orngAssoc.buildSparse(self.dataset.table,build_support)
-                    else:
-                        rules=orngAssoc.build(self.dataset.table,build_support)
-                except:
-                    self.buildLog.insertLine('Error occured during build.',0)
-                    return
-                                    
-                rules_count = len(rules)
-                self.buildLog.insertLine('Found ' + str(rules_count) + ' rules with support >= '+ str(build_support) + '.', 0)
-
-                # Èe si že našel dovolj pravil
-                if rules_count >= self.max_rules:
+    def generateRules(self):
+        if self.dataset:
+            num_steps = 20
+            for i in range(num_steps):
+                build_support = 1 - float(i) / num_steps * (1 - self.minSupport/100.0)
+                if self.useSparseAlgorithm:
+                    rules = orange.AssociationRulesSparseInducer(self.dataset, support = build_support, confidence = self.minConfidence/100.)
+                else:
+                    rules = orange.AssociationRulesInducer(self.dataset, support = build_support, confidence = self.minConfidence/100., classificationRules = self.classificationRules)
+                print len(rules)
+                if len(rules) >= self.maxRules:
                     break
+            print len(rules)
+            self.send("Association Rules", rules)
 
-            # pošlji pravila
-            if self.cbBuildMethod.currentItem() == 1:
-                self.buildLog.insertLine('Build with Sparse Data method ended.', 0)
-            else:
-                self.buildLog.insertLine('Build with Dense Data method ended.', 0)
-           
-            self.send("arules", rules)
+    def checkSparse(self):
+        state = self.cbSparseAlgorithm.isChecked()
+        if state:
+            self.cbClassificationRules.setEnabled(0)
+            self.cbClassificationRules.setChecked(0)
         else:
-            self.buildLog.insertLine('No data. Load a file.', 0 )
-
-    def cdata(self,dataset):                # channel po katerem dobi podatke
-        self.dataset = dataset 
+            self.cbClassificationRules.setEnabled(1)
+        
+    def cdata(self,dataset):
+        self.dataset = dataset
+        self.generateRules()
 
 if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWAssociationRules()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('lenses.tab')
-    #dataSet=orange.ExampleTable('basket_data_o')
-    od = OrangeData(dataset)
-    ow.cdata(od)
-
+    data = orange.ExampleTable("car")
+    ow.cdata(data)
+    
     ow.show()
     a.exec_loop()
     ow.saveSettings()
