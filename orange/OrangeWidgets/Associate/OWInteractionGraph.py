@@ -43,7 +43,7 @@ class OWInteractionGraph(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Interaction graph")
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
-        self.outputs = [("Examples", ExampleTable), ("view", tuple), ("Selection", list)]
+        self.outputs = [("Examples", ExampleTable), ("Attribute Pair", list), ("Selected Attributes List", list)]
     
 
         #set default settings
@@ -158,13 +158,13 @@ class OWInteractionGraph(OWWidget):
             for (attr1, attr2, rect) in self.lines:
                 clicked = self.clickInside(rect.rect(), ev.pos())
                 if clicked == 1:
-                    self.send("view", (attr1, attr2))
+                    self.send("Attribute Pair", [attr1, attr2])
                     return
         elif ev.button() == QMouseEvent.LeftButton and name == "interactions":
             self.rest = None
             for (rect1, rect2, rect3, nbrect, text1, text2, tooltipRect, tooltipText) in self.interactionRects:
                 if self.clickInside(tooltipRect, ev.pos()) == 1:
-                    self.send("view", (str(text1.text()), str(text2.text())))
+                    self.send("Attribute Pair", [str(text1.text()), str(text2.text())])
 
         elif ev.button() == QMouseEvent.RightButton and name == "interactions":
             if not self.mergeAttributes == 1: return
@@ -211,16 +211,16 @@ class OWInteractionGraph(OWWidget):
         for i in range(len(self.graphs)):
             if self.graphs[i].blankClick == 1:
                 (attr1, attr2, className, string) = self.graphParameters[i]
-                self.send("view", (attr1, attr2))
+                self.send("Attribute Pair", [attr1, attr2])
                 self.graphs[i].blankClick = 0
 
     # click on selection button   
     def selectionClick(self):
         if self.data == None: return
-        list = []
+        l = []
         for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i)))
-        self.send("selection", list)
+            l.append(str(self.shownAttribsLB.text(i)))
+        self.send("Selected Attributes List", l)
 
     def resizeEvent(self, e):
         if hasattr(self, "splitCanvas"):
