@@ -90,7 +90,7 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.optimizationDlgButton = QPushButton('kNN Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         self.tryReverse = QCheckBox("Try reversing attr. values (exponential time)", self.attrOrderingButtons)
 
         self.optimizationDlg = kNNOptimization(None)
@@ -653,6 +653,7 @@ class OWPolyviz(OWWidget):
 class GroupPolyvizOptions(QVGroupBox):
     def __init__(self,parent=None,name=None):
         QVGroupBox.__init__(self, parent, name)
+        self.parent = parent
 
         # ####
         # point width

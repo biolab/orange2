@@ -23,8 +23,8 @@ import OWGUI
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes"]
     #spreadType=["none","uniform","triangle","beta"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20]
     scaleFactorList = ["1.0", "1.1","1.2","1.3","1.4","1.5","1.6","1.7","1.8","1.9","2.0","2.2","2.4","2.6","2.8", "3.0"]
@@ -91,7 +91,7 @@ class OWRadviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
 
-        self.optimizationDlgButton = QPushButton('kNN Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         self.optimizationDlg = kNNOptimization(None)
         self.optimizationDlg.parentName = "Radviz"
         self.graph.kNNOptimization = self.optimizationDlg
@@ -653,9 +653,9 @@ class GroupRadvizOptions(QVGroupBox):
         self.sendShownAttributes = QCheckBox("Send only shown attributes", self.sendingSelectionsBG)
 
         # ####
-        #self.gSetCanvasColorB = QPushButton("Canvas Color", self)
-        #self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
-        #self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
+        self.gSetCanvasColorB = QPushButton("Canvas Color", self)
+        self.connect(self.widthSlider, SIGNAL("valueChanged(int)"), self.widthLCD, SLOT("display(int)"))
+        self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
 
     def setGraphCanvasColor(self):
         newColor = QColorDialog.getColor(QColor(self.parent.graphCanvasColor))

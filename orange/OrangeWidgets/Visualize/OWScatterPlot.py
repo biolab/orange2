@@ -99,13 +99,12 @@ class OWScatterPlot(OWWidget):
 
         # optimization
         self.attrOrderingButtons = QVButtonGroup("Shown attributes", self.GeneralTab) 
-        self.optimizationDlgButton = QPushButton('Optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         self.optimizationDlg = kNNOptimization(None)
         self.optimizationDlg.parentName = "ScatterPlot"
         self.optimizationDlg.optimizeAllSubsetSeparationButton.setEnabled(0)
         self.optimizationDlg.maxLenCombo.setEnabled(0)
         self.optimizationDlg.exactlyLenCombo.setEnabled(0)
-        self.optimizationDlg.useHeuristicsCB.setEnabled(0)
         self.optimizationDlg.optimizeSeparationButton.setText("Optimize separation")
         self.graph.kNNOptimization = self.optimizationDlg
 
