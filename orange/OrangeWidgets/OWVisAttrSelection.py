@@ -137,6 +137,37 @@ class MeasureFisherDiscriminant:
 
         return self.attrInfo[data.domain[attr].name]
 
+# signal to noise
+class S2NMeasure:
+    def __init__(self):
+        self.dataset = None
+        self.attrInfo = {}
+
+    def __call__(self, attr, data):
+        if self.attrInfo == {}:
+            arr = data.toNumeric("ac")[0]
+            arr = Numeric.transpose(arr)
+            clsIndex = len(arr)-1
+            cls = [Numeric.where(arr[clsIndex]== i, 1, 0) for i in range(len(data.domain.classVar.values))]
+
+            for i in range(len(data.domain.attributes)):
+                mis = []; stds = []; ts = []
+                for a in cls:
+                    sel = Numeric.compress(a, arr[i]).tolist()
+                    mis.append(statc.mean(sel))
+                    stds.append(statc.std(sel))
+
+                for a in range(len(data.domain.classVar.values)):
+                    for b in range(a+1, len(data.domain.classVar.values)):
+                        t = (mis[a] - mis[b]) / (stds[a] + stds[b])
+                        ts.append(abs(t))
+                
+                self.attrInfo[data.domain.attributes[i].name] = sum(ts)/float(len(data.domain.classVar.values))
+
+        return self.attrInfo[data.domain[attr].name]
+
+
+
 
 # used by kNN optimization to evaluate attributes
 def evaluateAttributes(data, contMeasure, discMeasure):
@@ -409,3 +440,11 @@ def removeAttributePair(attr1, attr2, attrInfo):
 
 # ##########################################################################################
 # ##########################################################################################
+
+if __name__=="__main__":
+    pass
+    #import orange
+    #data = orange.ExampleTable(r"E:\Development\Python23\Lib\site-packages\Orange\Datasets\microarray\cancer diagnostics\leukemia_tran.tab")
+    #a = data.toNumeric("ac")[0]
+    #c = S2NMeasure()
+    #c(data.domain.attributes[0].name, data)
