@@ -669,10 +669,8 @@ class OWROC(OWWidget):
         self.loadSettings()
 
         # GUI
-        self.missClassificationCostQVB = QVGroupBox(self)
-        self.missClassificationCostQVB.hide()
         self.grid.expand(3, 3)
-        self.grid.addMultiCellWidget(self.missClassificationCostQVB,0,3,2,2)
+##        self.grid.addMultiCellWidget(self.missClassificationCostQVB,0,3,2,2)
 
         self.graphsGridLayoutQGL = QGridLayout(self.mainArea)
 ##        self.graphsGridLayoutQGL.setResizeMode(QGridLayout.Fixed)
@@ -683,11 +681,14 @@ class OWROC(OWWidget):
         # inputs
         # data and graph temp variables
         self.addInput("results")
+        self.addInput("target")
 
         # temp variables
         self.dres = None
         self.classifierColor = None
         self.numberOfClasses  = 0
+        self.targetClass = 0
+        self.clPerformanceControls = []
         self.numberOfClassifiers = 0
         self.numberOfIterations = 0
         self.averagingMethod = 'merge'
@@ -714,13 +715,13 @@ class OWROC(OWWidget):
         self.splitQS.setOrientation(Qt.Vertical)
 
         ## class selection (classQLB)
-        self.classQVGB = QVGroupBox(self.splitQS)
-        self.classQVGB.setTitle("Classes")
-        self.classQLB = QListBox(self.classQVGB)
-        self.classQLB.setSelectionMode(QListBox.Multi)
-        self.unselectAllClassedQLB = QPushButton("(Un)select all", self.classQVGB)
-        self.connect(self.unselectAllClassedQLB, SIGNAL("clicked()"), self.SUAclassQLB)
-        self.connect(self.classQLB, SIGNAL("selectionChanged()"), self.classSelectionChange)
+##        self.classQVGB = QVGroupBox(self.splitQS)
+##        self.classQVGB.setTitle("Classes")
+##        self.classQLB = QListBox(self.classQVGB)
+##        self.classQLB.setSelectionMode(QListBox.Multi)
+##        self.unselectAllClassedQLB = QPushButton("(Un)select all", self.classQVGB)
+##        self.connect(self.unselectAllClassedQLB, SIGNAL("clicked()"), self.SUAclassQLB)
+##        self.connect(self.classQLB, SIGNAL("selectionChanged()"), self.classSelectionChange)
 
         ## classifiers selection (classifiersQLB)
         self.classifiersQVGB = QVGroupBox(self.splitQS)
@@ -763,8 +764,9 @@ class OWROC(OWWidget):
         self.performanceQVGB = QVGroupBox(self.space)
         self.performanceQVGB.setTitle("Performance line (only in Merge averaging)")
         self.showPerformanceAnalysisQCB = QCheckBox("Enable", self.performanceQVGB)
+        self.missClassificationCostQVB = QVBox(self.performanceQVGB)
         self.connect(self.showPerformanceAnalysisQCB, SIGNAL("stateChanged(int)"), self.setShowPerformanceAnalysis)
-        self.showPerformanceAnalysisQCB.setChecked(0)
+        self.showPerformanceAnalysisQCB.setChecked(1)
 
         self.resize(800, 768)
         szs = self.splitQS.sizes()
@@ -848,8 +850,8 @@ class OWROC(OWWidget):
                 break
         qlb.selectAll(not(selected))
 
-    def SUAclassQLB(self):
-        self.selectUnselectAll(self.classQLB)
+##    def SUAclassQLB(self):
+##        self.selectUnselectAll(self.classQLB)
 
     def SUAclassifiersQLB(self):
         self.selectUnselectAll(self.classifiersQLB)
@@ -861,43 +863,45 @@ class OWROC(OWWidget):
     def selectAveragingMethod(self, id):
         if id == 0: ##self.mergeAverageQRB.is = QRadioButton("Merge (average expected ROC performance)", self.averagingQBG)
             self.averagingMethod = 'merge'
-            self.missClassificationCostQVB.show()
+            if self.showPerformanceAnalysisQCB.isChecked():
+                self.missClassificationCostQVB.setEnabled(1)
+            else:
+                self.missClassificationCostQVB.setEnabled(0)
         elif id == 1: ##self.verticalAverageQRB = QRadioButton("Vertical", self.averagingQBG)
             self.averagingMethod = 'vertical'
-            self.missClassificationCostQVB.hide()
+            self.missClassificationCostQVB.setEnabled(0)
         elif id == 2: ##self.thresholdAverageQRB = QRadioButton("Threshold", self.averagingQBG)
             self.averagingMethod = 'threshold'
-            self.missClassificationCostQVB.hide()
+            self.missClassificationCostQVB.setEnabled(0)
         else: ##self.noAverageQRB = QRadioButton("None", self.averagingQBG)
             self.averagingMethod = None
-            self.missClassificationCostQVB.hide()
+            self.missClassificationCostQVB.setEnabled(0)
 
         self.convexCurvesQCB.setEnabled(self.averagingMethod == 'merge' or self.averagingMethod == None)
-        self.missClassificationCostQVB.setEnabled(self.averagingMethod == 'merge')
+##        self.missClassificationCostQVB.setEnabled(self.averagingMethod == 'merge')
         self.showPerformanceAnalysisQCB.setEnabled(self.averagingMethod == 'merge')
 
         for g in self.graphs:
             g.setAveragingMethod(self.averagingMethod)
 
     ## class selection (classQLB)
-    def classSelectionChange(self):
-        numOfClasseVisible = 0
-        for i in range(self.classQLB.numRows()):
+    def target(self, targetClass):
+        self.targetClass = targetClass
+        
+        for i in range(len(self.graphs)):
             self.graphs[i].hide()
-            if self.classQLB.isSelected(i):
-                numOfClasseVisible += 1
+            if self.clPerformanceControls <> [] and i < len(self.clPerformanceControls):
+                self.clPerformanceControls[i].hide()
 
-        max = 1
-        while max*max < numOfClasseVisible: max += 1
-
-        gcn = 0
-        for i in range(self.classQLB.numRows()):
-            if self.classQLB.isSelected(i):
-                print gcn/max, gcn%max
-                self.graphsGridLayoutQGL.addWidget(self.graphs[i], gcn%max, gcn/max)
-                self.graphs[i].show()
-                gcn += 1
-
+        if (self.targetClass <> None) and (len(self.graphs) > 0):
+            if self.targetClass >= len(self.graphs):
+                self.targetClass = len(self.graphs) - 1
+            if self.targetClass < 0:
+                self.targetClass = 0
+            self.graphsGridLayoutQGL.addWidget(self.graphs[self.targetClass], 0, 0)
+            self.graphs[self.targetClass].show()
+            if self.clPerformanceControls <> [] and self.targetClass < len(self.clPerformanceControls):
+                self.clPerformanceControls[self.targetClass].show()
     ##
 
     ## classifiers selection (classifiersQLB)
@@ -922,9 +926,9 @@ class OWROC(OWWidget):
 
     def setShowPerformanceAnalysis(self, b):
         if b:
-            self.missClassificationCostQVB.show()
+            self.missClassificationCostQVB.setEnabled(1)
         else:
-            self.missClassificationCostQVB.hide()
+            self.missClassificationCostQVB.setEnabled(0)
         for g in self.graphs:
             g.setShowPerformanceLine(b)
 
@@ -990,9 +994,9 @@ class OWROC(OWWidget):
             c.close(1)
 
         show = 0
-        if self.missClassificationCostQVB.isVisible():
+        if self.missClassificationCostQVB.isEnabled():
             show = 1
-            self.missClassificationCostQVB.hide()
+            self.missClassificationCostQVB.setEnabled(0)
 
         ## FP and FN cost ranges
         mincost = 1
@@ -1015,40 +1019,50 @@ class OWROC(OWWidget):
         for c in self.dres.classValues:
             self.pvalues.append(1)
 
-        wa = QPushButton("Default p(cl)", self.missClassificationCostQVB)
-        self.connect(wa, SIGNAL("clicked()"), self.setDefaultPValues)
+        self.clPerformanceControls = []
 
         for c in self.dres.classValues:
             tmpclQVGB = QVGroupBox(self.missClassificationCostQVB)
             tmpclQVGB.setTitle("cl: " + str(c))
 
-            hb = QHBox(tmpclQVGB)
+            hbl1 = QHBox(tmpclQVGB)
+            hb = QHBox(hbl1)
             QLabel('FP cost:', hb)
             wa = QSpinBox(mincost, maxcost, stepcost, hb)
             self.FPcostQSpinBoxes.append(wa)
             self.connect(wa, SIGNAL("valueChanged(int)"), CostChange(self, index))
 
-            hb = QHBox(tmpclQVGB)
+            hb = QHBox(hbl1)
             QLabel('FN cost:', hb)
             wa = QSpinBox(mincost, maxcost, stepcost, hb)
             self.FNcostQSpinBoxes.append(wa)
             self.connect(wa, SIGNAL("valueChanged(int)"), CostChange(self, index))
 
-            hb = QHBox(tmpclQVGB)
+            hbl2 = QHBox(tmpclQVGB)
+            hb = QHBox(hbl2)
             QLabel('p(cl) [1/1000]:', hb)
             wa = QSpinBox(minp, self.maxp, stepp, hb)
             self.pvaluesQSpinBoxes.append(wa)
-
             self.connect(wa, SIGNAL("valueChanged(int)"), BalancedSpinBoxCallback(self, index, minp, self.maxp, maxpsum))
 
+            wa = QPushButton("Default p(cl)", hbl2)
+            self.connect(wa, SIGNAL("clicked()"), self.setDefaultPValues)
+
+            self.clPerformanceControls.append(tmpclQVGB)
+
+            if index == self.targetClass:
+                tmpclQVGB.show()
+            else:
+                tmpclQVGB.hide()
+            
             index += 1
 
-        if show: self.missClassificationCostQVB.show()
+        if show: self.missClassificationCostQVB.setEnabled(1)
 
     def results(self, dres):
         self.dres = dres
 
-        self.classQLB.clear()
+##        self.classQLB.clear()
         self.classifiersQLB.clear()
         self.testSetsQLB.clear()
         self.removeGraphs()
@@ -1062,7 +1076,7 @@ class OWROC(OWWidget):
             for i in range(self.numberOfClasses):
                 graph = singleClassROCgraph(self.mainArea, "", "cl: " + self.dres.classValues[i])
                 self.graphs.append( graph )
-            self.classSelectionChange()
+            self.target(self.targetClass)
 
             ## classifiersQLB
             self.classifierColor = []
@@ -1084,8 +1098,8 @@ class OWROC(OWWidget):
 
             ## update graphics
             ## classQLB
-            self.classQLB.insertStrList(self.dres.classValues)
-            self.classQLB.selectAll(1)  ##or: if numberOfClasses > 0: self.classQLB.setSelected(0, 1)
+##            self.classQLB.insertStrList(self.dres.classValues)
+##            self.classQLB.selectAll(1)  ##or: if numberOfClasses > 0: self.classQLB.setSelected(0, 1)
 
             ## classifiersQLB
             for i in range(self.numberOfClassifiers):
