@@ -56,7 +56,7 @@ class BasicSVMLearner(orange.Learner):
       self.degree = 3
       
       # poly/rbf/sigm parameter
-      # if 0.0, it is assigned the default value of 1.0/features
+      # if 0.0, it is assigned the default value of 1.0/#attributes
       self.gamma = 0.0
 
       # poly/sigm      
@@ -85,7 +85,8 @@ class BasicSVMLearner(orange.Learner):
       # class weights
       self.classweights = []
 
-      self.translation_mode = 1
+      self.translation_mode_d = 1
+      self.translation_mode_c = 1
       self.for_nomogram = 0
 
       self.normalize = 0      
@@ -126,7 +127,7 @@ class BasicSVMLearner(orange.Learner):
               raise "Infeasible nu value."
 
       puredata = orange.Filter_hasClassValue(data)
-      translate = orng2Array.DomainTranslation(self.translation_mode)
+      translate = orng2Array.DomainTranslation(self.translation_mode_d,self.translation_mode_c)
       if fulldata != 0:
           purefulldata = orange.Filter_hasClassValue(fulldata)
           translate.analyse(purefulldata)
@@ -151,7 +152,7 @@ class BasicSVMLearner(orange.Learner):
   def __call__(self, data, weights = 0,fulldata=0):
       # note that weights are ignored
       (model, translate) = self.getmodel(data,fulldata)
-      return BasicSVMClassifier(model,translate,normalize=self.normalize)
+      return BasicSVMClassifier(model,translate,normalize=(self.normalize or self.for_nomogram))
 
 class BasicSVMClassifier(orange.Classifier):
   def __init__(self, model, translate, normalize):
@@ -161,7 +162,7 @@ class BasicSVMClassifier(orange.Classifier):
       self.translate = translate
       self.normalize = normalize
 
-      if normalize and model['kernel_type'] == 0 and model["svm_type"] in [0,1] and model["nr_class"] == 2:
+      if normalize and model['kernel_type'] == 0 and model["svm_type"] == 0 and model["nr_class"] == 2:
           beta = model["rho"][0]
           svs = model["SV"]
           ll = -1
@@ -173,8 +174,11 @@ class BasicSVMClassifier(orange.Classifier):
               coef = csv[0][0]
               for (j,v) in csv[1:]:
                   xcoeffs[j-1] += coef*v
-                  
           self.coefficient = 1.0/math.sqrt(reduce(lambda x,y:x+y*y,xcoeffs))
+          #if model["label"][0] == 0:
+          #    self.coefficient *= -1.0
+          self.xcoeffs = [x*self.coefficient for x in xcoeffs]
+          self.beta = beta*self.coefficient
           
   def getmargin(self, example):
       # classification with margins

@@ -238,14 +238,15 @@ class RobustBLogisticClassifierWrap(orange.Classifier):
 #
 class BasicLogisticLearner(RobustBLogisticLearner):
     def __init__(self):
-        self.translation_mode = 0 # dummy
+        self.translation_mode_d = 0 # dummy
+        self.translation_mode_c = 1 # standardize
 
     def __call__(self, examples, weight = 0,fulldata=0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
             for i in examples.domain.classVar.values:
                 print i
             raise "Logistic learner only works with binary discrete class."
-        translate = orng2Array.DomainTranslation(self.translation_mode)
+        translate = orng2Array.DomainTranslation(self.translation_mode_d,self.translation_mode_c)
         if fulldata != 0:
             translate.analyse(fulldata, weight)
         else:
@@ -320,7 +321,8 @@ class BasicBayesLearner(orange.Learner):
 
     
     def __init__(self):
-        self.translation_mode = 1 # binarization
+        self.translation_mode_d = 1 # binarization
+        self.translation_mode_c = 1 # standardization
 
     def __call__(self, examples, weight = 0,fulldata=0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
@@ -328,7 +330,7 @@ class BasicBayesLearner(orange.Learner):
         for attr in examples.domain.attributes:
             if not(attr.varType == 1):
                 raise "BasicBayes learner does not work with continuous attributes."
-        translate = orng2Array.DomainTranslation(self.translation_mode)
+        translate = orng2Array.DomainTranslation(self.translation_mode_d,self.translation_mode_c)
         if fulldata != 0:
             translate.analyse(fulldata, weight)
         else:

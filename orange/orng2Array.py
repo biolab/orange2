@@ -148,6 +148,167 @@ class Scalizer:
         return self.attr((list[self.idx]/self.mult)+self.disp)
         
 
+
+class Quadratizer:
+    def __init__(self,idx,attr,isclass=0):
+        self.avg = 0.0
+        self.stddev = 0.0
+        self.idx = idx
+        self.nidx = idx+2
+        self.attr= attr
+        self.values = []
+        self.isclass = isclass
+
+    def learn(self,value):
+        try:
+            spec = value.isSpecial()
+        except:
+            spec = 0
+        if not spec:
+            value = float(value)
+            self.values.append(value)
+            self.avg += value
+
+    def activate(self):
+        pass
+
+    def status(self):
+        print "quadratizer: "
+        print "\tattr:",self.attr
+        print "\tidx: ",self.idx
+        print "\taverage: ",self.avg
+        print "\tstddev: ",self.stddev
+            
+    def prep(self):
+        self.avg /= len(self.values)
+        for x in self.values:
+            t = x-self.avg
+            self.stddev += t*t
+        self.stddev /= len(self.values)-1
+        self.stddev = math.sqrt(self.stddev)
+        self.mult = 0.5/self.stddev
+        self.disp = self.avg
+        mmin = min(self.values)
+        mmax = max(self.values)
+        self.correction = 0.5/max((self.mult*(mmin-self.disp))**2, (self.mult*(mmax-self.disp))**2)
+        
+
+    def prepareSVM(self,nomo):
+        self.prep()
+        if self.isclass == 1:
+            self.missing = 3.14159   # a special value!
+        else:
+            self.missing = (0,1)
+
+    def prepareLR(self):
+        self.prep()
+        self.mult = 1.0
+        self.missing = 0.0
+        
+    def apply(self,ex,list):
+        (value,spec) = _getattr(ex,self.attr)
+        if spec:
+            list[self.idx] = self.missing
+            list[self.idx+1] = self.missing
+        else:
+            list[self.idx] = (float(value)-self.disp)*self.mult
+            list[self.idx+1] = (list[self.idx]**2)*self.correction
+        return
+
+    def descript(self):
+        if self.disp==0.0 and self.mult==1.0:
+            return ['%s'%(self.attr.name)]
+        else:
+            return ['(%s-%f)*%f'%(self.attr.name,self.disp,self.mult)]
+
+    def description(self):
+        return (0,'%s'%(self.attr.name))
+
+    def inverse(self,list):
+        return self.attr((list[self.idx]/self.mult)+self.disp)
+
+class Cubizer:
+    def __init__(self,idx,attr,isclass=0):
+        self.avg = 0.0
+        self.stddev = 0.0
+        self.idx = idx
+        self.nidx = idx+3
+        self.attr= attr
+        self.values = []
+        self.isclass = isclass
+
+    def learn(self,value):
+        try:
+            spec = value.isSpecial()
+        except:
+            spec = 0
+        if not spec:
+            value = float(value)
+            self.values.append(value)
+            self.avg += value
+
+    def activate(self):
+        pass
+
+    def status(self):
+        print "cubizer: "
+        print "\tattr:",self.attr
+        print "\tidx: ",self.idx
+        print "\taverage: ",self.avg
+        print "\tstddev: ",self.stddev
+            
+    def prep(self):
+        self.avg /= len(self.values)
+        for x in self.values:
+            t = x-self.avg
+            self.stddev += t*t
+        self.stddev /= len(self.values)-1
+        self.stddev = math.sqrt(self.stddev)
+        self.mult = 0.33/self.stddev
+        self.disp = self.avg
+        mmin = min(self.values)
+        mmax = max(self.values)
+        self.correction2 = 0.33/max((self.mult*(mmin-self.disp))**2, (self.mult*(mmax-self.disp))**2)
+        self.correction3 = 0.33/max((self.mult*(mmin-self.disp))**3, (self.mult*(mmax-self.disp))**3)
+        
+
+    def prepareSVM(self,nomo):
+        self.prep()
+        if self.isclass == 1:
+            self.missing = 3.14159   # a special value!
+        else:
+            self.missing = (0,1)
+
+    def prepareLR(self):
+        self.prep()
+        self.mult = 1.0
+        self.missing = 0.0
+        
+    def apply(self,ex,list):
+        (value,spec) = _getattr(ex,self.attr)
+        if spec:
+            list[self.idx] = self.missing
+            list[self.idx+1] = self.missing
+            list[self.idx+3] = self.missing
+        else:
+            list[self.idx] = (float(value)-self.disp)*self.mult
+            list[self.idx+1] = (list[self.idx]**2)*self.correction2
+            list[self.idx+2] = (list[self.idx]**3)*self.correction3
+        return
+
+    def descript(self):
+        if self.disp==0.0 and self.mult==1.0:
+            return ['%s'%(self.attr.name)]
+        else:
+            return ['(%s-%f)*%f'%(self.attr.name,self.disp,self.mult)]
+
+    def description(self):
+        return (0,'%s'%(self.attr.name))
+
+    def inverse(self,list):
+        return self.attr((list[self.idx]/self.mult)+self.disp)
+
+
 class Standardizer:
     def __init__(self,idx,attr,isclass=0):
         self.avg = 0.0
@@ -449,11 +610,18 @@ class Dummy:
         return self.attr(best-self.idx)
 
 class DomainTranslation:
-    def __init__(self, mode = 0):
+    def __init__(self, mode = 0, float_mode = 1):
+        # MODE:
         # 0: always dummy
         # 1: always binarize
         # 2: binarize if more values than 2, else dummy
+        # FLOAT_MODE:
+        # 0 : normalize
+        # 1 : standardize
+        # 2 : quadratize
+        # 3 : cubize
         self.mode = mode
+        self.floatmode = float_mode
 
     def analyse(self,examples,weight=0):
         # attributes
@@ -463,7 +631,14 @@ class DomainTranslation:
         for i in examples.domain.attributes:
             if i.varType == 2:
                 # continuous
-                t = Standardizer(idx,i)
+                if self.floatmode == 0:
+                    t = Scalizer(idx,i)
+                elif self.floatmode == 1:
+                    t = Standardizer(idx,i)
+                elif self.floatmode == 2:
+                    t = Quadratizer(idx,i)
+                elif self.floatmode == 3:
+                    t = Cubizer(idx,i)
             else:
                 if i.varType == 1:
                     
