@@ -24,7 +24,7 @@
 #define __CLS_VALUE_HPP
 
 #include "c2py.hpp"
-#include "orange.hpp"
+#include "module.hpp"
 
 #include "values.hpp"
 #include "vars.hpp"

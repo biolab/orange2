@@ -29,6 +29,9 @@ Package=<4>
     Begin Project Dependency
     Project_Dep_Name include
     End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name orange_core
+    End Project Dependency
 }}}
 
 ###############################################################################
@@ -56,6 +59,36 @@ Package=<5>
 
 Package=<4>
 {{{
+}}}
+
+###############################################################################
+
+Project: "orange_core"=.\orange_core.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "orangene"=.\orangene.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name include
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name orange_core
+    End Project Dependency
 }}}
 
 ###############################################################################

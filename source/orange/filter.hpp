@@ -112,7 +112,7 @@ public:
   float max; //P maximal acceptable value
   bool outside; //P it true, the filter accepts the values outside the interval, not inside
 
-  TValueFilter_continuous(const int &pos = ILLEGAL_INT, const float &min=0.0, const float &max=0.0, const bool &neg = false, const int &accs = -1);
+  TValueFilter_continuous(const int &pos = ILLEGAL_INT, const float &min=0.0, const float &max=0.0, const bool &outs = false, const int &accs = -1);
   virtual int operator()(const TExample &) const;
 };
 

@@ -29,7 +29,7 @@
 
 #include "garbage.hpp"
 #include "root.hpp"
-#include "orange.hpp"
+#include "module.hpp"
 #include "errors.hpp"
 
 PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *kwds);

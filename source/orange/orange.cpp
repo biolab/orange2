@@ -25,60 +25,6 @@
   #include <windows.h>
 #endif
 
-#include "orange.hpp"
-#include "errors.hpp"
-#include "values.hpp"
-#include "initialization.px"
-
-TOrangeType *FindOrangeType(const type_info &tinfo)
-{ TOrangeType **orty=orangeClasses;
-  while (*orty && ((*orty)->ot_classinfo!=tinfo))
-    orty++;
-
-  return *orty;
-}
-
-bool PyOrange_CheckType(PyTypeObject *pytype)
-{ TOrangeType *type=(TOrangeType *)pytype;
-  for(TOrangeType **orty=orangeClasses; *orty; orty++)
-    if (*orty==type)
-      return true;
-  return false;
-}
-
-
-// Ascends the hierarchy until it comes to a class that is from orange's hierarchy
-TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *pytype)
-{ while (pytype && !PyOrange_CheckType(pytype))
-    pytype=pytype->tp_base;
-  return (TOrangeType *)pytype;
-}
-
-
-bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
-{
-  if (dict) {
-    int pos = 0;
-    PyObject *key, *value;
-    char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
-    while (PyDict_Next(dict, &pos, &key, &value)) {
-      if (kc) {
-        char *kw = PyString_AsString(key);
-        char **akc;
-        for (akc = kc; *akc && strcmp(*akc, kw); akc++);
-        if (*akc)
-          continue;
-      }
-      if (PyObject_SetAttr(self, key, value)<0)
-        return false;
-    }
-  }
-  return true;
-}
-
-
-#include "converts.hpp"
-
 void tdidt_cpp_gcUnsafeInitialization();
 void random_cpp_gcUnsafeInitialization();
 
@@ -87,17 +33,13 @@ void gcUnsafeStaticInitialization()
   random_cpp_gcUnsafeInitialization();
 }
 
+#include "Python.h"
+#include "module.hpp"
 
-PyObject *PyExc_OrangeKernel;
-PyObject *PyExc_OrangeWarning;
-PyObject *PyExc_OrangeKernelWarning;
-PyObject *PyExc_OrangeAttributeWarning;
+extern PyMethodDef orangeFunctions[];
+void addConstants(PyObject *);
 
-void raiseWarning(const char *s)
-{ if (PyErr_Warn(PyExc_OrangeKernelWarning, const_cast<char *>(s)))
-    throw mlexception(s);
-}
-
+#include "initialization.px"
 
 bool initExceptions()
 { if (   ((PyExc_OrangeKernel = makeExceptionClass("orange.KernelException", "An error occurred in Orange's C++ kernel")) == NULL)
@@ -126,7 +68,7 @@ bool initExceptions()
 
 PyObject *orangeModule;
 
-void initorange()
+extern "C" __declspec(dllexport) void initorange()
 { 
   if (!initExceptions())
     return;
@@ -145,6 +87,8 @@ void initorange()
   PyModule_AddObject(orangeModule, "AttributeWarning", PyExc_OrangeAttributeWarning);
   PyModule_AddObject(orangeModule, "KernelWarning", PyExc_OrangeKernelWarning);
   PyModule_AddObject(orangeModule, "Warning", PyExc_OrangeWarning);
+
+  PyModule_AddObject(orangeModule, "_orangeClasses", PyCObject_FromVoidPtr((void *)orangeClasses, NULL));
 }
 
 

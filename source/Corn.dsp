@@ -58,7 +58,7 @@ LINK32=link.exe
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
-PostBuild_Cmds=del "d:\ai\orange\modules\corn.pyd"	"c:\program files\upx" "c:\temp\orange\release\corn.pyd" -o "d:\ai\orange\modules\corn.pyd"
+PostBuild_Cmds=del "d:\ai\orange\modules\corn.pyd"	"c:\program files\upx" "c:\temp\orange\release\corn.pyd" -o "c:\janez\orange\modules\corn.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Corn - Win32 Debug"
@@ -106,6 +106,10 @@ SOURCE=.\corn\corn.cpp
 # Begin Group "Header Files"
 
 # PROP Default_Filter "h;hpp;hxx;hm;inl"
+# Begin Source File
+
+SOURCE=.\corn\corn.hpp
+# End Source File
 # End Group
 # Begin Group "Resource Files"
 

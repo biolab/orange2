@@ -23,7 +23,7 @@
 #ifndef __CLS_EXAMPLE_HPP
 #define __CLS_EXAMPLE_HPP
 
-#include "orange.hpp"
+#include "module.hpp"
 #include "examples.hpp"
 
 extern TOrangeType PyOrExample_Type;

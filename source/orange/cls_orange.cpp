@@ -27,7 +27,6 @@
 #include "vars.hpp"
 #include "domain.hpp"
 
-#include "orange.hpp"
 #include "cls_value.hpp"
 #include "cls_example.hpp"
 #include "cls_orange.hpp"
@@ -43,6 +42,54 @@ POrange PyOrType_NoConstructor()
 { throw mlexception("no constructor for this type");
   return POrange();
 }
+
+
+TOrangeType *FindOrangeType(const type_info &tinfo)
+{ TOrangeType **orty=orangeClasses;
+  while (*orty && ((*orty)->ot_classinfo!=tinfo))
+    orty++;
+
+  return *orty;
+}
+
+bool PyOrange_CheckType(PyTypeObject *pytype)
+{ TOrangeType *type=(TOrangeType *)pytype;
+  for(TOrangeType **orty=orangeClasses; *orty; orty++)
+    if (*orty==type)
+      return true;
+  return false;
+}
+
+
+// Ascends the hierarchy until it comes to a class that is from orange's hierarchy
+TOrangeType *PyOrange_OrangeBaseClass(PyTypeObject *pytype)
+{ while (pytype && !PyOrange_CheckType(pytype))
+    pytype=pytype->tp_base;
+  return (TOrangeType *)pytype;
+}
+
+
+bool SetAttr_FromDict(PyObject *self, PyObject *dict, bool fromInit)
+{
+  if (dict) {
+    int pos = 0;
+    PyObject *key, *value;
+    char **kc = fromInit ? ((TOrangeType *)(self->ob_type))->ot_constructorkeywords : NULL;
+    while (PyDict_Next(dict, &pos, &key, &value)) {
+      if (kc) {
+        char *kw = PyString_AsString(key);
+        char **akc;
+        for (akc = kc; *akc && strcmp(*akc, kw); akc++);
+        if (*akc)
+          continue;
+      }
+      if (PyObject_SetAttr(self, key, value)<0)
+        return false;
+    }
+  }
+  return true;
+}
+
 
 PyObject *PyOrType_GenericNew(PyTypeObject *type, PyObject *args, PyObject *)
 { PyTRY

@@ -106,18 +106,7 @@ void loadC45()
 
   char funcname[258];
   
-  /*
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "getc45Data");
-  getDataFunc *p = (getDataFunc *)(GetProcAddress(c45Dll, funcname));
-
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45_learn");
-  c45learn = (learnFunc *)(GetProcAddress(c45Dll, funcname));
-
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45_collect_garbage");
-  c45garbage = (garbageFunc *)(GetProcAddress(c45Dll, funcname));
-*/
-
-  PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45Data");
+   PyOS_snprintf(funcname, sizeof(funcname), "%s", "c45Data");
   void *p = GetProcAddress(c45Dll, funcname);
 
   PyOS_snprintf(funcname, sizeof(funcname), "%s", "learn");

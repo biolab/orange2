@@ -239,7 +239,7 @@ int VariableFilterMap_setitemlow(TVariableFilterMap *aMap, PVariable var, PyObje
     if (!PyArg_ParseTuple(pyvalue, "ff:VariableFilterMap.__setitem__", &min, &max))
       return -1;
 
-    aMap->__ormap[var] = (min<max) ? mlnew TValueFilter_continuous(ILLEGAL_INT, min, max)
+    aMap->__ormap[var] = (min<=max) ? mlnew TValueFilter_continuous(ILLEGAL_INT, min, max)
                                    : mlnew TValueFilter_continuous(ILLEGAL_INT, max, min, true);
     return 0;
   }
