@@ -300,7 +300,7 @@ class AttributeRedundanciesRemover:
   def __init__(self, **keyw):
     self.__dict__ = keyw
 
-  def __call__(self, data, weight):
+  def __call__(self, data, weight=0):
     if hasattr(self, "inducer"):
       inducer = self.inducer
     else:
