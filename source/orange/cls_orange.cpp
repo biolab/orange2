@@ -1093,7 +1093,9 @@ int PyOrange_DictProxy_length(TPyOrange_DictProxy *mp)
 {
   int inlen = PyDict_Size((PyObject *)mp);
   if (mp->backlink) {
-    for (const TPropertyDescription *ppd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties, *pd = ppd; pd->name; pd++);
+    const TPropertyDescription *ppd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties, *pd = ppd;
+    while(pd->name)
+      pd++;
     inlen += pd-ppd;
   }
 
@@ -1206,7 +1208,9 @@ PyObject *PyOrange_DictProxy_has_key(TPyOrange_DictProxy *mp, PyObject *key)
 
   if (mp->backlink) {
     char *name = PyString_AsString(key);
-    for(const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties; pd->name && strcmp(pd->name, name); pd++);
+    const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties;
+    while(pd->name && strcmp(pd->name, name))
+      pd++;
     if (pd->name)
       return PyInt_FromLong(1);
   }
@@ -1286,7 +1290,9 @@ PyObject *PyOrange_DictProxy_pop(TPyOrange_DictProxy *mp, PyObject *args)
 
   if (mp->backlink) {
     char *name = PyString_AsString(key);
-    for(const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties; pd->name && strcmp(pd->name, name); pd++);
+    const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties;
+    while(pd->name && strcmp(pd->name, name))
+      pd++;
     if (pd->name)
       PYERROR(PyExc_KeyError, "cannot remove built-in attributes", PYNULL);
   }
@@ -1314,7 +1320,9 @@ static int PyOrange_DictProxy_contains(TPyOrange_DictProxy *mp, PyObject *key)
     PYERROR(PyExc_AttributeError, "object's attribute name must be string", -1);
 
   char *name = PyString_AsString(key);
-  for(const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties; pd->name && strcmp(pd->name, name); pd++);
+  const TPropertyDescription *pd = PyOrange_AS_Orange(mp->backlink)->classDescription()->properties;
+  while(pd->name && strcmp(pd->name, name))
+    pd++;
   if (pd->name)
     return 1;
 

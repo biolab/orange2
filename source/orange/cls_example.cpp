@@ -822,7 +822,7 @@ int Example_setattr(TPyExample *self, PyObject *name, PyObject *text)
   if (PyString_Check(text)) {
     if (ename)
       delete ename;
-    ename = new string(PyString_AsString(name));
+    ename = new string(PyString_AsString(text));
     return 0;
   }
 
