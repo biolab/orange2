@@ -341,15 +341,15 @@ class OWBaseWidget(QDialog):
         self.eventHandler = handler
 
     def printEvent(self, type, text):
+        # if we are in debug mode print the event into the file
+        if self.signalManager: self.signalManager.addEvent(type + " from " + self.captionTitle[3:] + ": " + text)
+        
         if not self.eventHandler: return
         if text == None:
             self.eventHandler("")
         else:                
             self.eventHandler(type + " from " + self.captionTitle[3:] + ": " + text)
         
-        # if we are in debug mode print the event into the file
-        if self.signalManager: self.signalManager.addEvent(text)
-
     def information(self, text = None):
         self.printEvent("Information", text)
 
