@@ -6,6 +6,10 @@
 <priority>2110</priority>
 """
 
+""" KNOWN BUGS
+- setting of the target does not work
+"""
+
 ## viewportToContents
 
 import copy, time
@@ -26,8 +30,7 @@ PopupRedraw = 5
 
 RefreshBubble = False
 
-# Resolucija canvasa v pixlih
-# Uporabljeno za lovljenje mouse eventom
+# resolution to catch mouse events
 CanvasResolution = 3
 
 # radius of a dropplet at the bottom of node with hidden childreen
@@ -526,7 +529,7 @@ class OWClassificationTreeViewer2D(OWWidget):
 ##        self.Popup.setText('Drawing tree, please wait...')
 ##        self.Popup.show()
         self.buildTree2D()
-        self.refresh()
+        self.canvas.update()
 
 ##        self.Popup.hide()
 
@@ -868,7 +871,7 @@ class OWClassificationTreeViewer2D(OWWidget):
                     if self.TruncateText:
                         w = text.boundingRect().width()
                         if w > maxTextWidth:
-                            for i in range(3): # this is approximite, as we compute the average char width and
+                            for i in range(3): # this is an approximate, as we compute the average char width and
                                 nchars = int(len(label) * maxTextWidth / w)  # based on this reduce string
                                 label = label[:nchars]                     # as the line may still be too long, we iterate
                                 text.setText(label)
