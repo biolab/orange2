@@ -325,6 +325,17 @@ class OWVisGraph(OWGraph):
                 arr = arr * colors.maxHueVal
         return (arr, values)
 
+    def scaleExampleValue(self, example, index):
+        if example[index].isSpecial(): return 0
+        if example.domain[index].varType == orange.VarTypes.Discrete:
+            return getVariableValueIndices(example, index)[example[index].value]
+        else:
+            [min, max] = self.attrValues[example.domain[index].name]
+            if example[index] < min: return 0
+            elif example[index] > max: return 1
+            else: return example[index] - min / float(max - min)
+        
+
     def rescaleAttributesGlobaly(self, data, attrList, jittering = 1):
         if len(attrList) == 0: return
         # find min, max values
