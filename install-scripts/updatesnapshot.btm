@@ -57,10 +57,10 @@ nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDI
 rem del snapshotfiles_*.inc
 
 del %DOWNLOADDIR\orange-source-snap-*.zip
-cdd %STABLEDIR
+cdd %SNAPSHOTDIR
 winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/OrangeCanvas orange/OrangeWidgets orange/doc
 winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
-winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" -aporange source
+winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source
 winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
 
 cdd %SNAPSHOTDIR
@@ -77,5 +77,5 @@ call updateVersionsPy__.btm
 
 popd
 
-start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
+rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/macinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
 
