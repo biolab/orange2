@@ -3,6 +3,8 @@
 #	manager, that handles correct processing of widget signals
 #
 
+import sys
+
 class SignalManager:
     widgets = []    # topologically sorted list of widgets
     links = {}      # dicionary. keys: widgetFrom, values: (widgetTo1, signalNameFrom1, signalNameTo1, enabled1), (widgetTo2, signalNameFrom2, signalNameTo2, enabled2)
@@ -154,7 +156,11 @@ class SignalManager:
         index = self.widgets.index(firstWidget)
         for i in range(index, len(self.widgets)):
             if self.widgets[i].needProcessing:
-                self.widgets[i].processSignals()
+                try:
+                    self.widgets[i].processSignals()
+                except:
+                    type, val, traceback = sys.exc_info()
+                    sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
 
         # we finished propagating
         self.signalProcessingInProgress = 0
