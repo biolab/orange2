@@ -19,10 +19,7 @@ import OWGUI
 import orngLinVis
 import orngSVM
 from OWWidget import *
-#from OW_KN_NomogramOptions import *
 from OWNomogramGraph import * 
-#import OW_NomogramGraph_Martin
-#reload(OW_NomogramGraph_Martin)
 
 def getStartingPoint(d, min):
     if min<0:
