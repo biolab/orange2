@@ -2,7 +2,7 @@
 <name>Rank</name>
 <description>Rank is an Orange Widget that shows ranking of attributes 
 by their relevance for particular classification.</description>
-<category>Data</category>
+<category>Classification</category>
 <icon>icons/Rank.png</icon>
 <priority>200</priority>
 """

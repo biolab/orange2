@@ -4,7 +4,7 @@
 a data set) a classification tree classifier.</description>
 <category>Classification</category>
 <icon>icons/ClassificationTree.png</icon>
-<priority>200</priority>
+<priority>50</priority>
 """
 
 from OData import *

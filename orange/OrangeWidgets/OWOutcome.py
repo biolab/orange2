@@ -2,7 +2,7 @@
 <name>Outcome</name>
 <description>Enables selecting the target outcome from all the possible outcomes in the data.
 It also provides some basic data statistics.</description>
-<category>Input</category>
+<category>Data</category>
 <icon>icons/Outcome.png</icon>
 <priority>20</priority>
 """

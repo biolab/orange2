@@ -1,9 +1,9 @@
 """
 <name>Parallel coordinates</name>
 <description>Shows data using parallel coordianates visualization method</description>
-<category>Visualization</category>
+<category>Classification</category>
 <icon>icons/ParallelCoordinates.png</icon>
-<priority>200</priority>
+<priority>3110</priority>
 """
 # ParallelCoordinates.py
 #

@@ -81,22 +81,14 @@ class WidgetTabs(QTabWidget):
 		self.canvasDlg = None
 		self.allWidgets = []
 
-		tab = WidgetTab(self, "Input")
-		self.tabs.append(tab)
-		self.insertTab(tab, "Input")
-
 		tab = WidgetTab(self, "Data")
 		self.tabs.append(tab)
 		self.insertTab(tab, "Data")
-
+		
 		tab = WidgetTab(self, "Classification")
 		self.tabs.append(tab)
-		self.insertTab(tab, "Classification")		
-
-		tab = WidgetTab(self, "Visualization")
-		self.tabs.append(tab)
-		self.insertTab(tab, "Visualization")
-
+		self.insertTab(tab, "Classification")
+		
 	def setCanvasDlg(self, canvasDlg):
 		self.canvasDlg = canvasDlg
 
