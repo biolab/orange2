@@ -306,6 +306,9 @@ class OWWidget(QWidget):
         """
         return self.outputs
 
+    def setOptions(self):
+        pass
+
 if __name__ == "__main__":  
     a=QApplication(sys.argv)
     oww=OWWidget()

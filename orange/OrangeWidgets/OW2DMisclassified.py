@@ -15,12 +15,17 @@ from OData import *
 from OW2DInteractions import *
 
 class OW2DMisclassified(OW2DInteractions):
+    settingsList = ["PointWidth", "RandomSpreadType", "ShowMainGraphTitle", "ShowXAxisTitle",
+                    "ShowYAxisTitle", "ShowVerticalGridlines", "ShowHorizontalGridlines",
+                    "ShowLegend", "GraphGridColor", "GraphCanvasColor"]
     def __init__(self,parent=None):
         OW2DInteractions.__init__(self, parent)
+        self.setCaption("2D Misclassified")
         self.myclassifier = None
         self.inputs.remove("cdata")
         self.addInput("cdata")
         self.addInput("classifier")
+        
 	########################################################
     # process classifier signal - set new classifier and redraw
     ########################################################
@@ -114,7 +119,7 @@ class OW2DMisclassified(OW2DInteractions):
         for curveIndex in range(2):
             # insert QListBox item
             newColor = QColor()
-            newColor.setHsv(curveIndex*360/2, 255, 255)
+            newColor.setHsv((curveIndex+1)*360/2, 255, 255)
             self.outcomesQLB.insertItem(ColorPixmap(newColor), self.outcomenames[curveIndex])
 
             # insert curve
