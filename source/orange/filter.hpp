@@ -42,6 +42,8 @@ public:
 };
 
 WRAPPER(Filter);
+#define TFilterList TOrangeVector<PFilter>
+VWRAPPER(FilterList)
 
 
 /// Randomly chooses examples with given probability.
@@ -163,6 +165,12 @@ public:
   TFilter_values(bool anAnd=true, bool aneg = false, PDomain =PDomain());
   TFilter_values(PValueFilterList, bool anAnd, bool=false, PDomain =PDomain());
   virtual bool operator()(const TExample &);
+
+  TValueFilterList::iterator findCondition(PVariable var, const int &varType, int &position);
+  void addCondition(PVariable var, const TValue &val);
+  void addCondition(PVariable var, PValueList vallist);
+  void addCondition(PVariable var, const float &min, const float &max, const bool outs = false);
+  void removeCondition(PVariable var);
 };
 
 
@@ -186,6 +194,30 @@ public:
   PExample example; //P example with which examples are compared
 
   TFilter_compatibleExample(PExample, bool=false);
+  virtual bool operator()(const TExample &);
+};
+
+
+class TFilter_conjunction : public TFilter {
+public:
+  __REGISTER_CLASS
+
+  PFilterList filters; //P a list of filters;
+
+  TFilter_conjunction();
+  TFilter_conjunction(PFilterList);
+  virtual bool operator()(const TExample &);
+};
+
+
+class TFilter_disjunction : public TFilter {
+public:
+  __REGISTER_CLASS
+
+  PFilterList filters; //P a list of filters;
+
+  TFilter_disjunction();
+  TFilter_disjunction(PFilterList);
   virtual bool operator()(const TExample &);
 };
 

@@ -107,4 +107,20 @@ int ccn_##type(PyObject *obj, void *ptr) \
 #define CAST_TO_err(type, obj, errreturn) NAME_CAST_TO_err(type, self, obj, errreturn)
 #define CAST_TO(type, obj)                NAME_CAST_TO_err(type, self, obj, PYNULL)
 
+
+PyObject *Orange_getattr(TPyOrange *self, PyObject *name);
+PyObject *Orange_getattr1(TPyOrange *self, const char *name);
+PyObject *Orange_getattr1(TPyOrange *self, PyObject *pyname);
+
+int Orange_setattrLow(TPyOrange *self, PyObject *pyname, PyObject *args, bool warn);
+
+PyObject *PyOrange_DictProxy_New(TPyOrange *);
+extern PyTypeObject PyOrange_DictProxy_Type;
+
+class TPyOrange_DictProxy : public PyDictObject {
+public:
+  TPyOrange *backlink;
+};
+
+
 #endif

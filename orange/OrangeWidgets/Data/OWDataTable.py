@@ -52,6 +52,7 @@ class OWDataTable(OWWidget):
     def set_table(self):
         if self.data==None:
             return
+        print self.data.domain, self.data.domain.getmetas()
         cols = len(self.data.domain.attributes)
         if self.data.domain.classVar:
             cols += 1
@@ -92,6 +93,7 @@ class OWDataTable(OWWidget):
         for (j,m) in enumerate(metas):
             self.progressBarSet(70+j*30/mlen)
             for i in range(instances):
+                #print m.name, m.varType, self.data[i][m].valueType, self.data[i][m].varType
                 OWGUI.tableItem(self.table, i, j+col, str(self.data[i][m]), background=QColor(220,220,220))
 
         # adjust the width of the table

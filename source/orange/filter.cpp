@@ -37,6 +37,7 @@
 
 
 DEFINE_TOrangeVector_classDescription(PValueFilter, "TValueFilterList")
+DEFINE_TOrangeVector_classDescription(PFilter, "TFilterList")
 
 // Sets the negate field (default is false)
 TFilter::TFilter(bool anegate, PDomain dom) 
@@ -133,7 +134,7 @@ int TValueFilter_continuous::operator()(const TExample &example) const
 
 TValueFilter_discrete::TValueFilter_discrete(const int &pos, PValueList bl, const int &accs)
 : TValueFilter(pos, accs),
-  values(bl)
+  values(bl ? bl : mlnew TValueList())
 {}
 
 
@@ -196,13 +197,103 @@ TFilter_values::TFilter_values(PValueFilterList v, bool anAnd, bool aneg, PDomai
 {}
 
 
+TValueFilterList::iterator TFilter_values::findCondition(PVariable var, const int &varType, int &position)
+{
+  if (varType && (var->varType != varType))
+    raiseError("invalid variable type");
+
+  checkProperty(domain);
+
+  position = domain->getVarNum(var);
+  TValueFilterList::iterator condi(conditions->begin()), conde(conditions->end());
+  while((condi!=conde) && ((*condi)->position != position))
+    condi++;
+
+  return condi;
+}
+
+void TFilter_values::addCondition(PVariable var, const TValue &val)
+{
+  int position;
+  TValueFilterList::iterator condi = findCondition(var, TValue::INTVAR, position);
+
+  TValueFilter_discrete *valueFilter;
+
+  if (condi==conditions->end()) {
+    valueFilter = mlnew TValueFilter_discrete(position); // it gets wrapped in the next line
+    conditions->push_back(valueFilter);
+  }
+  else {
+    valueFilter = (*condi).AS(TValueFilter_discrete);
+    if (!valueFilter)
+      raiseError("addCondition(Value) con only be used for setting ValueFilter_discrete");
+  }
+
+  if (val.isSpecial())
+    valueFilter->acceptSpecial = 1;
+  else {
+    valueFilter->values->clear();
+    valueFilter->values->push_back(val);
+  }
+}
+
+
+void TFilter_values::addCondition(PVariable var, PValueList vallist)
+{
+  int position;
+  TValueFilterList::iterator condi = findCondition(var, TValue::INTVAR, position);
+
+  if (condi==conditions->end())
+    conditions->push_back(mlnew TValueFilter_discrete(position, vallist));
+
+  else {
+    TValueFilter_discrete *valueFilter = (*condi).AS(TValueFilter_discrete);
+    if (!valueFilter)
+      raiseError("addCondition(Value) con only be used for setting ValueFilter_discrete");
+    else
+      valueFilter->values = vallist;
+  }
+}
+
+
+void TFilter_values::addCondition(PVariable var, const float &min, const float &max, const bool outs)
+{
+  int position;
+  TValueFilterList::iterator condi = findCondition(var, TValue::FLOATVAR, position);
+
+  if (condi==conditions->end())
+    conditions->push_back(mlnew TValueFilter_continuous(position, min, max, outs));
+
+  else {
+    TValueFilter_continuous *valueFilter = (*condi).AS(TValueFilter_continuous);
+    if (!valueFilter)
+      raiseError("addCondition(Value) con only be used for setting ValueFilter_continuous");
+    valueFilter->min = min;
+    valueFilter->max = max;
+    valueFilter->outside = outs;
+  }
+}
+
+
+void TFilter_values::removeCondition(PVariable var)
+{
+  int position;
+  TValueFilterList::iterator condi = findCondition(var, 0, position);
+
+  if (condi==conditions->end())
+    raiseError("there is no condition on value of '%s' in the filter", var->name.c_str());
+
+  conditions->erase(condi);
+}
+  
+
 bool TFilter_values::operator()(const TExample &exam)
 { checkProperty(domain);
   checkProperty(conditions);
 
   TExample *example;
   PExample wex;
-  if (domain) {
+  if (domain && (domain != exam.domain)) {
     example = mlnew TExample(domain, exam);
     wex = example;
   }
@@ -245,3 +336,46 @@ TFilter_compatibleExample::TFilter_compatibleExample(PExample anexample, bool an
 /// Chooses an examples (not) compatible with the 'example'
 bool TFilter_compatibleExample::operator()(const TExample &other)
 { return example->compatible(TExample(domain, other))!=negate; }
+
+
+
+
+TFilter_conjunction::TFilter_conjunction()
+: filters(mlnew TFilterList())
+{}
+
+
+TFilter_conjunction::TFilter_conjunction(PFilterList af)
+: filters(af)
+{}
+
+bool TFilter_conjunction::operator()(const TExample &ex)
+{
+  if (filters)
+    PITERATE(TFilterList, fi, filters)
+      if (!(*fi)->call(ex))
+        return false;
+
+  return true;
+}
+
+
+TFilter_disjunction::TFilter_disjunction()
+: filters(mlnew TFilterList())
+{}
+
+
+TFilter_disjunction::TFilter_disjunction(PFilterList af)
+: filters(af)
+{}
+
+
+bool TFilter_disjunction::operator()(const TExample &ex)
+{
+  if (filters)
+    PITERATE(TFilterList, fi, filters)
+      if ((*fi)->call(ex))
+        return true;
+
+  return false;
+}

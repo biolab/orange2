@@ -899,7 +899,7 @@ PyObject *Value_native(TPyValue *self)   PYARGS(METH_NOARGS, "() -> bool; Conver
 
 
 // This is in a separate file to avoid scanning by pyxtract
-#include "valuelisttemplate.cpp"
+#include "valuelisttemplate.hpp"
 
 // Modified new and related stuff, removed rich_cmp (might be added later, but needs to be programmed specifically)
 PValueList PValueList_FromArguments(PyObject *arg, PVariable var = PVariable())

@@ -62,23 +62,42 @@ def ME(res, **argkw):
 
     
 def MSE(res, **argkw):
-    MSEs = [0.0]*res.numberOfLearners
-
-    if argkw.get("unweighted", 0) or not res.weights:
-        for tex in res.results:
-            MSEs = map(lambda res, cls, ac = float(tex.actualClass):
-                       res + sqr(float(cls) - ac), MSEs, tex.classes)
-        totweight = gettotsize(res)
+    if argkw.get("SE", 0) and res.numberOfIterations > 1:
+        MSEs = [[0.0] * res.numberOfIterations for i in range(res.numberOfLearners)]
+        nIter = [0]*res.numberOfIterations
+        if argkw.get("unweighted", 0) or not res.weights:
+            for tex in res.results:
+                ac = float(tex.actualClass)
+                nIter[tex.iterationNumber] += 1
+                for i, cls in enumerate(tex.classes):
+                    MSEs[i][tex.iterationNumber] += sqr(float(cls) - ac)
+        else:
+            raise SystemError, "weighted RMSE with SE not implemented yet"
+        MSEs = [[x/ni for x, ni in zip(y, nIter)] for y in MSEs]
+        if argkw.get("sqrt", 0):
+            MSEs = [[math.sqrt(x) for x in y] for y in MSEs]
+        return [(statc.mean(x), statc.std(x)) for x in MSEs]
+        
     else:
-        for tex in res.results:
-            MSEs = map(lambda res, cls, ac = float(tex.actualClass), tw = tex.weight:
-                       res + tw*sqr(float(cls) - ac), MSEs, tex.classes)
-        totweight = gettotweight(res)
+        MSEs = [0.0]*res.numberOfLearners
+        if argkw.get("unweighted", 0) or not res.weights:
+            for tex in res.results:
+                MSEs = map(lambda res, cls, ac = float(tex.actualClass):
+                           res + sqr(float(cls) - ac), MSEs, tex.classes)
+            totweight = gettotsize(res)
+        else:
+            for tex in res.results:
+                MSEs = map(lambda res, cls, ac = float(tex.actualClass), tw = tex.weight:
+                           res + tw*sqr(float(cls) - ac), MSEs, tex.classes)
+            totweight = gettotweight(res)
 
-    return [x/totweight for x in MSEs]
+        if argkw.get("sqrt", 0):
+            MSEs = [math.sqrt(x) for x in MSEs]
+        return [x/totweight for x in MSEs]
 
 def RMSE(res, **argkw):
-    return [math.sqrt(x) for x in apply(MSE, (res, ), argkw)]
+    argkw.setdefault("sqrt", 1)
+    return MSE(res, **argkw)
 
 def CA(res, reportSE=0, **argkw):
     if res.numberOfIterations==1:

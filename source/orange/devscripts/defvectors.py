@@ -46,6 +46,7 @@ for (pyname, pyelementname, wrappedlistname, listname, elementname, goesto) in \
    ("DomainContingency",   "Contingency",      "PDomainContingency",   "TDomainContingency",   "PContingencyClass",    "lib_components.cpp"),
    normalList("Heatmap", "lib_components.cpp"),
    normalList("ValueFilter", "lib_components.cpp"),
+   normalList("Filter", "lib_components.cpp"),
    
    ("AssociationRules",    "AssociationRule",  "PAssociationRules",    "TAssociationRules",    "PAssociationRule",     "lib_learner.cpp"),
    normalList("TreeNode", "lib_learner.cpp"),

@@ -197,6 +197,10 @@ SOURCE=.\orange\decomposition.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\dictproxy.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\discretize.cpp
 # End Source File
 # Begin Source File

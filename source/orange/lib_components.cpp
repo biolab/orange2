@@ -1347,11 +1347,134 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
 
     PExampleGenerator egen = exampleGenFromArgs(args);
     if (!egen)
-      PYERROR(PyExc_TypeError, "attribute error (example generator expected)", PYNULL);
+      PYERROR(PyExc_TypeError, "example generator expected", PYNULL);
     return applyFilter(PyOrange_AsFilter(self), egen, false, 0);
   PyCATCH
 }
 
+
+#include "valuelisttemplate.hpp"
+
+
+int Filter_values_setitem(PyObject *self, PyObject *pyvar, PyObject *args)
+{
+  PyTRY
+    CAST_TO_err(TFilter_values, filter, -1);
+
+    PVariable var = varFromArg_byDomain(pyvar, filter->domain);
+    if (!var)
+      return -1;
+
+
+    if (!args || (args == Py_None)) {
+      filter->removeCondition(var);
+      return 0;
+    }
+
+
+    if (var->varType == TValue::INTVAR) {
+      if (PySequence_Check(args) && !PyString_Check(args)) {
+        PValueList vlist = TValueListMethods::P_FromArguments(args, var);
+        if (!vlist)
+          return -1;
+        filter->addCondition(var, vlist);
+      }
+      else {
+        TValue val;
+        if (!convertFromPython(args, val, var))
+          return -1;
+
+        filter->addCondition(var, val);
+      }
+    }
+
+    else if (var->varType == TValue::FLOATVAR) {
+      PyObject *outs = NULL;
+      float minv, maxv;
+      if (PyArg_ParseTuple(args, "ff|O:addCondition", &minv, &maxv, &outs))
+        return -1;
+      filter->addCondition(var, minv, maxv, outs && PyObject_IsTrue(outs));
+    }
+
+    else
+      PYERROR(PyExc_TypeError, "unsupported attribute type", -1);
+
+    return 0;
+  PyCATCH_1
+}
+
+
+PyObject *Filter_values_getitem(PyObject *self, PyObject *args)
+{
+  PyTRY
+    CAST_TO(TFilter_values, filter);
+
+    PVariable var = varFromArg_byDomain(args, filter->domain);
+    if (!var)
+      return PYNULL;
+
+    int position;
+    TValueFilterList::iterator condi = filter->findCondition(var, 0, position);
+    if (condi == filter->conditions->end()) {
+      PyErr_Format(PyExc_IndexError, "no condition on '%s'", var->name.c_str());
+      return PYNULL;
+    }
+    
+    return WrapOrange(*condi);
+  PyCATCH
+}
+
+
+PFilterList PFilterList_FromArguments(PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::P_FromArguments(arg); }
+PyObject *FilterList_FromArguments(PyTypeObject *type, PyObject *arg) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_FromArguments(type, arg); }
+PyObject *FilterList_new(PyTypeObject *type, PyObject *arg, PyObject *kwds) BASED_ON(Orange, "(<list of Filter>)") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_new(type, arg, kwds); }
+PyObject *FilterList_getitem_sq(TPyOrange *self, int index) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_getitem(self, index); }
+int       FilterList_setitem_sq(TPyOrange *self, int index, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_setitem(self, index, item); }
+PyObject *FilterList_getslice(TPyOrange *self, int start, int stop) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_getslice(self, start, stop); }
+int       FilterList_setslice(TPyOrange *self, int start, int stop, PyObject *item) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_setslice(self, start, stop, item); }
+int       FilterList_len_sq(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_len(self); }
+PyObject *FilterList_richcmp(TPyOrange *self, PyObject *object, int op) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_richcmp(self, object, op); }
+PyObject *FilterList_concat(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_concat(self, obj); }
+PyObject *FilterList_repeat(TPyOrange *self, int times) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_repeat(self, times); }
+PyObject *FilterList_str(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_str(self); }
+PyObject *FilterList_repr(TPyOrange *self) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_str(self); }
+int       FilterList_contains(TPyOrange *self, PyObject *obj) { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_contains(self, obj); }
+PyObject *FilterList_append(TPyOrange *self, PyObject *item) PYARGS(METH_O, "(Filter) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_append(self, item); }
+PyObject *FilterList_count(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> int") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_count(self, obj); }
+PyObject *FilterList_filter(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([filter-function]) -> FilterList") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_filter(self, args); }
+PyObject *FilterList_index(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> int") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_index(self, obj); }
+PyObject *FilterList_insert(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "(index, item) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_insert(self, args); }
+PyObject *FilterList_native(TPyOrange *self) PYARGS(METH_NOARGS, "() -> list") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_native(self); }
+PyObject *FilterList_pop(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "() -> Filter") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_pop(self, args); }
+PyObject *FilterList_remove(TPyOrange *self, PyObject *obj) PYARGS(METH_O, "(Filter) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_remove(self, obj); }
+PyObject *FilterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_reverse(self); }
+PyObject *FilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PFilterList, TFilterList, PFilter, (PyTypeObject *)&PyOrFilter_Type>::_sort(self, args); }
+
+
+PyObject *Filter_conjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])")
+{
+  if (!PyTuple_Size(args))
+    return WrapNewOrange(mlnew TFilter_conjunction(), type);
+
+  PFilterList flist = PFilterList_FromArguments(PyTuple_Size(args)>1 ? args : PyTuple_GET_ITEM(args, 0));
+  if (!flist)
+    return PYNULL;
+ 
+  return WrapNewOrange(mlnew TFilter_conjunction(flist), type);
+}
+
+
+PyObject *Filter_disjunction_new(PyTypeObject *type, PyObject *args, PyObject *keywords)  BASED_ON(Filter, "([filter-list])")
+{
+  if (!PyTuple_Size(args))
+    return WrapNewOrange(mlnew TFilter_disjunction(), type);
+
+  PFilterList flist = PFilterList_FromArguments(PyTuple_Size(args)>1 ? args : PyTuple_GET_ITEM(args, 0));
+  if (!flist)
+    return PYNULL;
+ 
+  return WrapNewOrange(mlnew TFilter_disjunction(flist), type);
+}
 
 /* ************ IMPUTATION ******************** */
 
