@@ -136,9 +136,10 @@ class HiddenScaleDraw(QwtScaleDraw):
 
 class OWChooseImageSizeDlg(OWBaseWidget):
     settingsList = ["selectedSize", "customX", "customY", "saveAllSizes"]
-    def __init__(self,*args):
+    def __init__(self, graph, *args):
         OWBaseWidget.__init__(self, None, "Image size", "Set size of output image", TRUE, FALSE, FALSE, modal = TRUE)
-        
+
+        self.graph = graph
         self.selectedSize = 0
         self.customX = 400
         self.customY = 400
@@ -167,12 +168,12 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.sizeOriginal.setChecked(1)
         self.allSizes = QCheckBox("Save all sizes", self.group)
         
-        
+        self.printButton = QPushButton("Print", self.space)
         self.okButton = QPushButton("OK", self.space)
         self.cancelButton = QPushButton("Cancel", self.space)
+        self.connect(self.printButton, SIGNAL("clicked()"), self.printPic)
         self.connect(self.okButton, SIGNAL("clicked()"), self.accept)
         self.connect(self.cancelButton, SIGNAL("clicked()"), self.reject)
-
                 
         if self.saveAllSizes == 1: self.allSizes.setChecked(1)
 
@@ -193,6 +194,32 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.saveAllSizes = self.allSizes.isChecked()
         self.saveSettings()
         QDialog.accept(self)
+
+
+    def printPic(self):
+        printer = QPrinter()
+
+        if self.sizeOriginal.isChecked(): size = self.size()
+        elif self.size400.isChecked(): size = QSize(400,400)
+        elif self.size600.isChecked(): size = QSize(600,600)
+        elif self.size800.isChecked(): size = QSize(800,800)
+        elif self.custom.isChecked():  size = QSize(int(str(self.xSize.text())), int(str(self.ySize.text())))
+        buffer = QPixmap(size)
+
+        if printer.setup():
+            painter = QPainter(printer)
+            metrics = QPaintDeviceMetrics(printer)
+            height = metrics.height() - 2*printer.margins().height()
+            width = metrics.width() - 2*printer.margins().width()
+            pageKvoc = width / float(height)
+            sizeKvoc = size.width() / float(size.height())
+            if pageKvoc < sizeKvoc:
+                rect = QRect(printer.margins().width(),printer.margins().height(), width, height*pageKvoc/sizeKvoc)
+            else:
+                rect = QRect(printer.margins().width(),printer.margins().height(), width*sizeKvoc/pageKvoc, height)
+            self.graph.printPlot(painter, rect)
+            painter.end()
+            
 
 
 
@@ -246,7 +273,7 @@ class OWGraph(QwtPlot):
         self.__dict__.update(settings)
 
     def saveToFile(self):
-        sizeDlg = OWChooseImageSizeDlg(self, "", TRUE)
+        sizeDlg = OWChooseImageSizeDlg(self, self, "", TRUE)
         sizeDlg.exec_loop()
         if sizeDlg.result() != QDialog.Accepted: return
 
@@ -290,10 +317,10 @@ class OWGraph(QwtPlot):
             res = QMessageBox.information(self,'Save picture','File already exists. Overwrite?','Yes','No', QString.null,0,1)
             if res == 1: return
 
-        print fileName
+        #print fileName
         if size.isEmpty(): buffer = QPixmap(self.size()) # any size can do, now using the window size
         else:              buffer = QPixmap(size)
-        buffer = QPixmap(size)
+        #buffer = QPixmap(size)
         painter = QPainter(buffer)
         painter.fillRect(buffer.rect(), QBrush(Qt.white)) # make background same color as the widget's background
         self.printPlot(painter, buffer.rect())
