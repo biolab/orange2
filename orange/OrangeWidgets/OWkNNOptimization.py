@@ -547,17 +547,17 @@ class kNNOptimization(OWBaseWidget):
             results = orngTest.crossValidation([knn], testTable)
         else:
             # wrong but fast way to evaluate the accuracy
-            results = orngTest.ExperimentResults(1, ["kNN"], list(table.domain.classVar.values), 0, table.domain.classVar.baseValue)
-            results.results = [orngTest.TestedExample(i, int(table[i].getclass()), 1) for i in range(len(table))]
-            classifier = knn(table)
-            for i in range(len(table)):
-                cls, pro = classifier(table[i], orange.GetBoth)
+            results = orngTest.ExperimentResults(1, ["kNN"], list(testTable.domain.classVar.values), 0, testTable.domain.classVar.baseValue)
+            results.results = [orngTest.TestedExample(i, int(testTable[i].getclass()), 1) for i in range(len(testTable))]
+            classifier = knn(testTable)
+            for i in range(len(testTable)):
+                cls, pro = classifier(testTable[i], orange.GetBoth)
                 results.results[i].setResult(0, cls, pro)
 
-        currentClassDistribution = orange.Distribution(table.domain.classVar, table)
-        prediction = [0.0 for i in range(len(table.domain.classVar.values))]
+        currentClassDistribution = orange.Distribution(testTable.domain.classVar, testTable)
+        prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
         # compute classification success using selected measure
-        if table.domain.classVar.varType == orange.VarTypes.Discrete:
+        if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
             if self.qualityMeasure == AVERAGE_CORRECT:
                 for res in results.results:
                     prediction[res.actualClass] += res.probabilities[0][res.actualClass]
@@ -581,7 +581,7 @@ class kNNOptimization(OWBaseWidget):
                 # compute n/N * sum_i n_i/n * N_i/n_i * P_r_i = n/N * sum_i N_i/n * P_r_i
                 pass
 
-            acc = sum(prediction) / float(len(table))
+            acc = sum(prediction) / float(len(testTable))
             val = 0.0; s = 0.0
             for index in self.selectedClasses:
                 val += prediction[index]; s += currentClassDistribution[index]
