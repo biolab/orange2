@@ -1,7 +1,3 @@
-Thu Aug 19 19:27:02 2004: Loading data
-Thu Aug 19 19:27:02 2004: Computing distances
-Thu Aug 19 19:27:02 2004: Hierarchical clustering (single linkage)
-Thu Aug 19 19:27:02 2004: Done.
 
 
 *** Cluster 0 ***

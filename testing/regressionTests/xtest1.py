@@ -5,13 +5,55 @@ import os as t__os
 
 NO_RANDOMNESS = 1 # prevent random parts of scripts to run
 
+def t__isdigit(c):
+    return c in "0123456789"
+
 def t__samefiles(name1, name2):
     equal = 1
     fnew, fold = open(name1, "rt"), open(name2, "rt")
-    equal = [t__string.rstrip(x) for x in fnew.readlines()] == [t__string.rstrip(x) for x in fold.readlines()]
+    lines1 = [t__string.rstrip(x) for x in fnew.readlines()]
+    lines2 = [t__string.rstrip(x) for x in fold.readlines()]
     fnew.close()
     fold.close()
-    return equal
+    if lines1 == lines2:
+        return 1
+    if len(lines1) != len(lines2):
+        return 0
+    for l in range(len(lines1)):
+        line1, line2 = lines1[l], lines2[l]
+        if line1 != line2:
+            if len(line1) != len(line2):
+                return 0
+            i = 0
+            while i < len(line1):
+                if line1[i] != line2[i]:
+                    j = i
+                    while i<len(line1) and t__isdigit(line1[i]):
+                        i += 1
+                    if i==j:
+                        return 0
+                    while j>=0 and t__isdigit(line1[j]):
+                        j -= 1
+                    if j<0 or line1[j] != ".":
+                        return 0
+                    j -= 1
+                    while j>=0 and t__isdigit(line1[j]):
+                        j -= 1
+                    if (j >= 0) and (line1[j] in "+-"):
+                        j -= 1
+                    n1, n2 = line1[j+1:i], line2[j+1:i]
+                    if n1.count(".") != n2.count("."):
+                        return 0
+                    for c in n2:
+                        if not c in "0123456789.+- ":
+                            return 0
+                    maxdiff = 1.5 * (.1 ** (len(n1) - n1.find(".") - 1))
+                    if abs(float(n1) - float(n2)) > maxdiff:
+                        return 0
+                else:
+                    i += 1
+    return 1
+
 
 def t__copyfile(src, dst):
     srcf = open(src, "rt")

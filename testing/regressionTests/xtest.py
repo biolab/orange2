@@ -172,7 +172,7 @@ def testScripts(complete):
 
     skip = ["buildC45.py"]
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in ["CVS", "datasets"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in ["cvs", "datasets"] or (directories and not dir in directories):
             continue
         
         print "\nDirectory '%s'\n" % dir
@@ -313,7 +313,7 @@ def do_purge():
 
     re_lf = re.compile(r".+\.py\.(?P<run>\d{5})\..+\.txt")
     for dir in os.listdir("."):
-        if not os.path.isdir(dir) or dir in ["CVS", "datasets"] or (directories and not dir in directories):
+        if not os.path.isdir(dir) or dir in ["cvs", "datasets"] or (directories and not dir in directories):
             continue
         outputsdir = "%s/%s-output" % (regtestdir, dir)
         for fle in os.listdir(outputsdir):
