@@ -1,31 +1,35 @@
-import sys
-import os
+import sys, os, cPickle, orange
 from orngSignalManager import *
+
+widgetDir = os.path.join(os.path.split(orange.__file__)[0], "OrangeWidgets")
+if os.path.exists(widgetDir):
+        for name in os.listdir(widgetDir):
+            fullName = os.path.join(widgetDir, name)
+            if os.path.isdir(fullName): sys.path.append(fullName)
+
 from OWFile import *
 from OWParallelCoordinates import *
+from OWScatterPlot import *
 
 
-class parallel(QVBox):
+class Schema_1(QVBox):
     def __init__(self,parent=None):
         QVBox.__init__(self,parent)
         self.setCaption("Qt parallel")
+        self.tabs = QTabWidget(self, 'tabWidget')
+        self.resize(800,600)
 
         # create widget instances
-        self.owFile = OWFile()
-        self.owParallel_coordinates = OWParallelCoordinates()
+        self.owFile = OWFile (self.tabs)
+        self.owParallel_coordinates = OWParallelCoordinates (self.tabs)
+        self.owScatterplot = OWScatterPlot (self.tabs)
+        
+        # create instances of hidden widgets
         self.owFile.progressBarSetHandler(self.progressHandler)
         self.owParallel_coordinates.progressBarSetHandler(self.progressHandler)
+        self.owScatterplot.progressBarSetHandler(self.progressHandler)
         
-        signalManager.addWidget(self.owFile)
-        signalManager.addWidget(self.owParallel_coordinates)
         
-        # create widget buttons
-        owButtonFile = QPushButton("File", self)
-        owButtonParallel_coordinates = QPushButton("Parallel coordinates", self)
-        exitButton = QPushButton("E&xit",self)
-        self.connect(exitButton,SIGNAL("clicked()"),a,SLOT("quit()"))
-        
-
         statusBar = QStatusBar(self)
         self.caption = QLabel('', statusBar)
         self.caption.setMaximumWidth(200)
@@ -36,20 +40,28 @@ class parallel(QVBox):
         self.progress.setCenterIndicator(1)
         statusBar.addWidget(self.caption, 1)
         statusBar.addWidget(self.progress, 1)
-        #connect GUI buttons to show widgets
-        self.connect( owButtonFile,SIGNAL("clicked()"), self.owFile.reshow)
-        self.connect( owButtonParallel_coordinates,SIGNAL("clicked()"), self.owParallel_coordinates.reshow)
+        signalManager.addWidget(self.owFile)
+        signalManager.addWidget(self.owParallel_coordinates)
+        signalManager.addWidget(self.owScatterplot)
         
+        # add tabs
+        self.tabs.insertTab (self.owFile, "File")
+        self.tabs.insertTab (self.owParallel_coordinates, "Parallel coordinates")
+        self.tabs.insertTab (self.owScatterplot, "Scatterplot")
+        
+        #load settings before we connect widgets
+        self.loadSettings()
+
         # add widget signals
         signalManager.setFreeze(1)
         signalManager.addLink( self.owFile, self.owParallel_coordinates, 'Examples', 'Examples', 1)
+        signalManager.addLink( self.owFile, self.owScatterplot, 'Examples', 'Examples', 1)
         signalManager.setFreeze(0)
         
 
-
     def progressHandler(self, widget, val):
         if val < 0:
-            self.caption.setText("<nobr>Processing: <b>" + str(widget.caption()) + "</b></nobr>")
+            self.caption.setText("<nobr>Processing: <b>" + str(widget.captionTitle) + "</b></nobr>")
             self.caption.show()
             self.progress.setProgress(0)
             self.progress.show()
@@ -60,15 +72,39 @@ class parallel(QVBox):
             self.progress.setProgress(val)
             self.update()
 
-    def exit(self):
-        self.owFile.saveSettings()
-        self.owParallel_coordinates.saveSettings()
+
+        
+    def loadSettings(self):
+        try:
+            file = open("parallel.sav", "r")
+        except:
+            return
+        strSettings = cPickle.load(file)
+        file.close()
+        self.owFile.loadSettingsStr(strSettings["File"])
+        self.owFile.activateLoadedSettings()
+        self.owParallel_coordinates.loadSettingsStr(strSettings["Parallel coordinates"])
+        self.owParallel_coordinates.activateLoadedSettings()
+        self.owScatterplot.loadSettingsStr(strSettings["Scatterplot"])
+        self.owScatterplot.activateLoadedSettings()
+        
+        
+    def saveSettings(self):
+        strSettings = {}
+        strSettings["File"] = self.owFile.saveSettingsStr()
+        strSettings["Parallel coordinates"] = self.owParallel_coordinates.saveSettingsStr()
+        strSettings["Scatterplot"] = self.owScatterplot.saveSettingsStr()
+        
+        file = open("parallel.sav", "w")
+        cPickle.dump(strSettings, file)
+        file.close()
         
 
 
-a=QApplication(sys.argv)
-ow=parallel()
-a.setMainWidget(ow)
-QObject.connect(a, SIGNAL('aboutToQuit()'),ow.exit) 
+application = QApplication(sys.argv)
+ow = Schema_1()
+application.setMainWidget(ow)
+ow.loadSettings()
 ow.show()
-a.exec_loop()
+application.exec_loop()
+ow.saveSettings()

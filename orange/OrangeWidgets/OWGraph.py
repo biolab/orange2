@@ -4,17 +4,15 @@
 # the base for all graphs
 
 import sys
-import math
-import os.path
+#import math
+#import os.path
 from qt import *
 from OWTools import *
 from qwt import *
 from Numeric import *
-from OWBaseWidget import *
+#from OWBaseWidget import *
 from OWGraphTools import *      # color palletes, user defined curves, ...
-import time
 from OWDlgs import OWChooseImageSizeDlg
-
 
 class OWGraph(QwtPlot):
     def __init__(self, parent = None, name = None):

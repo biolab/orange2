@@ -32,8 +32,8 @@ class OWSelectAttributes(OWWidget):
                             "Attribute groups are then used for attribute selection.")
 
         # seet channells
-        self.addInput("cdata")
-        self.addOutput("cdata")
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1)]
+        self.outputs = [("Examples", ExampleTable)]
 
         # set default settings
         self.data = None   # data set
@@ -90,8 +90,7 @@ class OWSelectAttributes(OWWidget):
             #atts = atts + [self.data.domain.classVar]
         newdomain = orange.Domain(atts)
         newdata = self.data.select(newdomain)
-        xxx = OrangeData(newdata)
-        self.send("cdata", xxx)
+        self.send("Examples", newdata)
         # replace xxx with newdata
 
     #################################################################################################
@@ -243,15 +242,15 @@ class OWSelectAttributes(OWWidget):
     def cdata(self, data):
         self.refreshOutputBlocked = 1
         previous = self.data
-        self.data = data.data
+        self.data = data
         # here we should compare to past data sets and set
         # the selection and groups accordingly
         # for now, we just check the attribute names, if equal, we keep with settings
         equal = 0
         if len(self.domainID) == len(self.data.domain.attributes):
             equal = 1
-            for i in range(len(data.data.domain.attributes)):
-                if data.data.domain.attributes[i].name <> self.domainID[i]:
+            for i in range(len(data.domain.attributes)):
+                if data.domain.attributes[i].name <> self.domainID[i]:
                     equal = 0
 
         if equal and not previous: # equal
