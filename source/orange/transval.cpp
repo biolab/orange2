@@ -115,8 +115,8 @@ void TDiscrete2Continuous::transform(TValue &val)
 }
 
 
-TOrdinal2Continuous::TOrdinal2Continuous(const int nval)
-: nvalues(nval)
+TOrdinal2Continuous::TOrdinal2Continuous(const float &f)
+: factor(f)
 {}
 
 

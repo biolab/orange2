@@ -80,7 +80,7 @@ public:
 
   int factor; //P number of values
 
-  TOrdinal2Continuous(const int = 1);
+  TOrdinal2Continuous(const float & = 1.0);
   virtual void transform(TValue &);
 };
 
