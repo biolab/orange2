@@ -553,6 +553,7 @@ if os.path.exists(widgetDir):
         loadSett = ""
         saveSett = ""
         progressHandlers = ""
+        signals = "#set signal manager to widgets\n"+t+t
 
         sepCount = 1
         # gui for shown widgets
@@ -569,6 +570,7 @@ if os.path.exists(widgetDir):
                 imports += "from %s import *\n" % (widget.widget.getFileName())
                 instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
                 instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
+                signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t
                 icons += "self.ow%s.setWidgetIcon('%s')\n" % (name, widget.widget.getIconName()) + t+t
                 captions  += "self.ow%s.setCaptionTitle('Qt %s')\n" %(name, widget.caption) +t+t
                 manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
@@ -583,8 +585,8 @@ if os.path.exists(widgetDir):
                 buttons += "frameSpace%s = QFrame(self);  frameSpace%s.setMinimumHeight(10); frameSpace%s.setMaximumHeight(10)\n" % (str(sepCount), str(sepCount), str(sepCount)) +t+t
                 sepCount += 1
 
-        instancesT += "\n" +t+t + "# create instances of hidden widgets\n" +t+t
-        instancesB += "\n" +t+t + "# create instances of hidden widgets\n" +t+t
+        instancesT += "\n" +t+t + "# create instances of hidden widgets\n\n" +t+t
+        instancesB += "\n" +t+t + "# create instances of hidden widgets\n\n" +t+t
         
         # gui for hidden widgets
         for widgetName in hiddenWidgetList:
@@ -598,6 +600,7 @@ if os.path.exists(widgetDir):
             name = name.replace(")", "")
             imports += "from %s import *\n" % (widget.widget.getFileName())
             instancesT += "self.ow%s = %s (self.tabs)\n" % (name, widget.widget.getFileName())+t+t
+            signals += "self.ow%s.signalManager = signalManager\n" % (name) +t+t
             manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
             instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
             tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
@@ -712,9 +715,9 @@ ow.saveSettings()
         #    save = t+"def exit(self):\n" +t+t+ save
 
         if asTabs:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesT + signals + "\n" +t+t + progressHandlers + "\n"+t+t + progress + "\n" +t+t + manager + "\n"+t+t + tabs + "\n" + t+t + links + "\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         else:
-            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
+            whole = imports + "\n\n" + "class " + classname + "(QVBox):" + classinit + "\n\n"+t+t+ instancesB + signals + "\n\n"+t+t+ captions + "\n"+t+t+ icons + "\n"+t+t + progressHandlers + "\n"+t+t + manager + "\n"+t+t + buttons + "\n" + progress + "\n" +t+t+  buttonsConnect + "\n" +t+t + links + "\n\n" + handlerFunct + "\n\n" + loadSettings + saveSettings + "\n\n" + finish
         
         #save app
         fileApp = open(os.path.join(self.applicationpath, self.applicationname), "wt")
