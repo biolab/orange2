@@ -53,6 +53,10 @@ class OWScatterPlotGraph(OWGraph):
 
     def setJitterSize(self, size):
         self.jitterSize = size
+
+    def setShowFilledSymbols(self, filled):
+        self.showFilledSymbols = filled
+        
     #
     # scale data at index index to the interval 0 - 1
     #
@@ -99,6 +103,7 @@ class OWScatterPlotGraph(OWGraph):
     # set new data and scale its values
     #
     def setData(self, data):
+
         self.rawdata = data
         self.scaledData = []
         self.scaledDataAttributes = []
@@ -113,33 +118,36 @@ class OWScatterPlotGraph(OWGraph):
             self.scaledData.append(scaled)
             self.attrVariance.append(variance)
 
+
     #
     # update shown data. Set labels, coloring by className ....
     #
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr):
-        self.removeCurves()
-
-        if len(self.scaledData) == 0: self.updateLayout(); return
-
-        if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
-            self.setXlabels(None)
-        else:   self.setXlabels(self.rawdata.domain[xAttr].values)
-
-        if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous: self.setYLlabels(None)
-        else:   self.setYLlabels(self.rawdata.domain[xAttr].values)
-
-        if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
-        if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
-
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, showColorLegend):
+        self.clear()
+        self.enableLegend(0)
 
         (xVarMin, xVarMax) = self.attrVariance[self.scaledDataAttributes.index(xAttr)]
         (yVarMin, yVarMax) = self.attrVariance[self.scaledDataAttributes.index(yAttr)]
         xVar = xVarMax - xVarMin
         yVar = yVarMax - yVarMin
-        
-        self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0), 1)
-        self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
+        MAX_HUE_VAL = 300           # hue value can go to 360, but at 360 it produces the same color as at 0 so we make the interval shorter
 
+        if len(self.scaledData) == 0: self.updateLayout(); return
+
+        if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
+            self.setXlabels(None)
+        else:
+            self.setXlabels(self.rawdata.domain[xAttr].values)
+            self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
+
+        if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous: self.setYLlabels(None)
+        else:
+            self.setYLlabels(self.rawdata.domain[yAttr].values)
+            self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)
+
+        if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
+        if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
+        
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
             colorIndex = self.scaledDataAttributes.index(colorAttr)
@@ -159,7 +167,6 @@ class OWScatterPlotGraph(OWGraph):
 
         shapeList = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.Triangle, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.Cross, QwtSymbol.XCross, QwtSymbol.StyleCnt]
 
-
         # create hash tables in case of discrete X axis attribute
         attrXIndices = {}
         discreteX = 0
@@ -177,7 +184,7 @@ class OWScatterPlotGraph(OWGraph):
             attr = self.rawdata.domain[yAttr]
             for i in range(len(attr.values)):
                 attrYIndices[attr.values[i]] = i
-
+        
         self.curveKeys = []
         for i in range(len(self.rawdata)):
             if discreteX == 1:
@@ -196,7 +203,7 @@ class OWScatterPlotGraph(OWGraph):
 
             newColor = QColor(0,0,0)
             if colorIndex != -1:
-                newColor.setHsv(self.scaledData[colorIndex][i]*360, 255, 255)
+                newColor.setHsv(self.scaledData[colorIndex][i]*MAX_HUE_VAL, 255, 255)
 
             symbol = shapeList[0]
             if shapeIndex != -1:
@@ -207,13 +214,16 @@ class OWScatterPlotGraph(OWGraph):
                 size = 4 + round(self.scaledData[sizeShapeIndex][i] * 20)
 
             newCurveKey = self.insertCurve(str(i))
-            newSymbol = QwtSymbol(symbol, QBrush(QBrush.NoBrush), QPen(newColor), QSize(size, size))
+
+            symbolBrush = QBrush(QBrush.NoBrush)
+            if self.showFilledSymbols == 1:
+                symbolBrush = QBrush(newColor)
+            newSymbol = QwtSymbol(symbol, symbolBrush, QPen(newColor), QSize(size, size))
             self.setCurveSymbol(newCurveKey, newSymbol)
             self.setCurveData(newCurveKey, [x], [y])
             self.curveKeys.append(newCurveKey)
 
         # show legend if necessary
-        self.enableLegend(0)
         if self.enabledLegend == 1:
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
                 numColors = len(self.rawdata.domain[colorIndex].values)
@@ -221,7 +231,7 @@ class OWScatterPlotGraph(OWGraph):
                 for ind in range(numColors):
                     newCurveKey = self.insertCurve(varName + "=" + self.rawdata.domain[colorIndex].values[ind])
                     newColor = QColor()
-                    newColor.setHsv(float(ind) / float(numColors) * 360, 255, 255)
+                    newColor.setHsv(float(ind) / float(numColors) * MAX_HUE_VAL, 255, 255)
                     newSymbol = QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth))
                     self.setCurveSymbol(newCurveKey, newSymbol)
                     self.enableLegend(1, newCurveKey)
@@ -234,7 +244,6 @@ class OWScatterPlotGraph(OWGraph):
                     newSymbol = QwtSymbol(shapeList[ind], QBrush(QColor(0,0,0)), QPen(QColor(0,0,0)), QSize(self.pointWidth, self.pointWidth))
                     self.setCurveSymbol(newCurveKey, newSymbol)
                     self.enableLegend(1, newCurveKey)
-
             if sizeShapeIndex != -1 and self.rawdata.domain[sizeShapeIndex].varType == orange.VarTypes.Discrete:
                 sizeShapes = len(self.rawdata.domain[sizeShapeIndex].values)
                 varName = self.rawdata.domain[sizeShapeIndex].name
@@ -245,6 +254,17 @@ class OWScatterPlotGraph(OWGraph):
                     self.setCurveSymbol(newCurveKey, newSymbol)
                     self.enableLegend(1, newCurveKey)
 
+
+        if colorAttr != "" and showColorLegend == 1:
+            for i in range(1000):
+                x0 = xVarMax + xVar/100
+                x1 = x0 + xVar/20
+                y = yVarMin + i*yVar/1000
+                newCurveKey = self.insertCurve(str(i))
+                newColor = QColor()
+                newColor.setHsv(float(i*MAX_HUE_VAL)/1000.0, 255, 255)
+                self.setCurvePen(newCurveKey, QPen(newColor))
+                self.setCurveData(newCurveKey, [x0,x1], [y,y])
         # -----------------------------------------------------------
         # -----------------------------------------------------------
         
@@ -267,7 +287,7 @@ class OWScatterPlotGraph(OWGraph):
 if __name__== "__main__":
     #Draw a simple graph
     a = QApplication(sys.argv)        
-    c = OWRadvizGraph()
+    c = OWScatterPlotGraph()
         
     a.setMainWidget(c)
     c.show()

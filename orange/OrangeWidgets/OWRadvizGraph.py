@@ -96,6 +96,13 @@ class OWRadvizGraph(OWGraph):
         self.noneSymbol = QwtSymbol()
         self.noneSymbol.setStyle(QwtSymbol.None)        
         self.curveIndex = 0
+        self.tips = DynamicToolTip(self)
+        self.connect(self, SIGNAL("plotMouseMoved(const QMouseEvent &)"), self.plotMouseMoved)
+
+
+        r = QRect(-100,-100,200,200)
+        QToolTip.add(self, r, "test tooltipov")
+
 
     def setShowDistributions(self, showDistributions):
         self.showDistributions = showDistributions
@@ -162,12 +169,27 @@ class OWRadvizGraph(OWGraph):
             scaled = self.scaleData(data, index)
             self.scaledData.append(scaled)
 
+        """
+        # save scaled data...
+        print "saving file..."
+        file = open("E:/scaledData.tab", "wt")
+        for i in range(len(self.scaledData[0])):
+            for j in range(len(self.scaledData)):
+                file.write(str(self.scaledData[j][i]))
+                file.write("\t")
+            file.write("\n")
+                
+        file.flush()
+        file.close()
+        """
+        
     #
     # update shown data. Set labels, coloring by className ....
     #
     def updateData(self, labels, className):
         self.removeCurves()
         self.removeMarkers()
+        self.tips.removeAll()
 
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
 
@@ -228,10 +250,14 @@ class OWRadvizGraph(OWGraph):
             self.marker(mkey).setLabelAlignment(Qt.AlignHCenter + Qt.AlignVCenter)
 
 
+        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+        self.updateLayout()
+
         # -----------------------------------------------------------
         #  create data curves
         # -----------------------------------------------------------
         # if we don't want coloring
+        MAX_HUE_COLOR = 360
         if className == "(One color)":      
             valLen = 1
         # if we have a discrete class
@@ -245,6 +271,7 @@ class OWRadvizGraph(OWGraph):
         # if we have a continuous class
         else:
             valLen = 0
+            MAX_HUE_COLOR = 300
             scaledClassData = []
             if className != "(One color)" and className != '':
                 ex_jitter = self.jitteringType
@@ -255,13 +282,14 @@ class OWRadvizGraph(OWGraph):
         dataSize = len(self.scaledData[0])
         curveData = []
         for i in range(valLen): curveData.append([ [] , [] ])   # we create valLen empty lists with sublists for x and y
-        
+
+        RECT_SIZE = self.pointWidth/2
         for i in range(dataSize):
             sum_i = 0.0
             for j in range(length):
                 sum_i = sum_i + self.scaledData[indices[j]][i]
 
-            if sum_i == 0.0: continue
+            if sum_i == 0.0: sum_i = 1.0    # we set sum to 1 because it won't make a difference and we prevent division by zero
 
             x_i = 0.0
             y_i = 0.0
@@ -269,6 +297,19 @@ class OWRadvizGraph(OWGraph):
                 index = indices[j]
                 x_i = x_i + anchors[0][j]*(self.scaledData[index][i] / sum_i)
                 y_i = y_i + anchors[1][j]*(self.scaledData[index][i] / sum_i)
+
+            ##########
+            # we add a tooltip for this point
+            xVal = self.transform(QwtPlot.xBottom, x_i)
+            yVal = self.transform(QwtPlot.yLeft, y_i)
+            print "x_i = " + str(x_i) + " ; y_i = " + str(y_i) + " ; xVal = " + str(xVal) + " ; yVal = " + str(yVal)
+            r = QRect(xVal-RECT_SIZE, yVal-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
+            text= ""
+            for j in range(len(self.rawdata.domain)):
+                text = text + self.rawdata.domain[j].name + ' = ' + str(self.rawdata[i][j].value) + '\n'
+            self.tips.addToolTip(r, text)
+            QToolTip.add(self, r, text)
+            ##########
 
             if valLen == 1:
                 curveData[0][0].append(x_i)
@@ -279,10 +320,10 @@ class OWRadvizGraph(OWGraph):
             else:
                 newCurveKey = self.insertCurve(str(i))
                 newColor = QColor()
-                newColor.setHsv(scaledClassData[i]*360, 255, 255)
+                newColor.setHsv(scaledClassData[i] * MAX_HUE_COLOR, 255, 255)
                 self.setCurveStyle(newCurveKey, QwtCurve.Dots)
                 self.setCurveSymbol(newCurveKey, QwtSymbol(QwtSymbol.Ellipse, QBrush(newColor), QPen(newColor), QSize(self.pointWidth, self.pointWidth)))
-                self.setCurveData(newCurveKey, [x_i, x_i], [y_i, y_i])
+                self.setCurveData(newCurveKey, [x_i], [y_i])
 
         self.curveColors = []
         if className == "(One color)" or self.rawdata.domain[className].varType == orange.VarTypes.Discrete:
@@ -309,7 +350,6 @@ class OWRadvizGraph(OWGraph):
                 self.marker(mkey).setXValue(0.90)
                 self.marker(mkey).setYValue(y)
                 self.marker(mkey).setLabelAlignment(Qt.AlignLeft + Qt.AlignHCenter)
-
 
 
         # -----------------------------------------------------------
@@ -435,6 +475,25 @@ class OWRadvizGraph(OWGraph):
             retList.append(self.scaledDataAttributes[i])
         return retList
 
+
+    def plotMouseMoved(self, e):
+        #print "testing collisions"
+        x = e.x()
+        y = e.y()
+
+        print "x = " + str(x) + " ; y = " + str(y)
+        #dx = self.invTransform(QwtPlot.xBottom, x)
+        #dy = self.invTransform(QwtPlot.yLeft, y)
+        #print "dx = " + str(dx) + " ; dy = " + str(dy)
+        
+        self.tips.maybeTip(QPoint(x,y))
+        """
+        p = QPoint(x,y)
+        for i in range(len(self.tips.rects)):
+            if self.tips.rects[i].contains(p):
+                print "contains = 1"
+                
+        """
     
 if __name__== "__main__":
     #Draw a simple graph

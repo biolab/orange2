@@ -91,11 +91,10 @@ class OWSurveyPlotGraph(OWGraph):
         if len(self.scaledData) == 0 or len(labels) == 0: self.updateLayout(); return
         
         self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
+        self.setAxisScale(QwtPlot.yLeft, 0, len(self.rawdata), len(self.rawdata))
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)
         self.setAxisMaxMajor(QwtPlot.xBottom, len(labels)-1.0)        
         self.setAxisMaxMinor(QwtPlot.xBottom, 0)
-        self.setAxisMaxMinor(QwtPlot.yLeft, 0)
-        self.setAxisMaxMajor(QwtPlot.yLeft, len(self.rawdata))
 
         length = len(labels)
         indices = []
@@ -126,15 +125,12 @@ class OWSurveyPlotGraph(OWGraph):
         count = len(self.rawdata)
         for i in range(count):
             curve = subBarQwtPlotCurve(self)
-            newColor = QColor()
+            newColor = QColor(0,0,0)
             if scaledClassData != []:
                 newColor.setHsv(scaledClassData[i]*360, 255, 255)
             elif classValueIndices != {}:
                 val = self.rawdata[i][className].value
                 newColor.setHsv(float(classValueIndices[val]*360)/float(classValueCount), 255, 255)
-            else:
-                newColor.setRgb(0,0,0)
-
                 
             curve.color = newColor
             curve.penColor = newColor

@@ -14,30 +14,26 @@ from OWWidget import *
 from OWScatterPlotOptions import *
 from random import betavariate 
 from OWScatterPlotGraph import *
-from OData import *
-import orngFSS
-import statc
-import orngCI
+#from OData import *
+#import orngFSS
+#import statc
+#import orngCI
 
 
 ###########################################################################################
-##### WIDGET : Radviz visualization
+##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWScatterPlot(OWWidget):
     settingsList = ["pointWidth", "jitteringType", "showXAxisTitle",
                     "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
-                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous"]
+                    "showLegend", "graphGridColor", "graphCanvasColor", "jitterSize", "jitterContinuous", "showFilledSymbols"]
     def __init__(self,parent=None):
-        self.spreadType=["none","uniform","triangle","beta"]
-        self.jitterSizeList = ['0.1','0.5','1','2','5','10']
-        self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10]
-        OWWidget.__init__(self,
-        parent,
-        "ScatterPlot",
-        "Show data using scatterplot",
-        TRUE,
-        TRUE)
+        OWWidget.__init__(self, parent, "ScatterPlot", "Show data using scatterplot", TRUE, TRUE)
 
+        self.spreadType=["none","uniform","triangle","beta"]
+        self.jitterSizeList = ['0.1','0.5','1','2','5','10', '15', '20']
+        self.jitterSizeNums = [0.1,   0.5,  1,  2,  5,  10, 15, 20]
+        
         #set default settings
         self.pointWidth = 5
         self.jitteringType = "uniform"
@@ -48,6 +44,7 @@ class OWScatterPlot(OWWidget):
         self.showLegend = 0
         self.jitterContinuous = 0
         self.jitterSize = 1
+        self.showFilledSymbols = 1
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
 
@@ -64,13 +61,13 @@ class OWScatterPlot(OWWidget):
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWScatterPlotGraph(self.mainArea)
         self.box.addWidget(self.graph)
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        #self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         # graph main tmp variables
         self.addInput("cdata")
 
         self.setOptions()        
-
+        
         #connect settingsbutton to show options
         self.connect(self.settingsButton, SIGNAL("clicked()"), self.options.show)        
         self.connect(self.options.widthSlider, SIGNAL("valueChanged(int)"), self.setPointWidth)
@@ -80,6 +77,7 @@ class OWScatterPlot(OWWidget):
         self.connect(self.options.gSetVgridCB, SIGNAL("toggled(bool)"), self.setVGrid)
         self.connect(self.options.gSetHgridCB, SIGNAL("toggled(bool)"), self.setHGrid)
         self.connect(self.options.gSetLegendCB, SIGNAL("toggled(bool)"), self.updateSettings)
+        self.connect(self.options.gShowFilledSymbolsCB, SIGNAL("toggled(bool)"), self.updateSettings)
         self.connect(self.options.jitterContinuous, SIGNAL("toggled(bool)"), self.updateSettings)
         self.connect(self.options.jitterSize, SIGNAL("activated(int)"), self.setJitteringSize)
         self.connect(self.options, PYSIGNAL("gridColorChange(QColor &)"), self.setGridColor)
@@ -98,8 +96,10 @@ class OWScatterPlot(OWWidget):
         self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         self.attrColorCB = QCheckBox('Enable coloring by', self.attrSelGroup)
+        self.attrColorLegendCB = QCheckBox('Show color legend', self.attrSelGroup)
         self.attrColor = QComboBox(self.attrSelGroup)
         self.connect(self.attrColorCB, SIGNAL("clicked()"), self.updateGraph)
+        self.connect(self.attrColorLegendCB, SIGNAL("clicked()"), self.updateGraph)
         self.connect(self.attrColor, SIGNAL('activated ( const QString & )'), self.updateGraph)
 
         self.attrShapeCB = QCheckBox('Enable shaping by', self.attrSelGroup)
@@ -126,6 +126,7 @@ class OWScatterPlot(OWWidget):
         self.options.gSetLegendCB.setChecked(self.showLegend)
         self.options.gSetGridColor.setNamedColor(str(self.graphGridColor))
         self.options.gSetCanvasColor.setNamedColor(str(self.graphCanvasColor))
+        self.options.gShowFilledSymbolsCB.setChecked(self.showFilledSymbols)
 
         self.options.jitterContinuous.setChecked(self.jitterContinuous)
         for i in range(len(self.jitterSizeList)):
@@ -134,7 +135,7 @@ class OWScatterPlot(OWWidget):
 
         self.options.widthSlider.setValue(self.pointWidth)
         self.options.widthLCD.display(self.pointWidth)
-        
+
         self.graph.setJitteringOption(self.jitteringType)
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
@@ -146,6 +147,7 @@ class OWScatterPlot(OWWidget):
         self.graph.setPointWidth(self.pointWidth)
         self.graph.setJitterContinuous(self.jitterContinuous)
         self.graph.setJitterSize(self.jitterSize)
+        self.graph.setShowFilledSymbols(self.showFilledSymbols)
 
     def setPointWidth(self, n):
         self.pointWidth = n
@@ -248,7 +250,8 @@ class OWScatterPlot(OWWidget):
         self.showLegend = self.options.gSetLegendCB.isOn()
         self.jitterContinuous = self.options.jitterContinuous.isOn()
         self.jitterSize = self.jitterSizeNums[self.jitterSizeList.index(str(self.options.jitterSize.currentText()))]
-        
+        self.showFilledSymbols = self.options.gShowFilledSymbolsCB.isOn()
+
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.graph.enableGridXB(self.showVerticalGridlines)
@@ -256,11 +259,12 @@ class OWScatterPlot(OWWidget):
         self.graph.enableGraphLegend(self.showLegend)
         self.graph.setJitterContinuous(self.jitterContinuous)
         self.graph.setJitterSize(self.jitterSize)
+        self.graph.setShowFilledSymbols(self.showFilledSymbols)
 
         if self.data != None:
             self.updateGraph()
 
-    
+
     def updateGraph(self):
         xAttr = str(self.attrX.currentText())
         yAttr = str(self.attrY.currentText())
@@ -274,7 +278,7 @@ class OWScatterPlot(OWWidget):
         if self.attrSizeShapeCB.isOn():
             sizeShapeAttr = str(self.attrSizeShape.currentText())
 
-        self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr)
+        self.graph.updateData(xAttr, yAttr, colorAttr, shapeAttr, sizeShapeAttr, self.attrColorLegendCB.isOn())
         self.graph.update()
         self.repaint()
 
@@ -290,12 +294,13 @@ class OWScatterPlot(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
         
+        
     #################################################
 
 #test widget appearance
 if __name__=="__main__":
     a=QApplication(sys.argv)
-    ow=OWRadviz()
+    ow=OWScatterPlot()
     a.setMainWidget(ow)
     ow.show()
     a.exec_loop()

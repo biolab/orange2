@@ -376,10 +376,8 @@ class OWSurveyPlot(OWWidget):
     # receive new data and update all fields
     def cdata(self, data):
         self.data = data.data
-        self.sortingClick()
         self.setClassCombo()
         self.setSortCombo()
-        self.graph.setData(self.data)
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
@@ -388,7 +386,7 @@ class OWSurveyPlot(OWWidget):
             return
         
         self.setShownAttributeList(self.data)
-        self.updateGraph()
+        self.sortingClick()
     #################################################
 
 #test widget appearance
