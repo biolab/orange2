@@ -222,9 +222,8 @@ class OWScatterPlot(OWWidget):
         for i in range(len(self.data)):
             fullData.append([self.graph.noJitteringScaledData[ind][i] for ind in range(len(self.data.domain.attributes))] + [self.data[i][self.data.domain.classVar.name]])
 
-        
         testIndex = 0
-        for (acc, tableLen, other, [xattr, yattr], strList) in results:
+        for (acc, tableLen, other, [xattr, yattr], tryIndex, strList) in results:
             if self.optimizationDlg.isOptimizationCanceled(): continue
             testIndex += 1
             self.progressBarSet(100.0*testIndex/float(len(results)))
@@ -234,7 +233,7 @@ class OWScatterPlot(OWWidget):
             if len(table) < self.optimizationDlg.minExamples: continue
 
             accuracy, other_results = self.optimizationDlg.kNNComputeAccuracy(table)
-            self.optimizationDlg.addResult(accuracy, other_results, len(table), [xattr, yattr])
+            self.optimizationDlg.addResult(accuracy, other_results, len(table), [xattr, yattr], tryIndex, strList)
 
         self.progressBarFinished()
         self.optimizationDlg.enableControls()
@@ -252,7 +251,6 @@ class OWScatterPlot(OWWidget):
 
         startTime = time.time()
         attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data)
-        attributeNameOrder.sort()
 
         if len(attributeNameOrder) > 1000:
             self.warning("Since there were too many attributes, all but best 1000 attributes were removed.")
@@ -287,7 +285,7 @@ class OWScatterPlot(OWWidget):
         self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
-        (accuracy, other_results, tableLen, list, strList) = val
+        (accuracy, other_results, tableLen, list, tryIndex, strList) = val
 
         attrNames = [attr.name for attr in self.data.domain]
         for item in list:
@@ -413,7 +411,6 @@ class OWScatterPlot(OWWidget):
     def updateAxisTitle(self):
         self.graph.setShowXaxisTitle(self.showXAxisTitle)
         self.graph.setShowYLaxisTitle(self.showYAxisTitle)
-        self.updateGraph()
 
     def setVerticalGridlines(self):
         self.graph.enableGridXB(self.showVerticalGridlines)

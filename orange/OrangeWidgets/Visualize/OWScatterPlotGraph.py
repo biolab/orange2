@@ -52,11 +52,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
         self.jitterContinuous = 0
         self.enabledLegend = 0
-        self.showAttributeValues = 1
         self.showDistributions = 1
         self.toolRects = []
         self.tooltipData = []
-        self.showManualAxisScale = 0
         self.optimizedDrawing = 1
         self.tooltipKind = 1
         self.scatterWidget = scatterWidget
@@ -64,13 +62,18 @@ class OWScatterPlotGraph(OWVisGraph):
         self.kNNOptimization = None
         self.subsetData = None
 
+        scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
+        scaleDraw.setTickLength(1, 1, 3)
+        scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
+        scaleDraw.setTickLength(1, 1, 3)
+
     #########################################################
     # update shown data. Set labels, coloring by className ....
     def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, **args):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
-        self.enableLegend(0)
+        #self.enableLegend(0)
         self.removeTooltips()
         self.tooltipData = []
 
@@ -80,8 +83,7 @@ class OWScatterPlotGraph(OWVisGraph):
             self.showFilledSymbols = 1
 
         if self.scaledData == None or len(self.scaledData) == 0:
-            self.setAxisScale(QwtPlot.xBottom, 0, 1, 1)
-            self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
+            self.setAxisScale(QwtPlot.xBottom, 0, 1, 1); self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             self.setXaxisTitle(""); self.setYLaxisTitle("")
             return
         
@@ -103,18 +105,12 @@ class OWScatterPlotGraph(OWVisGraph):
         MIN_SHAPE_SIZE = 6
         MAX_SHAPE_DIFF = self.pointWidth
 
-        if self.rawdata.domain[xAttr].varType == orange.VarTypes.Continuous:
-            self.setXlabels(None)
-            if self.showManualAxisScale: self.setAxisScale(QwtPlot.xBottom, xVarMin - (self.jitterSize * xVar / 80.0), xVarMax + (self.jitterSize * xVar / 80.0) + showColorLegend * xVar/20, 1)            
-        else:
+        if self.rawdata.domain[xAttr].varType != orange.VarTypes.Continuous:
             self.setXlabels(getVariableValuesSorted(self.rawdata, xAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.4, xVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.xBottom, xVarMin - 0.5, xVarMax + 0.5 + showColorLegend * xVar/20, 1)            
 
-        if self.rawdata.domain[yAttr].varType == orange.VarTypes.Continuous:
-            self.setYLlabels(None)
-            if self.showManualAxisScale: self.setAxisScale(QwtPlot.yLeft, yVarMin - (self.jitterSize * yVar / 80.0), yVarMax + (self.jitterSize * yVar / 80.0), 1)            
-        else:
+        if self.rawdata.domain[yAttr].varType != orange.VarTypes.Continuous:
             self.setYLlabels(getVariableValuesSorted(self.rawdata, yAttr))
             if self.showDistributions == 1: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.4, yVarMax + 0.4, 1)
             else: self.setAxisScale(QwtPlot.yLeft, yVarMin - 0.5, yVarMax + 0.5, 1)
@@ -122,20 +118,6 @@ class OWScatterPlotGraph(OWVisGraph):
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
 
-        if self.showAttributeValues == 0:
-            self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-            self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-            scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-            scaleDraw.setTickLength(1, 1, 0)
-            scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-            scaleDraw.setTickLength(1, 1, 0)
-        else:
-            scaleDraw = self.axisScaleDraw(QwtPlot.xBottom)
-            scaleDraw.setTickLength(1, 1, 3)
-            scaleDraw = self.axisScaleDraw(QwtPlot.yLeft)
-            scaleDraw.setTickLength(1, 1, 3)
-            
-        
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
             colorIndex = self.attributeNames.index(colorAttr)
@@ -164,8 +146,9 @@ class OWScatterPlotGraph(OWVisGraph):
             discreteY = 1
             attrYIndices = getVariableValueIndices(self.rawdata, yAttr)
 
-        #######
+        # ##############################################################
         # show the distributions
+        # ##############################################################
         if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete and not self.showKNNModel:
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
@@ -200,7 +183,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.tooltipData.append((tooltipText, i, j))
             self.addTooltips()
 
+        # ##############################################################
         # show normal scatterplot with dots
+        # ##############################################################
         else:
             # show quality of knn model with only 2 selected attributes
             if self.showKNNModel == 1:
@@ -228,7 +213,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     # we add a tooltip for this point
                     self.addTip(x, y, text = self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList) + "; " + qualityMeasure + " : " + "%.3f; "%(kNNValues[j]))
 
+            # ##############################################################
             # create a small number of curves which will make drawing much faster
+            # ##############################################################
             elif self.optimizedDrawing and (colorIndex == -1 or self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete) and shapeIndex == -1 and sizeShapeIndex == -1 and not self.subsetData:
                 if colorIndex != -1:
                     classIndices = getVariableValueIndices(self.rawdata, colorAttr)
@@ -262,7 +249,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     if colorIndex != -1: newColor = classColors.getColor(i)
                     key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = self.curveSymbols[0], xData = pos[i][0], yData = pos[i][1])
 
+            # ##############################################################
             # slow, unoptimized drawing because we use different symbols and/or different sizes of symbols
+            # ##############################################################
             else:
                 if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 elif colorIndex != -1:                                                                          classColors = ColorPaletteHSV(len(self.rawdata.domain[colorIndex].values))
@@ -300,8 +289,9 @@ class OWScatterPlotGraph(OWVisGraph):
                     # we add a tooltip for this point
                     self.addTip(x, y, toolTipList, i)
                 
-
+        # ##############################################################
         # show legend if necessary
+        # ##############################################################
         if self.enabledLegend == 1:
             legendKeys = {}
             if colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete:
@@ -341,8 +331,9 @@ class OWScatterPlotGraph(OWVisGraph):
                 for i in range(len(val[1])):
                     self.addCurve(val[0][i], val[1][i], val[1][i], val[2][i], symbol = val[3][i], enableLegend = 1)
             
-
+        # ##############################################################
         # draw color scale for continuous coloring attribute
+        # ##############################################################
         if colorAttr != "" and colorAttr != "(One color)" and showColorLegend == 1 and self.rawdata.domain[colorAttr].varType == orange.VarTypes.Continuous:
             x0 = xVarMax + xVar/100
             x1 = x0 + xVar/20
@@ -362,11 +353,26 @@ class OWScatterPlotGraph(OWVisGraph):
         # restore the correct showFilledSymbols
         if self.subsetData:
             self.showFilledSymbols = oldShowFilledSymbols 
-            
 
+        """
+        # show triangulation
+        graph = orange.triangulate(self.rawdata.select([xAttr, yAttr, self.rawdata.domain.classVar.name]))
+        graph.returnIndices = 1
+        for (i,j) in graph.getEdges():
+            if self.rawdata[i].getclass() != self.rawdata[j].getclass(): graph[i,j] = None
+
+        for vertex in range(len(self.rawdata)):
+            neighbours = graph.getNeighbours(vertex)
+            if len(neighbours) == 1: graph[vertex, neighbours[0]] = None
         
-    # -----------------------------------------------------------
-    # -----------------------------------------------------------
+        for (i, j) in graph.getEdges():
+            if graph[i,j][0] == 0: continue
+            self.addCurve("", QColor(0,0,0), QColor(0,0,0), 1, QwtCurve.Lines, QwtSymbol.None, xData = [self.rawdata[i][xAttr].value, self.rawdata[j][xAttr].value], yData = [self.rawdata[i][yAttr].value, self.rawdata[j][yAttr].value])
+        """
+        
+    # ##############################################################
+    # add tooltip for point at x,y
+    # ##############################################################
     def addTip(self, x, y, toolTipList = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
         if text == None:
@@ -376,8 +382,9 @@ class OWScatterPlotGraph(OWVisGraph):
                 text = self.getShortExampleText(self.rawdata, self.rawdata[dataindex], self.attributeNames)
         self.tips.addToolTip(x, y, text)
 
-
+    # ##############################################################
     # compute how good is a specific projection with given xAttr and yAttr
+    # ##############################################################
     def getProjectionQuality(self, xAttr, yAttr, className):
         xArray = self.noJitteringScaledData[self.attributeNames.index(xAttr)]
         yArray = self.noJitteringScaledData[self.attributeNames.index(yAttr)]
@@ -393,8 +400,9 @@ class OWScatterPlotGraph(OWVisGraph):
         return self.kNNOptimization.kNNComputeAccuracy(table)
 
 
-    # ####################################
+    # ##############################################################
     # create x-y projection of attributes in attrList
+    # ##############################################################
     def createProjection(self, xAttr, yAttr):
         xIsDiscrete = (self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete)
         yIsDiscrete = (self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete)
@@ -421,8 +429,9 @@ class OWScatterPlotGraph(OWVisGraph):
                            
         return (xArray, yArray)
 
-    # ####################################
+    # ##############################################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
+    # ##############################################################
     def getSelectionsAsExampleTables(self, xAttr, yAttr):
         if not self.rawdata: return (None, None, None)
         selected = orange.ExampleTable(self.rawdata.domain)
@@ -440,6 +449,9 @@ class OWScatterPlotGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
         
+    # ##############################################################
+    # evaluate the class separation for attribute pairs in the projections list
+    # ##############################################################
     def getOptimalSeparation(self, projections, addResultFunct):
         testIndex = 0
         totalTestCount = len(projections)
@@ -454,6 +466,7 @@ class OWScatterPlotGraph(OWVisGraph):
             fullData.append([self.noJitteringScaledData[ind][i] for ind in range(attrCount)] + [self.rawdata[i].getclass()])
 
         # if we want to use heuristics, we first discretize all attributes
+        # this way we discretize the attributes only once
         if self.kNNOptimization.evaluationAlgorithm == OWkNNOptimization.ALGORITHM_HEURISTIC:
             attrs = []
             for i in range(len(fullData.domain.attributes)):
@@ -478,11 +491,12 @@ class OWScatterPlotGraph(OWVisGraph):
             else:
                 print "permutation %6d / %d. MSE: %2.2f" % (testIndex, totalTestCount, accuracy) 
 
-            # save the permutation
-            addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name])
+            addResultFunct(accuracy, other_results, len(table), [table.domain[attr1].name, table.domain[attr2].name], testIndex)
             self.scatterWidget.progressBarSet(100.0*testIndex/float(totalTestCount))
 
-
+    # ##############################################################
+    # add tooltips for pie charts
+    # ##############################################################
     def addTooltips(self):
         for (text, i, j) in self.tooltipData:
             x_1 = self.transform(QwtPlot.xBottom, i-0.5); x_2 = self.transform(QwtPlot.xBottom, i+0.5)
