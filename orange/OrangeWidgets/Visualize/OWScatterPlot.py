@@ -324,8 +324,7 @@ class OWScatterPlot(OWWidget):
 
     def updateGraph(self, *args):
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.statusBar)
-        #self.graph.update()
-        #self.graph.replot()
+        self.graph.repaint()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
