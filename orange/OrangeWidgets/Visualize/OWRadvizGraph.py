@@ -473,7 +473,6 @@ class OWRadvizGraph(OWVisGraph):
             if self.isPointSelected(xArray[i], yArray[i]): selected.append(self.rawdata[i])
             else:                                          unselected.append(self.rawdata[i])
 
-        print len(selected), len(unselected)
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)

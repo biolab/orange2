@@ -263,7 +263,7 @@ class OWVisGraph(OWGraph):
 			print "warning. Computing min, max value for discrete attribute."
 			return (0, float(len(attr.values))-1)
 		else:
-			print data.domain[index].name
+			#print data.domain[index].name
 			return (self.domainDataStat[index].min, self.domainDataStat[index].max)
 		
 	# ####################################################################

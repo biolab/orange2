@@ -235,7 +235,6 @@ class OWPolyviz(OWWidget):
         self.progressBarFinished()
 
     def startOptimization(self):
-        print self.optimizationDlg.getOptimizationType()
         if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
             self.optimizeSeparation()
         else:
@@ -327,13 +326,16 @@ class OWPolyviz(OWWidget):
         for i in range(3, maxLen+1):
             if not self.rotateAttributes: proj += combinations(i, total) * fact(i-1)
             else: proj += combinations(i, total) * fact(i-1) * math.pow(2, i)/2
-
-        if proj > 20000:
-            res = QMessageBox.information(self,'Polyviz','There are %d possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (combin),'Yes','No', QString.null,0,1)
-            if res == 0: return
-
         self.graph.triedPossibilities = 0
         self.graph.totalPossibilities = proj
+        
+        if proj > 20000:
+            proj = str(self.graph.totalPossibilities)
+            l = len(proj)
+            for i in range(len(proj)-2, 0, -1):
+                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+            res = QMessageBox.information(self,'Polyviz','There are %s possible polyviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (proj),'Yes','No', QString.null,0,1)
+            if res != 0: return
 
         startTime = time.time()
         self.graph.startTime = time.time()

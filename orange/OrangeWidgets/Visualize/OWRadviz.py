@@ -321,14 +321,17 @@ class OWRadviz(OWWidget):
         proj = 0
         for i in range(3, maxLen+1):
             proj += combinations(i, total)*fact(i-1)/2
-
-        if proj > 20000:
-            res = QMessageBox.information(self,'Radviz','There are %d possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to cancel?' % (proj),'Yes','No', QString.null,0,1)
-            if res == 0: return
-                
         self.graph.triedPossibilities = 0
         self.graph.totalPossibilities = proj
-       
+
+        if proj > 20000:
+            strProj = str(self.graph.totalPossibilities)
+            l = len(strProj)
+            for i in range(len(strProj)-2, 0, -1):
+                if (l-i)%3 == 0: strProj = strProj[:i] + "," + strProj[i:]
+            res = QMessageBox.information(self,'Radviz','There are %s possible radviz projections using currently visualized attributes. Since their evaluation will probably take a long time, we suggest \n removing some attributes or decreasing the number of attributes in projections. Do you wish to continue?' % (strProj),'Yes','No', QString.null,0,1)
+            if res != 0: return
+                
         startTime = time.time()
         self.graph.startTime = time.time()
         self.progressBarInit()

@@ -157,9 +157,9 @@ class OWScatterPlotGraph(OWVisGraph):
 
         #######
         # show the distributions
-        print colorIndex
+        #print colorIndex
         if self.showDistributions == 1 and colorIndex != -1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Discrete and self.rawdata.domain[xAttr].varType == orange.VarTypes.Discrete and self.rawdata.domain[yAttr].varType == orange.VarTypes.Discrete and not self.showKNNModel:
-            print "color attr is discrete"
+            #print "color attr is discrete"
             (cart, profit) = FeatureByCartesianProduct(self.rawdata, [self.rawdata.domain[xAttr], self.rawdata.domain[yAttr]])
             tempData = self.rawdata.select(list(self.rawdata.domain) + [cart])
             contXY = orange.ContingencyAttrClass(cart, tempData)   # distribution of X attribute
