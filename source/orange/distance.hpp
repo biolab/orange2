@@ -176,7 +176,7 @@ public:
   __REGISTER_CLASS
 
   PDomainDistributions distributions; //P distributions (of discrete attributes only)
-  PFloatList bothSpecialDist; //P distances between discrete attributes if both values are unknown
+  PAttributedFloatList bothSpecialDist; //P distances between discrete attributes if both values are unknown
 
   TExamplesDistance_Euclidean();
   TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator, const int & = 0, PDomainDistributions = PDomainDistributions(), PDomainBasicAttrStat = PDomainBasicAttrStat());
@@ -201,9 +201,9 @@ public:
   __REGISTER_CLASS
 
   PDomainDistributions distributions; //P distributions of attributes' values
-  PFloatList averages; //P average values of attributes
-  PFloatList normalizations; //P ranges of attributes' values
-  PFloatList bothSpecial; //P distance if both values of both attributes are undefined
+  PAttributedFloatList averages; //P average values of attributes
+  PAttributedFloatList normalizations; //P ranges of attributes' values
+  PAttributedFloatList bothSpecial; //P distance if both values of both attributes are undefined
 
   virtual float operator()(const TExample &, const TExample &) const;
   virtual float operator()(const int &attrNo, const TValue &v1, const TValue &v2) const;

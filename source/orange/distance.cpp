@@ -375,8 +375,10 @@ TExamplesDistance_Manhattan::TExamplesDistance_Manhattan(const bool &ignoreClass
 TExamplesDistance_Euclidean::TExamplesDistance_Euclidean(const bool &ignoreClass, const bool &normalize, const bool &ignoreUnknowns, PExampleGenerator egen, const int &weightID, PDomainDistributions ddist, PDomainBasicAttrStat dstat)
 : TExamplesDistance_Normalized(ignoreClass, normalize, ignoreUnknowns, egen, weightID, ddist, dstat),
   distributions(mlnew TDomainDistributions(egen, weightID, false, true)),
-  bothSpecialDist(mlnew TFloatList())
+  bothSpecialDist(mlnew TAttributedFloatList())
 {
+  bothSpecialDist->attributes = averages->attributes;
+
   PITERATE(TDomainDistributions, di, distributions) {
     if (*di) {
       float sum2 = 0;
@@ -481,9 +483,9 @@ PExamplesDistance TExamplesDistanceConstructor_Relief::operator()(PExampleGenera
   if (!ignoreClass)
     raiseError("'ignoreClass' not supported");
 
-  edr->averages       = PFloatList(mlnew TFloatList());
-  edr->normalizations = PFloatList(mlnew TFloatList());
-  edr->bothSpecial    = PFloatList(mlnew TFloatList());
+  edr->averages       = mlnew TAttributedFloatList(gen->domain->attributes);
+  edr->normalizations = mlnew TAttributedFloatList(gen->domain->attributes);
+  edr->bothSpecial    = mlnew TAttributedFloatList(gen->domain->attributes);
 
   edr->distributions = ddist;
   edr->distributions->normalize();
