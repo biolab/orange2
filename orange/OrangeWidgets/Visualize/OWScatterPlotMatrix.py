@@ -15,6 +15,7 @@ from OWScatterPlotGraph import OWScatterPlotGraph
 import qt
 import orngInteract
 import statc
+import OWDlgs
 from math import sqrt
 
 class QMyLabel(QLabel):
@@ -268,18 +269,12 @@ class OWScatterPlotMatrix(OWWidget):
 
 
     def saveToFile(self):
-        sizeDlg = OWChooseImageSizeDlg(self, "", TRUE)
-        sizeDlg.exec_loop()
-        if sizeDlg.result() != QDialog.Accepted: return
+        self.sizeDlg = OWDlgs.OWChooseImageSizeDlg(self)
+        self.sizeDlg.disconnect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.sizeDlg.accept)
+        self.sizeDlg.connect(self.sizeDlg.okButton, SIGNAL("clicked()"), self.saveToFileAccept)
+        self.sizeDlg.exec_loop()
 
-        if sizeDlg.sizeOriginal.isChecked(): size = self.size()
-        elif sizeDlg.size400.isChecked(): size = QSize(400,400)
-        elif sizeDlg.size600.isChecked(): size = QSize(600,600)
-        elif sizeDlg.size800.isChecked(): size = QSize(800,800)
-        elif sizeDlg.custom.isChecked():  size = QSize(int(str(sizeDlg.xSize.text())), int(str(sizeDlg.ySize.text())))
-        else:
-            print "error"; return
-
+    def saveToFileAccept(self):
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (*.PNG);;Windows Bitmap (*.BMP);;Graphics Interchange Format (*.GIF)", None, "Save to..", "Save to..")
         fileName = str(qfileName)
         if fileName == "": return
@@ -290,22 +285,11 @@ class OWScatterPlotMatrix(OWWidget):
         	fileName = fileName + ".png"
         ext = ext.upper()
 
-        if not sizeDlg.allSizes.isChecked():
-            self.saveToFileDirect(fileName, ext, size)
-        else:
-            dirName, shortFileName = os.path.split(fileName)
-            if not os.path.isdir(dirName + "\\400\\"): os.mkdir(dirName + "\\400\\")
-            if not os.path.isdir(dirName + "\\600\\"): os.mkdir(dirName + "\\600\\")
-            if not os.path.isdir(dirName + "\\800\\"): os.mkdir(dirName + "\\800\\")
-            if not os.path.isdir(dirName + "\\Original\\"): os.mkdir(dirName + "\\Original\\")
-            self.saveToFileDirect(dirName + "\\400\\" + shortFileName, ext, QSize(400,400))
-            self.saveToFileDirect(dirName + "\\600\\" + shortFileName, ext, QSize(600,600))
-            self.saveToFileDirect(dirName + "\\800\\" + shortFileName, ext, QSize(800,800))
-            self.saveToFileDirect(dirName + "\\Original\\" + shortFileName, ext, QSize())
-
+        self.saveToFileDirect(fileName, ext, self.sizeDlg.getSize())
+        QDialog.accept(self.sizeDlg)
 
     # saving scatterplot matrix is a bit harder than the rest of visualization widgets. we have to save each scatterplot separately
-    def saveToFileDirect(self, fileName, ext, size = QSize()):
+    def saveToFileDirect(self, fileName, ext, size):
         if self.graphs == []: return
         count = self.shownAttrCount
         attrNameSpace = 30
