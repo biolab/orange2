@@ -28,6 +28,10 @@ class singleClassCalibrationPlotGraph(OWGraph):
         self.setAxisMaxMinor(QwtPlot.yLeft, 5)
         self.setAxisScale(QwtPlot.xBottom, -0.0, 1.0, 0)
         self.setAxisScale(QwtPlot.yLeft, -0.0, 1.0, 0)
+        self.setYLaxisTitle('actual probability')
+        self.setShowYLaxisTitle(1)
+        self.setXaxisTitle('estimated probability')
+        self.setShowXaxisTitle(1)
         self.setShowMainTitle(1)
         self.setMainTitle(title)
         self.dres = None
@@ -101,7 +105,7 @@ class singleClassCalibrationPlotGraph(OWGraph):
             x = []
             y = []
             for (px, py) in yesClassRugPoints:
-                n = 1.0 ##py
+                n = py > 0.0 ##py
                 py = 1.0
                 x.append(px)
                 y.append(py - self.rugHeight*n / 2.0)
@@ -117,7 +121,7 @@ class singleClassCalibrationPlotGraph(OWGraph):
             x = []
             y = []
             for (px, py) in noClassRugPoints:
-                n = 1.0 ##py
+                n = py > 0.0 ##py
                 py = 0.0
                 x.append(px)
                 y.append(py + self.rugHeight*n / 2.0)
