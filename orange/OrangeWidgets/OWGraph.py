@@ -143,8 +143,6 @@ class OWGraph(QwtPlot):
         QwtPlot.__init__(self, parent, name)
         self.setWFlags(Qt.WResizeNoErase) #this works like magic.. no flicker during repaint!
 
-        self.lastSaveDirName = ""   # name of the directory where we saved the last picture
-
         self.setAutoReplot(FALSE)
         self.setAutoLegend(FALSE)
         self.setAxisAutoScale(QwtPlot.xBottom)
