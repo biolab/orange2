@@ -306,7 +306,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
 
       if (!haveBase && nClasses)
         while(pcl < classes[*si]) {
-          classBoundaries.push_back(floatMap.size());
+          classBoundaries.push_back(floatMap.size()-1);
           pcl++;
         }
     }
