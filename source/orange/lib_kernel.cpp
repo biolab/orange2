@@ -2066,11 +2066,11 @@ PyObject *applyFilterL(PFilter filter, PExampleTable gen)
 }
 
 
-PyObject *applyFilterP(PFilter filter, PExampleGenerator gen)
+PyObject *applyFilterP(PFilter filter, PExampleTable gen)
 { if (!filter)
     return PYNULL;
   
-  TExampleTable *newTable = mlnew TExampleTable(gen, 1);
+  TExampleTable *newTable = mlnew TExampleTable(PExampleGenerator(gen), 1);
   PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
   filter->reset();
   PEITERATE(ei, gen)

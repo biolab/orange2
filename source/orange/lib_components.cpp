@@ -1337,7 +1337,7 @@ PyObject *ValueFilterList_reverse(TPyOrange *self) PYARGS(METH_NOARGS, "() -> No
 PyObject *ValueFilterList_sort(TPyOrange *self, PyObject *args) PYARGS(METH_VARARGS, "([cmp-func]) -> None") { return ListOfWrappedMethods<PValueFilterList, TValueFilterList, PValueFilter, (PyTypeObject *)&PyOrValueFilter_Type>::_sort(self, args); }
 
 
-PyObject *applyFilterL(PFilter filter, PExampleTable gen);
+PyObject *applyFilterP(PFilter filter, PExampleTable gen);
 
 PyObject *applyFilter(PFilter filter, PExampleGenerator gen, bool weightGiven, int weightID)
 { if (!filter) return PYNULL;
@@ -1382,8 +1382,13 @@ PyObject *Filter_call(PyObject *self, PyObject *args, PyObject *keywords)
     if (!PyArg_ParseTuple(args, "O&|i:Filter.__call__", &pt_ExampleGenerator, &egen, &references))
       return PYNULL;
 
-    return references ? applyFilterL(PyOrange_AsFilter(self), egen)
-                      : applyFilter(PyOrange_AsFilter(self), egen, false, 0);
+    if (references) {
+      if (!egen.is_derived_from(TExampleTable))
+        PYERROR(PyExc_TypeError, "cannot return references to examples that are not in example table", PYNULL);
+      return applyFilterP(PyOrange_AsFilter(self), egen);
+    }
+
+    return applyFilter(PyOrange_AsFilter(self), egen, false, 0);
   PyCATCH
 }
 
