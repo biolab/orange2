@@ -287,11 +287,6 @@ class OWRadviz(OWWidget):
         projections.sort()
         projections.reverse()
 
-        import cPickle
-        f = open("E:\\temp.txt", "wt")
-        cPickle.dump(projections, f)
-        f.close()
-        
         self.graph.getOptimalSeparation(number, projections, self.optimizationDlg.addResult)
 
         if not numberOfAttrs:
