@@ -90,6 +90,7 @@ class OWRadvizGraph(OWVisGraph):
         self.insideColors = None
         self.clusterClosure = None
         self.showClusters = 0
+        self.showAttributeNames = 1
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -154,8 +155,9 @@ class OWRadvizGraph(OWVisGraph):
         self.addCurve("dots", QColor(140,140,140), QColor(140,140,140), 10, style = QwtCurve.NoCurve, symbol = QwtSymbol.Ellipse, xData = XAnchors, yData = YAnchors, forceFilledSymbols = 1)
 
         # draw text at anchors
-        for i in range(length):
-            self.addMarker(labels[i], XAnchors[i]*1.1, YAnchors[i]*1.04, Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
+        if self.showAttributeNames:
+            for i in range(length):
+                self.addMarker(labels[i], XAnchors[i]*1.1, YAnchors[i]*1.04, Qt.AlignHCenter + Qt.AlignVCenter, bold = 1)
 
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
@@ -211,20 +213,62 @@ class OWRadvizGraph(OWVisGraph):
         # ############################################################## 
         elif self.subsetData:
             showFilled = self.showFilledSymbols
+            shownSubsetCount = 0
             colors = None
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete: colors = ColorPaletteHSV(valLen)
             for i in range(dataSize):
+                self.showFilledSymbols = (self.rawdata[i] in self.subsetData)
+                shownSubsetCount += self.showFilledSymbols
+                
                 if not validData[i]: continue
                 if colors:
                     newColor = colors[classValueIndices[self.rawdata[i].getclass().value]]
                 else:
                     newColor = QColor()
                     newColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
-                self.showFilledSymbols = 0
-                if self.rawdata[i] in self.subsetData: self.showFilledSymbols = 1
 
-                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
+                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                else: curveSymbol = self.curveSymbols[0]
+                
+                key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
+
+            # if we have a data subset that contains examples that don't exist in the original dataset we show them here
+            if self.subsetData != None and len(self.subsetData) != shownSubsetCount:
+                self.showFilledSymbols = 1
+                failedToShowCount = 0           # number of point that we were unable to show
+                for i in range(len(self.subsetData)):
+                    if self.subsetData[i] in self.rawdata: continue
+
+                    # check if has missing values
+                    indicesWithClass = indices + [classNameIndex]
+                    for ind in indicesWithClass:
+                        if self.subsetData[i][ind].isSpecial(): break
+                    if ind != indicesWithClass[-1]: continue
+
+                    dataVals = []
+                    for index in range(len(indicesWithClass)):
+                        attrName = self.attributeNames[indicesWithClass[index]]
+                        val = (float(self.subsetData[i][indicesWithClass[index]])- self.attrValues[attrName][0]) / float(self.attrValues[attrName][1] - self.attrValues[attrName][0])
+                        dataVals.append(val)
+
+                    # check if one of the values is above 1 or below 0
+                    for val in dataVals:
+                        if val < 0.0 or val > 1.0: break
+                    if val != dataVals[-1]: failedToShowCount+=1; continue
+                    
+                    [x,y] = self.getProjectedPointPosition(indices, dataVals[:-1])  # compute position of the point, but don't use the class value
+                    x = x * self.scaleFactor; y = y * self.scaleFactor
+                    if colors:
+                        newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
+                    else:
+                        newColor = QColor()
+                        val = self.subsetData[i][classNameIndex].value - self.attrValues[self.subsetData.domain.classVar.name][0] / float(self.attrValues[self.subsetData.domain.classVar.name][1] - self.attrValues[self.subsetData.domain.classVar.name][0])
+                        newColor.setHsv(val * 260, 255, 255)
+                    if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.subsetData[i].getclass().value]]
+                    else: curveSymbol = self.curveSymbols[0]
+                    self.addCurve("", newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [x], yData = [y])
+                if failedToShowCount > 0: self.radvizWidget.warning("We were unable to show %d points from the data subset, since their values were out of range." % (failedToShowCount))
             self.showFilledSymbols = showFilled                    
 
         # ############################################################## 
@@ -482,6 +526,19 @@ class OWRadvizGraph(OWVisGraph):
             
         return (x_positions, y_positions, self.getValidList(indices))
 
+    # for attributes in attrIndices and values of these attributes in values compute point positions
+    # function is called from OWClusterOptimization.py
+    # this function has more sense in radviz and polyviz methods
+    def getProjectedPointPosition(self, attrIndices, values):
+        XAnchors = self.createXAnchors(len(attrIndices))
+        YAnchors = self.createYAnchors(len(attrIndices))
+        s = sum(values)
+        if s == 0: return [0.0, 0.0]
+        x = self.scaleFactor * Numeric.matrixmultiply(XAnchors, values) / s
+        y = self.scaleFactor * Numeric.matrixmultiply(YAnchors, values) / s
+        return [x,y]
+        
+        
 
     def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0):
         if not validData: validData = self.getValidList(attrIndices)
