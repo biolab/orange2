@@ -558,6 +558,10 @@ SOURCE=.\orange\distance.hpp
 # End Source File
 # Begin Source File
 
+SOURCE=.\orange\distance_dtw.hpp
+# End Source File
+# Begin Source File
+
 SOURCE=.\orange\distvars.hpp
 # End Source File
 # Begin Source File
@@ -900,6 +904,10 @@ SOURCE=.\orange\ppp\dist_clustering.ppp
 # Begin Source File
 
 SOURCE=.\orange\ppp\distance.ppp
+# End Source File
+# Begin Source File
+
+SOURCE=.\orange\ppp\distance_dtw.ppp
 # End Source File
 # Begin Source File
 

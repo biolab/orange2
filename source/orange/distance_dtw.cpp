@@ -35,26 +35,27 @@ bool TAlignment::operator<(const TAlignment &o)
 class TdtwElement
 {
 public:
-	float	dist2;			// squared distance between two points: dist[i,j] = (pi - qj)^2
+	float	dist2;				// squared distance between two points: dist[i,j] = (pi - qj)^2
 	float	minSumDist2;		// sum of squared distances on the minimal warping path: sum(distij)
 	int K;						// length of the minimal warping path
 	const TdtwElement *pParent;	// parent element for reconstruction of warping path
 
 	TdtwElement() : dist2(-1), minSumDist2(-1), K(-1), pParent(NULL) {};
 	TdtwElement(float newDist) : dist2(newDist), minSumDist2(-1), K(-1), pParent(NULL) {};
+	//~TdtwElement() { if ( pParent != NULL ) free(pParent); };
 
-    TdtwElement &operator = (const TdtwElement &old)
+/*    TdtwElement &operator = (const TdtwElement &old)
     { dist2 = old.dist2;
       minSumDist2 = old.minSumDist2;
       K = old.K;
       pParent = old.pParent;
       return *this;
-    }
+    }*/
 
 	// update minSumDist2, K
-	void updateMin(const TPdtwVector &d)
+	void updateMin(const PdtwVector &d)
 	{
-		TPdtwVector::const_iterator iter, itere;
+		PdtwVector::const_iterator iter, itere;
 		vector<float> mm;
 		vector<int> kk;
 		for ( iter = d.begin(), itere = d.end(); iter != itere; iter++ )
@@ -91,7 +92,9 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2)
 
   TdtwMatrix mtrx;
   initMatrix(seq1,seq2, mtrx);
-  return calcDistance(mtrx);
+  float dtwDistance = calcDistance(mtrx);
+  //destructMatrix(mtrx);
+  return dtwDistance;
 }
 
 
@@ -105,6 +108,7 @@ float TExamplesDistance_DTW::operator ()(const TExample &e1, const TExample &e2,
   initMatrix(seq1, seq2, mtrx);
   float dtwDistance = calcDistance(mtrx);
   path = setWarpPath(mtrx);
+  //destructMatrix(mtrx);
   return dtwDistance;
 }
 
@@ -125,6 +129,22 @@ void TExamplesDistance_DTW::initMatrix(const vector<float> &p, const vector<floa
 		mtrx.push_back(v);
 	}
 }
+
+
+/*
+void TExamplesDistance_DTW::destructMatrix(TdtwMatrix &mtrx) const
+{
+	TdtwVector::iterator vi, vie;
+	TdtwMatrix::iterator mi(mtrx.begin()), mie(mtrx.end());
+	for ( ; mi != mie; mi++ )
+	{
+		for ( vi = mi->begin(), vie = mi->end(); vi != vie; vi ++ )
+		{
+			free(vi);
+		}
+	}
+}
+*/
 
 
 float TExamplesDistance_DTW::calcDistance(TdtwMatrix &mtrx) const
@@ -160,7 +180,7 @@ float TExamplesDistance_DTW::calcDistance(TdtwMatrix &mtrx) const
 		// iterate rows from d1->, column = d1
 		for ( iter_i = mtrx.begin() + d, iter_i1 = iter_i + 1, iter_endi = mtrx.end() - 1; iter_i < iter_endi; iter_i++, iter_i1++ )
 		{
-         	TPdtwVector minElPVect;
+         	PdtwVector minElPVect;
 			minElPVect.push_back( &((*iter_i)[d]) );
 			minElPVect.push_back( &((*iter_i)[d1]) );
 			minElPVect.push_back( &((*iter_i1)[d]) );
@@ -170,7 +190,7 @@ float TExamplesDistance_DTW::calcDistance(TdtwMatrix &mtrx) const
 		for ( iter_j = mtrx[d].begin() + d, iter_j1 = iter_j + 1, iter_jd = mtrx[d1].begin() + d, iter_jd1 = iter_jd + 1, \
 			  iter_endj = mtrx[d].end() - 1; iter_j < iter_endj; iter_j++, iter_j1++, iter_jd++, iter_jd1++ )
 		{
-            TPdtwVector minElPVect;
+            PdtwVector minElPVect;
 			minElPVect.push_back( &(*iter_j) );
 			minElPVect.push_back( &(*iter_j1) );
 			minElPVect.push_back( &(*iter_jd) );

@@ -1997,11 +1997,11 @@ PyObject *ExampleTable_filterlist(TPyOrange *self, PyObject *args, PyObject *key
     if (PyTuple_Size(args)==1) {
       PyObject *arg = PyTuple_GET_ITEM(args, 0);
 
-      if (PyDict_Check(args))
-        return applyFilterL(filter_sameValues(args, eg->domain), weg);
+      if (PyDict_Check(arg))
+        return applyFilterL(filter_sameValues(arg, eg->domain), weg);
 
-      if (PyOrFilter_Check(args))
-          return applyFilterL(PyOrange_AsFilter(args), weg);
+      if (PyOrFilter_Check(arg))
+          return applyFilterL(PyOrange_AsFilter(arg), weg);
     }
 
     PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)
@@ -2022,11 +2022,11 @@ PyObject *ExampleTable_filterref(TPyOrange *self, PyObject *args, PyObject *keyw
     if (PyTuple_Size(args)==1) {
       PyObject *arg = PyTuple_GET_ITEM(args, 0);
 
-      if (PyDict_Check(args))
-        return applyFilterP(filter_sameValues(args, eg->domain), weg);
+      if (PyDict_Check(arg))
+        return applyFilterP(filter_sameValues(arg, eg->domain), weg);
 
-      if (PyOrFilter_Check(args))
-          return applyFilterP(PyOrange_AsFilter(args), weg);
+      if (PyOrFilter_Check(arg))
+          return applyFilterP(PyOrange_AsFilter(arg), weg);
     }
 
     PYERROR(PyExc_AttributeError, "ExampleGenerator.filterlist expects a list of conditions or orange.Filter", PYNULL)

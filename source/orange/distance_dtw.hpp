@@ -24,7 +24,7 @@ VWRAPPER(WarpPath)
 
 class TdtwElement;
 typedef vector<TdtwElement> TdtwVector;
-typedef vector<TdtwElement*> TPdtwVector;
+typedef vector<TdtwElement*> PdtwVector;
 typedef vector<TdtwVector> TdtwMatrix;
 
 class TExamplesDistance_DTW : public TExamplesDistance_Normalized
@@ -39,9 +39,10 @@ public:
     virtual float operator()(const TExample &, const TExample &, PWarpPath &) const;
 
 private:
-	void initMatrix(const vector<float> &seq1, const vector<float> &seq2, vector<TdtwVector> &mtrx) const;
-	float calcDistance(vector<TdtwVector> &mtrx) const;
-	PWarpPath setWarpPath(const vector<TdtwVector> &mtrx) const;
+	void initMatrix(const vector<float> &seq1, const vector<float> &seq2, TdtwMatrix &mtrx) const;
+	float calcDistance(TdtwMatrix &mtrx) const;
+	PWarpPath setWarpPath(const TdtwMatrix &mtrx) const;
+	void destructMatrix(TdtwMatrix &mtrx) const;
 	void printMatrix(const TdtwMatrix &mtrx) const;
 };
 
