@@ -48,7 +48,9 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     wa.setValue(getattr(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
 
-    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))    
+    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
+    master.controledAttributes.append((value, CallFront_spin(wa)))
+    
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
@@ -70,6 +72,7 @@ def checkBox(widget, master, value, text, box=None, tooltip=None, callback=None,
     wa.setChecked(getattr(master, value))
     if disabled: wa.setDisabled(1)
     master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
+    master.controledAttributes.append((value, CallFront_checkBox(wa)))
     if tooltip: QToolTip.add(wa, tooltip)
     if callback:
         master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, callback, widget=wa, getwidget=getwidget, id=id))
@@ -82,6 +85,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     wa.setText(getattr(master,value))
     if tooltip: QToolTip.add(wa, tooltip)
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallback(master, value, str))
+    master.controledAttributes.append((value, CallFront_lineEdit(wa)))
     if callback:
         master.connect(wa, SIGNAL("textChanged(const QString &)"), FunctionCallback(master, callback))
     if space: QWidget(widget).setFixedSize(0, space)
@@ -99,6 +103,8 @@ def checkWithSpin(widget, master, text, min, max, checked, value, posttext = Non
 
     master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, checked))
     master.connect(wb, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
+    master.controledAttributes.append((checked, CallFront_checkBox(wa)))
+    master.controledAttributes.append((checked, CallFront_spin(wb)))
 
     if checkCallback:
         master.connect(wa, SIGNAL("toggled(bool)"), FunctionCallback(master, checkCallback, widget=wa, getwidget=getwidget))
@@ -158,6 +164,9 @@ def hSlider(widget, master, value, box=None, minValue=0.0, maxValue=1.0, step=0.
     QObject.connect(slider, SIGNAL("valueChanged(int)"), label.setLbl)
     if callback:
         master.connect(slider, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
+    master.controledAttributes.append((value, CallFront_hSlider(slider)))
+    
+    return slider
 
 import math
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
@@ -209,23 +218,31 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     slider.box = hb
     return slider
 
-def comboBox(widget, master, value, box=None, items=None, tooltip=None, callback=None):
+def comboBox(widget, master, value, box=None, items=None, tooltip=None, callback=None, sendString = 0):
     if box:
         hb = QHGroupBox(box, widget)
     else:
         hb = widget
     if tooltip: QToolTip.add(hb, tooltip)
     combo = QComboBox(hb)
-    for i in items:
-        combo.insertItem(i)
-    if len(items)>0:
-        combo.setCurrentItem(getattr(master, value))
-    else:
-        combo.setDisabled(True)
-    master.connect(combo, SIGNAL("activated(int)"), ValueCallback(master, value))
+
+    if items:
+        for i in items:
+            combo.insertItem(i)
+        if len(items)>0:
+            combo.setCurrentItem(getattr(master, value))
+        else:
+            combo.setDisabled(True)
+
+    if sendString: signal = "activated( const QString & )"
+    else: signal = "activated(int)"
+
+    master.connect(combo, SIGNAL(signal), ValueCallback(master, value))
     if callback:
-        master.connect(combo, SIGNAL("activated(int)"), FunctionCallback(master, callback))
+        master.connect(combo, SIGNAL(signal), FunctionCallback(master, callback))
+    master.controledAttributes.append((value, CallFront_comboBox(combo)))
     return combo
+
 
 ##############################################################################
 
@@ -236,6 +253,8 @@ class ValueCallback:
         self.f = f
         widget.callbackDeposit.append(self)
     def __call__(self, value):
+        print value
+        if isinstance(value, QString): value = str(value)
         setattr(self.widget, self.attribute, self.f and self.f(value) or value)
 
 class SetLabelCallback:
@@ -258,6 +277,7 @@ class FunctionCallback:
         self.id = id
         self.getwidget = getwidget
         master.callbackDeposit.append(self)
+
     def __call__(self, value):
         kwds = {}
         if self.id <> None: kwds['id'] = self.id
@@ -265,6 +285,42 @@ class FunctionCallback:
         apply(self.f, (), kwds)
 
 ##############################################################################
+
+
+class CallFront_spin:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        self.control.setValue(value)
+
+class CallFront_checkBox:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        self.control.setChecked(value)
+
+
+class CallFront_comboBox:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        for i in range(self.control.count()):
+            if str(self.control.text(i)) == value:
+                self.control.setCurrentItem(i)
+                return
+
+class CallFront_hSlider:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        self.control.setValue(value)
+        
+
+
 
 class tableItem(QTableItem):
     def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white):
