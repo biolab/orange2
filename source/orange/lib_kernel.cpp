@@ -3171,7 +3171,7 @@ PyObject *Learner_call(PyObject *self, PyObject *targs, PyObject *keywords) PYDO
     }
 
     PExampleGenerator egen;
-    int weight=0;
+    int weight = 0;
     if (!PyArg_ParseTuple(targs, "O&|O&", pt_ExampleGenerator, &egen, pt_weightByGen(egen), &weight))
       PYERROR(PyExc_AttributeError, "Learner.__call__: examples and, optionally, weight attribute expected", PYNULL);
 

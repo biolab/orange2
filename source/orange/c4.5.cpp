@@ -230,7 +230,10 @@ TC45Learner::TC45Learner()
    increment(0),
    cf(0.25),
    trials(10),
-   prune(true)
+   prune(true),
+   convertToOrange(false),
+   storeContingencies(false),
+   storeExamples(false)
 {
     if (!c45Loaded)
       loadC45();
@@ -483,9 +486,6 @@ bool TC45Learner::convertParameters()
 
 
 
-//#define C45DEBUG(x) x
-#define C45DEBUG(x)
-
 PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
 {   if (!gen->domain->classVar)
       raiseError("class-less domain");
@@ -494,11 +494,12 @@ PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
     Tree tree = (Tree)c45learn(trials, gainRatio, subset, batch, probThresh, minObjs, window, increment, cf, prune);
 
     PC45TreeNode root = mlnew TC45TreeNode(tree, gen->domain);
-    PClassifier c45classifier = mlnew TC45Classifier(gen->domain->classVar, root);
+    TC45Classifier *c45classifier = mlnew TC45Classifier(gen->domain->classVar, root);
+    PClassifier res = c45classifier;
 
     c45garbage();
     clearGenerator();
-    return c45classifier;
+    return convertToOrange ? PClassifier(c45classifier->asTreeClassifier(gen, weight, storeContingencies, storeExamples)) : res;
 }
 
 
@@ -671,4 +672,121 @@ void TC45Classifier::predictionAndDistribution(const TExample &example, TValue &
 
   value = TValue(bestClass);
   dist->normalize();
+}
+
+
+
+
+#include "tdidt.hpp"
+#include "classfromvar.hpp"
+#include "discretize.hpp"
+#include "tdidt_split.hpp"
+
+PTreeNode TC45TreeNode::asTreeNode(PExampleGenerator examples, const int &weightID, bool storeContingencies, bool storeExamples)
+{ 
+  PTreeNode newNode = mlnew TTreeNode();
+  newNode->distribution = classDist;
+
+  if (items > 0)
+    newNode->nodeClassifier = mlnew TDefaultClassifier(examples->domain->classVar, leaf, classDist);
+  else {
+    TDiscDistribution *dd = mlnew TDiscDistribution(examples->domain->classVar);
+    dd->add(leaf, 1.0);
+    newNode->nodeClassifier = mlnew TDefaultClassifier(examples->domain->classVar, leaf, dd);
+  }
+
+  if (storeExamples) {
+    newNode->examples = examples;
+    newNode->weightID = weightID;
+  }
+
+  if (nodeType == Leaf)
+    return newNode;
+
+  PDistribution branchSizes = mlnew TDiscDistribution;
+  int i = 0;
+  PITERATE(TC45TreeNodeList, li, branch)
+    branchSizes->addint(i, (*li)->items);
+  newNode->branchSizes = branchSizes;
+    
+  TEnumVariable *dummyVar = mlnew TEnumVariable(tested->name);
+  PVariable wdummyVar = dummyVar;
+
+  switch (nodeType) {
+    case Branch:
+      newNode->branchSelector = mlnew TClassifierFromVar(tested, branchSizes);
+      newNode->branchDescriptions = mlnew TStringList(tested.AS(TEnumVariable)->values.getReference());
+      break;
+
+    case Cut:
+      newNode->branchDescriptions = mlnew TStringList;
+
+      char str[128];
+      sprintf(str, "<%3.3f", cut);
+      newNode->branchDescriptions->push_back(str);
+      dummyVar->values->push_back(str);
+      sprintf(str, ">=%3.3f", cut);
+      newNode->branchDescriptions->push_back(str);
+      dummyVar->values->push_back(str);
+
+      newNode->branchSelector = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes, mlnew TThresholdDiscretizer(cut));
+      break;
+
+    case Subset:
+      int noval = 1 + *max_element(mapping->begin(), mapping->end());
+      dummyVar->values = mlnew TStringList(noval, "");
+      TStringList::const_iterator tvi(tested.AS(TEnumVariable)->values->begin());
+      PITERATE(TIntList, ni, mapping) {
+        string &val = dummyVar->values->at(*ni);
+        if (val.length())
+          val += ", ";
+        val += *tvi++;
+      }
+      PITERATE(TStringList, vi, dummyVar->values)
+        if ((*vi).find(",") != string::npos)
+          *vi = "in [" + *vi + "]";
+
+      newNode->branchSelector = mlnew TClassifierFromVar(wdummyVar, tested, branchSizes,mlnew TMapIntValue(mapping));
+      newNode->branchDescriptions = dummyVar->values;
+      break;
+  }
+
+  vector<int> newWeights;
+  PExampleGeneratorList subsets;
+  TExampleGeneratorList::const_iterator si;
+  if (storeExamples || storeContingencies) {
+    subsets = TTreeExampleSplitter_UnknownsAsBranchSizes()(PTreeNode(newNode.getReference()), examples, weightID, newWeights);
+    si = subsets->begin();
+  }
+
+  newNode->branches = mlnew TTreeNodeList;
+  vector<int>::const_iterator wi(newWeights.begin()), we(newWeights.end());
+  PITERATE(TC45TreeNodeList, c45bi, branch) {
+    if (storeExamples || storeContingencies) {
+      newNode->branches->push_back(*c45bi ? (*c45bi)->asTreeNode(*(si++), wi!=we ? *wi : weightID, storeContingencies, storeExamples) : PTreeNode());
+      if (wi!=we) {
+        examples->removeMetaAttribute(*wi);
+        wi++;
+      }
+    }
+    else
+      // just call with 'examples' as argument -- they will only be used to extract examples->domain->classVar
+      newNode->branches->push_back(*c45bi ? (*c45bi)->asTreeNode(examples, weightID, false, false) : PTreeNode());
+  }
+
+  
+
+  return newNode;
+}
+
+
+PTreeClassifier TC45Classifier::asTreeClassifier(PExampleGenerator examples, const int &weightID, bool storeContingencies, bool storeExamples)
+{
+  if (storeContingencies)
+    raiseWarning("'storeContingencies' not supported yet");
+
+  PExampleTable exampleTable = toExampleTable(examples);
+
+  PTreeNode orangeTree = tree->asTreeNode(examples, weightID, storeContingencies, storeExamples);
+  return mlnew TTreeClassifier(PDomain(), orangeTree, mlnew TTreeDescender_UnknownMergeAsBranchSizes());
 }

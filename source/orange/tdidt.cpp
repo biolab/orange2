@@ -332,8 +332,9 @@ TValue TTreeClassifier::operator()(const TExample &exam)
 {
   checkProperty(descender);
 
-  TExample convex = (exam.domain != domain) ? TExample(domain, exam) : TExample();
-  const TExample &refexam = (exam.domain != domain) ? convex : exam;
+  const bool convertEx = domain && (exam.domain != domain);
+  TExample convex = convertEx ? TExample(domain, exam) : TExample();
+  const TExample &refexam = convertEx ? convex : exam;
   PDiscDistribution branchWeights;
   PTreeNode node = descender->call(tree, refexam, branchWeights);
   if (!branchWeights)
@@ -348,7 +349,7 @@ TValue TTreeClassifier::operator()(const TExample &exam)
 PDistribution TTreeClassifier::classDistribution(const TExample &exam)
 {
   checkProperty(descender);
-  return classDistribution(tree, exam.domain == domain ? exam : TExample(domain, exam));
+  return classDistribution(tree, !domain || (exam.domain == domain) ? exam : TExample(domain, exam));
 }
 
 

@@ -39,6 +39,7 @@ public:
 
   TClassifierFromVar(PVariable classVar=PVariable(), PDistribution = PDistribution());
   TClassifierFromVar(PVariable classVar, PVariable whichVar, PDistribution = PDistribution());
+  TClassifierFromVar(PVariable classVar, PVariable whichVar, PDistribution, PTransformValue);
   TClassifierFromVar(const TClassifierFromVar &);
 
   virtual TValue operator ()(const TExample &);

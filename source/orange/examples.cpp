@@ -89,32 +89,47 @@ TExample::TExample(PDomain dom, const TExample &orig, bool copyMetas)
 
 void TExample::insertVal(TValue &srcval, PVariable var, const long &metaID)
 {
-  int position = var ? domain->getVarNum(var) : ILLEGAL_INT;
-  if (position == ILLEGAL_INT)
-    if (metaID)
-      position = metaID;
-    else
-      return;
+  int position = var ? domain->getVarNum(var, false) : ILLEGAL_INT;
 
-  if (position>=0) {
-    TValue &val = values[position];
-    if (val.isSpecial())
-      val = srcval;
-    else if (val!=srcval)
-      raiseError("ambiguous value of attribute '%s'", var->name.c_str());
-  }
-
-  else {
-    if (hasMeta(position)) {
-      TValue &val = meta[position];
+  if (position != ILLEGAL_INT) {
+    // Check if this is an ordinary attribute
+    if (position >= 0) {
+      TValue &val = values[position];
       if (val.isSpecial())
         val = srcval;
       else if (val!=srcval)
-        if (var)
-          raiseError("ambiguous value for meta-attribute '%s'", var->name.c_str());
-        else
-          raiseError("ambiguous value for meta-attribute %i", position);
+        raiseError("ambiguous value of attribute '%s'", var->name.c_str());
     }
+    
+    else {
+      // Is it meta?
+      if (hasMeta(position)) {
+        TValue &val = meta[position];
+        if (val.isSpecial())
+          val = srcval;
+        else if (val!=srcval)
+          raiseError("ambiguous value for meta-attribute '%s'", var->name.c_str());
+      }
+      else
+        setMeta(position, srcval);
+    }
+  }
+
+
+  else {
+    /* This attribute is not required in the example.
+       But if it is meta and there is no other meta-attribute with same id,
+       we shall copy it nevertheless */
+    if (metaID && !domain->getMetaVar(metaID, false))
+      if (hasMeta(metaID)) {
+        TValue &val = meta[metaID];
+        if (val.isSpecial())
+          val = srcval;
+        else if (val!=srcval)
+          raiseError("ambiguous value for meta-attribute %i", position);
+      }
+      else
+        setMeta(metaID, srcval);
   }
 }
 
@@ -124,6 +139,12 @@ TExample::TExample(PDomain dom, PExampleList elist)
 {
   if (!dom)
     raiseError("example needs a domain");
+
+  const int attrs = domain->variables->size();
+  TValue *vi = values = mlnew TValue[attrs];
+  values_end = values + attrs;
+  PITERATE(TVarList, di, dom->variables)
+    *(vi++) = (*di)->DK();
 
   PITERATE(TExampleList, eli, elist) {
     TVarList::iterator vli((*eli)->domain->variables->begin());
@@ -135,16 +156,19 @@ TExample::TExample(PDomain dom, PExampleList elist)
     set<int> metasNotToCopy;
     ITERATE(TMetaVector, mai, (*eli)->domain->metas) {
       metasNotToCopy.insert((*mai).id);
-      if (hasMeta((*mai).id))
-        TValue val = getMeta((*mai).id);
-        insertVal(getMeta((*mai).id), (*mai).variable, (*mai).id);
+      if ((*eli)->hasMeta((*mai).id))
+        insertVal((*eli)->getMeta((*mai).id), (*mai).variable, (*mai).id);
     }
 
     set<int>::iterator mend(metasNotToCopy.end());
     ITERATE(TMetaValues, mi, (*eli)->meta)
       if (metasNotToCopy.find((*mi).first)==mend)
         insertVal((*mi).second, PVariable(), (*mi).first);
-  }    
+  }
+
+  ITERATE(TMetaVector, mai, domain->metas)
+    if (!hasMeta((*mai).id))
+      setMeta((*mai).id, (*mai).variable->DK());
 }
 
 

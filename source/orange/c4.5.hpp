@@ -42,6 +42,9 @@ public:
     int trials; //P (+t) trials
 
     bool prune; //P return pruned tree
+    bool convertToOrange; //P return TreeClassifier instead of C45TreeClassifier
+    bool storeExamples; //P stores examples when (if) converting to TreeClassifier
+    bool storeContingencies; //P stores contingencies when (if) converting to TreeClassifier
 
     bool clearDomain();
     bool clearExamples();
@@ -86,6 +89,8 @@ typedef  struct _tree_record {
 } TreeRec;
 
 
+WRAPPER(TreeNode);
+
 class TC45TreeNode : public TOrange {
 public:
   __REGISTER_CLASS
@@ -109,8 +114,12 @@ public:
   TC45TreeNode(const Tree &, PDomain);
   PDiscDistribution vote(const TExample &example, PVariable classVar);
   PDiscDistribution classDistribution(const TExample &example, PVariable classVar);
+
+  PTreeNode asTreeNode(PExampleGenerator examples, const int &, bool storeContingencies, bool storeExamples);
 };
 
+
+WRAPPER(TreeClassifier);
 
 class TC45Classifier : public TClassifier {
 public:
@@ -122,6 +131,8 @@ public:
   virtual TValue operator ()(const TExample &);
   PDistribution classDistribution(const TExample &);
   void predictionAndDistribution(const TExample &example, TValue &value, PDistribution &dist);
+
+  PTreeClassifier asTreeClassifier(PExampleGenerator examples = PExampleGenerator(), const int &weightID = 0, bool storeContigencies = false, bool storeExamples = false);
 };
 
 

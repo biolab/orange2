@@ -99,7 +99,70 @@ loe = [
 
 <P>The other way of putting such examples into an <CODE>ExampleTable</CODE> is by method <A href="#extend"><CODE>extend</CODE></A>.</P>
 </DD>
+
+<DT>ExampleTable(table1, table2, ...)</DT>
+<DD>"Horizontally" merges multiple tables into a single table. All the tables must be of the same length since new examples are combined from examples from the given tables. Domains are combined so that each (ordinary) attribute appears only once in the resulting table. The class attribute is the last class attribute in the list of tables; for instance, if three tables are merged but the last one is class-less, the class attribute for the new table will come from the second table. Meta attributes for the new domain are merged based on id's: if the same attribute appears under two id's it will be added twice. If, on the opposite, same id is used for two different attributes in two example tables, this is an error. As examples are merged, Orange checks the attributes (ordinary or meta) that appear in different tables have either the same value or undefined values.</P>
+
+Note that this is not the SQL's join operator as it doesn't try to match any keys between the tables.</P>
+
+For a trivial example, we shall merge two tables stored in the following tab-delimited files.</P>
+
+<p class="header"><a href="merge1.py">merge1.py</a></p>
+<XMP class="code">
+a1    a2    m1    m2
+f     f     f     f
+            meta  meta
+1     2     3     4
+5     6     7     8
+9     10    11    12
+</XMP>
+
+<p class="header"><a href="merge2.py">merge2.py</a></p>
+<XMP class="code">
+a1    a3    m1     m3
+f     f     f      f
+            meta   meta
+1     2.5   3      4.5
+5     6.5   7      8.5
+9     10.5  11     12.5
+</XMP>
+
+The two tables can be loaded, merged and printed out by the following script.
+
+<p class="header"><a href="exampletable_merge.py">exampletable_merge.py</a> (uses <a href="merge1.tab">merge1.tab</a>, <A href="merge2.tab">merge2.tab</A>)</p>
+<XMP class="code">
+import orange
+
+data1 = orange.ExampleTable("merge1")
+data2 = orange.ExampleTable("merge2", use = data1.domain)
+
+merged = orange.ExampleTable([data1, data2])
+
+print "Domain 1: ", data1.domain
+print "Domain 2: ", data2.domain
+print "Merged:   ", merged.domain
+
+for i in range(len(data1)):
+    print "%s\t%s\t%s" % (data1[i], data2[i], merged[i])
+</XMP>
+
+<P>First, note the <CODE>use = data1.domain</CODE> which ensures that while loading the second table, the attributes from the first will be reused if they are of same name and type. Without that, the attribute <CODE>a1</CODE> from the first and the attribute <CODE>a2</CODE> from the second table would be two different attributes and the merged table would have two attributes named <CODE>a1</CODE> instead of a single one, which is what we want. The same goes for meta-attribute <CODE>m1</CODE> which will also have the same id in both table. (For this reason, it is important to pass the entire domain, <EM>ie</EM> <CODE>data1.domain</CODE>, not a list of attributes, such as <CODE>data1.domain.variables</CODE> or - obviously intentionally doing it wrong -- <CODE>data1.domain.variables + data1.domain.getmetas().values()</CODE>.)</P>
+
+<P>Merging succeeds since the values of <CODE>a1</CODE> and <CODE>m1</CODE> are the same for all matching examples from <CODE>data1</CODE> and <CODE>data2</CODE>, and the printout is as anticipated.</P>
+<XMP class=code>
+Domain 1:  [a1, a2], {-2:m1, -3:m2}
+Domain 2:  [a1, a3], {-2:m1, -4:m3}
+Merged:    [a1, a2, a3], {-2:m1, -3:m2, -4:m3}
+
+[1, 2, 2.5], {"m1":3, "m2":4, "m3":4.5}
+[5, 6, 6.5], {"m1":7, "m2":8, "m3":8.5}
+[9, 10, 10.5], {"m1":11, "m2":12, "m3":12.5}
+</XMP>
+</P>
+</DD>
+
 </DL>
+
 
 <H2>Standard list-like functions</H2>
 

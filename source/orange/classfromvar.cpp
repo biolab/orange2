@@ -47,6 +47,7 @@ inline TValue processValue(PTransformValue &transformer, const TValue &val, cons
 TClassifierFromVar::TClassifierFromVar(PVariable acv, PDistribution dun)
 : TClassifier(acv),
   whichVar(acv),
+  transformer(),
   distributionForUnknown(dun),
   transformUnknowns(false),
   lastDomainVersion(-1)
@@ -56,11 +57,20 @@ TClassifierFromVar::TClassifierFromVar(PVariable acv, PDistribution dun)
 TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDistribution dun)
 : TClassifier(acv),
   whichVar(awhichVar),
+  transformer(),
   distributionForUnknown(dun),
   transformUnknowns(false),
   lastDomainVersion(-1)
 {}
 
+
+TClassifierFromVar::TClassifierFromVar(PVariable acv, PVariable awhichVar, PDistribution dun, PTransformValue trans)
+: TClassifier(acv),
+  whichVar(awhichVar),
+  transformer(trans),
+  distributionForUnknown(dun),
+  lastDomainVersion(-1)
+{}
 
 TClassifierFromVar::TClassifierFromVar(const TClassifierFromVar &old)
 : TClassifier(old),
