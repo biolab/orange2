@@ -63,8 +63,8 @@ class OWChooseImageSizeDlg(OWBaseWidget):
         self.customX = int(str(self.xSize.text()))
         self.customY = int(str(self.ySize.text()))
         self.saveAllSizes = self.allSizes.isChecked()
-        self.saveSettings()
         self.saveToFile()
+        self.saveSettings()
         QDialog.accept(self)
 
 

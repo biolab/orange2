@@ -14,7 +14,7 @@ CLASS_ACCURACY = 0
 BRIER_SCORE = 1
 
 class kNNOptimization(OWBaseWidget):
-    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut"]
+    settingsList = ["resultListLen", "percentDataUsed", "kValue", "minExamples", "measureType", "useHeuristics", "bestSubsets", "onlyOnePerSubset", "useLeaveOneOut", "lastSaveDirName"]
     resultsListLenList = ['10', '20', '50', '100', '150', '200', '250', '300', '400', '500', '700', '1000', '2000', '4000', '8000']
     resultsListLenNums = [ 10 ,  20 ,  50 ,  100 ,  150 ,  200 ,  250 ,  300 ,  400 ,  500 ,  700 ,  1000 ,  2000 ,  4000,   8000 ]
     percentDataList = ['5', '10', '15', '20', '30', '40', '50', '60', '70', '80', '90', '100']
@@ -44,6 +44,8 @@ class kNNOptimization(OWBaseWidget):
         self.parentName = "Projection"
         self.useHeuristics = 0
         self.onlyOnePerSubset = 0
+        self.lastSaveDirName = os.getcwd() + "/"
+
                 
         self.optimizedListFull = []
         self.optimizedListFiltered = []
@@ -206,12 +208,15 @@ class kNNOptimization(OWBaseWidget):
         self.numberOfBestSubsetsEdit.setText(str(self.bestSubsets))
         self.useHeuristicsCB.setChecked(self.useHeuristics)
 
+    def destroy(self, dw, dsw):
+        self.saveSettings()
+        OWBaseWidget.destroy(self, dw, dsw)
+
     def setMeasure(self, n):
         self.measureType = n
 
     def setKNeighbours(self, n):
         self.kValue = self.kNeighboursNums[n]
-        self.saveSettings()
 
     def setUseHeuristics(self):
         self.useHeuristics = self.useHeuristicsCB.isChecked()
@@ -247,20 +252,16 @@ class kNNOptimization(OWBaseWidget):
     # set the length of the list of best projections
     def setResultListLen(self, n):
         self.resultListLen = self.resultsListLenNums[n]
-        self.saveSettings()
 
     # we may not want to use all the data when performing projection evaluation.
     def setPercentDataUsed(self, n):
         self.percentDataUsed = self.percentDataNums[n]
-        self.saveSettings()
 
     def setMinTableLen(self, val):
         self.minExamples = int(str(val))
-        self.saveSettings()
 
     def setBestSubsetsEdit(self, val):
         self.bestSubsets = int(str(val))
-        self.saveSettings()
 
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -354,14 +355,18 @@ class kNNOptimization(OWBaseWidget):
         if filename == None:
             # get file name
             filename = "%s (k - %2d)" % (self.parentName, self.kValue )
-            qname = QFileDialog.getSaveFileName( os.getcwd() + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
-            if qname.isEmpty():
-                return
+            qname = QFileDialog.getSaveFileName( self.lastSaveDirName + "/" + filename, "Interesting projections (*.proj)", self, "", "Save Projections")
+            if qname.isEmpty(): return
             name = str(qname)
         else:
             name = filename
-        if name[-5] != ".":
-                name = name + ".proj"
+
+        # take care of extension
+        if os.path.splitext(name)[1] != ".proj":
+            name = name + ".proj"
+
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
 
         # open, write and save file
         file = open(name, "wt")
@@ -381,12 +386,14 @@ class kNNOptimization(OWBaseWidget):
     def load(self):
         self.clear()
                 
-        name = QFileDialog.getOpenFileName( os.getcwd(), "Interesting projections (*.proj)", self, "", "Open Projections")
-        if name.isEmpty():
-            return
+        name = QFileDialog.getOpenFileName( self.lastSaveDirName, "Interesting projections (*.proj)", self, "", "Open Projections")
+        if name.isEmpty(): return
+        name = str(name)
 
-        file = open(str(name), "rt")
-        #self.optimizedListFull = cPickle.load(file)
+        dirName, shortFileName = os.path.split(name)
+        self.lastSaveDirName = dirName
+
+        file = open(name, "rt")
         self.kValue = int(file.readline()[:-1])
         self.resultListLen = int(file.readline()[:-1])
         self.minExamples = int(file.readline()[:-1])
