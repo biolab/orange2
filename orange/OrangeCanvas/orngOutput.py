@@ -7,7 +7,7 @@ import sys
 import string
 from time import localtime
 import traceback
-import os.path
+import os.path, os
 import orngResources
 
 TRUE  = 1
@@ -30,6 +30,11 @@ class OutputWindow(QMainWindow):
         self.focusOnCatchOutput  = 0
         self.printOutput = 1
         self.printException = 1
+        self.writeLogFile = 1
+
+        self.logFileName = os.path.join(canvasDlg.canvasDir, "outputLog.htm")
+        f = open(self.logFileName, "w") # create the log file and close it
+        f.close()
         #self.printExtraOutput = 0
         
         #sys.excepthook = self.exceptionHandler
@@ -41,6 +46,7 @@ class OutputWindow(QMainWindow):
         self.showNormal()
 
     def closeEvent(self,ce):
+        QMessageBox.information(self,'Orange Canvas','Output window is used to print output from canvas and widgets and therefore can not be closed.','Ok')
         pass
 
     def focusInEvent(self, ev):
@@ -66,6 +72,9 @@ class OutputWindow(QMainWindow):
     def printExceptionInStatusBar(self, printException):
         self.printException = printException
 
+    def setWriteLogFile(self, write):
+        self.writeLogFile = write
+
     def clear(self):
         self.textOutput.setText("")
     
@@ -77,10 +86,20 @@ class OutputWindow(QMainWindow):
             
         text = text.replace("<", "[")    # since this is rich text control, we have to replace special characters
         text = text.replace(">", "]")
+        text = "<nobr>" + text + "</nobr><br>"
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
+
+        if self.writeLogFile:
+            if os.path.exists(self.logFileName):
+                f = open(self.logFileName, "a")
+            else:
+                f = open(self.logFileName, "w")
+            f.write(str(text))
+            f.close()
+            
         self.textOutput.append(str(text))
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
         if self.printOutput:
@@ -101,10 +120,12 @@ class OutputWindow(QMainWindow):
         if self.focusOnCatchException:
             self.canvasDlg.menuItemShowOutputWindow()
             self.canvasDlg.workspace.cascade()    # cascade shown windows
-            
+
+
+        text = ""
         t = localtime()
-        self.textOutput.append("<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr>" % ( str(type) , t[3],t[4],t[5]))
-        self.textOutput.append("<nobr>Traceback:</nobr>")
+        text += "<nobr>Unhandled exception of type <b>%s </b> occured at %d:%d:%d:</nobr><br><nobr>Traceback:</nobr><br>" % ( str(type) , t[3],t[4],t[5])
+
         if self.printException:
             self.canvasDlg.setStatusBarEvent("Unhandled exception of type %s occured at %d:%d:%d" % ( str(type) , t[3],t[4],t[5]))
 
@@ -117,16 +138,23 @@ class OutputWindow(QMainWindow):
             (file, line, funct, code) = list[i]
             if code == None: continue
             (dir, filename) = os.path.split(file)
-            self.textOutput.append("<nobr>" + totalSpace + "File: <u>" + filename + "</u>  in line %4d</nobr>" %(line))
-            self.textOutput.append("<nobr>" + totalSpace + "<nobr>Function name: %s</nobr>" % (funct))
+            text += "<nobr>" + totalSpace + "File: <u>" + filename + "</u>  in line %4d</nobr><br>" %(line)
+            text += "<nobr>" + totalSpace + "<nobr>Function name: %s</nobr><br>" % (funct)
             if i == len(list)-1:
-                self.textOutput.append("<nobr>" + totalSpace + "Code: <b>" + code + "</b></nobr>")
+                text += "<nobr>" + totalSpace + "Code: <b>" + code + "</b></nobr><br>"
             else:
-                self.textOutput.append("<nobr>" + totalSpace + "Code: " + code + "</nobr>")
+                text += "<nobr>" + totalSpace + "Code: " + code + "</nobr><br>"
                 totalSpace += space
             
-        self.textOutput.append("<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr>")
-        self.textOutput.append("<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr>")
-        self.textOutput.append("<hr>")
+        text += "<nobr>" + totalSpace + "Exception type: <b>" + str(type) + "</b></nobr><br>"
+        text += "<nobr>" + totalSpace + "Exception value: <b>" + str(value)+ "</b></nobr><br><hr>"
+        self.textOutput.append(text)
         self.textOutput.ensureVisible(0, self.textOutput.contentsHeight())
-        
+
+        if self.writeLogFile:
+            if os.path.exists(self.logFileName):
+                f = open(self.logFileName, "a")
+            else:
+                f = open(self.logFileName, "w")
+            f.write(str(text))
+            f.close()

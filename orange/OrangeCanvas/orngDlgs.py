@@ -434,6 +434,7 @@ class CanvasOptionsDlg(QDialog):
         # general tab options
         self.snapToGridCB = QCheckBox("Snap widgets to grid", GeneralTab)
         self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
+        self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", GeneralTab)
 
         # exception tab options
         exceptions = QVGroupBox("Exceptions", ExceptionsTab)

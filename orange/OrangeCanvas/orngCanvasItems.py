@@ -257,6 +257,7 @@ class CanvasWidget(QCanvasRectangle):
         self.viewXPos = 0 # this two variables are used as offset for
         self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
+        self.isProcessing = 0   # is this widget currently processing signals
 
         # import widget class and create a class instance
         #code = compile("from " + widget.fileName + " import *", ".", "single")
@@ -270,7 +271,8 @@ class CanvasWidget(QCanvasRectangle):
         exec(code)
         code = compile(widget.getFileName() + "." + widget.getFileName() + "()", ".", "eval")
         self.instance = eval(code)
-        self.instance.progressBarSetHandler(self.view.progressBarHandler)   # set progress bar event handler
+        self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
+        self.instance.setProcessingHandler(self.view.processingHandler)
         if os.path.exists(widget.getFullIconName()):                                            self.instance.setWidgetIcon(widget.getFullIconName())
         elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):            self.instance.setWidgetIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
         elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):                self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
@@ -413,7 +415,11 @@ class CanvasWidget(QCanvasRectangle):
         painter.setPen(QPen(self.black))
         painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
 
-        if self.selected:
+        if self.isProcessing:
+            painter.setPen(QPen(self.blue))
+            painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
+            painter.drawRect(self.x()+8, self.y(), 52, 52)
+        elif self.selected:
             if self.invalidPosition:
                 painter.setPen(QPen(self.red))
             else:
@@ -486,7 +492,7 @@ class CanvasWidget(QCanvasRectangle):
 
     def repaintWidget(self):
         (x,y,w,h) = ( self.x(), self.y(), self.width(), self.height() )
-        self.view.repaintContents(QRect(x,y,w,h))
+        self.view.repaintContents(QRect(x-20,y-20,w+40,h+40))
 
     def repaintAllLines(self):
         for line in self.inLines:
@@ -549,12 +555,16 @@ class CanvasWidget(QCanvasRectangle):
         self.progressText.hide()
         self.canvas.update()
 
-    def setProgressBarValue(self,value):
+    def setProgressBarValue(self, value):
         totalSize = self.progressBarRect.width()
         self.progressRect.setSize(totalSize*(float(value)/100.0), self.progressRect.height())
         self.progressText.setText(str(int(value)) + " %")
         self.canvas.update()
-        
+
+    def setProcessing(self, value):
+        self.isProcessing = value
+        self.canvas.update()
+        self.repaintWidget()
         
     def rtti(self):
         return 1001

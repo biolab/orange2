@@ -55,14 +55,15 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.settings = {}
         self.widgetInfo = {} # this is a dictionary with items: category-widget_name : {info about widget (inList, outList, description...}
-        self.loadSettings()
+        
         self.rebuildSignals()    # coloring of signals - unused!
         self.useLargeIcons = FALSE
         self.snapToGrid = TRUE
-        if self.settings.has_key("useLargeIcons"): self.useLargeIcons = self.settings["useLargeIcons"]
-        if self.settings.has_key("snapToGrid"): self.snapToGrid = self.settings["snapToGrid"]
-        if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 0
-        if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
+
+        self.loadSettings()
+        
+        self.useLargeIcons = self.settings["useLargeIcons"]
+        self.snapToGrid = self.settings["snapToGrid"]
         
         self.toolbar = QToolBar(self, 'Toolbar')
         self.widgetsToolBar = QToolBar( self, 'Widgets')
@@ -109,6 +110,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
         self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
         self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
+        self.output.setWriteLogFile(self.settings["writeLogFile"])
         
         self.show()
         
@@ -503,10 +505,11 @@ class OrangeCanvasDlg(QMainWindow):
         webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
 
     def menuOpenOnlineOrangeHelp(self):
-        webbrowser.open("http://magix.fri.uni-lj.si/orange")
+        webbrowser.open("http://www.ailab.si/orange")
 
     def menuOpenOnlineCanvasHelp(self):
-        webbrowser.open("http://magix.fri.uni-lj.si/orangeCanvas")
+        #webbrowser.open("http://www.ailab.si/orange/orangeCanvas") # to be added on the web
+        webbrowser.open("http://www.ailab.si/orange")
 
     def menuHelpAbout(self):
         pass    
@@ -528,7 +531,7 @@ class OrangeCanvasDlg(QMainWindow):
         if self.channels.has_key(symbName):
             return self.channels[symbName]
         else:
-            return [symbName, str(1), "green"]
+            return [symbName, str(1), "blue"]
 
     def focusDocument(self, w):    
         if w: w.setFocus()
@@ -539,6 +542,7 @@ class OrangeCanvasDlg(QMainWindow):
         # set general options settings
         dlg.snapToGridCB.setChecked(self.snapToGrid)
         dlg.useLargeIconsCB.setChecked(self.useLargeIcons)
+        dlg.writeLogFileCB.setChecked(self.settings["writeLogFile"])
 
         # set current exception settings
         dlg.catchExceptionCB.setChecked(self.settings["catchException"])
@@ -574,12 +578,14 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["focusOnCatchException"] = dlg.focusOnCatchExceptionCB.isChecked()
             self.settings["focusOnCatchOutput"] = dlg.focusOnCatchOutputCB.isChecked()
             self.settings["printOutputInStatusBar"] = dlg.printOutputInStatusBarCB.isChecked()
+            self.settings["writeLogFile"] = dlg.writeLogFileCB.isChecked()
             self.output.catchException(self.settings["catchException"])
             self.output.catchOutput(self.settings["catchOutput"])
             self.output.printExceptionInStatusBar(self.settings["printExceptionInStatusBar"])
             self.output.printOutputInStatusBar(self.settings["printOutputInStatusBar"])
             self.output.setFocusOnException(self.settings["focusOnCatchException"])
             self.output.setFocusOnOutput(self.settings["focusOnCatchOutput"])
+            self.output.setWriteLogFile(self.settings["writeLogFile"])
 
             # save tab order settings
             newTabList = []
@@ -611,10 +617,16 @@ class OrangeCanvasDlg(QMainWindow):
         else:
             self.settings = {}
 
+        if not self.settings.has_key("useLargeIcons"):  self.settings["useLargeIcons"] = 0
+        if not self.settings.has_key("snapToGrid"): self.settings["snapToGrid"] = 1
+        if not self.settings.has_key("writeLogFile"): self.settings["writeLogFile"] = 1
+
         if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
         if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
         if not self.settings.has_key("focusOnCatchException"): self.settings["focusOnCatchException"] = 1
         if not self.settings.has_key("focusOnCatchOutput"): self.settings["focusOnCatchOutput"] = 0
+        if not self.settings.has_key("printOutputInStatusBar"): self.settings["printOutputInStatusBar"] = 1
+        if not self.settings.has_key("printExceptionInStatusBar") : self.settings["printExceptionInStatusBar"] = 1
                 
 
     # Saves settings to this widget's .ini file

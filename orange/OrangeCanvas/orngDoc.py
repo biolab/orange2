@@ -577,7 +577,7 @@ if os.path.exists(widgetDir):
                 tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
                 buttons += """owButton%s = QPushButton("%s", self)\n""" % (name, widget.caption) +t+t
                 buttonsConnect += """self.connect(owButton%s ,SIGNAL("clicked()"), self.ow%s.reshow)\n""" % (name, name) +t+t
-                progressHandlers += "self.ow%s.progressBarSetHandler(self.progressHandler)\n" % (name) +t+t
+                progressHandlers += "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
                 loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
                 loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
                 saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
@@ -604,7 +604,7 @@ if os.path.exists(widgetDir):
             manager += "signalManager.addWidget(self.ow%s)\n" %(name) +t+t
             instancesB += "self.ow%s = %s()\n" %(name, widget.widget.getFileName()) +t+t
             tabs += """self.tabs.insertTab (self.ow%s, "%s")\n""" % (name , widget.caption) +t+t
-            progressHandlers += "self.ow%s.progressBarSetHandler(self.progressHandler)\n" % (name) +t+t
+            progressHandlers += "self.ow%s.setProgressBarHandler(self.progressHandler)\n" % (name) +t+t
             loadSett += """self.ow%s.loadSettingsStr(strSettings["%s"])\n""" % (name, widget.caption) +t+t
             loadSett += """self.ow%s.activateLoadedSettings()\n""" % (name) +t+t
             saveSett += """strSettings["%s"] = self.ow%s.saveSettingsStr()\n""" % (widget.caption, name) +t+t
