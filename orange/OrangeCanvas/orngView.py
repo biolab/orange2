@@ -72,6 +72,7 @@ class SchemaView(QCanvasView):
             self.tempWidget.updateText(string)
             self.tempWidget.updateTooltip()
             self.doc.hasChanged = TRUE
+            self.doc.canvasDlg.enableSave(TRUE)
 
     # popMenuAction - user selected to delete active widget
     def removeActiveWidget(self):
@@ -94,6 +95,7 @@ class SchemaView(QCanvasView):
         self.tempWidget = None
         self.canvas().update()
         self.doc.hasChanged = TRUE
+        self.doc.canvasDlg.enableSave(TRUE)
 
     # ###########################################
     # POPUP MENU - LINKS actions
@@ -107,6 +109,7 @@ class SchemaView(QCanvasView):
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
         self.doc.hasChanged = TRUE
+        self.doc.canvasDlg.enableSave(TRUE)
 
     # popMenuAction - delete selected link
     def deleteLink(self):
@@ -117,6 +120,7 @@ class SchemaView(QCanvasView):
             self.selectedLine.repaintLine(self)
             self.selectedLine = None
             self.doc.hasChanged = TRUE
+            self.doc.canvasDlg.enableSave(TRUE)
             self.selectedLine = None
 
     # hide and remove the line "line"
@@ -330,6 +334,7 @@ class SchemaView(QCanvasView):
                 item.repaintAllLines()
                 
             self.doc.hasChanged = TRUE
+            self.doc.canvasDlg.enableSave(TRUE)
 
         # if we are drawing line
         elif self.bLineDragging:

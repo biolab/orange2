@@ -113,7 +113,9 @@ class CanvasLine(QCanvasLine):
                 code = compile("self.inWidget.instance." + action + "(self.outWidget.instance, \"" + signal +  "\")", ".", "single")
                 exec(code)
             except:
-                print "failed to " + action + " widgets"
+                print "Failed to " + action + " widgets"
+                print "Unexpected error: ", sys.exc_info()[0]
+
         
     # draw the line
     def drawShape(self, painter):

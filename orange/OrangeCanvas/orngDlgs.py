@@ -18,12 +18,17 @@ FALSE = 0
 class SignalDialog(QDialog):
     def __init__(self, *args):
         apply(QDialog.__init__,(self,) + args)
+        self.setCaption("Qt Activate Signals")
         self.topLayout = QVBoxLayout( self, 10 )
         self.signals = []
         self.symbSignals = []
     
     # add checkboxes for all signals that are in inSignals and outSignals
     def addSignals(self, inSignals, outSignals, canvasDlg):
+        self.text = QLabel("Which signals you wish to activate?", self)
+        self.text.show()
+        self.topLayout.addWidget(self.text)
+        
         for signal in inSignals:
             if signal in outSignals:
                 self.symbSignals.append(signal)

@@ -21,9 +21,11 @@ class SchemaDoc(QMainWindow):
         apply(QMainWindow.__init__,(self,) + args)
         self.resize(400,300)
         self.showNormal()
+        self.canvasDlg = canvasDlg
         self.setCaption("Schema" + str(orngResources.iDocIndex))
         orngResources.iDocIndex = orngResources.iDocIndex + 1
         self.hasChanged = FALSE
+        self.canvasDlg.enableSave(FALSE)
         self.setIcon(QPixmap(orngResources.file_new))
         self.canvas = QCanvas(2000,2000)
         self.canvasView = orngView.SchemaView(self, self.canvas, self)
@@ -31,7 +33,7 @@ class SchemaDoc(QMainWindow):
         self.canvasView.show()
         self.lines = []
         self.widgets = []
-        self.canvasDlg = canvasDlg
+        
         # if widget path not registered -> register
         if sys.path.count(canvasDlg.widgetDir) == 0:
             sys.path.append(canvasDlg.widgetDir)
@@ -104,6 +106,7 @@ class SchemaDoc(QMainWindow):
         newwidget.updateTooltip()
         self.widgets.append(newwidget)
         self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
         self.canvas.update()    
         return newwidget
 
@@ -122,12 +125,14 @@ class SchemaDoc(QMainWindow):
             line.setEnabled(TRUE)
             line.repaintLine(self.canvasView)
         self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
 
     def disableAllLines(self):
         for line in self.lines:
             line.setEnabled(FALSE)
             line.repaintLine(self.canvasView)
         self.hasChanged = TRUE
+        self.canvasDlg.enableSave(TRUE)
 
     # return the widget instance that has caption "widgetName"
     def getWidgetByCaption(self, widgetName):
@@ -169,6 +174,7 @@ class SchemaDoc(QMainWindow):
     # save the file            
     def save(self):
         self.hasChanged = FALSE
+        self.canvasDlg.enableSave(FALSE)
 
         # create xml document
         doc = Document()
@@ -281,6 +287,7 @@ class SchemaDoc(QMainWindow):
                 tempLine.repaintLine(self.canvasView)
 
         self.hasChanged = FALSE
+        self.canvasDlg.enableSave(FALSE)
         self.path = os.path.dirname(filename)
         self.filename = os.path.basename(filename)
         self.setCaption(self.filename)

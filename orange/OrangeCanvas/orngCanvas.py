@@ -46,9 +46,9 @@ class OrangeCanvasDlg(QMainWindow):
 		self.initMenu()
 
 		self.toolbar = QToolBar(self, 'test')
-		toolNew  = QToolButton(QPixmap(orngResources.file_new), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema') 
-		toolOpen = QToolButton(QPixmap(orngResources.file_open), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
-		toolSave = QToolButton(QPixmap(orngResources.file_save), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
+		self.toolNew  = QToolButton(QPixmap(orngResources.file_new), "New schema" , QString.null, self.menuItemNewSchema, self.toolbar, 'new schema') 
+		self.toolOpen = QToolButton(QPixmap(orngResources.file_open), "Open schema" , QString.null, self.menuItemOpen , self.toolbar, 'open schema') 
+		self.toolSave = QToolButton(QPixmap(orngResources.file_save), "Save schema" ,QString.null, self.menuItemSave, self.toolbar, 'save schema')
 		self.toolbar.addSeparator()
 		toolPrint = QToolButton(QPixmap(orngResources.file_print), "Print" ,QString.null, self.menuItemPrinter, self.toolbar, 'print')
 		self.addToolBar(self.toolbar, "Toolbar", QMainWindow.Top, TRUE)
@@ -95,8 +95,8 @@ class OrangeCanvasDlg(QMainWindow):
 		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
 		self.menuFile.insertItem( "&Close", self.menuItemClose )
 		self.menuFile.insertSeparator()
-		self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
-		self.menuFile.insertItem( "&Save As..", self.menuItemSaveAs)
+		self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
+		self.menuSaveAsID = self.menuFile.insertItem( "&Save As..", self.menuItemSaveAs)
 		self.menuFile.insertItem( "&Save As Application (Tabs)", self.menuItemSaveAsAppTabs)
 		self.menuFile.insertItem( "&Save As Application (Buttons)", self.menuItemSaveAsAppButtons)
 		self.menuFile.insertSeparator()
@@ -372,7 +372,11 @@ class OrangeCanvasDlg(QMainWindow):
 
 	def keyReleaseEvent(self, e):
 		self.ctrlPressed = 0
-		
+
+	def enableSave(self, enable):
+		self.toolSave.setEnabled(enable)
+		self.menuFile.setItemEnabled(self.menuSaveID, enable)
+		self.menuFile.setItemEnabled(self.menuSaveAsID, enable)
 
 app = QApplication(sys.argv) 
 dlg = OrangeCanvasDlg()
