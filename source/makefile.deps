@@ -1,22 +1,22 @@
 ORANGE_OBJECTS =\
 	 obj/assistant.o obj/assoc.o obj/assoc_sparse.o obj/basket.o obj/basstat.o obj/bayes.o\
-	 obj/boolcnt.o obj/boosting.o obj/c.4.5.dynload2.o obj/c2py.o obj/c4.5.o obj/c45inter.o\
-	 obj/calibrate.o obj/callback.o obj/cartesian.o obj/clas_gen.o obj/classfromvar.o obj/classifier.o\
-	 obj/cls_example.o obj/cls_misc.o obj/cls_orange.o obj/cls_value.o obj/common.o obj/contingency.o\
-	 obj/converts.o obj/cost.o obj/costwrapper.o obj/crc32.o obj/decomposition.o obj/discretize.o\
-	 obj/dist_clustering.o obj/distance.o obj/distance_dtw.o obj/distancemap.o obj/distvars.o obj/domain.o\
-	 obj/domaindepot.o obj/errors.o obj/estimateprob.o obj/exampleclustering.o obj/examplegen.o obj/examples.o\
-	 obj/excel.o obj/filegen.o obj/filter.o obj/functions.o obj/garbage_py_manner.o obj/getarg.o\
-	 obj/gslconversions.o obj/heatmap.o obj/imputation.o obj/induce.o obj/knn.o obj/lcomb.o\
-	 obj/learn.o obj/lib_components.o obj/lib_io.o obj/lib_kernel.o obj/lib_learner.o obj/lib_preprocess.o\
-	 obj/lib_vectors.o obj/linreg.o obj/logfit.o obj/logistic.o obj/logreg.o obj/lookup.o\
-	 obj/lsq.o obj/lwr.o obj/majority.o obj/measures.o obj/meta.o obj/minimal_complexity.o\
-	 obj/minimal_error.o obj/module.o obj/nearest.o obj/obsolete.o obj/orange.o obj/orvector.o\
-	 obj/preprocessors.o obj/random.o obj/readdata.o obj/redundancy.o obj/retisinter.o obj/root.o\
-	 obj/rule_conditions.o obj/spec_contingency.o obj/spec_gen.o obj/stat.o obj/statexceptions.o obj/strings.o\
-	 obj/stringvars.o obj/subsets.o obj/survival.o obj/svm.o obj/symmatrix.o obj/tabdelim.o\
-	 obj/table.o obj/tdidt.o obj/tdidt_split.o obj/tdidt_stop.o obj/transdomain.o obj/transval.o\
-	 obj/trindex.o obj/valuelisttemplate.o obj/values.o obj/vars.o
+	 obj/boolcnt.o obj/boosting.o obj/c2py.o obj/c4.5.o obj/c45inter.o obj/calibrate.o\
+	 obj/callback.o obj/cartesian.o obj/clas_gen.o obj/classfromvar.o obj/classifier.o obj/cls_example.o\
+	 obj/cls_misc.o obj/cls_orange.o obj/cls_value.o obj/common.o obj/contingency.o obj/converts.o\
+	 obj/cost.o obj/costwrapper.o obj/crc32.o obj/decomposition.o obj/discretize.o obj/dist_clustering.o\
+	 obj/distance.o obj/distance_dtw.o obj/distancemap.o obj/distvars.o obj/domain.o obj/domaindepot.o\
+	 obj/errors.o obj/estimateprob.o obj/exampleclustering.o obj/examplegen.o obj/examples.o obj/excel.o\
+	 obj/filegen.o obj/filter.o obj/functions.o obj/garbage_py_manner.o obj/getarg.o obj/gslconversions.o\
+	 obj/heatmap.o obj/imputation.o obj/induce.o obj/knn.o obj/lcomb.o obj/learn.o\
+	 obj/lib_components.o obj/lib_io.o obj/lib_kernel.o obj/lib_learner.o obj/lib_preprocess.o obj/lib_vectors.o\
+	 obj/linreg.o obj/logfit.o obj/logistic.o obj/logreg.o obj/lookup.o obj/lsq.o\
+	 obj/lwr.o obj/majority.o obj/measures.o obj/meta.o obj/minimal_complexity.o obj/minimal_error.o\
+	 obj/module.o obj/nearest.o obj/obsolete.o obj/orange.o obj/orvector.o obj/preprocessors.o\
+	 obj/random.o obj/readdata.o obj/redundancy.o obj/retisinter.o obj/root.o obj/rule_conditions.o\
+	 obj/spec_contingency.o obj/spec_gen.o obj/stat.o obj/statexceptions.o obj/strings.o obj/stringvars.o\
+	 obj/subsets.o obj/survival.o obj/svm.o obj/symmatrix.o obj/tabdelim.o obj/table.o\
+	 obj/tdidt.o obj/tdidt_split.o obj/tdidt_stop.o obj/transdomain.o obj/transval.o obj/trindex.o\
+	 obj/valuelisttemplate.o obj/values.o obj/vars.o
 
 CORN_OBJECTS = obj/corn.o obj/c2py.o
 
@@ -30,7 +30,6 @@ obj/basstat.o : orange/basstat.cpp basstat.cpp basstat.hpp domain.hpp errors.hpp
 obj/bayes.o : orange/bayes.cpp bayes.cpp bayes.hpp calibrate.hpp classify.hpp contingency.hpp distvars.hpp domain.hpp errors.hpp estimateprob.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
 obj/boolcnt.o : orange/boolcnt.cpp boolcnt.cpp boolcnt.hpp stladdon.hpp
 obj/boosting.o : orange/boosting.cpp boosting.cpp boosting.hpp cMersenneTwister.h classify.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp values.hpp vars.hpp
-obj/c.4.5.dynload2.o : orange/c.4.5.dynload2.cpp c.4.5.dynload2.cpp
 obj/c2py.o : include/c2py.cpp Python.h c2py.cpp c2py.hpp
 obj/c4.5.o : orange/c4.5.cpp c4.5.cpp c4.5.hpp cMersenneTwister.h classfromvar.hpp classify.hpp contingency.hpp discretize.hpp distvars.hpp domain.hpp errors.hpp examplegen.hpp examples.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp learn.hpp meta.hpp orvector.hpp random.hpp root.hpp stladdon.hpp table.hpp tdidt.hpp tdidt_split.hpp transval.hpp values.hpp vars.hpp
 obj/c45inter.o : orange/c45inter.cpp c45inter.cpp c45inter.hpp domain.hpp domaindepot.hpp errors.hpp examplegen.hpp examples.hpp filegen.hpp garbage.hpp garbage_py_manner.hpp getarg.hpp meta.hpp orvector.hpp root.hpp stladdon.hpp values.hpp vars.hpp
