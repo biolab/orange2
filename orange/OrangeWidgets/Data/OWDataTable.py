@@ -82,7 +82,7 @@ class OWDataTable(OWWidget):
         for i in range(instances):
             self.progressBarSet(i*50/instances)
             for j in range(len(self.data.domain.attributes)):
-                self.table.setText(i, j, str(self.data[i][j].native()))
+                self.table.setText(i, j, str(self.data[i][j]))
         col = len(self.data.domain.attributes)
         if self.data.domain.classVar:
             self.progressBarSet(50+i*20/instances)
@@ -93,7 +93,7 @@ class OWDataTable(OWWidget):
         for (j,m) in enumerate(metas):
             self.progressBarSet(70+j*30/mlen)
             for i in range(instances):
-##                print str(self.data[i][m])
+                print str(self.data[i][m])
                 OWGUI.tableItem(self.table, i, j+col, str(self.data[i][m]), background=QColor(220,220,220))
 
         # adjust the width of the table
