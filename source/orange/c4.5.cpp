@@ -71,6 +71,7 @@ int (__cdecl *rFormTarget)(ItemNo), (*rFormInitialWindow)();
 
 int (__cdecl *rInitialiseTreeData)();
 int (__cdecl *rInitialiseWeights)();
+int (__cdecl *rKillTreeData)();
 
 void (*rReleaseTree)(Tree Node, bool clearSubsets = true);
 
@@ -85,7 +86,6 @@ void (*rReleaseTree)(Tree Node, bool clearSubsets = true);
 #define SpecialStatus (*rSpecialStatus)
 #define ClassName (*rClassName)
 #define AttName (*rAttName)
-#define MaxAtt (*rMaxAtt)
 #define AttValName (*rAttValName)
 #define FileName (*rFileName)
 #define VERBOSITY (*rVERBOSITY)
@@ -115,6 +115,7 @@ void (*rReleaseTree)(Tree Node, bool clearSubsets = true);
 #define FormInitialWindow (*rFormInitialWindow)
 #define InitialiseTreeData (*rInitialiseTreeData)
 #define InitialiseWeights (*rInitialiseWeights)
+#define KillTreeData (*rKillTreeData)
 
 typedef void **getDataFunc();
 
@@ -171,7 +172,7 @@ void loadC45()
   
   COPY(SoftenThresh, 27);      COPY(ReleaseTree, 28);        /* was: Category, 29 */     /* was: Classify, 30 */    COPY(FormTree, 31);
   COPY(CopyTree, 32);          COPY(Iterate, 33);            COPY(Prune, 34);            /* was: PrintTree, 35 */   COPY(FormTarget, 36);
-  COPY(FormInitialWindow, 37); COPY(InitialiseTreeData, 38); COPY(InitialiseWeights, 39);
+  COPY(FormInitialWindow, 37); COPY(InitialiseTreeData, 38); COPY(InitialiseWeights, 39);COPY(KillTreeData, 40);
   #undef COPY
   
   c45Loaded = true;
@@ -235,6 +236,7 @@ TC45Learner::TC45Learner()
 bool TC45Learner::clearDomain()
 { if (ClassName) {
     String *ClassNamei=ClassName;
+    MaxClass++;
     while(MaxClass--)
       mldelete *(ClassNamei++);
     mldelete ClassName;
@@ -243,7 +245,7 @@ bool TC45Learner::clearDomain()
 
   if (AttName) {
     String *AttNamei=AttName;
-    int atts=MaxAtt;
+    int atts=MaxAtt+1;
     while(atts--)
       mldelete *(AttNamei++);
     mldelete AttName;
@@ -311,7 +313,7 @@ bool TC45Learner::convertDomain(PDomain dom)
 
     if ((*vi)->varType==TValue::INTVAR) {
       int noOfValues = (*vi).AS(TEnumVariable)->noOfValues();
-      if (noOfValues>MaxDiscrVal)
+      if (noOfValues>MaxDiscrVal)  
         MaxDiscrVal=noOfValues;
       *(MaxAttVali++) = noOfValues;
 
@@ -371,6 +373,7 @@ bool TC45Learner::convertExamples(PExampleGenerator table)
 bool TC45Learner::clearExamples()
 { if (Item) {
     Description *Itemi = Item;
+    MaxItem++;
     while(MaxItem--)
       mldelete *(Itemi++);
     mldelete Item;
@@ -381,10 +384,14 @@ bool TC45Learner::clearExamples()
 
 
 bool TC45Learner::convertGenerator(PExampleGenerator gen)
-{ PExampleGenerator table = toExampleTable(gen); // ensure that we know about all the attribute values
-  convertDomain(gen->domain);
-  convertExamples(gen);
-  return true;
+{ 
+  return convertDomain(gen->domain) && convertExamples(gen);
+}
+
+
+bool TC45Learner::clearGenerator()
+{ 
+  return clearExamples() && clearDomain();
 }
 
 
@@ -572,13 +579,13 @@ PClassifier TC45Learner::operator ()(PExampleGenerator gen, const int &weight)
       ReleaseTree(*Prunedi, false);
     }
 
-    mldelete Raw;
+    free Raw;
     Raw = NULL;
-    mldelete Pruned;
+    free Pruned;
     Pruned = NULL;
 
-    clearDomain();
-    clearExamples();
+    KillTreeData();
+    clearGenerator();
     return c45classifier;
 }
 

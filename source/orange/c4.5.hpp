@@ -49,6 +49,7 @@ public:
 
     bool clearDomain();
     bool clearExamples();
+    bool clearGenerator();
 
     bool convertDomain(PDomain);
     bool convertExamples(PExampleGenerator);
