@@ -245,7 +245,8 @@ def comboBox(widget, master, value, box=None, items=None, tooltip=None, callback
 
 	if callback:
 		master.connect(combo, SIGNAL(signal), FunctionCallback(master, callback))
-	master.controledAttributes.append((value, CallFront_comboBox(combo)))
+	if sendSelectedValue: master.controledAttributes.append((value, CallFront_comboBox(combo, valueType)))
+	else: 				  master.controledAttributes.append((value, CallFront_comboBox(combo)))
 	return combo
 
 def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tooltip=None, callback = None, sendSelectedValue=0, valueType = int, labelWidth = None):
@@ -318,14 +319,20 @@ class CallFront_checkBox:
 
 
 class CallFront_comboBox:
-	def __init__(self, control):
+	def __init__(self, control, valType = None):
 		self.control = control
+		self.valType = valType
 
 	def __call__(self, value):
-		for i in range(self.control.count()):
-			if str(self.control.text(i)) == value:
-				self.control.setCurrentItem(i)
-				return
+		if self.valType: 
+			for i in range(self.control.count()):
+				if self.valType(str(self.control.text(i))) == value:
+					self.control.setCurrentItem(i)
+					return
+			print "unable to set ", self.control, " to value ", value
+		else:
+			self.control.setCurrentItem(value)
+		
 
 class CallFront_hSlider:
 	def __init__(self, control):
