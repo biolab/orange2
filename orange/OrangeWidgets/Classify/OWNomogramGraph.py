@@ -31,7 +31,7 @@ def unique(lst):
 
 # returns difference between continuous label values
 def getDiff(d):
-    if d < 1:
+    if d < 1 and d>0:
         mnum = d/pow(10, math.floor(math.log10(d)))
     else:
         mnum = d
@@ -447,7 +447,7 @@ class AttrLine:
         maxPercent = exp(self.maxValue)/(1+exp(self.maxValue))
 
         percentLine = AttrLine(self.name, canvas)
-        percentList = filter(lambda x:x>minPercent and x<1,arange(0, maxPercent+0.1, 0.05))
+        percentList = filter(lambda x:x>minPercent and x<maxPercent,arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             #print p, int(10*p),10*p, int(10*p) != 10*p, not p == percentList[0], not p==percentList[len(percentList)-1]
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
@@ -528,7 +528,7 @@ class AttrLine:
 
                 # for 1d cont space
                 at.setCreation(canvas)
-            
+           
         self.initialized = True    
                 
     
@@ -645,9 +645,9 @@ class AttrLine:
         if not self.initialized:
             self.initializeBeforePaint(canvas)
         # rect and att. values initialization
-        verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())                        
+        verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())
         verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
-
+        
         atValues_mapped, atErrors_mapped, min_mapped, max_mapped = mapper(self) # return mapped values, errors, min, max --> mapper(self)
         sortVal = atValues_mapped[:]
         sortVal.sort()
@@ -826,7 +826,6 @@ class BasicNomogramFooter(QCanvas):
         if minSumBeta<-3:
             minSum = (-3 - minSumBeta)*k + minSum
             minSumBeta = -3
-
         # draw continous line with values from min and max sum (still have values!)
         self.m = Mapper_Linear_Fixed(minSumBeta, maxSumBeta, rect.left(), rect.right(), maxLinearValue = maxSum, minLinearValue = minSum)
         if self.footer:
@@ -839,6 +838,7 @@ class BasicNomogramFooter(QCanvas):
         # continous line convert to percent and draw accordingly (minbeta = minsum)
         if self.footerPercent:
             self.footerPercent.destroy()
+
         self.footerPercent = self.footer.convertToPercent(self)
 
         # create a mapper for footer, BZ CHANGE TO CONSIDER THE TARGET
@@ -1050,7 +1050,7 @@ class BasicNomogram(QCanvas):
         #graph sizes
         self.gleft = 0
         for at in self.attributes:
-            if at.label.boundingRect().width()>self.gleft:
+            if not (self.parent.contType == 1 and at.continuous) and at.label.boundingRect().width()>self.gleft:
                 self.gleft = at.label.boundingRect().width()
         #self.gleft = max(self.gleft, 100) # should really test footer width, and with of other lables
         self.gleft = max(self.gleft, 80)

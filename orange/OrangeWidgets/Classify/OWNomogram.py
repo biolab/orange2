@@ -23,13 +23,13 @@ from OWNomogramGraph import *
 
 def getStartingPoint(d, min):
     if min<0:
-        curr_num = arange(-min+d)
+        curr_num = arange(-min+d, step=d)
         curr_num = curr_num[len(curr_num)-1]
         curr_num = -curr_num
     elif min - d <= 0:
         curr_num = 0
     else:
-        curr_num = arange(min-d)
+        curr_num = arange(min-d, step=d)
         curr_num = curr_num[len(curr_num)-1]
     return curr_num
 
@@ -223,11 +223,11 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                 d = getDiff(d/numOfPartitions)
 
                 # get curr_num = starting point for continuous att. sampling                
-                curr_num = getStartingPoint(d, minAtValue) 
+                curr_num = getStartingPoint(d, minAtValue)
                 rndFac = getRounding(d)                
 
                 n = sum = 0
-
+            
                 for i in range(2*numOfPartitions):
                     if curr_num+i*d>=minAtValue and curr_num+i*d<=maxAtValue:
                         # get thickness
@@ -237,13 +237,13 @@ for displaying a nomogram of a Naive Bayesian or logistic regression classifier.
                             thickness = float(len(curr_data))/len(self.data)
                         else:
                             thickness = 0
-                        
                         d_filter = filter(lambda x: x>curr_num+i*d-d/2 and x<curr_num+i*d+d/2, cl.conditionalDistributions[at].keys())
                         if len(d_filter)>0:
                             d_filter = d_filter[len(d_filter)/2]
                             conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[0]], 0.00000001)
                             conditional1 = max(cl.conditionalDistributions[at][d_filter][classVal[1]], 0.00000001)
                             a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)), Numeric.log(conditional0/conditional1/prior),lineWidth=thickness))
+                        
                 a.continuous = True
             self.bnomogram.addAttribute(a)        
 
@@ -508,10 +508,10 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("d:\\data\\crush.tab")
-    #bayes = orange.BayesLearner(data)
-    logistic = orngLR.LogRegLearner(data)
-    ow.classifier(logistic)
+    data = orange.ExampleTable("titanic")
+    bayes = orange.BayesLearner(data)
+    #logistic = orngLR.LogRegLearner(data)
+    ow.classifier(bayes)
     ow.cdata(data)
 
     # here you can test setting some stuff
