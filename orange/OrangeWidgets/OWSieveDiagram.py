@@ -15,8 +15,9 @@ from OData import *
 from qt import *
 from qtcanvas import *
 import orngInteract
-from math import sqrt, floor, ceil
+from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
+
 
 ###########################################################################################
 ##### WIDGET : 
@@ -28,7 +29,7 @@ class OWSieveDiagram(OWWidget):
 
     
     def __init__(self,parent=None):
-        OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, FALSE)
+        OWWidget.__init__(self, parent, "Sieve diagram", 'show sieve diagram', FALSE, TRUE)
 
         #set default settings
         self.data = None
@@ -82,9 +83,9 @@ class OWSieveDiagram(OWWidget):
         self.showLinesCB = QCheckBox('Show lines', self.controlArea)
         self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
 
-
-        self.saveCanvas = QPushButton("Save diagram", self.controlArea)
-        self.connect(self.saveCanvas, SIGNAL("clicked()"), self.saveToFileCanvas)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+        #self.saveCanvas = QPushButton("Save diagram", self.controlArea)
+        #self.connect(self.saveCanvas, SIGNAL("clicked()"), self.saveToFileCanvas)
 
         #connect controls to appropriate functions
         self.activateLoadedSettings()
@@ -215,17 +216,30 @@ class OWSieveDiagram(OWWidget):
         sqareSize = min(self.canvasView.size().width() - xOff - 20, self.canvasView.size().height() - yOff - 30)
         if sqareSize < 0: return    # canvas is too small to draw rectangles
 
+        ######################
+        # compute chi-square
+        chisquare = 0.0
+        for i in range(len(valsX)):
+            for j in range(len(valsY)):
+                ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
+                expected = float(xVal*yVal)/float(sum)
+                if expected == 0: continue
+                pearson2 = (actual - expected)*(actual - expected) / expected
+                chisquare += pearson2
+
+        ######################
+        # draw rectangles
         criteriaText = str(self.criteriaCombo.currentText())
         currX = xOff
         for i in range(len(valsX)):
-            itemX = valsX[i]
+            if valsX[i] == 0: continue
             currY = yOff
-            width = int(float(sqareSize * itemX)/float(total))
+            width = int(float(sqareSize * valsX[i])/float(total))
 
             for j in range(len(valsY)):
                 ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
-                itemY = valsY[j]
-                height = int(float(sqareSize * itemY)/float(total))
+                if valsY[j] == 0: continue
+                height = int(float(sqareSize * valsY[j])/float(total))
 
                 # create rectangle
                 rect = QCanvasRectangle(currX+1, currY+1, width-2, height-2, self.canvas)
@@ -235,6 +249,7 @@ class OWSieveDiagram(OWWidget):
 
                 if criteriaText == "Attribute independence":  self.addRectIndependence(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
                 elif criteriaText == "Attribute independence (Pearson residuals)": self.addRectIndependencePearson(rect, currX + 1, currY + 1, width-2, height-2, (xAttr, xVal), (yAttr, yVal), actual, sum)
+                self.addTooltip(currX+1, currY+1, width-2, height-2, (xAttr, xVal),(yAttr, yVal), actual, sum, chisquare)
 
                 currY += height
                 if currX == xOff:
@@ -293,7 +308,6 @@ class OWSieveDiagram(OWWidget):
             g = b = max(g, 50)  # if actual/independent > 10 --> b=g=50     -- we don't go under 50
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
-        self.addTooltip(x,y,w,h, (xAttr, xVal),(yAttr, yVal), actual, sum)
         if self.showLines == 1 and actualProb > 0 and independentProb > 0: self.addLines(x,y,w,h, independentProb/actualProb, pen)
 
 
@@ -311,7 +325,8 @@ class OWSieveDiagram(OWWidget):
             r = g = max(r, 55)  #
         elif pearson < 0:
             intPearson = ceil(pearson)
-            pen = QPen(QColor(255,0,0)); rect.setPen(pen)
+            rect.setPen(QPen(QColor(255,0,0), 1, Qt.DashLine))
+            pen = QPen(QColor(255,0,0))
             r = 255
             b = g = 255 + intPearson*20
             b = g = max(b, 55)
@@ -319,7 +334,6 @@ class OWSieveDiagram(OWWidget):
             r = g = b = 255         # white            
         color = QColor(r,g,b)
         brush = QBrush(color); rect.setBrush(brush)
-        self.addTooltip(x,y,w,h, (xAttr, xVal),(yAttr, yVal), actual, sum)
         
         if pearson > 0:
             pearson = min(pearson, 10)
@@ -332,13 +346,13 @@ class OWSieveDiagram(OWWidget):
 
     #################################################
     # add tooltips
-    def addTooltip(self, x,y,w,h, (xAttr, xVal), (yAttr, yVal), actual, sum):
+    def addTooltip(self, x,y,w,h, (xAttr, xVal), (yAttr, yVal), actual, sum, chisquare):
         expected = float(xVal*yVal)/float(sum)
         pearson = (actual - expected) / sqrt(expected)
         tooltipText = """<b>X attribute</b><br>Value: <b>%s</b><br>Number of examples (p(x)): <b>%d (%.2f%%)</b><br><hr>
                         <b>Y attribute</b><br>Value: <b>%s</b><br>Number of examples (p(y)): <b>%d (%.2f%%)</b><br><hr>
                         <b>Number of examples (probabilities)</b><br>Expected (p(x)p(y)): <b>%.1f (%.2f%%)</b><br>Actual (p(x,y)): <b>%d (%.2f%%)</b><br>
-                        <hr><b>Statistics:</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), expected, 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum), pearson )
+                        <hr><b>Statistics:</b><br>Chi-square: <b>%.2f</b><br>Standardized Pearson residual: <b>%.2f</b>""" %(xAttr, xVal, 100.0*float(xVal)/float(sum), yAttr, yVal, 100.0*float(yVal)/float(sum), expected, 100.0*float(xVal*yVal)/float(sum*sum), actual, 100.0*float(actual)/float(sum), chisquare, pearson )
         tipRect = QRect(x, y, w, h)
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
