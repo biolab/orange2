@@ -41,7 +41,7 @@ class kNNOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
     MAXIMUM_NUMBER_OF_ATTRS = 1
 
-    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm", "evaluateEachClassValue", "createSnapshots"]
+    settingsList = ["kValue", "resultListLen", "percentDataUsed", "minExamples", "qualityMeasure", "testingMethod", "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances", "evaluationAlgorithm", "evaluateEachClassValue", "createSnapshots", "evaluationTime", "classificationProjectionWeight"]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
     kNeighboursNums = [ 0 ,  1 ,  2 ,  3 ,  4 ,  5 ,  6 ,  7 ,  8 ,  9 ,  10 ,  12 ,  15 ,  17 ,  20 ,  25 ,  30 ,  40 ,  60 ,  80 ,  100 ,  150 ,  200 ]
@@ -79,6 +79,8 @@ class kNNOptimization(OWBaseWidget):
         self.subsetdata = None
         self.arguments = []
         self.createSnapshots = 1
+        self.evaluationTime = 30
+        self.classificationProjectionWeight = 1
 
         self.showRank = 0
         self.showAccuracy = 1
@@ -102,8 +104,8 @@ class kNNOptimization(OWBaseWidget):
         
         self.tabs.insertTab(self.MainTab, "Main")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-        self.tabs.insertTab(self.ArgumentationTab, "Argumentation")
         self.tabs.insertTab(self.ManageTab, "Manage & Save")
+        self.tabs.insertTab(self.ArgumentationTab, "Argumentation && Classification")
         
 
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
@@ -116,14 +118,18 @@ class kNNOptimization(OWBaseWidget):
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Miscellaneous Settings ")
         #self.miscSettingsBox.hide()
         
-        # argumentation tab        
-        self.argumentationStartBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
-        self.findArgumentsButton = OWGUI.button(self.argumentationStartBox, self, "Find arguments", callback = self.findArguments)
+        # argumentation and classification tab
+        self.classificationBox = OWGUI.widgetBox(self.ArgumentationTab, " Classification ")
+        self.classificationProjectionWeightCheck = OWGUI.checkBox(self.classificationBox, self, 'classificationProjectionWeight', 'Weight projections according to their value', tooltip = "Will all evaluated projections have same importance when classifying an example \nor will they be weighted according to projection values")
+        self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(self.classificationBox, self, "evaluationTime", "Time for evaluating projections (sec): ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = [10, 20, 30, 40, 60, 80, 100, 120, 150, 200], sendSelectedValue = 1, valueType = int)
+        #self.projectionAccuracyRatioCombo = OWGUI.comboBoxWithCaption(self.classificationBox, self, "classificationRatio", "Ratio between projection value and classification accuracy: ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
+        self.argumentationBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments ")
+        self.findArgumentsButton = OWGUI.button(self.argumentationBox, self, "Find arguments", callback = self.findArguments)
         f = self.findArgumentsButton.font(); f.setBold(1);  self.findArgumentsButton.setFont(f)
-        self.stopArgumentationButton = OWGUI.button(self.argumentationStartBox, self, "Stop searching", callback = self.stopArgumentationClick)
+        self.stopArgumentationButton = OWGUI.button(self.argumentationBox, self, "Stop searching", callback = self.stopArgumentationClick)
         self.stopArgumentationButton.setFont(f)
         self.stopArgumentationButton.hide()
-        self.createSnapshotCheck = OWGUI.checkBox(self.argumentationStartBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
+        self.createSnapshotCheck = OWGUI.checkBox(self.argumentationBox, self, 'createSnapshots', 'Create snapshots of projections (a bit slower)', tooltip = "Show each argument with a projections screenshot.\nTakes a bit more time, since the projection has to be created.")
         self.classValueList = OWGUI.comboBox(self.ArgumentationTab, self, "argumentationClassValue", box = " Arguments for class: ", tooltip = "Select the class value that you wish to see arguments for", callback = self.argumentationClassChanged)
         self.argumentBox = OWGUI.widgetBox(self.ArgumentationTab, " Arguments for the selected class value ")
         self.argumentList = QListBox(self.argumentBox)
@@ -218,7 +224,7 @@ class kNNOptimization(OWBaseWidget):
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
         self.clearButton = OWGUI.button(self.buttonBox7, self, "Clear results", self.clearResults)
         self.closeButton = OWGUI.button(self.buttonBox7, self, "Close", self.hide)
-        self.resize(350,550)
+        self.resize(370,550)
         self.setMinimumWidth(350)
         self.tabs.setMinimumWidth(350)
 
@@ -725,46 +731,21 @@ class kNNOptimization(OWBaseWidget):
 
     # disable all controls while evaluating projections
     def disableControls(self):
-        self.optimizationSettingsBox.setEnabled(0)
-        #self.optimizationBox.setEnabled(0)
-        self.optimizationTypeCombo.setEnabled(0)
-        self.attributeCountCombo.setEnabled(0)
-        #self.startOptimizationButton.setText(" Stop optimization ")
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
-        self.manageResultsBox.setEnabled(0)
-        self.evaluateBox.setEnabled(0)
-        self.measureCombo.setEnabled(0)
-        self.heuristicsSettingsBox.setEnabled(0)
         self.resultsDetailsBox.setEnabled(0)
-        self.classesList.setEnabled(0)
-        self.miscSettingsBox.setEnabled(0)
-        self.methodTypeCombo.setEnabled(0)
-        self.optimizeGivenProjectionButton.setEnabled(0)
-        self.argumentBox.setEnabled(0)
-        self.classValueList.setEnabled(0)
-        self.argumentationStartBox.setEnabled(0)
-
+        self.SettingsTab.setEnabled(0)
+        self.ManageTab.setEnabled(0)
+        self.ArgumentationTab.setEnabled(0)
+        
     def enableControls(self):    
-        self.optimizationSettingsBox.setEnabled(1)
-        #self.optimizationBox.setEnabled(1)
-        self.optimizationTypeCombo.setEnabled(1)
-        self.attributeCountCombo.setEnabled(1)
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
-        self.manageResultsBox.setEnabled(1)
-        self.evaluateBox.setEnabled(1)
-        self.measureCombo.setEnabled(1)
-        self.heuristicsSettingsBox.setEnabled(1)
         self.resultsDetailsBox.setEnabled(1)
-        self.classesList.setEnabled(1)
-        self.miscSettingsBox.setEnabled(1)
-        self.methodTypeCombo.setEnabled(1)
-        self.optimizeGivenProjectionButton.setEnabled(1)
-        self.argumentBox.setEnabled(1)
-        self.classValueList.setEnabled(1)
-        self.argumentationStartBox.setEnabled(1)
-
+        self.SettingsTab.setEnabled(1)
+        self.ManageTab.setEnabled(1)
+        self.ArgumentationTab.setEnabled(1)
+        
     # ##############################################################
     # exporting multiple pictures
     # ##############################################################
@@ -852,6 +833,7 @@ class kNNOptimization(OWBaseWidget):
     def findArguments(self):
         self.cancelArgumentation = 0
         self.arguments = [[] for i in range(self.classValueList.count())]
+        self.argumentList.clear()
         snapshots = self.createSnapshots
         
         if self.subsetdata == None:
@@ -876,14 +858,6 @@ class kNNOptimization(OWBaseWidget):
 
             qApp.processEvents()
             
-            possiblyInside = 1
-            
-            for attr in attrList:
-                if testExample[self.graph.attributeNames.index(attr)] < 0.0 or testExample[self.graph.attributeNames.index(attr)] > 1.0:
-                    possiblyInside = 0
-                    break
-            if not possiblyInside: continue
-
             [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, [testExample[self.graph.attributeNames.index(attrList[i])] for i in range(len(attrList))])
             table = self.graph.createProjectionAsExampleTable([self.graph.attributeNames.index(attr) for attr in attrList])
             knn = orange.kNNLearner(table, k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
@@ -946,6 +920,70 @@ class kNNOptimization(OWBaseWidget):
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
+
+class kNNClassifier(orange.Classifier):
+    def __init__(self, kNNOptimizationDlg, visualizationWidget, data):
+        self.kNNOptimizationDlg = kNNOptimizationDlg
+        self.visualizationWidget = visualizationWidget
+        self.data = data
+
+        self.visualizationWidget.cdata(data)
+        self.evaluating = 1
+        t = QTimer(self.visualizationWidget)
+        self.visualizationWidget.connect(t, SIGNAL("timeout()"), self.stopEvaluation)
+        t.start(self.kNNOptimizationDlg.evaluationTime * 1000, 1)
+        self.visualizationWidget.optimizeSeparation()
+        t.stop()
+        self.evaluating = 0
+
+    # timer event that stops evaluation of clusters
+    def stopEvaluation(self):
+        if self.evaluating:
+            self.kNNOptimizationDlg.stopOptimizationClick()
+            
+
+    # for a given example run argumentation and find out to which class it most often fall        
+    def __call__(self, example, returnType):
+        table = orange.ExampleTable(example.domain)
+        table.append(example)
+        self.visualizationWidget.subsetdata(table)
+        snapshots = self.kNNOptimizationDlg.createSnapshots
+        self.kNNOptimizationDlg.createSnapshots = 0
+        self.kNNOptimizationDlg.findArguments()
+        self.kNNOptimizationDlg.createSnapshots = snapshots
+        worstAccuracy = self.allResults[-1][0]
+
+        vals = [0.0 for i in range(len(self.kNNOptimizationDlg.arguments))]
+        if self.kNNOptimizationDlg.classificationProjectionWeight:
+            for i in range(len(self.kNNOptimizationDlg.arguments)):
+                for j in range(len(self.kNNOptimizationDlg.arguments[i])):
+                    vals[i] += (self.kNNOptimizationDlg.arguments[i][j][2] - worstAccuracy) * self.kNNOptimizationDlg.arguments[i][j][3]
+        else:
+            for i in range(len(self.kNNOptimizationDlg.arguments)):
+                vals[i] = len(self.kNNOptimizationDlg.arguments[i])
+        
+        ind = vals.index(max(vals))
+        if max(vals) == 0.0:
+            print "there are no arguments"
+            return
+        
+        if returnType == orange.GetBoth:
+            s = sum(vals) + len(vals)
+            return (example.domain.classVar[ind], orange.DiscDistribution([(val+1)/float(s) for val in vals]))
+        else:
+            return example.domain.classVar[ind]
+        
+        
+
+class VizRankLearner(orange.Learner):
+    def __init__(self, kNNOptimizationDlg, visualizationWidget):
+        self.kNNOptimizationDlg = kNNOptimizationDlg
+        self.visualizationWidget = visualizationWidget
+        self.name = "VizRank classifier"
+        
+    def __call__(self, examples, weightID = 0):
+        return kNNClassifier(self.kNNOptimizationDlg, self.visualizationWidget, examples)
+
 
 
 #test widget appearance
