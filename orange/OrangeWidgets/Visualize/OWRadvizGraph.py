@@ -80,11 +80,11 @@ class OWRadvizGraph(OWVisGraph):
         self.radvizWidget = radvizWidget
 
         self.showLegend = 1
-        self.useDifferentSymbols = 1
+        self.useDifferentSymbols = 0
+        self.useDifferentColors = 1
         self.enhancedTooltips = 0
         self.scaleFactor = 1.0
         
-        self.optimizeForPrinting = 1        # show class value using different simple empty symbols using black color
 
     def setEnhancedTooltips(self, enhanced):
         self.enhancedTooltips = enhanced
@@ -178,7 +178,7 @@ class OWRadvizGraph(OWVisGraph):
         
         # will we show different symbols?        
         useDifferentSymbols = 0
-        if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(min(self.curveSymbols, self.curveSymbolsPrinting)): useDifferentSymbols = 1
+        if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
 
         dataSize = len(self.rawdata)
         blackColor = QColor(0,0,0)
@@ -272,12 +272,9 @@ class OWRadvizGraph(OWVisGraph):
             colors = ColorPaletteHSV(valLen)
             for i in range(valLen):
                 newColor = colors.getColor(i)
-                if self.optimizeForPrinting: newColor = QColor(0,0,0)
+                if not self.useDifferentColors: newColor = QColor(0,0,0)
                 
-                if self.useDifferentSymbols:
-                    if self.optimizeForPrinting and valLen < len(self.curveSymbolsPrinting): curveSymbol = self.curveSymbolsPrinting[i]
-                    elif not self.optimizeForPrinting and valLen < len(self.curveSymbols):   curveSymbol = self.curveSymbols[i]
-                    else:                                                                     curveSymbol = self.curveSymbols[0]
+                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
                 else: curveSymbol = self.curveSymbols[0]
 
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = pos[i][0], yData = pos[i][1])
@@ -285,25 +282,16 @@ class OWRadvizGraph(OWVisGraph):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], newColor, pos[i][2][k])
 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            if self.optimizeForPrinting:
-                for i in range(dataSize):
-                    if not curveData[i][VALID]: continue
-                    if self.useDifferentSymbols and valLen < len(self.curveSymbolsPrinting): curveSymbol = self.curveSymbolsPrinting[classValueIndices[self.rawdata[i].getclass().value]]
-                    else: curveSymbol = self.curveSymbolsPrinting[0]
-                    self.addCurve(str(i), blackColor, blackColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                    self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
-                    self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], blackColor, i)
-            else:
-                for i in range(dataSize):
-                    if not curveData[i][VALID]: continue
-                    newColor = QColor(0,0,0)
-                    if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[classValueIndices[self.rawdata[i].getclass().value]], 255, 255)
-                    else:                                 newColor.setHsv((classValueIndices[self.rawdata[i].getclass().value])/valLen, 255, 255)
-                    if self.useDifferentSymbols and valLen < len(self.curveSymbols): curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
-                    else: curveSymbol = self.curveSymbols[0]
-                    self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
-                    self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
-                    self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], newColor, i)
+            for i in range(dataSize):
+                if not curveData[i][VALID]: continue
+                newColor = QColor(0,0,0)
+                if valLen < len(self.colorHueValues): newColor.setHsv(self.colorHueValues[classValueIndices[self.rawdata[i].getclass().value]], 255, 255)
+                else:                                 newColor.setHsv((classValueIndices[self.rawdata[i].getclass().value])/valLen, 255, 255)
+                if self.useDifferentSymbols: curveSymbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                else: curveSymbol = self.curveSymbols[0]
+                self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = [curveData[i][XPOS]], yData = [curveData[i][YPOS]])
+                self.tips.addToolTip(QRectFloat(curveData[i][XPOS]-RECT_SIZE, curveData[i][YPOS]-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE), self.getShortExampleText(self.rawdata, self.rawdata[i], indices))
+                self.addTooltipKey(curveData[i][XPOS], curveData[i][YPOS], newColor, i)
                     
         
         #################
@@ -317,13 +305,11 @@ class OWRadvizGraph(OWVisGraph):
                 classColors = ColorPaletteHSV(len(classVariableValues))
                 for index in range(len(classVariableValues)):
                     color = classColors.getColor(index)
-                    if self.optimizeForPrinting: color = QColor(0,0,0)
+                    if not self.useDifferentColors: color = QColor(0,0,0)
                     y = 1.0 - index * 0.05
 
-                    if not self.useDifferentSymbols: curveSymbol = self.curveSymbols[0]
-                    elif self.optimizeForPrinting and valLen < len(self.curveSymbolsPrinting): curveSymbol = self.curveSymbolsPrinting[index]
-                    elif not self.optimizeForPrinting and valLen < len(self.curveSymbols):   curveSymbol = self.curveSymbols[index]
-                    else:                                                                     curveSymbol = self.curveSymbols[0]
+                    if not self.useDifferentSymbols:  curveSymbol = self.curveSymbols[0]
+                    else:                             curveSymbol = self.curveSymbols[index]
 
                     self.addCurve(str(index), color, color, self.pointWidth, symbol = curveSymbol, xData = [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)

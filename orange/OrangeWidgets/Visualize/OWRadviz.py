@@ -23,7 +23,7 @@ import OWGUI
 ###########################################################################################
 class OWRadviz(OWWidget):
     #spreadType=["none","uniform","triangle","beta"]
-    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "optimizeForPrinting"]
+    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "sendShownAttributes", "useDifferentColors"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -56,7 +56,7 @@ class OWRadviz(OWWidget):
         self.showFilledSymbols = 1
         self.optimizedDrawing = 1
         self.useDifferentSymbols = 0
-        self.optimizeForPrinting = 0
+        self.useDifferentColors = 1
         self.autoSendSelection = 0
         self.sendShownAttributes = 1
         self.graphCanvasColor = str(Qt.white.name())
@@ -111,13 +111,14 @@ class OWRadviz(OWWidget):
         OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.setScaleFactor, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
-        OWGUI.checkBox(box2, self, 'enhancedTooltips', 'Use enhanced tooltips', callback = self.setUseEnhancedTooltips)
+        OWGUI.checkBox(box2, self, 'enhancedTooltips', 'Use enhanced tooltips', callback = self.setEnhancedTooltips)
         OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.setShowLegend)
         OWGUI.checkBox(box2, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling)
         OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.setOptmizedDrawing, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
         OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.setDifferentSymbols, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box2, self, 'useDifferentColors', 'Use different colors', callback = self.setDifferentColors, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.setShowFilledSymbols)
-        OWGUI.checkBox(box2, self, 'optimizeForPrinting', 'Optimize for printing', callback = self.setOptmizeForPrinting, tooltip = "use symbols that will be printer-friendly")
+        
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
         OWGUI.checkBox(box3, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
@@ -168,7 +169,7 @@ class OWRadviz(OWWidget):
         self.graph.setScaleFactor(self.scaleFactor)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.useDifferentSymbols = self.useDifferentSymbols
-        self.graph.optimizeForPrinting = self.optimizeForPrinting
+        self.graph.useDifferentColors = self.useDifferentColors
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -507,7 +508,7 @@ class OWRadviz(OWWidget):
         self.graph.setPointWidth(self.pointWidth)
         self.updateGraph()
 
-    def setUseEnhancedTooltips(self):
+    def setEnhancedTooltips(self):
         self.graph.setEnhancedTooltips(self.enhancedTooltips)
         self.updateGraph()
 
@@ -515,14 +516,14 @@ class OWRadviz(OWWidget):
         self.graph.useDifferentSymbols = self.useDifferentSymbols
         self.updateGraph()
 
+    def setDifferentColors(self):
+        self.graph.updateSettings(useDifferentColors = self.useDifferentColors)
+        self.updateGraph()
+        
     def setShowFilledSymbols(self):
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols)
         self.updateGraph()
-
-    def setOptmizeForPrinting(self):
-        self.graph.updateSettings(optimizeForPrinting = self.optimizeForPrinting)
-        self.updateGraph()
-        
+   
     def setGlobalValueScaling(self):
         self.graph.setGlobalValueScaling(self.globalValueScaling)
         self.graph.setData(self.data)

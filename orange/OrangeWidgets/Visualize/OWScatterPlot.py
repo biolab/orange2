@@ -41,7 +41,7 @@ class OWScatterPlot(OWWidget):
         self.showHorizontalGridlines = 0
         self.showLegend = 1
         self.showDistributions = 0
-        self.optimizedDrawing = 1 
+        self.optimizedDrawing = 1
         
         self.jitterContinuous = 0
         self.jitterSize = 5
@@ -428,7 +428,7 @@ class OWScatterPlot(OWWidget):
     def setOptmizedDrawing(self):
         self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing)
         self.updateGraph() 
-            
+
     def setGraphCanvasColor(self):
         newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
         if newColor.isValid():

@@ -68,7 +68,7 @@ class OWPolyvizGraph(OWVisGraph):
         self.kNNOptimization = None
         self.polyvizWidget = polyvizWidget
         self.useDifferentSymbols = 1
-        self.optimizeForPrinting = 1
+        self.useDifferentColors = 1
 
         self.dataMap = {}        # each key is of form: "xVal-yVal", where xVal and yVal are discretized continuous values. Value of each key has form: (x,y, HSVValue, [data vals])
         self.tooltipCurveKeys = []
@@ -166,7 +166,8 @@ class OWPolyvizGraph(OWVisGraph):
             index = self.attributeNames.index(label)
             indices.append(index)
 
-        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
 
         # ##########
         # create anchor for every attribute
@@ -211,6 +212,11 @@ class OWPolyvizGraph(OWVisGraph):
                 if classNameIndex >= 0 and self.scaledData[classNameIndex][i] == "?": self.validData[i] = 0
 
 
+        # will we show different symbols?        
+        useDifferentSymbols = 0
+        if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
+
+
         # ##########
         # draw text at lines
         for i in range(length):
@@ -243,9 +249,6 @@ class OWPolyvizGraph(OWVisGraph):
 
         sum = self.calculateAttrValuesSum(self.scaledData, len(self.rawdata), indices, self.validData)
 
-        if self.optimizeForPrinting: symbolList = self.curveSymbolsPrinting
-        else: symbolList = self.curveSymbols
-        
         # ##########
         #  create data curves
         RECT_SIZE = 0.01    # size of tooltip rectangle in percents of graph size
@@ -279,15 +282,15 @@ class OWPolyvizGraph(OWVisGraph):
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 curveData[index][0].append(x_i)
                 curveData[index][1].append(y_i)
-                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
+                if self.useDifferentColors: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
             else:
-                if classIsDiscrete and self.useDifferentSymbols and valLen < len(symbolList) : symbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
-                else: symbol = symbolList[0]
+                if useDifferentSymbols : symbol = self.curveSymbols[classValueIndices[self.rawdata[i].getclass().value]]
+                else: symbol = self.curveSymbols[0]
                 contData.append([x_i, y_i, self.coloringScaledData[classNameIndex][i], symbol]) # store data for drawing
-                if not self.optimizeForPrinting: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
+                if self.useDifferentColors: lineColor.setHsv(self.coloringScaledData[classNameIndex][i], 255, 255)
                 text= self.getShortExampleText(self.rawdata, self.rawdata[i], indices + [self.rawdata.domain.classVar.name])
                 r = QRectFloat(x_i-RECT_SIZE, y_i-RECT_SIZE, 2*RECT_SIZE, 2*RECT_SIZE)
                 self.tips.addToolTip(r, text)
@@ -361,13 +364,13 @@ class OWPolyvizGraph(OWVisGraph):
         ###### ONE COLOR OR DISCRETE CLASS ATTRIBUTE
         elif classIsDiscrete and self.optimizedDrawing:
             colors = ColorPaletteHSV(valLen)
-            if self.optimizeForPrinting: colors.colors = [QColor(0,0,0) for i in range(valLen)]
+            if not self.useDifferentColors: colors.colors = [QColor(0,0,0) for i in range(valLen)]
             
             # create data curves for dots
             for i in range(valLen):
                 newColor = colors.getColor(i)
-                if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[i]
-                else: curveSymbol = symbolList[0]
+                if useDifferentSymbols: curveSymbol = self.curveSymbols[i]
+                else: curveSymbol = self.curveSymbols[0]
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = curveData[i][0], yData = curveData[i][1])
                 for j in range(len(labels)):
                     self.addCurve("lines" + str(i), newColor, newColor, 0, QwtCurve.Lines, symbol = QwtSymbol.None, xData = polyvizLineCoordsX[j][i], yData = polyvizLineCoordsY[j][i])
@@ -375,8 +378,8 @@ class OWPolyvizGraph(OWVisGraph):
         ###### CONTINUOUS CLASS ATTRIBUTE
         else:
             for i in range(len(contData)):
-                newColor = QColor();  newColor.setHsv(contData[i][2], 255, 255)
-                if classIsDiscrete and self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(symbolList): curveSymbol = symbolList[classValueIndices[self.rawdata[i].getclass().value]]
+                newColor = QColor(0,0,0);
+                if self.useDifferentColors: newColor.setHsv(contData[i][2], 255, 255)
                 self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = contData[i][3], xData = [contData[i][0]], yData = [contData[i][1]])
 
         
@@ -400,28 +403,29 @@ class OWPolyvizGraph(OWVisGraph):
                 classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
                 classColors = ColorPaletteHSV(len(classVariableValues))
                 for index in range(len(classVariableValues)):
-                    newColor = QColor(0,0,0)
-                    if not self.optimizeForPrinting: newColor = classColors.getColor(index)
                     y = 1.0 - index * 0.05
-                    if self.useDifferentSymbols and valLen < len(symbolList): curveSymbol = symbolList[index]
-                    else: curveSymbol = symbolList[0]
+                    if self.useDifferentColors: newColor = classColors.getColor(index)
+                    else: newColor = QColor(0,0,0)
+                    if useDifferentSymbols: curveSymbol = self.curveSymbols[index]
+                    else: curveSymbol = self.curveSymbols[0]
                     self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData= [0.95, 0.95], yData = [y, y])
                     self.addMarker(classVariableValues[index], 0.90, y, Qt.AlignLeft + Qt.AlignHCenter)
 
             # show legend for continuous class
             else:
-                x0 = 1.20; x1 = 1.24
-                classColors = ColorPaletteHSV(-1)
-                for i in range(1000):
-                    y = -1.0 + i*2.0/1000.0
-                    newCurveKey = self.insertCurve(str(i))
-                    self.setCurvePen(newCurveKey, QPen(classColors.getColor(float(i)/1000.0)))
-                    self.setCurveData(newCurveKey, [x0,x1], [y,y])
+                if self.useDifferentColors:
+                    x0 = 1.20; x1 = 1.24
+                    classColors = ColorPaletteHSV(-1)
+                    for i in range(1000):
+                        y = -1.0 + i*2.0/1000.0
+                        newCurveKey = self.insertCurve(str(i))
+                        self.setCurvePen(newCurveKey, QPen(classColors.getColor(float(i)/1000.0)))
+                        self.setCurveData(newCurveKey, [x0,x1], [y,y])
 
-                # add markers for min and max value of color attribute
-                [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
-                self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
+                    # add markers for min and max value of color attribute
+                    [minVal, maxVal] = self.attrValues[self.rawdata.domain.classVar.name]
+                    self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), x0 - 0.02, -1.0 + 0.04, Qt.AlignLeft)
+                    self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), x0 - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
 
     ##########################

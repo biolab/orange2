@@ -58,6 +58,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.showManualAxisScale = 0
         self.optimizedDrawing = 1
         self.scatterWidget = scatterWidget
+        self.optimizeForPrinting = 0
         self.kNNOptimization = None
 
     #########################################################
