@@ -775,7 +775,7 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
   
   const TDomain &domain = gen->domain.getReference();
   
-  PITERATE(TVarList, vi, domain.variables)
+  const_PITERATE(TVarList, vi, domain.variables)
     if (   ((*vi)->varType == TValue::FLOATVAR)
         && (   !attributes || !attributes->size() 
             || exists(attributes->begin(), attributes->end(), *vi))) {
@@ -794,22 +794,23 @@ PExampleGenerator TPreprocessor_discretize::operator()(PExampleGenerator gen, co
     newDomain->attributes->erase(newDomain->attributes->end()-1);
   }
   
-  PITERATE(TVarList, ai, attributes)
-    if (!exists(discretized.begin(), discretized.end(), *ai)) {
-      long varNum = domain.getVarNum(*ai);
-      if (varNum == ILLEGAL_INT)
-        raiseError("Attribute '%s' is not found", (*ai)->name.c_str());
-      else if ((varNum >= 0) || ((*ai)->varType != TValue::FLOATVAR))
-        raiseError("Attribute '%s' is not continuous", (*ai)->name.c_str());
-      else {
-        PVariable evar = method->operator()(gen, *ai);
-	TMetaDescriptor ndsc(varNum, evar);
-	newDomain->metas.push_back(ndsc);
-	discretizedMetas.push_back(varNum);
+  if (attributes)
+    PITERATE(TVarList, ai, attributes)
+      if (!exists(discretized.begin(), discretized.end(), *ai)) {
+        long varNum = domain.getVarNum(*ai);
+        if (varNum == ILLEGAL_INT)
+          raiseError("Attribute '%s' is not found", (*ai)->name.c_str());
+        else if ((varNum >= 0) || ((*ai)->varType != TValue::FLOATVAR))
+          raiseError("Attribute '%s' is not continuous", (*ai)->name.c_str());
+        else {
+          PVariable evar = method->operator()(gen, *ai);
+          TMetaDescriptor ndsc(varNum, evar);
+          newDomain->metas.push_back(ndsc);
+          discretizedMetas.push_back(varNum);
+        }
       }
-    }
 
-  ITERATE(TMetaVector, mi, domain.metas)
+  const_ITERATE(TMetaVector, mi, domain.metas)
     if (!exists(discretizedMetas.begin(), discretizedMetas.end(), (*mi).id))
       newDomain->metas.push_back(*mi);
       
