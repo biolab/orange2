@@ -76,13 +76,13 @@ class SchemaDoc(QMainWindow):
         return line
 
     def addWidget(self, widget):
-        newwidget = orngCanvasItems.CanvasWidget(self.canvas, widget, self.canvasDlg.defaultPic, self.canvasDlg)
+        newwidget = orngCanvasItems.CanvasWidget(self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
         x = self.canvasView.contentsX() + 10
         for w in self.widgets:
             x = max(w.x() + 90, x)
             x = x/10*10
         y = 150
-        newwidget.move(x,y)
+        newwidget.setCoords(x,y)
 
         list = []
         for item in self.widgets:
@@ -94,12 +94,13 @@ class SchemaDoc(QMainWindow):
             while not found:
                 if newwidget.caption + " (" + str(i) + ")" not in list:
                     found = 1
-                    newwidget.caption = newwidget.caption + " (" + str(i) + ")"
+                    newwidget.updateText(newwidget.caption + " (" + str(i) + ")")
                 else:
                     i += 1
-                    
+
+        
         newwidget.show()
-        newwidget.updateTooltip(self.canvasView)
+        newwidget.updateTooltip()
         self.widgets.append(newwidget)
         self.hasChanged = TRUE
         self.canvas.update()    
@@ -253,7 +254,7 @@ class SchemaDoc(QMainWindow):
             if (tempWidget != None):
                 xPos = int(widget.getAttribute("xPos"))
                 yPos = int(widget.getAttribute("yPos"))
-                tempWidget.move(xPos, yPos)
+                tempWidget.setCoords(xPos, yPos)
                 tempWidget.caption = widget.getAttribute("caption")
             else:
                 QMessageBox.information(self,'Qrange Canvas','Unable to find widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)

@@ -43,7 +43,8 @@ class SchemaView(QCanvasView):
 
         self.linePopup = QPopupMenu(self, "Link")
         self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
-        self.linePopup.insertItem( "Delete",  self.deleteLink)
+        self.linePopup.insertSeparator()
+        self.linePopup.insertItem( "Remove",  self.deleteLink)
         self.linePopup.insertSeparator() 
 
    
@@ -66,8 +67,8 @@ class SchemaView(QCanvasView):
                 if widget.caption.lower() == str(string).lower():
                     QMessageBox.critical(self,'Qrange Canvas','Unable to rename widget. An instance with that name already exists.',  QMessageBox.Ok + QMessageBox.Default)
                     return
-            self.tempWidget.caption = str(string)
-            self.tempWidget.updateTooltip(self)
+            self.tempWidget.updateText(string)
+            self.tempWidget.updateTooltip()
             self.doc.hasChanged = TRUE
 
     # popMenuAction - user selected to delete active widget
@@ -77,12 +78,13 @@ class SchemaView(QCanvasView):
 
         for item in self.selWidgets:
             self.doc.widgets.remove(item)
-            item.removeTooltip(self)
-            item.hide()
+            item.hideWidget()
             for line in item.inLines:
-                self.removeLine(line)
+                self.selectedLine = line
+                self.deleteLink()
             for line in item.outLines:
-                self.removeLine(line)
+                self.selectedLine = line
+                self.deleteLink()
             list = self.canvas().allItems()
             list.remove(item)
 
@@ -100,8 +102,8 @@ class SchemaView(QCanvasView):
         if self.selectedLine != None:
             self.selectedLine.setEnabled(not self.selectedLine.getEnabled())
             self.selectedLine.repaintLine(self)
-            self.selectedLine.inWidget.updateTooltip(self)
-            self.selectedLine.outWidget.updateTooltip(self)
+            self.selectedLine.inWidget.updateTooltip()
+            self.selectedLine.outWidget.updateTooltip()
         self.doc.hasChanged = TRUE
 
     # popMenuAction - delete selected link
@@ -120,8 +122,8 @@ class SchemaView(QCanvasView):
         self.doc.lines.remove(line)
         line.hide()
         line.setEnabled(FALSE)
-        line.inWidget.updateTooltip(self)
-        line.outWidget.updateTooltip(self)
+        line.inWidget.updateTooltip()
+        line.outWidget.updateTooltip()
         line = None
 
     # ###########################################
@@ -223,9 +225,9 @@ class SchemaView(QCanvasView):
 
                     for widget in self.selWidgets:
                         widget.setCoords(widget.x(), widget.y())
-                        widget.removeTooltip(self)
+                        widget.removeTooltip()
                         widget.setAllLinesFinished(FALSE)
-                        widget.repaintAllLines(self)
+                        widget.repaintAllLines()
                     
                 # is we clicked the right mouse button we show the popup menu for widgets
                 elif ev.button() == QMouseEvent.RightButton:
@@ -256,7 +258,7 @@ class SchemaView(QCanvasView):
                 if self.doc.canvasDlg.snapToGrid:
                     item.moveToGrid()
                 else:
-                    item.move(item.xPos, item.yPos)                    
+                    item.setCoords(item.xPos, item.yPos)                    
 
                 items = self.canvas().collisions(item.rect())
                 count = self.findItemTypeCount(items, orngCanvasItems.CanvasWidget)
@@ -265,7 +267,6 @@ class SchemaView(QCanvasView):
                 else:
                     item.invalidPosition = FALSE
                 item.updateLineCoords()
-                item.eraseExText(self, ex_pos.x() , ex_pos.y())
             self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
             self.doc.canvas.update()
 
@@ -295,18 +296,19 @@ class SchemaView(QCanvasView):
             widgets = self.findAllItemType(items, orngCanvasItems.CanvasWidget)
             for widget in widgets:
                 widget.selected = TRUE
-                widget.repaintWidget(self)
+                widget.repaintWidget()
                 self.selWidgets.append(widget)
             for widget in self.doc.widgets:
                 if widget not in widgets:
                     widget.selected = FALSE
-                    widget.repaintWidget(self)
+                    widget.repaintWidget()
 
             self.canvas().update()
 
     # ###################################################################
     # mouse button was released #########################################
     def contentsMouseReleaseEvent(self, ev):
+        # if we are moving a widget
         if self.bWidgetDragging:
             validPos = TRUE
             for item in self.selWidgets:
@@ -318,15 +320,16 @@ class SchemaView(QCanvasView):
             for item in self.selWidgets:
                 item.invalidPosition = FALSE
                 if not validPos:
-                    item.moveBy(self.moving_start.x() - ev.pos().x(), self.moving_start.y() - ev.pos().y())
-                item.updateTooltip(self)
+                    item.setCoordsBy(self.moving_start.x() - ev.pos().x(), self.moving_start.y() - ev.pos().y())
+                item.updateTooltip()
                 item.updateLineCoords()
                 item.setAllLinesFinished(TRUE)
-                item.repaintWidget(self)
-                item.repaintAllLines(self)
+                item.repaintWidget()
+                item.repaintAllLines()
                 
             self.doc.hasChanged = TRUE
 
+        # if we are drawing line
         elif self.bLineDragging:
             items = self.canvas().collisions(ev.pos())
             item = self.findFirstItemType(items, orngCanvasItems.CanvasWidget)
@@ -362,8 +365,8 @@ class SchemaView(QCanvasView):
                         else:
                         	self.tempWidget.addOutLine(line)	
                         	item.addInLine(line)
-                        inWidget.updateTooltip(self)
-                        outWidget.updateTooltip(self)
+                        inWidget.updateTooltip()
+                        outWidget.updateTooltip()
                         line.updateLinePos()
                         line.repaintLine(self)
                 

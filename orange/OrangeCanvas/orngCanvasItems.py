@@ -24,6 +24,7 @@ class CanvasLine(QCanvasLine):
         self.signals = []
         self.colors = []
 
+    # set widgets that the line belongs to
     def setInOutWidget(self, inWidget, outWidget):
         self.inWidget = inWidget
         self.outWidget = outWidget
@@ -76,7 +77,7 @@ class CanvasLine(QCanvasLine):
             self.setRightColors(canvasDlg)
         return TRUE
 
-    # 
+    # show only colors that belong to 3 most important signals
     def setRightColors(self, canvasDlg):
         self.colors = []
         tempList = []
@@ -106,10 +107,15 @@ class CanvasLine(QCanvasLine):
         else:
             action = "unlink"
 
-        for signal in self.signals:
-            code = compile("self.inWidget.instance." + action + "(self.outWidget.instance, \"" + signal +  "\")", ".", "single")
-            exec(code)
         
+        for signal in self.signals:
+            try:
+                code = compile("self.inWidget.instance." + action + "(self.outWidget.instance, \"" + signal +  "\")", ".", "single")
+                exec(code)
+            except:
+                print "failed to " + action + " widgets"
+        
+    # draw the line
     def drawShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
@@ -144,6 +150,7 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
         """
 
+    # draw the line on the printer
     def printShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
@@ -173,6 +180,7 @@ class CanvasLine(QCanvasLine):
             painter.setPen(QPen(QColor(self.colors[2]), 2*fact, lineStyle))
             painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
         
+    # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
         x1 = self.outWidget.x() + 68
         y1 = self.outWidget.y() + 26
@@ -180,11 +188,13 @@ class CanvasLine(QCanvasLine):
         y2 = self.inWidget.y() + 26
         self.setPoints(x1, y1, x2, y2)
 
+    # redraw the line
     def repaintLine(self, canvasView):
         p1 = self.startPoint()
         p2 = self.endPoint()
         canvasView.repaintContents(QRect(min(p1.x(), p2.x())-5, min(p1.y(), p2.y())-5, abs(p1.x()-p2.x())+10,abs(p1.y()-p2.y())+10))
 
+    # we need this to separate line objects and widget objects
     def rtti(self):
         return 1000
 
@@ -192,10 +202,11 @@ class CanvasLine(QCanvasLine):
 # # CANVAS WIDGET
 # #######################################
 class CanvasWidget(QCanvasRectangle):
-    def __init__(self, canvas, widget, defaultPic, canvasDlg):
+    def __init__(self, canvas, view, widget, defaultPic, canvasDlg):
         apply(QCanvasRectangle.__init__, (self,canvas))
         self.widget = widget
         self.canvas = canvas
+        self.view = view
         self.canvasDlg = canvasDlg
         if os.path.isfile(widget.iconName):
             self.image = QPixmap(widget.iconName)
@@ -216,23 +227,45 @@ class CanvasWidget(QCanvasRectangle):
         self.xPos = 0
         self.yPos = 0
 
+        self.text = QCanvasText(self.caption, canvas)
+        self.text.show()
+        self.text.setTextFlags(Qt.AlignCenter)
+        self.updateTextCoords()
+
         # import widget class and create a class instance
         code = compile("import " + widget.fileName, ".", "single")
         exec(code)
         code = compile(widget.fileName + "." + widget.fileName + "()", ".", "eval")
         self.instance = eval(code)
 
+    def updateTextCoords(self):
+        self.text.move(self.xPos + 34, self.yPos + 60)
+
+    def updateText(self, text):
+        self.caption = str(text)
+        self.text.setText(text)
+    
+    # set coordinates of the widget
     def setCoords(self, x, y):
         self.xPos = x
         self.yPos = y
+        self.move(x,y)
+        self.updateTextCoords()
 
+    # move existing coorinates by dx, dy
     def setCoordsBy(self, dx, dy):
         self.xPos = self.xPos + dx
         self.yPos = self.yPos + dy
+        self.move(self.xPos,self.yPos)
+        self.updateTextCoords()
 
     def moveToGrid(self):
-        self.move(round(self.xPos/10)*10, round(self.yPos/10)*10)
+        (x,y) = (self.xPos, self.yPos)
+        self.setCoords(round(self.xPos/10)*10, round(self.yPos/10)*10)
+        self.xPos = x
+        self.yPos = y
 
+    # is mouse position inside the left signal channel
     def mouseInsideLeftChannel(self, mousePos):
         LBox = QRect(self.x(), self.y()+18,8,16)
         if LBox.contains(mousePos):
@@ -240,6 +273,7 @@ class CanvasWidget(QCanvasRectangle):
         else:
             return FALSE
 
+    # is mouse position inside the right signal channel
     def mouseInsideRightChannel(self, mousePos):
         RBox = QRect(self.x() + 60, self.y()+18,8,16)
         if RBox.contains(mousePos):
@@ -247,12 +281,15 @@ class CanvasWidget(QCanvasRectangle):
         else:
             return FALSE
 
+    # we know that the mouse was pressed inside a channel box. We only need to find
+    # inside which one it was
     def getEdgePoint(self, mousePos):
         if self.mouseInsideLeftChannel(mousePos):
             return QPoint(self.x(), self.y() + 26)
         elif self.mouseInsideRightChannel(mousePos):
             return QPoint(self.x()+ 68, self.y() + 26)
-        
+
+    # draw the widget        
     def drawShape(self, painter):
         painter.setBrush(QBrush(self.NoBrush))
         painter.setPen(QPen(self.black))
@@ -277,9 +314,9 @@ class CanvasWidget(QCanvasRectangle):
             if self.widget.outList != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
         painter.setPen(QPen(self.black))
-        rect = painter.boundingRect(0,0,200,20,0,self.caption)
-        self.captionWidth = rect.width()
-        painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
+        #rect = painter.boundingRect(0,0,200,20,0,self.caption)
+        #self.captionWidth = rect.width() + 50
+        #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, self.captionWidth, rect.height(), 0, self.caption)
 
     def printShape(self, painter):
         painter.setPen(QPen(self.black))
@@ -293,17 +330,12 @@ class CanvasWidget(QCanvasRectangle):
         if self.widget.outList != []:
             painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
-        painter.setBrush(QBrush(self.NoBrush))
-        rect = painter.boundingRect(0,0,200,20,0,self.caption)
-        self.captionWidth = rect.width()
-        painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
-        painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
+        #painter.setBrush(QBrush(self.NoBrush))
+        #rect = painter.boundingRect(0,0,200,20,0,self.caption)
+        #self.captionWidth = rect.width()
+        #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
+        #painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
         
-
-    # if text is too big for the widget space we must refresh
-    # the space taken by it, since it doesn't get repainted by itself
-    def eraseExText(self, view, exX, exY):
-        view.repaintContents(QRect(exX+34-self.captionWidth/2, exY+52+2, self.captionWidth, 13 ))
 
     def addOutLine(self, line):
         self.outLines.append(line)
@@ -335,19 +367,17 @@ class CanvasWidget(QCanvasRectangle):
         for line in self.outLines:
             line.updateLinePos()
 
-    def repaintWidget(self, canvasView):
+    def repaintWidget(self):
         (x,y,w,h) = ( self.x(), self.y(), self.width(), self.height() )
-        canvasView.repaintContents(QRect(x,y,w,h))
-        self.eraseExText(canvasView, x, y)
+        self.view.repaintContents(QRect(x,y,w,h))
 
-    def repaintAllLines(self, canvasView):
+    def repaintAllLines(self):
         for line in self.inLines:
-            line.repaintLine(canvasView)
+            line.repaintLine(self.view)
         for line in self.outLines:
-            line.repaintLine(canvasView)
+            line.repaintLine(self.view)
 
-    def updateTooltip(self, view):
-        canvasDlg = view.doc.canvasDlg
+    def updateTooltip(self):
         str = "<b>" + self.caption + "</b><br>Class name: " + self.widget.fileName + "<br>Input Signals: "
 
         for signal in self.widget.inList:
@@ -355,7 +385,7 @@ class CanvasWidget(QCanvasRectangle):
             for line in self.inLines:
                 if signal in line.signals:
                     start= "<b>"; end = "</b>"
-            str += start + canvasDlg.getChannelName(signal) + end + ", "
+            str += start + self.canvasDlg.getChannelName(signal) + end + ", "
 
         if str[-2] == ",": str = str[:-2]
         else:              str += "None"
@@ -366,15 +396,20 @@ class CanvasWidget(QCanvasRectangle):
             for line in self.outLines:
                 if signal in line.signals:
                     start= "<b>"; end = "</b>"
-            str += start + canvasDlg.getChannelName(signal) + end + ", "
+            str += start + self.canvasDlg.getChannelName(signal) + end + ", "
 
         if str[-2] == ",": str = str[:-2]
         else:              str += "None"
         
-        QToolTip.add(view, self.rect(), str)
+        QToolTip.add(self.view, self.rect(), str)
 
-    def removeTooltip(self, view):
-        QToolTip.remove(view, self.rect())
+    def removeTooltip(self):
+        QToolTip.remove(self.view, self.rect())
+
+    def hideWidget(self):
+        self.removeTooltip()
+        self.hide()
+        self.text.hide()
         
     def rtti(self):
         return 1001
