@@ -23,7 +23,7 @@ class TreeLearnerClass:
 		
 	def __setattr__(self, name, value):
 		if name in ["split", "binarization", "measure", "worstAcceptable", "minSubset",
-					"stop", "maxMajority", "minExample"]:
+					"stop", "maxMajority", "minExample", "nodeLearner"]:
 			self.learner = None
 		self.__dict__[name] = value
 
@@ -88,7 +88,7 @@ class TreeLearnerClass:
 			if me:
 				learner.stop.minExamples = self.minExamples
 
-		for a in ["storeDistributions", "storeContingencies", "storeExamples", "storeNodeClassifier"]:
+		for a in ["storeDistributions", "storeContingencies", "storeExamples", "storeNodeClassifier", "nodeLearner"]:
 			if hasattr(self, a):
 				setattr(learner, a, getattr(self, a))
 

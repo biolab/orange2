@@ -143,7 +143,7 @@ if __name__ == '__main__':
 
     ### introduce missing values and impute them using random imputation
 
-    pp_missing=orange.Preprocessor_missing(probabilities={'a1':0.7, 'a3':0.2, 'a4':0.1}, randseed=1235)
+    pp_missing=orange.Preprocessor_addMissing(proportions={'a1':0.7, 'a3':0.2, 'a4':0.1})
     tab_missing=pp_missing(tab)
 
     impute_random=ImputePreprocessor(ImputeRandom())
