@@ -75,8 +75,9 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
         if (Fout <= Fin)
           raiseError("Fout should be higher than Fin");
         iterations = (maxIterations > columns) ? maxIterations : columns;
-        if (iterations > columns*columns)
-          iterations = columns*columns*columns;
+        float columns3 = float(columns)*columns*columns;
+        if (iterations > columns3)
+          iterations = columns3;
       }
       else
         iterations = columns;
@@ -202,7 +203,7 @@ void TLinRegLearner::Fselection(gsl_matrix *X, gsl_vector *y, gsl_vector *w, con
       }
     }
 
-    if (!nSelected) {
+    if (nSelected==1) {
       GSL_FREE(best_c, vector);
       GSL_FREE(best_se, vector);
       bestOrder = vector<int>(1, 0);
@@ -347,7 +348,7 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
     GSL_FREE(c_se, vector)
 
 
-    TLinRegClassifier *classifier = mlnew TLinRegClassifier(mlnew TDomain(origen->domain->classVar, dom_attributes.getReference()), coeffs, coeffs_se, SSres, SStot, N);
+    TLinRegClassifier *classifier = mlnew TLinRegClassifier(mlnew TDomain(origen->domain->classVar, dom_attributes.getReference()), coeffs, coeffs_se, SSres, SStot, rows);
     PClassifier wclassifier(classifier);
     classifier->imputer = imputer;
 
@@ -440,8 +441,14 @@ void TLinRegClassifier::setStatistics(const float &aSSres, const float &aSStot, 
   MStot = SStot / (N-1);
   MSreg = k>0 ? SSreg / k : 0.0;
   
-  F = (MSres>1e-1) ? MSreg / MSres : numeric_limits<float>::max();
-  Fprob = (F>1e-10) ? fprob(double(k), double(N-k-1), double(F)) : 0.0;
+  if (MSres > 1e-10) {
+    F = MSreg / MSres;
+    Fprob = (F>1e-10) ? fprob(double(k), double(N-k-1), double(F)) : 0.0;
+  }
+  else {
+    F = numeric_limits<float>::max();
+    Fprob = 0;
+  }
   R2 = 1 - SSres/SStot;
   adjR2 = 1 - MSres/MStot;
 }
