@@ -10,11 +10,12 @@ a Logistic regression classifier. </description>
 from OData import *
 from OWWidget import *
 from orngLR import *
+import OWGUI
 
 ##############################################################################
 
 class OWLogisticRegression(OWWidget):
-    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint"]
+    settingsList = ["removeSingular", "univariate", "name", "stepwiseLR", "addCrit", "removeCrit", "numAttr", "zeroPoint", "imputation"]
 
     def __init__ (self, parent=None, name = "Logistic regression"):    
         # tu pridejo vse nastavitve
@@ -30,6 +31,8 @@ preprocessors to filter/change the data.
         FALSE,
         FALSE)
 
+        self.imputationMethodsStr = ["Classification/Regression trees", "Average values", "Minimal value", "Maximal value", "None (skip examples)"]
+        self.imputationMethods = [orange.ImputerConstructor_model(), orange.ImputerConstructor_average(), orange.ImputerConstructor_minimal(), orange.ImputerConstructor_maximal(), None]
         # inputs / outputs
         #self.addInput("cdata")
         #self.addInput("pp")
@@ -39,16 +42,19 @@ preprocessors to filter/change the data.
         #self.addOutput("classifier")
         #self.addOutput("lrClassifier")
         #self.addOutput("attributes")
+
+        self.callbackDeposit = []
         
         # Settings
         self.name = "Logistic regression"
-        self.removeSingular = 0
+        self.removeSingular = 1
         self.univariate = 0
         self.stepwiseLR = 0
         self.addCrit = 0.2
         self.removeCrit = 0.3
         self.numAttr = -1
         self.zeroPoint = 0
+        self.imputation = 1
 
         self.data = None
         self.preprocessor = None
@@ -68,25 +74,24 @@ preprocessors to filter/change the data.
         #parameters
         
         # remove singularity
-        self.sBox = QVGroupBox(self.controlArea)
-        self.removeSingularCB = QCheckBox("Remove singular attributes", self.sBox)
-        QToolTip.add(self.removeSingularCB, "Remove attributes causing singularity and constants?")
+        self.removeSingularCB = QCheckBox("Remove singular attributes", self.controlArea)
+        QToolTip.add(self.removeSingularCB, "Remove attributes that cause singularity and constants")
         self.connect(self.removeSingularCB, SIGNAL("clicked()"), self.setRemoveSingular)
 
         # use univariate logistic regression
-        self.uBox = QVGroupBox(self.controlArea)
-        self.univariateCB = QCheckBox("univariate logistic regression", self.uBox)
+        self.univariateCB = QCheckBox("Univariate logistic regression", self.controlArea)
         QToolTip.add(self.univariateCB, "Fit univariate logistic regression.")
         self.connect(self.univariateCB, SIGNAL("clicked()"), self.setUnivariate)
         self.univariateCB.setDisabled(True)
 
         # get 0-point betas ?
-        self.zeroBox = QVGroupBox(self.controlArea)
-        self.zeroCB = QCheckBox("calculate 0-point", self.zeroBox)
+        self.zeroCB = QCheckBox("Calculate 0-point for nomograms", self.controlArea)
         QToolTip.add(self.zeroCB, "Basic logistic regression does not compute prior contribution of each attribute to class \
                                    If nomograms are used to visualize logistic regression model, this could be very helpful.")
         self.connect(self.zeroCB, SIGNAL("clicked()"), self.setZeroPoint)
         self.zeroCB.setDisabled(True)
+
+        self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", items=self.imputationMethodsStr)
         
         # stepwise logistic regression
         self.swBox = QVGroupBox(self.controlArea)
@@ -139,25 +144,28 @@ preprocessors to filter/change the data.
                                             # has come to the input yet
                                             
     def setLearner(self):
-        # perform stepwise lr
-        self.newData = self.data
-        self.Attributes = None
-        if self.stepwiseLR and self.data <> None:
-            self.attributes = StepWiseFSS(self.data, addCrit = float(str(self.addCrit)), deleteCrit = float(str(self.removeCrit)))
-            self.newData = self.newData.select(orange.Domain(self.attributes, self.newData.domain.classVar))
+        imputer = self.imputationMethods[self.imputation]
+        removeMissing = not imputer
+
         if self.univariate:
             self.learner = Univariate_LogRegLearner()
         else:            
-            self.learner = LogRegLearner(removeSingular = self.removeSingular)
+            self.learner = LogRegLearner(removeSingular = self.removeSingular, imputer = imputer, removeMissing = removeMissing)
+            if self.stepwiseLR:
+                self.learner.stepwiseLR = 1
+                self.learner.addCrit = float(str(self.addCrit))
+                self.learner.removeCrit = float(str(self.removeCrit))
+
         self.learner.name = self.name
         self.send("Learner", self.learner)        
-        if self.data <> None:
+
+        if self.data:
             if self.zeroPoint:
-                self.classifier, betas_ap = LogRegLearner_getPriors(self.newData)
+                self.classifier, betas_ap = LogRegLearner_getPriors(self.data)
                 self.classifier.betas_ap = betas_ap
             else:
                 try:
-                    self.classifier = self.learner(self.newData)
+                    self.classifier = self.learner(self.data)
                 except orange.KernelException, (errValue):
                     self.classifier = None
                     QMessageBox("LogRegFitter error:", str(errValue), QMessageBox.Warning,
@@ -236,11 +244,9 @@ if __name__=="__main__":
     ow=OWLogisticRegression()
     a.setMainWidget(ow)
 
-    dataset = orange.ExampleTable('d:\\data\\titanic.tab')
-    od = OrangeData(dataset)
-    ow.cdata(od)
+    dataset = orange.ExampleTable(r'C:\Documents and Settings\janez\Desktop\crush\crush.tab')
+    ow.cdata(dataset)
 
     ow.show()
     a.exec_loop()
     ow.saveSettings() 
-                

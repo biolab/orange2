@@ -83,7 +83,7 @@ def createFullNoDiscDomain(domain):
                 newVar = orange.FloatVariable(at.name+"="+at.values[ival])
                 
                 # create classifier
-                vals = [orange.Value((float)(ival==i)) for i in range(len(at.values))]
+                vals = [orange.Value(float(ival==i)) for i in range(len(at.values))]
                 vals.append("?")
                 #print (vals)
                 cl = orange.ClassifierByLookupTable(newVar, at, vals)                
@@ -127,25 +127,34 @@ class LogRegLearnerClass:
         self.__dict__ = kwds
         self.removeSingular = removeSingular
         self.fitter = None
+
     def __call__(self, examples, weight=0):
-        nexamples = orange.Preprocessor_dropMissing(examples)
+        imputer = getattr(self, "imputer", None) or orange.ImputerConstructor_average()
+
+        if getattr(self, "removeMissing", 0):
+            examples = orange.Preprocessor_dropMissing(examples)
         if hasDiscreteValues(examples.domain):
-            nexamples = createNoDiscTable(nexamples)
-        else:
-            nexamples = nexamples
+            examples = createNoDiscTable(examples)
+        if getattr(self, "stepwise", 0):
+            addCrit = getattr(self, "addcrit", 0.2)
+            removeCrit = getattr(self, "removeCrit", 0.3)
+            attributes = StepWiseFSS(examples, addCrit = addCrit, deleteCrit = removeCrit, imputer = imputer)
+            examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
 
         learner = orange.LogRegLearner()
+        learner.imputerConstructor = imputer
 
         if self.fitter:
             learner.fitter = self.fitter
             
         if self.removeSingular:
-            lr = learner.fitModel(nexamples, weight)
+            lr = learner.fitModel(examples, weight)
         else:
-            lr = learner(nexamples, weight)
-        while isinstance(lr,orange.Variable):
-            nexamples.domain.attributes.remove(lr)
-            nexamples = nexamples.select(orange.Domain(nexamples.domain.attributes, nexamples.domain.classVar))
+            lr = learner(examples, weight)
+        while isinstance(lr, orange.Variable):
+            attributes = examples.domain.attributes[:]
+            attributes.remove(lr)
+            examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
             lr = learner.fitModel(nexamples, weight)
         return lr
 
@@ -638,15 +647,19 @@ def getLikelihood(fitter, examples):
     
 
 class StepWiseFSS_class:
-  def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1):
+  def __init__(self, addCrit=0.2, deleteCrit=0.3, numAttr = -1, **kwds):
+    self.__dict__.update(kwds)
     self.addCrit = addCrit
     self.deleteCrit = deleteCrit
     self.numAttr = numAttr
   def __call__(self, examples):
+    if getattr(self, "imputer", 0):
+        examples = self.imputer(examples)(examples)
+    if getattr(self, "removeMissing", 0):
+        examples = orange.Preprocessor_dropMissing(examples)
     attr = []
     remain_attr = examples.domain.attributes[:]
 
-    
     # get LL for Majority Learner 
     tempDomain = orange.Domain(attr,examples.domain.classVar)
     tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
@@ -675,7 +688,6 @@ class StepWiseFSS_class:
                 length_Delete = len(tempData)
                 # P=PR(CHI^2>G), G=-2(L(0)-L(1))=2(E(0)-E(1))
                 length_Avg = (length_Delete + length_Old)/2.0
-
 
                 G=-2*length_Avg*(ll_Delete/length_Delete-ll_Old/length_Old)
 
