@@ -23,7 +23,7 @@ from OWkNNOptimization import *
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showContinuous", "showFilledSymbols"]
+    settingsList = ["pointWidth", "lineLength", "attrContOrder", "attrDiscOrder", "jitterSize", "jitteringType", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -50,7 +50,6 @@ class OWPolyviz(OWWidget):
         self.jitterSize = 1
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
         self.showLegend = 1
-        self.showContinuous = 0
         self.showFilledSymbols = 1
         
         self.graphCanvasColor = str(Qt.white.name())

@@ -24,7 +24,7 @@ from qt import *
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend", "showContinuous"]
+    settingsList = ["pointWidth", "attrContOrder", "attrDiscOrder", "jitteringType", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "showFilledSymbols", "scaleFactor", "showLegend"]
     spreadType=["none","uniform","triangle","beta"]
     attributeContOrder = ["None","RelieF"]
     attributeDiscOrder = ["None","RelieF","GainRatio","Gini", "Oblivious decision graphs"]
@@ -49,7 +49,6 @@ class OWRadviz(OWWidget):
         self.jitterSize = 1
         self.scaleFactor = 1.0
         self.showLegend = 1
-        self.showContinuous = 0
         self.showFilledSymbols = 1
         
         self.graphCanvasColor = str(Qt.white.name())
