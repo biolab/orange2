@@ -28,6 +28,22 @@ class ExampleTable(orange.ExampleTable):
 class ExampleTableWithClass(ExampleTable):
     pass
 
+# class that allows to process only one signal at a time
+class SignalWrapper:
+    def __init__(self, widget, method):
+        self.widget = widget
+        self.method = method
+
+    def __call__(self, *k):
+        signalManager.signalProcessingInProgress += 1
+        try:
+            apply(self.method, k)
+        finally:
+            signalManager.signalProcessingInProgress -= 1
+            if not signalManager.signalProcessingInProgress:
+                signalManager.processNewSignals(self.widget)
+
+
 
 class SignalManager:
     widgets = []    # topologically sorted list of widgets
