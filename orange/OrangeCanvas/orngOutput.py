@@ -91,11 +91,12 @@ class OutputWindow(QMainWindow):
         #    if not self.printExtraOutput: return
         #    text = text[7:]
         if text == "\n": return
-            
-        text = text.replace("<", "[")    # since this is rich text control, we have to replace special characters
-        text = text.replace(">", "]")
-        text = text.replace("\n", "<br>")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
-        text = "<nobr>" + text + "</nobr>"  
+
+        if (text.count("<") != text.count(">")) or text.count("\n") > 0 or text.count("\t") > 0:
+            text = text.replace("<", "[")    # since this is rich text control, we have to replace special characters
+            text = text.replace(">", "]")
+            text = text.replace("\n", "<br>")   # replace new line characters with <br> otherwise they don't get shown correctly in html output
+            text = "<nobr>" + text + "</nobr>"  
 
         if self.focusOnCatchOutput:
             self.canvasDlg.menuItemShowOutputWindow()
