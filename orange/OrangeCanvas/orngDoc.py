@@ -263,9 +263,20 @@ class SchemaDoc(QMainWindow):
         newwidget.updateText(caption)
         newwidget.instance.setCaptionTitle("Qt " + caption)
 
-        self.signalManager.addWidget(newwidget.instance)
-        newwidget.show()
-        newwidget.updateTooltip()
+        # show the widget and activate the settings
+        qApp.setOverrideCursor(QWidget.waitCursor)
+        try:
+            self.signalManager.addWidget(newwidget.instance)
+            newwidget.show()
+            newwidget.updateTooltip()
+            newwidget.setProcessing(1)
+            newwidget.instance.activateLoadedSettings()
+            newwidget.setProcessing(0)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that it doesn't crash canvas
+        qApp.restoreOverrideCursor()
+        
         self.widgets.append(newwidget)
         self.enableSave(TRUE)
         self.canvas.update()    
@@ -489,6 +500,7 @@ class SchemaDoc(QMainWindow):
                     self.addLink(outWidget, inWidget, outName, inName, Enabled)
                 qApp.processEvents()
 
+            for widget in self.widgets: widget.updateTooltip()
             self.canvas.update()
             self.enableSave(FALSE)
             
@@ -693,7 +705,6 @@ if os.path.exists(widgetDir):
 application = QApplication(sys.argv)
 ow = """ + classname + """()
 application.setMainWidget(ow)
-ow.loadSettings()
 ow.show()
 
 # comment the next line if in debugging mode and are interested only in output text in 'signalManagerOutput.txt' file
