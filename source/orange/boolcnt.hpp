@@ -24,6 +24,7 @@
 #define __BOOLCNT_HPP
 
 #include <vector>
+#include "garbage.hpp"
 
 using namespace std;
 

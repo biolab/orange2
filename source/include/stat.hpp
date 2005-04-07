@@ -48,7 +48,7 @@ using namespace std;
 
 /* *********** AUXILIARY FUNCTIONS ************/
 
-#if _MSC_VER && _MSC_VER < 1300
+#ifdef _MSC_VER_60
 inline double abs(double x)
 { return fabs(x); }
 #endif
