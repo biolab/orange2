@@ -4,6 +4,7 @@ set DOCUMENTATION=orange-doc-snap-%daystr.zip
 set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
 set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr.exe
 set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
+set SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.zip
 
 set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
 set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
@@ -63,6 +64,14 @@ winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
 winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source
 winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
 
+rem *** copy sources file and add genomics part
+del %DOWNLOADDIR\orange-source-genomics-snap-*.zip
+copy "%DOWNLOADDIR\%SOURCE_SNAPSHOT" "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT"
+md orange\OrangeWidgets\Genomics
+xcopy /S Genomics orange\OrangeWidgets\Genomics
+winrar a -r "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" orange/OrangeWidgets/Genomics
+winrar d "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" @orange\exclude.lst
+
 cdd %SNAPSHOTDIR
 if errorlevel == 0 goto changedirok2
 popd
@@ -77,5 +86,5 @@ call updateVersionsPy__.btm
 
 popd
 
-start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
+rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
 
