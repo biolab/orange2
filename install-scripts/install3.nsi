@@ -6,6 +6,8 @@ UninstallIcon OrangeInstall.ico
 	!define ORANGEDIR orange
 !endif
 
+!define INCLUDEMSVCDLL ; by default
+
 !ifdef COMPLETE
   !ifndef OUTFILENAME
 		OutFile "Orange-complete.exe"
@@ -98,6 +100,13 @@ Page instfiles
 
 		SetOutPath $INSTDIR
 		File various\QT-LICENSE.txt
+	SectionEnd
+!endif
+
+!ifdef INCLUDEMSVCDLL
+	Section "MSVCP60.DLL" SECMSVCP60DLL
+		SetOutPath $SYSDIR
+		File various\MSVCP60.DLL
 	SectionEnd
 !endif
 
@@ -358,6 +367,16 @@ Function .onGUIInit
 	!else
 		!insertMacro WarnMissingModule "$SYSDIR\qt-mt230nc.dll" "Qt"
 	!endif
+
+	!ifdef INCLUDEMSVCDLL
+		${If} ${FileExists} "$SYSDIR\MSVCP60.DLL"
+			!insertMacro HideSection ${SECMSVCP60DLL}
+		${EndIf}
+	!else
+		!insertMacro WarnMissingModule "$SYSDIR\MSVCP60.DLL" "MSVCP60.DLL"
+	!endif
+
+
 	
 	StrCpy $INSTDIR $PythonDir\lib\site-packages\orange
 
