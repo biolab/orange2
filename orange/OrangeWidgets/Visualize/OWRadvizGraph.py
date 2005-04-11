@@ -113,21 +113,21 @@ class OWRadvizGraph(OWVisGraph):
     def drawCanvasItems(self, painter, rect, map, pfilter):
         #print rect.x(), rect.y(), rect.width(), rect.height()
         #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
-        classifier = orange.P2NN(self.rawdata, self.anchorData)
-        imagebmp, nShades = orangeom.potentialsBitmap(classifier, 300, 300, 5)
-        colors = ((0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255))
-        palette = []
-        for cls in range(len(classifier.classVar.values)):
-           color = colors[cls]
-           towhite = [255-c for c in color]
-           for s in range(nShades):
-             si = 1-float(s)/nShades
-             palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-        palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-        image = QImage(imagebmp, 600, 600, 8, palette, 256, QImage.LittleEndian)
-        pm = QPixmap()
-        pm.convertFromImage(image)
-        painter.drawPixmap(QPoint(0,0), pm)
+##        classifier = orange.P2NN(self.rawdata, self.anchorData)
+##        imagebmp, nShades = orangeom.potentialsBitmap(classifier, 300, 300, 5)
+##        colors = ((0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255))
+##        palette = []
+##        for cls in range(len(classifier.classVar.values)):
+##           color = colors[cls]
+##           towhite = [255-c for c in color]
+##           for s in range(nShades):
+##             si = 1-float(s)/nShades
+##             palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+##        palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+##        image = QImage(imagebmp, 600, 600, 8, palette, 256, QImage.LittleEndian)
+##        pm = QPixmap()
+##        pm.convertFromImage(image)
+##        painter.drawPixmap(QPoint(0,0), pm)
         OWVisGraph.drawCanvasItems(self, painter, rect, map, pfilter)
 
     # create anchors around the circle
