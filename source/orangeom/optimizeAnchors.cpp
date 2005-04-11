@@ -256,7 +256,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       }
 
  
-  //Centering and scaling
+  //Centering
       double aax = 0.0, aay = 0.0;
       for(anci = anc; anci != ance; anci++) {
         aax += anci->x;
@@ -271,22 +271,43 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         anci->y -= aay;
       }
 
+   // Scaling, rotating and mirroring
 
-      double maxr = 0.0;
+      // find the largest and the second largest not collocated with the largest
+      double maxr = 0.0, maxr2 = 0.0;
+      TPoint *anci_l = NULL, *anci_l2 = NULL;
       for(anci = anc; anci != ance; anci++) {
         const double r = sqr(anci->x) + sqr(anci->y);
-        if (r > maxr)
+        if (r > maxr) {
+          maxr2 = maxr;
+          anci_l2 = anci_l;
           maxr = r;
+          anci_l = anci;
+        }
+        else if ((r > maxr2) && ((anci->x != anci_l->x) || (anci->y != anci_l->y))) {
+          maxr2 = r;
+          anci_l2 = anci;
+        }
       }
 
-      if (maxr > 0) {
-        maxr = sqrt(maxr);
+      if (anci_l2) {
+        maxr = maxr > 0.0 ? sqrt(maxr) : 1.0;
+
+        double phi = atan2(anci_l->y, anci_l->x);
+        double phi2 = atan2(anci_l2->y, anci_l2->x);
+        int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
+        double dphi = 3.1419265/2.0 - phi;
+        double cs = cos(dphi)/maxr, sn = sin(dphi)/maxr;
+
         for(anci = anc; anci != ance; anci++) {
-          anci->x /= maxr;
-          anci->y /= maxr;
+          const double tx = anci->x * cs - anci->y * sn;
+          anci->y = anci->x * sn + anci->y * cs;
+          anci->x = sign * tx;
         }
       }
     }
+
+    // Rotating and mirroring (largest up, second largest right)
 
 
     anchors = PyList_New(nAttrs);
@@ -617,3 +638,58 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 }
 
 
+#include "pnn.hpp"
+#include "../orange/px/externs.px"
+
+#define nColors 6
+#ifdef _MSC_VER
+#pragma warning (disable: 4305 4309)
+#endif
+
+PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, cx, cy, res) -> bitmap as string")
+{
+  PyTRY
+    PyObject *cls;
+    int rx, ry, cell;
+    if (!PyArg_ParseTuple(args, "Oiii:potentialsBitmap", &cls, &rx, &ry, &cell))
+      return PYNULL;
+
+    TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
+    const int nClasses = tp2nn->classVar->noOfValues();
+    const int nShades = 255/nClasses;
+
+    const int oneLine = 2*rx;
+    const int bitmapSize = oneLine * 2*ry;
+    char *bitmap = new char[bitmapSize];
+    memset(bitmap, 255, bitmapSize);
+    char *bitmapmid = bitmap + oneLine*ry + rx;
+
+    float *probs = new float[nClasses], *pe = probs + nClasses;
+
+    for(int y = -ry+1; y < ry-1; y+=cell) {
+      double realy = double(y)/ry;
+      for(int xe = ceil(rx * sqrt(1.0 - realy*realy)), x = -xe; x < xe; x+=cell) {
+        double realx = double(x)/rx;
+        tp2nn->classDistribution(realx, -realy, probs, nClasses);
+        double sprobs = *probs;
+        float *largest = probs;
+        for(float *pi = probs+1; pi != pe; pi++) {
+          sprobs += *pi;
+          if (*pi > *largest)
+            largest = pi;
+        }
+        unsigned char color = floor(0.5 + nShades * *largest/sprobs);
+        if (color >= nShades)
+          color = nShades - 1;
+        color += nShades * (largest - probs);
+
+        const int ys = y+cell < ry ? cell : ry-y;
+        for(char *yy = bitmapmid + y*oneLine + x, *yye = yy + ys*oneLine; yy < yye; yy += oneLine)
+          memset(yy, color, cell);
+      }
+    }
+
+    return Py_BuildValue("s#i", bitmap, bitmapSize, nShades);
+
+  PyCATCH
+}
