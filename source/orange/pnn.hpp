@@ -36,6 +36,7 @@ public:
   PFloatList offsets; //P offsets to subtract from the attribute values
   PFloatList normalizers; //P number to divide the values by
   double *bases; // eg x1, y1,  x2, y2,  x3, y3, ... x_dimensions, y_dimensions
+  double *radii; // eg sqrt(x1^2+y1^2) ...
 
   int nExamples; //PR the number of examples
   double *projections; // projections of examples + class
@@ -45,6 +46,7 @@ public:
   TPNN(PDomain domain, const float &exponent2 = -1);
   TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &exponent2 = -1);
   TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const float &exponent2 = -1.0);
+  TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow);
   TPNN(const TPNN &);
   TPNN &operator =(const TPNN &);
 

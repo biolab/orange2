@@ -55,12 +55,11 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /machine:I386
-# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
-# SUBTRACT LINK32 /debug
+# ADD LINK32 libgslcblas.a libgsl.a oleaut32.lib ole32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"obj/Release/orange.pyd" /libpath:"$(PYTHON)\libs" /libpath:"$(GNUWIN32)\lib" /WARN:0
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
 PostBuild_Desc=UPXing Orange
-PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib
+PostBuild_Cmds=del "..\..\orange.pyd"	"c:\program files\upx" "obj\Release\orange.pyd" -o "..\..\orange.pyd"	copy obj\Release\orange.lib ..\..\lib\orange.lib	rem copy "obj\Release\orange.pyd" "..\..\orange.pyd"
 # End Special Build Tool
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Debug"
@@ -88,7 +87,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 libgslcblas.a libgsl.a ole32.lib oleaut32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"C:\Python23\Lib\site-packages\orange\orange_d.pyd" /libpath:"$(PYTHON)/libs" /libpath:"$(GNUWIN32)/lib"
+# ADD LINK32 libgslcblas.a libgsl.a ole32.lib oleaut32.lib /nologo /dll /pdb:none /debug /machine:I386 /out:"d:\ai\orange\orange_d.pyd" /libpath:"$(PYTHON)/libs" /libpath:"$(GNUWIN32)/lib"
 # SUBTRACT LINK32 /verbose /nodefaultlib
 # Begin Special Build Tool
 SOURCE="$(InputPath)"
@@ -111,7 +110,7 @@ PostBuild_Cmds=copy obj\Debug\orange_d.lib ..\..\lib\orange_d.lib
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /MT /W3 /GR /GX /O2 /I "include" /I "orange/ppp" /I "orange/px" /I "../external" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /YX /FD /Zm700 /c
 # SUBTRACT BASE CPP /Fr
-# ADD CPP /nologo /MD /W3 /GR /GX /O2 /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
+# ADD CPP /nologo /MD /W3 /GR /GX /Zi /Od /I "../include" /I "ppp" /I "px" /I "$(PYTHON)\include" /I "$(GNUWIN32)\include" /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /D "_MBCS" /D "_USRDLL" /D "ORANGE_EXPORTS" /D "LINK_C45" /FD /Zm700 /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
@@ -443,8 +442,7 @@ SOURCE=.\lib_kernel.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD CPP /O2
-# SUBTRACT CPP /Z<none>
+# ADD CPP /Zi /Od
 
 !ENDIF 
 
@@ -707,7 +705,7 @@ SOURCE=.\vars.cpp
 
 !ELSEIF  "$(CFG)" == "Orange - Win32 Release_Debug"
 
-# ADD CPP /Zi
+# ADD CPP /Zi /Od
 
 !ENDIF 
 

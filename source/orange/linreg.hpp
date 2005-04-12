@@ -25,6 +25,7 @@
 #include "vars.hpp"
 #include "learn.hpp"
 #include "classify.hpp"
+#include "transval.hpp"
 
 #include "r_imports.hpp"
 
@@ -36,13 +37,13 @@ class ORANGE_API TLinRegLearner : public TLearner
 public:
   __REGISTER_CLASS
 
-  int multinomialTreatment; //P treatment of multinomial variables (0 ignore, 1 treat as ordinal, 2 report an error)
   int iterativeSelection; //P 0 all, 1 forward, 2 backward, 3 stepwise
   float Fin; //P significance limit for an attribute to enter the model
   float Fout; //P significance limit for the attribute to be removed
   int maxIterations; //P maximal number of iterations for stepwise
 
   PImputerConstructor imputerConstructor; //P if present, it constructs an imputer for unknown values
+  PDomainContinuizer continuizer; //P if present, specifies the way in which discrete attributes are converted to continuous
 
   TLinRegLearner();
 

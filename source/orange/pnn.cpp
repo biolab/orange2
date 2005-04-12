@@ -72,6 +72,37 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
 }
 
 
+TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow)
+: TClassifierFD(domain),
+  dimensions(dim),
+  offsets(off),
+  normalizers(norm),
+  bases((double *)memcpy(new double[domain->attributes->size()*dim], ba, domain->attributes->size()*dim*sizeof(double))),
+  nExamples(nEx),
+  projections(new double[dim*nEx]),
+  exponent2(e2)
+{
+  const int nAttrs = domain->attributes->size();
+  TFloatList::const_iterator offi, offb = offsets->begin(), offe = offsets->end();
+  TFloatList::const_iterator nori, norb = normalizers->begin(), nore = normalizers->end();
+
+  double *pi, *pe;
+  for(pi = projections, pe = projections + (dim+1)*nEx; pi != pe; *(pi++) = 0.0);
+
+  for(double *example = examples, *examplee = examples + nEx*dimensions, *projection = projections; example != examplee; projection = pe, example += nOrigRow) {
+    offi = offb;
+    nori = norb;
+    pe = projection + dimensions;
+    double *base = bases;
+    const_ITERATE(vector<int>, ai, attrIndices) {
+      double aval = (example[*ai] - *(offi++)) / *(nori++);
+      for(pi = projection; pi != pe; *(pi++) += aval * *(base++));
+    }
+    *pe++ = example[nOrigRow-1]; // copy the class
+  }
+}
+
+
 TPNN::TPNN(const TPNN &old)
 : TClassifierFD(old),
   dimensions(0),
@@ -128,6 +159,9 @@ TPNN::~TPNN()
 
   if (projections)
     delete projections;
+
+  if (radii)
+    delete radii;
 }
 
 
@@ -208,10 +242,12 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
     raiseError("the number of used attributes, x- and y-anchors coordinates mismatch");
 
   bases = new double[2*domain->attributes->size()];
-  double *bi;
+  radii = new double[domain->attributes->size()];
+
+  double *bi, *radiii;
   TFloatList::const_iterator bxi(basesX->begin()), bxe(basesX->end());
   TFloatList::const_iterator byi(basesY->begin());
-  for(bi = bases; bxi != bxe; *bi++ = *bxi++, *bi++ = *byi++);
+  for(radiii = radii, bi = bases; bxi != bxe; *radiii++ = sqrt(sqr(*bxi) + sqr(*byi)), *bi++ = *bxi++, *bi++ = *byi++);
 
   const TDomain &gendomain = egen->domain.getReference();
   vector<int> attrIdx;
@@ -257,6 +293,8 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
     TFloatList::const_iterator offi(offsets->begin());
     TFloatList::const_iterator nori(normalizers->begin());
     double *base = bases;
+    radiii = radii;
+    double sumex = 0.0;
     ITERATE(vector<int>, ai, attrIdx) {
       const TValue &val = (*ei)[*ai];
       if (val.isSpecial())
@@ -266,6 +304,11 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
       double aval = ((val.varType == TValue::INTVAR ? float(val.intV) : val.floatV) - *offi++) / *nori++;
       pi[0] += aval * *base++;
       pi[1] += aval * *base++;
+      sumex += aval * *radiii++;
+    }
+    if (sumex > 0.0) {
+      pi[0] /= sumex;
+      pi[1] /= sumex;
     }
 
     TValue &cval = (*ei)[classIdx];

@@ -33,8 +33,7 @@
 #include "r_imports.hpp"
 
 TLinRegLearner::TLinRegLearner()
-: multinomialTreatment(0),
-  iterativeSelection(0),
+: iterativeSelection(0),
   Fin(float(0.05)),
   Fout(float(0.1)),
   maxIterations(60000)
@@ -280,11 +279,11 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
     PExampleGenerator gen = imputer ? imputer->call(origen, weightID) : origen;
 
     if (gen->domain->hasDiscreteAttributes(true)) {
-      PDomain regDomain = TDomainContinuizer()(gen, weightID);
+      PDomain regDomain = continuizer ? continuizer->call(gen, weightID) : PDomain(TDomainContinuizer()(gen, weightID));
       gen = mlnew TExampleTable(regDomain, gen);
     }
 
-    exampleGenerator2r(gen, weightID, "1A/Cw", multinomialTreatment, X, y, w, rows, columns);
+    exampleGenerator2r(gen, weightID, "1A/Cw", 1 /* multiTreatment */, X, y, w, rows, columns);
 
     if (columns==1)
       raiseError("no useful attributes");

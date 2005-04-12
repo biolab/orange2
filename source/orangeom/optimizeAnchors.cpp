@@ -678,14 +678,24 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
           if (*pi > *largest)
             largest = pi;
         }
-        unsigned char color = floor(0.5 + nShades * *largest/sprobs);
+        unsigned char color = floor(0.5 + nShades * (*largest/sprobs*nClasses - 1) / (nClasses - 1));
         if (color >= nShades)
           color = nShades - 1;
+        else if (color < 0)
+          color = 0;
         color += nShades * (largest - probs);
 
-        const int ys = y+cell < ry ? cell : ry-y;
+/*        const int ys = y+cell < ry ? cell : ry-y;
         for(char *yy = bitmapmid + y*oneLine + x, *yye = yy + ys*oneLine; yy < yye; yy += oneLine)
           memset(yy, color, cell);
+*/
+        const int ys = y+cell < ry ? cell : ry-y;
+        char *yy = bitmapmid + y*oneLine+x;
+        memset(yy, color, cell);
+        yy += oneLine;
+        for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
+          *yy = yy[cell-1] = color;
+        memset(yy, color, cell);
       }
     }
 
