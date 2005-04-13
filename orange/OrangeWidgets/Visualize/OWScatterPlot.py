@@ -270,20 +270,8 @@ class OWScatterPlot(OWWidget):
 
         attributeNameOrder = self.clusterDlg.getEvaluatedAttributes(self.data)
 
-        if len(attributeNameOrder) > 1000:
-            self.warning("Since there were too many attributes, all but best 1000 attributes were removed.")
-            attributeNameOrder = attributeNameOrder[:1000]
-
-        projections = []
-        for i in range(len(attributeNameOrder)):
-            for j in range(i+1, len(attributeNameOrder)):
-                projections.append((attributeNameOrder[i][0] + attributeNameOrder[j][0], attributeNameOrder[i][1], attributeNameOrder[j][1]))
-
-        # sort projections using heuristics
-        projections.sort()
-        projections.reverse()
-
-        self.graph.getOptimalClusters(projections, self.clusterDlg.addResult)
+        # evaluate projections
+        self.graph.getOptimalClusters(attributeNameOrder, self.clusterDlg.addResult)
 
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
