@@ -17,6 +17,7 @@ from OWClusterOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom, DESolver
 
+
 class RadvizSolver(DESolver.DESolver):
     def __init__(self, radvizWidget, dim, pop):
         DESolver.DESolver.__init__(self, dim, pop) # superclass
@@ -255,9 +256,11 @@ class OWRadviz(OWWidget):
         
         # ####################################
         # K-NN OPTIMIZATION functionality
+        self.optimizationDlg.useHeuristicToFindAttributeOrderCheck.show()
+        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
-        self.connect(self.optimizationDlg.startOptimizationButton , SIGNAL("clicked()"), self.optimizeSeparation)
+        
 
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
@@ -348,8 +351,6 @@ class OWRadviz(OWWidget):
         if not self.data.domain.classVar:
             QMessageBox.critical( None, "VizRank Dialog", 'Projections can be evaluated only in datasets with a class value.', QMessageBox.Ok)
             return
-        
-        listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
 
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(listOfAttributes)
@@ -357,29 +358,46 @@ class OWRadviz(OWWidget):
         
         if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
         else: minLen = 3
-
+        
         self.optimizationDlg.clearResults()
-
-        possibilities = 0
-        for i in range(minLen, maxLen+1):
-            possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
-            
-        self.graph.totalPossibilities = possibilities
-        self.graph.triedPossibilities = 0
-    
-        if self.graph.totalPossibilities > 20000:
-            self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
-        
         self.optimizationDlg.disableControls()
+
+        # ################################################################################################
+        # use the heuristic to test only most interesting attribute orders
+        if self.optimizationDlg.useHeuristicToFindAttributeOrders:
+            self.optimizationDlg.setStatusBarText("Evaluating attributes...")
+            contAttrs = []
+            for attr in self.data.domain.attributes:
+                if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
+            attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix(), contAttrs)
+
+            self.optimizationDlg.setStatusBarText("")
+
+            self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, self.optimizationDlg.addResult)
+
+        # ################################################################################################
+        # evaluate all attribute orders
+        else:
+            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+            possibilities = 0
+            for i in range(minLen, maxLen+1):
+                possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+                
+            self.graph.totalPossibilities = possibilities
+            self.graph.triedPossibilities = 0
         
-        try:
-            self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
-        except:
-            type, val, traceback = sys.exc_info()
-            sys.excepthook(type, val, traceback)  # print the exception
+            if self.graph.totalPossibilities > 200000:
+                self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+            
+            try:
+                self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
+            except:
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
+        self.showSelectedAttributes()
     
 
     # ################################################################################################
@@ -425,6 +443,7 @@ class OWRadviz(OWWidget):
 
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
+        self.showSelectedAttributes()
    
 
     # ################################################################################################
@@ -437,12 +456,14 @@ class OWRadviz(OWWidget):
                 numOfBestAttrs = int(str(text))
             else: numOfBestAttrs = 10000
         self.optimizationDlg.disableControls()
+
         acc = self.graph.getProjectionQuality(self.getShownAttributeList())[0]
-        # try to find a better separation than the one that is currently shown
+
         self.graph.optimizeGivenProjection(self.getShownAttributeList(), acc, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1, maxProjectionLen = maxProjLen)
+
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
-
+        self.showSelectedAttributes()
 
     # send signals with selected and unselected examples as two datasets
     def sendSelections(self):
@@ -753,10 +774,10 @@ class OWRadviz(OWWidget):
     # ###### SELECTION signal ################################
     # receive info about which attributes to show
     def selection(self, list):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
         if self.data == None or list == None: return
+        
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()        
 
         for attr in self.data.domain:
             if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
