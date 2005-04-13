@@ -278,8 +278,14 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
     }
   }
   else {
-    const_PITERATE(TVarList, ai, domain->attributes)
-      attrIdx.push_back(gendomain.getVarNum(*ai));
+    const_PITERATE(TVarList, ai, domain->attributes) 
+      if ((*ai)->varType != TValue::INTVAR)
+        raiseError("P2NN can only handle discrete and continuous attributes");
+      else {
+        attrIdx.push_back(gendomain.getVarNum(*ai));
+        offsets->push_back(0.0);
+        normalizers->push_back((*ai)->noOfValues());
+      }
   }
 
   const int &classIdx = gendomain.getVarNum(domain->classVar);

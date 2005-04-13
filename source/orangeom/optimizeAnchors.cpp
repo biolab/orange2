@@ -276,7 +276,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       // find the largest and the second largest not collocated with the largest
       double maxr = 0.0, maxr2 = 0.0;
       TPoint *anci_l = NULL, *anci_l2 = NULL;
-      for(anci = anc; anci != ance; anci++) {
+/*      for(anci = anc; anci != ance; anci++) {
         const double r = sqr(anci->x) + sqr(anci->y);
         if (r > maxr) {
           maxr2 = maxr;
@@ -289,6 +289,16 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
           anci_l2 = anci;
         }
       }
+*/
+      for(anci = anc; anci != ance; anci++) {
+        const double r = sqr(anci->x) + sqr(anci->y);
+        if (r > maxr) {
+          maxr = r;
+          anci_l = anci;
+        }
+      }
+      anci_l = anc;
+      anci_l2 = anc+1;
 
       if (anci_l2) {
         maxr = maxr > 0.0 ? sqrt(maxr) : 1.0;
@@ -646,19 +656,20 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 #pragma warning (disable: 4305 4309)
 #endif
 
-PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, cx, cy, res) -> bitmap as string")
+PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_VARARGS, "(P2NN, rx, ry, cellsize, scaleFactor) -> bitmap as string")
 {
   PyTRY
     PyObject *cls;
     int rx, ry, cell;
-    if (!PyArg_ParseTuple(args, "Oiii:potentialsBitmap", &cls, &rx, &ry, &cell))
+    double scaleFactor;
+    if (!PyArg_ParseTuple(args, "Oiiid:potentialsBitmap", &cls, &rx, &ry, &cell, &scaleFactor))
       return PYNULL;
 
     TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
     const int nClasses = tp2nn->classVar->noOfValues();
     const int nShades = 255/nClasses;
 
-    const int oneLine = 2*rx;
+    const int oneLine = (2*rx + 3) & 0xfffffffc;
     const int bitmapSize = oneLine * 2*ry;
     char *bitmap = new char[bitmapSize];
     memset(bitmap, 255, bitmapSize);
@@ -666,10 +677,14 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
 
     float *probs = new float[nClasses], *pe = probs + nClasses;
 
+    const double rxbysf = rx*scaleFactor;
     for(int y = -ry+1; y < ry-1; y+=cell) {
-      double realy = double(y)/ry;
-      for(int xe = ceil(rx * sqrt(1.0 - realy*realy)), x = -xe; x < xe; x+=cell) {
-        double realx = double(x)/rx;
+      const double yry = double(y)/ry;
+      const double realy = yry/scaleFactor;
+      int xe = ceil(rx * sqrt(1.0 - yry*yry));
+      xe += cell - xe % cell;
+      for(int x = -xe; x < xe; x+=cell) {
+        const double realx = x/rxbysf;
         tp2nn->classDistribution(realx, -realy, probs, nClasses);
         double sprobs = *probs;
         float *largest = probs;
@@ -684,8 +699,8 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
         else if (color < 0)
           color = 0;
         color += nShades * (largest - probs);
-
-/*        const int ys = y+cell < ry ? cell : ry-y;
+/*
+        const int ys = y+cell < ry ? cell : ry-y;
         for(char *yy = bitmapmid + y*oneLine + x, *yye = yy + ys*oneLine; yy < yye; yy += oneLine)
           memset(yy, color, cell);
 */
