@@ -814,7 +814,7 @@ class OWRadvizGraph(OWVisGraph):
                         addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities)
 
                     del validData, classList, selectedData, sum_i, tempList
-                del combinations, projs, combinations
+                del projs, combinations
                 
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
