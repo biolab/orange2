@@ -1,8 +1,8 @@
 from OWVisGraph import *
 from copy import copy, deepcopy
-import time
+import time, math
 from OWkNNOptimization import *
-import math
+import OWVisFuncts
 #import orange
 
 # ####################################################################
@@ -706,6 +706,111 @@ class OWPolyvizGraph(OWVisGraph):
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.polyvizWidget.progressBarFinished()
+
+
+    def getOptimalSeparationUsingHeuristicSearch(self, attributes, attrsByClass, minLength, maxLength, attrReverseDict, addResultFunct):
+        # variables and domain for the table
+        xVar = orange.FloatVariable("xVar")
+        yVar = orange.FloatVariable("yVar")
+        domain = orange.Domain([xVar, yVar, self.rawdata.domain.classVar])
+        self.triedPossibilities = 0
+
+        # replace attribute names with indices in domain - faster searching
+        attributes = [self.attributeNameIndex[name] for name in attributes]
+        attrsByClass = [[self.attributeNameIndex[name] for name in arr] for arr in attrsByClass]
+        if attrReverseDict != None:
+            d = {}
+            for key in attrReverseDict.keys():
+                d[self.attributeNameIndex[key]] = attrReverseDict[key]
+            attrReverseDict = d
+
+        numClasses = len(self.rawdata.domain.classVar.values)
+        anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(minLength, maxLength+1)]
+        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        allAttrReverse = {}    # dictionary where keys are the number of attributes and the values are dictionaries with all reverse orders for this number of attributes
+        startTime = time.time()
+
+        for z in range(minLength-1, len(attributes)):
+            for u in range(minLength-1, maxLength):
+                projs = OWVisFuncts.createProjections(numClasses, u+1)
+                attrListLength = u+1
+                
+                combinations = OWVisFuncts.combinations(range(z), u)
+
+                if attrReverseDict == None:
+                    if not allAttrReverse.has_key(attrListLength):
+                        allAttrReverse[attrListLength] = self.createAttrReverseList(attrListLength)
+                    attrReverse = allAttrReverse[attrListLength]
+
+                XAnchors = anchorList[u+1-minLength][0]
+                YAnchors = anchorList[u+1-minLength][1]
+                
+                for comb in combinations:
+                    comb = comb + [z]  # remove the value of this attribute subset
+                    counts = [0 for i in range(numClasses)]
+                    for v in comb: counts[v%numClasses] += 1
+                    if min(counts) < (u+1) / numClasses: continue   # ignore combinations that don't have good attributes for all class values
+
+                    attrList = [[] for i in range(numClasses)]
+                    for v in comb:
+                        attrList[v%numClasses].append(attributes[v])
+
+                    attrs = [attributes[c] for c in comb]
+
+                    indPermutations = {}
+                    getPermutationList(attrs, [], indPermutations, attrReverseDict == None)
+
+                    if attrReverseDict != None: # if we received a dictionary, then we don't reverse attributes 
+                        attrReverse = [[attrReverseDict[attr] for attr in attrs]]
+
+                    permutationIndex = 0 # current permutation index
+                    totalPermutations = len(indPermutations.values())*len(attrReverse)
+
+                    validData = self.getValidList(attrs)
+                    classList = Numeric.compress(validData, classListFull)
+                    selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrs))
+                    sum_i = self._getSum_i(selectedData)
+
+                    tempList = []
+
+                    # for every permutation compute how good it separates different classes
+                    for proj in projs:
+                        try:
+                            permutation = [attrList[i][j] for (i,j) in proj]
+
+                            for attrOrder in attrReverse:
+                                if self.kNNOptimization.isOptimizationCanceled():
+                                    secs = time.time() - startTime
+                                    self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                                    return
+                                permutationIndex += 1
+
+                                table = self.createProjectionAsExampleTable(permutation, attrOrder, validData, classList, sum_i, XAnchors, YAnchors, domain)
+                                accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                            
+                                # save the permutation
+                                if not self.kNNOptimization.onlyOnePerSubset:
+                                    addResultFunct(accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation], attrOrder)
+                                else:
+                                    tempList.append((accuracy, other_results, len(table), [self.attributeNames[val] for val in permutation], attrOrder))
+                                    
+                                self.triedPossibilities += 1
+                                self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z))
+                                del table
+                        except:
+                            pass
+                            
+                    if self.kNNOptimization.onlyOnePerSubset:
+                        (acc, other_results, lenTable, attrList, attrOrder) = self.kNNOptimization.getMaxFunct()(tempList)
+                        addResultFunct(acc, other_results, lenTable, attrList, self.triedPossibilities, attrOrder)
+
+                    del validData, classList, selectedData, sum_i, tempList
+                del combinations
+                
+        secs = time.time() - startTime
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.polyvizWidget.progressBarFinished()
+
 
     def optimizeGivenProjection(self, projection, attrReverseList, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
         dataSize = len(self.rawdata)

@@ -140,6 +140,7 @@ class OWPolyviz(OWWidget):
 
         # ####################################
         #K-NN OPTIMIZATION functionality
+        self.optimizationDlg.useHeuristicToFindAttributeOrderCheck.show()
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlgButton, SIGNAL("clicked()"), self.optimizationDlg.reshow)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
@@ -220,8 +221,7 @@ class OWPolyviz(OWWidget):
         
     def optimizeSeparation(self):
         if self.data == None: return
-        listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-
+        
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
@@ -229,34 +229,47 @@ class OWPolyviz(OWWidget):
         if self.rotateAttributes: reverseList = None
         else: reverseList = self.attributeReverse
         
-        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS:
-            minLen = maxLen
-        else:
-            minLen = 3
+        if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
+        else: minLen = 3
 
         self.optimizationDlg.clearResults()
-
-        possibilities = 0
-        for i in range(minLen, maxLen+1):
-            possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
-
-            if not self.rotateAttributes: possibilities += combinations(i, len(listOfAttributes)) * fact(i-1)
-            else: possibilities += combinations(i, len(listOfAttributes)) * fact(i-1) * pow(2, i)/2
-
-        self.graph.totalPossibilities = int(possibilities)
-        self.graph.triedPossibilities = 0
-
-            
-        if self.graph.totalPossibilities > 200000:
-            self.warning("There are %s possible polyviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
-            
         self.optimizationDlg.disableControls()
 
-        try:
-            self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
-        except:
-            type, val, traceback = sys.exc_info()
-            sys.excepthook(type, val, traceback)  # print the exception
+        # ################################################################################################
+        # use the heuristic to test only most interesting attribute orders
+        if self.optimizationDlg.useHeuristicToFindAttributeOrders:
+            self.optimizationDlg.setStatusBarText("Evaluating attributes...")
+            contAttrs = []
+            for attr in self.data.domain.attributes:
+                if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
+            attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix(), contAttrs)
+
+            self.optimizationDlg.setStatusBarText("")
+
+            self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
+
+        # ################################################################################################
+        # evaluate all attribute orders
+        else:
+            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+            possibilities = 0
+            for i in range(minLen, maxLen+1):
+                possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+
+                if not self.rotateAttributes: possibilities += combinations(i, len(listOfAttributes)) * fact(i-1)
+                else: possibilities += combinations(i, len(listOfAttributes)) * fact(i-1) * pow(2, i)/2
+
+            self.graph.totalPossibilities = int(possibilities)
+            self.graph.triedPossibilities = 0
+
+            if self.graph.totalPossibilities > 200000:
+                self.warning("There are %s possible polyviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+
+            try:
+                self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
+            except:
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
