@@ -35,6 +35,7 @@ public:
   int dimensions; //PR the number of dimensions
   PFloatList offsets; //P offsets to subtract from the attribute values
   PFloatList normalizers; //P number to divide the values by
+  bool normalizeExamples; //P if true, attribute values are divided to sum up to 1
   double *bases; // eg x1, y1,  x2, y2,  x3, y3, ... x_dimensions, y_dimensions
   double *radii; // eg sqrt(x1^2+y1^2) ...
 
@@ -43,10 +44,10 @@ public:
 
   float exponent2; //P the exponent/2 (eg. -1 for falling with sqr distance)
 
-  TPNN(PDomain domain, const float &exponent2 = -1);
-  TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &exponent2 = -1);
-  TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const float &exponent2 = -1.0);
-  TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow);
+  TPNN(PDomain domain, const float &exponent2 = -1, const bool normalizeExamples = true);
+  TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &exponent2 = -1, const bool normalizeExamples = true);
+  TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const float &exponent2 = -1.0, const bool normalizeExamples = true);
+  TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow, const bool normalizeExamples = true);
   TPNN(const TPNN &);
   TPNN &operator =(const TPNN &);
 
@@ -63,8 +64,8 @@ class ORANGE_API TP2NN : public TPNN {
 public:
   __REGISTER_CLASS
 
-  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &exponent2 = -1.0);
-  TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const float &exponent2 = -1.0);
+  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &exponent2 = -1.0, const bool normalizeExamples = true);
+  TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const float &exponent2 = -1.0, const bool normalizeExamples = true);
 
   virtual PDistribution classDistribution(const TExample &);
   virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;

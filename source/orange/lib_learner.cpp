@@ -682,7 +682,8 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
     PDomain domain;
     PExampleGenerator examples;
     PyObject *pybases;
-    if (!PyArg_ParseTuple(args, "O&O|O&:P2NN", pt_ExampleGenerator, &examples, &pybases, cc_Domain, &domain))
+    int normalizeExamples = 1;
+    if (!PyArg_ParseTuple(args, "O&O|iO&:P2NN", pt_ExampleGenerator, &examples, &pybases, &normalizeExamples, cc_Domain, &domain))
       return PYNULL;
 
     if (!domain)
@@ -709,7 +710,7 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
         return PYNULL;
       }
 
-    return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY), type);
+    return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY, -1.0, normalizeExamples != 0), type);
 
   PyCATCH;
 }

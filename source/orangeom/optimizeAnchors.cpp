@@ -136,7 +136,7 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
 }
 
      
-PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0]) -> new-anchors")
+PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
     PyObject *scaledData;
@@ -145,8 +145,9 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     PyObject *pyattrIndices;
     double attractG = 1.0, repelG = -1.0;
     int steps = 1;
+    int normalizeExamples = 1;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps))
+    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps, &normalizeExamples))
       return NULL;
 
     double *Xi, *X;
@@ -168,20 +169,25 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
 
     while (steps--) {
-      for(anci = anc, radi = rad; anci != ance; anci++, radi++)
-        *radi = sqrt(sqr(anci->x) + sqr(anci->y));
+      if (normalizeExamples) {
+        for(anci = anc, radi = rad; anci != ance; anci++, radi++)
+          *radi = sqrt(sqr(anci->x) + sqr(anci->y));
+      }
 
       for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
         ptsi->x = ptsi->y = *sumi = 0.0;
         for(anci = anc, radi = rad; anci != ance; anci++, Xi++, radi++) {
           ptsi->x += *Xi * anci->x;
           ptsi->y += *Xi * anci->y;
-          *sumi += *Xi * *radi;
+          if (normalizeExamples)
+            *sumi += *Xi * *radi;
         }
-        if (*sumi == 0.0)
-          *sumi = 1.0;
-        ptsi->x /= *sumi;
-        ptsi->y /= *sumi;
+        if (normalizeExamples) {
+          if (*sumi == 0.0)
+            *sumi = 1.0;
+          ptsi->x /= *sumi;
+          ptsi->y /= *sumi;
+        }
       }
 
 
@@ -220,12 +226,14 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
           K[v].y -= druvy;
         }
 
-        K[u].x /= sum[u];
-        K[u].y /= sum[u];
+        if (normalizeExamples) {
+          K[u].x /= sum[u];
+          K[u].y /= sum[u];
+        }
 
         double *Xu = X + u * nAttrs;
         for(i = 0; i < nAttrs; i++, Xu++) {
-          double ex = *Xu/sum[u];
+          double ex = normalizeExamples ? *Xu/sum[u] : *Xu;
           danc[i].x -= K[u].x * ex;
           danc[i].y -= K[u].y * ex;
         }
@@ -316,9 +324,6 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         }
       }
     }
-
-    // Rotating and mirroring (largest up, second largest right)
-
 
     anchors = PyList_New(nAttrs);
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)

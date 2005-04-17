@@ -25,11 +25,12 @@
 
 #include "pnn.ppp"
 
-TPNN::TPNN(PDomain domain, const float &e2)
+TPNN::TPNN(PDomain domain, const float &e2, const bool normalize)
 : TClassifierFD(domain, true),
   dimensions(0),
   offsets(),
   normalizers(),
+  normalizeExamples(normalize),
   bases(NULL),
   nExamples(0),
   projections(NULL),
@@ -37,16 +38,18 @@ TPNN::TPNN(PDomain domain, const float &e2)
 {}
 
 
-TPNN::TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &e2)
+TPNN::TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &e2, const bool)
 { raiseError("not implemented yet"); }
 
 
-TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2)
+TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const bool normalize)
 : TClassifierFD(domain),
   dimensions(dim),
   offsets(off),
   normalizers(norm),
+  normalizeExamples(normalize),
   bases((double *)memcpy(new double[domain->attributes->size()*dim], ba, domain->attributes->size()*dim*sizeof(double))),
+  radii(new double[domain->attributes->size()]),
   nExamples(nEx),
   projections(new double[dim*nEx]),
   exponent2(e2)
@@ -55,6 +58,11 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   TFloatList::const_iterator offi, offb = offsets->begin(), offe = offsets->end();
   TFloatList::const_iterator nori, norb = normalizers->begin(), nore = normalizers->end();
 
+  for(double *base = bases, *basee = base + nAttrs * dim, *radius = radii; base != basee; radius++) {
+    for(int d = dim; d--; *radius += sqr(*base++));
+    *radius = sqrt(*radius);
+  }
+  
   double *pi, *pe;
   for(pi = projections, pe = projections + (dim+1)*nEx; pi != pe; *(pi++) = 0.0);
 
@@ -62,22 +70,29 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
     offi = offb;
     nori = norb;
     pe = projection + dimensions;
-    double *base = bases;
+    double *base = bases, *radius = radii;
+    double asum = 0.0;
     for(double *ee = example + nAttrs; example != ee; example) {
       double aval = (*(example++) - *(offi++)) / *(nori++);
       for(pi = projection; pi != pe; *(pi++) += aval * *(base++));
+      if (normalizeExamples)
+        asum += aval * *radius++;
     }
+    if (normalizeExamples && (asum > 0.0))
+      for(pi = projection; pi != pe; *(pi++) /= asum);
     *pe++ = *example++; // copy the class
   }
 }
 
 
-TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow)
+TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow, const bool normalize)
 : TClassifierFD(domain),
   dimensions(dim),
   offsets(off),
   normalizers(norm),
+  normalizeExamples(normalize),
   bases((double *)memcpy(new double[domain->attributes->size()*dim], ba, domain->attributes->size()*dim*sizeof(double))),
+  radii(new double[domain->attributes->size()]),
   nExamples(nEx),
   projections(new double[dim*nEx]),
   exponent2(e2)
@@ -86,6 +101,11 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   TFloatList::const_iterator offi, offb = offsets->begin(), offe = offsets->end();
   TFloatList::const_iterator nori, norb = normalizers->begin(), nore = normalizers->end();
 
+  for(double *base = bases, *basee = base + nAttrs * dim, *radiii = radii; base != basee; radii++) {
+    for(int d = dim; d--; *radii += sqr(*base++));
+    *radii = sqrt(*radii);
+  }
+  
   double *pi, *pe;
   for(pi = projections, pe = projections + (dim+1)*nEx; pi != pe; *(pi++) = 0.0);
 
@@ -93,11 +113,16 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
     offi = offb;
     nori = norb;
     pe = projection + dimensions;
-    double *base = bases;
+    double *base = bases, *radius = radii;
+    double asum = 0.0;
     const_ITERATE(vector<int>, ai, attrIndices) {
       double aval = (example[*ai] - *(offi++)) / *(nori++);
       for(pi = projection; pi != pe; *(pi++) += aval * *(base++));
+      if (normalizeExamples)
+        asum += aval * *radius++;
     }
+    if (normalizeExamples && (asum > 0.0))
+      for(pi = projection; pi != pe; *(pi++) /= asum);
     *pe++ = example[nOrigRow-1]; // copy the class
   }
 }
@@ -107,6 +132,7 @@ TPNN::TPNN(const TPNN &old)
 : TClassifierFD(old),
   dimensions(0),
   bases(NULL),
+  radii(NULL),
   nExamples(0),
   projections(NULL)
 { *this = old; }
@@ -117,22 +143,19 @@ TPNN &TPNN::operator =(const TPNN &old)
   if (bases)
     delete bases;
 
-  if (old.bases) {
-    const int nAttrs = domain->attributes->size();
-    bases = (double *)memcpy(new double[nAttrs*dimensions], old.bases, nAttrs*dimensions*sizeof(double));
-  }
-  else
-    bases = NULL;
+  const int nAttrs = domain->attributes->size();
 
+  if (bases)
+    delete bases;
+  bases = old.bases ? (double *)memcpy(new double[nAttrs*dimensions], old.bases, nAttrs*dimensions*sizeof(double)) : NULL;
+  
+  if (radii)
+    delete radii;
+  radii = old.radii ? (double *)memcpy(new double[nAttrs], old.radii, nAttrs*sizeof(double)) : NULL;
 
   if (projections)
     delete projections;
-
-  if (old.projections)
-    projections = (double *)memcpy(new double[nExamples*(dimensions+1)], old.projections, nExamples*(dimensions+1)*sizeof(double));
-  else
-    projections = NULL;
-
+  projections = old.projections ? (double *)memcpy(new double[nExamples*(dimensions+1)], old.projections, nExamples*(dimensions+1)*sizeof(double)) : NULL;
 
   if (old.offsets)
     offsets = new TFloatList(old.offsets.getReference());
@@ -144,9 +167,9 @@ TPNN &TPNN::operator =(const TPNN &old)
   else
     normalizers = PFloatList();
 
-
   nExamples = old.nExamples;
   exponent2 = old.exponent2;
+  normalizeExamples = old.normalizeExamples;
 
   return *this;
 }
@@ -173,6 +196,8 @@ void TPNN::project(const TExample &example, double *projection)
   for(pi = projection; pi != pe; *(pi++) = 0.0);
 
   double *base = bases;
+  double *radius = radii;
+  double asum = 0.0;
 
   for(TExample::const_iterator ei = example.begin(), ee = example.end(); ei != ee; ) {
     if ((*ei).isSpecial())
@@ -180,8 +205,13 @@ void TPNN::project(const TExample &example, double *projection)
 
     double aval = ((*(ei++)).floatV - *(offi++)) / *(nori++);
     for(pi = projection; pi != pe; *(pi++) += aval * *(base++));
+    if (normalizeExamples)
+      asum +=aval * *radius++;
   }
+  if (normalizeExamples)
+    for(pi = projection; pi != pe; *(pi++) /= asum);
 }
+
 
 PDistribution TPNN::classDistribution(const TExample &example)
 {
@@ -230,8 +260,8 @@ PDistribution TPNN::classDistribution(const TExample &example)
 
 
 
-TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &e2)
-: TPNN(domain, e2)
+TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &e2, const bool normalize)
+: TPNN(domain, e2, normalize)
 { 
   dimensions = 2;
   nExamples = egen->numberOfExamples();
@@ -312,7 +342,7 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
       pi[1] += aval * *base++;
       sumex += aval * *radiii++;
     }
-    if (sumex > 0.0) {
+    if (normalizeExamples && (sumex > 0.0)) {
       pi[0] /= sumex;
       pi[1] /= sumex;
     }
@@ -326,8 +356,8 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 }
 
 
-TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, const float &e2)
-: TPNN(domain, e2)
+TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, const float &e2, const bool normalize)
+: TPNN(domain, e2, normalize)
 {
   dimensions = 2;
   offsets = off;
@@ -341,6 +371,9 @@ TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList o
 
   bases = (double *)memcpy(new double[domain->attributes->size()*2], ba, domain->attributes->size()*2*sizeof(double));
 
+  double *radiii, *radiie, *bi;
+  for(radiii = radii, radiie = radii + nAttrs, bi = bases; radiii != radiie; *radiii++ = sqrt(sqr(*bi++) + sqr(*bi++)));
+
   projections = new double[2*nEx];
   double *pi, *pe;
   for(pi = projections, pe = projections + 3*nEx; pi != pe; *(pi++) = 0.0);
@@ -350,10 +383,18 @@ TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList o
     offi = offb;
     nori = norb;
     double *base = bases;
+    radiii = radii;
+    double sumex = 0.0;
     for(double *ee = example + nAttrs; example != ee; example) {
       double aval = (*(example++) - *(offi++)) / *(nori++);
       pi[0] += aval * *(base++);
       pi[1] += aval * *(base++);
+      if (normalizeExamples)
+        sumex += aval * *radiii++;
+    }
+    if (normalizeExamples && (sumex > 0.0)) {
+      pi[0] /= sumex;
+      pi[1] /= sumex;
     }
     pi[2] = *example++;
   }
@@ -365,7 +406,8 @@ void TP2NN::project(const TExample &example, double &x, double &y)
 {
   TFloatList::const_iterator offi = offsets->begin(), nori = normalizers->begin();
   x = y = 0.0;
-  double *base = bases;
+  double *base = bases, *radius = radii;
+  double sumex = 0.0;
 
   TExample::const_iterator ei = example.begin();
   for(int attrs = example.domain->attributes->size(); attrs--; ) {
@@ -375,6 +417,12 @@ void TP2NN::project(const TExample &example, double &x, double &y)
     double aval = ((*(ei++)).floatV - *(offi++)) / *(nori++);
     x += aval * *(base++);
     y += aval * *(base++);
+    if (normalizeExamples)
+      sumex += aval * *radius++;
+  }
+  if (normalizeExamples) {
+    x /= sumex;
+    y /= sumex;
   }
 }
 
