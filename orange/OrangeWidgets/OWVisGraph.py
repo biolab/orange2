@@ -1,4 +1,6 @@
 #
+#
+#
 # OWVisGraph.py
 #
 # extension for the base graph class that is used in all visualization widgets
@@ -76,6 +78,7 @@ class OWVisGraph(OWGraph):
         self.showFilledSymbols = 1
         self.scaleFactor = 1.0              # used in some visualizations to "stretch" the data - see radviz, polviz
         self.globalValueScaling = 0         # do we want to scale data globally
+        self.scalingByVariance = 0          
         self.setCanvasColor(QColor(Qt.white.name()))
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
         self.ypos = 0
@@ -219,16 +222,19 @@ class OWVisGraph(OWGraph):
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
                 self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
             else:
-                if self.attrValues.has_key(attr.name):          # keep the old min, max values
-                    min, max = self.attrValues[attr.name]
-                elif self.globalValueScaling == 0:
-                    min = self.domainDataStat[index].min
-                    max = self.domainDataStat[index].max
-                diff = float(max - min)
-                if diff == 0.0: diff = 1.0    # prevent division by zero
-                self.attrValues[attr.name] = [min, max]
+                if self.scalingByVariance:
+                    arr[index] = (arr[index] - self.domainDataStat[index].avg) / (5*self.domainDataStat[index].dev)
+                else:
+                    if self.attrValues.has_key(attr.name):          # keep the old min, max values
+                        min, max = self.attrValues[attr.name]
+                    elif self.globalValueScaling == 0:
+                        min = self.domainDataStat[index].min
+                        max = self.domainDataStat[index].max
+                    diff = float(max - min)
+                    if diff == 0.0: diff = 1.0    # prevent division by zero
+                    self.attrValues[attr.name] = [min, max]
 
-                arr[index] = (arr[index] - float(min)) / diff
+                    arr[index] = (arr[index] - float(min)) / diff
 
                 if self.jitterContinuous:
                     line = arr[index].copy() + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))

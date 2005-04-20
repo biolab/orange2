@@ -17,7 +17,6 @@ from OWClusterOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom, DESolver
 
-
 class RadvizSolver(DESolver.DESolver):
     def __init__(self, radvizWidget, dim, pop):
         DESolver.DESolver.__init__(self, dim, pop) # superclass
@@ -48,7 +47,8 @@ class FreeVizClassifier(orange.Classifier):
         self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
 
         self.radvizWidget.optimize()
-        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData)
+        domain = orange.Domain([a[2] for a in self.radvizWidget.graph.anchorData]+[self.radvizWidget.data.domain.classVar], self.radvizWidget.data.domain)
+        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData, self.radvizWidget.normalizeExamples, domain)
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):
@@ -79,11 +79,11 @@ class OWRadviz(OWWidget):
     settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
                     "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName",
-                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps", "lockToCircle"]
+                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps", "lockToCircle", "valueScalingType", "showProbabilities"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
-    scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
-    scaleFactorList = [str(x) for x in scaleFactorNums]
+    scaleFactorNums = [0.0, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
+    scaleFactorList = ["to fit"] + [str(x) for x in scaleFactorNums[1:]]
         
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
@@ -114,10 +114,13 @@ class OWRadviz(OWWidget):
         self.showAnchors = 1
         self.lockToCircle = 0
         self.showOptimizationSteps = 0
-        self.globalValueScaling = 0
+        self.valueScalingType = 0
         self.jitterSize = 1
         self.jitterContinuous = 0
         self.scaleFactor = 1.0
+        self.scaleFactorItem = 1
+        self.normalizeExamples = 1
+        self.showProbabilities = 1
         self.showLegend = 1
         self.showFilledSymbols = 1
         self.optimizedDrawing = 1
@@ -191,17 +194,22 @@ class OWRadviz(OWWidget):
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
         OWGUI.comboBoxWithCaption(box, self, "jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
         OWGUI.checkBox(box, self, 'jitterContinuous', 'Jitter continuous attributes', callback = self.setJitterCont, tooltip = "Does jittering apply also on continuous attributes?")
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.updateValues, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+
+        box2a = OWGUI.widgetBox(self.SettingsTab, self, " Scaling")
+        OWGUI.comboBoxWithCaption(box2a, self, "scaleFactorItem", 'Scale point position by: ', callback = self.setPointScaling, items = self.scaleFactorList)
+        OWGUI.comboBoxWithCaption(box2a, self, "valueScalingType", 'Scale values by: ', callback = self.setValueScaling, items = ["attribute range", "global range", "attribute variance"])
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
         
+        OWGUI.checkBox(box3, self, 'normalizeExamples', 'Normalize examples', callback = self.updateValues)
         OWGUI.checkBox(box3, self, 'showLegend', 'Show legend', callback = self.updateValues)
-        OWGUI.checkBox(box3, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling)
         OWGUI.checkBox(box3, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
         OWGUI.checkBox(box3, self, 'useDifferentSymbols', 'Use different symbols', callback = self.updateValues, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'useDifferentColors', 'Use different colors', callback = self.updateValues, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box3, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
         OWGUI.checkBox(box3, self, 'showClusters', 'Show clusters', callback = self.updateValues, tooltip = "Show a line boundary around a significant cluster")
+        OWGUI.checkBox(box3, self, 'showProbabilities', 'Show probabilities', callback = self.updateValues, tooltip = "Show a background image with class probabilities")
+        
 
         box2 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
         OWGUI.comboBox(box2, self, "tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
@@ -261,7 +269,6 @@ class OWRadviz(OWWidget):
         self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.connect(self.optimizationDlg.resultList, SIGNAL("selectionChanged()"),self.showSelectedAttributes)
         
-
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
@@ -279,6 +286,7 @@ class OWRadviz(OWWidget):
         
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
+        self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
         self.send("FreeViz learner", self.freeVizLearner)
 
@@ -351,14 +359,14 @@ class OWRadviz(OWWidget):
         if not self.data.domain.classVar:
             QMessageBox.critical( None, "VizRank Dialog", 'Projections can be evaluated only in datasets with a class value.', QMessageBox.Ok)
             return
-
+        
         text = str(self.optimizationDlg.attributeCountCombo.currentText())
         if text == "ALL": maxLen = len(listOfAttributes)
         else:             maxLen = int(text)
         
         if self.optimizationDlg.getOptimizationType() == self.optimizationDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
         else: minLen = 3
-        
+
         self.optimizationDlg.clearResults()
         self.optimizationDlg.disableControls()
 
@@ -379,21 +387,21 @@ class OWRadviz(OWWidget):
         # evaluate all attribute orders
         else:
             listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-            possibilities = 0
-            for i in range(minLen, maxLen+1):
-                possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
-                
-            self.graph.totalPossibilities = possibilities
-            self.graph.triedPossibilities = 0
-        
-            if self.graph.totalPossibilities > 200000:
-                self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+        possibilities = 0
+        for i in range(minLen, maxLen+1):
+            possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
             
-            try:
-                self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
-            except:
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # print the exception
+        self.graph.totalPossibilities = possibilities
+        self.graph.triedPossibilities = 0
+    
+        if self.graph.totalPossibilities > 200000:
+            self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+        
+        try:
+            self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
@@ -520,11 +528,10 @@ class OWRadviz(OWWidget):
         noChange = 0
         while noChange < 5:
             for i in range(iterations):
-                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps)
+                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps, self.normalizeExamples)
                 self.energyLabel.setText("Energy: %.3f" % E)
                 self.energyLabel.repaint()
-                self.graph.updateData(attrList)
-                self.graph.repaint()
+                self.updateGraph()
                 if singleStep:
                     noChange = 5
                 else:
@@ -533,13 +540,6 @@ class OWRadviz(OWWidget):
                     else:
                         minE = E
                         noChange = 0
-##                imagebmp, palette = orangeom.potentialsBitmap(orange.P2NN(self.graph.rawdata, self.graph.anchorData), 3, 3, 100)
-##                print [ord(x) for x in palette]
-##                palette = [qRgb(ord(palette[i]), ord(palette[i+1]), ord(palette[i+2])) for i in range(0, 255, 3)]
-##                image = QImage(imagebmp, 300, 300, 8, palette, 256, QImage.LittleEndian)
-##                pm = QPixmap()
-##                pm.convertFromImage(image)
-##                self.setBackgroundPixmap(pm)
 
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 100)
@@ -727,6 +727,7 @@ class OWRadviz(OWWidget):
 
     def updateGraph(self, setAnchors = 0, *args):
         self.graph.updateData(self.getShownAttributeList(), setAnchors)
+        self.graph.potRx = -1
         self.graph.update()
         self.repaint()
 
@@ -777,7 +778,7 @@ class OWRadviz(OWWidget):
         if self.data == None or list == None: return
         
         self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()        
+        self.hiddenAttribsLB.clear()
 
         for attr in self.data.domain:
             if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
@@ -805,7 +806,7 @@ class OWRadviz(OWWidget):
         self.graph.updateSettings(optimizedDrawing = self.optimizedDrawing, useDifferentSymbols = self.useDifferentSymbols, useDifferentColors = self.useDifferentColors)
         self.graph.updateSettings(showFilledSymbols = self.showFilledSymbols, tooltipKind = self.tooltipKind, tooltipValue = self.tooltipValue)
         self.graph.updateSettings(showLegend = self.showLegend, pointWidth = self.pointWidth, scaleFactor = self.scaleFactor)
-        self.graph.updateSettings(hideRadius = self.hideRadius, showAnchors = self.showAnchors)
+        self.graph.updateSettings(hideRadius = self.hideRadius, showAnchors = self.showAnchors, normalizeExamples = self.normalizeExamples, showProbabilities = self.showProbabilities)
         self.updateGraph()
 
     def setJitteringSize(self):
@@ -818,11 +819,23 @@ class OWRadviz(OWWidget):
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setGlobalValueScaling(self):
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        self.graph.globalValueScaling = self.globalValueScaling
+    def setPointScaling(self):
+        self.scaleFactor = float(self.scaleFactorNums[self.scaleFactorItem])
+        self.updateValues()
+        
+    def setValueScaling(self):
+        self.graph.insideColors = self.graph.clusterClosure = None
+        if self.valueScalingType == 0:
+            self.graph.globalValueScaling = self.graph.scalingByVariance = 0
+        elif self.valueScalingType == 1:
+            self.graph.globalValueScaling = 1
+            self.graph.scalingByVariance = 0
+        else:
+            self.graph.globalValueScaling = 0
+            self.graph.scalingByVariance = 1
         self.graph.setData(self.data)
         self.updateGraph()
+        
 
     def setAutoSendSelection(self):
         if self.autoSendSelection:

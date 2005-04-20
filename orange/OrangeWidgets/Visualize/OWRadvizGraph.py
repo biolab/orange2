@@ -40,10 +40,10 @@ def buildPermutationIndexList(elements, tempPerm, currList):
 
 # factoriela
 def fact(i):
-    ret = 1
-    for j in range(2, i+1): ret*= j
-    return ret
-
+        ret = 1
+        for j in range(2, i+1): ret*= j
+        return ret
+    
 # return number of combinations where we select "select" from "total"
 def combinations(select, total):
     return fact(total)/ (fact(total-select)*fact(select))
@@ -110,24 +110,40 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
 
+    def computePotentialsBitmap(self):
+        domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
+        classifier = orange.P2NN(self.rawdata, self.anchorData, self.normalizeExamples, domain)
+        rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
+        ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+        imagebmp, nShades = orangeom.potentialsBitmap(classifier, rx, ry, 3, self.trueScaleFactor)
+        classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+        colors = [(i.red(), i.green(), i.blue()) for i in classColors]
+#        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
+        palette = []
+        for cls in range(len(classifier.classVar.values)):
+           color = colors[cls]
+           towhite = [255-c for c in color]
+           for s in range(nShades):
+             si = 1-float(s)/nShades
+             palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+        palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+        image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
+        self.potentialsBmp = QPixmap()
+        self.potentialsBmp.convertFromImage(image)
+        self.potRx, self.potRy = rx, ry
+        self.potSf = self.trueScaleFactor
+
+
     def drawCanvasItems(self, painter, rect, map, pfilter):
         #print rect.x(), rect.y(), rect.width(), rect.height()
         #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
-##        classifier = orange.P2NN(self.rawdata, self.anchorData)
-##        imagebmp, nShades = orangeom.potentialsBitmap(classifier, 300, 300, 5)
-##        colors = ((0, 0, 255), (255, 0, 0), (0, 255, 0), (255, 255, 0), (255, 0, 255), (0, 255, 255))
-##        palette = []
-##        for cls in range(len(classifier.classVar.values)):
-##           color = colors[cls]
-##           towhite = [255-c for c in color]
-##           for s in range(nShades):
-##             si = 1-float(s)/nShades
-##             palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-##        palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-##        image = QImage(imagebmp, 600, 600, 8, palette, 256, QImage.LittleEndian)
-##        pm = QPixmap()
-##        pm.convertFromImage(image)
-##        painter.drawPixmap(QPoint(0,0), pm)
+        if self.showProbabilities and getattr(self, "rawdata", None):
+            rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
+            ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
+            if getattr(self, "potRx", None) != rx or getattr(self, "potRy", None) != ry or getattr(self, "potSf", None) != self.trueScaleFactor:
+                self.computePotentialsBitmap()
+
+            painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
         OWVisGraph.drawCanvasItems(self, painter, rect, map, pfilter)
 
     # create anchors around the circle
@@ -207,11 +223,27 @@ class OWRadvizGraph(OWVisGraph):
 
         dataSize = len(self.rawdata)
         selectedData = Numeric.take(self.scaledData, indices)
-        sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
         XAnchors = [a[0] for a in self.anchorData]
         YAnchors = [a[1] for a in self.anchorData]
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
+        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
+        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
+        print XAnchors
+        print YAnchors
+
+        if self.normalizeExamples:
+            sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
+            x_positions /= sum_i
+            y_positions /= sum_i
+            
+        if self.scaleFactor:
+            self.trueScaleFactor = self.scaleFactor
+        else:
+            abss = x_positions*x_positions + y_positions*y_positions
+            self.trueScaleFactor =  1 / sqrt(abss[Numeric.argmax(abss)])
+
+        x_positions *= self.trueScaleFactor
+        y_positions *= self.trueScaleFactor
+            
         validData = self.getValidList(indices)
 
         # do we have cluster closure information
@@ -574,6 +606,48 @@ class OWRadvizGraph(OWVisGraph):
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
+    """
+    def createCombinations(self, currCombination, count, attrList, combinations):
+        
+        if count > attrList: return combinations
+
+        if count == 0 and len(currCombination) > 2:
+            combinations.append(currCombination)
+            return combinations
+
+        if len(attrList) == 0: return combinations
+        temp = list(currCombination) + [attrList[0]]
+        temp[0] += attrList[0][0]
+        combinations = self.createCombinations(temp, count-1, attrList[1:], combinations)
+
+        combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
+        return combinations
+    """
+
+    def createCombinations(self, attrList, count):
+        if count > len(attrList): return []
+        answer = []
+        indices = range(count)
+        indices[-1] = indices[-1] - 1
+        while 1:
+            limit = len(attrList) - 1
+            i = count - 1
+            while i >= 0 and indices[i] == limit:
+                i = i - 1
+                limit = limit - 1
+            if i < 0: break
+
+            val = indices[i]
+            for i in xrange( i, count ):
+                val = val + 1
+
+                indices[i] = val
+            temp = []
+            for i in indices:
+                temp.append( attrList[i] )
+            answer.append( temp )
+        return answer
+
     # ############################################################## 
     # create x-y projection of attributes in attrList
     def createProjection(self, attrList, scaleFactor = 1.0):
@@ -655,10 +729,9 @@ class OWRadvizGraph(OWVisGraph):
             sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
         return sum_i        
 
-
-    # #######################################################################################################
-    # ####    GET OPTIMAL SEPARATION #####################################################################
-    # #######################################################################################################
+    # #######################################
+    # try to find the optimal attribute order by trying all diferent circular permutations
+    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getOptimalSeparation(self, attributes, minLength, maxLength, addResultFunct):
         dataSize = len(self.rawdata)
         self.triedPossibilities = 0
