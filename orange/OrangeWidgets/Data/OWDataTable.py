@@ -86,7 +86,7 @@ class OWDataTable(OWWidget):
         if self.data.domain.classVar:
             self.progressBarSet(50+i*20/instances)
             for i in range(instances):
-                OWGUI.tableItem(self.table, i, col, self.data[i].getclass().native(), background=QColor(160,160,160))
+                OWGUI.tableItem(self.table, i, col, str(self.data[i].getclass()), background=QColor(160,160,160))
             col += 1
         mlen = len(metas)
         for (j,m) in enumerate(metas):
