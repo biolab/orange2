@@ -86,7 +86,7 @@ TDomainContinuizer *constructDefaultLRContinuizer()
 { 
   TDomainContinuizer *def = mlnew TDomainContinuizer();
   def->zeroBased = true;
-  def->normalizeContinuous = false;
+  def->continuousTreatment = TDomainContinuizer::Leave;
   def->multinomialTreatment = TDomainContinuizer::FrequentIsBase;
   def->classTreatment = TDomainContinuizer::Ignore;
   return def;

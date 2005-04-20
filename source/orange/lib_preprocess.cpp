@@ -124,6 +124,10 @@ PYCLASSCONSTANT_INT(DomainContinuizer, ReportError, int(TDomainContinuizer::Repo
 PYCLASSCONSTANT_INT(DomainContinuizer, AsOrdinal, int(TDomainContinuizer::AsOrdinal))
 PYCLASSCONSTANT_INT(DomainContinuizer, AsNormalizedOrdinal, int(TDomainContinuizer::AsNormalizedOrdinal))
 
+PYCLASSCONSTANT_INT(DomainContinuizer, Leave, int(TDomainContinuizer::Leave))
+PYCLASSCONSTANT_INT(DomainContinuizer, NormalizeBySpan, int(TDomainContinuizer::NormalizeBySpan))
+PYCLASSCONSTANT_INT(DomainContinuizer, NormalizeByVariance, int(TDomainContinuizer::NormalizeByVariance))
+
 int getTargetClass(PVariable classVar, PyObject *pyval)
 {
   if (pyval) {
@@ -143,7 +147,7 @@ int getTargetClass(PVariable classVar, PyObject *pyval)
   return -1; // not an error, but undefined!
 }
 
-PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(domain | examples, weightID) -> domain")
+PyObject *DomainContinuizer_call(PyObject *self, PyObject *args, PyObject *keywords) PYDOC("(domain[, targetClass] | examples[, weightID, targetClass]) -> domain")
 { 
   PyTRY
     NO_KEYWORDS

@@ -105,9 +105,10 @@ public:
   __REGISTER_CLASS
 
   enum { LowestIsBase, FrequentIsBase, NValues, Ignore, ReportError, AsOrdinal, AsNormalizedOrdinal};
+  enum { Leave, NormalizeBySpan, NormalizeByVariance };
 
   bool zeroBased; //P if true (default) it gives values 0.0 and 1.0; else -1.0 and 1.0, 0.0 for undefined
-  bool normalizeContinuous; //P if true (default is false), continuous values are normalized
+  int continuousTreatment; //P 0-leave as they are, 1-divide by span, 1-normalize
   int multinomialTreatment; //P 0-lowest value, 1-most frequent (or baseValue), 2-n binary, 3-ignore, 4-error, 5-convert as ordinal, 6-ordinal,normalized
   int classTreatment; //P 3-leave as is unless target is given, 4-error if not continuous nor binary nor target given, 5-convert as ordinal (unless target given)
 

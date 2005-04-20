@@ -147,7 +147,7 @@ void TNormalizeContinuous::transform(TValue &val)
 
 TDomainContinuizer::TDomainContinuizer()
 : zeroBased(true),
-  normalizeContinuous(false),
+  continuousTreatment(Leave),
   multinomialTreatment(FrequentIsBase),
   classTreatment(ReportError)
 {}
@@ -240,7 +240,7 @@ PVariable TDomainContinuizer::discreteClass2continous(PVariable classVar, const 
     if (classBase >= int(eclass->values->size()))
         raiseError("base class value out of range");
 
-    PVariable newClassVar = mlnew TFloatVariable(eclass->name+"<>"+eclass->values->at(classBase));
+    PVariable newClassVar = mlnew TFloatVariable(eclass->name+"="+eclass->values->at(classBase));
     TClassifierFromVar *cfv = mlnew TClassifierFromVar(newClassVar, classVar);
     cfv->transformer = mlnew TDiscrete2Continuous(classBase, false, zeroBased);
     newClassVar->getValueFrom = cfv;
@@ -273,7 +273,7 @@ PDomain TDomainContinuizer::operator()(PDomain dom, const int &targetClass) cons
   if (otherAttr)
     raiseError("attribute '%s' is of a type that cannot be converted to continuous", otherAttr->name.c_str());
   
-  if (normalizeContinuous)
+  if (continuousTreatment)
     raiseError("cannot normalize continuous attributes without seeing the data");
   if (multinomialTreatment == FrequentIsBase)
     raiseError("cannot determine the most frequent values without seeing the data");
@@ -304,7 +304,7 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
   if (!convertClass && (targetClass>=0))
     raiseWarning("class is not being converted, 'targetClass' argument is ignored");
 
-  if (!normalizeContinuous && (multinomialTreatment != FrequentIsBase))
+  if (!continuousTreatment && (multinomialTreatment != FrequentIsBase))
     return call(egen->domain, targetClass);
 
   const TDomain &domain = egen->domain.getReference();
@@ -337,12 +337,26 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
     }
   }
 
-  if (normalizeContinuous && domain.hasContinuousAttributes(convertClass)) {
+  if (continuousTreatment && domain.hasContinuousAttributes(convertClass)) {
     TDomainBasicAttrStat dombas(egen);
     ITERATE(TDomainBasicAttrStat, di, dombas)
     if (*di) {
-      avgs.push_back((*di)->avg);
-      spans.push_back((*di)->dev);
+      if (continuousTreatment == NormalizeBySpan) {
+        const float &min = (*di)->min;
+        const float &max = (*di)->max;
+        if (zeroBased) {
+          avgs.push_back(min);
+          spans.push_back(max-min);
+        }
+        else {
+          avgs.push_back((max+min) / 2.0);
+          spans.push_back((max-min) / 2.0);
+        }
+      }
+      else {
+        avgs.push_back((*di)->avg);
+        spans.push_back((*di)->dev);
+      }
     }
     else {
       avgs.push_back(-1);
@@ -363,7 +377,7 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
     if ((*vi)->varType == TValue::INTVAR)
       discrete2continuous(*vi, newvars, mostFrequent[i]);
     else
-      if (normalizeContinuous)
+      if (continuousTreatment)
         newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
       else
         newvars.push_back(*vi);
