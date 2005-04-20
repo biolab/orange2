@@ -277,6 +277,8 @@ def comboBoxWithCaption(widget, master, value, label, box=None, items=None, tool
 ##############################################################################
 # callback handlers
 
+import sys
+
 class ValueCallback:
     def __init__(self, widget, attribute, f = None):
         self.widget = widget
@@ -288,10 +290,10 @@ class ValueCallback:
         if value==None: return
         if isinstance(value, QString): value = str(value)
         try:
-            if self.f: setattr(self.widget, self.attribute, self.f(value))
-            else:        setattr(self.widget, self.attribute, value)
+           if self.f: setattr(self.widget, self.attribute, self.f(value))
+           else:        setattr(self.widget, self.attribute, value)
         except:
-            print "OWGUI ValueCallback: invalid value", value, type(value), "for", self.attribute
+           print "OWGUI.ValueCallback: %s" % sys.exc_info()[1]
 
 class ValueCallbackLineEdit:
     def __init__(self, control, widget, attribute, f = None):
