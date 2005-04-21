@@ -171,7 +171,7 @@ class OWBaseWidget(QDialog):
 
     # Loads settings from string str which is compatible with cPickle
     def loadSettingsStr(self, str):
-        if str == None: return
+        if str == None or str == "": return
         if hasattr(self, "settingsList"):
             settings = cPickle.loads(str)
             self.setSettings(settings)
