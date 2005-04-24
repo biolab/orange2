@@ -25,7 +25,7 @@
 
 #include "pnn.ppp"
 
-TPNN::TPNN(PDomain domain, const float &e2, const bool normalize)
+TPNN::TPNN(PDomain domain, const int &alaw, const bool normalize)
 : TClassifierFD(domain, true),
   dimensions(0),
   offsets(),
@@ -34,15 +34,15 @@ TPNN::TPNN(PDomain domain, const float &e2, const bool normalize)
   bases(NULL),
   nExamples(0),
   projections(NULL),
-  exponent2(e2)
+  law(alaw)
 {}
 
 
-TPNN::TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &e2, const bool)
+TPNN::TPNN(PDomain domain, PExampleGenerator egen, double *bases, const int &alaw, const bool)
 { raiseError("not implemented yet"); }
 
 
-TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const bool normalize)
+TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const int &alaw, const bool normalize)
 : TClassifierFD(domain),
   dimensions(dim),
   offsets(off),
@@ -52,7 +52,7 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   radii(new double[domain->attributes->size()]),
   nExamples(nEx),
   projections(new double[dim*nEx]),
-  exponent2(e2)
+  law(alaw)
 {
   const int nAttrs = domain->attributes->size();
   TFloatList::const_iterator offi, offb = offsets->begin(), offe = offsets->end();
@@ -85,7 +85,7 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
 }
 
 
-TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow, const bool normalize)
+TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const int &alaw, const vector<int> &attrIndices, int &nOrigRow, const bool normalize)
 : TClassifierFD(domain),
   dimensions(dim),
   offsets(off),
@@ -95,7 +95,7 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   radii(new double[domain->attributes->size()]),
   nExamples(nEx),
   projections(new double[dim*nEx]),
-  exponent2(e2)
+  law(alaw)
 {
   const int nAttrs = domain->attributes->size();
   TFloatList::const_iterator offi, offb = offsets->begin(), offe = offsets->end();
@@ -168,7 +168,7 @@ TPNN &TPNN::operator =(const TPNN &old)
     normalizers = PFloatList();
 
   nExamples = old.nExamples;
-  exponent2 = old.exponent2;
+  law = old.law;
   normalizeExamples = old.normalizeExamples;
 
   return *this;
@@ -237,7 +237,11 @@ PDistribution TPNN::classDistribution(const TExample &example)
         dist += sqr(*pi - *(proj++));
       if (dist < 1e-5)
         dist = 1e-5;
-      cprob[int(*(proj++))] += exp(exponent2 * log(dist));
+      switch(law) {
+        case InverseLinear: cprob[int(*(proj++))] += 1/sqrt(dist); break;
+        case InverseSquare: cprob[int(*(proj++))] += 1/dist; break;
+        case InverseExponential: cprob[int(*(proj++))] += exp(-dist); break;
+      }
     }
 
     TDiscDistribution *dist = mlnew TDiscDistribution(cprob, nClasses);
@@ -260,8 +264,8 @@ PDistribution TPNN::classDistribution(const TExample &example)
 
 
 
-TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &e2, const bool normalize)
-: TPNN(domain, e2, normalize)
+TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &alaw, const bool normalize)
+: TPNN(domain, alaw, normalize)
 { 
   dimensions = 2;
   nExamples = egen->numberOfExamples();
@@ -356,8 +360,8 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 }
 
 
-TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, const float &e2, const bool normalize)
-: TPNN(domain, e2, normalize)
+TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, const int &alaw, const bool normalize)
+: TPNN(domain, alaw, normalize)
 {
   dimensions = 2;
   offsets = off;
@@ -460,10 +464,28 @@ PDistribution TP2NN::classDistribution(const TExample &example)
 void TP2NN::classDistribution(const double &x, const double &y, float *distribution, const int &nClasses) const
 {
   for(float *ci = distribution, *ce = distribution + nClasses; ci != ce; *ci++ = 0.0);
-  for(double *proj = projections, *proje = projections + 3*nExamples; proj != proje; proj += 3) {
-    double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
-    if (dist < 1e-5)
-      dist = 1e-5;
-    distribution[int(proj[2])] += exp(exponent2 * log(dist));
+  double *proj = projections, *proje = projections + 3*nExamples;
+
+  switch(law) {
+    case InverseLinear:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        distribution[int(proj[2])] += dist<1e-8 ? 1e4 : 1.0/sqrt(dist);
+      }
+      return;
+
+    case InverseSquare:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        distribution[int(proj[2])] += dist<1e-8 ? 1e8 : 1.0/dist;
+      }
+      return;
+
+    case InverseExponential:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        distribution[int(proj[2])] += exp(-dist);
+      }
+      return;
   }
 }

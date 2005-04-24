@@ -2351,6 +2351,28 @@ PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Error, 2)
 
 
+PyObject *MA_module = NULL;
+PyObject *MaskedArray_class = NULL;
+
+inline bool load_MA()
+{
+  if (MaskedArray_class)
+    return true;
+
+  if (!MA_module) {
+    MA_module = PyImport_ImportModule("MA");
+    if (!MA_module)
+      return false;
+  }
+
+  MaskedArray_class = PyDict_GetItemString(PyModule_GetDict(MA_module), "MaskedArray");
+  if (!MaskedArray_class)
+    PYERROR(PyExc_AttributeError, "MA modules has not class MaskedArray (compatibility error?)", false);
+
+  return true;
+}
+
+
 PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
 {
   int left = (*contents && *contents != '/') ? 1 : 0;
@@ -2381,7 +2403,6 @@ PyObject *packMatrixTuple(PyObject *X, PyObject *y, PyObject *w, char *contents)
   Py_DECREF(X);
   Py_DECREF(y);
   Py_DECREF(w);
-
   return res;
 }
 
@@ -2487,7 +2508,7 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
 #ifndef NO_NUMERIC
 
 
-PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1[, valueForMissing=None]]]) -> matrix(-ces)")
+PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1[, masked=0]]]) -> matrix(-ces)")
 {
   PyTRY
     prepareNumeric();
@@ -2495,23 +2516,12 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
-    PyObject *missing = NULL;
-    if (!PyArg_ParseTuple(args, "|siiO:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment, &missing))
+    int masked = 0;
+    if (!PyArg_ParseTuple(args, "|siii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment, &masked))
       return PYNULL;
 
     if (!contents)
       contents = "a/cw";
-
-    float missingValue;
-    if (missing)
-      if (missing == Py_None) {
-        Py_DECREF(Py_None);
-        missing = NULL;
-      }
-      else {
-        if (!PyNumber_ToFloat(missing, missingValue))
-          raiseError("float argument (or None) expect for missing values");
-      }
 
     PExampleGenerator egen = PyOrange_AsExampleGenerator(self);
 
@@ -2523,14 +2533,21 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
 
     int rows = egen->numberOfExamples();
 
-    PyObject *X, *y, *w;
+    PyObject *X, *y, *w, *mask = NULL, *masky = NULL;
     double *Xp, *yp, *wp;
+    signed char *mp = NULL, *mpy = NULL;
     if (columns) {
       int dims[2];
       dims[0] = rows;
       dims[1] = columns;
+
       X = PyArray_FromDims(2, dims, PyArray_DOUBLE);
       Xp = (double *)((PyArrayObject *)X)->data;
+
+      if (masked) {
+        mask = PyArray_FromDims(2, dims, PyArray_SBYTE);
+        mp = (signed char *)((PyArrayObject *)mask)->data;
+      }
     }
     else {
       X = Py_None;
@@ -2541,6 +2558,11 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
     if (classVector) {
       y = PyArray_FromDims(1, &rows, PyArray_DOUBLE);
       yp = (double *)((PyArrayObject *)y)->data;
+
+      if (masked) {
+        masky = PyArray_FromDims(1, &rows, PyArray_SBYTE);
+        mpy = (signed char *)((PyArrayObject *)masky)->data;
+      }
     }
     else {
       y = Py_None;
@@ -2579,13 +2601,18 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
               for(; vi != ve; eei++, vi++, bi++)
                 if (*bi) {
                   if ((*eei).isSpecial()) {
-                    if (missing)
-                      *Xp++ = missingValue;
+                    if (masked) {
+                      *Xp++ = 0;
+                      *mp++ = 1;
+                    }
                     else
                       raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
                   }
-                  else
+                  else {
                     *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
+                    if (masked)
+                     *mp++ = 0;
+                  }
                 }
               break;
             }
@@ -2595,13 +2622,18 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
               if (hasClass) {
                 const TValue &classVal = (*ei).getClass();
                 if (classVal.isSpecial()) {
-                  if (missing)
-                    *Xp++ = missingValue;
+                  if (masked) {
+                    *Xp++ = 0;
+                    *mp++ = 1;
+                  }
                   else
                     raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
                 }
-                else
+                else {
                   *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
+                  if (masked)
+                    *mp++ = 0;
+                }
               }
               break;
 
@@ -2609,14 +2641,20 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
             case 'w': 
               if (weightID)
                 *Xp++ = WEIGHT(*ei);
+                if (masked)
+                  *mp++ = 0;
               break;
 
             case '0':
               *Xp++ = 0.0;
+              if (masked)
+                *mp++ = 0;
               break;
 
             case '1':
               *Xp++ = 1.0;
+              if (masked)
+                *mp++ = 0;
               break;
           }
         }
@@ -2624,17 +2662,63 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
         if (yp) {
           const TValue &classVal = (*ei).getClass();
           if (classVal.isSpecial()) {
-            if (missing)
-              *yp++ = missingValue;
+            if (masked) {
+              *yp++ = 0;
+              *mpy++ = 1;
+            }
             else
               raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
-            }
+          }
           else
             *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);
+            if (masked)
+              *mpy++ = 0;
         }
 
         if (wp)
           *wp++ = WEIGHT(*ei);
+      }
+
+      if (masked) {
+        PyObject *args, *maskedX = NULL, *maskedy = NULL;
+
+        bool err = !load_MA();
+
+        if (!err && mask) {
+          args = Py_BuildValue("OOiOO", X, Py_None, 1, Py_None, mask);
+          maskedX = PyObject_CallObject(MaskedArray_class, args);
+          Py_DECREF(args);
+          err = !maskedX;
+        }
+
+        if (!err && masky) {
+          args = Py_BuildValue("OOiOO", y, Py_None, 1, Py_None, masky);
+          maskedy = PyObject_CallObject(MaskedArray_class, args);
+          Py_DECREF(args);
+          err = !maskedy;
+        }
+
+        if (err) {
+          Py_DECREF(X);
+          Py_DECREF(y);
+          Py_DECREF(w);
+          Py_XDECREF(maskedX);
+          Py_XDECREF(mask);
+          Py_XDECREF(masky);
+          return PYNULL;
+        }
+
+        if (mask) {
+          Py_DECREF(X);
+          Py_DECREF(mask);
+          X = maskedX;
+        }
+
+        if (masky) {
+          Py_DECREF(y);
+          Py_DECREF(masky);
+          y = maskedy;
+        }
       }
 
       return packMatrixTuple(X, y, w, contents);
@@ -2643,6 +2727,8 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
       Py_DECREF(X);
       Py_DECREF(y);
       Py_DECREF(w);
+      Py_XDECREF(mask);
+      Py_XDECREF(masky);
       throw;
     }
   PyCATCH

@@ -1,5 +1,7 @@
 #include "orange_api.hpp"
 #include "examplegen.hpp"
+#include "pnn.hpp"
+#include "../orange/px/externs.px"
 
 //#include "rconversions.hpp"
 
@@ -9,7 +11,8 @@ inline double sqr(const double &x)
 
 typedef struct {double x, y; } TPoint;
 
-float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *classes, TPoint *pts, TPoint *anc, double *sum, double attractG, double repelG)
+
+float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *classes, TPoint *pts, TPoint *anc, double *sum, const double attractG, const double repelG, const int law)
 {
   double *Xi;
   double *sumi, *sume = sum + nExamples;
@@ -28,17 +31,46 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *
   }
 
   double E = 0.0;
-  for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-    for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-      const int duv = *classesi == *classesj ? attractG : repelG;
-      if (duv) {
-        double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-        E += duv * log(dist < 1e-15 ? 1e-15 : dist);
-      }
-    }
-  E /= 2.0; // this is needed since we omitted a sqrt inside log...
+
+  switch(law) {
+    case TPNN::InverseLinear:
+      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+          const int duv = *classesi == *classesj ? attractG : repelG;
+          if (duv) {
+            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E += duv * log(dist < 1e-15 ? 1e-15 : dist);
+          }
+        }
+      E /= 2.0; // this is needed since we omitted a sqrt inside log...
+      break;
+
+    case TPNN::InverseSquare:
+      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+          const int duv = *classesi == *classesj ? attractG : repelG;
+          if (duv) {
+            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E -= duv / (dist < 1e-15 ? 1e-15 : sqrt(dist));
+          }
+        }
+      break;
+
+    case TPNN::InverseExponential:
+      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+          const int duv = *classesi == *classesj ? attractG : repelG;
+          if (duv) {
+            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E -= duv * exp(dist < 1e-15 ? -1e-15 : -sqrt(dist));
+          }
+        }
+      break;
+
+  }
   return E;
 }
+
 
 
 bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors, PyObject *pyattrIndices,
@@ -92,8 +124,9 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
     PyObject *pyattrIndices;
     double attractG = 1.0, repelG = -1.0;
     int steps = 1;
+    int law = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|dd:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG))
+    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law))
       return NULL;
 
     double *X, *Xi;
@@ -121,7 +154,7 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
         *sumi = 1.0;
     }
 
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG);
+    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(X);
     free(classes);
@@ -135,8 +168,9 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
   PyCATCH
 }
 
+
      
-PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, steps=1, normalizeExamples=1]) -> new-anchors")
+PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
     PyObject *scaledData;
@@ -144,10 +178,11 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     PyObject *anchors;
     PyObject *pyattrIndices;
     double attractG = 1.0, repelG = -1.0;
+    int law = TPNN::InverseLinear;
     int steps = 1;
     int normalizeExamples = 1;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps, &normalizeExamples))
+    if (!PyArg_ParseTuple(args, "OOOO|ddiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &normalizeExamples))
       return NULL;
 
     double *Xi, *X;
@@ -213,9 +248,12 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
           if (ruv < 1e-15)
             ruv = 1e-15;
 
-          //const double druv = duv / exp(2.5 * log(ruv));
-          //const double druv = duv / sqrt(ruv);
-          const double druv = duv / ruv;
+          double druv;
+          switch(law) {
+            case TPNN::InverseLinear: druv = duv / sqrt(ruv); break;
+            case TPNN::InverseSquare: druv = duv / ruv; break;
+            case TPNN::InverseExponential: druv = duv / exp(-ruv); break;
+          }
 
           const double druvx = druv * (pts[u].x - pts[v].x);
           K[u].x += druvx;
@@ -340,7 +378,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         *sumi = 1.0;
     }
 
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG);
+    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(anc);
     free(danc);
@@ -359,7 +397,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
 
 
-PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0]) -> new-anchors")
+PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "(scaledData, classes, anchors[, attractG=1.0, repelG=-1.0, law=InverseLinear, steps=1, normalizeExamples=1]) -> new-anchors")
 {
   PyTRY
     PyObject *scaledData;
@@ -367,9 +405,10 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     PyObject *anchors;
     PyObject *pyattrIndices;
     double attractG = 1.0, repelG = -1.0;
+    int law = TPNN::InverseLinear;
     int steps = 1;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps))
+    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps))
       return NULL;
 
     double *Xi, *X;
@@ -432,9 +471,12 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
           if (ruv < 1e-15)
             ruv = 1e-15;
 
-          //const double druv = duv / exp(0.3 * log(ruv));
-          //const double druv = duv / sqrt(ruv);
-          const double druv = duv / ruv;
+          double druv;
+          switch(law) {
+            case TPNN::InverseLinear: druv = duv / sqrt(ruv); break;
+            case TPNN::InverseSquare: druv = duv / ruv; break;
+            case TPNN::InverseExponential: druv = duv / exp(-ruv); break;
+          }
 
           const double Kefx = dx * druv;
           K[u].x += Kefx;
@@ -473,7 +515,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
       PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG);
+    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(anc);
     free(dphi);
@@ -636,7 +678,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
       PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG);
+    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, 0);
 
     free(anc);
     free(dr);
@@ -653,8 +695,6 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
 }
 
 
-#include "pnn.hpp"
-#include "../orange/px/externs.px"
 
 #define nColors 6
 #ifdef _MSC_VER

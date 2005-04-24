@@ -42,12 +42,13 @@ public:
   int nExamples; //PR the number of examples
   double *projections; // projections of examples + class
 
-  float exponent2; //P the exponent/2 (eg. -1 for falling with sqr distance)
+  enum { InverseLinear, InverseSquare, InverseExponential };
+  int law; //P law
 
-  TPNN(PDomain domain, const float &exponent2 = -1, const bool normalizeExamples = true);
-  TPNN(PDomain domain, PExampleGenerator egen, double *bases, const float &exponent2 = -1, const bool normalizeExamples = true);
-  TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const float &exponent2 = -1.0, const bool normalizeExamples = true);
-  TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const float &e2, const vector<int> &attrIndices, int &nOrigRow, const bool normalizeExamples = true);
+  TPNN(PDomain domain, const int &law = InverseLinear, const bool normalizeExamples = true);
+  TPNN(PDomain domain, PExampleGenerator egen, double *bases, const int &law = InverseLinear, const bool normalizeExamples = true);
+  TPNN(PDomain, double *, const int &nExamples, double *bases, const int &dimensions, PFloatList off, PFloatList norm, const int &law = InverseLinear, const bool normalizeExamples = true);
+  TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const int &dim, PFloatList off, PFloatList norm, const int &law, const vector<int> &attrIndices, int &nOrigRow, const bool normalizeExamples = true);
   TPNN(const TPNN &);
   TPNN &operator =(const TPNN &);
 
@@ -64,8 +65,8 @@ class ORANGE_API TP2NN : public TPNN {
 public:
   __REGISTER_CLASS
 
-  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const float &exponent2 = -1.0, const bool normalizeExamples = true);
-  TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const float &exponent2 = -1.0, const bool normalizeExamples = true);
+  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &law = InverseLinear, const bool normalizeExamples = true);
+  TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const int &law = InverseLinear, const bool normalizeExamples = true);
 
   virtual PDistribution classDistribution(const TExample &);
   virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;
