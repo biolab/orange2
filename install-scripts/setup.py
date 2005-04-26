@@ -40,12 +40,16 @@ if os.system("gsl-config --prefix > /dev/null 2>&1") != 0:
     sys.exit(1)
 
 # creating custom commands
+OrangeVer="ADDVERSION"
+
+if OrangeVer is "ADDVERSION":
+    print "Version should be added manually!"
+    sys.exit(1)
 
 # uninstall deletes everything which was installed
 from distutils.core import Command
 from distutils.command.install import install
 
-        
 class uninstall(Command):
     description = "uninstall current version"
 
@@ -151,7 +155,7 @@ class install_wrap(install):
         print "Success"
             
 # preparing data for Distutils
-OrangeVer="Orange-0.99"
+
 PythonVer = "python"+sys.version[:3]
 OrangeInstallDir = os.path.join("lib", PythonVer, "site-packages", "orange")
 OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
