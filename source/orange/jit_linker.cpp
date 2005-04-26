@@ -38,7 +38,7 @@ int jit_link(const char *dllname, TJitLink *functions, TDefaultFunc deffunc)
 }
 
 
-#elif defined LINUX
+#elif defined LINUX || defined FREEBSD
 
 #include <dlfcn.h>
 #include <unistd.h>

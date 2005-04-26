@@ -111,7 +111,7 @@ void dynloadC45(const char *pathname)
   c45garbage = (garbageFunc *)(getsym(c45Dll, "guarded_collect"));
 }
 
-#elif defined LINUX
+#elif defined LINUX || defined FREEBSD 
 
 #include <dlfcn.h>
 #include <unistd.h>

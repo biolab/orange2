@@ -20,9 +20,16 @@ OS = $(shell uname)
 ifeq ($(OS), Darwin)
   COMPILEOPTIONS=-fPIC -fpermissive -w -DDARWIN -O3 -DNO_NUMERIC
   LINKOPTIONS=-W1,-F. -bundle -framework Python -lstdc++ -L$(OLD) -lorange_include
+  MAKE=make
+else ifeq($(OS), FreeBSD)
+  COMPILEOPTIONS=-fPIC -fpermissive -w -DFREEBSD -O3 -DNO_NUMERIC
+  LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
+  LINKOPTIONS+=`gsl-config --libs`
+  MAKE=gmake
 else
   COMPILEOPTIONS=-fPIC -fpermissive -w -DLINUX -O3 -DNO_NUMERIC
   LINKOPTIONS=-shared -lstdc++ -L$(OLD) -lorange_include
+  MAKE=make
 endif
 
 ifneq ($(MODULENAME), ORANGE)

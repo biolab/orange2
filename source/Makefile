@@ -10,7 +10,7 @@ ACTIONS=all clean cleantemp
 	
 $(ACTIONS):
 	(for MODULE in $(MODULES) ; \
-	   do make $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); done)
+	   do $(MAKE) $@ -C $$MODULE OLD=$(ORANGE_LIBDIR); done)
 
 	   
 orange.pth:
