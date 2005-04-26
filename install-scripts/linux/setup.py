@@ -48,7 +48,7 @@ if OrangeVer is "ADDVERSION":
 
 if "FreeBSD" in sys.version:
     HostOS="FreeBSD"
-else if "Linux" in sys.version:
+elif "Linux" in sys.version:
     HostOS="Linux"
 else:
     HostOS="unknown"
