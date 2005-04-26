@@ -34,7 +34,7 @@ class Tune1Parameter(TuneParameters):
         import types, whrandom
         import orange, orngTest, orngStat
 
-        verbose = verbose or getattr(self, "verbose", 1)
+        verbose = verbose or getattr(self, "verbose", 0)
         
         if (type(self.parameter)==types.ListType) or (type(self.parameter)==types.TupleType):
             to_set = [self.findobj(ld) for ld in self.parameter]
@@ -70,7 +70,7 @@ class Tune1Parameter(TuneParameters):
                         bestres, bestpar = res, par
                     wins=wins+1
 
-        returnWhat = getattr(self, "returnWhat", Tune1Parameter.returnNone)
+        returnWhat = getattr(self, "returnWhat", Tune1Parameter.returnClassifier)
 
         if verbose:
             print "*** Optimal parameter: %s = %s" % (self.parameter, bestpar)
@@ -108,7 +108,7 @@ class TuneMParameters(TuneParameters):
         import types, whrandom
         import orange, orngTest, orngStat, orngMisc
 
-        verbose = verbose or getattr(self, "verbose", 1)
+        verbose = verbose or getattr(self, "verbose", 0)
         
         to_set = []
         parnames = []
@@ -152,7 +152,7 @@ class TuneMParameters(TuneParameters):
                         bestres, bestpar = res, values
                     wins = wins+1
 
-        returnWhat = getattr(self, "returnWhat", Tune1Parameter.returnNone)
+        returnWhat = getattr(self, "returnWhat", Tune1Parameter.returnClassifier)
 
         if verbose:
             print "*** Optimal set of parameters: ",
