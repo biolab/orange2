@@ -119,7 +119,7 @@ class compile(Command):
         SourceDir = os.path.join("source")
         os.chdir(SourceDir)
         print "Compiling... this might take a while, logging into compiling.log"
-        make=makeCmd+"> ../compiling.log"
+        make=self.makeCmd+"> ../compiling.log"
         retval = os.system(make)
         if retval != 0:
             print "Compiling Orange failed... exiting!"
