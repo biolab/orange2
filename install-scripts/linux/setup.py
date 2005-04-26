@@ -43,9 +43,16 @@ if os.system("gsl-config --prefix > /dev/null 2>&1") != 0:
 OrangeVer="ADDVERSION"
 
 if OrangeVer is "ADDVERSION":
-    print "Version should be added manually!"
+    print "Version should be added manually (edit setup.py and replace ADDVERSION in line 45)"
     sys.exit(1)
 
+if "FreeBSD" in sys.version:
+    HostOS="FreeBSD"
+else if "Linux" in sys.version:
+    HostOS="Linux"
+else:
+    HostOS="unknown"
+    
 # uninstall deletes everything which was installed
 from distutils.core import Command
 from distutils.command.install import install
@@ -97,17 +104,23 @@ class compile(Command):
 
     def initialize_options(self):
         self.coptions = None
+        self.makeCmd = None
 
     def finalize_options(self):
         if self.coptions is None:
             print "Default compiler options are taken..."
+        if HostOS is "FreeBSD":
+            self.makeCmd = "gmake"
+        else:
+            self.makeCmd = "make"
             
     def run(self):
         #compile Orange with make files
         SourceDir = os.path.join("source")
         os.chdir(SourceDir)
         print "Compiling... this might take a while, logging into compiling.log"
-        retval = os.system("make > ../compiling.log")
+        make=makeCmd+"> ../compiling.log"
+        retval = os.system(make)
         if retval != 0:
             print "Compiling Orange failed... exiting!"
             sys.exit(1)
