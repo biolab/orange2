@@ -52,7 +52,7 @@ rm -rf $ORANGEDIR
 echo -n "Checkouting Orange from CVS to $ORANGEDIR..."
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR orange > cvs.log 2>&1
 cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR/source source >> cvs.log 2>&1
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR install-scripts/setup.py >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR install-scripts/linux/setup.py >> cvs.log 2>&1
 
 if [ ! $REL -eq 0 ]; then
     cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR/OrangeWidgets/Genomics Genomics >> cvs.log 2>&1
