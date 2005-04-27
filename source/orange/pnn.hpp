@@ -38,6 +38,7 @@ public:
   bool normalizeExamples; //P if true, attribute values are divided to sum up to 1
   double *bases; // eg x1, y1,  x2, y2,  x3, y3, ... x_dimensions, y_dimensions
   double *radii; // eg sqrt(x1^2+y1^2) ...
+  int k; //P if >1, the kernel is scaled so that the k-th's neighbour's distance is 0.001
 
   int nExamples; //PR the number of examples
   double *projections; // projections of examples + class

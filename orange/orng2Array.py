@@ -61,13 +61,15 @@ def _getattr(ex,attr):
     try:
         v = ex[attr]
     except:
-        # perhaps the domain changed
-        try:
-            v = ex[attr.name]
-        except:
-            warnings.warn("Missing attribute %s"%attr.name)
-            v = attr.values[0]
-            spec = 1            
+        v = attr.computeValue(ex)
+        if v.isSpecial():
+            # perhaps the domain changed
+            try:
+                v = ex[attr.name]
+            except:
+                warnings.warn("Missing attribute %s"%attr.name)
+                v = attr.values[0]
+                spec = 1            
     if spec == 0:
         try:
             spec = v.isSpecial()

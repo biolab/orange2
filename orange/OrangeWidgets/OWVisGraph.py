@@ -8,7 +8,7 @@ from OWGraph import *
 import sys, math, os.path, time
 import orange
 import qtcanvas
-import Numeric, RandomArray
+import Numeric, RandomArray, MA
 from OWTools import *
 
 ZOOMING = 1
@@ -86,7 +86,7 @@ class OWVisGraph(OWGraph):
         self.zoomState = ()
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
-        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.Cross]
 
         # uncomment this if you want to use printer friendly symbols
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
@@ -196,10 +196,12 @@ class OWVisGraph(OWGraph):
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        arr = data.toNumeric("ac", 0, 1, 1e20)[0]
-        arr = Numeric.transpose(arr)
-        self.validDataArray = Numeric.where(arr == 1e20, 0, 1)
-        self.originalData = arr.copy()
+        arr = data.toNumeric("ac", 0, 1, 1)[0]
+        arr = MA.transpose(arr)
+        arr = MA.filled(arr, MA.average(arr, 1))
+        #print type(arr), arr.__class__
+        self.validDataArray = Numeric.ones(Numeric.shape(arr))#Numeric.logical_not(arr.mask())#Numeric.where(arr == 1e20, 0, 1)
+        self.originalData = Numeric.array(arr)
         self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
 
         # see if the values for discrete attributes have to be resorted 

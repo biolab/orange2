@@ -36,22 +36,35 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *
     case TPNN::InverseLinear:
       for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
         for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          const int duv = *classesi == *classesj ? attractG : repelG;
-          if (duv) {
-            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E += duv * log(dist < 1e-15 ? 1e-15 : dist);
+          if (*classesi == *classesj) {
+            if (attractG != 0.0)
+              E += attractG * (sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y));
+          }
+          else {
+            if (repelG != 0.0) {
+              const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+              E += repelG * log(dist < 1e-15 ? 1e-15 : dist);
+            }
           }
         }
-      E /= 2.0; // this is needed since we omitted a sqrt inside log...
+      E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
       break;
 
     case TPNN::InverseSquare:
       for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
         for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          const int duv = *classesi == *classesj ? attractG : repelG;
-          if (duv) {
-            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E -= duv / (dist < 1e-15 ? 1e-15 : sqrt(dist));
+          if (*classesi == *classesj) {
+            if (attractG != 0.0) {
+              const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+              if (dist > 1e-15)
+                E += 100*attractG * exp(1.5 * log(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)))/3.0;
+            }
+          }
+          else {
+            if (repelG != 0.0) {
+              double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+              E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
+            }
           }
         }
       break;
@@ -59,10 +72,13 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *
     case TPNN::InverseExponential:
       for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
         for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          const int duv = *classesi == *classesj ? attractG : repelG;
-          if (duv) {
-            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E -= duv * exp(dist < 1e-15 ? -1e-15 : -sqrt(dist));
+          if (*classesi == *classesj) {
+            if (attractG != 0.0)
+              E += attractG * exp(sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+          }
+          else {
+            if (repelG != 0.0)
+              E -= repelG * exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
           }
         }
       break;
@@ -240,19 +256,36 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
       for(u = 0; u < nExamples; u++) {
         for(v = u+1; v < nExamples; v++) {
-          const double duv = classes[u] == classes[v] ? attractG : repelG;
-          if (duv == 0.0)
-            continue;
-
-          double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-          if (ruv < 1e-15)
-            ruv = 1e-15;
-
           double druv;
-          switch(law) {
-            case TPNN::InverseLinear: druv = duv / sqrt(ruv); break;
-            case TPNN::InverseSquare: druv = duv / ruv; break;
-            case TPNN::InverseExponential: druv = duv / exp(-ruv); break;
+
+          if (classes[u] == classes[v]) {
+            if (attractG == 0.0)
+              continue;
+
+            double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
+            if (ruv < 1e-15)
+              ruv = 1e-15;
+
+            switch(law) {
+              case TPNN::InverseLinear: druv = attractG * sqrt(ruv); break;
+              case TPNN::InverseSquare: druv = 100*attractG * ruv; break;
+              case TPNN::InverseExponential: druv = attractG * exp(sqrt(ruv)); break;
+            }
+          }
+
+          else {
+            if (repelG == 0.0)
+              continue;
+
+            double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
+            if (ruv < 1e-15)
+              ruv = 1e-15;
+
+            switch(law) {
+              case TPNN::InverseLinear: druv = repelG / sqrt(ruv); break;
+              case TPNN::InverseSquare: druv = repelG / ruv; break;
+              case TPNN::InverseExponential: druv = repelG / exp(sqrt(ruv)); break;
+            }
           }
 
           const double druvx = druv * (pts[u].x - pts[v].x);
@@ -475,7 +508,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
           switch(law) {
             case TPNN::InverseLinear: druv = duv / sqrt(ruv); break;
             case TPNN::InverseSquare: druv = duv / ruv; break;
-            case TPNN::InverseExponential: druv = duv / exp(-ruv); break;
+            case TPNN::InverseExponential: druv = duv / exp(-sqrt(ruv)); break;
           }
 
           const double Kefx = dx * druv;

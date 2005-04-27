@@ -48,13 +48,12 @@ class FreeVizClassifier(orange.Classifier):
 
         self.radvizWidget.optimize()
         domain = orange.Domain([a[2] for a in self.radvizWidget.graph.anchorData]+[self.radvizWidget.data.domain.classVar], self.radvizWidget.data.domain)
-        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData, self.radvizWidget.normalizeExamples, domain)
+        self.classifier = orange.P2NN(data, self.radvizWidget.graph.anchorData, self.radvizWidget.normalizeExamples, domain, law=self.radvizWidget.law)
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):
         example.setclass(0)
         v = self.classifier(example, returnType)
-        print "XX", v, v[0], v[1], type(v[0]), type(v[1]), "YY"
         return v
         
         
@@ -76,10 +75,10 @@ class FreeVizLearner(orange.Learner):
 ##### WIDGET : Radviz visualization
 ###########################################################################################
 class OWRadviz(OWWidget):
-    settingsList = ["pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
+    settingsList = ["showAllAttributes", "pointWidth", "jitterSize", "graphCanvasColor", "globalValueScaling", "showFilledSymbols", "scaleFactor",
                     "showLegend", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors",
                     "tooltipKind", "tooltipValue", "toolbarSelection", "showClusters", "VizRankClassifierName", "clusterClassifierName",
-                    "attractG", "repelG", "hideRadius", "showAnchors", "showOptimizationSteps", "lockToCircle", "valueScalingType", "showProbabilities"]
+                    "attractG", "repelG", "law", "hideRadius", "showAnchors", "showOptimizationSteps", "lockToCircle", "valueScalingType", "normalizeExamples", "showProbabilities"]
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [0.0, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -108,8 +107,10 @@ class OWRadviz(OWWidget):
 
         # variables
         self.pointWidth = 4
+        self.showAllAttributes = 0
         self.attractG = 1.0
         self.repelG = 1.0
+        self.law = 0
         self.hideRadius = 0
         self.showAnchors = 1
         self.lockToCircle = 0
@@ -144,6 +145,8 @@ class OWRadviz(OWWidget):
         #load settings
         self.loadSettings()
 
+        OWGUI.button(self.buttonBackground, self, "Save PicTeX", callback=self.graph.savePicTeX)
+
         #GUI
         # add a settings dialog and initialize its values
         self.tabs = QTabWidget(self.space, 'tabWidget')
@@ -158,7 +161,8 @@ class OWRadviz(OWWidget):
         
         #add controls to self.controlArea widget
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
-        self.addRemoveGroup = QHButtonGroup(self.GeneralTab)
+        self.addRemoveShowGroup = QVGroupBox(self.GeneralTab)
+        self.addRemoveGroup = QHBox(self.addRemoveShowGroup)
         self.hiddenAttribsGroup = QVGroupBox(self.GeneralTab)
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
@@ -183,8 +187,9 @@ class OWRadviz(OWWidget):
         self.buttonUPAttr = QPushButton("Attr UP", self.hbox2)
         self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox2)
 
-        self.attrAddButton = QPushButton("Add attr.", self.addRemoveGroup)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.addRemoveGroup)
+        self.attrAddButton = QPushButton("Add attr", self.addRemoveGroup)
+        self.attrRemoveButton = QPushButton("Remove attr", self.addRemoveGroup)
+        OWGUI.checkBox(self.addRemoveShowGroup, self, "showAllAttributes", "Show all attributes", callback = self.cbShowAllAttributes) 
 
         # ####################################
         # SETTINGS TAB
@@ -206,6 +211,7 @@ class OWRadviz(OWWidget):
         OWGUI.checkBox(box3, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
         OWGUI.checkBox(box3, self, 'useDifferentSymbols', 'Use different symbols', callback = self.updateValues, tooltip = "Show different class values using different symbols")
         OWGUI.checkBox(box3, self, 'useDifferentColors', 'Use different colors', callback = self.updateValues, tooltip = "Show different class values using different colors")
+        OWGUI.checkBox(box3, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
         OWGUI.checkBox(box3, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
         OWGUI.checkBox(box3, self, 'showClusters', 'Show clusters', callback = self.updateValues, tooltip = "Show a line boundary around a significant cluster")
         OWGUI.checkBox(box3, self, 'showProbabilities', 'Show probabilities', callback = self.updateValues, tooltip = "Show a background image with class probabilities")
@@ -243,23 +249,23 @@ class OWRadviz(OWWidget):
         self.freeAttributesButton = OWGUI.button(box, self, "Slow Animate", callback = self.slowAnimate)
         #self.setAnchorsButton = OWGUI.button(box, self, "Cheat", callback = self.setAnchors)
 
-        box = OWGUI.widgetBox(self.AnchorsTab, "Differential Evolution")
-        self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)        
-        self.createPopulationButton = OWGUI.button(box, self, "Create population", callback = self.createPopulation)
-        self.evolvePopulationButton = OWGUI.button(box, self, "Evolve population", callback = self.evolvePopulation)
+##        box = OWGUI.widgetBox(self.AnchorsTab, "Differential Evolution")
+##        self.populationSizeEdit = OWGUI.lineEdit(box, self, "differentialEvolutionPopSize", "Population size: ", orientation = "horizontal", valueType = int)        
+##        self.createPopulationButton = OWGUI.button(box, self, "Create population", callback = self.createPopulation)
+##        self.evolvePopulationButton = OWGUI.button(box, self, "Evolve population", callback = self.evolvePopulation)
     
         box2 = OWGUI.widgetBox(self.AnchorsTab, "Forces")
-        OWGUI.qwtHSlider(box2, self, "attractG", label="attractive", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
-        OWGUI.qwtHSlider(box2, self, "repelG", label = "repellant", minValue=0, maxValue=9, step=1, ticks=0, callback=self.recomputeEnergy)
-#        OWGUI.comboBoxWithCaption(box, self, "showOptimizationSteps", 'Show optimization', items = ["Yes", "Every 10", "No"])
+        OWGUI.qwtHSlider(box2, self, "attractG", label="Attractive", labelWidth=90, minValue=0, maxValue=3, step=1, ticks=0, callback=self.recomputeEnergy)
+        OWGUI.qwtHSlider(box2, self, "repelG", label = "Repellant", labelWidth=90, minValue=0, maxValue=3, step=1, ticks=0, callback=self.recomputeEnergy)
+        OWGUI.comboBox(box2, self, "law", label="Law", labelWidth=90, orientation="horizontal", items=["Inverse linear", "Inverse square", "exponential"], callback=self.updateValues)
+        #OWGUI.qwtHSlider(box2, self, "exponent", label = "exponent", labelwidth=50, minValue=0.5, maxValue=3, step=0.5, ticks=0, callback=self.recomputeEnergy)
 
-        box = OWGUI.widgetBox(self.AnchorsTab, "Show Anchors")
+        box = OWGUI.widgetBox(self.AnchorsTab, "Anchors")
         OWGUI.checkBox(box, self, 'showAnchors', 'Show anchors', callback = self.updateValues)
         OWGUI.qwtHSlider(box, self, "hideRadius", label="Hide radius", minValue=0, maxValue=9, step=1, ticks=0, callback = self.updateValues)
         self.freeAttributesButton = OWGUI.button(box, self, "Remove hidden attriubtes", callback = self.removeHidden)
 
-
-        box = OWGUI.widgetBox(self.AnchorsTab, 1)
+        box = OWGUI.widgetBox(self.AnchorsTab, 1, "Potential Energy")
         self.energyLabel = QLabel(box, "Energy: ")
         
         # ####################################
@@ -296,6 +302,7 @@ class OWRadviz(OWWidget):
     # #########################
     def activateLoadedSettings(self):
         self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing, tooltipValue = self.tooltipValue, tooltipKind = self.tooltipKind)
+        self.graph.updateSettings(showProbabilities = self.showProbabilities, normalizeExamples = self.normalizeExamples)
         self.graph.useDifferentSymbols = self.useDifferentSymbols
         self.graph.useDifferentColors = self.useDifferentColors
         self.graph.pointWidth = self.pointWidth
@@ -310,6 +317,8 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.updateClassifierChanges()
         self.clusterDlg.classifierName = self.clusterClassifierName
         self.clusterDlg.classifierNameChanged(self.clusterClassifierName)
+
+        self.cbShowAllAttributes()
 
     def VizRankClassifierNameChanged(self, text):
         self.VizRankClassifierName = self.optimizationDlg.classifierName
@@ -499,7 +508,6 @@ class OWRadviz(OWWidget):
     def ranch(self, label):
         import random
         r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
-        #print r
         phi = 2*pi*random.random()
         return (r*math.cos(phi), r*math.sin(phi), label)
 
@@ -528,18 +536,19 @@ class OWRadviz(OWWidget):
         noChange = 0
         while noChange < 5:
             for i in range(iterations):
-                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, steps, self.normalizeExamples)
+                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.normalizeExamples)
                 self.energyLabel.setText("Energy: %.3f" % E)
                 self.energyLabel.repaint()
                 self.updateGraph()
                 if singleStep:
                     noChange = 5
                 else:
-                    if E > minE*0.99:
+                    if E > min(minE*0.99, minE*1.01):
                         noChange += 1
                     else:
                         minE = E
                         noChange = 0
+                    #print E, minE, noChange
 
     def singleStep(self): self.freeAttributes(1, 1, True)
     def optimize(self):   self.freeAttributes(1, 100)
@@ -557,6 +566,8 @@ class OWRadviz(OWWidget):
                 rem += 1
             else:
                 newAnchorData.append(t)
+        if rem:
+            self.showAllAttributes = 0
         self.graph.anchorData = newAnchorData
         attrList = self.getShownAttributeList()
         self.graph.updateData(attrList, 0)
@@ -578,7 +589,6 @@ class OWRadviz(OWWidget):
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
         E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
-        #print E
         self.energyLabel.setText("Energy: %.3f" % E)
         self.energyLabel.repaint()
 
@@ -691,14 +701,23 @@ class OWRadviz(OWWidget):
         self.sendShownAttributes()
         self.updateGraph()
 
-    def addAttribute(self):
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+        
+    def addAttribute(self, addAll = False):
         self.graph.removeAllSelections()
         self.graph.insideColors = None; self.graph.clusterClosure = None
         count = self.hiddenAttribsLB.count()
         pos   = self.shownAttribsLB.count()
+        classVarName = self.data and self.data.domain.classVar.name
         for i in range(count-1, -1, -1):
-            if self.hiddenAttribsLB.isSelected(i):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
                 text = self.hiddenAttribsLB.text(i)
+                if text == classVarName:
+                    continue
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
         if self.globalValueScaling == 1:
@@ -755,9 +774,12 @@ class OWRadviz(OWWidget):
             self.shownAttribsLB.clear()
             self.hiddenAttribsLB.clear()
             if data:
-                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(attr.name)
-                if len(data.domain.attributes) > 10:
-                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
+                if self.showAllAttributes:
+                    for attr in data.domain.attributes: self.shownAttribsLB.insertItem(attr.name)
+                else:
+                    for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(attr.name)
+                    if len(data.domain.attributes) > 10:
+                        for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
                 if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
                 
         self.updateGraph(1)

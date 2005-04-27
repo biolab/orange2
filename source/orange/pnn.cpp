@@ -240,7 +240,7 @@ PDistribution TPNN::classDistribution(const TExample &example)
       switch(law) {
         case InverseLinear: cprob[int(*(proj++))] += 1/sqrt(dist); break;
         case InverseSquare: cprob[int(*(proj++))] += 1/dist; break;
-        case InverseExponential: cprob[int(*(proj++))] += exp(-dist); break;
+        case InverseExponential: cprob[int(*(proj++))] += exp(-sqrt(dist)); break;
       }
     }
 
@@ -484,7 +484,7 @@ void TP2NN::classDistribution(const double &x, const double &y, float *distribut
     case InverseExponential:
       for(; proj != proje; proj += 3) {
         const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
-        distribution[int(proj[2])] += exp(-dist);
+        distribution[int(proj[2])] += exp(-sqrt(dist));
       }
       return;
   }

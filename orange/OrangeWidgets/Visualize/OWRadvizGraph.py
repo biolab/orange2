@@ -112,7 +112,7 @@ class OWRadvizGraph(OWVisGraph):
 
     def computePotentialsBitmap(self):
         domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
-        classifier = orange.P2NN(self.rawdata, self.anchorData, self.normalizeExamples, domain)
+        classifier = orange.P2NN(self.rawdata, self.anchorData, self.normalizeExamples, domain, law=self.radvizWidget.law)
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
         imagebmp, nShades = orangeom.potentialsBitmap(classifier, rx, ry, 3, self.trueScaleFactor)
@@ -130,8 +130,7 @@ class OWRadvizGraph(OWVisGraph):
         image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
         self.potentialsBmp = QPixmap()
         self.potentialsBmp.convertFromImage(image)
-        self.potRx, self.potRy = rx, ry
-        self.potSf = self.trueScaleFactor
+        self.potentialContext = (rx, ry, self.trueScaleFactor, self.radvizWidget.law)
 
 
     def drawCanvasItems(self, painter, rect, map, pfilter):
@@ -140,7 +139,7 @@ class OWRadvizGraph(OWVisGraph):
         if self.showProbabilities and getattr(self, "rawdata", None):
             rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
             ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
-            if getattr(self, "potRx", None) != rx or getattr(self, "potRy", None) != ry or getattr(self, "potSf", None) != self.trueScaleFactor:
+            if getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
                 self.computePotentialsBitmap()
 
             painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
@@ -227,8 +226,6 @@ class OWRadvizGraph(OWVisGraph):
         YAnchors = [a[1] for a in self.anchorData]
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
-        print XAnchors
-        print YAnchors
 
         if self.normalizeExamples:
             sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
@@ -371,6 +368,7 @@ class OWRadvizGraph(OWVisGraph):
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
                 else: curveSymbol = self.curveSymbols[0]
 
+                print pos[i][0]
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = pos[i][0], yData = pos[i][1])
                 for k in range(len(pos[i][0])):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], newColor, pos[i][2][k])
@@ -1081,6 +1079,86 @@ class OWRadvizGraph(OWVisGraph):
         secs = time.time() - startTime
         self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.radvizWidget.progressBarFinished()
+
+    # ####################################################################
+    # update shown data. Set labels, coloring by className ....
+    def savePicTeX(self):
+        lastSave = getattr(self, "lastPicTeXSave", "d:\ai\papers\05\idamap")
+        qfileName = QFileDialog.getSaveFileName(lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)", None, "Save to..", "Save to..")
+        fileName = str(qfileName)
+        if fileName == "":
+            return
+        
+        if not os.path.splitext(fileName)[1][1:]:
+            fileName = fileName + ".pictex"
+
+        self.lastSave = os.path.split(fileName)[0]+"/"
+        file = open(fileName, "wt")
+        
+        file.write("\\mbox{\n")
+        file.write("  \\beginpicture\n")
+        file.write("  \\setcoordinatesystem units <0.4\columnwidth, 0.4\columnwidth>\n")
+        file.write("  \\setplotarea x from -1.1 to 1.1, y from -1 to 1.1\n")
+
+        file.write("\\circulararc 360 degrees from 1 0 center at 0 0\n")
+        if self.showAnchors:
+            if self.hideRadius > 0:
+                file.write("\\setdashes\n")
+                file.write("\\circulararc 360 degrees from %5.3f 0 center at 0 0\n" % (self.hideRadius/10.))
+                file.write("\\setsolid\n")
+
+            if self.showAttributeNames:
+                shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
+                file.write("\\multiput {\\small $\\odot$} at %s /\n" % (" ".join(["%5.3f %5.3f" % tuple(i[:2]) for i in shownAnchorData])))
+                for x,y,l in shownAnchorData:
+                    file.write("\\put {{\\footnotesize %s}} [b] at %5.3f %5.3f\n" % (l.replace("_", "-"), x*1.07, y*1.04))
+        
+        symbols = ("{\\small $\\circ$}", "{\\tiny $\\times$}", "{\\tiny $+$}", "{\\small $\\star$}",
+                   "{\\small $\\ast$}", "{\\tiny $\\div$}", "{\\small $\\bullet$}", ) + tuple([chr(x) for x in range(97, 123)])
+        dataSize = len(self.rawdata)
+        labels = self.radvizWidget.getShownAttributeList()
+        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
+        indices = [self.attributeNameIndex[label] for label in labels]
+        selectedData = Numeric.take(self.scaledData, indices)
+        XAnchors = [a[0] for a in self.anchorData]
+        YAnchors = [a[1] for a in self.anchorData]
+        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
+        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
+
+        if self.normalizeExamples:
+            sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
+            x_positions /= sum_i
+            y_positions /= sum_i
+            
+        if self.scaleFactor:
+            self.trueScaleFactor = self.scaleFactor
+        else:
+            abss = x_positions*x_positions + y_positions*y_positions
+            self.trueScaleFactor =  1 / sqrt(abss[Numeric.argmax(abss)])
+
+        x_positions *= self.trueScaleFactor
+        y_positions *= self.trueScaleFactor
+            
+        validData = self.getValidList(indices)
+        valLen = len(self.rawdata.domain.classVar.values)
+
+        pos = [[] for i in range(valLen)]
+        for i in range(dataSize):
+            if validData[i]:
+                pos[classValueIndices[self.rawdata[i].getclass().value]].append((x_positions[i], y_positions[i]))
+
+        for i in range(valLen):
+            file.write("\\multiput {%s} at %s /\n" % (symbols[i], " ".join(["%5.3f %5.3f" % p for p in pos[i]])))
+
+        if self.showLegend:
+            classVariableValues = getVariableValuesSorted(self.rawdata, self.rawdata.domain.classVar.name)
+            file.write("\\put {%s} [lB] at 0.87 1.06\n" % self.rawdata.domain.classVar.name)
+            for index in range(len(classVariableValues)):
+                file.write("\\put {%s} at 1.0 %5.3f\n" % (symbols[index], 0.93 - 0.115*index))
+                file.write("\\put {%s} [lB] at 1.05 %5.3f\n" % (classVariableValues[index], 0.9 - 0.115*index))
+
+        file.write("\\endpicture\n}\n")
+        file.close()
 
 if __name__== "__main__":
     #Draw a simple graph
