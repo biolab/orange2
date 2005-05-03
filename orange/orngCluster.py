@@ -18,7 +18,7 @@
 #       - added conversion functions: diss ragged list <-> Numeric.array
 #       - fixed bug: DMClustering for k = len(diss) + 1
 
-import math, Numeric, statc
+import math, Numeric, MA, statc
 import orngCRS
 
 class HClustering:
@@ -295,6 +295,12 @@ class DMClustering:
         def bic(self, distrlist):
                 return _bic(distrlist, self.mapping, self.medoids, self.k)
 
+        def bicMA(self, ma2d):
+                """Input: 2d masked array with vectors that were used to calculate self.diss.
+                """
+                assert type(ma2d) in [Numeric.ArrayType, MA.array]
+                return _bicMA(ma2d, self.mapping, self.medoids, self.k)
+
 class DFClustering:
     def __init__(self, diss,k):
         if not(k >= 1):
@@ -324,7 +330,9 @@ def _bic(distrlist, mapping, medoids, K):
         medoids0 = [m-1 for m in medoids]       # fix indices
         M = len(distrlist[0])                   # number of dimensions
         R = len(distrlist) * 1.                 # number of input vectors
-##        print mapping0, medoids0, K, M, R
+        if R == K:
+                print "cannot calc. BIC if the number of clusters equals the number of vectors"
+                return -1e20
         numFreePar = (M+1) * K * math.log(R, 2) / 2
         Ri = [0] * K
         sumdiffsq = {}
@@ -332,18 +340,42 @@ def _bic(distrlist, mapping, medoids, K):
         for i,c in enumerate(mapping0):
             Ri[c] += 1
             xsumdiffsq = statc.sumdiffsquared(distrlist[i], distrlist[medoids0[c]])
-##            print xsumdiffsq, "\t", i, c, medoids0[c]
-##            print distrlist[i], distrlist[medoids0[c]]
             s2 += xsumdiffsq
             sumdiffsq[i] = xsumdiffsq
         s2 = s2 / (R - K)
-## overflow        logf = R * math.log(pow(2. * math.pi, -0.5) * pow(s2, M / -2.), 2)
         # log-likelihood of the vectors = ld + logf
         logf = R * (-0.5*math.log(2.*math.pi,2) + M/-2.*math.log(s2,2))         # sigma**(-M) == sigma**2**(-M/2)
         ld = 0                                  
         for i,c in enumerate(mapping0):
             ld += math.log(Ri[c] / R, 2) - sumdiffsq[i] / (2 * s2)
         return ld + logf - numFreePar
+
+def _bicMA(ma2d, mapping, medoids, K):
+        """returns Bayesian Information Criteria score of the clustering
+        WARNING: cannot evaluate BIC for K == len(distrlist), that is each element represents a cluster
+        opperates with masked arrays (MA), supports for masked values
+        """
+        mapping0 = [m-1 for m in mapping]       # fix indices
+        medoids0 = [m-1 for m in medoids]       # fix indices
+        M = ma2d.shape[1]                       # number of dimensions
+        R = ma2d.shape[0]                       # number of input vectors
+        if R == K:
+                print "cannot calc. BIC if the number of clusters equals the number of vectors"
+                return -1e20
+        numFreePar = (M+1) * K * math.log(R, 2) / 2
+        Ri = [0] * K
+        sumdiffsq = MA.zeros(len(mapping0), MA.Float)
+        for i,c in enumerate(mapping0):
+            Ri[c] += 1
+            sumdiffsq[i] = MA.add.reduce((ma2d[i] - ma2d[medoids0[c]])**2)
+        # max. likelihood of the variance: sigma**2
+        s2 = MA.add.reduce(sumdiffsq) / float(R-K)
+        # log-likelihood of the vectors = ld + logf
+        logf = R * (-0.5*math.log(2.*math.pi,2) + M/-2.*math.log(s2,2))         # sigma**(-M) == sigma**2**(-M/2)
+        ld = MA.zeros(len(mapping0), MA.Float)
+        for i,c in enumerate(mapping0):
+            ld[i] = math.log(float(Ri[c]) / R, 2) - sumdiffsq[i] / (2 * s2)
+        return MA.add.reduce(ld) + logf - numFreePar
 
 
 def _fixIndices0(indList):
