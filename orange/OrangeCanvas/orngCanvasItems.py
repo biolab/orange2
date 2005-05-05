@@ -83,12 +83,12 @@ class CanvasLine(QCanvasLine):
         self.text = QCanvasText("", canvas)
         self.text.setZ(-5)
         self.text.show()
-        self.text.show()
         self.text.setTextFlags(Qt.AlignHCenter + Qt.AlignBottom)
         self.text.setColor(QColor(100,100,100))
         
     def remove(self):
         self.hide()
+        self.text.hide()
         self.setCanvas(None)
         self.removeTooltip()
 
