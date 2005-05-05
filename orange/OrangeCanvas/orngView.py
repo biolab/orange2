@@ -396,6 +396,7 @@ class SchemaView(QCanvasView):
         for widget in self.doc.widgets:
             if widget.instance == widgetInstance:
                 widget.setProcessing(value)
+                self.repaint()
                 return
             
 
