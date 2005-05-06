@@ -38,6 +38,11 @@ class OWPolyviz(OWWidget):
         self.graph = OWPolyvizGraph(self, self.mainArea)
         self.box.addWidget(self.graph)
 
+        # optimization dlg
+        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Polyviz")
+        self.graph.kNNOptimization = self.optimizationDlg
+        self.optimizationDlg.optimizeGivenProjectionButton.show()
+
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
 
@@ -94,10 +99,6 @@ class OWPolyviz(OWWidget):
         
         self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
         OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
-
-        self.optimizationDlg = kNNOptimization(None, self.signalManager, self.graph, "Polyviz")
-        self.graph.kNNOptimization = self.optimizationDlg
-        self.optimizationDlg.optimizeGivenProjectionButton.show()
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
         self.graph.autoSendSelectionCallback = self.selectionChanged
