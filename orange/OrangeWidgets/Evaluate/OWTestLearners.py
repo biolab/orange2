@@ -144,7 +144,13 @@ class OWTestLearners(OWWidget):
                     r.classes.append(res.results[i].classes[0])
                     r.probabilities.append(res.results[i].probabilities[0])
                 for (i, stat) in enumerate(self.stat):
-                    self.scores[i].append(eval('orngStat.' + stat[2])[0])
+                    try:
+                        self.scores[i].append(eval('orngStat.' + stat[2])[0])
+                    except:
+                        self.scores[i].append(-1) # handle the exception
+                        type, val, traceback = sys.exc_info()
+                        sys.excepthook(type, val, traceback)  # print the exception
+                        self.error("Caught an exception while evaluating classifiers")
             else:
                 # this is an old but updated learner
                 indx = self.learners.index(learner)
@@ -153,7 +159,15 @@ class OWTestLearners(OWWidget):
                     r.classes[indx] = res.results[i].classes[0]
                     r.probabilities[indx] = res.results[i].probabilities[0]
                 for (i, stat) in enumerate(self.stat):
-                    self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
+                    try:
+                        self.scores[i][indx] = eval('orngStat.' + stat[2])[0]
+                    except:
+                        self.scores[i][indx] = -1
+                        type, val, traceback = sys.exc_info()
+                        sys.excepthook(type, val, traceback)  # print the exception
+                        self.error("Caught an exception while evaluating classifiers")
+                        
+                    
         else: # test on all learners
             self.results = res
             self.scores = []
@@ -187,6 +201,7 @@ class OWTestLearners(OWWidget):
 
     def learner(self, learner, id=None):
         if not learner: # remove a learner and corresponding results
+            # print 'Remove', id
             indx = self.learners.index(self.learnDict[id])
             for i,r in enumerate(self.results.results):
                 del r.classes[indx]
@@ -200,6 +215,7 @@ class OWTestLearners(OWWidget):
             self.setStatTable()
             self.send("Evaluation Results", self.results)
         else: # a new or updated learner
+            # print 'Add/Upd', learner.name, ", id:", id
             if not self.learnDict.has_key(id): # new
                 self.learners.append(learner)
             else: # updated
@@ -230,8 +246,8 @@ class OWTestLearners(OWWidget):
             self.tabHH.setLabel(i+1, self.stat[i][1])
 
         self.tab.setNumRows(len(self.learners))
-        for i in range(len(self.learners)):
-            self.tab.setText(i, 0, self.learners[i].name)
+        for i in range(len(self.results.classifierNames)):
+            self.tab.setText(i, 0, self.results.classifierNames[i])
 
         prec="%%.%df" % self.precision
 
@@ -270,8 +286,8 @@ if __name__=="__main__":
     data = orange.ExampleTable('voting')
     ow.cdata(data)
 
-    l1 = orange.BayesLearner()
-    l1.name = 'Naive Bayes'
+    l1 = orange.MajorityLearner()
+    l1.name = 'Maj 1'
     ow.learner(l1, 1)
 
     l2 = orange.BayesLearner()
@@ -283,15 +299,19 @@ if __name__=="__main__":
     # now we resend the first learner
     l3 = orange.BayesLearner()
     l3.name = 'NB First'
-    ow.learner(l3, 1)
+    ow.learner(l3, 3)
 
-    import orngTree
-    l4 = orngTree.TreeLearner(minSubset=2)
-    l4.name = "Decision Tree"
+    l1.name = 'Maj 1 updated'
+    ow.learner(l1, 1)
+
+    ow.learner(None, 2)
+
+    l4 = orange.MajorityLearner()
+    l4.name = "Maj 2"
     ow.learner(l4, 4)
 
     # and now we kill the first learner    
-    ow.learner(None, 1)    
+    # ow.learner(None, 1)    
 
     ow.show()
     a.exec_loop()
