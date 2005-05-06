@@ -121,8 +121,10 @@ class kNNOptimization(OWBaseWidget):
         self.autoSetTheKValue = 1       # automatically set the value k 
 
         self.loadSettings()
+        """
         for i in range(len(self.recentProjectionFiles))[::-1]:
             if self.recentProjectionFiles[i] != "(None)" and not os.path.exists(self.recentProjectionFiles[i]): self.recentProjectionFiles.remove(self.recentProjectionFiles[i])
+        """
 
         self.tabs = QTabWidget(self, 'tabWidget')
         self.controlArea.addWidget(self.tabs)
