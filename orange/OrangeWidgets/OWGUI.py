@@ -9,6 +9,7 @@ from qt import *
 from qttable import *
 import qwt
 import math
+from OWBaseWidget import mygetattr
 
 ##############################################################################
 # Some common rutines
@@ -46,7 +47,7 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
     widgetLabel(b, label, labelWidth)
     
     wa = QSpinBox(min, max, step, b)
-    wa.setValue(getattr(master, value))
+    wa.setValue(mygetattr(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
 
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
@@ -61,7 +62,7 @@ def checkBox(widget, master, value, label, box=None, tooltip=None, callback=None
     wa = QCheckBox(label, b)
     if labelWidth:
         wa.setFixedSize(labelWidth, wa.sizeHint().height())
-    wa.setChecked(getattr(master, value))
+    wa.setChecked(mygetattr(master, value))
     if disabled: wa.setDisabled(1)
     master.connect(wa, SIGNAL("toggled(bool)"), ValueCallback(master, value))
     master.controledAttributes.append((value, CallFront_checkBox(wa)))
@@ -79,7 +80,7 @@ def lineEdit(widget, master, value, label=None, labelWidth=None, orientation='ve
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     wa = QLineEdit(b)
-    wa.setText(str(getattr(master,value)))
+    wa.setText(str(mygetattr(master,value)))
     if tooltip: QToolTip.add(wa, tooltip)
     if validator: wa.setValidator(validator)
     master.connect(wa, SIGNAL("textChanged(const QString &)"), ValueCallbackLineEdit(wa, master, value, valueType))
@@ -94,7 +95,7 @@ def checkWithSpin(widget, master, label, min, max, checked, value, posttext = No
     wa = checkBox(hb, master, checked, label, callback = checkCallback, labelWidth = labelWidth)
 
     wb = QSpinBox(min, max, step, hb)
-    wb.setValue(getattr(master, value))
+    wb.setValue(mygetattr(master, value))
     if posttext <> None:
         QLabel(posttext, hb)
     # HANDLE TOOLTIP XXX
@@ -134,7 +135,7 @@ def radioButtonsInBox(widget, master, value, btnLabels, box=None, tooltips=None,
         else:
             w = QRadioButton(str(i), bg)
             w.setPixmap(btnLabels[i])
-        w.setOn(getattr(master, value) == i)
+        w.setOn(mygetattr(master, value) == i)
         bg.buttons.append(w)
         if tooltips:
             QToolTip.add(w, tooltips[i])
@@ -156,7 +157,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
     else:
         w = QRadioButton("X")
         w.setPixmap(label)
-    w.setOn(getattr(master, value))
+    w.setOn(mygetattr(master, value))
     if tooltip:
         QToolTip.add(w, tooltip)
     master.connect(w, SIGNAL("stateChanged(int)"), ValueCallback(master, value))
@@ -170,7 +171,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
         sliderBox = QHButtonGroup(box, widget)
     else:
         sliderBox = QHBox(widget)
-    slider = QSlider(minValue, maxValue, step, getattr(master, value), QSlider.Horizontal, sliderBox)
+    slider = QSlider(minValue, maxValue, step, mygetattr(master, value), QSlider.Horizontal, sliderBox)
     if ticks:
         slider.setTickmarks(QSlider.Below)
         slider.setTickInterval(ticks)
@@ -180,7 +181,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     label.setText(labelFormat % maxValue)
     width2 = label.sizeHint().width()
     label.setFixedSize(max(width1, width2), label.sizeHint().height())
-    txt = labelFormat % (getattr(master, value)/divideFactor)
+    txt = labelFormat % (mygetattr(master, value)/divideFactor)
     label.setText(txt)
     label.setLbl = lambda x, l=label, f=labelFormat: l.setText(f % (x/divideFactor))
     master.connect(slider, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
@@ -192,7 +193,7 @@ def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, ca
     return slider
 
 def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, minValue=1, maxValue=10, step=0.1, precision=1, callback=None, logarithmic=0, ticks=0, maxWidth=80):
-    init = getattr(master, value)
+    init = mygetattr(master, value)
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:
@@ -250,8 +251,8 @@ def comboBox(widget, master, value, box=None, label=None, labelWidth=None, orien
         for i in items:
             combo.insertItem(str(i))
         if len(items)>0:
-                if sendSelectedValue and getattr(master, value) in items: combo.setCurrentItem(items.index(getattr(master, value)))
-                elif not sendSelectedValue: combo.setCurrentItem(getattr(master, value))
+                if sendSelectedValue and mygetattr(master, value) in items: combo.setCurrentItem(items.index(mygetattr(master, value)))
+                elif not sendSelectedValue: combo.setCurrentItem(mygetattr(master, value))
         else:
             combo.setDisabled(True)
 
@@ -428,7 +429,7 @@ class Disabler:
             if len(value):
                 disabled = not value[0]
             else:
-                disabled = not getattr(self.master, self.valueName)
+                disabled = not mygetattr(self.master, self.valueName)
         else:
             disabled = 1
             

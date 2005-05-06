@@ -14,6 +14,16 @@ from OWAbout import *
 from orngSignalManager import *
 import time, user
 
+def mygetattr(obj, attr, default = None):
+    if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
+        try:
+            v = eval(compile("obj." + attr, ".", "eval"))
+            return v
+        except:
+            return default
+    else:
+        return getattr(obj, attr, default)
+
 ##################
 # this definitions are needed only to define ExampleTable as subclass of ExampleTableWithClass
 class ExampleTable(orange.ExampleTable):
@@ -130,7 +140,7 @@ class OWBaseWidget(QDialog):
     # Get all settings
     # returns map with all settings
     def getSettings(self):
-        return dict([(x, getattr(self, x, None)) for x in settingsList])
+        return dict([(x, mygetattr(self, x, None)) for x in settingsList])
 
     # Loads settings from the widget's .ini file 
     def loadSettings(self, file = None):
@@ -155,11 +165,13 @@ class OWBaseWidget(QDialog):
         
     def saveSettings(self, file = None):
         if hasattr(self, "settingsList"):
-            #settings = dict([(name, getattr(self, name)) for name in self.settingsList])
+            #settings = dict([(name, mygetattr(self, name)) for name in self.settingsList])
             settings = {}
             for name in self.settingsList:
-                if hasattr(self, name): settings[name] =  getattr(self, name)
-                else:                   print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
+                try:
+                    settings[name] =  mygetattr(self, name)
+                except:
+                    print "Attribute %s not found in %s widget. Remove it from the settings list." % (name, self.title)
                     
             if file==None: file = os.path.join(self.outputDir, self.title + ".ini")
             if type(file) == str:
@@ -180,7 +192,7 @@ class OWBaseWidget(QDialog):
     def saveSettingsStr(self):
         str = ""
         if hasattr(self, "settingsList"):
-            settings = dict([(name, getattr(self, name)) for name in self.settingsList])
+            settings = dict([(name, mygetattr(self, name)) for name in self.settingsList])
             str = cPickle.dumps(settings)
         return str
 
@@ -382,8 +394,14 @@ class OWBaseWidget(QDialog):
         self.printEvent("Error", text)
 
     def __setattr__(self, name, value):
-        if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
-        else:                               self.__dict__[name] = value             # for windows platform
+        if name.count(".") > 0:
+            code = compile("self." + name[:name.rindex(".")], ".", "eval")  # get the instance of the object
+            inst = eval(code)
+            inst.__dict__[name[name.rindex(".")+1:]] = value
+        else:
+            if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
+            else:                               self.__dict__[name] = value             # for windows platform
+
         if hasattr(self, "controledAttributes"):
             for attrname, func in self.controledAttributes:
                 if attrname == name:
