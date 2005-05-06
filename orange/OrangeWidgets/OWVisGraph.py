@@ -9,6 +9,7 @@ import sys, math, os.path, time
 import orange
 import qtcanvas
 import Numeric, RandomArray, MA
+from MA import transpose
 from OWTools import *
 
 ZOOMING = 1
@@ -76,6 +77,7 @@ class OWVisGraph(OWGraph):
         self.jitterSize = 10
         self.jitterContinuous = 0
         self.showFilledSymbols = 1
+        self.showLegend = 1
         self.scaleFactor = 1.0              # used in some visualizations to "stretch" the data - see radviz, polviz
         self.globalValueScaling = 0         # do we want to scale data globally
         self.scalingByVariance = 0          
@@ -86,7 +88,7 @@ class OWVisGraph(OWGraph):
         self.zoomState = ()
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
-        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.Cross]
+        self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
 
         # uncomment this if you want to use printer friendly symbols
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
@@ -173,21 +175,13 @@ class OWVisGraph(OWGraph):
             self.attrValues = {}
         
         self.rawdata = data
-
-        # reset the fliping information    
-        if data != None:
-            for attr in data.domain:
-                self.attributeFlipInfo[attr.name] = 0
         
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
             return
+        else:
+            self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information 
         
-        self.originalData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
-        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
-        self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
-        self.validDataArray = Numeric.ones([len(data.domain), len(data)])
-
         self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.attributeNames = [attr.name for attr in data.domain]
         self.attributeNameIndex = dict([(data.domain[i].name, i) for i in range(len(data.domain))])
@@ -197,12 +191,13 @@ class OWVisGraph(OWGraph):
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
         arr = data.toNumeric("ac", 0, 1, 1)[0]
-        arr = MA.transpose(arr)
-        arr = MA.filled(arr, MA.average(arr, 1))
-        #print type(arr), arr.__class__
-        self.validDataArray = Numeric.ones(Numeric.shape(arr))#Numeric.logical_not(arr.mask())#Numeric.where(arr == 1e20, 0, 1)
-        self.originalData = Numeric.array(arr)
-        self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
+        arr = transpose(arr)
+        #arr = MA.filled(arr, MA.average(arr, 1))
+
+        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
+        self.originalData = arr.filled(1e20)
+        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+        self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
 
         # see if the values for discrete attributes have to be resorted 
         for index in range(len(data.domain)):
@@ -222,7 +217,7 @@ class OWVisGraph(OWGraph):
                 if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
                 count = self.attrValues[attr.name][1]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
-                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
+                self.scaledData[index] = arr[index].filled(1e20) + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
                     arr[index] = (arr[index] - self.domainDataStat[index].avg) / (5*self.domainDataStat[index].dev)
@@ -239,18 +234,17 @@ class OWVisGraph(OWGraph):
                     arr[index] = (arr[index] - float(min)) / diff
 
                 if self.jitterContinuous:
-                    line = arr[index].copy() + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
+                    line = arr[index] + self.jitterSize/50.0 * (0.5 - RandomArray.random(len(data)))
                     line = Numeric.absolute(line)       # fix values below zero
 
                     # fix values above 1
                     ind = Numeric.where(line > 1.0, 1, 0)
                     Numeric.putmask(line, ind, 2.0 - Numeric.compress(ind, line))
-                    self.scaledData[index] = line
+                    self.scaledData[index] = line.filled(1e20)
                 else:
-                    self.scaledData[index] = arr[index]
+                    self.scaledData[index] = arr[index].filled(1e20)
 
-        self.noJitteringScaledData = arr
-        #self.scaledData = Numeric.transpose(self.scaledData)
+        self.noJitteringScaledData = arr.filled(1e20)
         
     # ####################################################################
     # ####################################################################
