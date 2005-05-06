@@ -20,7 +20,10 @@ from sys import getrecursionlimit, setrecursionlimit
 ##### WIDGET : Parallel coordinates visualization
 ###########################################################################################
 class OWParallelCoordinates(OWWidget):
-    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "jitterSize", "showDistributions", "showAttrValues", "hidePureExamples", "globalValueScaling", "linesDistance", "useSplines", "lineTracking", "showLegend", "autoSendSelection", "sendShownAttributes", "toolbarSelection", "showStatistics"]
+    settingsList = ["attrContOrder", "attrDiscOrder", "graphCanvasColor", "graph.jitterSize", "graph.showDistributions",
+                    "graph.showAttrValues", "graph.hidePureExamples", "graph.globalValueScaling", "linesDistance",
+                    "graph.useSplines", "graph.lineTracking", "graph.enabledLegend", "autoSendSelection", "sendShownAttributes",
+                    "toolbarSelection", "graph.showStatistics"]
     attributeContOrder = ["None", "ReliefF", "Fisher discriminant", "Signal to Noise", "Signal to Noise For Each Class"]
     attributeDiscOrder = ["None", "ReliefF", "GainRatio", "Oblivious decision graphs"]
     jitterSizeNums = [0, 2,  5,  10, 15, 20, 30]
@@ -30,24 +33,37 @@ class OWParallelCoordinates(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Parallel Coordinates", TRUE)
         self.resize(700,700)
 
+        #add a graph widget
+        self.box = QVBoxLayout(self.mainArea)
+        self.graph = OWParallelGraph(self, self.mainArea)
+        self.slider = QSlider(QSlider.Horizontal, self.mainArea)
+        self.sliderRange = 0
+        self.slider.setRange(0, 0)
+        self.slider.setTickmarks(QSlider.Below)
+        self.isResizing = 0 
+        self.box.addWidget(self.graph)
+        self.box.addWidget(self.slider)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Selection List", ExampleList, self.exampleSelection), ("Attribute Selection List", AttributeList, self.attributeSelection)]  # ExampleList and AttributeList are defined in OWBaseWidget
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Example selection", list)]
     
         #set default settings
         self.data = None
+        self.attributeSelectionList = None  # set with an input signal
 
-        self.jitterSize = 10
+        self.graph.jitterSize = 10
         self.linesDistance = 60
         
-        self.showDistributions = 1
-        self.showStatistics = 0
-        self.showAttrValues = 1
-        self.hidePureExamples = 1
+        self.graph.showDistributions = 1
+        self.graph.showStatistics = 0
+        self.graph.showAttrValues = 1
+        self.graph.hidePureExamples = 1
         
-        self.globalValueScaling = 0
-        self.useSplines = 0
-        self.lineTracking = 0
-        self.showLegend = 1
+        self.graph.globalValueScaling = 0
+        self.graph.useSplines = 0
+        self.graph.lineTracking = 0
+        self.graph.enabledLegend = 1
         self.autoSendSelection = 1
         self.sendShownAttributes = 0
         self.attrDiscOrder = "None"
@@ -57,7 +73,6 @@ class OWParallelCoordinates(OWWidget):
         self.correlationDict = {}
         self.middleLabels = "Correlations"
         self.exampleSelectionList = None
-        self.attributeSelectionList = None
         self.toolbarSelection = 0
 
         self.setSliderIndex = -1
@@ -71,18 +86,6 @@ class OWParallelCoordinates(OWWidget):
         self.SettingsTab = QVGroupBox(self, "Settings")
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
-
-        #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWParallelGraph(self, self.mainArea)
-        self.slider = QSlider(QSlider.Horizontal, self.mainArea)
-        self.sliderRange = 0
-        self.slider.setRange(0, 0)
-        self.slider.setTickmarks(QSlider.Below)
-        self.isResizing = 0 
-        self.box.addWidget(self.graph)
-        self.box.addWidget(self.slider)
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
         #add controls to self.controlArea widget
         self.targetGroup = QVGroupBox(self.GeneralTab)
@@ -129,7 +132,7 @@ class OWParallelCoordinates(OWWidget):
         # ####################################
         # SETTINGS functionality
         # jittering options
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "jitterSize", 'Jittering size (% of size):  ', box = " Jittering options ", callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "graph.jitterSize", 'Jittering size (% of size):  ', box = " Jittering options ", callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
 
         # attribute axis distance
         OWGUI.comboBoxWithCaption(self.SettingsTab, self, "linesDistance", 'Minimum distance: ', box = " Attribute axis distance ", callback = self.updateGraph, items = self.linesDistanceNums, tooltip = "What is the minimum distance between two adjecent attribute axis", sendSelectedValue = 1, valueType = int)
@@ -137,16 +140,16 @@ class OWParallelCoordinates(OWWidget):
         # ####
         # visual settings
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
-        OWGUI.checkBox(box, self, 'showAttrValues', 'Show attribute values', callback = self.updateValues)
-        OWGUI.checkBox(box, self, 'hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
-        OWGUI.checkBox(box, self, 'useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
-        OWGUI.checkBox(box, self, 'lineTracking', 'Line tracking', callback = self.updateValues, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
-        OWGUI.checkBox(box, self, 'showLegend', 'Show legend', callback = self.updateValues)
-        OWGUI.checkBox(box, self, 'globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
+        OWGUI.checkBox(box, self, 'graph.showAttrValues', 'Show attribute values', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'graph.hidePureExamples', 'Hide pure examples', callback = self.updateValues, tooltip = "When one value of a discrete attribute has only examples from one class, \nstop drawing lines for this example. Figure must be interpreted from left to right.")
+        OWGUI.checkBox(box, self, 'graph.useSplines', 'Show splines', callback = self.updateValues, tooltip  = "Show lines using splines")
+        OWGUI.checkBox(box, self, 'graph.lineTracking', 'Line tracking', callback = self.updateValues, tooltip = "Show nearest example with a wider line. The rest of the lines \nwill be shown in lighter colors.")
+        OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateValues)
+        OWGUI.checkBox(box, self, 'graph.globalValueScaling', 'Global Value Scaling', callback = self.setGlobalValueScaling)
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " Statistics ")
-        OWGUI.comboBox(box3, self, "showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
-        OWGUI.checkBox(box3, self, 'showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
+        OWGUI.comboBox(box3, self, "graph.showStatistics", items = ["No statistics", "Means, deviations", "Median, quartiles"], callback = self.updateValues, sendSelectedValue = 0, valueType = int)
+        OWGUI.checkBox(box3, self, 'graph.showDistributions', 'Show distributions', callback = self.updateValues, tooltip = "Show bars with distribution of class values (only for discrete attributes)")
         
         
         box2 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
@@ -173,9 +176,6 @@ class OWParallelCoordinates(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.updateSettings(enabledLegend = self.showLegend, useSplines = self.useSplines, lineTracking = self.lineTracking)
-        self.graph.updateSettings(showDistributions = self.showDistributions, showAttrValues = self.showAttrValues, hidePureExamples = self.hidePureExamples)
-        self.graph.updateSettings(globalValueScaling = self.globalValueScaling, jitterSize = self.jitterSize, showStatistics = self.showStatistics)
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
 
@@ -216,7 +216,7 @@ class OWParallelCoordinates(OWWidget):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
@@ -228,7 +228,7 @@ class OWParallelCoordinates(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
 
@@ -417,13 +417,14 @@ class OWParallelCoordinates(OWWidget):
         self.cdata(self.data)
 
     def attributeSelection(self, attributeSelectionList):
+        self.attributeSelectionList = attributeSelectionList
         if self.data and attributeSelectionList:
             domain = [attr.name for attr in self.data.domain]
             for attr in attributeSelectionList:
                 if attr not in domain:  # this attribute list belongs to a new dataset that has not come yet
-                    self.attributeSelectionList = attributeSelectionList
                     return
             self.setShownAttributeList(self.data, attributeSelectionList)
+            self.attributeSelectionList = None
             self.updateGraph()
             self.sendSelections()
 
@@ -465,8 +466,6 @@ class OWParallelCoordinates(OWWidget):
 
     def updateValues(self):
         self.isResizing = 0
-        self.graph.updateSettings(showDistributions = self.showDistributions, useSplines = self.useSplines, enabledLegend = self.showLegend, lineTracking = self.lineTracking)
-        self.graph.updateSettings(showAttrValues = self.showAttrValues, hidePureExamples = self.hidePureExamples, showStatistics = self.showStatistics)
         self.updateGraph()
 
     def resizeEvent(self, e):
@@ -476,16 +475,14 @@ class OWParallelCoordinates(OWWidget):
     # jittering options
     def setJitteringSize(self):
         self.isResizing = 0
-        self.graph.jitterSize = self.jitterSize
         self.graph.setData(self.data)
         self.updateGraph()
 
     def setGlobalValueScaling(self):
         self.isResizing = 0
-        self.graph.globalValueScaling = self.globalValueScaling
         if not self.exampleSelectionList: self.graph.setData(self.data)
         else: self.graph.setData(self.data.select(self.exampleSelectionList))
-        if self.globalValueScaling:
+        if self.graph.globalValueScaling:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())        # we need to call this so that attributes are really rescaled in respect to the CURRENTLY SHOWN ATTRIBUTES
         self.updateGraph()
 

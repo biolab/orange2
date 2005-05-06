@@ -97,6 +97,8 @@ class OWRadvizGraph(OWVisGraph):
         self.clusterClosure = None
         self.showClusters = 0
         self.showAttributeNames = 1
+        self.normalizeExamples = 1
+        self.showProbabilities = 0
 
         self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
         self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
@@ -115,7 +117,7 @@ class OWRadvizGraph(OWVisGraph):
         classifier = orange.P2NN(self.rawdata, self.anchorData, self.normalizeExamples, domain, law=self.radvizWidget.law)
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
-        imagebmp, nShades = orangeom.potentialsBitmap(classifier, rx, ry, 3, self.trueScaleFactor)
+        imagebmp, nShades = orangeom.potentialsBitmap(classifier, rx, ry, self.trueScaleFactor)
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         colors = [(i.red(), i.green(), i.blue()) for i in classColors]
 #        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
@@ -134,8 +136,6 @@ class OWRadvizGraph(OWVisGraph):
 
 
     def drawCanvasItems(self, painter, rect, map, pfilter):
-        #print rect.x(), rect.y(), rect.width(), rect.height()
-        #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
         if self.showProbabilities and getattr(self, "rawdata", None):
             rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
             ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
@@ -149,7 +149,6 @@ class OWRadvizGraph(OWVisGraph):
     def createAnchors(self, numOfAttr, labels = None):
         xAnchors = self.createXAnchors(numOfAttr).tolist()
         yAnchors = self.createYAnchors(numOfAttr).tolist()
-
         if labels:
             return [(xAnchors[i], yAnchors[i], labels[i]) for i in range(numOfAttr)]
         else:
@@ -368,7 +367,6 @@ class OWRadvizGraph(OWVisGraph):
                 if self.useDifferentSymbols: curveSymbol = self.curveSymbols[i]
                 else: curveSymbol = self.curveSymbols[0]
 
-                print pos[i][0]
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = curveSymbol, xData = pos[i][0], yData = pos[i][1])
                 for k in range(len(pos[i][0])):
                     self.addTooltipKey(pos[i][0][k], pos[i][1][k], newColor, pos[i][2][k])
@@ -463,19 +461,20 @@ class OWRadvizGraph(OWVisGraph):
 
 
     def onMousePressed(self, e):
-        if self.radvizWidget.manualPositioningButton.isOn():
+        if self.manualPositioning:
             self.mouseCurrentlyPressed = 1
             (key, dist, foo1, foo2, index) = self.closestCurve(e.x(), e.y())
             if dist < 5 and str(self.curve(key).title()) == "dots":
                 self.selectedAnchorIndex = index
             else:
                 self.selectedAnchorIndex = None
+            print self.selectedAnchorIndex
         else:
             OWVisGraph.onMousePressed(self, e)
 
 
     def onMouseReleased(self, e):
-        if self.radvizWidget.manualPositioningButton.isOn():
+        if self.manualPositioning:
             self.mouseCurrentlyPressed = 0
             self.selectedAnchorIndex = None
         else:
@@ -501,7 +500,7 @@ class OWRadvizGraph(OWVisGraph):
             OWVisGraph.onMouseMoved(self, e)
             if redraw: self.replot()
 
-            if self.radvizWidget.manualPositioningButton.isOn():
+            if self.manualPositioning:
                 if self.selectedAnchorIndex != None:
                     if self.radvizWidget.lockToCircle:
                         rad = math.sqrt(xFloat**2 + yFloat**2)
@@ -525,7 +524,13 @@ class OWRadvizGraph(OWVisGraph):
                     nearestPoint = (x_i, y_i, color, index)
 
             (x_i, y_i, color, index) = nearestPoint
-            if self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
+            intX = self.transform(QwtPlot.xBottom, x_i)
+            intY = self.transform(QwtPlot.yLeft, y_i)
+            if len(self.anchorData) > 100:
+                text = "Too many attributes.<hr>Example index = %d" % (index+1)
+                self.showTip(intX, intY, text)
+
+            elif self.tooltipKind == LINE_TOOLTIPS and bestDist < 0.05:
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     # draw lines
@@ -544,8 +549,6 @@ class OWRadvizGraph(OWVisGraph):
 
                     self.tooltipMarkers.append(marker)
             elif self.tooltipKind == VISIBLE_ATTRIBUTES or self.tooltipKind == ALL_ATTRIBUTES:
-                intX = self.transform(QwtPlot.xBottom, x_i)
-                intY = self.transform(QwtPlot.yLeft, y_i)
                 text = ""
                 if self.tooltipKind == VISIBLE_ATTRIBUTES:
                     shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
@@ -603,48 +606,6 @@ class OWRadvizGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
-
-    """
-    def createCombinations(self, currCombination, count, attrList, combinations):
-        
-        if count > attrList: return combinations
-
-        if count == 0 and len(currCombination) > 2:
-            combinations.append(currCombination)
-            return combinations
-
-        if len(attrList) == 0: return combinations
-        temp = list(currCombination) + [attrList[0]]
-        temp[0] += attrList[0][0]
-        combinations = self.createCombinations(temp, count-1, attrList[1:], combinations)
-
-        combinations = self.createCombinations(currCombination, count, attrList[1:], combinations)
-        return combinations
-    """
-
-    def createCombinations(self, attrList, count):
-        if count > len(attrList): return []
-        answer = []
-        indices = range(count)
-        indices[-1] = indices[-1] - 1
-        while 1:
-            limit = len(attrList) - 1
-            i = count - 1
-            while i >= 0 and indices[i] == limit:
-                i = i - 1
-                limit = limit - 1
-            if i < 0: break
-
-            val = indices[i]
-            for i in xrange( i, count ):
-                val = val + 1
-
-                indices[i] = val
-            temp = []
-            for i in indices:
-                temp.append( attrList[i] )
-            answer.append( temp )
-        return answer
 
     # ############################################################## 
     # create x-y projection of attributes in attrList
@@ -727,9 +688,10 @@ class OWRadvizGraph(OWVisGraph):
             sum_i += Numeric.where(sum_i == 0, 1.0, 0.0)
         return sum_i        
 
-    # #######################################
-    # try to find the optimal attribute order by trying all diferent circular permutations
-    # and calculating a variation of mean K nearest neighbours to evaluate the permutation
+
+    # #######################################################################################################
+    # ####    GET OPTIMAL SEPARATION #####################################################################
+    # #######################################################################################################
     def getOptimalSeparation(self, attributes, minLength, maxLength, addResultFunct):
         dataSize = len(self.rawdata)
         self.triedPossibilities = 0
@@ -895,7 +857,7 @@ class OWRadvizGraph(OWVisGraph):
     # #######################################################################################################
     # ####    OPTIMIZE GIVEN PROJECTION      ################################################################
     # #######################################################################################################
-    def optimizeGivenProjection(self, projection, accuracy, attributes, addResultFunct, restartWhenImproved = 0, maxProjectionLen = -1):
+    def optimizeGivenProjection(self, attrLists, accuracys, attributes, addResultFunct, restartWhenImproved = 1, maxProjectionLen = -1):
         dataSize = len(self.rawdata)
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         self.triedPossibilities = 0
@@ -903,80 +865,84 @@ class OWRadvizGraph(OWVisGraph):
         # replace attribute names with indices in domain - faster searching
         attributes = [self.attributeNameIndex[name] for name in attributes]
         lenOfAttributes = len(attributes)
-        projection = [self.attributeNameIndex[name] for name in projection]
+        attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]
 
         # variables and domain for the table
         domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
         anchorList = [(self.createXAnchors(i), self.createYAnchors(i)) for i in range(3, 50)]
         classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
         startTime = time.time()
-        
-        optimizedProjection = 1
-        while optimizedProjection:
-            optimizedProjection = 0
-            significantImprovement = 0
+
+        for i in range(len(attrLists)):
+            projection = attrLists[i]
+            accuracy = accuracys[i]
+            optimizedProjection = 1
             
-            # in the first step try to find a better projection by substituting an existent attribute with a new one
-            # in the second step try to find a better projection by adding a new attribute to the circle
-            for iteration in range(2):
-                if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
-                if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                strTotalAtts = createStringFromNumber(lenOfAttributes)
-                listOfCanditates = []
-                for (attrIndex, attr) in enumerate(attributes):
-                    if attr in projection: continue
-                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
+            while optimizedProjection:
+                optimizedProjection = 0
+                significantImprovement = 0
+                
+                # in the first step try to find a better projection by substituting an existent attribute with a new one
+                # in the second step try to find a better projection by adding a new attribute to the circle
+                for iteration in range(2):
+                    if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
+                    if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
+                    strTotalAtts = createStringFromNumber(lenOfAttributes)
+                    listOfCanditates = []
+                    for (attrIndex, attr) in enumerate(attributes):
+                        if attr in projection: continue
+                        if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
 
-                    projections = [copy(projection) for i in range(len(projection))]
-                    if iteration == 0:  # replace one attribute in each projection with attribute attr
-                        count = len(projection)
-                        for i in range(count): projections[i][i] = attr
-                    elif iteration == 1:
-                        count = len(projection) + 1
-                        for i in range(count-1): projections[i].insert(i, attr)
+                        projections = [copy(projection) for i in range(len(projection))]
+                        if iteration == 0:  # replace one attribute in each projection with attribute attr
+                            count = len(projection)
+                            for i in range(count): projections[i][i] = attr
+                        elif iteration == 1:
+                            count = len(projection) + 1
+                            for i in range(count-1): projections[i].insert(i, attr)
 
-                    if len(anchorList) < count-3: anchorList.append((self.createXAnchors(count), self.createYAnchors(count)))
+                        if len(anchorList) < count-3: anchorList.append((self.createXAnchors(count), self.createYAnchors(count)))
 
-                    XAnchors = anchorList[count-3][0]
-                    YAnchors = anchorList[count-3][1]
-                    validData = self.getValidList(projections[0])
-                    classList = Numeric.compress(validData, classListFull)
-                    
-                    tempList = []
-                    for testProj in projections:
-                        if self.kNNOptimization.isOptimizationCanceled(): return
-
-                        table = self.createProjectionAsExampleTable(testProj, validData, classList, None, XAnchors, YAnchors, domain)
-                        acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                        XAnchors = anchorList[count-3][0]
+                        YAnchors = anchorList[count-3][1]
+                        validData = self.getValidList(projections[0])
+                        classList = Numeric.compress(validData, classListFull)
                         
-                        # save the permutation
-                        tempList.append((acc, other_results, len(table), testProj))
+                        tempList = []
+                        for testProj in projections:
+                            if self.kNNOptimization.isOptimizationCanceled(): return
 
-                        del table
-                        self.triedPossibilities += 1
-                        qApp.processEvents()        # allow processing of other events
-                        if self.kNNOptimization.isOptimizationCanceled(): return
+                            table = self.createProjectionAsExampleTable(testProj, validData, classList, None, XAnchors, YAnchors, domain)
+                            acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                            
+                            # save the permutation
+                            tempList.append((acc, other_results, len(table), testProj))
 
-                    # return only the best attribute placements
-                    (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
-                    if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
-                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
-                        self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
-                        #if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
-                        optimizedProjection = 1
-                        listOfCanditates.append((acc, attrList))
-                        if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
-                    else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
-                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
-                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
+                            del table
+                            self.triedPossibilities += 1
+                            qApp.processEvents()        # allow processing of other events
+                            if self.kNNOptimization.isOptimizationCanceled(): return
 
-                    del validData, classList, projections
+                        # return only the best attribute placements
+                        (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
+                        if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
+                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
+                            self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                            if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
+                            #optimizedProjection = 1
+                            listOfCanditates.append((acc, attrList))
+                            if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
+                        else:
+                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
+                            if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
+                                addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
 
-                # select the best new projection and say this is now our new projection to optimize    
-                if len(listOfCanditates) > 0:
-                    (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
-                    self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+                        del validData, classList, projections
+
+                    # select the best new projection and say this is now our new projection to optimize    
+                    if len(listOfCanditates) > 0:
+                        (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
+                        self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
         secs = time.time() - startTime
         self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))

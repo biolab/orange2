@@ -22,7 +22,9 @@ import OWToolbars
 ##### WIDGET : Polyviz visualization
 ###########################################################################################
 class OWPolyviz(OWWidget):
-    settingsList = ["pointWidth", "lineLength", "jitterSize", "graphCanvasColor", "globalValueScaling", "enhancedTooltips", "scaleFactor", "showLegend", "showFilledSymbols", "optimizedDrawing", "useDifferentSymbols", "autoSendSelection", "useDifferentColors", "tooltipKind", "tooltipValue", "toolbarSelection"]
+    settingsList = ["graph.pointWidth", "lineLength", "graph.jitterSize", "graphCanvasColor", "graph.globalValueScaling", "graph.scaleFactor",
+                    "graph.enabledLegend", "graph.showFilledSymbols", "graph.optimizedDrawing", "graph.useDifferentSymbols", "autoSendSelection",
+                    "graph.useDifferentColors", "graph.tooltipKind", "graph.tooltipValue", "toolbarSelection", "VizRankClassifierName"]
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0]
@@ -31,30 +33,36 @@ class OWPolyviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Selection", list, self.selection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass)]
+        #add a graph widget
+        self.box = QVBoxLayout(self.mainArea)
+        self.graph = OWPolyvizGraph(self, self.mainArea)
+        self.box.addWidget(self.graph)
+
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
 
         #set default settings
-        self.pointWidth = 5
+        self.graph.pointWidth = 5
         self.lineLength = 2
-        self.scaleFactor = 1.0
-        self.enhancedTooltips = 1
-        self.globalValueScaling = 0
-        self.jitterSize = 1
+        self.graph.scaleFactor = 1.0
+        self.graph.globalValueScaling = 0
+        self.graph.jitterSize = 1
         self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
-        self.showLegend = 1
-        self.showFilledSymbols = 1
-        self.optimizedDrawing = 1
-        self.useDifferentSymbols = 0
-        self.useDifferentColors = 1
+        self.graph.enabledLegend = 1
+        self.graph.showFilledSymbols = 1
+        self.graph.optimizedDrawing = 1
+        self.graph.useDifferentSymbols = 0
+        self.graph.useDifferentColors = 1
         self.autoSendSelection = 1
         self.rotateAttributes = 0
-        self.tooltipKind = 0
-        self.tooltipValue = 0
+        self.graph.tooltipKind = 0
+        self.graph.tooltipValue = 0
         self.toolbarSelection = 0
         self.graphCanvasColor = str(Qt.white.name())
+        self.VizRankClassifierName = "VizRank classifier (Polyviz)"
         
         self.data = None
+        self.attributeSelectionList = None
 
         #load settings
         self.loadSettings()
@@ -67,10 +75,6 @@ class OWPolyviz(OWWidget):
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
         #GUI
-        #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWPolyvizGraph(self, self.mainArea)
-        self.box.addWidget(self.graph)
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         self.graph.updateSettings(statusBar = self.statusBar)
@@ -96,7 +100,7 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.optimizeGivenProjectionButton.show()
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
-        self.graph.autoSendSelectionCallback = self.setAutoSendSelection
+        self.graph.autoSendSelectionCallback = self.selectionChanged
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
@@ -109,29 +113,29 @@ class OWPolyviz(OWWidget):
         # ####################################
         # SETTINGS TAB
         # #####
-        OWGUI.hSlider(self.SettingsTab, self, 'pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback = self.updateValues, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback = self.updateGraph, ticks=1)
         OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box='Line length', minValue=1, maxValue=5, step=1, callback = self.updateValues, ticks=1)
 
         box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
-        OWGUI.comboBoxWithCaption(box, self, "jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
 
-        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.updateValues, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.comboBoxWithCaption(self.SettingsTab, self, "graph.scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
         box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
-        OWGUI.checkBox(box2, self, 'showLegend', 'Show legend', callback = self.updateValues)
-        OWGUI.checkBox(box2, self, 'globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling, tooltip = "Scale values of all attributes based on min and max value of all attributes. Usually unchecked.")
-        OWGUI.checkBox(box2, self, 'optimizedDrawing', 'Optimize drawing (biased)', callback = self.updateValues, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
-        OWGUI.checkBox(box2, self, 'useDifferentSymbols', 'Use different symbols', callback = self.updateValues, tooltip = "Show different class values using different symbols")
-        OWGUI.checkBox(box2, self, 'useDifferentColors', 'Use different colors', callback = self.updateValues, tooltip = "Show different class values using different colors")
-        OWGUI.checkBox(box2, self, 'showFilledSymbols', 'Show filled symbols', callback = self.updateValues)
+        OWGUI.checkBox(box2, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
+        OWGUI.checkBox(box2, self, 'graph.globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling, tooltip = "Scale values of all attributes based on min and max value of all attributes. Usually unchecked.")
+        OWGUI.checkBox(box2, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box2, self, 'graph.useDifferentSymbols', 'Use different symbols', callback = self.updateGraph, tooltip = "Show different class values using different symbols")
+        OWGUI.checkBox(box2, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
+        OWGUI.checkBox(box2, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
-        OWGUI.comboBox(box3, self, "tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
-        OWGUI.comboBox(box3, self, "tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateValues, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
+        OWGUI.comboBox(box3, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        OWGUI.comboBox(box3, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
 
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
-        OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
+        OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
 
         # ####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
@@ -169,17 +173,9 @@ class OWPolyviz(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.updateSettings(showLegend = self.showLegend, showFilledSymbols = self.showFilledSymbols, optimizedDrawing = self.optimizedDrawing)
-        self.graph.pointWidth = self.pointWidth
-        self.graph.globalValueScaling = self.globalValueScaling
-        self.graph.jitterSize = self.jitterSize
-        self.graph.scaleFactor = self.scaleFactor
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
-        self.graph.useDifferentSymbols = self.useDifferentSymbols
-        self.graph.useDifferentColors = self.useDifferentColors
-        self.graph.tooltipKind = self.tooltipKind
-        self.graph.tooltipValue = self.tooltipValue
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
+        self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
 
     # #########################
     # KNN OPTIMIZATION BUTTON EVENTS
@@ -239,11 +235,7 @@ class OWPolyviz(OWWidget):
         # use the heuristic to test only most interesting attribute orders
         if self.optimizationDlg.useHeuristicToFindAttributeOrders:
             self.optimizationDlg.setStatusBarText("Evaluating attributes...")
-            contAttrs = []
-            for attr in self.data.domain.attributes:
-                if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
-            attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix(), contAttrs)
-
+            attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
             self.optimizationDlg.setStatusBarText("")
 
             self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
@@ -296,8 +288,6 @@ class OWPolyviz(OWWidget):
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
 
-
-
     def reverseSelectedAttribute(self, item):
         text = str(item.text())
         name = text[:-2]
@@ -349,6 +339,9 @@ class OWPolyviz(OWWidget):
         self.send("Selected Examples",selected)
         self.send("Unselected Examples",unselected)
         self.send("Example Distribution", merged)
+
+    def sendShownAttributes(self):
+        self.send("Attribute Selection List", self.getShownAttributeList())
         
     # ####################
     # LIST BOX FUNCTIONS
@@ -384,7 +377,7 @@ class OWPolyviz(OWWidget):
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
 
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
@@ -397,7 +390,7 @@ class OWPolyviz(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
@@ -408,14 +401,42 @@ class OWPolyviz(OWWidget):
         self.graph.updateData(self.getShownAttributeList(), self.attributeReverse)
         self.graph.update()
         self.repaint()
+    
+    def getShownAttributeList(self):
+        return [str(self.shownAttribsLB.text(i))[:-2] for i in range(self.shownAttribsLB.count())]
 
-        
-    def getShownAttributeList (self):
-        list = []
-        for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i))[:-2])
-        return list
+    def setShownAttributeList(self, data, shownAttributes = None):
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
 
+        if data == None: return
+
+        if shownAttributes:
+            # we already have the list of attributes to show
+            shown = shownAttributes;  hidden = []
+            if shownAttributes != None:
+                for attr in data.domain:
+                    if attr.name not in shown: hidden.append(attr.name)
+            for attr in shown:
+                if self.attributeReverse[attr]: self.shownAttribsLB.insertItem(attr + " -")
+                else:                           self.shownAttribsLB.insertItem(attr + " +")
+            for attr in hidden:
+                self.attributeReverse[attr] = 0
+                self.hiddenAttribsLB.insertItem(attr + " +")
+        else:
+            for attr in data.domain.attributes[:10]:
+                if self.attributeReverse[attr.name]: self.shownAttribsLB.insertItem(attr.name + " -")
+                else:                                self.shownAttribsLB.insertItem(attr.name + " +")
+            if len(data.domain.attributes) > 10:
+                for attr in data.domain.attributes[10:]:
+                    self.attributeReverse[attr.name] = 0
+                    self.hiddenAttribsLB.insertItem(attr.name + " +")
+            if data.domain.classVar:
+                if self.attributeReverse[attr.name]: self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " -")
+                else:                                self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
+                
+        self.sendShownAttributes()
+    
     ##############################################
     
     
@@ -423,68 +444,56 @@ class OWPolyviz(OWWidget):
     # receive new data and update all fields
     def cdata(self, data, keepMinMaxVals = 0):
         if data:
-            name = ""
-            if hasattr(data, "name"): name = data.name
+            name = getattr(data, "name", "")
             data = orange.Preprocessor_dropMissingClasses(data)
             data.name = name
         if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.optimizationDlg.clearResults()
-        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
+        
         exData = self.data
         self.data = data
         self.graph.setData(self.data, keepMinMaxVals)
+        self.optimizationDlg.setData(data)
 
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)):    # preserve attribute choice if the domain is the same
-            self.shownAttribsLB.clear()
-            self.hiddenAttribsLB.clear()
             self.attributeReverse = {}
-            
             if data:
                 for attr in data.domain: self.attributeReverse[attr.name] = 0   # set reverse parameter to 0
-                for i in range(len(data.domain.attributes)):
-                    if i < 25: self.shownAttribsLB.insertItem(data.domain.attributes[i].name + " +")
-                    else: self.hiddenAttribsLB.insertItem(data.domain.attributes[i].name + " +")
-                if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
-        
+            self.setShownAttributeList(data, self.attributeSelectionList)
+            
         self.updateGraph()
         self.sendSelections()
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
-    def selection(self, list):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+    def attributeSelection(self, attributeSelectionList):
+        self.attributeSelectionList = attributeSelectionList
+        if self.data and attributeSelectionList:
+            domain = [attr.name for attr in self.data.domain]
+            for attr in attributeSelectionList:
+                if attr not in domain or not self.attributeReverse.has_key(attr): return  # this attribute list belongs to a new dataset that has not come yet
 
-        if self.data == None: return
-
-        for attr in self.data.domain:
-            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
-            else:                 self.hiddenAttribsLB.insertItem(attr.name)
-
+            self.setShownAttributeList(self.data, attributeSelectionList)
+            self.attributeSelectionList = None
+            self.selectionChanged()
+    
         self.updateGraph()
-
 
     # #########################
     # POLYVIZ EVENTS
     # #########################
     def updateValues(self):
         self.graph.setLineLength(self.lineLength)
-        self.graph.updateSettings(pointWidth = self.pointWidth, showFilledSymbols = self.showFilledSymbols, useDifferentSymbols = self.useDifferentSymbols)
-        self.graph.updateSettings(useDifferentColors = self.useDifferentColors, showLegend = self.showLegend, optimizedDrawing = self.optimizedDrawing, scaleFactor = self.scaleFactor)
-        self.graph.updateSettings(tooltipKind = self.tooltipKind, tooltipValue = self.tooltipValue)
         self.updateGraph()
     
     def setJitteringSize(self):
-        self.graph.jitterSize = self.jitterSize
         self.graph.setData(self.data)
         self.updateGraph()
 
     def setGlobalValueScaling(self):
-        self.graph.globalValueScaling = self.globalValueScaling
         self.graph.setData(self.data)
         self.updateGraph()
 
-    def setAutoSendSelection(self):
+    def selectionChanged(self):
         if self.autoSendSelection:
             self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
             self.sendSelections()

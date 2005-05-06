@@ -18,7 +18,7 @@ import OWGUI
 ##### WIDGET : Survey plot visualization
 ###########################################################################################
 class OWSurveyPlot(OWWidget):
-    settingsList = ["attrDiscOrder", "attrContOrder", "globalValueScaling", "exampleTracking", "showLegend", "tooltipKind"]
+    settingsList = ["attrDiscOrder", "attrContOrder", "graph.globalValueScaling", "graph.exampleTracking", "graph.enabledLegend", "graph.tooltipKind"]
     attributeContOrder = ["None","ReliefF", "Fisher discriminant"]
     attributeDiscOrder = ["None","ReliefF","GainRatio", "Oblivious decision graphs"]
 
@@ -26,16 +26,23 @@ class OWSurveyPlot(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata)]
-        self.outputs = [("Selection", list)] 
+        self.outputs = [("Selection", list)]
+
+        #add a graph widget
+        self.box = QVBoxLayout(self.mainArea)
+        self.graph = OWSurveyPlotGraph(self.mainArea)
+        self.box.addWidget(self.graph)
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+
 
         #set default settings
         self.data = None
-        self.globalValueScaling = 0
-        self.exampleTracking = 1
-        self.showLegend = 1
+        self.graph.globalValueScaling = 0
+        self.graph.exampleTracking = 1
+        self.graph.enabledLegend = 1
+        self.graph.tooltipKind = 1
         self.attrDiscOrder = "None"
         self.attrContOrder = "None"
-        self.tooltipKind = 1
         self.graphCanvasColor = str(Qt.white.name())
 
         #load settings
@@ -48,13 +55,6 @@ class OWSurveyPlot(OWWidget):
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
 
-        #add a graph widget
-        self.box = QVBoxLayout(self.mainArea)
-        self.graph = OWSurveyPlotGraph(self.mainArea)
-        self.box.addWidget(self.graph)
-        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
-
-        
         #add controls to self.controlArea widget
         self.sortingAttrGB = QVGroupBox(self.GeneralTab)
         self.shownAttribsGroup = QVGroupBox(self.GeneralTab)
@@ -100,15 +100,15 @@ class OWSurveyPlot(OWWidget):
         # survey plot settings
         # ####
         box = OWGUI.widgetBox(self.SettingsTab, " Visual settings ")
-        OWGUI.checkBox(box, self, "globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
-        OWGUI.checkBox(box, self, "exampleTracking", "Enable example tracking", callback = self.updateValues)
-        OWGUI.checkBox(box, self, "showLegend", "Show legend", callback = self.updateValues)
+        OWGUI.checkBox(box, self, "graph.globalValueScaling", "Global Value Scaling", callback = self.setGlobalValueScaling)
+        OWGUI.checkBox(box, self, "graph.exampleTracking", "Enable example tracking", callback = self.updateValues)
+        OWGUI.checkBox(box, self, "graph.enabledLegend", "Show legend", callback = self.updateValues)
 
         OWGUI.comboBox(self.SettingsTab, self, "attrContOrder", box = " Continuous attribute ordering ", items = self.attributeContOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
         OWGUI.comboBox(self.SettingsTab, self, "attrDiscOrder", box = " Discrete attribute ordering ", items = self.attributeDiscOrder, callback = self.updateShownAttributeList, sendSelectedValue = 1, valueType = str)
 
         box = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
-        OWGUI.comboBox(box, self, "tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
+        OWGUI.comboBox(box, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateValues)
 
 
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
@@ -122,12 +122,7 @@ class OWSurveyPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.graph.exampleTracking = self.exampleTracking
-        self.graph.enabledLegend = self.showLegend
-        self.graph.globalValueScaling = self.globalValueScaling
-        self.graph.tooltipKind = self.tooltipKind
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
-        
 
     # ####################
     # LIST BOX FUNCTIONS
@@ -162,7 +157,7 @@ class OWSurveyPlot(OWWidget):
                 text = self.hiddenAttribsLB.text(i)
                 self.hiddenAttribsLB.removeItem(i)
                 self.shownAttribsLB.insertItem(text, pos)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
@@ -175,7 +170,7 @@ class OWSurveyPlot(OWWidget):
                 text = self.shownAttribsLB.text(i)
                 self.shownAttribsLB.removeItem(i)
                 self.hiddenAttribsLB.insertItem(text, pos)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
         #self.graph.replot()
@@ -289,9 +284,6 @@ class OWSurveyPlot(OWWidget):
     #################################################
 
     def updateValues(self):
-        self.graph.exampleTracking = self.exampleTracking
-        self.graph.enabledLegend = self.showLegend
-        self.graph.tooltipKind = self.tooltipKind
         self.updateGraph()
 
     # update attribute ordering
@@ -305,11 +297,10 @@ class OWSurveyPlot(OWWidget):
         self.graph.replot()
 
     def setGlobalValueScaling(self):
-        self.graph.globalValueScaling = self.globalValueScaling
         self.graph.setData(self.data)
 
         # this is not optimal, because we do the rescaling twice (TO DO)
-        if self.globalValueScaling == 1:
+        if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
 
         self.updateGraph()
