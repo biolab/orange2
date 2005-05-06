@@ -33,6 +33,18 @@ class OWPolyviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
+
+        # local variables
+        self.lineLength = 2
+        self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
+        self.autoSendSelection = 1
+        self.rotateAttributes = 0
+        self.toolbarSelection = 0
+        self.graphCanvasColor = str(Qt.white.name())
+        self.VizRankClassifierName = "VizRank classifier (Polyviz)"
+
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
         self.graph = OWPolyvizGraph(self, self.mainArea)
@@ -41,35 +53,25 @@ class OWPolyviz(OWWidget):
         # optimization dlg
         self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "Polyviz")
         self.graph.kNNOptimization = self.optimizationDlg
-        self.optimizationDlg.optimizeGivenProjectionButton.show()
+        self.optimizationDlg.optimizeGivenProjectionButton.show()        
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
-
-        #set default settings
+        # graph variables        
         self.graph.pointWidth = 5
-        self.lineLength = 2
         self.graph.scaleFactor = 1.0
         self.graph.globalValueScaling = 0
         self.graph.jitterSize = 1
-        self.attributeReverse = {}  # dictionary with bool values - do we want to reverse attribute values
         self.graph.enabledLegend = 1
         self.graph.showFilledSymbols = 1
         self.graph.optimizedDrawing = 1
         self.graph.useDifferentSymbols = 0
         self.graph.useDifferentColors = 1
-        self.autoSendSelection = 1
-        self.rotateAttributes = 0
         self.graph.tooltipKind = 0
         self.graph.tooltipValue = 0
-        self.toolbarSelection = 0
-        self.graphCanvasColor = str(Qt.white.name())
-        self.VizRankClassifierName = "VizRank classifier (Polyviz)"
-        
+                
         self.data = None
         self.attributeSelectionList = None
 
-        #load settings
+        # load settings
         self.loadSettings()
 
         # add a settings dialog and initialize its values

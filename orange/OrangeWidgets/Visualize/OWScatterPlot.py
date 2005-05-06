@@ -32,14 +32,21 @@ class OWScatterPlot(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
 
-        self.graph = OWScatterPlotGraph(self, self.mainArea)
-
-        #set default settings
-        
+        # local variables
         self.showXAxisTitle = 1
         self.showYAxisTitle = 1
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
+        self.autoSendSelection = 1
+        self.toolbarSelection = 0
+        self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
+        self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
+        self.graphCanvasColor = str(Qt.white.name())
+        self.graphGridColor = str(Qt.black.name())
+
+        self.graph = OWScatterPlotGraph(self, self.mainArea)
+
+        # graph variables
         self.graph.pointWidth = 5
         self.graph.enabledLegend = 1
         self.graph.showDistributions = 0
@@ -49,14 +56,8 @@ class OWScatterPlot(OWWidget):
         self.graph.jitterContinuous = 0
         self.graph.jitterSize = 5
         self.graph.showFilledSymbols = 1
-        self.autoSendSelection = 1
-        self.toolbarSelection = 0
         self.graph.showAxisScale = 1
-        self.VizRankClassifierName = "VizRank classifier (Scatterplot)"
-        self.clusterClassifierName = "Visual cluster classifier (Scatterplot)"
-        
-        self.graphCanvasColor = str(Qt.white.name())
-        self.graphGridColor = str(Qt.black.name())
+       
         self.data = None
 
         #load settings

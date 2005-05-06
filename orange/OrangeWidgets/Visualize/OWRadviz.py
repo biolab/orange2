@@ -37,6 +37,26 @@ class OWRadviz(OWWidget):
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner), ("FreeViz learner", orange.Learner)]
+
+        # local variables
+        self.showAllAttributes = 0
+        self.attractG = 1.0
+        self.repelG = 1.0
+        self.law = 0
+        self.lockToCircle = 0
+        self.showOptimizationSteps = 0
+        self.valueScalingType = 0
+        self.scaleFactor = 1.0
+        self.scaleFactorItem = 1
+        self.autoSendSelection = 1
+        self.graphCanvasColor = str(Qt.white.name())
+        self.data = None
+        self.toolbarSelection = 0
+        self.VizRankClassifierName = "VizRank classifier (Radviz)"
+        self.clusterClassifierName = "Visual cluster classifier (Radviz)"
+        self.classificationResults = None
+        self.attributeSelectionList = None
+
         
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -56,37 +76,20 @@ class OWRadviz(OWWidget):
         # freeviz dialog
         self.freeVizDlg = FreeVizOptimization(self, self.signalManager, self.graph, "Radviz")
 
-        # variables
+        # graph variables
         self.graph.manualPositioning = 0
-        self.showAllAttributes = 0
-        self.attractG = 1.0
-        self.repelG = 1.0
-        self.law = 0
         self.graph.hideRadius = 0
+        self.graph.showClusters = 0
         self.graph.showAnchors = 1
-        self.lockToCircle = 0
-        self.showOptimizationSteps = 0
-        self.valueScalingType = 0
         self.graph.jitterContinuous = 0
-        self.scaleFactor = 1.0
-        self.scaleFactorItem = 1
         self.graph.normalizeExamples = 1
         self.graph.showProbabilities = 0
         self.graph.optimizedDrawing = 1
         self.graph.useDifferentSymbols = 0
         self.graph.useDifferentColors = 1
-        self.autoSendSelection = 1
         self.graph.tooltipKind = 0
         self.graph.tooltipValue = 0
-        self.graphCanvasColor = str(Qt.white.name())
-        self.data = None
-        self.toolbarSelection = 0
-        self.graph.showClusters = 0
-        self.VizRankClassifierName = "VizRank classifier (Radviz)"
-        self.clusterClassifierName = "Visual cluster classifier (Radviz)"
-        self.classificationResults = None
-        self.attributeSelectionList = None
-
+        
         # differential evolution
         self.differentialEvolutionPopSize = 100
         self.DERadvizSolver = None
