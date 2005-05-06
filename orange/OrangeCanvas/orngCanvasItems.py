@@ -90,7 +90,9 @@ class CanvasLine(QCanvasLine):
         self.hide()
         self.text.hide()
         self.setCanvas(None)
+        self.text.setCanvas(None)
         self.removeTooltip()
+        self.view.repaintContents(QRect(min(self.startPoint().x(), self.endPoint().x())-55, min(self.startPoint().y(), self.endPoint().y())-55, abs(self.startPoint().x()-self.endPoint().x())+100,abs(self.startPoint().y()-self.endPoint().y())+100))
 
     def getEnabled(self):
         signals = self.signalManager.findSignals(self.outWidget.instance, self.inWidget.instance)
