@@ -546,7 +546,8 @@ class ClusterOptimization(OWBaseWidget):
     settingsList = ["resultListLen", "minExamples", "lastSaveDirName", "attrCont", "attrDisc", "showRank",
                     "showValue", "jitterDataBeforeTriangulation", "createSnapshots", "useProjectionValue",
                     "evaluationTime", "distributionScale", "removeDistantPoints", "useAlphaShapes", "alphaShapesValue",
-                    "argumentCountIndex", "evaluationTimeIndex", "conditionForArgument", "moreArgumentsIndex", "canUseMoreArguments"]
+                    "argumentCountIndex", "evaluationTimeIndex", "conditionForArgument", "moreArgumentsIndex", "canUseMoreArguments",
+                    "parentWidget.clusterClassifierName"]
     #resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 , 10000, 20000, 50000, 100000, 500000 ]
     resultsListLenNums = [ 100 ,  250 ,  500 ,  1000 ,  5000 , 10000]
     resultsListLenList = [str(x) for x in resultsListLenNums]
@@ -580,7 +581,7 @@ class ClusterOptimization(OWBaseWidget):
         self.selectedClasses = []
         self.optimizationType = 1
         self.jitterDataBeforeTriangulation = 0
-        self.classifierName = "Visual cluster classifier"
+        self.parentWidget.clusterClassifierName = "Visual cluster classifier"
 
         self.showRank = 0
         self.showValue = 1
@@ -695,7 +696,7 @@ class ClusterOptimization(OWBaseWidget):
 
         # ##########################
         # CLASSIFICATION TAB
-        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'classifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
+        self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.clusterClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
         self.useProjectionValueCheck = OWGUI.checkBox(self.ClassificationTab, self, "useProjectionValue", "Use projection value when voting", box = "Voting for class value", tooltip = "Does each projection count for 1 vote or is it dependent on the value of the projection")
         OWGUI.comboBox(self.ClassificationTab, self, "argumentationType", box = "When searching for arguments consider ... ", items = ["... best evaluated groups", "... best groups for each class value"], tooltip = "When you wish to find arguments or classify an example, do you wish to search groups from the begining of the list\nor do you want to consider best groups for each class value. \nExplanation: For some class value evaluated groups might have significantly lower values than for other classes. \nIf you select 'best evaluated groups' you therefore won't even give a chance to this class value, \nsince its groups will be much lower in the list of evaluated groups.")
         self.conditionCombo = OWGUI.comboBox(self.ClassificationTab, self, "conditionForArgument", box = "Condition for a cluster to be an argument for an example is that...", items = ["... the example lies inside the cluster", "... the example lies inside or near the cluster"], tooltip = "When searching for arguments or classifying an example we have to define when can a detected cluster be an argument for a class.\nDoes the point being classified have to lie inside that cluster or is it enough that it lies near it.\nIf nearness is enough than the point can be away from the cluster for the distance that is defined as an average distance between points inside the cluster." )
@@ -723,7 +724,7 @@ class ClusterOptimization(OWBaseWidget):
 
         self.buttonBox7 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         OWGUI.button(self.buttonBox7, self, "Graph projections", self.graphProjectionQuality)
-        OWGUI.button(self.buttonBox7, self, "Result analysis", self.resultAnalysis)
+        OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
         
         self.buttonBox3 = OWGUI.widgetBox(self.manageBox, orientation = "horizontal")
         self.clusterStabilityButton = OWGUI.button(self.buttonBox3, self, 'Show cluster stability', self.evaluatePointsInClusters)
@@ -746,7 +747,7 @@ class ClusterOptimization(OWBaseWidget):
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
 
-        self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.classifierNameChanged)
+        self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.changeLearnerName)
         self.clusterLearner = clusterLearner(self, self.parentWidget)
         if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner, 1)
 
@@ -755,8 +756,8 @@ class ClusterOptimization(OWBaseWidget):
     # EVENTS
     # ##############################################################
     # when text of vizrank or cluster learners change update their name
-    def classifierNameChanged(self, text):
-        self.clusterLearner.name = self.classifierName
+    def changeLearnerName(self, text):
+        self.clusterLearner.name = self.parentWidget.clusterClassifierName
 
     def updateGraph(self):
         if self.parentWidget: self.parentWidget.updateGraph()
@@ -1207,9 +1208,9 @@ class ClusterOptimization(OWBaseWidget):
         QDialog.accept(self.sizeDlg)
 
 
-    def resultAnalysis(self):
-        from OWkNNOptimization import OWResultAnalysis, CLUSTER
-        dialog = OWResultAnalysis(self, signalManager = self.signalManager)
+    def interactionAnalysis(self):
+        from OWkNNOptimization import OWInteractionAnalysis, CLUSTER
+        dialog = OWInteractionAnalysis(self, signalManager = self.signalManager)
         dialog.setResults(self.shownResults, CLUSTER)
         dialog.show()
 
@@ -1627,7 +1628,7 @@ class clusterLearner(orange.Learner):
     def __init__(self, clusterOptimizationDlg, visualizationWidget):
         self.clusterOptimizationDlg = clusterOptimizationDlg
         self.visualizationWidget = visualizationWidget
-        self.name = self.clusterOptimizationDlg.classifierName
+        self.name = self.clusterOptimizationDlg.parentWidget.clusterClassifierName
         self.firstTime = 1
         
     def __call__(self, examples, weightID = 0):

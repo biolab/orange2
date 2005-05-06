@@ -230,11 +230,6 @@ class S2NMeasureMix(S2NMeasure):
             self.dataMix = data
 
         if self.attrInfoMix == {}:
-            """
-            attrs = []
-            for attr in data.domain.attributes:
-                if attr.varType == orange.VarTypes.Continuous: attrs.append(attr.name)
-            """
             attrs = range(len(data.domain.attributes))
             classVar = data.domain.classVar
             #shortData = data.select(attrs + [classVar])
@@ -247,9 +242,12 @@ class S2NMeasureMix(S2NMeasure):
                 newData = mergeClassValues(data, c)
                 for attrIndex in range(len(attrs)):
                     val = S2NMeasure.__call__(self, attrs[attrIndex], newData)
-                    aves = [stat[attrIndex].avg for stat in statistics]
-                    if max(aves) != aves[classVarIndex] : val = -val
-                    attrValsList.append((val, attrs[attrIndex]))
+                    if statistics[0][attrIndex] == None:
+                        attrValsList.append((0,attrs[attrIndex]))
+                    else:
+                        aves = [stat[attrIndex].avg for stat in statistics]
+                        if max(aves) != aves[classVarIndex] : val = -val
+                        attrValsList.append((val, attrs[attrIndex]))
                 attrValsList.sort()
                 attrValsList = [element[1] for element in attrValsList]     # remove the value
                 attrValsList.reverse()
@@ -301,9 +299,12 @@ def mergeClassValues(data, value):
 # almost equal to evaluateAttributesByEachClassValue function with one exception. if the class value that we want to discriminate
 # has a lower average value than the other average class values then we multiply quality of this attribute with -1
 # this way we get the attributes that have the highes expression and are also good at discrimination
-def findAttributeGroupsForRadviz(data, measure, attrs):
-    
-    attrVals = [(measure(attr, data), attr) for attr in attrs]
+def findAttributeGroupsForRadviz(data, measure):
+    contAttrs = []
+    for attr in data.domain.attributes:
+        if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
+
+    attrVals = [(measure(attr, data), attr) for attr in contAttrs]
     attrVals.sort()
     attrVals.reverse()
     attrNames = [attrVals[i][1] for i in range(len(attrVals))]  # remove quality values of the attributes
