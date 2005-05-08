@@ -294,8 +294,10 @@ class SignalDialog(QDialog):
     def countCompatibleConnections(self, outputs, inputs, outInstance, inInstance, outType, inType):
         count = 0
         for outS in outputs:
+            if outInstance.getOutputType(outS.name) == None: continue  # ignore if some signals don't exist any more, since we will dispatch refresh registry somwhere else
             if not issubclass(outInstance.getOutputType(outS.name), outType): continue
             for inS in inputs:
+                if inInstance.getOutputType(inS.name) == None: continue  # ignore if some signals don't exist any more, since we will dispatch refresh registry somwhere else
                 if not issubclass(inType, inInstance.getInputType(inS.name)): continue
                 if issubclass(outInstance.getOutputType(outS.name), inInstance.getInputType(inS.name)): count+= 1
 
@@ -339,9 +341,11 @@ class SignalDialog(QDialog):
         for outS in nonMinorOutputs:
             if not self.outWidget.instance.hasOutputName(outS.name):   return -1   # rebuild registry
             outType = self.outWidget.instance.getOutputType(outS.name)
+            if outType == None: return -1                                          # rebuild registry
             for inS in nonMinorInputs:
                 if not self.inWidget.instance.hasInputName(inS.name):   return -1   # rebuild registry
                 inType = self.inWidget.instance.getInputType(inS.name)
+                if inType == None: return -1                                        # rebuild registry
                 if issubclass(outType, inType):
                     canConnect = 1
                     existsBetter, betterOut, betterIn = self.existsABetterLink(outS, inS, nonMinorOutputs, nonMinorInputs)
