@@ -114,7 +114,6 @@ class kNNOptimization(OWBaseWidget):
         self.shownResults = []
         self.attrLenDict = {}
         self.datasetName = ""
-        self.dataset = None
         self.cancelOptimization = 0
         self.argumentCountIndex = 1     # when classifying use 10 best arguments
         #self.autoSetTheKValue = 1       # automatically set the value k
@@ -262,7 +261,6 @@ class kNNOptimization(OWBaseWidget):
         OWGUI.button(self.buttonBox7, self, "Attribute Analysis", self.attributeAnalysis)
         OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
 
-
         self.buttonBox8 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         OWGUI.button(self.buttonBox8, self, "Graph projections", self.graphProjectionQuality)
         OWGUI.button(self.buttonBox8, self, "Remove similar projections", callback = self.removeTooSimilarProjections)
@@ -286,8 +284,11 @@ class kNNOptimization(OWBaseWidget):
         self.controlArea.activate()
 
         self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.changeLearnerName)
-        self.vizRankLearner = VizRankLearner(self, self.parentWidget)
-        if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
+        if self.parentWidget and self.parentName == "Radviz" :
+            self.parentWidget.learnersArray[0] = VizRankLearner(self, self.parentWidget)
+        else:
+            self.vizRankLearner = VizRankLearner(self, self.parentWidget)
+            if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
 
         self.resize(375,550)
         self.setMinimumWidth(375)
@@ -297,7 +298,11 @@ class kNNOptimization(OWBaseWidget):
     # EVENTS
     # ##############################################################
     def changeLearnerName(self, text = None):
-        self.vizRankLearner.name = self.parentWidget.VizRankClassifierName
+        if self.parentWidget and self.parentName == "Radviz" and self.parentWidget.learnersArray[0]:
+            self.parentWidget.learnersArray[0].name = self.parentWidget.VizRankClassifierName
+        elif self.parentWidget:
+            self.vizRankLearner.name = self.parentWidget.VizRankClassifierName
+        else: print "there is no instance of VizRank Learner"
         
     # result list can contain projections with different number of attributes
     # user clicked in the listbox that shows possible number of attributes of result list
@@ -1018,7 +1023,8 @@ class kNNOptimization(OWBaseWidget):
             return (None,None)
 
         if example == None: example = self.subsetdata[0]
-        testExample = [self.parentWidget.graph.scaleExampleValue(example, i) for i in range(len(example.domain.attributes))]
+        scaleFunction = self.parentWidget.graph.scaleExampleValue   # so that we don't have to search the dictionaries each time
+        testExample = [scaleFunction(example, i) for i in range(len(example.domain.attributes))]
 
         self.findArgumentsButton.hide()
         self.stopArgumentationButton.show()

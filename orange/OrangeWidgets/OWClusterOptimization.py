@@ -748,8 +748,11 @@ class ClusterOptimization(OWBaseWidget):
         self.controlArea.activate()
 
         self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.changeLearnerName)
-        self.clusterLearner = clusterLearner(self, self.parentWidget)
-        if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner, 1)
+        if self.parentWidget and self.parentName == "Radviz" :
+            self.parentWidget.learnersArray[1] = clusterLearner(self, self.parentWidget)
+        else:
+            self.clusterLearner = clusterLearner(self, self.parentWidget)
+            if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner)
 
 
     # ##############################################################
@@ -757,7 +760,11 @@ class ClusterOptimization(OWBaseWidget):
     # ##############################################################
     # when text of vizrank or cluster learners change update their name
     def changeLearnerName(self, text):
-        self.clusterLearner.name = self.parentWidget.clusterClassifierName
+        if self.parentWidget and self.parentName == "Radviz" and self.parentWidget.learnersArray[1]:
+            self.parentWidget.learnersArray[1].name = self.parentWidget.clusterClassifierName
+        elif self.parentWidget:
+            self.clusterLearner.name = self.parentWidget.clusterClassifierName
+        else: print "there is no instance of Cluster Learner"
 
     def updateGraph(self):
         if self.parentWidget: self.parentWidget.updateGraph()
