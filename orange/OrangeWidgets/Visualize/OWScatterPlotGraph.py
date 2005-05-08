@@ -240,7 +240,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, text = self.getShortExampleText(self.rawdata, self.rawdata[j], toolTipList) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
+                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], toolTipList) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
 
             # ##############################################################
             # create a small number of curves which will make drawing much faster
@@ -457,9 +457,9 @@ class OWScatterPlotGraph(OWVisGraph):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
         if text == None:
             if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                text = self.getShortExampleText(self.rawdata, self.rawdata[dataindex], toolTipList)
+                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], toolTipList)
             elif self.tooltipKind == ALL_ATTRIBUTES:
-                text = self.getShortExampleText(self.rawdata, self.rawdata[dataindex], range(len(self.attributeNames)))
+                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], range(len(self.attributeNames)))
         self.tips.addToolTip(x, y, text)
 
     # ##############################################################

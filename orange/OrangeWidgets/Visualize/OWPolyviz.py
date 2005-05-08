@@ -88,10 +88,10 @@ class OWPolyviz(OWWidget):
         self.statusBar.message("")
 
         #add controls to self.controlArea widget
-        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown attributes ")
+        self.shownAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Shown Attributes ")
         self.hbox2 = OWGUI.widgetBox(self.GeneralTab, "", orientation = "horizontal")
-        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden attributes ")
-        self.attrOrderingButtons = QVButtonGroup("Attribute ordering", self.GeneralTab)
+        self.hiddenAttribsGroup = OWGUI.widgetBox(self.GeneralTab, " Hidden Attributes ")
+        self.attrOrderingButtons = OWGUI.widgetBox(self.GeneralTab, " Optimization Dialog ")
 
         self.shownAttribsLB = QListBox(self.shownAttribsGroup)
         self.shownAttribsLB.setSelectionMode(QListBox.Extended)
@@ -99,7 +99,7 @@ class OWPolyviz(OWWidget):
         self.hiddenAttribsLB = QListBox(self.hiddenAttribsGroup)
         self.hiddenAttribsLB.setSelectionMode(QListBox.Extended)
         
-        self.optimizationDlgButton = QPushButton('VizRank optimization dialog', self.attrOrderingButtons)
+        self.optimizationDlgButton = QPushButton('VizRank', self.attrOrderingButtons)
         OWGUI.checkBox(self.attrOrderingButtons, self, "rotateAttributes", "Rotate attributes", tooltip = "When searching for optimal projections also evaluate projections with rotated attributes. \nThis will significantly increase the number of possible projections.")
 
         self.zoomSelectToolbar = OWToolbars.ZoomSelectToolbar(self, self.GeneralTab, self.graph, self.autoSendSelection)
@@ -107,24 +107,24 @@ class OWPolyviz(OWWidget):
         self.connect(self.zoomSelectToolbar.buttonSendSelections, SIGNAL("clicked()"), self.sendSelections)
 
         self.hbox = OWGUI.widgetBox(self.shownAttribsGroup, "", orientation = "horizontal")
-        self.buttonUPAttr = QPushButton("Attr UP", self.hbox)
-        self.buttonDOWNAttr = QPushButton("Attr DOWN", self.hbox)
+        self.buttonUPAttr = QPushButton("Attr Up", self.hbox)
+        self.buttonDOWNAttr = QPushButton("Attr Down", self.hbox)
 
-        self.attrAddButton = QPushButton("Add attr.", self.hbox2)
-        self.attrRemoveButton = QPushButton("Remove attr.", self.hbox2)
+        self.attrAddButton = QPushButton("Add attr", self.hbox2)
+        self.attrRemoveButton = QPushButton("Remove attr", self.hbox2)
 
         # ####################################
         # SETTINGS TAB
         # #####
-        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box='Point width', minValue=1, maxValue=15, step=1, callback = self.updateGraph, ticks=1)
-        OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box='Line length', minValue=1, maxValue=5, step=1, callback = self.updateValues, ticks=1)
+        OWGUI.hSlider(self.SettingsTab, self, 'graph.pointWidth', box=' Point Size ', minValue=1, maxValue=15, step=1, callback = self.updateGraph)
+        OWGUI.hSlider(self.SettingsTab, self, 'lineLength', box=' Line Length ', minValue=1, maxValue=5, step=1, callback = self.updateValues)
 
-        box = OWGUI.widgetBox(self.SettingsTab, " Jittering options ")
+        box = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
         OWGUI.comboBoxWithCaption(box, self, "graph.jitterSize", 'Jittering size (% of size)  ', callback = self.setJitteringSize, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
 
         OWGUI.comboBoxWithCaption(self.SettingsTab, self, "graph.scaleFactor", 'Scale point position by: ', box = " Point scaling ", callback = self.updateGraph, items = self.scaleFactorNums, sendSelectedValue = 1, valueType = float)
 
-        box2 = OWGUI.widgetBox(self.SettingsTab, " General graph settings ")
+        box2 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
         OWGUI.checkBox(box2, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
         OWGUI.checkBox(box2, self, 'graph.globalValueScaling', 'Use global value scaling', callback = self.setGlobalValueScaling, tooltip = "Scale values of all attributes based on min and max value of all attributes. Usually unchecked.")
         OWGUI.checkBox(box2, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
@@ -132,12 +132,12 @@ class OWPolyviz(OWWidget):
         OWGUI.checkBox(box2, self, 'graph.useDifferentColors', 'Use different colors', callback = self.updateGraph, tooltip = "Show different class values using different colors")
         OWGUI.checkBox(box2, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
 
-        box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips settings ")
+        box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box3, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
         OWGUI.comboBox(box3, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
 
-        box4 = OWGUI.widgetBox(self.SettingsTab, " Sending selection ")
+        box4 = OWGUI.widgetBox(self.SettingsTab, " Sending Selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
 
         # ####

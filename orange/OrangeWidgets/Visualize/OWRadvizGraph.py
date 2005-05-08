@@ -147,8 +147,8 @@ class OWRadvizGraph(OWVisGraph):
 
     # create anchors around the circle
     def createAnchors(self, numOfAttr, labels = None):
-        xAnchors = self.createXAnchors(numOfAttr).tolist()
-        yAnchors = self.createYAnchors(numOfAttr).tolist()
+        xAnchors = self.createXAnchors(numOfAttr)
+        yAnchors = self.createYAnchors(numOfAttr)
         if labels:
             return [(xAnchors[i], yAnchors[i], labels[i]) for i in range(numOfAttr)]
         else:
@@ -182,6 +182,7 @@ class OWRadvizGraph(OWVisGraph):
         if setAnchors:
             self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
 
+        # do we want to show anchors and their labels
         if self.showAnchors:
             if self.hideRadius > 0:
                 xdata = self.createXAnchors(100)*(self.hideRadius / 10)
@@ -429,7 +430,6 @@ class OWRadvizGraph(OWVisGraph):
         if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
         self.dataMap[dictValue].append((x, y, color, index))
 
-
     def showClusterLines(self, attributeIndices, validData, width = 1):
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
         shortData = self.createProjectionAsExampleTable(attributeIndices, validData = validData, scaleFactor = self.scaleFactor)
@@ -557,7 +557,7 @@ class OWRadvizGraph(OWVisGraph):
                     labels = self.attributeNames
 
                 if self.tooltipValue == TOOLTIPS_SHOW_DATA:
-                    text = self.getShortExampleText(self.rawdata, self.rawdata[index], labels)
+                    text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[index], labels)
 
                 elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
                     for label in labels: text += "%s = %.3f; " % (label, self.scaledData[self.attributeNameIndex[label]][index])
@@ -609,13 +609,16 @@ class OWRadvizGraph(OWVisGraph):
 
     # ############################################################## 
     # create x-y projection of attributes in attrList
-    def createProjection(self, attrList, scaleFactor = 1.0):
-        # create anchor for every attribute if necessary
-        XAnchors = self.createXAnchors(len(attrList))
-        YAnchors = self.createYAnchors(len(attrList))
-
-        indices = [self.attributeNameIndex[label] for label in attrList]
-
+    def createProjection(self, attrList, scaleFactor = 1.0, useAnchorData = 0):
+        if useAnchorData:
+            XAnchors = [val[0] for val in self.anchorData]
+            YAnchors = [val[1] for val in self.anchorData]
+            indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
+        else:
+            XAnchors = self.createXAnchors(len(attrList))
+            YAnchors = self.createYAnchors(len(attrList))
+            indices = [self.attributeNameIndex[label] for label in attrList]
+            
         selectedData = Numeric.take(self.noJitteringScaledData, indices)
         sum_i = Numeric.add.reduce(selectedData)
         
@@ -632,9 +635,16 @@ class OWRadvizGraph(OWVisGraph):
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # function is called from OWClusterOptimization.py
     # this function has more sense in radviz and polyviz methods
-    def getProjectedPointPosition(self, attrIndices, values):
-        XAnchors = self.createXAnchors(len(attrIndices))
-        YAnchors = self.createYAnchors(len(attrIndices))
+    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0):
+        if useAnchorData:
+            XAnchors = [val[0] for val in self.anchorData]
+            YAnchors = [val[1] for val in self.anchorData]
+            if len(XAnchors) != len(values):
+                print "getProjectedPointPosition error: number of visualized attributes and number of values does not match"
+                return 0.0
+        else:
+            XAnchors = self.createXAnchors(len(attrIndices))
+            YAnchors = self.createYAnchors(len(attrIndices))
         s = sum(values)
         if s == 0: return [0.0, 0.0]
         x = self.scaleFactor * Numeric.matrixmultiply(XAnchors, values) / float(s)
@@ -642,8 +652,7 @@ class OWRadvizGraph(OWVisGraph):
         return [x,y]
         
         
-
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0):
+    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, useAnchorData = 0):
         if not validData: validData = self.getValidList(attrIndices)
 
         selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
@@ -653,9 +662,12 @@ class OWRadvizGraph(OWVisGraph):
             classList = Numeric.compress(validData, classList)
             
         if not sum_i: sum_i = self._getSum_i(selectedData)
-        if not XAnchors or not YAnchors:
+        if not (XAnchors and YAnchors and useAnchorData):
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
+        else:
+            XAnchors = [val[0] for val in self.anchorData]
+            YAnchors = [val[1] for val in self.anchorData]
 
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData) / sum_i
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData) / sum_i
@@ -670,9 +682,9 @@ class OWRadvizGraph(OWVisGraph):
 
     # ##############################################################
     # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0):
+    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0, useAnchorData = 0):
         if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize)
+        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize, useAnchorData)
         return orange.ExampleTable(domain, data)
 
     # ##############################################################
