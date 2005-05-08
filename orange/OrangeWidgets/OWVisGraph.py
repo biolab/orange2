@@ -195,7 +195,8 @@ class OWVisGraph(OWGraph):
         #arr = MA.filled(arr, MA.average(arr, 1))
 
         self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-        self.originalData = arr.filled(1e20)
+        arr = Numeric.array(arr.filled(1e20))
+        self.originalData = arr  #.filled(1e20)
         self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
         self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
 
@@ -217,7 +218,7 @@ class OWVisGraph(OWGraph):
                 if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
                 count = self.attrValues[attr.name][1]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
-                self.scaledData[index] = arr[index].filled(1e20) + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
+                self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
                     arr[index] = (arr[index] - self.domainDataStat[index].avg) / (5*self.domainDataStat[index].dev)
@@ -240,11 +241,11 @@ class OWVisGraph(OWGraph):
                     # fix values above 1
                     ind = Numeric.where(line > 1.0, 1, 0)
                     Numeric.putmask(line, ind, 2.0 - Numeric.compress(ind, line))
-                    self.scaledData[index] = line.filled(1e20)
+                    self.scaledData[index] = line
                 else:
-                    self.scaledData[index] = arr[index].filled(1e20)
+                    self.scaledData[index] = arr[index]
 
-        self.noJitteringScaledData = arr.filled(1e20)
+        self.noJitteringScaledData = arr
         
     # ####################################################################
     # ####################################################################
@@ -420,7 +421,7 @@ class OWVisGraph(OWGraph):
 
     # ####################################################################
     # return string with attribute names and their values for example example
-    def getShortExampleText(self, data, example, indices):
+    def getExampleTextWithMeta(self, data, example, indices):
         text = ""
         try:
             for index in indices:
