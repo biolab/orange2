@@ -292,8 +292,11 @@ class FreeVizOptimization(OWBaseWidget):
             results = []
             oldVal = self.parentWidget.optimizationDlg.qualityMeasure
             self.parentWidget.optimizationDlg.qualityMeasure = AVERAGE_CORRECT
+            first = 1
             for val in self.attrsNum:
-                if val > len(self.rawdata.domain.attributes): continue
+                if val > len(self.rawdata.domain.attributes):
+                    if not first: continue
+                    else: first = 0         # allow the computations once
                 self.s2nPlaceAttributes = val
                 self.s2nMixAnchors()
                 acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))

@@ -95,10 +95,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.recentDocs = []
         self.readRecentFiles()
 
-        width  = 700
-        height = 700
-        if self.settings.has_key("canvasWidth"): width = self.settings["canvasWidth"]
-        if self.settings.has_key("canvasHeight"): height = self.settings["canvasHeight"]
+        width  = self.settings.get("canvasWidth", 700)
+        height = self.settings.get("canvasHeight", 700)
         self.resize(width, height)
         
         # center window in the desktop
@@ -637,6 +635,7 @@ class OrangeCanvasDlg(QMainWindow):
         text = str(text)
         text = text.replace("<nobr>", ""); text = text.replace("</nobr>", "")
         text = text.replace("<b>", ""); text = text.replace("</b>", "")
+        text = text.replace("<i>", ""); text = text.replace("</i>", "")
         text = text.replace("<br>", ""); text = text.replace("&nbsp", "")
         self.statusBar.message(QString("Last event: " + str(text)))
         
