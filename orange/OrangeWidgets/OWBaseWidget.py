@@ -14,11 +14,15 @@ from OWAbout import *
 from orngSignalManager import *
 import time, user
 
+
 def mygetattr(obj, attr, default = None):
     if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
         try:
-            v = eval(compile("obj." + attr, ".", "eval"))
-            return v
+            names = attr.split(".")
+            lastobj = obj
+            for name in names[:-1]:
+                lastobj = getattr(lastobj, name)
+            return getattr(lastobj, names[-1], default)
         except:
             return default
     else:
