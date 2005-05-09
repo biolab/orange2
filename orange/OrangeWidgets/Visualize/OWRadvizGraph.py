@@ -653,6 +653,10 @@ class OWRadvizGraph(OWVisGraph):
         
         
     def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, useAnchorData = 0):
+        # if we want to use anchor data we can get attrIndices from the anchorData
+        if attrIndices == None and useAnchorData:
+            attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
+
         if not validData: validData = self.getValidList(attrIndices)
 
         selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
