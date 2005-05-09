@@ -93,6 +93,9 @@ class SchemaDoc(QMainWindow):
         connectStatus = dialog.addDefaultLinks()
         if connectStatus == -1:
             self.canvasDlg.menuItemRebuildWidgetRegistry()
+            for widget in self.widgets: widget.updateTooltip()
+            for (outName, inName) in dialog._links: dialog.removeLink(outName, inName)
+            dialog.setOutInWidgets(outWidget, inWidget)
             connectStatus = dialog.addDefaultLinks()
         
         if connectStatus == 0:

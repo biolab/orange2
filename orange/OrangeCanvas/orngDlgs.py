@@ -49,6 +49,9 @@ class SignalCanvasView(QCanvasView):
         #self.connect(self, SIGNAL("contentsMoving(int,int)"), self.contentsMoving)
 
     def addSignalList(self, outName, inName, outputs, inputs, outIconName, inIconName):
+        items = self.canvas().allItems()
+        for item in items: item.hide()
+        self.lines = []; self.outBoxes = []; self.inBoxes = []; self.texts = []
         xSpaceBetweenWidgets = 100  # space between widgets
         xWidgetOff = 10     # offset for widget position
         yWidgetOffTop = 10     # offset for widget position
@@ -237,10 +240,9 @@ class SignalDialog(QDialog):
         self._links = []
 
         # GUI
-        self.setName('Qt Set Signals')
-
         self.resize(515,286)
-        self.setCaption(self.tr("Qt Set Signals"))
+        self.setName('Qt Connect Signals')
+        self.setCaption(self.tr("Qt Connect Signals"))
 
         self.grid = QGridLayout( 2, 1 )
         self.topLayout.addLayout( self.grid, 10 )
