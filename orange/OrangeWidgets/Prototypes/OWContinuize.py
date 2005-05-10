@@ -41,6 +41,7 @@ class OWContinuize(OWWidget):
         self.multinomialTreatment = 0
         self.targetValue = 0
         self.continuousTreatment = 0
+        self.classTreatment = 0
         self.zeroBased = 1
         self.autosend = 0
         self.dataChanged = False
