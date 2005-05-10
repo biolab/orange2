@@ -379,14 +379,22 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     floatMap.reserve(nRows);
     lineCenters.reserve(nRows);
     lineAverages.reserve(nRows);
-        
-    ITERATE(vector<int>, si, sortIndices) {
-      esorted.addExample(etable[*si]);
-      lineCenters.push_back(tempLineCenters[*si]);
-      lineAverages.push_back(tempLineAverages[*si]);
-      floatMap.push_back(tempFloatMap[*si]);
-      tempFloatMap[*si] = NULL;
-    }
+
+	if (pushSortIndices) {
+      ITERATE(vector<int>, si, sortIndices) {
+        esorted.addExample(etable[*si]);
+        lineCenters.push_back(tempLineCenters[*si]);
+        lineAverages.push_back(tempLineAverages[*si]);
+        floatMap.push_back(tempFloatMap[*si]);
+        tempFloatMap[*si] = NULL;
+	  }
+	}
+	else {
+	  sortedExamples = mlnew TExampleTable(etable);
+	  lineCenters = tempLineCenters;
+	  lineAverages = tempLineAverages;
+	  floatMap = tempFloatMap;
+	}
   }
   catch (...) {
     ITERATE(vector<float *>, tfmi, tempFloatMap)
