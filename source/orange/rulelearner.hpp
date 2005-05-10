@@ -228,6 +228,7 @@ public:
   PRuleBeamRefiner refiner; //P
   PRuleBeamCandidateSelector candidateSelector; //P
   PRuleBeamFilter ruleFilter; //P
+  PRuleValidator ruleStoppingValidator; //P
 
   PRule operator()(PExampleTable, const int & =0, const int &targetClass = -1, PRuleList baseRules = PRuleList());
 };

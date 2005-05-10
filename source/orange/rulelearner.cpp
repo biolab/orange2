@@ -477,8 +477,10 @@ PRuleList TRuleBeamInitializer_Default::operator()(PExampleTable data, const int
 
 PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data, const int &weightID, const int &targetClass)
 {
-  if (!discretization)
+  if (!discretization) {
     discretization = mlnew TEntropyDiscretization();
+    dynamic_cast<TEntropyDiscretization *>(discretization.getUnwrappedPtr())->forceAttribute = true;
+  }
 
   TRule &rule = wrule.getReference();
   TFilter_values *filter = wrule->filter.AS(TFilter_values);
@@ -600,8 +602,11 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   if (tempRefiner)
     refiner = mlnew TRuleBeamRefiner_Selector;
   bool tempValidator = !validator;
-  if (tempValidator)
-    validator = mlnew TRuleValidator_LRS;
+  if (tempValidator) 
+    validator = mlnew TRuleValidator_LRS((float)0.01);
+  bool tempRuleStoppingValidator = !ruleStoppingValidator;
+  if (tempRuleStoppingValidator) 
+    ruleStoppingValidator = mlnew TRuleValidator_LRS((float)0.05);
   bool tempEvaluator = !evaluator;
   if (tempEvaluator)
     evaluator = mlnew TRuleEvaluator_Entropy;
@@ -615,6 +620,7 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   checkProperty(validator);
   checkProperty(evaluator);
   checkProperty(ruleFilter);
+  checkProperty(ruleStoppingValidator);
 
   PDistribution apriori = getClassDistribution(data, weightID);
 
@@ -646,10 +652,10 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
       PITERATE(TRuleList, ni, newRules) {
-        if (!validator || validator->call(*ni, data, weightID, targetClass, apriori)) {
+        if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, data, weightID, targetClass, apriori)) {
           (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
           ruleList->push_back(*ni);
-          if ((*ni)->quality >= bestRule->quality)
+          if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
             _selectBestRule(*ni, bestRule, wins, rgen);
         }
       } 
@@ -666,6 +672,8 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     refiner = PRuleBeamRefiner();
   if (tempValidator)
     validator = PRuleValidator();
+  if (tempRuleStoppingValidator)
+    ruleStoppingValidator = PRuleValidator();  
   if (tempEvaluator)
     evaluator = PRuleEvaluator();
   if (tempRuleFilter)
