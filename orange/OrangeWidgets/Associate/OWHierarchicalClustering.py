@@ -2,7 +2,7 @@
 <name>Hierarchical Clustering</name>
 <description>Constructs a hierarchical clustering tree and prints it</description>
 <icon>bla</icon>
-<prority>1000</priority>
+<prority>1550</priority>
 """
 
 from OWWidget import *
@@ -67,16 +67,11 @@ class OWHierarchicalClustering(OWWidget):
         self.selectionTab=QVGroupBox(self,"Selection")
         self.tabs.insertTab(self.settingsTab, "Settings")
         self.tabs.insertTab(self.selectionTab, "Selection")
-        #self.settingsBox=QVGroupBox(self.settingsTab, "HC Settings")
 
         #HC Settings
         OWGUI.comboBox(self.settingsTab, self, "Linkage", box="Linkage",
                 items=self.linkageMethods, tooltip="Choose linkage method",
                 callback=self.constructTree)
-        #OWGUI.checkBox(self.settingsBox, self, "OverwriteMatrix", "Overwrite matrix",
-        #        tooltip="If selected the input matrix will be overwritten"
-        #        ,)#callback=self.constructTree)
-
         #Label
         self.labelCombo=OWGUI.comboBox(self.settingsTab, self, "Annotation",
                 box="Annotation", items=["None"],tooltip="Choose label attribute",
@@ -102,27 +97,21 @@ class OWHierarchicalClustering(OWWidget):
         OWGUI.spin(dendogramBox,self, "LineSpacing", label="Line spacing",
                         min=2,max=8,step=1)
         OWGUI.button(dendogramBox, self, "&Apply",self.applySettings)
-        #self.dApplyButton=QPushButton("&Apply",dendogramBox)
-        #self.connect(self.dApplyButton, SIGNAL("clicked()"), self.applySettings)
 
         #Selection options
         OWGUI.checkBox(self.selectionTab, self, "SelectionMode", "Cutoff line", 
               callback=self.updateCutOffLine)
-        self.classificacionBox=QVGroupBox(self.selectionTab)
-        OWGUI.checkBox(self.classificacionBox, self, "ClassifySelected","Classify selected examples")
-        OWGUI.lineEdit(self.classificacionBox, self, "ClassifyName", "Class name")
+        self.classificationBox=QVGroupBox(self.selectionTab)
+        #self.classificationBox.setTitle("Classification")
+        OWGUI.checkBox(self.classificationBox, self, "ClassifySelected","Classify selected examples")
+        OWGUI.lineEdit(self.classificationBox, self, "ClassifyName", "Class name")
         #selectionBox=QVGroupBox(self.selectionTab)
         commitBox=QVGroupBox(self.selectionTab)
+        commitBox.setTitle("Commit settings")
         OWGUI.checkBox(commitBox, self, "CommitOnChange", "Commit on change")
         OWGUI.button(commitBox, self, "&Commit", self.commitData)
         OWGUI.checkBox(self.selectionTab, self, "DisableHighlights", "Disable highlights")
         OWGUI.checkBox(self.selectionTab, self, "DisableBubble", "Disable bubble info")
-        #self.commitButton=QPushButton("&Commit",selectionBox)
-        #self.connect(self.commitButton,SIGNAL("clicked()"),self.commitData)
-
-        #Save button
-        #self.saveButton=QPushButton("&Save graph", self.controlArea)
-        #self.connect(self.saveButton, SIGNAL("clicked()"), self.saveGraph)
         OWGUI.button(self.controlArea, self, "&Save graph", self.saveGraph)
 
         self.mainAreaLayout=QVBoxLayout(self.mainArea, QVBoxLayout.TopToBottom,0)
@@ -131,10 +120,7 @@ class OWHierarchicalClustering(OWWidget):
         self.footerView=ScaleCanvas(self, scale, self.mainArea)
         self.dendogram=Dendogram(self)
         self.dendogramView=DendogramView(self.dendogram, self.mainArea)
-        #self.dendogramView.setCanvas(self.dendogram)
-        #self.footerView.setCanvas(scale)
-        #self.headerView.setCanvas(scale)
-
+    
         self.mainAreaLayout.addWidget(self.headerView)
         self.mainAreaLayout.addWidget(self.dendogramView)
         self.mainAreaLayout.addWidget(self.footerView)
@@ -148,11 +134,6 @@ class OWHierarchicalClustering(OWWidget):
                 self.headerView.horizontalScrollBar().setValue)
         self.dendogram.resize(self.HDSize,self.VDSize)
         self.dendogram.update()
-        
-        #self.connect(self.dendogramView.verticalScrollBar(), SIGNAL('valueChanged(int)'),
-        #        self.dendogramView.updateContents)
-
-        #self.setFocusPolicy(QWidget.StrongFocus)
 
 
     def dataset(self, data):
@@ -164,17 +145,24 @@ class OWHierarchicalClustering(OWWidget):
             self.footerView.clear()
             self.labelCombo.clear()
             self.send("Selected Examples", None)
-            self.classificacionBox.setDisabled(True)
+            self.classificationBox.setDisabled(True)
             return
 
         self.matrixSource="Unknown"
         items=getattr(self.matrix, "items")
         try:
-                self.labels=["None","Default"]+ \
-                        [m.name for m in items.domain.getmetas().values()]+\
-                        [a.name for a in items.domain.attributes]+\
-                        [items.domain.classVar.name]
-                self.matrixSource="Example Distance"
+            self.labels=["None","Default"]+ \
+                    [a.name for a in items.domain.attributes]+\
+                    [items.domain.classVar.name]
+                    
+            self.labelInd=range(len(self.labels)-2)
+            self.labels.extend([m.name for m in items.domain.getmetas().values()])
+            self.labelInd.extend(items.domain.getmetas().keys())
+            #print self.labelInd
+            #print self.labels
+            self.numMeta=len(items.domain.getmetas())
+            self.metaLabels=items.domain.getmetas().values()
+            self.matrixSource="Example Distance"
         except AttributeError:
             self.labels=["None","Attribute Name"]
             self.Annotation=0
@@ -186,9 +174,9 @@ class OWHierarchicalClustering(OWWidget):
                 self.Annotation=0
         self.labelCombo.setCurrentItem(self.Annotation)
         if self.matrixSource=="Example Distance":
-            self.classificacionBox.setDisabled(False)
+            self.classificationBox.setDisabled(False)
         else:
-            self.classificacionBox.setDisabled(True)
+            self.classificationBox.setDisabled(True)
 
         self.constructTree()
 
@@ -207,13 +195,14 @@ class OWHierarchicalClustering(OWWidget):
                                 [a.name for a in items])
         elif self.matrixSource=="Example Distance":
             try:
+                print self.labelInd[self.Annotation-2]
                 self.rootCluster.mapping.setattr("objects",
-                                [e[self.Annotation-2].value for e in items])
+                                [e[self.labelInd[self.Annotation-2]].value for e in items])
             except IndexError:
                 self.Annotation=0
-                self.rootCluster.mapping.setattr("objects",
+                self.rootCluster.mapping.setattr("objects", \
                                 [e[0].value for e in items])
-
+        #print self.rootCluster.mapping
         self.dendogram.updateLabel()
 
     def constructTree(self):
@@ -369,6 +358,7 @@ class Dendogram(QCanvas):
         self.cutOffLine.setPen( QPen(QColor("black"),2))
         self.bublerRect=BubbleRect(None)
         self.setDoubleBuffering(True)
+        self.holdoff=False
 
     def displayTree(self, root):
         self.clear()
@@ -393,7 +383,6 @@ class Dendogram(QCanvas):
         (self.rootGraphics,a)=self.drawTree(self.rootCluster,0)
         self.updateLabel()
         self.header.drawScale(self.treeAreaWidth, root.height)
-        self.cutOffLine.setPoints(0,0,0,self.height())
         for old in self.oldSelection:
             for new in self.rectObj:
                 if new.cluster==old:
@@ -403,6 +392,7 @@ class Dendogram(QCanvas):
         self.otherObj.append(self.bubbleRect)
         fix=max([a.boundingRect().width() for a in self.textObj]) 
         self.resize(leftMargin+self.treeAreaWidth+fix+rightMargin,2*topMargin+self.gTextPos)
+        self.cutOffLine.setPoints(0,0,0,self.height())
         self.update()
 
     def drawTree(self, cluster, l):
@@ -548,10 +538,6 @@ class Dendogram(QCanvas):
         for el, col in zip(self.selectionList, colorPalette):
             brush=QBrush(col,Qt.SolidPattern)
             el.setBrush(brush)
-            #el.rootGraphics.setBrush(brush)
-        ##
-        #new.rootGraphics.setBrush(new.brush())
-        #new.setZ(obj.z()-1)
         new.setZ(self.gZPos-2)
         #new.setZ(2)
         ##
@@ -598,6 +584,7 @@ class Dendogram(QCanvas):
             self.update()
 
     def releaseEvent(self, e):
+        self.holdoff=False
         if not self.rootCluster:
             return
         if self.parent.SelectionMode and self.cutOffLineDragged:
@@ -823,6 +810,14 @@ class BubbleRect(QCanvasRectangle):
         else:
             QCanvasRectangle.move(self, x-self.width()-5, y+5)
             self.text.move(x-self.width()-3,y+6)
+        #if not self.canvas().onCanvas(1,y+self.height()):
+        #    self.move(x,y-self.height())
+            #if not self.canvas().onCanvas(self.x(),self.y()) and  \
+            #               self.canvas().onCanvas(self.x(),self.y()+self.height()):
+            #    while not self.canvas().onCanvas(self.x(),self.y()) and self.y()<self.canvas().height():
+            #        QCanvasRectangle.move(self,self.x(), self.y()+10)
+            #    self.move(self.x(),self.y())
+            
 
     def setCanvas(self, canvas):
         QCanvasRectangle.setCanvas(self,canvas)
@@ -834,6 +829,9 @@ if __name__=="__main__":
     app.setMainWidget(w)
     w.show()
     data=orange.ExampleTable("../../doc/datasets/iris.tab")
+    id=orange.newmetaid()
+    data.domain.addmeta(id, orange.FloatVariable("a"))
+    data.addMetaAttribute(id)
     matrix = orange.SymMatrix(len(data))
     dist = orange.ExamplesDistanceConstructor_Euclidean(data)
     matrix = orange.SymMatrix(len(data))
