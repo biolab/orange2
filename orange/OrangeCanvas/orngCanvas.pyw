@@ -55,7 +55,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.workspace = WidgetWorkspace(self)
         #self.workspace.setBackgroundColor(QColor(255,255,255))
         self.setCentralWidget(self.workspace)
-        self.statusBar = QStatusBar(self)
+        self.statusBar = MyStatusBar(self)
         self.connect(self.workspace, SIGNAL("windowActivated(QWidget*)"), self.focusDocument)
         
         self.settings = {}
@@ -675,11 +675,9 @@ class OrangeCanvasDlg(QMainWindow):
         cPickle.dump(self.settings, file)
         file.close()
 
-
     #######################
     # EVENTS
     #######################
-
     def closeEvent(self, ce):
         totalDocs = len(self.workspace.getDocumentList())
         closedDocs = 0
@@ -707,6 +705,14 @@ class OrangeCanvasDlg(QMainWindow):
         self.toolSave.setEnabled(enable)
         self.menuFile.setItemEnabled(self.menuSaveID, enable)
         self.menuFile.setItemEnabled(self.menuSaveAsID, enable)
+
+class MyStatusBar(QStatusBar):
+    def __init__(self, parent, name = ""):
+        QStatusBar.__init__(self, parent, name)
+        self.parentWidget = parent
+
+    def mouseDoubleClickEvent(self, ev):
+        self.parentWidget.menuItemShowOutputWindow()
 
 class WidgetWorkspace(QWorkspace):
     def __init__(self,*args):
