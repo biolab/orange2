@@ -293,14 +293,14 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
     double *dcoeffs, *dcoeffs_se, *cov;
     Fselection(X, y, w, rows, columns, (iterativeSelection & 1) == 1, (iterativeSelection & 2) == 2, pivot, rank, dcoeffs, dcoeffs_se, cov, SSres, SStot, N);
 
-    const TVarList &origattr = gen->domain->attributes.getReference();
-    PVarList dom_attributes = mlnew TVarList(rank);
-    PVarList attributes = mlnew TVarList(rank);
-
     int i, e = rank;
     for(i = 0; pivot[i] && (i != e); i++);
     int interci = i == e ? -1 : i;
     int subint = i == e ? 0 : 1;
+
+    const TVarList &origattr = gen->domain->attributes.getReference();
+    PVarList dom_attributes = mlnew TVarList(rank-subint);
+    PVarList attributes = mlnew TVarList(rank);
 
     int *spivots = (int *)malloc(rank*sizeof(int));
     for(i = 0; i != e; spivots[i] = i, i++);
@@ -314,7 +314,7 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
         attributes->at(spi) = origattr[pi];
     }
     if (interci >= 0)
-      attributes->at(rank-1) = dom_attributes->at(rank-1) = gen->domain->classVar;
+      attributes->at(rank-1) = gen->domain->classVar;
 
     TAttributedFloatList *coeffs = mlnew TAttributedFloatList(attributes, rank);
     TAttributedFloatList *coeffs_se = mlnew TAttributedFloatList(attributes, rank);
@@ -339,6 +339,14 @@ PClassifier TLinRegLearner::operator()(PExampleGenerator origen, const int &weig
 
     if (origen->domain->classVar->varType == TValue::INTVAR)
       classifier->threshold = 0.5; //XXX compute the threshold!!!
+
+    free(X);
+    free(y);
+    free(w);
+    free(pivot);
+    free(cov);
+    free(dcoeffs);
+    free(dcoeffs_se);
 
     return wclassifier;
   }
