@@ -9,7 +9,7 @@ from math import sqrt
 class FreeVizOptimization(OWBaseWidget):
     settingsList = ["stepsBeforeUpdate", "lockToCircle", "attractG", "repelG", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters"]
-    attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 7500, 10000, 50000]
+    attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
     
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "FreeViz Dialog")
@@ -292,6 +292,7 @@ class FreeVizOptimization(OWBaseWidget):
             results = []
             oldVal = self.parentWidget.optimizationDlg.qualityMeasure
             self.parentWidget.optimizationDlg.qualityMeasure = AVERAGE_CORRECT
+            self.s2nSpread = 0
             first = 1
             for val in self.attrsNum:
                 if val > len(self.rawdata.domain.attributes):
@@ -299,9 +300,11 @@ class FreeVizOptimization(OWBaseWidget):
                     else: first = 0         # allow the computations once
                 self.s2nPlaceAttributes = val
                 self.s2nMixAnchors()
+                qApp.processEvents()
                 acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
                 results.append(acc)
             self.s2nPlaceAttributes = self.attrsNum[results.index(max(results))]
+            qApp.processEvents()
 
             results = []
             anchors = self.graph.anchorData
