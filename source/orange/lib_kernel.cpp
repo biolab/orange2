@@ -3114,7 +3114,7 @@ PyObject *ExampleTable_selectLow(TPyOrange *self, PyObject *args, PyObject *keyw
         }
 
         else { // !toList
-          TExampleTable *newTable = mlnew TExampleTable(eg->domain, false);
+          TExampleTable *newTable = mlnew TExampleTable(lock, 1);
           PExampleGenerator newGen(newTable); // ensure it gets deleted in case of error
 
           for(;ei && (lli!=lle); ++ei, lli++)
