@@ -468,7 +468,6 @@ class OWRadvizGraph(OWVisGraph):
                 self.selectedAnchorIndex = index
             else:
                 self.selectedAnchorIndex = None
-            print self.selectedAnchorIndex
         else:
             OWVisGraph.onMousePressed(self, e)
 
