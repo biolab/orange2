@@ -429,7 +429,7 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     PyObject *pycandidates = PYNULL;
     PClassifier nodeClassifier;
 
-    if (!PyArg_ParseTuple(args, "O&|O&O&O&O&O:TreeSplitConstructor.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, ccn_DomainContingency, &dcont, ccn_Distribution, &apriori, &pycandidates, ccn_Classifier, &nodeClassifier))
+    if (!PyArg_ParseTuple(args, "O&|O&O&O&OO&:TreeSplitConstructor.call", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &weightID, ccn_DomainContingency, &dcont, ccn_Distribution, &apriori, &pycandidates, ccn_Classifier, &nodeClassifier))
       return PYNULL;
 
     vector<bool> candidates;
