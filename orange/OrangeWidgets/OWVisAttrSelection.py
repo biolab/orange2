@@ -209,7 +209,7 @@ class S2NMeasure:
         else:
             return -1
 
-    
+import time
 
 # same class as above, just that we can use it to evaluate attribute for each class value
 class S2NMeasureMix(S2NMeasure):
@@ -217,9 +217,10 @@ class S2NMeasureMix(S2NMeasure):
         S2NMeasure.__init__(self)
         self.attrInfoMix = {}
         self.dataMix = None
+        self.sortedAttrList = None
         
-    def __call__(self, attr, data):
-        if data.domain[attr].varType == orange.VarTypes.Discrete:
+    def __call__(self, attribute, data):
+        if data.domain[attribute].varType == orange.VarTypes.Discrete:
             print "S2NMeasureMix can not evaluate discrete attributes"
             return -1
         
@@ -236,7 +237,7 @@ class S2NMeasureMix(S2NMeasure):
             datas = [data.select({classVar.name: [val]}) for val in classVar.values]
             statistics = [orange.DomainBasicAttrStat(d) for d in datas]
 
-            cls = []            
+            cls = []
             for classVarIndex, c in enumerate(classVar.values):   # for each class value compute how good is each attribute for discriminating this class value against all other
                 attrValsList = []
                 newData = mergeClassValues(data, c)
@@ -253,25 +254,36 @@ class S2NMeasureMix(S2NMeasure):
                 attrValsList.reverse()
                 cls.append(attrValsList)
 
-            evalAttrs = []
+            attrPositionsDict = dict([(attr, []) for attr in cls[0]])
+            for arr in cls:
+                for i in range(len(arr)):
+                    attrPositionsDict[arr[i]].append(i)
+
             ableToAdd = 1
             numClasses = len(classVar.values)
+            currPos = [0 for i in range(numClasses)]
+            self.sortedAttrList = []
             while ableToAdd:    # sometimes some attributes are duplicated. in such cases we will add only one instance of such attribute to the list
                 ableToAdd = 0
                 for i in range(numClasses):
-                    if len(cls[i]) == 0: continue
-                    attr = cls[i][0]
-                    evalAttrs.append(attr)
-                    for j in range(numClasses):
-                        cls[j].remove(attr)
+                    pos = currPos[i]
+                    while pos < len(cls[i]) and cls[i][pos] == None: pos += 1
+                    currPos[i] = pos + 1
+                    if pos >= len(cls[i]): continue
                     ableToAdd = 1
                     
-            count = len(evalAttrs)
-            for (i, attr) in enumerate(evalAttrs):
+                    attr = cls[i][pos]
+                    self.sortedAttrList.append(attr)
+                    attrPositions = attrPositionsDict[attr]     # get indices in cls where attribute attr is placed
+                    for j in range(numClasses): cls[j][attrPositions[j]] = None
+                    
+                    
+            count = len(self.sortedAttrList)
+            for (i, attr) in enumerate(self.sortedAttrList):
                 self.attrInfoMix[data.domain[attr].name] = count-i
 
-        if self.attrInfoMix.has_key(data.domain[attr].name):
-            return self.attrInfoMix[data.domain[attr].name]
+        if self.attrInfoMix.has_key(data.domain[attribute].name):
+            return self.attrInfoMix[data.domain[attribute].name]
         else:
             return -1
     
@@ -300,17 +312,17 @@ def mergeClassValues(data, value):
 # has a lower average value than the other average class values then we multiply quality of this attribute with -1
 # this way we get the attributes that have the highes expression and are also good at discrimination
 def findAttributeGroupsForRadviz(data, measure):
-    contAttrs = []
-    for attr in data.domain.attributes:
-        if attr.varType == orange.VarTypes.Continuous: contAttrs.append(attr.name)
-
-    attrVals = [(measure(attr, data), attr) for attr in contAttrs]
-    attrVals.sort()
-    attrVals.reverse()
-    attrNames = [attrVals[i][1] for i in range(len(attrVals))]  # remove quality values of the attributes
-
-    numClasses = len(data.domain.classVar.values)
-    cls = [attrNames[i::numClasses] for i in range(numClasses)]
+    if isinstance(measure, S2NMeasureMix):
+        measure(data.domain.attributes[0].name, data)                       # just call measure to compute quality of all attributes
+        attrNames = [data.domain[ind].name for ind in measure.sortedAttrList]
+        numClasses = len(data.domain.classVar.values)
+        cls = [attrNames[i::numClasses] for i in range(numClasses)]
+    else:
+        attrVals = [(measure(attr.name, data), attr.name) for attr in data.domain.attributes]
+        attrVals.sort()
+        attrVals.reverse()
+        attrNames = [attrVals[i][1] for i in range(len(attrVals))]  # remove quality values of the attributes
+        cls = None
 
     return attrNames, cls
     
