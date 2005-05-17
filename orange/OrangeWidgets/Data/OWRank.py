@@ -32,7 +32,7 @@ class OWRank(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "Rank")
         
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.data)]
-        self.outputs = [("Selected Attributes", ExampleTableWithClass)] 
+        self.outputs = [("Selected Attributes", ExampleTableWithClass),("ExampleTable Attributes", ExampleTable)]
         
         #set default settings
         self.Precision=3
@@ -50,6 +50,7 @@ class OWRank(OWWidget):
         # add a settings dialog (create this dialog separately by inheriting from OWOptions
         # and adding your setting controls, like checkboxes, radiobuttons and sliders
         # and don't forget tooltips)
+        #self.options=OWRankOptions(self.controlArea)
         self.options=OWRankOptions()
         self.activateLoadedSettings()
         
@@ -296,6 +297,28 @@ class OWRank(OWWidget):
             self.table.adjustColumn(k)
 
 
+        cd=orange.EnumVariable("C/D",values=["C","D"])
+        hash=orange.FloatVariable("#")
+        relieF=orange.FloatVariable("RelieF")
+        infoGain=orange.FloatVariable("InfoGain")
+        gainRatio=orange.FloatVariable("GainRatio")
+        gini=orange.FloatVariable("Gini")
+        name=orange.EnumVariable("Name",values=[str(self.table.text(i,0)) for i in range(self.table.numRows())])
+        domain=orange.Domain([cd,hash,relieF,infoGain,gainRatio,gini, name])
+        table=orange.ExampleTable(domain)
+        for i in range(self.table.numRows()):
+            table.append([cd(str(self.table.text(i,1))),
+                          hash(str(self.table.text(i,2))),
+                          relieF(str(self.table.text(i,3))),
+                          infoGain(str(self.table.text(i,4))),
+                          gainRatio(str(self.table.text(i,5))),
+                          gini(str(self.table.text(i,6))),
+                          name(str(self.table.text(i,0)))])
+        self.send("ExampleTable Attributes",table)
+                              
+            
+
+
 from OWOptions import *
 from OWTools import *
 
@@ -357,6 +380,7 @@ if __name__=="__main__":
     ow=OWRank()
     a.setMainWidget(ow)
 #here you can test setting some stuff
+    #ow.data(orange.ExampleTable("../../doc/datasets/lenses.tab"))
     ow.show()
     a.exec_loop()
     
