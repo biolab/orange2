@@ -309,8 +309,10 @@ bool TRule::operator ==(const TRule &other) const
 
 
 
-TRuleValidator_LRS::TRuleValidator_LRS(const float &a)
-: alpha(a)
+TRuleValidator_LRS::TRuleValidator_LRS(const float &a, const float &min_coverage, const float &max_rule_complexity)
+: alpha(a),
+  min_coverage(min_coverage),
+  max_rule_complexity(max_rule_complexity)
 {}
 
 bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, const int &targetClass, PDistribution apriori) const
@@ -318,6 +320,13 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
   const TDiscDistribution &obs_dist = dynamic_cast<const TDiscDistribution &>(rule->classDistribution.getReference());
   if (!obs_dist.cases)
     return false;
+  
+  if (min_coverage>0.0 && obs_dist.cases < min_coverage)
+    return false;
+
+  if (max_rule_complexity > 0.0 && rule->complexity > max_rule_complexity)
+    return false;
+
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
@@ -339,6 +348,7 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 
   float n = obs_dist.abs - p;
   float N = exp_dist.abs - P;
+
   if (N<=0.0)
     N = 1e-6f;
   if (p<=0.0)
@@ -601,12 +611,12 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   bool tempRefiner = !refiner;
   if (tempRefiner)
     refiner = mlnew TRuleBeamRefiner_Selector;
-  bool tempValidator = !validator;
+/*  bool tempValidator = !validator;
   if (tempValidator) 
     validator = mlnew TRuleValidator_LRS((float)0.01);
   bool tempRuleStoppingValidator = !ruleStoppingValidator;
   if (tempRuleStoppingValidator) 
-    ruleStoppingValidator = mlnew TRuleValidator_LRS((float)0.05);
+    ruleStoppingValidator = mlnew TRuleValidator_LRS((float)0.05); */
   bool tempEvaluator = !evaluator;
   if (tempEvaluator)
     evaluator = mlnew TRuleEvaluator_Entropy;
@@ -617,7 +627,6 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   checkProperty(initializer);
   checkProperty(candidateSelector);
   checkProperty(refiner);
-  checkProperty(validator);
   checkProperty(evaluator);
   checkProperty(ruleFilter);
   checkProperty(ruleStoppingValidator);
@@ -670,10 +679,10 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     candidateSelector = PRuleBeamCandidateSelector();
   if (tempRefiner)
     refiner = PRuleBeamRefiner();
-  if (tempValidator)
+/*  if (tempValidator)
     validator = PRuleValidator();
   if (tempRuleStoppingValidator)
-    ruleStoppingValidator = PRuleValidator();  
+    ruleStoppingValidator = PRuleValidator();  */
   if (tempEvaluator)
     evaluator = PRuleEvaluator();
   if (tempRuleFilter)

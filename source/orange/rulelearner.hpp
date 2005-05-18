@@ -106,8 +106,10 @@ public:
   __REGISTER_CLASS
 
   float alpha; //P
+  float min_coverage; //P
+  float max_rule_complexity; //P
 
-  TRuleValidator_LRS(const float & = 0.05);
+  TRuleValidator_LRS(const float &alpha = 0.05, const float &min_coverage = 0.0, const float &max_rule_complexity = 0.0);
   virtual bool operator()(PRule, PExampleTable, const int &, const int &targetClass, PDistribution ) const;
 };
 
