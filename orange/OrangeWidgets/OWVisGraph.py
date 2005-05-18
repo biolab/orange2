@@ -183,6 +183,8 @@ class OWVisGraph(OWGraph):
             self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information 
         
         self.domainDataStat = orange.DomainBasicAttrStat(data)
+        self.offsets = []
+        self.normalizers = []
         self.attributeNames = [attr.name for attr in data.domain]
         self.attributeNameIndex = dict([(data.domain[i].name, i) for i in range(len(data.domain))])
         
@@ -190,14 +192,17 @@ class OWVisGraph(OWGraph):
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        arr = data.toNumeric("ac", 0, 1, 1)[0]
-        arr = transpose(arr)
-        #arr = MA.filled(arr, MA.average(arr, 1))
-
-        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
-        arr = Numeric.array(arr.filled(1e20))
-        self.originalData = arr  #.filled(1e20)
-        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
+        arr = data.toMA("ac")[0]
+        arr = MA.transpose(arr)
+        averages = MA.average(arr, 1)
+        print "averages: ", averages
+        arr = MA.filled(arr, averages)
+        print type(arr)
+        self.averages = averages.tolist()
+        #print type(arr), arr.__class__
+        self.validDataArray = Numeric.ones(Numeric.shape(arr))#Numeric.logical_not(arr.mask())#Numeric.where(arr == 1e20, 0, 1)
+        self.originalData = Numeric.array(arr)
+        self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
         self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
 
         # see if the values for discrete attributes have to be resorted 
@@ -218,20 +223,24 @@ class OWVisGraph(OWGraph):
                 if not self.attrValues.has_key(attr.name):  self.attrValues[attr.name] = [0, len(attr.values)]
                 count = self.attrValues[attr.name][1]
                 arr[index] = (arr[index]*2.0 + 1.0)/ float(2*count)
+                self.offsets.append(-0.5)
+                self.normalizers.append(count)
                 self.scaledData[index] = arr[index] + (self.jitterSize/(50.0*count))*(RandomArray.random(len(data)) - 0.5)
             else:
                 if self.scalingByVariance:
-                    arr[index] = (arr[index] - self.domainDataStat[index].avg) / (5*self.domainDataStat[index].dev)
+                    self.offsets.append(self.domainDataStat[index].avg)
+                    self.normalizers.append(5*self.domainDataStat[index].dev)
+                    arr[index] = (arr[index] - offsets[-1]) / normalizers[-1]
                 else:
                     if self.attrValues.has_key(attr.name):          # keep the old min, max values
                         min, max = self.attrValues[attr.name]
                     elif self.globalValueScaling == 0:
                         min = self.domainDataStat[index].min
                         max = self.domainDataStat[index].max
-                    diff = float(max - min)
-                    if diff == 0.0: diff = 1.0    # prevent division by zero
+                    diff = float(max - min) or 1.0
                     self.attrValues[attr.name] = [min, max]
-
+                    self.offsets.append(min)
+                    self.normalizers.append(diff)
                     arr[index] = (arr[index] - float(min)) / diff
 
                 if self.jitterContinuous:

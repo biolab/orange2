@@ -472,7 +472,8 @@ class OWRadviz(OWWidget):
             for i in range(iterations):
                 self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples)
                 self.energyLabel.setText("Energy: %.3f" % E)
-                self.energyLabel.repaint()
+                #self.energyLabel.repaint()
+                self.graph.potentialsBmp = None
                 self.updateGraph()
                 if singleStep:
                     noChange = 5
@@ -612,7 +613,8 @@ class OWRadviz(OWWidget):
                 self.shownAttribsLB.insertItem(text, i-1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
         self.sendShownAttributes()
-        self.updateGraph(1)
+        self.graph.potentialsBmp = None
+        self.updateGraph()
 
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
@@ -626,7 +628,8 @@ class OWRadviz(OWWidget):
                 self.shownAttribsLB.insertItem(text, i+1)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.sendShownAttributes()
-        self.updateGraph(1)
+        self.graph.potentialsBmp = None
+        self.updateGraph()
 
     def cbShowAllAttributes(self):
         if self.showAllAttributes:
@@ -672,7 +675,6 @@ class OWRadviz(OWWidget):
 
     def updateGraph(self, setAnchors = 0, *args):
         self.graph.updateData(self.getShownAttributeList(), setAnchors)
-        self.graph.potRx = -1
         self.graph.update()
         self.repaint()
 
@@ -740,6 +742,10 @@ class OWRadviz(OWWidget):
     # #########################
     # RADVIZ EVENTS
     # #########################
+    def resetBmpUpdateValues(self):
+        self.graph.potentialsBmp = None
+        self.updateGraph()
+
     def setActiveLearner(self, idx):
         self.send("Learner", self.learnersArray[self.learnerIndex])
         
@@ -761,6 +767,7 @@ class OWRadviz(OWWidget):
             self.graph.globalValueScaling = 0
             self.graph.scalingByVariance = 1
         self.graph.setData(self.data)
+        self.graph.potentialsBmp = None
         self.updateGraph()
         
 

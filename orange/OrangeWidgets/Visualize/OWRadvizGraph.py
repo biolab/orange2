@@ -112,36 +112,34 @@ class OWRadvizGraph(OWVisGraph):
         self.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
 
-    def computePotentialsBitmap(self):
-        domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
-        classifier = orange.P2NN(self.rawdata, self.anchorData, self.normalizeExamples, domain, law=self.radvizWidget.law)
+    def computePotentials(self):
         rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
-        imagebmp, nShades = orangeom.potentialsBitmap(classifier, rx, ry, self.trueScaleFactor)
+        if not getattr(self, "potentialsBmp", None) \
+           or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
+            imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
         classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
         colors = [(i.red(), i.green(), i.blue()) for i in classColors]
-#        classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)    # we create a hash table of variable values and their indices            
-        palette = []
-        for cls in range(len(classifier.classVar.values)):
-           color = colors[cls]
-           towhite = [255-c for c in color]
-           for s in range(nShades):
-             si = 1-float(s)/nShades
-             palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-        palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
-        image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
-        self.potentialsBmp = QPixmap()
-        self.potentialsBmp.convertFromImage(image)
-        self.potentialContext = (rx, ry, self.trueScaleFactor, self.radvizWidget.law)
 
-
+            palette = []
+            sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+            for cls in self.potentialsClassifier.classVar.values:
+               color = colors[sortedClasses.index(cls)]
+               towhite = [255-c for c in color]
+               for s in range(nShades):
+                 si = 1-float(s)/nShades
+                 palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+            palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+            image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
+            self.potentialsBmp = QPixmap()
+            self.potentialsBmp.convertFromImage(image)
+            self.potentialContext = (rx, ry, self.trueScaleFactor, self.radvizWidget.law)
+        
     def drawCanvasItems(self, painter, rect, map, pfilter):
-        if self.showProbabilities and getattr(self, "rawdata", None):
-            rx = self.transform(QwtPlot.xBottom, 1) - self.transform(QwtPlot.xBottom, 0)
-            ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
-            if getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
-                self.computePotentialsBitmap()
-
+        #print rect.x(), rect.y(), rect.width(), rect.height()
+        #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
+        if self.showProbabilities and getattr(self, "potentialsClassifier", None):
+            self.computePotentials()
             painter.drawPixmap(QPoint(self.transform(QwtPlot.xBottom, -1), self.transform(QwtPlot.yLeft, 1)), self.potentialsBmp)
         OWVisGraph.drawCanvasItems(self, painter, rect, map, pfilter)
 
@@ -180,6 +178,7 @@ class OWRadvizGraph(OWVisGraph):
         # store indices to shown attributes
         indices = [self.attributeNameIndex[label] for label in labels]
         if setAnchors:
+            self.potentialsBmp = None
             self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
 
         # do we want to show anchors and their labels
@@ -207,6 +206,7 @@ class OWRadvizGraph(OWVisGraph):
         ydata = self.createYAnchors(100)
         self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
+        self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
         self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
         self.updateLayout()
 
@@ -231,7 +231,15 @@ class OWRadvizGraph(OWVisGraph):
             sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
             x_positions /= sum_i
             y_positions /= sum_i
-            
+
+        # construct potentialsClassifier from unscaled positions
+        domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
+        print len(domain.attributes), len(self.anchorData)
+        offsets = [self.offsets[i] for i in indices]
+        normalizers = [self.normalizers[i] for i in indices]
+        averages = [self.averages[i] for i in indices]
+        self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([x_positions, y_positions, [float(ex.getclass()) for ex in self.rawdata]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=self.radvizWidget.law)
+
         if self.scaleFactor:
             self.trueScaleFactor = self.scaleFactor
         else:
@@ -533,15 +541,19 @@ class OWRadvizGraph(OWVisGraph):
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     # draw lines
-                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
+                    spring = self.scaledData[self.attributeNameIndex[label]][index]
+                    key = self.addCurve("Tooltip curve", color, color, 1, lineWidth = 10*spring, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                     self.tooltipCurveKeys.append(key)
+
+#                    key = self.addCurve("Tooltip curve", color, color, 1, lineWidth=5, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, x_i + (xAnchor-x_i)*spring], yData = [y_i, y_i + (yAnchor-y_i)*spring])
+#                    self.tooltipCurveKeys.append(key)
 
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
                         marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[label]]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % spring, (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
