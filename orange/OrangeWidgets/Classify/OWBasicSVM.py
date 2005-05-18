@@ -8,11 +8,12 @@
 from OWWidget import *
 from orngSVM import *
 import orngLR_Jakulin
+import OWGUI
 
 ##############################################################################
 
 class OWBasicSVM(OWWidget):
-    settingsList = ["kernelMethod", "polyD", "polyG", "polyC", "rbfG", "sigmaG", "sigmaC", "nu", "p", "c", "eps", "shrinking", "nuOptionEnabled", "methodIsOneClass"]
+    settingsList = ["kernel", "gamma", "coef0", "degree", "C", "p", "eps", "nu", "shrinking", "useNu"]
     
     def __init__(self, parent=None, signalManager = None, name='Support Vector Machine'):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -20,123 +21,72 @@ class OWBasicSVM(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.cdata)]
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Support Vectors", ExampleTable)]
 
-        self.kernelMethod = 0                
-        self.data = None
-        self.polyD = 3
-        self.polyG = 0.0
-        self.polyC = 0.0
-        self.rbfG = 0.0
-        self.sigmaG = 0.0
-        self.sigmaC = 0.0
-        self.nu = 0.5
-        self.p = 0.5
-        self.c = 1.0
-        self.eps = 1e-3
-        self.shrinking = 1
-        self.nuOptionEnabled = 0
-        self.methodIsOneClass = 0
-        
-        # Settings
         self.name = "SVM Learner"
+        self.kernel = 2
+        self.gamma = 0.0
+        self.coef0 = 0.0
+        self.degree = 3
+        self.C = 1.0
+        self.p = 0.5
+        self.eps = 1e-3
+        self.nu = 0.5
+        self.useNu = 0
+        self.shrinking = 1
+        self.data = None
+        
         self.loadSettings()
 
-        self.controlArea.setSpacing(5)
+#        self.controlArea.setSpacing(5)
+
+        validDouble = QDoubleValidator(self.controlArea)
         
         # GUI
-        self.nameBox = QVGroupBox(self.controlArea)
-        self.nameBox.setTitle('Learner/Classifier Name')
-        QToolTip.add(self.nameBox,"Name to be used by other widgets to identify your learner/classifier.")
-        self.nameEdt = QLineEdit(self.nameBox)
-        self.nameEdt.setText(self.name)
+        namebox = OWGUI.widgetBox(self.controlArea, "Learner/Classifier name")
+        OWGUI.lineEdit(namebox, self, "name")
 
-        self.kernelCaption = QLabel("Select kernel method:", self.controlArea)
-        self.KernelTabs = QTabWidget(self.controlArea, 'kernel')
+        bgKernel = QVButtonGroup("Kernel", self.controlArea)
+        self.kernelradio = OWGUI.radioButtonsInBox(bgKernel, self, "kernel", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d", "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
+        OWGUI.separator(self.kernelradio)
+        self.gcd = OWGUI.widgetBox(bgKernel, orientation="horizontal")
+        self.leg = OWGUI.lineEdit(self.gcd, self, "gamma", "g: ", orientation="horizontal", validator = validDouble)
+        self.led = OWGUI.lineEdit(self.gcd, self, "coef0", "  c: ", orientation="horizontal", validator = validDouble)
+        self.lec = OWGUI.lineEdit(self.gcd, self, "degree", "  d: ", orientation="horizontal", validator = validDouble)
+        self.changeKernel()
 
-        # linear kernel: x.y
-        # polynomial kernel: (g*x.y+c)^d
-        # RBF (default): e^(-g(x-y).(x-y))
-        # sigmoid: tanh(g*x.y+c)
+##        bgKernel = QHButtonGroup("Kernel", self.controlArea)
+##        buttons = OWGUI.widgetBox(bgKernel)
+##        self.kernelradio = OWGUI.radioButtonsInBox(buttons, self, "kernel", btnLabels=["Linear,   x.y", "Polynomial,   (g*x.y+c)^d", "RBF,   exp(-g*(x-y).(x-y))", "Sigmoid,   tanh(g*x.y+c)"], callback=self.changeKernel)
+##        gcd = OWGUI.widgetBox(bgKernel)
+##        self.leg = OWGUI.lineEdit(gcd, self, "gamma", "g: ", orientation="horizontal", validator = validDouble)
+##        self.led = OWGUI.lineEdit(gcd, self, "coef0", "  c: ", orientation="horizontal", validator = validDouble)
+##        self.lec = OWGUI.lineEdit(gcd, self, "degree", "  d: ", orientation="horizontal", validator = validDouble)
+##        self.changeKernel()
+##
+        labwidth = 120
+        methodOptions = QVButtonGroup("Options", self.controlArea)
+        self.leC = OWGUI.lineEdit(methodOptions, self, "C", "Model complexity (C): ", orientation="horizontal", validator = validDouble, labelWidth = labwidth)
 
-        # kernel tabs
-        self.linearTab = QVBox(self)
-        self.polyTab = QVBox(self)
-        self.rbfTab = QVBox(self)
-        self.sigmaTab = QVBox(self)
-        self.KernelTabs.insertTab(self.linearTab, "Linear")
-        self.KernelTabs.insertTab(self.polyTab, "Polynomial")
-        self.KernelTabs.insertTab(self.rbfTab, "RBF")
-        self.KernelTabs.insertTab(self.sigmaTab, "Sigmoid")
-        self.KernelTabs.setCurrentPage(self.kernelMethod)
+        pValid = QDoubleValidator(self.controlArea)
+        pValid.setBottom(0)
+        self.lep = OWGUI.lineEdit(methodOptions, self, "p", "Tolerance (p): ", orientation="horizontal", validator = pValid, labelWidth = labwidth)
 
-        self.linearCaption = QLabel("Kernel Function: x.y", self.linearTab)
-        self.polyCaption = QLabel("Kernel Function: (g*x.y+c)^d", self.polyTab)
-        self.rbfCaption = QLabel("Kernel Function: e^(-g(x-y).(x-y))", self.rbfTab)
-        self.sigmaCaption = QLabel("Kernel Function: tanh(g*x.y+c)", self.sigmaTab)
-        
-        polyGBox = QHBox(self.polyTab)
-        self.polyGCaption = QLabel("g:", polyGBox)
-        self.polyGValue = QLineEdit(str(self.polyG), polyGBox)
+        epsValid = QDoubleValidator(self.controlArea)
+        epsValid.setBottom(1e-6)
+        self.leeps = OWGUI.lineEdit(methodOptions, self, "eps", "Numeric precision (eps): ", orientation="horizontal", validator = epsValid, labelWidth = labwidth)
 
-        polyCBox = QHBox(self.polyTab)
-        self.polyCCaption = QLabel("c:", polyCBox)
-        self.polyCValue = QLineEdit(str(self.polyC), polyCBox)
+        OWGUI.separator(methodOptions)
+        OWGUI.checkBox(methodOptions, self, "shrinking", "Shrinking")
+        self.cbNu = OWGUI.checkBox(methodOptions, self, "useNu", "Limit the number of support vectors")
+        nuValid = QDoubleValidator(self.controlArea)
+        nuValid.setRange(0,1,3)
+        self.leNu = OWGUI.lineEdit(methodOptions, self, "nu", "      Fraction (nu): ", orientation="horizontal", validator = nuValid, labelWidth = labwidth)
+        self.cbNu.disables = [self.leNu]
+        self.leNu.setDisabled(not self.useNu)
 
-        polyDBox = QHBox(self.polyTab)
-        self.polyDCaption = QLabel("d:", polyDBox)
-        self.polyDValue = QLineEdit(str(self.polyD), polyDBox)
+# This should not be a settin, it should be change according to the 'data' signal
+#        OWGUI.checkBox(methodOptions, self, "oneClass", "One class ...")
 
-        rbfGBox = QHBox(self.rbfTab)
-        self.rbfGCaption = QLabel("g:", rbfGBox)
-        self.rbfGValue = QLineEdit(str(self.rbfG), rbfGBox)
-
-        sigmaGBox = QHBox(self.sigmaTab)
-        self.sigmaGCaption = QLabel("g:", sigmaGBox)
-        self.sigmaGValue = QLineEdit(str(self.sigmaG), sigmaGBox)
-
-        sigmaCBox = QHBox(self.sigmaTab)
-        self.sigmaCCaption = QLabel("c:", sigmaCBox)
-        self.sigmaCValue = QLineEdit(str(self.sigmaC), sigmaCBox)        
-        
-
-        # method tabs
-        self.methodOptions = QVButtonGroup("Method Options", self.controlArea)
-        self.methodButtons = QHButtonGroup("Method", self.methodOptions)
-        self.methodButtons.setExclusive(TRUE)
-        self.methodClassifier = QRadioButton("Supervised", self.methodButtons)
-        self.methodOneClass = QRadioButton("One Class", self.methodButtons)
-        if self.methodIsOneClass: self.methodButtons.setButton(1)
-        else:                     self.methodButtons.setButton(0)
-
-        NuHBox = QHBox(self.methodOptions)
-        self.nuOption = QCheckBox("nu:", NuHBox)
-        self.nuOption.setChecked(self.nuOptionEnabled)
-        self.nuValue  = QLineEdit(str(self.nu), NuHBox)
-        self.nuValid = QDoubleValidator(self.controlArea)
-        self.nuValid.setRange(0,1,3)
-        self.nuValue.setValidator(self.nuValid)
-
-        cHBox = QHBox(self.methodOptions)
-        self.cCaption = QLabel('C:', cHBox)
-        self.cValue = QLineEdit(str(self.c), cHBox)
-        
-        pHBox = QHBox(self.methodOptions)
-        self.pCaption = QLabel("p:", pHBox)
-        self.pValue = QLineEdit(str(self.p), pHBox)
-        self.pValid = QDoubleValidator(self.controlArea)
-        self.pValid.setBottom(0)
-        self.pValue.setValidator(self.pValid)
-
-        epsHBox = QHBox(self.methodOptions)
-        self.epsCaption = QLabel("eps:", epsHBox)
-        self.epsValue = QLineEdit(str(self.eps), epsHBox)
-        self.epsValid = QDoubleValidator(self.controlArea)
-        self.epsValid.setBottom(1e-6)
-        self.epsValue.setValidator(self.epsValid)
-
-        self.shrinkingCB = QCheckBox("Shrinking", self.methodOptions)
-        self.shrinkingCB.setChecked(self.shrinking)
-
-        # apply button
+        OWGUI.separator(self.controlArea)
         self.applyButton = QPushButton("&Apply", self.controlArea)
         self.connect(self.applyButton, SIGNAL("clicked()"), self.applySettings)
 
@@ -145,104 +95,47 @@ class OWBasicSVM(OWWidget):
         self.resize(self.controlArea.width()+140, self.controlArea.height()+10)
         
 
+    enabledMethod = [[], [0, 1, 2], [0], [0, 1]]
+    def changeKernel(self):
+        em = self.enabledMethod[self.kernel]
+        for i, c in enumerate([self.leg, self.led, self.lec]):
+            c.setDisabled(i not in em)
+
     def applySettings(self):
-        self.updateSettings()
         self.learner = BasicSVMLearner()
-        self.learner.name = self.name
+        for attr in ("name", "kernel", "degree", "gamma", "coef0", "C", "p", "eps", "nu", "shrinking"):
+            setattr(self.learner, attr, getattr(self, attr))
+        self.learner.for_nomogram = 1
 
-        pageIndex = self.KernelTabs.currentPageIndex()
-        if pageIndex == 0:  # linear
-            self.learner.kernel = 0
-            self.learner.for_nomogram = 1
-
-        elif pageIndex == 1:    # polynomial
-            self.learner.kernel = 1
-            self.learner.degree = int(str(self.polyDValue.text()))
-            self.learner.gamma = float(str(self.polyGValue.text()))
-            self.learner.coef0 = float(str(self.polyCValue.text()))
-
-        elif pageIndex == 2:
-            self.learner.kernel = 2     # rbf
-            self.learner.gamma = float(str(self.rbfGValue.text()))
-
-        else:
-            self.learner.kernel = 3     # sigmoid
-            self.learner.gamma = float(str(self.sigmaGValue.text()))
-            self.learner.coef0 = float(str(self.sigmaCValue.text()))
-
-        if self.methodOneClass.isOn():
-            self.learner.type = -3
+        ### XXX What to do with this?!
+        ### Should we check whether domain has the classVar?
+##        if self.methodOneClass.isOn():
+##            self.learner.type = -3
+        if self.useNu:
+            self.learner.type = -2
         else:
             self.learner.type = -1
-        if self.nuOption.isChecked():
-            self.learner.type = -2
-            self.learner.nu = float(str(self.nuValue.text()))
 
-        self.learner.C = float(str(self.cValue.text()))
-        self.learner.p = float(str(self.pValue.text()))
-        self.learner.eps = float(str(self.epsValue.text()))
-        self.learner.shrinking = self.shrinkingCB.isChecked()
-            
         self.send("Learner", self.learner)
-        if self.data <> None:
-            try: 
-                self.classifier = orngLR_Jakulin.MarginMetaLearner(self.learner,folds = 1)(self.data)
-                self.classifier.name = self.name
-                self.classifier.domain = self.data.domain
-                self.classifier.data = self.data
-                self.send("Classifier", self.classifier)
-                vectors = self.data.getitemsref(self.classifier.classifier.model["SVi"])
-                self.send("Support Vectors", vectors)
-            except Exception, (errValue):
-                self.classifier = None
-                self.error("SVM error:"+ str(errValue))
-#                QMessageBox("SVM error:", str(errValue), QMessageBox.Warning,
-#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
-                return                
-            except:
-                self.classifier = None
-                self.error("SVM error:"+ "Unidentified error!")
-#                QMessageBox("SVM error:", "Unidentified error!", QMessageBox.Warning,
-#                            QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
-                return                
-        self.error()
-        
+        self.sendData()
+
+    def sendData(self):
+        # should not renew the classifier here (if settings are not applied,
+        #the classifier should not change)
+        if self.data:
+            self.classifier = orngLR_Jakulin.MarginMetaLearner(self.learner, folds = 1)(self.data)
+            self.classifier.name = self.name
+            self.classifier.domain = self.data.domain
+            self.classifier.data = self.data
+            self.send("Classifier", self.classifier)
+            
+            vectors = self.data.getitemsref(self.classifier.classifier.model["SVi"])
+            self.send("Support Vectors", vectors)
+
     def cdata(self,data):
-        self.data=data
-        self.applySettings()
+        self.data = data
+        self.sendData()
 
-    def pp():
-        pass
-        # include preprocessing!!!
-
-    def updateSettings(self):
-        self.polyD = int(str(self.polyDValue.text()))
-        self.polyG = float(str(self.polyGValue.text()))
-        self.polyC = float(str(self.polyCValue.text()))
-        self.rbfG = float(str(self.rbfGValue.text()))
-        self.sigmaG = float(str(self.sigmaGValue.text()))
-        self.sigmaC = float(str(self.sigmaCValue.text()))
-        self.nu = float(str(self.nuValue.text()))
-        self.p = float(str(self.pValue.text()))
-        self.c = float(str(self.cValue.text()))
-        self.eps = float(str(self.epsValue.text()))
-        self.shrinking = self.shrinkingCB.isChecked()
-        self.nuOptionEnabled = self.nuOption.isChecked()
-        
-        if self.methodButtons.selected() == self.methodOneClass:
-            self.methodIsOneClass = 1
-        else:
-            self.methodIsOneClass = 0
-
-    def saveSettings(self, file = None):
-        self.updateSettings()
-        OWBaseWidget.saveSettings(self, file)
-        
-    def saveSettingsStr(self):
-        self.updateSettings()
-        OWBaseWidget.saveSettingsStr(self)
-
-        
 ##############################################################################
 # Test the widget, run from DOS prompt
 # > python OWDataTable.py)
