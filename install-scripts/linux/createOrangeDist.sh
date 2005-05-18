@@ -47,40 +47,40 @@ else
     ORANGEDIR=Orange-$VER
 fi
 
-rm -rf $ORANGEDIR
+rm -rf orange
 
-echo -n "Checkouting Orange from CVS to $ORANGEDIR..."
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR orange > cvs.log 2>&1
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR/source source >> cvs.log 2>&1
-cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR install-scripts/linux/setup.py >> cvs.log 2>&1
+echo -n "Checkouting Orange from CVS to orange..."
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange orange > cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange/source source >> cvs.log 2>&1
+cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange install-scripts/linux/setup.py >> cvs.log 2>&1
 
 if [ ! $REL -eq 0 ]; then
-    cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d $ORANGEDIR/OrangeWidgets/Genomics Genomics >> cvs.log 2>&1
+    cvs -d :pserver:cvs@estelle.fri.uni-lj.si:/CVS co -r $TAG -f -d orange/OrangeWidgets/Genomics Genomics >> cvs.log 2>&1
 fi
 
 echo "done"
 # clean CVS co, all CVS directories, all .pyd and .dll files,...
 
-echo -n "Cleaning $ORANGEDIR..."
-find $ORANGEDIR -name CVS -type d -exec rm -rf {} \; > /dev/null  2>&1
-find $ORANGEDIR -name '*.pyd' -type f -exec rm -rf {} \; > /dev/null  2>&1
-find $ORANGEDIR -name '*.dll' -type f -exec rm -rf {} \; > /dev/null  2>&1
+echo -n "Cleaning orange directory..."
+find orange -name CVS -type d -exec rm -rf {} \; > /dev/null  2>&1
+find orange -name '*.pyd' -type f -exec rm -rf {} \; > /dev/null  2>&1
+find orange -name '*.dll' -type f -exec rm -rf {} \; > /dev/null  2>&1
 # in every directory create __init__.py file, distutils demand
-find $ORANGEDIR -name '*' -type d -exec touch {}/__init__.py \;
+#find orange -name '*' -type d -exec touch {}/__init__.py \;
 # clean everything out of exclude.lst file
-cat $ORANGEDIR/exclude.lst | xargs rm -rf
+cat orange/exclude.lst | xargs rm -rf
 
 if [ $REL -eq 1 ]; then # cleanup of BCMonly.lst file
-    cat $ORANGEDIR/OrangeWidgets/Genomics/BCMonly.lst | xargs rm -rf
+    cat orange/OrangeWidgets/Genomics/BCMonly.lst | xargs rm -rf
 fi
 echo "done"
 
 echo -n "Updating Orange version to Orange-$VER..."
-cat $ORANGEDIR/setup.py | sed s/"OrangeVer=\"ADDVERSION\""/"OrangeVer=\"Orange-$VER\""/ > $ORANGEDIR/new.py
-mv -f $ORANGEDIR/new.py $ORANGEDIR/setup.py
+cat orange/setup.py | sed s/"OrangeVer=\"ADDVERSION\""/"OrangeVer=\"Orange-$VER\""/ > orange/new.py
+mv -f orange/new.py orange/setup.py
 echo "done"
 
-echo -n "Packing $ORANGEDIR to $OUT..."
-tar czpvf $OUT $ORANGEDIR > packing.log 2>&1
+echo -n "Packing orange to $OUT..."
+tar czpvf $OUT orange > packing.log 2>&1
 echo "done"
 #python setup.py install
