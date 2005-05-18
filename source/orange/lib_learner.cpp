@@ -435,18 +435,14 @@ PyObject *TreeSplitConstructor_call(PyObject *self, PyObject *args, PyObject *ke
     vector<bool> candidates;
     if (pycandidates) {
       PyObject *iterator = PyObject_GetIter(pycandidates);
-      if (!iterator) {
-        Py_DECREF(pycandidates);
+      if (!iterator)
         PYERROR(PyExc_SystemError, "TreeSplitConstructor.call: cannot iterate through candidates; a list exected", PYNULL);
-      }
       for(PyObject *item = PyIter_Next(iterator); item; item = PyIter_Next(iterator)) {
         candidates.push_back(PyObject_IsTrue(item) != 0);
         Py_DECREF(item);
       }
       
       Py_DECREF(iterator);
-      Py_DECREF(pycandidates);
-
       if (PyErr_Occurred())
         return PYNULL;
     }
@@ -683,34 +679,104 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
     PExampleGenerator examples;
     PyObject *pybases;
     int normalizeExamples = 1;
-    if (!PyArg_ParseTuple(args, "O&O|iO&:P2NN", pt_ExampleGenerator, &examples, &pybases, &normalizeExamples, cc_Domain, &domain))
-      return PYNULL;
+    if (PyArg_ParseTuple(args, "O&O|iO&:P2NN", pt_ExampleGenerator, &examples, &pybases, &normalizeExamples, cc_Domain, &domain)) {
+      if (!domain)
+        domain = examples->domain;
 
-    if (!domain)
-      domain = examples->domain;
+      if (!PyList_Check(pybases))
+        PYERROR(PyExc_AttributeError, "the anchors should be given as a list", PYNULL);
 
-    if (!PyList_Check(pybases))
-      PYERROR(PyExc_AttributeError, "the anchors should be given as a list", PYNULL);
+      const int nAnchors = PyList_Size(pybases);
+      if (nAnchors != domain->attributes->size())
+        PYERROR(PyExc_AttributeError, "the number of attributes does not match the number of anchors", PYNULL);
 
-    const int nAnchors = PyList_Size(pybases);
-    if (nAnchors != domain->attributes->size())
-      PYERROR(PyExc_AttributeError, "the number of attributes does not match the number of anchors", PYNULL);
-
-    TFloatList *basesX = mlnew TFloatList(nAnchors);
-    TFloatList *basesY = mlnew TFloatList(nAnchors);
-    PFloatList wbasesX = basesX, wbasesY = basesY;
+      TFloatList *basesX = mlnew TFloatList(nAnchors);
+      TFloatList *basesY = mlnew TFloatList(nAnchors);
+      PFloatList wbasesX = basesX, wbasesY = basesY;
    
-    TFloatList::iterator xi(basesX->begin());
-    TFloatList::iterator yi(basesY->begin());
-    PyObject *foo;
+      TFloatList::iterator xi(basesX->begin());
+      TFloatList::iterator yi(basesY->begin());
+      PyObject *foo;
 
-    for(int i = 0; i < nAnchors; i++)
-      if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "ff|O", &*xi++, &*yi++, &foo)) {
-        PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
-        return PYNULL;
+      for(int i = 0; i < nAnchors; i++)
+        if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "ff|O", &*xi++, &*yi++, &foo)) {
+          PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
+          return PYNULL;
+        }
+
+      return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY, -1.0, normalizeExamples != 0), type);
+    }
+
+    PyErr_Clear();
+    PyObject *matrix;
+    PyObject *pyoffsets, *pynormalizers, *pyaverages;
+    if (PyArg_ParseTuple(args, "O&OOOOO|i", cc_Domain, &domain, &matrix, &pybases, &pyoffsets, &pynormalizers, &pyaverages, &normalizeExamples)) {
+      prepareNumeric();
+//      if (!PyArray_Check(matrix))
+//        PYERROR(PyExc_AttributeError, "the second argument (projection matrix) must a Numeric.array", PYNULL);
+
+      const int nAttrs = domain->attributes->size();
+
+      PyArrayObject *array = (PyArrayObject *)(matrix);
+      if (array->nd != 2)
+        PYERROR(PyExc_AttributeError, "two-dimensional array expected for matrix of projections", PYNULL);
+      if (array->dimensions[1] != 3)
+        PYERROR(PyExc_AttributeError, "the matrix of projections must have three columns", PYNULL);
+      if ((array->descr->type_num != PyArray_FLOAT) && (array->descr->type_num != PyArray_DOUBLE))
+        PYERROR(PyExc_AttributeError, "elements of matrix of projections must be doubles or floats", PYNULL);
+      if (!PyList_Check(pybases) || (PyList_Size(pybases) != nAttrs))
+        PYERROR(PyExc_AttributeError, "the third argument must be a list of anchors with length equal the number of attributes", PYNULL);
+
+      const int nExamples = array->dimensions[0];
+
+      #define LOADLIST(x) \
+      PFloatList x = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::P_FromArguments(py##x); \
+      if (!x) return PYNULL; \
+      if (x->size() != nAttrs) PYERROR(PyExc_TypeError, "invalid size of "#x" list", PYNULL);
+
+      LOADLIST(offsets)
+      LOADLIST(normalizers)
+      LOADLIST(averages)
+      #undef LOADLIST
+
+      double *bases = new double[2*nAttrs];
+      double *bi = bases;
+      PyObject *foo;
+
+      for(int i = 0; i < nAttrs; i++, bi+=2)
+        if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "dd|O", bi, bi+1, &foo)) {
+          PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
+          delete bases;
+          return PYNULL;
+        }
+
+      double *projections = new double[3*nExamples];
+
+      char *rowPtr = array->data;
+      double *pi = projections;
+      const int &strideRow = array->strides[0];
+      const int &strideCol = array->strides[1];
+
+      if (array->descr->type_num == PyArray_FLOAT) {
+        for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
+          *pi++ = double(*(float *)(rowPtr));
+          *pi++ = double(*(float *)(rowPtr+strideCol));
+          *pi++ = double(*(float *)(rowPtr+2*strideCol));
+        }
+      }
+      else {
+        for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
+          *pi++ = *(double *)(rowPtr);
+          *pi++ = *(double *)(rowPtr+strideCol);
+          *pi++ = *(double *)(rowPtr+2*strideCol);
+        }
       }
 
-    return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY, -1.0, normalizeExamples != 0), type);
+      return WrapNewOrange(mlnew TP2NN(domain, projections, nExamples, bases, offsets, normalizers, averages, TP2NN::InverseSquare, normalizeExamples != 0), type);
+    }
+
+    PyErr_Clear();
+    PYERROR(PyExc_TypeError, "P2NN.invalid argumenst", PYNULL);
 
   PyCATCH;
 }

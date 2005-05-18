@@ -47,10 +47,7 @@ inline PyObject *callCallback(PyObject *self, PyObject *args)
     Py_DECREF(callback);
   }
   else 
-    result = PyEval_CallObject(self, args);
-
-  if (args)
-    Py_DECREF(args);
+    result = PyObject_CallObject(self, args);
 
   if (!result)
     throw pyexception();
@@ -78,7 +75,10 @@ PyObject *setCallbackFunction(PyObject *self, PyObject *args)
 
 
 bool TFilter_Python::operator()(const TExample &ex)
-{ PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(N)", Example_FromExampleCopyRef(ex)));
+{ 
+  PyObject *args = Py_BuildValue("(N)", Example_FromExampleCopyRef(ex));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   bool res = bool(PyObject_IsTrue(result)!=0);
   Py_DECREF(result);
@@ -101,7 +101,9 @@ PFilter TFilter_Python::deepCopy() const
 
 void TTransformValue_Python::transform(TValue &val)
 {
-  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(N)", Value_FromValue(val)));
+  PyObject *args = Py_BuildValue("(N)", Value_FromValue(val));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   PVariable var;
   bool succ = convertFromPython(result, val, var);
@@ -149,7 +151,9 @@ PClassifier TLearner_Python::operator()(PExampleGenerator eg, const int &weight)
 { if (!eg)
     raiseError("invalid example generator");
 
-  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight));
+  PyObject *args = Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight);
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrClassifier_Check(res)) 
     raiseError("__call__ is expected to return something derived from Classifier");
@@ -167,7 +171,9 @@ PAttributedFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, cons
   if (!eg)
     raiseError("invalid example generator");
 
-  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weightID));
+  PyObject *args = Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weightID);
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyTuple_Check(res) || (PyTuple_Size(res)<2) || !PyInt_Check(PyTuple_GET_ITEM(res, 0)))
     raiseError("invalid result from __call__");
@@ -198,7 +204,10 @@ PAttributedFloatList TLogRegFitter_Python::operator()(PExampleGenerator eg, cons
 
 
 TValue TClassifier_Python::operator ()(const TExample &ex)
-{ PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 0));
+{ 
+  PyObject *args = Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 0);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (result==Py_None) {
     Py_DECREF(result);
@@ -217,7 +226,10 @@ TValue TClassifier_Python::operator ()(const TExample &ex)
 
 
 PDistribution TClassifier_Python::classDistribution(const TExample &ex)
-{ PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 1));
+{ 
+  PyObject *args = Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 1);
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (result==Py_None) {
     Py_DECREF(result);
@@ -236,7 +248,10 @@ PDistribution TClassifier_Python::classDistribution(const TExample &ex)
 
 
 void TClassifier_Python::predictionAndDistribution(const TExample &ex, TValue &val, PDistribution &dist)
-{ PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 2));
+{ 
+  PyObject *args = Py_BuildValue("(Ni)", Example_FromExampleCopyRef(ex), 2);
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (result==Py_None) {
     Py_DECREF(result);
@@ -286,9 +301,9 @@ PClassifier TTreeSplitConstructor_Python::operator()(
       PyList_SetItem(pycandidates, as, PyInt_FromLong(1));
   }
 
-  PyObject *res=callCallback((PyObject *)myWrapper,
-     Py_BuildValue("(NiNNNN)", WrapOrange(gen), weightID, WrapOrange(dcont), WrapOrange(apriorClass), pycandidates, WrapOrange(nodeClassifier))
-  );
+  PyObject *args = Py_BuildValue("(NiNNNN)", WrapOrange(gen), weightID, WrapOrange(dcont), WrapOrange(apriorClass), pycandidates, WrapOrange(nodeClassifier));
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (res==Py_None) {
     Py_DECREF(res);
@@ -318,7 +333,9 @@ PExampleGeneratorList TTreeExampleSplitter_Python::operator()(PTreeNode node, PE
 { if (!gen)
     raiseError("invalid example generator");
   
-  PyObject *res=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(node), WrapOrange(gen), weightID));
+  PyObject *args = Py_BuildValue("(NNi)", WrapOrange(node), WrapOrange(gen), weightID);
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (res == Py_None) {
     Py_DECREF(res);
@@ -357,10 +374,13 @@ PExampleGeneratorList TTreeExampleSplitter_Python::operator()(PTreeNode node, PE
 
 
 bool TTreeStopCriteria_Python::operator()(PExampleGenerator gen, const int &weightID, PDomainContingency dcont)
-{ if (!gen)
+{ 
+  if (!gen)
     raiseError("invalid example generator");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NiN)", WrapOrange(gen), weightID, WrapOrange(dcont)));
+  PyObject *args = Py_BuildValue("(NiN)", WrapOrange(gen), weightID, WrapOrange(dcont));
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   bool res = bool(PyObject_IsTrue(result)!=0);
   Py_DECREF(result);
@@ -372,7 +392,10 @@ bool TTreeStopCriteria_Python::operator()(PExampleGenerator gen, const int &weig
 int pt_DiscDistribution(PyObject *args, void *dist);
 
 PTreeNode TTreeDescender_Python::operator()(PTreeNode node, const TExample &ex, PDiscDistribution &distr)
-{ PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NN)", WrapOrange(node), Example_FromExampleCopyRef(ex)));
+{ 
+  PyObject *args = Py_BuildValue("(NN)", WrapOrange(node), Example_FromExampleCopyRef(ex));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (result == Py_None) {
     Py_DECREF(result);
@@ -396,7 +419,10 @@ PTreeNode TTreeDescender_Python::operator()(PTreeNode node, const TExample &ex, 
 
 bool TProgressCallback_Python::operator()(const float &f, POrange o)
 { 
-  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("fN", f, WrapOrange(o)));
+  PyObject *args = Py_BuildValue("fN", f, WrapOrange(o));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
+
   bool res = PyObject_IsTrue(result) != 0;
   Py_DECREF(result);
   return res;
@@ -408,7 +434,9 @@ PImputer TImputerConstruct_Python::operator()(PExampleGenerator eg, const int &w
   if (!eg)
     raiseError("invalid example generator");
 
-  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight));
+  PyObject *args = Py_BuildValue("(Ni)", WrapOrange(POrange(eg)), weight);
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrImputer_Check(res)) 
     raiseError("__call__ is expected to return something derived from Imputer");
@@ -421,7 +449,10 @@ PImputer TImputerConstruct_Python::operator()(PExampleGenerator eg, const int &w
 
 TExample *TImputer_Python::operator()(TExample &example)
 {
-  PyObject *result = callCallback((PyObject *)myWrapper, Py_BuildValue("(Ni)", Example_FromExampleCopyRef(example), 0));
+  PyObject *args = Py_BuildValue("(Ni)", Example_FromExampleCopyRef(example), 0);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
+
   if (!PyOrExample_Check(result))
     raiseError("__call__ is expected to return an instance of Example");
 
@@ -439,7 +470,9 @@ float TRuleEvaluator_Python::operator()(PRule rule, PExampleTable table, const i
   if (!apriori)
     raiseError("invalid prior distribution");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori)));
+  PyObject *args = Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori));
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyFloat_Check(result))
     raiseError("__call__ is expected to return a float value.");
@@ -457,7 +490,9 @@ bool TRuleValidator_Python::operator()(PRule rule, PExampleTable table, const in
   if (!apriori)
     raiseError("invalid prior distribution");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori)));
+  PyObject *args = Py_BuildValue("(NNiiN)", WrapOrange(rule), WrapOrange(table), weightID, targetClass, WrapOrange(apriori));
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyBool_Check(result))
     raiseError("__call__ is expected to return a Boolean value.");
@@ -473,7 +508,9 @@ PExampleTable TRuleCovererAndRemover_Python::operator()(PRule rule, PExampleTabl
   if (!rule)
     raiseError("invalid rule");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass));
+  PyObject *args = Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   PExampleGenerator gen; 
   if (!PyArg_ParseTuple(result, "O&O&", pt_ExampleGenerator, &gen, pt_weightByGen(gen), &newWeightID))
@@ -491,7 +528,9 @@ bool TRuleStoppingCriteria_Python::operator()(PRuleList ruleList, PRule rule, PE
   if (!rule)
     raiseError("invalid rule");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNNi)", WrapOrange(ruleList), WrapOrange(rule), WrapOrange(table), weightID));
+  PyObject *args = Py_BuildValue("(NNNi)", WrapOrange(ruleList), WrapOrange(rule), WrapOrange(table), weightID);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyBool_Check(result))
     raiseError("__call__ is expected to return a Boolean value.");
@@ -505,7 +544,9 @@ bool TRuleDataStoppingCriteria_Python::operator()(PExampleTable table, const int
   if (!table)
     raiseError("invalid example table");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(Nii)", WrapOrange(table), weightID, targetClass));
+  PyObject *args = Py_BuildValue("(Nii)", WrapOrange(table), weightID, targetClass);
+  PyObject *result=callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyBool_Check(result))
     raiseError("__call__ is expected to return a Boolean value.");
@@ -519,7 +560,9 @@ PRule TRuleFinder_Python::operator ()(PExampleTable table, const int &weightID, 
   if (!table)
     raiseError("invalid example table");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NiiN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules)));
+  PyObject *args = Py_BuildValue("(NiiN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrRule_Check(result))
     raiseError("__call__ is expected to return a rule.");
@@ -535,7 +578,9 @@ PRuleList TRuleBeamRefiner_Python::operator ()(PRule rule, PExampleTable table, 
   if (!rule)
     raiseError("invalid rule");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass));
+  PyObject *args = Py_BuildValue("(NNii)", WrapOrange(rule), WrapOrange(table), weightID, targetClass);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrRuleList_Check(result))
     raiseError("__call__ is expected to return a list of rules.");
@@ -553,7 +598,9 @@ PRuleList TRuleBeamInitializer_Python::operator ()(PExampleTable table, const in
   if (!prior)
     raiseError("invalid prior distribution");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NiiNNNN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules), WrapOrange(evaluator), WrapOrange(prior), WrapOrange(bestRule)));
+  PyObject *args = Py_BuildValue("(NiiNNNN)", WrapOrange(table), weightID, targetClass, WrapOrange(baseRules), WrapOrange(evaluator), WrapOrange(prior), WrapOrange(bestRule));
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrRuleList_Check(result))
     raiseError("__call__ is expected to return a list of rules.");
@@ -569,7 +616,9 @@ PRuleList TRuleBeamCandidateSelector_Python::operator ()(PRuleList existingRules
   if (!existingRules)
     raiseError("invalid existing rules");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(existingRules), WrapOrange(table), weightID));
+  PyObject *args = Py_BuildValue("(NNi)", WrapOrange(existingRules), WrapOrange(table), weightID);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   PRuleList candidates; 
   if (!PyArg_ParseTuple(result, "O&O&", cc_RuleList, &candidates, cc_RuleList, &existingRules))
@@ -585,7 +634,9 @@ void TRuleBeamFilter_Python::operator ()(PRuleList rules, PExampleTable table, c
   if (!rules)
     raiseError("invalid existing rules");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID));
+  PyObject *args = Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrRuleList_Check(result))
     raiseError("__call__ is expected to return a list of rules.");
@@ -599,7 +650,9 @@ PRuleClassifier TRuleClassifierConstructor_Python::operator()(PRuleList rules, P
   if (!table)  
     raiseError("invalid example table");
 
-  PyObject *result=callCallback((PyObject *)myWrapper, Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID));
+  PyObject *args = Py_BuildValue("(NNi)", WrapOrange(rules), WrapOrange(table), weightID);
+  PyObject *result = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (result==Py_None) {
     Py_DECREF(result);
@@ -631,7 +684,9 @@ PIM TConstructIM_Python::operator()(PExampleGenerator gen, const vector<bool> &b
     Py_DECREF(m);
   }
 
-  PyObject *res = callCallback((PyObject *)myWrapper, Py_BuildValue("(NNNi)", WrapOrange(gen), boundList, freeList, weightID));
+  PyObject *args = Py_BuildValue("(NNNi)", WrapOrange(gen), boundList, freeList, weightID);
+  PyObject *res = callCallback((PyObject *)myWrapper, args);
+  Py_DECREF(args);
 
   if (!PyOrIM_Check(res))
     raiseError("invalid result from __call__");

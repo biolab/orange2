@@ -1374,6 +1374,39 @@ PyObject *registerFileType(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(na
 }
 
 
+extern char *fileTypes[][2];
+
+PyObject *getRegisteredFileTypes(PyObject *, PyObject *, PyObject *) PYARGS(METH_NOARGS, "() -> ((extension, description, loader, saver), ...)")
+{
+  char *(*t)[2] = fileTypes;
+  while(**t)
+    t++;
+
+  int builtIns = t-fileTypes;
+  int i = 0;
+  PyObject *types = PyTuple_New(builtIns + filetypeDefinitions.size());
+  for(t = fileTypes; **t; t++)
+    PyTuple_SetItem(types, i++, Py_BuildValue("ss", (*t)[0], (*t)[1]));
+
+  ITERATE(vector<TFiletypeDefinition>, fi, filetypeDefinitions) {
+    string exts;
+    ITERATE(TStringList, ei, (*fi).extensions)
+      exts += (exts.size() ? " *" : "*") + *ei;
+
+    PyObject *ploader = (*fi).loader, *psaver = (*fi).saver;
+    if (!ploader) {
+      ploader = Py_None;
+      Py_INCREF(Py_None);
+    }
+    if (!psaver) {
+      psaver = Py_None;
+      Py_INCREF(Py_None);
+    }
+    PyTuple_SetItem(types, i++, Py_BuildValue("ssOO", (*fi).name.c_str(), exts.c_str(), ploader, psaver));
+  }
+
+  return types;
+}
 
 #include "examplegen.hpp"
 BASED_ON(ExampleGenerator, Orange)
@@ -2508,7 +2541,7 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
 #ifndef NO_NUMERIC
 
 
-PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1[, masked=0]]]) -> matrix(-ces)")
+PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, bool masked)
 {
   PyTRY
     prepareNumeric();
@@ -2516,8 +2549,7 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
-    int masked = 0;
-    if (!PyArg_ParseTuple(args, "|siii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment, &masked))
+    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
       return PYNULL;
 
     if (!contents)
@@ -2735,12 +2767,24 @@ PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywo
 }
 #else
 
-PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords)
+PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *keywords, bool)
 {
   PYERROR(PyExc_SystemError, "ExampleTable.Numeric: this build does not support module 'Numeric'", PYNULL);
 }
 
 #endif
+
+
+PyObject *ExampleTable_toNumeric(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, false);
+}
+
+
+PyObject *ExampleTable_toMA(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents='a/cw'[, weightID=0[, multinomialTreatment=1]]) -> matrix(-ces)")
+{
+  return ExampleTable_toNumericOrMA(self, args, keywords, true);
+}
 
 
 int ExampleTable_nonzero(PyObject *self)

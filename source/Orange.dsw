@@ -3,7 +3,7 @@ Microsoft Developer Studio Workspace File, Format Version 6.00
 
 ###############################################################################
 
-Project: "Corn"=.\Corn.dsp - Package Owner=<4>
+Project: "Corn"=.\corn\Corn.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -18,7 +18,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "Orange"=.\Orange.dsp - Package Owner=<4>
+Project: "Orange"=.\orange\Orange.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -33,7 +33,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "Statc"=.\Statc.dsp - Package Owner=<4>
+Project: "Statc"=.\statc\Statc.dsp - Package Owner=<4>
 
 Package=<5>
 {{{
@@ -48,7 +48,7 @@ Package=<4>
 
 ###############################################################################
 
-Project: "include"=.\include.dsp - Package Owner=<4>
+Project: "include"=.\include\include.dsp - Package Owner=<4>
 
 Package=<5>
 {{{

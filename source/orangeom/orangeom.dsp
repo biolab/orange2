@@ -201,8 +201,6 @@ SOURCE=.\optimizeAnchors.cpp
 
 !IF  "$(CFG)" == "orangeom - Win32 Release"
 
-# SUBTRACT CPP /FA<none>
-
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Debug"
 
 !ELSEIF  "$(CFG)" == "orangeom - Win32 Release_Debug"

@@ -61,6 +61,10 @@ bool fileExists(const string &s) {
 
 typedef enum {UNKNOWN, TXT, CSV, BASKET, TAB, TSV, C45, RETIS, ASSISTANT, EXCEL} TFileFormats;
 
+char *fileTypes[][2] = {{"Tab-delimited", "*.tab"}, {"Tab-delimited (simplified)", "*.txt"}, {"Comma-separated", "*.csv"},
+                       {"C45", "*.names"}, {"Retis", "*.rda"}, {"Assistant", "*.dat"}, {"Basket", "*.basket"},
+                       {NULL, NULL}};
+                       
 WRAPPER(ExampleTable);
 
 TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMetas, PDomain knownDomain, bool dontCheckStored, bool dontStore, const char *DK, const char *DC, bool noExcOnUnknown = false)
@@ -280,3 +284,4 @@ TExampleTable *readData(char *filename, PVarList knownVars, TMetaVector *knownMe
   }
   return NULL;
 }
+

@@ -289,6 +289,9 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 
   offsets = new TFloatList();
   normalizers = new TFloatList();
+  averages = new TFloatList();
+
+  TDomainDistributions ddist(egen, 0, false, true); // skip continuous
 
   if (domain->hasContinuousAttributes()) {
     TDomainBasicAttrStat basstat(egen);
@@ -299,6 +302,7 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
       if ((*ai)->varType == TValue::INTVAR) {
         offsets->push_back(0);
         normalizers->push_back((*ai)->noOfValues() - 1);
+        averages->push_back(float(ddist[aidx]->highestProbIntIndex()));
       }
       else if ((*ai)->varType == TValue::FLOATVAR) {
         if (aidx < 0)
@@ -306,6 +310,7 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 
         offsets->push_back(basstat[aidx]->min);
         normalizers->push_back(basstat[aidx]->max - basstat[aidx]->min);
+        averages->push_back(basstat[aidx]->avg);;
       }
       else
         raiseError("P2NN can only handle discrete and continuous attributes");
@@ -316,9 +321,11 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
       if ((*ai)->varType != TValue::INTVAR)
         raiseError("P2NN can only handle discrete and continuous attributes");
       else {
-        attrIdx.push_back(gendomain.getVarNum(*ai));
+        const int aidx = gendomain.getVarNum(*ai);
+        attrIdx.push_back(aidx);
         offsets->push_back(0.0);
-        normalizers->push_back((*ai)->noOfValues());
+        normalizers->push_back((*ai)->noOfValues()-1);
+        averages->push_back(float(ddist[aidx]->highestProbIntIndex()));
       }
   }
 
@@ -330,18 +337,26 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 
   pi = projections;
   PEITERATE(ei,egen) {
+    TValue &cval = (*ei)[classIdx];
+    if (cval.isSpecial())
+      continue;
+
     TFloatList::const_iterator offi(offsets->begin());
     TFloatList::const_iterator nori(normalizers->begin());
+    TFloatList::const_iterator avgi(averages->begin());
+    vector<int>::const_iterator ai(attrIdx.begin()), ae(attrIdx.end());
     double *base = bases;
     radiii = radii;
     double sumex = 0.0;
-    ITERATE(vector<int>, ai, attrIdx) {
+    for(; ai!=ae; ai++, offi++, nori++, avgi++) {
       const TValue &val = (*ei)[*ai];
+      double av;
       if (val.isSpecial())
-        raiseError("P2NN cannot handle missing values");
+        av = *avgi;
+      else
+        av = val.varType == TValue::INTVAR ? float(val.intV) : val.floatV;
 
-      // don't throw out offi if the value is discrete -- we need to increase it
-      double aval = ((val.varType == TValue::INTVAR ? float(val.intV) : val.floatV) - *offi++) / *nori++;
+      const double aval = (av - *offi) / *nori;
       pi[0] += aval * *base++;
       pi[1] += aval * *base++;
       sumex += aval * *radiii++;
@@ -351,21 +366,20 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
       pi[1] /= sumex;
     }
 
-    TValue &cval = (*ei)[classIdx];
-    if (cval.isSpecial())
-      raiseError("P2NN cannot handle missing class values");
     pi[2] = cval.varType == TValue::INTVAR ? float(cval.intV) : cval.floatV;
     pi += 3;
   }
 }
 
 
-TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, const int &alaw, const bool normalize)
+/* This one projects the examples; removed in favour of the one that gets the computed projections 
+TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList off, PFloatList norm, PFloatList avgs, const int &alaw, const bool normalize)
 : TPNN(domain, alaw, normalize)
 {
   dimensions = 2;
   offsets = off;
   normalizers = norm;
+  averages = avgs;
 
   nExamples = nEx;
 
@@ -403,22 +417,42 @@ TP2NN::TP2NN(PDomain, double *examples, const int &nEx, double *ba, PFloatList o
     pi[2] = *example++;
   }
 }
+*/
 
+
+TP2NN::TP2NN(PDomain dom, double *aprojections, const int &nEx, double *ba, PFloatList off, PFloatList norm, PFloatList avgs, const int &alaw, const bool normalize)
+: TPNN(dom, alaw, normalize)
+{
+  dimensions = 2;
+  offsets = off;
+  normalizers = norm;
+  averages = avgs;
+  bases = ba;
+  projections = aprojections;
+  nExamples = nEx;
+  radii = mlnew double[2*domain->attributes->size()];
+  for(double *radiii = radii, *radiie = radii + domain->attributes->size(), *bi = bases;
+      radiii != radiie;
+      *radiii++ = sqrt(sqr(*bi++) + sqr(*bi++)));
+}
 
 
 void TP2NN::project(const TExample &example, double &x, double &y)
 {
-  TFloatList::const_iterator offi = offsets->begin(), nori = normalizers->begin();
+  TFloatList::const_iterator offi = offsets->begin(), nori = normalizers->begin(), avgi = averages->begin();
   x = y = 0.0;
   double *base = bases, *radius = radii;
   double sumex = 0.0;
 
   TExample::const_iterator ei = example.begin();
-  for(int attrs = example.domain->attributes->size(); attrs--; ) {
+  for(int attrs = example.domain->attributes->size(); attrs--; ei++, avgi++, offi++, nori++) {
+    double av;
     if ((*ei).isSpecial())
-      raiseError("cannot handle missing values");
+      av = *avgi;
+    else
+      av = (*ei).varType == TValue::INTVAR ? float((*ei).intV) : (*ei).floatV;
 
-    double aval = ((*(ei++)).floatV - *(offi++)) / *(nori++);
+    const double aval = (av - *offi) / *nori;
     x += aval * *(base++);
     y += aval * *(base++);
     if (normalizeExamples)
@@ -442,7 +476,7 @@ PDistribution TP2NN::classDistribution(const TExample &example)
       project(example, x, y);
     else {
       TExample nex(domain, example);
-      project(example, x, y);
+      project(nex, x, y);
     }
 
     classDistribution(x, y, cprob, nClasses);

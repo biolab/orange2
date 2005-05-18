@@ -35,10 +35,10 @@ public:
   int dimensions; //PR the number of dimensions
   PFloatList offsets; //P offsets to subtract from the attribute values
   PFloatList normalizers; //P number to divide the values by
+  PFloatList averages; //P numbers to use instead of the missing
   bool normalizeExamples; //P if true, attribute values are divided to sum up to 1
   double *bases; // eg x1, y1,  x2, y2,  x3, y3, ... x_dimensions, y_dimensions
   double *radii; // eg sqrt(x1^2+y1^2) ...
-  int k; //P if >1, the kernel is scaled so that the k-th's neighbour's distance is 0.001
 
   int nExamples; //PR the number of examples
   double *projections; // projections of examples + class
@@ -66,8 +66,8 @@ class ORANGE_API TP2NN : public TPNN {
 public:
   __REGISTER_CLASS
 
-  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &law = InverseLinear, const bool normalizeExamples = true);
-  TP2NN(PDomain, double *, const int &nExamples, double *bases, PFloatList off, PFloatList norm, const int &law = InverseLinear, const bool normalizeExamples = true);
+  TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &law = InverseSquare, const bool normalizeExamples = true);
+  TP2NN(PDomain, double *projections, const int &nExamples, double *bases, PFloatList off, PFloatList norm, PFloatList avgs, const int &law = InverseSquare, const bool normalizeExamples = true);
 
   virtual PDistribution classDistribution(const TExample &);
   virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;
