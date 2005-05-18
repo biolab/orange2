@@ -665,7 +665,7 @@ void TExampleTable::changeDomain(PDomain dom, bool filterMetas)
 
   else {
     for (TExample **ri = examples; ri!=_Last; ri++)
-      *ri = mlnew TExample(dom, **ri, filterMetas);
+      *ri = mlnew TExample(dom, **ri, !filterMetas);
     ownsExamples = false;
     lock = PExampleGenerator();
   }

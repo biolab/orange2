@@ -274,6 +274,7 @@ def detectHierarchy(line, classdefs):
 def detectCallDoc(line, classdefs):
   found=calldocdef.search(line)
   if found:
+    print line
     typename, doc = found.group("typename", "doc")
     printV2("%s: definition/declaration of description" % typename)
     addClassDef(classdefs, typename, parsedFile, "description", doc)
