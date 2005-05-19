@@ -292,7 +292,7 @@ for root, dirs, files in os.walk(os.path.join("doc")):
                                  OrangeDocs)]
 
 # we save setup.py, so we can uninstall complete orange installation
-#data_files += [(OrangeInstallDoc,['setup.py'])]
+data_files += [(OrangeInstallDoc,['setup.py'])]
 
 long_description = """Orange, data-mining software"""
 
