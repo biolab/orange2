@@ -12,11 +12,14 @@ if [ "$1" == "clean" ]; then
 fi
 echo
 
-rm -Rf source
-cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f source
+rm -Rf orange
+rm -Rf orange/source
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f orange
+cvs -d :pserver:cvso@estelle.fri.uni-lj.si:/CVS checkout -r $TAG -f -d orange/source source
 
 START_WD=`pwd`
-rm orange.so statc.so corn.so
+cd orange
+rm -f orange.so statc.so corn.so orangene.so orangeom.so
 cd source 
 if ! make; then 
 	echo -e "\n\nERROR compiling"
@@ -25,5 +28,3 @@ else
 	echo -e "\n\nOrange compiled successfully"
 fi
 cd $START_WD
-rm orange.so statc.so corn.so
-
