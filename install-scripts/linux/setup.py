@@ -212,7 +212,9 @@ class install_wrap(install):
         print "success"
         print "Creating path file...",
         pth = os.path.join(sys.prefix,OrangeInstallDir,"..","orange.pth")
-        os.remove(pth)
+
+        if os.access(pth, os.F_OK) is True:
+            os.remove(pth)
 
         fo = file(pth,"w+")
         fo.write(os.path.join(sys.prefix,OrangeInstallDir)+"\n")
