@@ -299,7 +299,10 @@ class BasicLogisticLearner(RobustBLogisticLearner):
 
         # get the attribute importances
         t = examples
-        importance = [(orange.MeasureAttribute_info(t.domain.attributes[i],t),i) for i in xrange(len(t.domain.attributes))]
+        importance = []
+        for i in xrange(len(t.domain.attributes)):
+            qi = orange.MeasureAttribute_relief(t.domain.attributes[i],t)
+            importance.append((qi,i))
         importance.sort()
         freqs = list(orange.Distribution(examples.domain.classVar,examples))
         s = 1.0/sum(freqs)

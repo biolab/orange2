@@ -25,8 +25,6 @@
 #
 #   - make sure everything works when given an empty example table
 #
-#   - Consider supporting TRANSDUCTION. Currently all the missing-class examples
-#     are filtered out.
 #
 
 import orange
@@ -80,7 +78,10 @@ class BasicSVMLearner(orange.Learner):
       self.eps = 1e-3
 
       # shrinking heuristic (1=on, 0=off)
-      self.shrinking = 1      
+      self.shrinking = 1
+
+      # probability (1 = on, 0 = off)
+      self.probability = 0
 
       # class weights
       self.classweights = []
@@ -116,7 +117,8 @@ class BasicSVMLearner(orange.Learner):
       assert(self.eps > 0)
       assert(self.nu <= 1.0 and self.nu >= 0.0)
       assert(self.p >= 0.0)
-      assert(self.shrinking in [0,1])        
+      assert(self.shrinking in [0,1])
+      assert(self.probability in [0,1])        
       if type == 1:
         counts = [0]*len(data.domain.classVar.values)
         for x in data:
@@ -137,16 +139,12 @@ class BasicSVMLearner(orange.Learner):
       mdata = translate.transform(puredata)
 
       if len(self.classweights)==0:
-          #import pickle
-          #r = (mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking)
-          #pickle.dump(r,open('c:/temp/huh.pik','w'))
-          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking)
-          #print model
+          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, 0, [], [])
       else:
           assert(len(puredata.domain.classVar.values)==len(self.classweights))
           cvals = [data.domain.classVar(i) for i in data.domain.classVar.values]
           labels = translate.transformClass(cvals)
-          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking,len(self.classweights), self.classweights, labels)
+          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, len(self.classweights), self.classweights, labels)
       return (model, translate)
 
   def __call__(self, data, weights = 0,fulldata=0):
@@ -161,7 +159,18 @@ class BasicSVMClassifier(orange.Classifier):
       self.cmodel = orngCRS.SVMClassifier(model)
       self.translate = translate
       self.normalize = normalize
-
+      if model["svm_type"] in [0,1]:
+          self.classifier = 1
+          if model.has_key("ProbA") and model.has_key("ProbB"):
+              self.probabilistic = 1
+          else:
+              self.probabilistic = 0
+          self.classLUT = [self.translate.getClass(q) for q in model["label"]]
+          self.iclassLUT = [int(q) for q in self.classLUT]
+      else:
+          self.probabilistic = 0
+          self.classifier = 0
+          
       if normalize and model['kernel_type'] == 0 and model["svm_type"] == 0 and model["nr_class"] == 2:
           beta = model["rho"][0]
           svs = model["SV"]
@@ -178,24 +187,22 @@ class BasicSVMClassifier(orange.Classifier):
           for x in xcoeffs:
               sum += x*x
           self.coefficient = 1.0/math.sqrt(sum)
-          #if model["label"][0] == 0:
-          #    self.coefficient *= -1.0
           self.xcoeffs = [x*self.coefficient for x in xcoeffs]
           self.beta = beta*self.coefficient
+      else:
+          self.coefficient = 1.0
           
   def getmargin(self, example):
       # classification with margins
       assert(self.model['nr_class'] <= 2) # this should work only with 2-class problems
       if self.model['nr_class'] == 2:
         td = self.translate.extransform(example)
-        if self.model["label"][0] == 1:
-          margin = orngCRS.SVMClassifyM(self.cmodel,td)
-        else:
-          margin = -orngCRS.SVMClassifyM(self.cmodel,td)
+        margin = orngCRS.SVMClassifyM(self.cmodel,td)
+        print margin
         if self.normalize:
-            return margin*self.coefficient
+            return -margin[0]*self.coefficient
         else:
-            return margin
+            return -margin[0]
       else:
         # it can happen that there is a single class
         return 0.0
@@ -205,11 +212,18 @@ class BasicSVMClassifier(orange.Classifier):
       td = self.translate.extransform(example)
       x = orngCRS.SVMClassify(self.cmodel,td)
       v = self.translate.getClass(x)
+      if self.probabilistic:
+          px = orngCRS.SVMClassifyP(self.cmodel,td)
+          p = [0.0]*len(self.translate.cv.attr.values)
+          for i in xrange(len(self.iclassLUT)):
+              p[self.iclassLUT[i]] = px[i]
+      elif self.model['svm_type']==0 or self.model['svm_type']==1:
+          p = [0.0]*len(self.translate.cv.attr.values)
+          p[int(v)] = 1.0
+
       if format == orange.GetValue or self.model['svm_type']==3 or self.model['svm_type']==2:
           # do not return and PD when we're dealing with regression, or one-class
           return v
-      p = [0.0]*len(self.translate.cv.attr.values)
-      p[int(v)] = 1.0
       if format == orange.GetBoth:
           return (v,p)
       if format == orange.GetProbabilities:

@@ -27,6 +27,26 @@ except AttributeError:
     _newclass = 0
 
 
+svm_destroy_model = _orngCRS.svm_destroy_model
+
+SVMClassifier = _orngCRS.SVMClassifier
+
+SVMLearnS = _orngCRS.SVMLearnS
+
+SVMLearn = _orngCRS.SVMLearn
+
+SVMClassify = _orngCRS.SVMClassify
+
+SVMClassifyP = _orngCRS.SVMClassifyP
+
+SVMClassifyM = _orngCRS.SVMClassifyM
+
+SVMClassifyS = _orngCRS.SVMClassifyS
+
+SVMClassifyPS = _orngCRS.SVMClassifyPS
+
+SVMClassifyMS = _orngCRS.SVMClassifyMS
+
 MCluster = _orngCRS.MCluster
 
 HCluster = _orngCRS.HCluster
@@ -41,14 +61,66 @@ DFCluster = _orngCRS.DFCluster
 
 LogReg = _orngCRS.LogReg
 
-svm_destroy_model = _orngCRS.svm_destroy_model
+Computer = _orngCRS.Computer
 
-SVMClassifier = _orngCRS.SVMClassifier
+NBprepare = _orngCRS.NBprepare
 
-SVMLearn = _orngCRS.SVMLearn
+NBkill = _orngCRS.NBkill
 
-SVMClassify = _orngCRS.SVMClassify
+NBcleanup = _orngCRS.NBcleanup
 
-SVMClassifyM = _orngCRS.SVMClassifyM
+NBquality = _orngCRS.NBquality
+
+TANquality = _orngCRS.TANquality
+
+NBdivergence = _orngCRS.NBdivergence
+
+NBqualityW = _orngCRS.NBqualityW
+
+NBsaveScores = _orngCRS.NBsaveScores
+
+NBrememberScores = _orngCRS.NBrememberScores
+
+NBcompareScores = _orngCRS.NBcompareScores
+
+NBexportScores = _orngCRS.NBexportScores
+
+NBexportProbabilities = _orngCRS.NBexportProbabilities
+
+NBcompareLists = _orngCRS.NBcompareLists
+
+NBstoreModel = _orngCRS.NBstoreModel
+
+NBclassify = _orngCRS.NBclassify
+
+NBclassifyW = _orngCRS.NBclassifyW
+
+NBupdate = _orngCRS.NBupdate
+
+Ksetmodel = _orngCRS.Ksetmodel
+
+Kaddmodel = _orngCRS.Kaddmodel
+
+Ktestaddition = _orngCRS.Ktestaddition
+
+Kdie = _orngCRS.Kdie
+
+Kuse = _orngCRS.Kuse
+
+Kvalidate = _orngCRS.Kvalidate
+
+Kremember = _orngCRS.Kremember
+
+Klearn = _orngCRS.Klearn
+
+KgetDOF = _orngCRS.KgetDOF
+
+Kcheckreversal = _orngCRS.Kcheckreversal
+
+Ksetensemble = _orngCRS.Ksetensemble
+
+Kuseensemble = _orngCRS.Kuseensemble
+
+Ktestmodels = _orngCRS.Ktestmodels
 
 
