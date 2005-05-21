@@ -198,7 +198,6 @@ class BasicSVMClassifier(orange.Classifier):
       if self.model['nr_class'] == 2:
         td = self.translate.extransform(example)
         margin = orngCRS.SVMClassifyM(self.cmodel,td)
-        print margin
         if self.normalize:
             return -margin[0]*self.coefficient
         else:
