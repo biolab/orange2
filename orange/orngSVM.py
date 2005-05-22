@@ -111,6 +111,14 @@ class BasicSVMLearner(orange.Learner):
         type = 2 # one-class, class is ignored.
 
       # do error checking
+      assert(type(self.degree) == type(1.0))
+      assert(type(self.gamma) == type(1.0))
+      assert(type(self.coef0) == type(1.0))
+      assert(type(self.nu) == type(1.0))
+      assert(type(self.cache_size) == type(1.0))
+      assert(type(self.C) == type(1.0))
+      assert(type(self.eps) == type(1.0))
+      assert(type(self.p) == type(1.0))
       assert(type in [0,1,2,3,4])
       assert(self.kernel in [0,1,2,3])
       assert(self.cache_size > 0)
@@ -118,7 +126,7 @@ class BasicSVMLearner(orange.Learner):
       assert(self.nu <= 1.0 and self.nu >= 0.0)
       assert(self.p >= 0.0)
       assert(self.shrinking in [0,1])
-      assert(self.probability in [0,1])        
+      assert(self.probability in [0,1]) 
       if type == 1:
         counts = [0]*len(data.domain.classVar.values)
         for x in data:
