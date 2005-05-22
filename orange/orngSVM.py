@@ -96,21 +96,25 @@ class BasicSVMLearner(orange.Learner):
       # make sure that regression is used for continuous classes, and classification
       # for discrete class
       assert(data.domain.classVar.varType == 1 or data.domain.classVar.varType == 2)
-      type = self.type
-      if type == -1: # Classical
+      typ = self.type
+      if typ == -1: # Classical
         if data.domain.classVar.varType == 2: # continuous class
-          type = 3 # regression
+          typ = 3 # regression
         else: # discrete class
-          type = 0 # classification
-      elif type == -2: # Nu
+          typ = 0 # classification
+      elif typ == -2: # Nu
         if data.domain.classVar.varType == 2: # continuous class
-          type = 4 # regression
+          typ = 4 # regression
         else: # discrete class
-          type = 1 # classification
-      elif type == -3: # OC
-        type = 2 # one-class, class is ignored.
+          typ = 1 # classification
+      elif typ == -3: # OC
+        typ = 2 # one-class, class is ignored.
 
       # do error checking
+      if type(self.degree) == type(1):
+          self.degree = float(self.degree)
+      if type(self.cache_size) == type(1):
+          self.cache_size = float(self.cache_size)
       assert(type(self.degree) == type(1.0))
       assert(type(self.gamma) == type(1.0))
       assert(type(self.coef0) == type(1.0))
@@ -119,7 +123,7 @@ class BasicSVMLearner(orange.Learner):
       assert(type(self.C) == type(1.0))
       assert(type(self.eps) == type(1.0))
       assert(type(self.p) == type(1.0))
-      assert(type in [0,1,2,3,4])
+      assert(typ in [0,1,2,3,4])
       assert(self.kernel in [0,1,2,3])
       assert(self.cache_size > 0)
       assert(self.eps > 0)
@@ -147,12 +151,12 @@ class BasicSVMLearner(orange.Learner):
       mdata = translate.transform(puredata)
 
       if len(self.classweights)==0:
-          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, 0, [], [])
+          model = orngCRS.SVMLearn(mdata, typ, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, 0, [], [])
       else:
           assert(len(puredata.domain.classVar.values)==len(self.classweights))
           cvals = [data.domain.classVar(i) for i in data.domain.classVar.values]
           labels = translate.transformClass(cvals)
-          model = orngCRS.SVMLearn(mdata, type, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, len(self.classweights), self.classweights, labels)
+          model = orngCRS.SVMLearn(mdata, typ, self.kernel, self.degree, self.gamma, self.coef0, self.nu, self.cache_size, self.C, self.eps, self.p, self.shrinking, self.probability, len(self.classweights), self.classweights, labels)
       return (model, translate)
 
   def __call__(self, data, weights = 0,fulldata=0):
