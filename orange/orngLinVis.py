@@ -334,17 +334,8 @@ class _parseSVM(_parseLR):
 
         (coeff_names, total, contins, tr_values) = self.getNames(descriptors, prevnames, trans_values)
         
-        beta = classifier.model["rho"][0]
-        svs = classifier.model["SV"]
-        ll = -1
-        for i in xrange(classifier.model["total_sv"]):
-            ll = max(ll,svs[i][-1][0])
-        xcoeffs = [0.0]*(ll)
-        for i in xrange(classifier.model["total_sv"]):
-            csv = svs[i]
-            coef = csv[0][0]
-            for (j,v) in csv[1:]:
-                xcoeffs[j-1] += coef*v
+        beta = classifier.beta
+        xcoeffs = classifier.xcoeffs
 
         (basis,lookup,nlookup,coeffs) = self.getBasis(total, xcoeffs, contins, coeff_names, tr_values)
 
