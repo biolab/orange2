@@ -57,11 +57,11 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
 
-def decSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
+def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, labelWidth=None, orientation=None, tooltip=None, callback=None):
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     
-    wa = DecSpinBox(min, max, step, b)
+    wa = FloatSpinBox(min, max, step, b)
     wa.setValue(mygetattr(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
 
@@ -485,12 +485,17 @@ class ProgressBar:
     def finish(self):
         self.widget.progressBarFinished()
 
-class DecSpinBox(QSpinBox):
-    def __init__(self, *args):
-        apply(QSpinBox.__init__,(self,)+args)
+class FloatSpinBox(QSpinBox):
+    def __init__(self,min,max,step, *args):
+        self.min=min
+        self.max=max
+        self.stepSize=step
+        self.steps=(max-min)/step
+        apply(QSpinBox.__init__,(self,0,self.steps,1)+args)
         self.setValidator(QDoubleValidator(self))
 
     def mapValueToText(self,i):
-        return "%i.%i%i" % (i/100,(i/10)%10,i%10)
+        return str(self.min+i*self.stepSize)
+        #return "%i.%i%i" % (i/100,(i/10)%10,i%10)
     def interpretText(self):
-        self.setValue(int(self.text().toFloat()[0]*100))
+        self.setValue(int(math.floor((float(self.text().toFloat()[0])-self.min)/self.stepSize)))
