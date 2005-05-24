@@ -707,73 +707,77 @@ PyObject *P2NN_new(PyTypeObject *type, PyObject *args, PyObject *keywords) BASED
       return WrapNewOrange(mlnew TP2NN(domain, examples, wbasesX, wbasesY, -1.0, normalizeExamples != 0), type);
     }
 
-    PyErr_Clear();
-    PyObject *matrix;
-    PyObject *pyoffsets, *pynormalizers, *pyaverages;
-    if (PyArg_ParseTuple(args, "O&OOOOO|i", cc_Domain, &domain, &matrix, &pybases, &pyoffsets, &pynormalizers, &pyaverages, &normalizeExamples)) {
-      prepareNumeric();
-//      if (!PyArray_Check(matrix))
-//        PYERROR(PyExc_AttributeError, "the second argument (projection matrix) must a Numeric.array", PYNULL);
+    #ifndef NO_NUMERIC
 
-      const int nAttrs = domain->attributes->size();
+      PyErr_Clear();
+      PyObject *matrix;
+      PyObject *pyoffsets, *pynormalizers, *pyaverages;
+      if (PyArg_ParseTuple(args, "O&OOOOO|i", cc_Domain, &domain, &matrix, &pybases, &pyoffsets, &pynormalizers, &pyaverages, &normalizeExamples)) {
+        prepareNumeric();
+  //      if (!PyArray_Check(matrix))
+  //        PYERROR(PyExc_AttributeError, "the second argument (projection matrix) must a Numeric.array", PYNULL);
 
-      PyArrayObject *array = (PyArrayObject *)(matrix);
-      if (array->nd != 2)
-        PYERROR(PyExc_AttributeError, "two-dimensional array expected for matrix of projections", PYNULL);
-      if (array->dimensions[1] != 3)
-        PYERROR(PyExc_AttributeError, "the matrix of projections must have three columns", PYNULL);
-      if ((array->descr->type_num != PyArray_FLOAT) && (array->descr->type_num != PyArray_DOUBLE))
-        PYERROR(PyExc_AttributeError, "elements of matrix of projections must be doubles or floats", PYNULL);
-      if (!PyList_Check(pybases) || (PyList_Size(pybases) != nAttrs))
-        PYERROR(PyExc_AttributeError, "the third argument must be a list of anchors with length equal the number of attributes", PYNULL);
+        const int nAttrs = domain->attributes->size();
 
-      const int nExamples = array->dimensions[0];
+        PyArrayObject *array = (PyArrayObject *)(matrix);
+        if (array->nd != 2)
+          PYERROR(PyExc_AttributeError, "two-dimensional array expected for matrix of projections", PYNULL);
+        if (array->dimensions[1] != 3)
+          PYERROR(PyExc_AttributeError, "the matrix of projections must have three columns", PYNULL);
+        if ((array->descr->type_num != PyArray_FLOAT) && (array->descr->type_num != PyArray_DOUBLE))
+          PYERROR(PyExc_AttributeError, "elements of matrix of projections must be doubles or floats", PYNULL);
+        if (!PyList_Check(pybases) || (PyList_Size(pybases) != nAttrs))
+          PYERROR(PyExc_AttributeError, "the third argument must be a list of anchors with length equal the number of attributes", PYNULL);
 
-      #define LOADLIST(x) \
-      PFloatList x = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::P_FromArguments(py##x); \
-      if (!x) return PYNULL; \
-      if (x->size() != nAttrs) PYERROR(PyExc_TypeError, "invalid size of "#x" list", PYNULL);
+        const int nExamples = array->dimensions[0];
 
-      LOADLIST(offsets)
-      LOADLIST(normalizers)
-      LOADLIST(averages)
-      #undef LOADLIST
+        #define LOADLIST(x) \
+        PFloatList x = ListOfUnwrappedMethods<PAttributedFloatList, TAttributedFloatList, float>::P_FromArguments(py##x); \
+        if (!x) return PYNULL; \
+        if (x->size() != nAttrs) PYERROR(PyExc_TypeError, "invalid size of "#x" list", PYNULL);
 
-      double *bases = new double[2*nAttrs];
-      double *bi = bases;
-      PyObject *foo;
+        LOADLIST(offsets)
+        LOADLIST(normalizers)
+        LOADLIST(averages)
+        #undef LOADLIST
 
-      for(int i = 0; i < nAttrs; i++, bi+=2)
-        if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "dd|O", bi, bi+1, &foo)) {
-          PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
-          delete bases;
-          return PYNULL;
+        double *bases = new double[2*nAttrs];
+        double *bi = bases;
+        PyObject *foo;
+
+        for(int i = 0; i < nAttrs; i++, bi+=2)
+          if (!PyArg_ParseTuple(PyList_GetItem(pybases, i), "dd|O", bi, bi+1, &foo)) {
+            PyErr_Format(PyExc_TypeError, "anchor #%i is not a tuple of (at least) two elements", i);
+            delete bases;
+            return PYNULL;
+          }
+
+        double *projections = new double[3*nExamples];
+
+        char *rowPtr = array->data;
+        double *pi = projections;
+        const int &strideRow = array->strides[0];
+        const int &strideCol = array->strides[1];
+
+        if (array->descr->type_num == PyArray_FLOAT) {
+          for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
+            *pi++ = double(*(float *)(rowPtr));
+            *pi++ = double(*(float *)(rowPtr+strideCol));
+            *pi++ = double(*(float *)(rowPtr+2*strideCol));
+          }
+        }
+        else {
+          for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
+            *pi++ = *(double *)(rowPtr);
+            *pi++ = *(double *)(rowPtr+strideCol);
+            *pi++ = *(double *)(rowPtr+2*strideCol);
+          }
         }
 
-      double *projections = new double[3*nExamples];
-
-      char *rowPtr = array->data;
-      double *pi = projections;
-      const int &strideRow = array->strides[0];
-      const int &strideCol = array->strides[1];
-
-      if (array->descr->type_num == PyArray_FLOAT) {
-        for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
-          *pi++ = double(*(float *)(rowPtr));
-          *pi++ = double(*(float *)(rowPtr+strideCol));
-          *pi++ = double(*(float *)(rowPtr+2*strideCol));
-        }
+        return WrapNewOrange(mlnew TP2NN(domain, projections, nExamples, bases, offsets, normalizers, averages, TP2NN::InverseSquare, normalizeExamples != 0), type);
       }
-      else {
-        for(int row = 0, rowe = nExamples; row < rowe; row++, rowPtr += strideRow) {
-          *pi++ = *(double *)(rowPtr);
-          *pi++ = *(double *)(rowPtr+strideCol);
-          *pi++ = *(double *)(rowPtr+2*strideCol);
-        }
-      }
 
-      return WrapNewOrange(mlnew TP2NN(domain, projections, nExamples, bases, offsets, normalizers, averages, TP2NN::InverseSquare, normalizeExamples != 0), type);
-    }
+    #endif
 
     PyErr_Clear();
     PYERROR(PyExc_TypeError, "P2NN.invalid argumenst", PYNULL);
