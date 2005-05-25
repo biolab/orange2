@@ -6,8 +6,8 @@ include ../makefile.defs
 obj/statc.o:	statc.cpp statc.hpp \
 		../include/stat.hpp ../include/stat.cpp $(OLD)/liborange.so
 		
-$(OLD)/statc.so:	statc.o
-	gcc statc.o $(LINKOPTIONS) -o $(OLD)/statc.so
+$(OLD)/statc.so:	obj/statc.o
+	gcc obj/statc.o $(LINKOPTIONS) -o $(OLD)/statc.so
 
 clean:	cleantemp
 	rm -f $(OLD)/statc.so
