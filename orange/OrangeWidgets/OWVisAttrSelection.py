@@ -217,7 +217,7 @@ class S2NMeasureMix(S2NMeasure):
         S2NMeasure.__init__(self)
         self.attrInfoMix = {}
         self.dataMix = None
-        self.sortedAttrList = None
+        self.sortedAttrList = []
         
     def __call__(self, attribute, data):
         if data.domain[attribute].varType == orange.VarTypes.Discrete:
