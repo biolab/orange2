@@ -1,8 +1,8 @@
 """
-<name>CN2Classifier</name>
+<name>CN2 Classifier</name>
 <desctiption>Constructs CN2 learner and classifier from example table </description>
 <icon>CN2Classifier.png</icon>
-<priority> 60</priority>
+<priority> 300</priority>
 """
 
 from OWWidget import *
@@ -14,7 +14,7 @@ import sys
 
 class OWCN2Classifier(OWWidget):
     settingsList=["QualityButton","CoveringButton","m", "MaxRuleLength", "MinCoverage",
-         "BeamWidth", "Alpha"]
+         "BeamWidth", "Alpha", "Weight"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2Classifier")
@@ -23,11 +23,11 @@ class OWCN2Classifier(OWWidget):
         self.outputs=[("Learner", orange.Learner),("Classiffier",orange.Classifier)]
         self.QualityButton=0
         self.CoveringButton=0
-        self.Alpha=0.05
+        self.Alpha=0.2
         self.BeamWidth=50
         self.MinCoverage=0
         self.MaxRuleLength=0
-        self.Weight=50
+        self.Weight=0.9
         self.m=2
         self.LearnerName=""
         self.loadSettings()
@@ -67,7 +67,7 @@ class OWCN2Classifier(OWWidget):
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
                             btnLabels=["Exclusive covering ","Weighted Covering"],
                             box="Covering algorithm", callback=self.coveringAlgButtonPressed)
-        self.weightSpin=OWGUI.doubleSpin(self.coveringAlgGroup, self, "Weight",0, 1,0.05,label= "Weight",
+        self.weightSpin=OWGUI.doubleSpin(self.coveringAlgGroup, self, "Weight",0, 0.95,0.05,label= "Weight",
                 orientation="horizontal", labelWidth=labelWidth)
  
         #layout=QVBoxLayout(self.controlArea)
@@ -76,6 +76,9 @@ class OWCN2Classifier(OWWidget):
         #layout.add(self.coveringAlgGroup)
 
         OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
+
+        self.Alpha=float(self.Alpha)
+        self.Weight=float(self.Weight)
 
         self.qualityButtonPressed()
         self.coveringAlgButtonPressed()
@@ -86,28 +89,28 @@ class OWCN2Classifier(OWWidget):
     def setLearner(self):
         self.learner=orngCN2.CN2UnorderedLearner()
         self.learner.name=self.LearnerName
+        self.send("Learner",self.learner)
         ruleFinder=orange.RuleBeamFinder()
-
+        print self.Alpha
+        print self.Weight
         if self.QualityButton==0:
             ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
         elif self.QualityButton==1:
-            pass
-            #ruleFinder.evaluator=orange.ProbabilityEstimatorConstructor_m(m=self.m)
-            ruleFinder.evaluator=orngCN2.mEstimate(self.m)
+            #ruleFinder.evaluator=orngCN2.mEstimate(self.m)
+            ruleFinder.evaluator=mEstimate(self.m)
         elif self.QualityButton==2:
             ruleFinder.evaluator=orngCN2.WRACCEvaluator()
 
-        ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.Alpha/100,
-                    min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
+        ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha)#
+                    #min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
         ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
         self.learner.ruleFinder=ruleFinder
 
         if self.CoveringButton==0:
             self.learner.coverAndRemove=orange.RuleCovererAndRemover_Default()
         elif self.CoveringButton==1:
-            self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight/100)
+            self.learner.coverAndRemove=orngCN2.CovererAndRemover_multWeights(mult=self.Weight)
 
-        self.send("Learner",self.learner)
         self.classifier=None
         if self.data:
             try:
@@ -146,15 +149,22 @@ class OWCN2Classifier(OWWidget):
     def applySettings(self):
         self.setLearner()
 
-class DecSpinBox(QSpinBox):
-    def __init__(self, *args):
-        apply(QSpinBox.__init__,(self,)+args)
-        self.setValidator(QDoubleValidator(self))
-
-    def mapValueToText(self,i):
-        return "%i.%i%i" % (i/100,i/10,i%10)
-    def interpretText(self):
-        self.setValue(int(self.text().toFloat()[0]*100))
+class mEstimate(orange.RuleEvaluator):
+    def __init__(self, m):
+        orange.RuleEvaluator(self)
+        self.m=m
+        
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if not rule.classDistribution:
+            return 0
+        sumDist=sum(rule.classDistribution)
+        if not sumDist:
+            return 0
+        p=1/len(rule.classDistribution)
+        if targetClass>-1:
+            return (rule.classDistribution[targetClass]+self.m*p)/(sumDist+self.m)
+        else:
+            return (max(rule.classDistribution)+self.m*p)/(sumDist+len(data.domain.classVar.values)+self.m)
         
 if __name__=="__main__":
     app=QApplication(sys.argv)
