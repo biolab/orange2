@@ -52,7 +52,6 @@ def spin(widget, master, value, min, max, step=1, box=None, label=None, labelWid
 
     master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
     master.controledAttributes.append((value, CallFront_spin(wa)))
-    
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
@@ -61,13 +60,12 @@ def doubleSpin(widget, master, value, min, max, step=1, box=None, label=None, la
     b = widgetBox(widget, box, orientation)
     widgetLabel(b, label, labelWidth)
     
-    wa = FloatSpinBox(min, max, step, b)
+    wa = DoubleSpinBox(min, max, step, value, master, b)
     wa.setValue(mygetattr(master, value))
     if tooltip: QToolTip.add(wa, tooltip)
 
-    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value))
-    master.controledAttributes.append((value, CallFront_spin(wa)))
-    
+    master.connect(wa, SIGNAL("valueChanged(int)"), ValueCallback(master, value, wa.clamp))
+    master.controledAttributes.append((value, CallFront_doubleSpin(wa)))
     if callback:
         master.connect(wa, SIGNAL("valueChanged(int)"), FunctionCallback(master, callback))
     return b
@@ -375,6 +373,14 @@ class CallFront_spin:
         if value==None: return
         self.control.setValue(value)
 
+class CallFront_doubleSpin:
+    def __init__(self, control):
+        self.control = control
+
+    def __call__(self, value):
+        if value==None: return
+        self.control.setValue(self.control.expand(value))
+
 class CallFront_checkBox:
     def __init__(self, control):
         self.control = control
@@ -485,17 +491,28 @@ class ProgressBar:
     def finish(self):
         self.widget.progressBarFinished()
 
-class FloatSpinBox(QSpinBox):
-    def __init__(self,min,max,step, *args):
+##############################################################################
+# float 
+class DoubleSpinBox(QSpinBox):
+    def __init__(self,min,max,step,value,master, *args):
         self.min=min
         self.max=max
         self.stepSize=step
         self.steps=(max-min)/step
+        self.master=master
+        self.value=value
         apply(QSpinBox.__init__,(self,0,self.steps,1)+args)
         self.setValidator(QDoubleValidator(self))
 
     def mapValueToText(self,i):
         return str(self.min+i*self.stepSize)
-        #return "%i.%i%i" % (i/100,(i/10)%10,i%10)
+
     def interpretText(self):
-        self.setValue(int(math.floor((float(self.text().toFloat()[0])-self.min)/self.stepSize)))
+        QSpinBox.setValue(self, int(math.floor((float(self.text().toFloat()[0])-self.min)/self.stepSize)))
+
+    def clamp(self, val):
+        return self.min+val*self.stepSize
+    def expand(self, val):
+        return int(math.floor((val-self.min)/self.stepSize))
+
+        
