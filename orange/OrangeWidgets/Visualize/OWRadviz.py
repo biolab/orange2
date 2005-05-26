@@ -697,12 +697,14 @@ class OWRadviz(OWWidget):
         self.clusterDlg.setData(data, clearResults)
         self.freeVizDlg.setData(data)
         self.graph.clusterClosure = None
+        self.graph.insideColors = self.classificationResults            
         
         if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
             self.setShownAttributeList(self.data, self.attributeSelectionList)
-
-        self.graph.insideColors = self.classificationResults            
-        self.updateGraph(1)
+            self.updateGraph(1)            
+        else:        
+            self.updateGraph(0)
+            
         self.sendSelections()
 
     def subsetdata(self, data, update = 1):

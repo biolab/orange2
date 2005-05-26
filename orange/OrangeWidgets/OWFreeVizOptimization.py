@@ -9,7 +9,8 @@ from math import sqrt
 class FreeVizOptimization(OWBaseWidget):
     settingsList = ["stepsBeforeUpdate", "lockToCircle", "attractG", "repelG", "differentialEvolutionPopSize",
                     "s2nSpread", "s2nPlaceAttributes", "autoSetParameters"]
-    attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
+    attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000]
+    #attrsNum = [5, 10, 20, 30, 50, 70, 100, 150, 200, 300, 500, 750, 1000, 2000, 3000, 5000, 10000, 50000]
     
     def __init__(self, parentWidget = None, signalManager = None, graph = None, parentName = "Visualization widget"):
         OWBaseWidget.__init__(self, None, signalManager, "FreeViz Dialog")
@@ -61,7 +62,7 @@ class FreeVizOptimization(OWBaseWidget):
         
         vbox = OWGUI.widgetBox(self.MainTab, "Set Anchor Positions")
         hbox1 = OWGUI.widgetBox(vbox, orientation = "horizontal")
-        OWGUI.button(hbox1, self, "Radial", callback = self.radialAnchors)
+        OWGUI.button(hbox1, self, "Normal", callback = self.radialAnchors)
         OWGUI.button(hbox1, self, "Random", callback = self.randomAnchors)
         self.manualPositioningButton = OWGUI.button(hbox1, self, "Manual", callback = self.setManualPosition)
         self.manualPositioningButton.setToggleButton(1)
@@ -82,8 +83,8 @@ class FreeVizOptimization(OWBaseWidget):
         self.createPopulationButton = OWGUI.button(box2, self, "Create population", callback = self.createPopulation)
         self.evolvePopulationButton = OWGUI.button(box2, self, "Evolve population", callback = self.evolvePopulation)
     
-        box = OWGUI.widgetBox(self.MainTab, 1)
-        self.energyLabel = QLabel(box, "Energy: ")
+        #box = OWGUI.widgetBox(self.MainTab, 1)
+        #self.energyLabel = QLabel(box, "Energy: ")
 
         # ##########################
         # S2N HEURISTIC TAB
@@ -136,11 +137,15 @@ class FreeVizOptimization(OWBaseWidget):
         attrList = self.parentWidget.getShownAttributeList()
         self.graph.anchorData = [self.ranch(a) for a in attrList]
         if not self.lockToCircle:
-            self.singleStep() # this won't do much, it's just for normalization
+            ai = self.graph.attributeNameIndex
+            attrIndices = [ai[label] for label in attrList]
+            #self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)   # this won't do much, it's just for normalization
         else:
             self.graph.updateData(self.parentWidget.getShownAttributeList())
             self.graph.repaint()
             self.recomputeEnergy()
+        self.parentWidget.updateGraph()
+        
 
     def ranch(self, label):            
         r = self.lockToCircle and 1.0 or 0.3+0.7*random.random()
@@ -187,40 +192,45 @@ class FreeVizOptimization(OWBaseWidget):
         attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
         E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
         #print E
-        self.energyLabel.setText("Energy: %.3f" % E)
-        self.energyLabel.repaint()
+        #self.energyLabel.setText("Energy: %.3f" % E)
+        #self.energyLabel.repaint()
 
-    def optimize(self):
+    def optimize(self, nrOfSteps = -1):
         self.optimizeButton.hide()
         self.stopButton.show()
         self.cancelOptimization = 0
 
-        classes = Numeric.array([int(x.getclass()) for x in self.rawdata])
         ai = self.graph.attributeNameIndex
-        attrIndices = [ai[label] for label in self.parentWidget.getShownAttributeList()]
+        attrs = self.parentWidget.getShownAttributeList()
+        attrIndices = [ai[label] for label in attrs]
         steps = 0
-        while self.cancelOptimization != 1:
-            self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData, classes)
+        totalSteps = 0
+        while self.cancelOptimization != 1 and nrOfSteps != totalSteps:
+            self.graph.anchorData = self.optimizationStep(attrIndices, self.graph.anchorData)
             qApp.processEvents()
             steps += 1
+            totalSteps += 1
             if steps >= self.stepsBeforeUpdate:
-                self.graph.updateData(self.parentWidget.getShownAttributeList(), 0)
+                self.graph.updateData(attrs, 0)
                 self.graph.repaint()
                 steps = 0
 
         self.stopButton.hide()
         self.optimizeButton.show()
             
-    def optimizationStep(self, attrIndices, anchorData = None, classData = None):
+    def optimizationStep(self, attrIndices, anchorData):
         dataSize = len(self.rawdata)
-        selectedData = Numeric.take(self.graph.scaledData, attrIndices)
-        XAnchors = [a[0] for a in self.graph.anchorData]
-        YAnchors = [a[1] for a in self.graph.anchorData]
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
-        sum_i = self.graph._getSum_i(selectedData, useCurrentAnchors = 1)
-        x_positions /= sum_i
-        y_positions /= sum_i
+        validData = self.graph.getValidList(attrIndices)
+        selectedData = Numeric.compress(validData, Numeric.take(self.graph.noJitteringScaledData, attrIndices))
+
+        XAnchors = Numeric.array([a[0] for a in anchorData], Numeric.Float)
+        YAnchors = Numeric.array([a[1] for a in anchorData], Numeric.Float)
+        
+        transProjData = self.graph.createProjectionAsNumericArray(attrIndices, validData = validData, XAnchors = XAnchors, YAnchors = YAnchors, scaleFactor = self.graph.scaleFactor, normalize = self.graph.normalizeExamples, useAnchorData = 1)
+        projData = Numeric.transpose(transProjData)
+        x_positions = projData[0]
+        y_positions = projData[1]
+        classData = projData[2]
 
         FXs = Numeric.zeros(len(x_positions), Numeric.Float)        # forces
         FYs = Numeric.zeros(len(x_positions), Numeric.Float)
@@ -237,20 +247,24 @@ class FreeVizOptimization(OWBaseWidget):
             classData2 = Numeric.take(classData2, rotateArray)
             dx = x_positions2 - x_positions
             dy = y_positions2 - y_positions
-            rs2 = dx*dx + dy*dy
-            #classDiff = 3*((classData - classData2)== 0) - 1     # create array with -1 and 1. -1 where c(i) == c(j) and 1 where c(i) != c(j)
-            classDiff = Numeric.where(classData == classData2, -self.repelG, self.attractG) # create array with -self.repelG (where c(i) == c(j) and 1 where c(i) != c(j)) and self.attractG.
-            FXs += classDiff * dx / rs2
-            FYs += classDiff * dy / rs2
+            rs2 = dx**2 + dy**2
+            rs2 += Numeric.where(rs2 == 0.0, 0.0001, 0.0)    # replace zeros to avoid divisions by zero
+            rs = Numeric.sqrt(rs2)
+            
+            F = Numeric.zeros(len(x_positions), Numeric.Float)
+            classDiff = Numeric.where(classData == classData2, 1, 0)
+            Numeric.putmask(F, classDiff, 100*self.attractG*rs2)
+            Numeric.putmask(F, 1-classDiff, -self.repelG/rs)
+            FXs += F * dx / rs
+            FYs += F * dy / rs
 
         # compute gradient for all anchors
         GXs = Numeric.array([sum(FXs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
         GYs = Numeric.array([sum(FYs * selectedData[i]) for i in range(len(anchorData))], Numeric.Float)
 
         m = max(max(GXs), max(GYs))
-        GXs /= (100*m); GYs /= (100*m)
-        print m
-        #print GXs, GYs
+        GXs /= (20*m); GYs /= (20*m)
+        #print m
         
         newXAnchors = XAnchors + GXs
         newYAnchors = YAnchors + GYs
@@ -305,6 +319,7 @@ class FreeVizOptimization(OWBaseWidget):
                 results.append(acc)
             self.s2nPlaceAttributes = self.attrsNum[results.index(max(results))]
             qApp.processEvents()
+            self.s2nMixAnchors()        # update the best number of attributes
 
             results = []
             anchors = self.graph.anchorData
@@ -353,7 +368,6 @@ class FreeVizOptimization(OWBaseWidget):
         self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
         self.graph.updateData(attrNames)
         self.graph.repaint()
-
 
 # ###############################################################
 # Optimize anchor position using differential evolution 
@@ -410,7 +424,7 @@ class FreeVizLearner(orange.Learner):
 # #############################################################################
 # class that represents S2N Heuristic classifier
 class S2NHeuristicClassifier(orange.Classifier):
-    def __init__(self, optimizationDlg, radvizWidget, data):
+    def __init__(self, optimizationDlg, radvizWidget, data, nrOfFreeVizSteps = 0):
         self.optimizationDlg = optimizationDlg
         self.radvizWidget = radvizWidget
 
@@ -418,6 +432,9 @@ class S2NHeuristicClassifier(orange.Classifier):
         self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
 
         self.optimizationDlg.s2nMixAnchorsAutoSet()
+
+        if nrOfFreeVizSteps > 0:
+            self.optimizationDlg.optimize(nrOfFreeVizSteps)
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):        
@@ -429,7 +446,10 @@ class S2NHeuristicClassifier(orange.Classifier):
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
         
         [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
-        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.radvizWidget.graph.scaleFactor, useAnchorData = 1)
+        xTest*= self.radvizWidget.graph.trueScaleFactor
+        yTest*= self.radvizWidget.graph.trueScaleFactor
+        
+        table = self.radvizWidget.graph.createProjectionAsExampleTable(attrListIndices, scaleFactor = self.radvizWidget.graph.trueScaleFactor, useAnchorData = 1)
         knn = self.radvizWidget.optimizationDlg.createkNNLearner()(table)
         (classVal, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
 
@@ -443,8 +463,8 @@ class S2NHeuristicLearner(orange.Learner):
         self.optimizationDlg = optimizationDlg
         self.name = "S2N Feature Selection Learner"
         
-    def __call__(self, examples, weightID = 0):
-        return S2NHeuristicClassifier(self.optimizationDlg, self.radvizWidget, examples)
+    def __call__(self, examples, weightID = 0, nrOfFreeVizSteps = 0):
+        return S2NHeuristicClassifier(self.optimizationDlg, self.radvizWidget, examples, nrOfFreeVizSteps)
 
 
                 

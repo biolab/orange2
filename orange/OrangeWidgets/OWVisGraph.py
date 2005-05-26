@@ -85,10 +85,10 @@ class OWVisGraph(OWGraph):
         self.xpos = 0   # we have to initialize values, since we might get onMouseRelease event before onMousePress
         self.ypos = 0
         self.zoomStack = []
-        self.zoomState = ()
         self.colorNonTargetValue = QColor(200,200,200)
         self.colorTargetValue = QColor(0,0,255)
         self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Triangle, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
+        #self.curveSymbols = [QwtSymbol.Triangle, QwtSymbol.Ellipse, QwtSymbol.Rect, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle, QwtSymbol.XCross, QwtSymbol.Cross]
 
         # uncomment this if you want to use printer friendly symbols
         #self.curveSymbols = [QwtSymbol.Ellipse, QwtSymbol.XCross, QwtSymbol.Triangle, QwtSymbol.Cross, QwtSymbol.Diamond, QwtSymbol.DTriangle, QwtSymbol.Rect, QwtSymbol.UTriangle, QwtSymbol.LTriangle, QwtSymbol.RTriangle]
@@ -117,40 +117,7 @@ class OWVisGraph(OWGraph):
         self.connect(self, SIGNAL('plotMousePressed(const QMouseEvent&)'), self.onMousePressed)
         self.connect(self, SIGNAL('plotMouseReleased(const QMouseEvent&)'),self.onMouseReleased)
 
-    def updateZoom(self):
-        if self.zoomState == (): return
-        (xmin, xmax, ymin, ymax) = self.zoomState
-        self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-        self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-
-    def activateZooming(self):
-        self.state = ZOOMING
-
-    def activateRectangleSelection(self):
-        self.state = SELECT_RECTANGLE
-
-    def activatePolygonSelection(self):
-        self.state = SELECT_POLYGON
-
-    def removeLastSelection(self):
-        if self.selectionCurveKeyList != []:
-            lastCurve = self.selectionCurveKeyList[len(self.selectionCurveKeyList)-1]
-            self.removeCurve(lastCurve)
-            self.selectionCurveKeyList.remove(lastCurve)
-            self.tempSelectionCurve = None
-        self.replot()
-        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-        
-
-    def removeAllSelections(self, send = 1):
-        while self.selectionCurveKeyList != []:
-            curve = self.selectionCurveKeyList[0]
-            self.removeCurve(curve)
-            self.selectionCurveKeyList.remove(curve)
-        self.updateZoom()
-        self.replot()
-        if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-
+    
     # Converts orange.ExampleTable to Numeric.array based on the attribute values.
     # rows correspond to examples, columns correspond to attributes, class values are left out
     # missing values and attributes of types other than orange.FloatVariable are masked
@@ -192,17 +159,13 @@ class OWVisGraph(OWGraph):
         if self.globalValueScaling == 1:
             (min, max) = self.getMinMaxValDomain(data, self.attributeNames)
 
-        arr = data.toMA("ac")[0]
-        arr = MA.transpose(arr)
+        arr = transpose(data.toMA("ac")[0])
         averages = MA.average(arr, 1)
-        print "averages: ", averages
-        arr = MA.filled(arr, averages)
-        print type(arr)
+        self.validDataArray = Numeric.array(1-arr.mask(), Numeric.Int)  # have to convert to int array, otherwise when we do some operations on this array we get overflow
         self.averages = averages.tolist()
-        #print type(arr), arr.__class__
-        self.validDataArray = Numeric.ones(Numeric.shape(arr))#Numeric.logical_not(arr.mask())#Numeric.where(arr == 1e20, 0, 1)
-        self.originalData = Numeric.array(arr)
-        self.scaledData = Numeric.zeros(Numeric.shape(arr), Numeric.Float)
+        arr = Numeric.array(MA.filled(arr, averages))
+        self.originalData = arr
+        self.scaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
         self.noJitteringScaledData = Numeric.zeros([len(data.domain), len(data)], Numeric.Float)
 
         # see if the values for discrete attributes have to be resorted 
@@ -449,12 +412,6 @@ class OWVisGraph(OWGraph):
             text = ""
         return text
 
-    def removeDrawingCurves(self):
-        for key in self.curveKeys():
-            curve = self.curve(key)
-            if not isinstance(curve, SelectionCurve):
-                self.removeCurve(key)
-
     def changeClassAttr(self, selected, unselected):
         classVar = orange.EnumVariable("Selection", values = ["Selected data", "Unselected data"])
         classVar.getValueFrom = lambda ex,what: 0  # orange.Value(classVar, 0)
@@ -475,10 +432,39 @@ class OWVisGraph(OWGraph):
     def showTip(self, x, y, text):
         MyQToolTip.tip(self.tooltip, QRect(x+self.canvas().frameGeometry().x()-3, y+self.canvas().frameGeometry().y()-3, 6, 6), text)
        
-
     # mouse was only pressed and released on the same spot. visualization methods might want to process this event
     def staticMouseClick(self, e):
         pass
+
+    def activateZooming(self):
+        self.state = ZOOMING
+
+    def activateRectangleSelection(self):
+        self.state = SELECT_RECTANGLE
+
+    def activatePolygonSelection(self):
+        self.state = SELECT_POLYGON
+
+    def removeDrawingCurves(self):
+        for key in self.curveKeys():
+            curve = self.curve(key)
+            if not isinstance(curve, SelectionCurve):
+                self.removeCurve(key)
+
+    def removeLastSelection(self):
+        if self.selectionCurveKeyList != []:
+            lastCurve = self.selectionCurveKeyList.pop()
+            self.removeCurve(lastCurve)
+            self.tempSelectionCurve = None
+        self.replot()
+        if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+        
+    def removeAllSelections(self, send = 1):
+        for key in self.selectionCurveKeyList: self.removeCurve(key)
+        self.selectionCurveKeyList = []
+        self.replot()
+        if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
 
     # ###############################################
     # HANDLING MOUSE EVENTS
@@ -486,8 +472,6 @@ class OWVisGraph(OWGraph):
     def onMousePressed(self, e):
         self.mouseCurrentlyPressed = 1
         self.mouseCurrentButton = e.button()
-        self.zoomState = (self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
-        self.updateZoom()
         self.xpos = e.x()
         self.ypos = e.y()
 
@@ -496,8 +480,6 @@ class OWVisGraph(OWGraph):
         if e.button() == Qt.LeftButton and self.state == ZOOMING:
             self.tempSelectionCurve = SelectionCurve(self, pen = Qt.DashLine)
             self.zoomKey = self.insertCurve(self.tempSelectionCurve)
-            if self.state == ZOOMING and self.zoomStack == []:
-                self.zoomState = ( self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(),   self.axisScale(QwtPlot.yLeft).hBound())
 
         # ####
         # SELECT RECTANGLE
@@ -518,10 +500,8 @@ class OWVisGraph(OWGraph):
 
             if self.tempSelectionCurve.closed():    # did we intersect an existing line. if yes then close the curve and finish appending lines
                 self.tempSelectionCurve = None
-                self.updateZoom()
                 self.replot()
                 if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-                
 
         # fake a mouse move to show the cursor position
         self.onMouseMoved(e)
@@ -532,29 +512,21 @@ class OWVisGraph(OWGraph):
         xFloat = self.invTransform(QwtPlot.xBottom, e.x())
         yFloat = self.invTransform(QwtPlot.yLeft, e.y())
 
-        (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
-       
-        if self.statusBar != None:
-            self.statusBar.message(text)
-
-        if text != "":
-            intX = self.transform(QwtPlot.xBottom, x)
-            intY = self.transform(QwtPlot.yLeft, y)
-            self.showTip(intX, intY, text[:-2].replace("; ", "\n"))
+        text = ""
+        if not self.mouseCurrentlyPressed: (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
+        
+        if self.statusBar != None:  self.statusBar.message(text)
+        if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text[:-2].replace("; ", "\n"))
 
         if self.tempSelectionCurve != None and (self.state == ZOOMING or self.state == SELECT_RECTANGLE):
             x1 = self.invTransform(QwtPlot.xBottom, self.xpos)
             y1 = self.invTransform(QwtPlot.yLeft, self.ypos)
-            x2 = xFloat
-            y2 = yFloat
-            xData = [x1, x1, x2, x2, x1]
-            yData = [y1, y2, y2, y1, y1]
-            self.tempSelectionCurve.setData(xData, yData)
+            self.tempSelectionCurve.setData([x1, x1, xFloat, xFloat, x1], [y1, yFloat, yFloat, y1, y1])
             self.replot()
 
         elif self.state == SELECT_POLYGON and self.tempSelectionCurve != None:
             self.tempSelectionCurve.replaceLastPoint(xFloat,yFloat)
-            self.replot()            
+            self.repaint()
             
         self.event(e)
 
@@ -569,68 +541,63 @@ class OWVisGraph(OWGraph):
                 self.staticMouseClick(e)
                 staticClick = 1
 
-        if e.button() == Qt.LeftButton and self.state == ZOOMING:
-            if self.zoomState == (): return     # this example happens if we clicked outside the graph and released the button inside it
-            xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
-            ymin = min(self.ypos, e.y());  ymax = max(self.ypos, e.y())
-            
-            self.removeCurve(self.zoomKey)
-            self.tempSelectionCurve = None
+        if e.button() == Qt.LeftButton:
+            if self.state == ZOOMING:            
+                xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
+                ymin = min(self.ypos, e.y());  ymax = max(self.ypos, e.y())
+                
+                self.removeCurve(self.zoomKey)
+                self.tempSelectionCurve = None
 
-            if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
+                if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
 
-            xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
-            ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
-            
-            self.blankClick = 0
-            self.zoomStack.append(self.zoomState)
-            self.zoomState = (xmin, xmax, ymin, ymax)
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-            
-            
-        elif e.button() == Qt.RightButton and self.state == ZOOMING:
-            if len(self.zoomStack):
-                xmin, xmax, ymin, ymax = self.zoomStack.pop()
-                self.zoomState = (xmin, xmax, ymin, ymax)
+                xmin = self.invTransform(QwtPlot.xBottom, xmin);  xmax = self.invTransform(QwtPlot.xBottom, xmax)
+                ymin = self.invTransform(QwtPlot.yLeft, ymin);    ymax = self.invTransform(QwtPlot.yLeft, ymax)
+                
+                self.blankClick = 0
+                self.zoomStack.append((self.axisScale(QwtPlot.xBottom).lBound(), self.axisScale(QwtPlot.xBottom).hBound(), self.axisScale(QwtPlot.yLeft).lBound(), self.axisScale(QwtPlot.yLeft).hBound()))
                 self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
                 self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-            else:
-                self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
-                return
-
-        elif e.button() == Qt.RightButton and self.state == SELECT_RECTANGLE:
-            self.removeLastSelection()      # remove the rectangle
-
-        # ####
-        # SELECT RECTANGLE
-        elif e.button() == Qt.LeftButton and self.state == SELECT_RECTANGLE:
-            if self.tempSelectionCurve:
-                self.tempSelectionCurve = None
-                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
-       
-
-        elif Qt.RightButton == e.button() and self.state == SELECT_POLYGON:
-            if self.tempSelectionCurve:
-                self.tempSelectionCurve.removeLastPoint()
-                if self.tempSelectionCurve.dataSize() == 0: # remove the temp curve
-                    self.tempSelectionCurve = None
-                    self.removeLastSelection()
-                else:   # set new last point 
-                    x = self.invTransform(QwtPlot.xBottom, e.x())
-                    y = self.invTransform(QwtPlot.yLeft, e.y())
-                    self.tempSelectionCurve.replaceLastPoint(x,y)
                 self.replot()
-            
-        self.replot()
+
+            elif self.state == SELECT_RECTANGLE:
+                if self.tempSelectionCurve:
+                    self.tempSelectionCurve = None
+                if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
+        elif e.button() == Qt.RightButton:
+            if self.state == ZOOMING:
+                if len(self.zoomStack):
+                    (xmin, xmax, ymin, ymax) = self.zoomStack.pop()
+                    self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+                    self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+                    self.replot()
+                else:
+                    self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
+                    return
+
+            elif self.state == SELECT_RECTANGLE:
+                self.removeLastSelection()      # remove the rectangle
+
+            elif self.state == SELECT_POLYGON:
+                if self.tempSelectionCurve:
+                    self.tempSelectionCurve.removeLastPoint()
+                    if self.tempSelectionCurve.dataSize() == 0: # remove the temp curve
+                        self.tempSelectionCurve = None
+                        self.removeLastSelection()
+                    else:   # set new last point 
+                        self.tempSelectionCurve.replaceLastPoint(self.invTransform(QwtPlot.xBottom, e.x()), self.invTransform(QwtPlot.yLeft, e.y()))
+                    self.replot()
+                else:
+                    self.removeLastSelection()
+                
+        #self.replot()
         self.event(e)
 
     # does a point (x,y) lie inside one of the selection rectangles (polygons)
     def isPointSelected(self, x,y):
         for curveKey in self.selectionCurveKeyList:
-            #print "isPointSelected:", x, y
-            curve = self.curve(curveKey)
-            if curve.isInside(x,y): return 1
+            if self.curve(curveKey).isInside(x,y): return 1
         return 0
 
 
@@ -647,9 +614,7 @@ class MyQToolTip(QToolTip):
 
     def maybeTip(self, p):
         if self.rect and self.text:
-            #print p.x(), p.y(), self.rect.left()
             if self.rect.contains(p):
-                #print "tip"
                 self.tip(self.rect, text)
         
 # ###########################################################
