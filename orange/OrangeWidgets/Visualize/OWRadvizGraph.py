@@ -118,23 +118,24 @@ class OWRadvizGraph(OWVisGraph):
         if not getattr(self, "potentialsBmp", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
             imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
-        classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-        colors = [(i.red(), i.green(), i.blue()) for i in classColors]
+            classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+            colors = [(i.red(), i.green(), i.blue()) for i in classColors]
 
             palette = []
             sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
             for cls in self.potentialsClassifier.classVar.values:
-               color = colors[sortedClasses.index(cls)]
-               towhite = [255-c for c in color]
-               for s in range(nShades):
-                 si = 1-float(s)/nShades
-                 palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+                color = colors[sortedClasses.index(cls)]
+                towhite = [255-c for c in color]
+                for s in range(nShades):
+                    si = 1-float(s)/nShades
+                    palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
             palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
             image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
             self.potentialContext = (rx, ry, self.trueScaleFactor, self.radvizWidget.law)
-        
+
+
     def drawCanvasItems(self, painter, rect, map, pfilter):
         #print rect.x(), rect.y(), rect.width(), rect.height()
         #painter.drawPixmap (QPoint(100,30), QPixmap(r"E:\Development\Python23\Lib\site-packages\Orange\orangeWidgets\icons\2DInteractions.png"))
@@ -166,9 +167,7 @@ class OWRadvizGraph(OWVisGraph):
         self.removeMarkers()
 
         self.__dict__.update(args)
-        length = len(labels)
         self.shownAttributes = labels
-        xs = []
         self.dataMap = {}   # dictionary with keys of form "x_i-y_i" with values (x_i, y_i, color, data)
 
         if self.scaledData == None or len(labels) < 3: self.updateLayout(); return
@@ -179,7 +178,7 @@ class OWRadvizGraph(OWVisGraph):
         indices = [self.attributeNameIndex[label] for label in labels]
         if setAnchors:
             self.potentialsBmp = None
-            self.anchorData = self.createAnchors(length, labels)    # used for showing tooltips
+            self.anchorData = self.createAnchors(len(labels), labels)    # used for showing tooltips
 
         # do we want to show anchors and their labels
         if self.showAnchors:
@@ -221,39 +220,24 @@ class OWRadvizGraph(OWVisGraph):
         if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
 
         dataSize = len(self.rawdata)
-        selectedData = Numeric.take(self.scaledData, indices)
-        XAnchors = [a[0] for a in self.anchorData]
-        YAnchors = [a[1] for a in self.anchorData]
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
-
-        if self.normalizeExamples:
-            sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
-            x_positions /= sum_i
-            y_positions /= sum_i
-
-        # construct potentialsClassifier from unscaled positions
-        domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
-        print len(domain.attributes), len(self.anchorData)
-        offsets = [self.offsets[i] for i in indices]
-        normalizers = [self.normalizers[i] for i in indices]
-        averages = [self.averages[i] for i in indices]
-        self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([x_positions, y_positions, [float(ex.getclass()) for ex in self.rawdata]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=self.radvizWidget.law)
-
-        if self.scaleFactor:
-            self.trueScaleFactor = self.scaleFactor
-        else:
-            abss = x_positions*x_positions + y_positions*y_positions
-            self.trueScaleFactor =  1 / sqrt(abss[Numeric.argmax(abss)])
-
-        x_positions *= self.trueScaleFactor
-        y_positions *= self.trueScaleFactor
-            
         validData = self.getValidList(indices)
+        transProjData = self.createProjectionAsNumericArray(indices, validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, useAnchorData = 1, removeMissingData = 0)
+        projData = Numeric.transpose(transProjData)
+        x_positions = projData[0]
+        y_positions = projData[1]
 
+        if self.showProbabilities:
+            # construct potentialsClassifier from unscaled positions
+            domain = orange.Domain([a[2] for a in self.anchorData]+[self.rawdata.domain.classVar], self.rawdata.domain)
+            offsets = [self.offsets[i] for i in indices]
+            normalizers = [self.normalizers[i] for i in indices]
+            averages = [self.averages[i] for i in indices]
+            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([x_positions, y_positions, [float(ex.getclass()) for ex in self.rawdata]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=self.radvizWidget.law)
+
+           
         # do we have cluster closure information
         if self.showClusters and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
-            data = self.createProjectionAsExampleTable(indices, validData = validData, scaleFactor = self.scaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
+            data = self.createProjectionAsExampleTable(indices, validData = validData, scaleFactor = self.trueScaleFactor, jitterSize = 0.001 * self.clusterOptimization.jitterDataBeforeTriangulation)
             graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict = self.clusterOptimization.evaluateClusters(data)
             classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
             for key in valueDict.keys():
@@ -316,6 +300,11 @@ class OWRadvizGraph(OWVisGraph):
             if len(self.subsetData) != shownSubsetCount:
                 self.showFilledSymbols = 1
                 failedToShowCount = 0           # number of point that we were unable to show
+                
+                XAnchors = Numeric.array([val[0] for val in self.anchorData])
+                YAnchors = Numeric.array([val[1] for val in self.anchorData])
+                anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
+                
                 for i in range(len(self.subsetData)):
                     if self.subsetData[i] in self.rawdata: continue
 
@@ -328,8 +317,9 @@ class OWRadvizGraph(OWVisGraph):
                         self.radvizWidget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
                         for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
-                    [x,y] = self.getProjectedPointPosition(indices, dataVals)  # compute position of the point
-                    x = x * self.scaleFactor; y = y * self.scaleFactor
+                    [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
+                    x *= self.trueScaleFactor
+                    y *= self.trueScaleFactor
 
                     if colors and not self.subsetData[i].getclass().isSpecial():
                         newColor = colors[classValueIndices[self.subsetData[i].getclass().value]]
@@ -490,8 +480,7 @@ class OWRadvizGraph(OWVisGraph):
     # ############################################################## 
     # draw tooltips
     def onMouseMoved(self, e):
-        redraw = 0
-        if self.tooltipCurveKeys != [] or self.tooltipMarkers != []: redraw = 1
+        redraw = (self.tooltipCurveKeys != [] or self.tooltipMarkers != [])
 
         for key in self.tooltipCurveKeys:  self.removeCurve(key)
         for marker in self.tooltipMarkers: self.removeMarker(marker)
@@ -504,10 +493,10 @@ class OWRadvizGraph(OWVisGraph):
         # in case we are drawing a rectangle, we don't draw enhanced tooltips
         # because it would then fail to draw the rectangle
         if self.mouseCurrentlyPressed:
-            OWVisGraph.onMouseMoved(self, e)
-            if redraw: self.replot()
-
-            if self.manualPositioning:
+            if not self.manualPositioning:
+                OWVisGraph.onMouseMoved(self, e)
+                if redraw: self.replot()
+            else:
                 if self.selectedAnchorIndex != None:
                     if self.radvizWidget.lockToCircle:
                         rad = math.sqrt(xFloat**2 + yFloat**2)
@@ -515,8 +504,8 @@ class OWRadvizGraph(OWVisGraph):
                         yFloat /= rad
                     self.anchorData[self.selectedAnchorIndex] = (xFloat, yFloat, self.anchorData[self.selectedAnchorIndex][2]) 
                     self.updateData(self.shownAttributes)
-                    self.repaint()
-                    self.radvizWidget.recomputeEnergy()
+                    self.replot()
+                    #self.radvizWidget.recomputeEnergy()
             return 
             
         dictValue = "%.1f-%.1f"%(xFloat, yFloat)
@@ -541,19 +530,15 @@ class OWRadvizGraph(OWVisGraph):
                 shownAnchorData = filter(lambda p, r=self.hideRadius**2/100: p[0]**2+p[1]**2>r, self.anchorData)
                 for (xAnchor,yAnchor,label) in shownAnchorData:
                     # draw lines
-                    spring = self.scaledData[self.attributeNameIndex[label]][index]
-                    key = self.addCurve("Tooltip curve", color, color, 1, lineWidth = 10*spring, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
+                    key = self.addCurve("Tooltip curve", color, color, 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, xAnchor], yData = [y_i, yAnchor])
                     self.tooltipCurveKeys.append(key)
-
-#                    key = self.addCurve("Tooltip curve", color, color, 1, lineWidth=5, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = [x_i, x_i + (xAnchor-x_i)*spring], yData = [y_i, y_i + (yAnchor-y_i)*spring])
-#                    self.tooltipCurveKeys.append(key)
 
                     # draw text
                     marker = None
                     if self.tooltipValue == TOOLTIPS_SHOW_DATA:
                         marker = self.addMarker(str(self.rawdata[index][self.attributeNameIndex[label]]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     elif self.tooltipValue == TOOLTIPS_SHOW_SPRINGS:
-                        marker = self.addMarker("%.3f" % spring, (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
+                        marker = self.addMarker("%.3f" % (self.scaledData[self.attributeNameIndex[label]][index]), (x_i + xAnchor)/2.0, (y_i + yAnchor)/2.0, Qt.AlignVCenter + Qt.AlignHCenter, bold = 1)
                     font = self.markerFont(marker)
                     font.setPointSize(12)
                     self.setMarkerFont(marker, font)
@@ -591,124 +576,125 @@ class OWRadvizGraph(OWVisGraph):
     # ############################################################## 
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
-    def getProjectionQuality(self, attrList):
-        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList]))
+    def getProjectionQuality(self, attrList, useAnchorData = 0):
+        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], useAnchorData))
 
      # save projection (xAttr, yAttr, classVal) into a filename fileName
-    def saveProjectionAsTabData(self, fileName, attrList):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList]))
+    def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData))
 
     # ############################################################## 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
-    def getSelectionsAsExampleTables(self, attrList):
+    def getSelectionsAsExampleTables(self, attrList, useAnchorData = 1):
         if not self.rawdata: return (None, None, None)
         selected = orange.ExampleTable(self.rawdata.domain)
         unselected = orange.ExampleTable(self.rawdata.domain)
 
-        xArray, yArray, validData = self.createProjection(attrList, scaleFactor = self.scaleFactor)
+        if useAnchorData: indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
+        else:             indices = [self.attributeNameIndex[label] for label in attrList]
+        validData = self.getValidList(indices)
+        
+        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
                  
         for i in range(len(validData)):
             if not validData[i]: continue
             
-            if self.isPointSelected(xArray[i], yArray[i]): selected.append(self.rawdata[i])
-            else:                                          unselected.append(self.rawdata[i])
+            if self.isPointSelected(array[i][0], array[i][1]): selected.append(self.rawdata[i])
+            else:                                              unselected.append(self.rawdata[i])
 
         if len(selected) == 0: selected = None
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
 
-    # ############################################################## 
-    # create x-y projection of attributes in attrList
-    def createProjection(self, attrList, scaleFactor = 1.0, useAnchorData = 0):
-        if useAnchorData:
-            XAnchors = [val[0] for val in self.anchorData]
-            YAnchors = [val[1] for val in self.anchorData]
-            indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
-        else:
-            XAnchors = self.createXAnchors(len(attrList))
-            YAnchors = self.createYAnchors(len(attrList))
-            indices = [self.attributeNameIndex[label] for label in attrList]
-            
-        selectedData = Numeric.take(self.noJitteringScaledData, indices)
-        sum_i = Numeric.add.reduce(selectedData)
-        
-        # test if there are zeros in sum_i
-        if len(Numeric.nonzero(sum_i)) < len(sum_i):
-            add = Numeric.where(sum_i == 0, 1.0, 0.0)
-            sum_i += add
-
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData) * self.scaleFactor / sum_i
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData) * self.scaleFactor / sum_i
-            
-        return (x_positions, y_positions, self.getValidList(indices))
-
+    
     # for attributes in attrIndices and values of these attributes in values compute point positions
     # function is called from OWClusterOptimization.py
     # this function has more sense in radviz and polyviz methods
-    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0):
+    # NOTE: the computed x and y positions are not yet scaled. probably you have to use self.scaleFactor or trueScaleFactor to scale them!!!
+    def getProjectedPointPosition(self, attrIndices, values, useAnchorData = 0, anchorRadius = None, normalizeExample = None):
         if useAnchorData:
-            XAnchors = [val[0] for val in self.anchorData]
-            YAnchors = [val[1] for val in self.anchorData]
-            if len(XAnchors) != len(values):
-                print "getProjectedPointPosition error: number of visualized attributes and number of values does not match"
-                return 0.0
+            XAnchors = Numeric.array([val[0] for val in self.anchorData])
+            YAnchors = Numeric.array([val[1] for val in self.anchorData])
+            if not anchorRadius: anchorRadius = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
-        s = sum(values)
-        if s == 0: return [0.0, 0.0]
-        x = self.scaleFactor * Numeric.matrixmultiply(XAnchors, values) / float(s)
-        y = self.scaleFactor * Numeric.matrixmultiply(YAnchors, values) / float(s)
+            anchorRadius = Numeric.ones(len(attrIndices), Numeric.Float)
+
+        if normalizeExample == 1 or (normalizeExample == None and self.normalizeExamples):
+            s = sum(Numeric.array(values)*anchorRadius)
+            if s == 0: return [0.0, 0.0]
+        else: s = 1
+
+        x = Numeric.matrixmultiply(XAnchors*anchorRadius, values) / float(s)
+        y = Numeric.matrixmultiply(YAnchors*anchorRadius, values) / float(s)
         return [x,y]
+
+    # ##############################################################
+    # create the projection of attribute indices given in attrIndices and create an example table with it. 
+    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0):
+        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, normalize, jitterSize, useAnchorData)
+        return orange.ExampleTable(domain, data)
         
         
-    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, jitterSize = 0.0, useAnchorData = 0):
+    def createProjectionAsNumericArray(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, scaleFactor = 1.0, normalize = None, jitterSize = 0.0, useAnchorData = 0, removeMissingData = 1):
         # if we want to use anchor data we can get attrIndices from the anchorData
-        if attrIndices == None and useAnchorData:
+        if useAnchorData:
             attrIndices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
 
-        if not validData: validData = self.getValidList(attrIndices)
+        if not validData and removeMissingData: validData = self.getValidList(attrIndices)
 
-        selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
+        else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
         
         if not classList:
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
-            classList = Numeric.compress(validData, classList)
-            
-        if not sum_i: sum_i = self._getSum_i(selectedData)
-        if not (XAnchors and YAnchors and useAnchorData):
+            if removeMissingData: classList = Numeric.compress(validData, classList)    
+
+        if useAnchorData or not (XAnchors and YAnchors):
+            XAnchors = Numeric.array([val[0] for val in self.anchorData])
+            YAnchors = Numeric.array([val[1] for val in self.anchorData])
+            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+            if normalize == 1 or (normalize == None and self.normalizeExamples):
+                XAnchors *= r                                               
+                YAnchors *= r
+        else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
-        else:
-            XAnchors = [val[0] for val in self.anchorData]
-            YAnchors = [val[1] for val in self.anchorData]
+            r = Numeric.ones(len(XAnchors), Numeric.Float)
 
-        x_positions = Numeric.matrixmultiply(XAnchors, selectedData) / sum_i
-        y_positions = Numeric.matrixmultiply(YAnchors, selectedData) / sum_i
-        if scaleFactor != 1.0:
-            x_positions = x_positions * scaleFactor
-            y_positions = y_positions * scaleFactor
+        x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
+        y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
+
+        if normalize == 1 or (normalize == None and self.normalizeExamples):
+            if not sum_i: sum_i = self._getSum_i(selectedData, useAnchorData, r)
+            x_positions /= sum_i
+            y_positions /= sum_i
+            self.trueScaleFactor = scaleFactor
+        else:
+            abss = x_positions*x_positions + y_positions*y_positions
+            self.trueScaleFactor = 1 / sqrt(abss[Numeric.argmax(abss)])
+
+        if self.trueScaleFactor != 1.0:
+            x_positions *= self.trueScaleFactor
+            y_positions *= self.trueScaleFactor
+    
         if jitterSize > 0.0:
             x_positions += (RandomArray.random(len(x_positions))-0.5)*jitterSize
             y_positions += (RandomArray.random(len(y_positions))-0.5)*jitterSize
         
         return Numeric.transpose(Numeric.array((x_positions, y_positions, classList)))
 
-    # ##############################################################
-    # create the projection of attribute indices given in attrIndices and create an example table with it. 
-    def createProjectionAsExampleTable(self, attrIndices, validData = None, classList = None, sum_i = None, XAnchors = None, YAnchors = None, domain = None, scaleFactor = 1.0, jitterSize = 0.0, useAnchorData = 0):
-        if not domain: domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
-        data = self.createProjectionAsNumericArray(attrIndices, validData, classList, sum_i, XAnchors, YAnchors, scaleFactor, jitterSize, useAnchorData)
-        return orange.ExampleTable(domain, data)
-
+    
     # ##############################################################
     # function to compute the sum of all values for each element in the data. used to normalize.
-    def _getSum_i(self, data, useCurrentAnchors = 0):
-        if useCurrentAnchors:
-            r = [a[0]**2+a[1]**2 for a in self.anchorData]
-            r = Numeric.sqrt(r)
-            sum_i = Numeric.add.reduce(Numeric.transpose(Numeric.transpose(data)*r))
+    def _getSum_i(self, data, useAnchorData = 0, anchorRadius = None):
+        if useAnchorData:
+            if not anchorRadius:
+                anchorRadius = Numeric.sqrt([a[0]**2+a[1]**2 for a in self.anchorData])
+            sum_i = Numeric.add.reduce(Numeric.transpose(Numeric.transpose(data)*anchorRadius))
         else:
             sum_i = Numeric.add.reduce(data)
         if len(Numeric.nonzero(sum_i)) < len(sum_i):    # test if there are zeros in sum_i
@@ -720,7 +706,6 @@ class OWRadvizGraph(OWVisGraph):
     # ####    GET OPTIMAL SEPARATION #####################################################################
     # #######################################################################################################
     def getOptimalSeparation(self, attributes, minLength, maxLength, addResultFunct):
-        dataSize = len(self.rawdata)
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
@@ -885,7 +870,6 @@ class OWRadvizGraph(OWVisGraph):
     # ####    OPTIMIZE GIVEN PROJECTION      ################################################################
     # #######################################################################################################
     def optimizeGivenProjection(self, attrLists, accuracys, attributes, addResultFunct, restartWhenImproved = 1, maxProjectionLen = -1):
-        dataSize = len(self.rawdata)
         classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         self.triedPossibilities = 0
 
@@ -980,7 +964,6 @@ class OWRadvizGraph(OWVisGraph):
     # ####    GET OPTIMAL CLUSTERS      #####################################################################
     # #######################################################################################################
     def getOptimalClusters(self, attributes, minLength, maxLength, addResultFunct):
-        dataSize = len(self.rawdata)
         self.triedPossibilities = 0
 
         # replace attribute names with indices in domain - faster searching
@@ -1076,7 +1059,7 @@ class OWRadvizGraph(OWVisGraph):
     # ####################################################################
     # update shown data. Set labels, coloring by className ....
     def savePicTeX(self):
-        lastSave = getattr(self, "lastPicTeXSave", "d:\ai\papers\05\idamap")
+        lastSave = getattr(self, "lastPicTeXSave", "C:\\")
         qfileName = QFileDialog.getSaveFileName(lastSave + "graph.pictex","PicTeX (*.pictex);;All files (*.*)", None, "Save to..", "Save to..")
         fileName = str(qfileName)
         if fileName == "":
@@ -1113,13 +1096,18 @@ class OWRadvizGraph(OWVisGraph):
         classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
         indices = [self.attributeNameIndex[label] for label in labels]
         selectedData = Numeric.take(self.scaledData, indices)
-        XAnchors = [a[0] for a in self.anchorData]
-        YAnchors = [a[1] for a in self.anchorData]
+        XAnchors = Numeric.array([a[0] for a in self.anchorData])
+        YAnchors = Numeric.array([a[1] for a in self.anchorData])
+
+        r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
+        XAnchors *= r                                               # we need to normalize the anchors by r, otherwise the anchors won't attract points less if they are placed at the center of the circle
+        YAnchors *= r
+        
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
 
         if self.normalizeExamples:
-            sum_i = self._getSum_i(selectedData, useCurrentAnchors = 1)
+            sum_i = self._getSum_i(selectedData, useAnchorData = 1, anchorRadius = r)
             x_positions /= sum_i
             y_positions /= sum_i
             
