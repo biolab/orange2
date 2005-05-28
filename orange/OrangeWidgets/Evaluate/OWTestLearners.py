@@ -191,6 +191,7 @@ class OWTestLearners(OWWidget):
     # slots: handle input signals        
     def cdata(self,data):
         if not data:
+            self.data = None
             return # have to handle this appropriately
         self.data = orange.Filter_hasClassValue(data)
         self.classindex = 0 # data.targetValIndx
