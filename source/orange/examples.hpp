@@ -84,6 +84,10 @@ public:
   TValue &operator[] (const string &name);
   const TValue &operator[] (const string &name) const;
 
+  // this one is similar to the above operator, but calls computeValue if needed
+  // (if [] returned it, the computed value would be a reference to a temporary)
+  TValue getValue(PVariable &var) const;
+
   TValue &getClass()
   { return values_end[-1]; }
 

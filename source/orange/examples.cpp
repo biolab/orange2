@@ -248,6 +248,13 @@ TExample &TExample::operator =(const TExample &orig)
 }
 
 
+TValue TExample::getValue(PVariable &var) const
+{
+  // if there is no getValueFrom, throw an exception
+  const int position = domain->getVarNum(var, var->getValueFrom);
+  return position != ILLEGAL_INT ? operator[](position) : var->computeValue(*this);
+}
+
 TValue &TExample::operator[] (PVariable &var)
 { return operator[](domain->getVarNum(var)); }
 
