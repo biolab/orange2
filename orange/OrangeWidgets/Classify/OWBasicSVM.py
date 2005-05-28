@@ -79,7 +79,7 @@ class OWBasicSVM(OWWidget):
         self.cbNu = OWGUI.checkBox(methodOptions, self, "useNu", "Limit the number of support vectors")
         nuValid = QDoubleValidator(self.controlArea)
         nuValid.setRange(0,1,3)
-        self.leNu = OWGUI.lineEdit(methodOptions, self, "nu", "      Fraction (nu): ", orientation="horizontal", validator = nuValid, labelWidth = labwidth)
+        self.leNu = OWGUI.lineEdit(methodOptions, self, "nu", "      Complexity bound (nu): ", orientation="horizontal", validator = nuValid, labelWidth = labwidth)
         self.cbNu.disables = [self.leNu]
         self.leNu.setDisabled(not self.useNu)
 
