@@ -2,7 +2,7 @@
 <name>Data Table</name>
 <description>DataTable shows the data set in a spreadsheet.</description>
 <icon>icons/DataTable.png</icon>
-<priority>500</priority>
+<priority>100</priority>
 """
 
 # OWDataTable.py

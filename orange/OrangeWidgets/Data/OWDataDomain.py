@@ -4,7 +4,7 @@
 (select which attributes to use,select if and which attribute will be used as a class variable,
 and which attributes will be used as meta attributes), and output a new data set with that domain.</description>
 <icon>icons/SelectAttributes.png</icon>
-<priority>20</priority>
+<priority>1100</priority>
 """
 
 from OWTools import *

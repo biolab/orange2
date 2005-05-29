@@ -1,9 +1,9 @@
 """
-<name>SelectData</name>
+<name>Select Data</name>
 <description>Selects instances from the data set based on conditions
 over attributes.</description>
 <icon>icons/SelectData.png</icon>
-<priority>2000</priority>
+<priority>1150</priority>
 """
 
 import orange
