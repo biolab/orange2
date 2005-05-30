@@ -14,6 +14,9 @@ from OWAbout import *
 from orngSignalManager import *
 import time, user
 
+ERROR = 0
+WARNING = 1
+
 
 def mygetattr(obj, attr, default = None):
     if attr.count(".") > 0:     # in case that we want to access an attribute that is not directly in this class we have to go like this
@@ -95,6 +98,9 @@ class OWBaseWidget(QDialog):
         self.eventHandler = None
         self.callbackDeposit = []
         self.startTime = time.time()    # used in progressbar
+
+        self.widgetStateHandler = None
+        self.widgetState = None
     
         #the title
         self.setCaption(self.captionTitle)
@@ -378,6 +384,9 @@ class OWBaseWidget(QDialog):
     def setEventHandler(self, handler):
         self.eventHandler = handler
 
+    def setWidgetStateHandler(self, handler):
+        self.widgetStateHandler = handler
+
     def printEvent(self, type, text):
         # if we are in debug mode print the event into the file
         if text: self.signalManager.addEvent(type + " from " + self.captionTitle[3:] + ": " + text)
@@ -391,11 +400,32 @@ class OWBaseWidget(QDialog):
     def information(self, text = None):
         self.printEvent("Information", text)
 
-    def warning(self, text = None):
-        self.printEvent("Warning", text)
+    def warning(self, code = 0, text = ""):
+        self.setState(WARNING, code, text)
+        
+        if text and not self.widgetStateHandler:
+            self.printEvent("Warning", text)
 
-    def error(self, text = None):
-        self.printEvent("Error", text)
+    def error(self, code = 0, text = ""):
+        self.setState(ERROR, code, text)
+
+        if text and not self.widgetStateHandler:
+            self.printEvent("Error", text)
+
+    def setState(self, type, code, text):
+        if not self.widgetState: self.widgetState = [[], []]
+
+        if code == 0: self.widgetState[type] = []
+        else:
+            for (c, t) in self.widgetState[type]:
+                if c == code: self.widgetState[type].remove((c,t))
+            if text:
+                self.widgetState[type].append((code, text))
+
+        if self.widgetState == [[],[]]: self.widgetState = None
+
+        if self.widgetStateHandler:
+            self.widgetStateHandler()
 
     def __setattr__(self, name, value):
         if name.count(".") > 0:
