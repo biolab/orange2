@@ -68,7 +68,10 @@ class WidgetButton(QToolButton):
         formatedOutList = formatedOutList[:-4]
         
         #tooltipText = name + "\nClass name: " + fileName + "\nin: " + formatedInList + "\nout: " + formatedOutList + "\ndescription: " + description
-        tooltipText = "<b>%s</b><br><hr><b>Description:</b><br> &nbsp &nbsp %s<hr>%s<hr>%s" % (name, self.getDescription(), formatedInList, formatedOutList)
+        tooltipText = "<b>%s</b><br><hr>" % (name)
+        author = self.getAuthor()
+        if author: tooltipText += "<b>Author:</b> %s<br><hr>" % (author)
+        tooltipText += "<b>Description:</b><br> &nbsp &nbsp %s<hr>%s<hr>%s" % (self.getDescription(), formatedInList, formatedOutList)
         QToolTip.add( self, tooltipText)
 
         self.canvasDlg = canvasDlg
@@ -105,6 +108,11 @@ class WidgetButton(QToolButton):
 
     def getDescription(self):
         return str(self.widgetTabs.widgetInfo[self.nameKey]["description"])
+
+    def getAuthor(self):
+        if self.widgetTabs.widgetInfo[self.nameKey].has_key("author"):
+            return str(self.widgetTabs.widgetInfo[self.nameKey]["author"])
+        else: return ""
 
     # get inputs as instances of InputSignal
     def getInputs(self):
@@ -264,16 +272,19 @@ class WidgetTabs(QTabWidget):
 
         priorityList = []
         nameList = []
+        authorList = []
         iconNameList = []
         descriptionList = []
         fileNameList = []
         inputList = []
         outputList = []
         
+        
         widgetList = category.getElementsByTagName("widget")
         for widget in widgetList:
             name = str(widget.getAttribute("name"))
             fileName = str(widget.getAttribute("file"))
+            author = str(widget.getAttribute("author"))
             inputs = [InputSignal(*signal) for signal in eval(widget.getAttribute("in"))]
             outputs = [OutputSignal(*signal) for signal in eval(widget.getAttribute("out"))]
             priority = int(widget.getAttribute("priority"))
@@ -295,6 +306,7 @@ class WidgetTabs(QTabWidget):
                 i = i + 1
             priorityList.insert(i, priority)
             nameList.insert(i, name)
+            authorList.insert(i, author)
             fileNameList.insert(i, fileName)
             iconNameList.insert(i, iconName)
             descriptionList.insert(i, description)
@@ -304,7 +316,7 @@ class WidgetTabs(QTabWidget):
         exIndex = 0
         for i in range(len(priorityList)):            
             button = WidgetButton(tab)
-            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i]}
+            self.widgetInfo[strCategory + " - " + nameList[i]] = {"fileName": fileNameList[i], "iconName": iconNameList[i], "author" : authorList[i], "description":descriptionList[i], "priority":priorityList, "inputs": inputList[i], "outputs" : outputList[i]}
             button.setValue(nameList[i], strCategory + " - " + nameList[i], self, self.canvasDlg, self.useLargeIcons)
             self.connect( button, SIGNAL( 'clicked()' ), button.clicked)
             if exIndex != priorityList[i] / 1000:
