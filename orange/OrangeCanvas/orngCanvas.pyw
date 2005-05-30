@@ -51,6 +51,21 @@ class OrangeCanvasDlg(QMainWindow):
         
         if sys.path.count(self.widgetDir) == 0:
             sys.path.append(self.widgetDir)
+
+        # create error and warning icons
+        errorIconName = os.path.join(self.canvasDir, "icons/triangle-red.png")
+        if os.path.exists(canvasIconName):
+            self.errorIcon = QPixmap(errorIconName)
+        else:
+            self.errorIcon = None
+            print "Unable to load all necessary icons. Please reinstall Orange."
+
+        warningIconName = os.path.join(self.canvasDir, "icons/triangle-red.png")
+        if os.path.exists(canvasIconName):
+            self.warningIcon = QPixmap(warningIconName)
+        else:
+            self.warningIcon = None
+            print "Unable to load all necessary icons. Please reinstall Orange."
         
         self.workspace = WidgetWorkspace(self)
         #self.workspace.setBackgroundColor(QColor(255,255,255))
@@ -133,7 +148,6 @@ class OrangeCanvasDlg(QMainWindow):
         
         if hasattr(self, "addDockWindow") : self.addDockWindow(self.widgetsToolBar, "Widgets", Qt.DockTop, TRUE)
         else:                               self.addToolBar(self.widgetsToolBar, "Widgets", QMainWindow.Top, TRUE)
-
         
         self.tabs.setCanvasDlg(self)
         
@@ -174,13 +188,13 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_new)), "&New",  self.menuItemNewSchema, Qt.CTRL+Qt.Key_N )
         #self.menuFile.insertItem( "New from template",  self.menuItemNewFromTemplate)
         #self.menuFile.insertItem( "New from wizard",  self.menuItemNewWizard)
-        self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
+        self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_open)), "&Open...", self.menuItemOpen, Qt.CTRL+Qt.Key_O )
         self.menuFile.insertItem( "&Close", self.menuItemClose )
         self.menuFile.insertSeparator()
         self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
-        self.menuSaveAsID = self.menuFile.insertItem( "&Save As..", self.menuItemSaveAs)
-        self.menuFile.insertItem( "&Save As Application (Tabs)", self.menuItemSaveAsAppTabs)
-        self.menuFile.insertItem( "&Save As Application (Buttons)", self.menuItemSaveAsAppButtons)
+        self.menuSaveAsID = self.menuFile.insertItem( "&Save As...", self.menuItemSaveAs)
+        self.menuFile.insertItem( "&Save As Application (Tabs)...", self.menuItemSaveAsAppTabs)
+        self.menuFile.insertItem( "&Save As Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.insertSeparator()
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
         self.menuFile.insertSeparator()
@@ -204,12 +218,16 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.insertItem( "Enable All Links",  self.menuItemEnableAll, Qt.CTRL+Qt.Key_E)
         self.menuOptions.insertItem( "Disable All Links",  self.menuItemDisableAll, Qt.CTRL+Qt.Key_D)
         self.menuOptions.insertItem( "Clear Scheme",  self.menuItemClearWidgets)
+
+        # uncomment this only for debugging
+        #self.menuOptions.insertItem("Dump widget variables", self.dumpVariables)
+        
         self.menuOptions.insertSeparator()
         #self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.insertSeparator()
         self.menuOptions.insertItem( "Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "Canvas options",  self.menuItemCanvasOptions)
+        self.menuOptions.insertItem( "Canvas options...",  self.menuItemCanvasOptions)
         
         self.menuWindow = QPopupMenu( self )        
         self.menuWindow.insertItem("Cascade", self.workspace.cascade)
@@ -236,7 +254,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOutput.insertItem("Show Output Window", self.menuItemShowOutputWindow)
         self.menuOutput.insertItem("Clear Output Window", self.menuItemClearOutputWindow)
         self.menuOutput.insertSeparator()
-        self.menuOutput.insertItem("Save Output Text", self.menuItemSaveOutputWindow)
+        self.menuOutput.insertItem("Save Output Text...", self.menuItemSaveOutputWindow)
         self.menuWindow.insertSeparator()
 
         self.menuWindow.insertItem("Minimize All", self.menuMinimizeAll)
@@ -427,8 +445,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def updateUseLargeIcons(self):
         self.createWidgetsToolbar(0)
-        
-        
+                
     def menuItemEnableAll(self):
         win = self.workspace.activeWindow()
         if isinstance(win, orngDoc.SchemaDoc):
@@ -443,6 +460,11 @@ class OrangeCanvasDlg(QMainWindow):
         win = self.workspace.activeWindow()
         if win != None:
             win.clear()
+
+    def dumpVariables(self):
+        win = self.workspace.activeWindow()
+        if isinstance(win, orngDoc.SchemaDoc):
+            win.dumpWidgetVariables()
 
     def menuItemShowOutputWindow(self):
         self.output.show()
