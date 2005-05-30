@@ -1,6 +1,7 @@
 """
 <name>Parallel coordinates</name>
 <description>Shows data using parallel coordianates visualization method</description>
+<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/ParallelCoordinates.png</icon>
 <priority>3200</priority>
 """

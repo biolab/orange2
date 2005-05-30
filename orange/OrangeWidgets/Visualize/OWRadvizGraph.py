@@ -263,13 +263,11 @@ class OWRadvizGraph(OWVisGraph):
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
             else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
 
-            dataIndex = 0
-            for j in range(len(self.insideColors)):
-                while (validData[dataIndex] == 0): dataIndex += 1
-                fillColor = classColors.getColor(classValueIndices[self.rawdata[dataIndex].getclass().value], 255*self.insideColors[j])
-                edgeColor = classColors.getColor(classValueIndices[self.rawdata[dataIndex].getclass().value])
-                key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x_positions[dataIndex]], yData = [y_positions[dataIndex]])
-                dataIndex += 1
+            for i in range(len(self.insideColors)):
+                if not validData[i]: continue
+                fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*self.insideColors[i])
+                edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
 
         # ############################################################## 
         # do we have a subset data to show?

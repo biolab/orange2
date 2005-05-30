@@ -1,6 +1,7 @@
 """
 <name>Radviz</name>
 <description>Shows data using radviz visualization method</description>
+<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/Radviz.png</icon>
 <priority>3100</priority>
 """
@@ -171,12 +172,12 @@ class OWRadviz(OWWidget):
         OWGUI.comboBox(box2, self, "graph.tooltipKind", items = ["Show line tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
         OWGUI.comboBox(box2, self, "graph.tooltipValue", items = ["Tooltips show data values", "Tooltips show spring values"], callback = self.updateGraph, tooltip = "Do you wish that tooltips would show you original values of visualized attributes or the 'spring' values (values between 0 and 1). \nSpring values are scaled values that are used for determining the position of shown points. Observing these values will therefore enable you to \nunderstand why the points are placed where they are.")
 
+        self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.")
+        self.connect(self.activeLearnerCombo, SIGNAL("activated(int)"), self.setActiveLearner)
+
         box4 = OWGUI.widgetBox(self.SettingsTab, " Sending Selection ")
         OWGUI.checkBox(box4, self, 'autoSendSelection', 'Auto send selected data', callback = self.selectionChanged, tooltip = "Send signals with selected data whenever the selection changes.")
         self.selectionChanged()
-
-        self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner", "FreeViz Learner", "S2N Feature Selection Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.")
-        self.connect(self.activeLearnerCombo, SIGNAL("activated(int)"), self.setActiveLearner)
 
         # ####
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)

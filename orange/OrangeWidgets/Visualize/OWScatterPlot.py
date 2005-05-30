@@ -1,6 +1,7 @@
 """
 <name>Scatterplot</name>
 <description>Shows data using scatterplot</description>
+<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/ScatterPlot.png</icon>
 <priority>100</priority>
 """
@@ -22,7 +23,8 @@ import OWToolbars
 class OWScatterPlot(OWWidget):
     settingsList = ["graph.pointWidth", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
                     "graph.enabledLegend", "graphGridColor", "graphCanvasColor", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
-                    "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters", "VizRankClassifierName", "clusterClassifierName"]
+                    "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
+                    "VizRankClassifierName", "clusterClassifierName", "learnerIndex"]
     jitterSizeList = ['0.0', '0.1','0.5','1','2','3','4','5','7', '10', '15', '20', '30', '40', '50']
     jitterSizeNums = [0.0, 0.1,   0.5,  1,  2 , 3,  4 , 5 , 7 ,  10,   15,   20 ,  30 ,  40 ,  50 ]
 
@@ -30,7 +32,7 @@ class OWScatterPlot(OWWidget):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
-        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("VizRank learner", orange.Learner), ("Cluster learner", orange.Learner)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Learner", orange.Learner)]
 
         # local variables
         self.showXAxisTitle = 1
@@ -44,8 +46,12 @@ class OWScatterPlot(OWWidget):
         self.graphCanvasColor = str(Qt.white.name())
         self.graphGridColor = str(Qt.black.name())
         self.classificationResults = None
+        self.learnerIndex = 0
+        self.learnersArray = [None, None]   # VizRank, Cluster
 
         self.graph = OWScatterPlotGraph(self, self.mainArea)
+        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
+        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
 
         # graph variables
         self.graph.pointWidth = 5
@@ -100,7 +106,6 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
-        self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.optimizationDlg.label1.hide()
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()
@@ -110,7 +115,6 @@ class OWScatterPlot(OWWidget):
         self.graph.kNNOptimization = self.optimizationDlg
 
         # cluster dialog
-        self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.clusterDlg.label1.hide()
         self.clusterDlg.optimizationTypeCombo.hide()
         self.clusterDlg.attributeCountCombo.hide()
@@ -169,9 +173,12 @@ class OWScatterPlot(OWWidget):
         box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
         OWGUI.comboBox(box3, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
+        self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.")
+        self.connect(self.activeLearnerCombo, SIGNAL("activated(int)"), self.setActiveLearner)
+    
         OWGUI.checkBox(self.SettingsTab, self, 'autoSendSelection', 'Auto send selected data', box = " Data selection ", callback = self.setAutoSendSelection, tooltip = "Send signals with selected data whenever the selection changes.")
         self.graph.autoSendSelectionCallback = self.setAutoSendSelection
-
+        
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Change Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor)
         OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor)
@@ -196,6 +203,10 @@ class OWScatterPlot(OWWidget):
 
         self.optimizationDlg.changeLearnerName(self.VizRankClassifierName)
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
+        self.setActiveLearner(self.learnerIndex)
+
+    def setActiveLearner(self, idx):
+        self.send("Learner", self.learnersArray[self.learnerIndex])
 
     # #######################################################################################################
     # KNN OPTIMIZATION BUTTON EVENTS

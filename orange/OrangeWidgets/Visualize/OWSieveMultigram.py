@@ -1,6 +1,7 @@
 """
 <name>Sieve multigram</name>
 <description>Shows sieve multigram</description>
+<author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/SieveMultigram.png</icon>
 <priority>4150</priority>
 """
