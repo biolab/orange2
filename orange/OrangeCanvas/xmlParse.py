@@ -48,12 +48,13 @@ class WidgetsToXML:
 			data = file.read()
 			file.close()
 
-			name		= self.GetCustomText(data, '<name>.*</name>', 6, -7)
-			#category	= self.GetCustomText(data, '<category>.*</category>', 10, -11)
-			icon		= self.GetCustomText(data, '<icon>.*</icon>', 6, -7)
-			priorityStr = self.GetCustomText(data, '<priority>.*</priority>', 10, -11)
-			if priorityStr == None:
-				priorityStr = "5000"
+			name		= self.GetCustomText(data, '<name>.*</name>')
+			#category	= self.GetCustomText(data, '<category>.*</category>')
+			author      = self.GetCustomText(data, '<author>.*</author>')
+			icon		= self.GetCustomText(data, '<icon>.*</icon>')
+			priorityStr = self.GetCustomText(data, '<priority>.*</priority>')
+			if priorityStr == None:	priorityStr = "5000"
+			if author      == None: author = ""
 
 			description = self.GetDescription(data)
 			inputList   = self.GetAllInputs(data)
@@ -79,6 +80,7 @@ class WidgetsToXML:
 			widget.setAttribute("out", str(outputList))
 			widget.setAttribute("icon", icon)
 			widget.setAttribute("priority", priorityStr)
+			widget.setAttribute("author", author)
 			
 			# description			
 			if (description != ""):
@@ -95,19 +97,20 @@ class WidgetsToXML:
 		search = re.search('<description>.*</description>', data, re.DOTALL)
 		if (search == None):
 			return ""
-		 
+
 		description = search.group(0)[13:-14]	#delete the <...> </...>
 		description = re.sub("#", "", description)  # if description is in multiple lines, delete the comment char
 		return string.strip(description)
 
-	def GetCustomText(self, data, searchString, index1, index2):
+	def GetCustomText(self, data, searchString):
 		#read the description from widget
 		search = re.search(searchString, data)
 		if (search == None):
 			return None
 		
-		text = search.group(0)[index1:index2]	#delete the <...> </...>
-		return string.strip(text)
+		text = search.group(0)
+		text = text[text.find(">")+1:-text[::-1].find("<")-1]	#delete the <...> </...>
+		return text.strip()
 
 		
 	def GetAllInputs(self, data):
