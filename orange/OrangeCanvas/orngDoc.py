@@ -733,7 +733,13 @@ ow.saveSettings()
         # save settings
         self.saveWidgetSettings(os.path.join(self.applicationpath, fileName) + ".sav")
         
-        
+    def dumpWidgetVariables(self):
+        for widget in self.widgets:
+            self.canvasDlg.output.write("<hr><br><b>%s</b><br>" % (widget.caption))
+            v = vars(widget.instance).keys()
+            v.sort()
+            for val in v:
+                self.canvasDlg.output.write("%s = %s" % (val, getattr(widget.instance, val)))
 
 if __name__=='__main__': 
     app = QApplication(sys.argv)
