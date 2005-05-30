@@ -29,7 +29,7 @@ class OWAssociationRulesViewer(OWWidget):
  
         self.settingsList = ["treeDepth", "showWholeRules"]
 
-        OWGUI.hSlider(self.space, self, "treeDepth", "Tree depth", minValue = 2, maxValue = 10, step = 1, callback = self.displayRules)
+        OWGUI.hSlider(self.space, self, "treeDepth", "Tree depth", minValue = 0, maxValue = 10, step = 1, callback = self.displayRules)
 
         self.layout=QVBoxLayout(self.mainArea)
         self.treeRules = QListView(self.mainArea,'ListView')       #the rules and their properties are printed into this QListView
