@@ -438,12 +438,15 @@ class OWVisGraph(OWGraph):
 
     def activateZooming(self):
         self.state = ZOOMING
+        if self.tempSelectionCurve: self.removeLastSelection()
 
     def activateRectangleSelection(self):
         self.state = SELECT_RECTANGLE
+        if self.tempSelectionCurve: self.removeLastSelection()
 
     def activatePolygonSelection(self):
         self.state = SELECT_POLYGON
+        if self.tempSelectionCurve: self.removeLastSelection()
 
     def removeDrawingCurves(self):
         for key in self.curveKeys():
