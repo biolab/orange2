@@ -34,7 +34,7 @@ ALGORITHM_HEURISTIC = 2
 
 NUMBER_OF_INTERVALS = 6  # number of intervals to use when discretizing 
 
-contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure()), ("Signal to Noise Mix", OWVisAttrSelection.S2NMeasureMix())]
+contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure()), ("Signal to Noise OVA", OWVisAttrSelection.S2NMeasureMix())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
 
@@ -284,11 +284,12 @@ class kNNOptimization(OWBaseWidget):
         self.controlArea.activate()
 
         self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.changeLearnerName)
-        if self.parentWidget and self.parentName == "Radviz" :
-            self.parentWidget.learnersArray[0] = VizRankLearner(self, self.parentWidget)
-        else:
-            self.vizRankLearner = VizRankLearner(self, self.parentWidget)
-            if self.parentWidget: self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
+        if self.parentWidget:
+            if hasattr(self.parentWidget, "learnersArray"):
+                self.parentWidget.learnersArray[0] = VizRankLearner(self, self.parentWidget)
+            else:
+                self.vizRankLearner = VizRankLearner(self, self.parentWidget)
+                self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
 
         self.resize(375,550)
         self.setMinimumWidth(375)
@@ -298,10 +299,11 @@ class kNNOptimization(OWBaseWidget):
     # EVENTS
     # ##############################################################
     def changeLearnerName(self, text = None):
-        if self.parentWidget and self.parentName == "Radviz" and self.parentWidget.learnersArray[0]:
-            self.parentWidget.learnersArray[0].name = self.parentWidget.VizRankClassifierName
-        elif self.parentWidget:
-            self.vizRankLearner.name = self.parentWidget.VizRankClassifierName
+        if self.parentWidget:
+            if hasattr(self.parentWidget, "learnersArray"):
+                self.parentWidget.learnersArray[0].name = self.parentWidget.VizRankClassifierName
+            else:
+                self.vizRankLearner.name = self.parentWidget.VizRankClassifierName            
         else: print "there is no instance of VizRank Learner"
         
     # result list can contain projections with different number of attributes
@@ -450,8 +452,8 @@ class kNNOptimization(OWBaseWidget):
             return
 
         if self.autoSetTheKValue:
-            #correct = sqrt(len(data));
-            correct = len(data) / len(data.domain.classVar.values)  #set value of k to N/n where N is number of examples and n is number of class values
+            correct = sqrt(len(data));
+            #correct = len(data) / len(data.domain.classVar.values)  #set value of k to N/n where N is number of examples and n is number of class values
             #correct = len(data) / 2
             i=0
             while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1

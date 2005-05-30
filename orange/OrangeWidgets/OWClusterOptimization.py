@@ -25,8 +25,6 @@ BEST_GROUPS_IN_EACH_CLASS = 1
 contMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Fisher discriminant", OWVisAttrSelection.MeasureFisherDiscriminant()), ("Signal to Noise Ratio", OWVisAttrSelection.S2NMeasure()), ("Signal to Noise Ratio For Each Class", OWVisAttrSelection.S2NMeasureMix())]
 discMeasures = [("None", None), ("ReliefF", orange.MeasureAttribute_relief(k=10, m=50)), ("Gain ratio", orange.MeasureAttribute_gainRatio()), ("Gini index", orange.MeasureAttribute_gini())]
 
-
-
 VALUE = 0
 CLUSTER = 1
 DISTANCE = 2
@@ -38,506 +36,6 @@ OTHER_DISTANCE = 3
 OTHER_AVERAGE = 4
 OTHER_AVERAGE_DIST = 5
 
-
-# compute union of two lists
-def union(list1, list2):
-    union_dict = {}
-    for e in list1: union_dict[e] = 1
-    for e in list2: union_dict[e] = 1
-    return union_dict.keys()
-
-# compute intersection of two lists
-def intersection(list1, list2):
-    int_dict = {}
-    list1_dict = {}
-    for e in list1:
-        list1_dict[e] = 1
-    for e in list2:
-        if list1_dict.has_key(e): int_dict[e] = 1
-    return int_dict.keys()
-    
-# on which side of the line through (x1,y1), (x2,y2) lies the point (xTest, yTest)
-def getPosition(x1, y1, x2, y2, xTest, yTest):
-    if x1 == x2:
-        if xTest > x1: return 1
-        else: return -1
-    k = (y2-y1)/float(x2-x1)
-    c = y1 - k*x1
-    if k*xTest - yTest > -c : return 1
-    else: return -1
-
-# compute distances between all connected vertices and store it in the DISTANCE field
-def computeDistances(graph):
-    for (i,j) in graph.getEdges():
-        xdiff = graph.objects[i][0] - graph.objects[j][0]
-        ydiff = graph.objects[i][1] - graph.objects[j][1]
-        graph[i,j][DISTANCE] = sqrt(xdiff*xdiff + ydiff*ydiff)
-
-
-# Slightly deficient function to determine if the two lines p1, p2 and p2, p3 turn in counter clockwise direction
-def ccw(p1, p2, p3):
-    dx1 = p2[0] - p1[0]; dy1 = p2[1] - p1[1]
-    dx2 = p3[0] - p2[0]; dy2 = p3[1] - p2[1]
-    if(dy1*dx2 < dy2*dx1): return 1
-    else: return 0
-
-
-# do lines with (p1,p2) and (p3,p4) intersect?
-def lineIntersect(p1, p2, p3, p4):
-    return ((ccw(p1, p2, p3) != ccw(p1, p2, p4)) and (ccw(p3, p4, p1) != ccw(p3, p4, p2)))
-
-# compute distance between points (x1,y1), (x2, y2)
-def computeDistance(x1, y1, x2, y2):
-    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
-
-# remove edges to different class values from the graph. set VALUE field of such edges to newVal
-def removeEdgesToDifferentClasses(graph, newVal):
-    if newVal == None:
-        for (i,j) in graph.getEdges():
-            if graph.objects[i].getclass() != graph.objects[j].getclass(): graph[i,j] = None
-    else:
-        for (i,j) in graph.getEdges():
-            if graph.objects[i].getclass() != graph.objects[j].getclass(): graph[i,j][VALUE] = newVal
-
-
-# for a given dictionary that contains edges on the closure, return a dictionary with these points as keys and a list of points with a different class value as the value
-# this is used when we have to compute the nearest points that belong to a different class
-def getPointsWithDifferentClassValue(graph, closureDict):
-    differentClassPoinsDict = {}
-    for key in closureDict:
-        vertices = union([i for (i,j) in closureDict[key]], [j for (i,j) in closureDict[key]])
-        points = []
-        for v in vertices:
-            for n in graph.getNeighbours(v):
-                if graph.objects[v].getclass() == graph.objects[n].getclass() or n in points: continue
-                points.append(n)
-        differentClassPoinsDict[key] = points
-    return differentClassPoinsDict
-
-
-# remove edges, that do not connect to triangles
-def removeSingleLines(graph, edgesDict, clusterDict, verticesDict, minimumValidIndex, newVal):
-    for (i,j) in graph.getEdges():
-        if graph[i,j][VALUE] < minimumValidIndex: continue
-        merged = graph.getNeighbours(i) + graph.getNeighbours(j)
-        merged.sort()
-        k=0; found = 0;
-        for k in range(len(merged)-1):
-            if merged[k] == merged[k+1] and graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex:
-                found = 1; break
-        if not found:
-            if newVal == None: graph[i,j] = None            # delete the edge
-            else:
-                graph[i,j][VALUE] = newVal   # set the edge value
-                graph[i,j][CLUSTER] = -1
-            # remove the edge from the edgesDict
-            if edgesDict and clusterDict and verticesDict:
-                index = max(clusterDict[j], clusterDict[i])
-                if index == -1: continue
-                if (i,j) in edgesDict[index]: edgesDict[index].remove((i,j))
-                elif (j,i) in edgesDict[index]: edgesDict[index].remove((j,i))
-                if clusterDict[i] != -1: verticesDict[clusterDict[i]].remove(i)
-                if clusterDict[j] != -1: verticesDict[clusterDict[j]].remove(j)
-                clusterDict[j] = clusterDict[i] = -1
-
-# remove single lines and triangles that are now treated as their own clusters because they are probably insignificant
-def removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, newVal):
-    for key in edgesDict.keys():
-        if len(verticesDict[key]) < 4:
-            for (i,j) in edgesDict[key]:
-                graph[i,j][VALUE] = newVal
-                graph[i,j][CLUSTER] = -1
-                clusterDict[i] = -1; clusterDict[j] = -1;
-            verticesDict.pop(key)
-            edgesDict.pop(key)
-
-# make clusters smaller by removing points on the hull that lie closer to points in opposite class
-def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, newVal):
-    for key in closureDict.keys():
-        edges = closureDict[key]
-        vertices = union([i for (i,j) in edges], [j for (i,j) in edges])
-        
-        for vertex in vertices:
-            correctClass = int(graph.objects[vertex].getclass())
-            correct = []; incorrect = []
-            for n in graph.getNeighbours(vertex):
-                if int(graph.objects[n].getclass()) == correctClass: correct.append(graph[vertex,n][DISTANCE])
-                else: incorrect.append(graph[vertex,n][DISTANCE])
-
-            # if the distance to the correct class value is greater than to the incorrect class -> remove the point from the
-            if correct == [] or (len(incorrect) > 0 and min(correct) > min(incorrect)):     
-                # if closure will degenerate into a line -> remove the remaining vertices
-                correctClassNeighbors = []
-                for n in graph.getNeighbours(vertex):
-                    if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] != -1: correctClassNeighbors.append(n)
-                for i in correctClassNeighbors:
-                    for j in correctClassNeighbors:
-                        if i==j: continue
-                        if (i,j) in edges:
-                            graph[i,j][CLUSTER] = -1
-                            if newVal == None:  graph[i,j] = None
-                            else:               graph[i,j][VALUE] = newVal
-                            if i in verticesDict[key]: verticesDict[key].remove(i)
-                            if j in verticesDict[key]: verticesDict[key].remove(j)
-                            clusterDict[i] = -1; clusterDict[j] = -1
-                            if (i,j) in edgesDict[key]: edgesDict[key].remove((i,j))
-                            else: edgesDict[key].remove((j,i))
-                            edges.remove((i,j))
-
-                # remove the vertex from the closure
-                for n in graph.getNeighbours(vertex):
-                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue 
-                    if newVal == None:  graph[vertex,n] = None
-                    else:               graph[vertex,n][VALUE] = newVal
-                    if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
-                    elif (vertex, n) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((vertex, n))
-                    graph[vertex,n][CLUSTER] = -1
-                if clusterDict[vertex] != -1: verticesDict[key].remove(vertex)
-                #verticesDict[clusterDict[vertex]].remove(vertex)
-                clusterDict[vertex] = -1
-
-
-# mark edges on the closure with the outerEdgeValue and edges inside a cluster with a innerEdgeValue
-# algorithm: for each edge, find all triangles that contain this edge. if the number of triangles is 1, then this edge is on the closure.
-# if there is a larger number of triangles, then they must all lie on the same side of this edge, otherwise this edge is not on the closure
-def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdgeValue, differentClassValue, tooDistantValue):
-    closureDict = {}
-    for key in edgesDict.keys(): closureDict[key] = []  # create dictionary where each cluster will contain all edges that lie on the closure
-    for (i,j) in graph.getEdges():
-        if graph[i,j][VALUE] < minimumValidIndex or graph[i,j][CLUSTER] == -1: continue
-        merged = intersection(graph.getNeighbours(i), graph.getNeighbours(j))
-        sameClassPoints = []; otherClassPoints = []
-        for v in merged:
-            if graph[i, v][VALUE] >= minimumValidIndex and graph[j, v][VALUE] >= minimumValidIndex: sameClassPoints.append(v)
-            elif graph[i, v][VALUE] == graph[j, v][VALUE] == differentClassValue: otherClassPoints.append(v)
-            elif graph[i,v][VALUE] == tooDistantValue or graph[j,v][VALUE] == tooDistantValue:
-                for n in graph.getNeighbours(v):
-                    if graph[v,n][VALUE] == differentClassValue and n not in otherClassPoints: otherClassPoints.append(n)
-        outer = 1; outer2 = 0
-        if sameClassPoints == []: outer = 0
-        elif len(sameClassPoints) > 0:
-            dir = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[sameClassPoints[0]][0].value, graph.objects[sameClassPoints[0]][1].value)
-            for val in sameClassPoints[1:]:
-                dir2 = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[val][0].value, graph.objects[val][1].value)
-                if dir != dir2: outer = 0; break
-            if otherClassPoints != []:   # test if a point from a different class is lying inside one of the triangles
-                for o in otherClassPoints:
-                    val = 0; nearerPoint = 0
-                    for s in sameClassPoints:
-                        # check if o is inside (i,j,s) triangle
-                        val += pointInsideCluster (graph.objects, [(i,j), (j,s), (s,i)], graph.objects[o][0].value, graph.objects[o][1].value)
-                        # check if another point from sameClassPoints is inside (i,j,o) triangle - if it is, then (i,j) definitely isn't on the closure
-                        nearerPoint += pointInsideCluster(graph.objects, [(i,j), (j,o), (o,i)], graph.objects[s][0].value, graph.objects[s][1].value)
-                    if val > 0 and nearerPoint == 0: outer2 = 1
-        if outer + outer2 == 1:      # if outer is 0 or more than 1 than it is not an outer edge
-            graph[i,j][VALUE] = outerEdgeValue
-            closureDict[graph[i,j][CLUSTER]].append((i,j))
-        else:
-            graph[i,j][VALUE] = innerEdgeValue
-    return closureDict
-
-# produce a dictionary with edges, clusters and vertices. clusters are enumerated from 1 up. Each cluster has a different value.
-# minimumValidValue - edges that have smaller value than this will be ignored and will represent boundary between different clusters
-def enumerateClusters(graph, minimumValidValue):    
-    clusterIndex = 1
-    verticesDict = {}
-    clusterDict = {}
-    edgesDict = {}
-    for (i,j) in graph.getEdges(): graph[i,j][CLUSTER] = -1   # initialize class cluster
-    for i in range(graph.nVertices): clusterDict[i] = -1
-    
-    for i in range(graph.nVertices):
-        if graph.getNeighbours(i) == [] or clusterDict[i] != -1: continue
-        edgesDict[clusterIndex] = []
-        verticesDict[clusterIndex] = []
-        verticesToSearch = [i]
-        while verticesToSearch != []:
-            current = verticesToSearch.pop()
-            if clusterDict[current] != -1: continue
-            clusterDict[current] = clusterIndex
-            verticesDict[clusterIndex].append(current)
-            for n in graph.getNeighbours(current):
-                if graph[current,n][VALUE] < minimumValidValue: continue
-                if clusterDict[n] == -1:
-                    verticesToSearch.append(n)
-                    edgesDict[clusterIndex].append((n, current))
-                    graph[current, n][CLUSTER] = clusterIndex
-        clusterIndex += 1
-    return (edgesDict, clusterDict, verticesDict, clusterIndex-1)
-
-# for edges that have too small number of vertices set edge value to insignificantEdgeValue
-# for edges that fall apart because of the distance between points set value to removedEdgeValue
-def computeAlphaShapes(graph, edgesDict, alphaShapesValue, insignificantEdgeValue, removedEdgeValue):
-    for key in edgesDict.keys():
-        edges = edgesDict[key]
-        if len(edges) < 5:
-            for (i,j) in edges: graph[i,j][VALUE] = insignificantEdgeValue
-            continue
-
-        # remove edges that are of lenghts average + alphaShapesValue * standard deviation        
-        lengths = [graph[i,j][DISTANCE] for (i,j) in edges]
-        ave = sum(lengths) / len(lengths)
-        std = sqrt(sum([(x-ave)*(x-ave) for x in lengths])/len(lengths))
-        allowedDistance = ave + alphaShapesValue * std
-        for index in range(len(lengths)):
-            if lengths[index] > allowedDistance: graph[edges[index][0], edges[index][1]][VALUE] = removedEdgeValue
-        
-
-# alphashapes removed some edges. if after clustering two poins of the edge still belong to the same cluster, restore the deleted edges
-def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue, deleteValue):
-    for (i,j) in graph.getEdges():
-        if graph[i,j][VALUE] == deletedEdgeValue:
-            if clusterDict[i] == clusterDict[j]:           # points still belong to the same cluster. restore the values
-                graph[i,j][VALUE] = repairValue            # restore the value of the edge
-                graph[i,j][CLUSTER] = clusterDict[i]       # reset the edge value
-                edgesDict[clusterDict[i]].append((i,j))    # re-add the edge to the list of edges
-            else:       # points belong to a different clusters. delete the values
-                if deleteValue == None: graph[i,j] = None
-                else:                   graph[i,j][VALUE] = deleteValue
-        
-
-# compute the area of the polygons that are not necessarily convex
-# can be used to measure how good one cluster is. Currently is is not used
-def computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, outerEdgeValue):
-    areaDict = {}
-    
-    for key in closureDict.keys():
-        # first check if the closure is really a closure, by checking if it is connected into a circle
-        # if it is not, remove this closure from all dictionaries
-        vertices = [i for (i,j) in closureDict[key]] + [j for (i,j) in closureDict[key]]
-        vertices.sort()
-        valid = 1
-        if len(vertices) % 2 != 0: valid = 0
-        else:
-            for i in range(len(vertices)/2):
-                if vertices[2*i] != vertices[2*i+1]: valid = 0; break
-        if not valid:
-            print "found and ignored an invalid group", graph.objects.domain[0].name, graph.objects.domain[1].name, closureDict[key]
-            areaDict[key] = 0
-            continue
-
-        # then compute its area size        
-        currArea = 0.0
-        edges = closureDict[key] # select outer edges
-        coveredEdges = []
-        while len(coveredEdges) < len(edges):
-            for (e1, e2) in edges:
-                if (e1, e2) not in coveredEdges and (e2, e1) not in coveredEdges: break
-            polygons = computePolygons(graph, (e1, e2), outerEdgeValue)
-            for poly in polygons:
-                currArea += computeAreaOfPolygon(graph, poly)       # TO DO: currently this is incorrect. we should first check if the polygon poly lies inside one of the other polygons. if true, than the area should be subtracted
-                for i in range(len(poly)-2): coveredEdges.append((poly[i], poly[i+1]))
-                coveredEdges.append((poly[0], poly[-1]))
-        areaDict[key] = currArea
-    return areaDict
-
-# used when computing area of polygon
-# for a given graph and starting edge return a set of polygons that represent the boundaries. in the simples case there will be only one polygon.
-# However there can be also subpolygons and connected polygons
-# this method is unable to guaranty correct computation of polygons in case there is an ambiguity - such as in case of 3 connected triangles where each shares two vertices with the other two triangles.
-def computePolygons(graph, startingEdge, outerEdgeValue):
-    waitingEdges = [startingEdge]
-    takenEdges = []
-    polygons = []
-    while waitingEdges != []:
-        (start, end) = waitingEdges.pop()
-        if (start, end) in takenEdges or (end,start) in takenEdges: continue
-        subpath = [start]
-        while end != subpath[0]:
-            neighbors = graph.getNeighbours(end)
-            outerEdges = []
-            for n in neighbors:
-                if graph[end, n][VALUE] == outerEdgeValue and n != start and (n, end) not in takenEdges and (end, n) not in takenEdges:
-                    outerEdges.append(n)
-            if end in subpath:
-                i = subpath.index(end)
-                polygons.append(subpath[i:])
-                subpath = subpath[:i]
-            if outerEdges == []:
-                print "there is a bug in computePolygons function", graph.objects.domain, startingEdge, end, neighbors
-                break
-            subpath.append(end)
-            takenEdges.append((start, end))
-            start = end; end = outerEdges[0]
-            outerEdges.remove(end)
-            if len(outerEdges) > 0:
-                for e in outerEdges:
-                    if (start, e) not in waitingEdges and (e, start) not in waitingEdges: waitingEdges.append((start, e))
-        takenEdges.append((subpath[-1], subpath[0]))
-        polygons.append(subpath)
-    return polygons
-
-# fast computation of the area of the polygon
-# formula can be found at http://en.wikipedia.org/wiki/Polygon
-def computeAreaOfPolygon(graph, polygon):
-    polygon = polygon + [polygon[0]]
-    tempArea = 0.0
-    for i in range(len(polygon)-1):
-        tempArea += graph.objects[polygon[i]][0]*graph.objects[polygon[i+1]][1] - graph.objects[polygon[i+1]][0]*graph.objects[polygon[i]][1]
-    return abs(tempArea)
-
-# does the point lie inside or on the edge of a cluster described with edges in closure
-# algorithm from computational geometry in c (Jure Zabkar)
-def pointInsideCluster(data, closure, xTest, yTest):
-    # test if the point is the same as one of the points in the closure
-    for (p1, p2) in closure:
-        if data[p1][0] == xTest and data[p1][1] == yTest: return 1
-        if data[p2][0] == xTest and data[p2][1] == yTest: return 1
-        
-    count = 0
-    for (p2, p3) in closure:
-        x1 = data[p2][0] - xTest; y1 = data[p2][1] - yTest
-        x2 = data[p3][0] - xTest; y2 = data[p3][1] - yTest
-        if (y1 > 0 and y2 <= 0) or (y2 > 0 and y1 <= 0):
-            x = (x1 * y2 - x2 * y1) / (y2 - y1)
-            if x > 0: count += 1
-    return count % 2 
-        
-
-# compute average distance between points inside each cluster
-def computeAverageDistance(graph, edgesDict):
-    ave_distDict = {}
-    for key in edgesDict.keys():
-        distArray = []
-        for (v1,v2) in edgesDict[key]:
-            d = sqrt((graph.objects[v1][0]-graph.objects[v2][0])*(graph.objects[v1][0]-graph.objects[v2][0]) + (graph.objects[v1][1]-graph.objects[v2][1])*(graph.objects[v1][1]-graph.objects[v2][1]))
-            distArray.append(d)
-        ave_distDict[key] = sum(distArray) / float(max(1, len(distArray)))
-    return ave_distDict
-
-
-# ############################################################################################################################################
-# #############################      FUNCTIONS FOR COMPUTING ENLARGED CLOSURE     ############################################################
-# ############################################################################################################################################
-
-# return a list of vertices that are connected to vertex and have an edge value value
-def getNeighboursWithValue(graph, vertex, value):
-    ret = []
-    for n in graph.getNeighbours(vertex):
-        if graph[vertex, n][VALUE] == value: ret.append(n)
-    return ret
-
-# for neighbors of v find which left and right vertices will represent the boundary of the enlarged closure
-# this is only called when a vertex has more than 2 edges that we know that lie on the closure. in this case we have to figure out which pairs of vertices in ns belong together
-def getNextPoints(graph, v, ns, closure):
-    ret = []
-    status = {}
-    while ns != []:
-        e = ns.pop()
-        x_e = 0.999*graph.objects[v][0] + 0.001*graph.objects[e][0]; y_e = 0.999*graph.objects[v][1] + 0.001*graph.objects[e][1]
-        for e2 in ns:
-            x_e2 = 0.999*graph.objects[v][0] + 0.001*graph.objects[e2][0]; y_e2 = 0.999*graph.objects[v][1] + 0.001*graph.objects[e2][1]
-            intersect = 0
-            for test in ns:
-                if test == e2: continue
-                intersect += lineIntersect((x_e, y_e), (x_e2, y_e2), (graph.objects[v][0], graph.objects[v][1]), (graph.objects[test][0], graph.objects[test][1]))
-            status[(e,e2)] = intersect
-
-    for (e,e2) in status.keys():
-        if not status.has_key((e,e2)): continue
-        if status[(e,e2)] == 0:
-            ret.append((e,e2))
-            for (f, f2) in status.keys():
-                if f == e or f == e2 or f2 == e or f2 == e2:
-                    status.pop((f,f2))
-
-    for (e,e2) in status.keys():
-        if not status.has_key((e,e2)): continue
-        ret.append((e,e2))
-        for (f, f2) in status.keys():
-            if f == e or f == e2 or f2 == e or f2 == e2:
-                status.pop((f,f2))
-    return ret
-
-# add val to the dictionary under the key key
-def addPointsToDict(dictionary, key, val):
-    if dictionary.has_key(key): dictionary[key] = dictionary[key] + [val]
-    else: dictionary[key] = [val]
-
-# return a list that possibly contains multiple lists. in each list there are vertices sorted in the way as they are ordered on the closure
-def getSortedClosurePoints(graph, closure):
-    dicts = []
-    tempDicts = []
-    tempD = {}
-
-    pointDict = {}
-    points = union([i for (i,j) in closure], [j for (i,j) in closure])
-    for p in points:
-        ns = getNeighboursWithValue(graph, p, 2)
-        if len(ns) > 2:
-            split = getNextPoints(graph, p, ns, closure)       # splited is made of [(l1, r1), (l2, r2), ...]
-        else: split = [(ns[0], ns[1])]
-        pointDict[p] = split
-
-    lists = []
-    #print pointDict
-    while pointDict.keys() != []:
-        for start in pointDict.keys():
-            if len(pointDict[start]) == 1:
-                currList = [start, pointDict[start][0][0]]
-                last = pointDict[start][0][1]
-                pointDict.pop(start)
-                break
-        lastAdded = currList[-1]
-        while lastAdded != start:
-            for (l,r) in pointDict[lastAdded]:
-                if l == currList[-2]:
-                    currList.append(r)
-                    pointDict[lastAdded].remove((l,r))
-                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
-                    lastAdded = r
-                    break
-                elif r == currList[-2]:
-                    currList.append(l)
-                    pointDict[lastAdded].remove((l,r))
-                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
-                    lastAdded = l
-                    break
-        lists.append(currList[:-1])
-    return lists
-
-# we are trying to blown a cluster. we therefore compute the new position of point point that lies outside the current cluster
-def getEnlargedPointPosition(graph, point, left, right, dist, closure):
-    y_diff1 = graph.objects[point][0] - graph.objects[left][0]
-    x_diff1 = - (graph.objects[point][1] - graph.objects[left][1])
-    d = sqrt(x_diff1*x_diff1 + y_diff1*y_diff1)
-    x_diff1 /= d; y_diff1 /= d
-
-    y_diff2 = graph.objects[right][0] - graph.objects[point][0]
-    x_diff2 = - (graph.objects[right][1] - graph.objects[point][1])
-    d = sqrt(x_diff2*x_diff2 + y_diff2*y_diff2)
-    x_diff2 /= d; y_diff2 /= d
-
-    x_diff = x_diff1 + x_diff2; y_diff = y_diff1 + y_diff2
-    d = sqrt(x_diff*x_diff + y_diff*y_diff)
-    x_diff /= d; y_diff /= d
-    x_diff *= dist; y_diff *= dist
-
-    x = graph.objects[point][0] + x_diff*0.001
-    y = graph.objects[point][1] + y_diff*0.001
-    if pointInsideCluster(graph.objects, closure, 0.99*graph.objects[left][0] + 0.01*x, 0.99*graph.objects[left][1] + 0.01*y):
-        return (graph.objects[point][0] - x_diff, graph.objects[point][1] - y_diff)
-    else:
-        return (graph.objects[point][0] + x_diff, graph.objects[point][1] + y_diff)
-
-
-# this function computes a blown cluster. The cluster is enlarged for a half of average distance between edges inside the cluster
-def enlargeClosure(graph, closure, aveDist):
-    halfAveDist = aveDist / 2.0
-    sortedClosurePoints = getSortedClosurePoints(graph, closure)
-    merged = []
-    for group in sortedClosurePoints:
-        currMerged = []
-        for i in range(len(group)):
-            p = group[i]
-            l = group[i-1]; r = group[(i+1)%len(group)]
-            x, y = getEnlargedPointPosition(graph, p, l, r, halfAveDist, closure)
-            currMerged.append((x,y))
-        merged.append(currMerged)
-    return merged
-
-# ############################################################################################################################################
-# ############################################################################################################################################
 
 class ClusterOptimization(OWBaseWidget):
     EXACT_NUMBER_OF_ATTRS = 0
@@ -748,22 +246,24 @@ class ClusterOptimization(OWBaseWidget):
         self.controlArea.activate()
 
         self.connect(self.classifierNameEdit, SIGNAL("textChanged(const QString &)"), self.changeLearnerName)
-        if self.parentWidget and self.parentName == "Radviz" :
-            self.parentWidget.learnersArray[1] = clusterLearner(self, self.parentWidget)
-        else:
-            self.clusterLearner = clusterLearner(self, self.parentWidget)
-            if self.parentWidget: self.parentWidget.send("Cluster learner", self.clusterLearner)
-
-
+        if self.parentWidget:
+            if hasattr(self.parentWidget, "learnersArray"):
+                self.parentWidget.learnersArray[1] = clusterLearner(self, self.parentWidget)
+            else:
+                self.clusterLearner = clusterLearner(self, self.parentWidget)
+                self.parentWidget.send("Cluster learner", self.clusterLearner)
+                
+                
     # ##############################################################
     # EVENTS
     # ##############################################################
     # when text of vizrank or cluster learners change update their name
     def changeLearnerName(self, text):
-        if self.parentWidget and self.parentName == "Radviz" and self.parentWidget.learnersArray[1]:
-            self.parentWidget.learnersArray[1].name = self.parentWidget.clusterClassifierName
-        elif self.parentWidget:
-            self.clusterLearner.name = self.parentWidget.clusterClassifierName
+        if self.parentWidget:
+            if hasattr(self.parentWidget, "learnersArray"):
+                self.parentWidget.learnersArray[1].name = self.parentWidget.clusterClassifierName
+            else:
+                self.clusterLearner.name = self.parentWidget.clusterClassifierName
         else: print "there is no instance of Cluster Learner"
 
     def updateGraph(self):
@@ -1643,6 +1143,508 @@ class clusterLearner(orange.Learner):
         self.firstTime = 0
         return classifier
         
+
+# ############################################################################################################################################
+# ############################################################################################################################################
+
+
+# compute union of two lists
+def union(list1, list2):
+    union_dict = {}
+    for e in list1: union_dict[e] = 1
+    for e in list2: union_dict[e] = 1
+    return union_dict.keys()
+
+# compute intersection of two lists
+def intersection(list1, list2):
+    int_dict = {}
+    list1_dict = {}
+    for e in list1:
+        list1_dict[e] = 1
+    for e in list2:
+        if list1_dict.has_key(e): int_dict[e] = 1
+    return int_dict.keys()
+    
+# on which side of the line through (x1,y1), (x2,y2) lies the point (xTest, yTest)
+def getPosition(x1, y1, x2, y2, xTest, yTest):
+    if x1 == x2:
+        if xTest > x1: return 1
+        else: return -1
+    k = (y2-y1)/float(x2-x1)
+    c = y1 - k*x1
+    if k*xTest - yTest > -c : return 1
+    else: return -1
+
+# compute distances between all connected vertices and store it in the DISTANCE field
+def computeDistances(graph):
+    for (i,j) in graph.getEdges():
+        xdiff = graph.objects[i][0] - graph.objects[j][0]
+        ydiff = graph.objects[i][1] - graph.objects[j][1]
+        graph[i,j][DISTANCE] = sqrt(xdiff*xdiff + ydiff*ydiff)
+
+
+# Slightly deficient function to determine if the two lines p1, p2 and p2, p3 turn in counter clockwise direction
+def ccw(p1, p2, p3):
+    dx1 = p2[0] - p1[0]; dy1 = p2[1] - p1[1]
+    dx2 = p3[0] - p2[0]; dy2 = p3[1] - p2[1]
+    if(dy1*dx2 < dy2*dx1): return 1
+    else: return 0
+
+
+# do lines with (p1,p2) and (p3,p4) intersect?
+def lineIntersect(p1, p2, p3, p4):
+    return ((ccw(p1, p2, p3) != ccw(p1, p2, p4)) and (ccw(p3, p4, p1) != ccw(p3, p4, p2)))
+
+# compute distance between points (x1,y1), (x2, y2)
+def computeDistance(x1, y1, x2, y2):
+    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
+
+# remove edges to different class values from the graph. set VALUE field of such edges to newVal
+def removeEdgesToDifferentClasses(graph, newVal):
+    if newVal == None:
+        for (i,j) in graph.getEdges():
+            if graph.objects[i].getclass() != graph.objects[j].getclass(): graph[i,j] = None
+    else:
+        for (i,j) in graph.getEdges():
+            if graph.objects[i].getclass() != graph.objects[j].getclass(): graph[i,j][VALUE] = newVal
+
+
+# for a given dictionary that contains edges on the closure, return a dictionary with these points as keys and a list of points with a different class value as the value
+# this is used when we have to compute the nearest points that belong to a different class
+def getPointsWithDifferentClassValue(graph, closureDict):
+    differentClassPoinsDict = {}
+    for key in closureDict:
+        vertices = union([i for (i,j) in closureDict[key]], [j for (i,j) in closureDict[key]])
+        points = []
+        for v in vertices:
+            for n in graph.getNeighbours(v):
+                if graph.objects[v].getclass() == graph.objects[n].getclass() or n in points: continue
+                points.append(n)
+        differentClassPoinsDict[key] = points
+    return differentClassPoinsDict
+
+
+# remove edges, that do not connect to triangles
+def removeSingleLines(graph, edgesDict, clusterDict, verticesDict, minimumValidIndex, newVal):
+    for (i,j) in graph.getEdges():
+        if graph[i,j][VALUE] < minimumValidIndex: continue
+        merged = graph.getNeighbours(i) + graph.getNeighbours(j)
+        merged.sort()
+        k=0; found = 0;
+        for k in range(len(merged)-1):
+            if merged[k] == merged[k+1] and graph[i, merged[k]][VALUE] >= minimumValidIndex and graph[j, merged[k]][VALUE] >= minimumValidIndex:
+                found = 1; break
+        if not found:
+            if newVal == None: graph[i,j] = None            # delete the edge
+            else:
+                graph[i,j][VALUE] = newVal   # set the edge value
+                graph[i,j][CLUSTER] = -1
+            # remove the edge from the edgesDict
+            if edgesDict and clusterDict and verticesDict:
+                index = max(clusterDict[j], clusterDict[i])
+                if index == -1: continue
+                if (i,j) in edgesDict[index]: edgesDict[index].remove((i,j))
+                elif (j,i) in edgesDict[index]: edgesDict[index].remove((j,i))
+                if clusterDict[i] != -1: verticesDict[clusterDict[i]].remove(i)
+                if clusterDict[j] != -1: verticesDict[clusterDict[j]].remove(j)
+                clusterDict[j] = clusterDict[i] = -1
+
+# remove single lines and triangles that are now treated as their own clusters because they are probably insignificant
+def removeSingleTrianglesAndLines(graph, edgesDict, clusterDict, verticesDict, newVal):
+    for key in edgesDict.keys():
+        if len(verticesDict[key]) < 4:
+            for (i,j) in edgesDict[key]:
+                graph[i,j][VALUE] = newVal
+                graph[i,j][CLUSTER] = -1
+                clusterDict[i] = -1; clusterDict[j] = -1;
+            verticesDict.pop(key)
+            edgesDict.pop(key)
+
+# make clusters smaller by removing points on the hull that lie closer to points in opposite class
+def removeDistantPointsFromClusters(graph, edgesDict, clusterDict, verticesDict, closureDict, newVal):
+    for key in closureDict.keys():
+        edges = closureDict[key]
+        vertices = union([i for (i,j) in edges], [j for (i,j) in edges])
+        
+        for vertex in vertices:
+            correctClass = int(graph.objects[vertex].getclass())
+            correct = []; incorrect = []
+            for n in graph.getNeighbours(vertex):
+                if int(graph.objects[n].getclass()) == correctClass: correct.append(graph[vertex,n][DISTANCE])
+                else: incorrect.append(graph[vertex,n][DISTANCE])
+
+            # if the distance to the correct class value is greater than to the incorrect class -> remove the point from the
+            if correct == [] or (len(incorrect) > 0 and min(correct) > min(incorrect)):     
+                # if closure will degenerate into a line -> remove the remaining vertices
+                correctClassNeighbors = []
+                for n in graph.getNeighbours(vertex):
+                    if int(graph.objects[n].getclass()) == correctClass and graph[vertex,n][CLUSTER] != -1: correctClassNeighbors.append(n)
+                for i in correctClassNeighbors:
+                    for j in correctClassNeighbors:
+                        if i==j: continue
+                        if (i,j) in edges:
+                            graph[i,j][CLUSTER] = -1
+                            if newVal == None:  graph[i,j] = None
+                            else:               graph[i,j][VALUE] = newVal
+                            if i in verticesDict[key]: verticesDict[key].remove(i)
+                            if j in verticesDict[key]: verticesDict[key].remove(j)
+                            clusterDict[i] = -1; clusterDict[j] = -1
+                            if (i,j) in edgesDict[key]: edgesDict[key].remove((i,j))
+                            else: edgesDict[key].remove((j,i))
+                            edges.remove((i,j))
+
+                # remove the vertex from the closure
+                for n in graph.getNeighbours(vertex):
+                    if int(graph.objects[n].getclass()) != correctClass or graph[vertex,n][CLUSTER] == -1: continue 
+                    if newVal == None:  graph[vertex,n] = None
+                    else:               graph[vertex,n][VALUE] = newVal
+                    if (n, vertex) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((n,vertex))
+                    elif (vertex, n) in edgesDict[graph[vertex,n][CLUSTER]]: edgesDict[graph[vertex,n][CLUSTER]].remove((vertex, n))
+                    graph[vertex,n][CLUSTER] = -1
+                if clusterDict[vertex] != -1: verticesDict[key].remove(vertex)
+                #verticesDict[clusterDict[vertex]].remove(vertex)
+                clusterDict[vertex] = -1
+
+
+# mark edges on the closure with the outerEdgeValue and edges inside a cluster with a innerEdgeValue
+# algorithm: for each edge, find all triangles that contain this edge. if the number of triangles is 1, then this edge is on the closure.
+# if there is a larger number of triangles, then they must all lie on the same side of this edge, otherwise this edge is not on the closure
+def computeClosure(graph, edgesDict, minimumValidIndex, innerEdgeValue, outerEdgeValue, differentClassValue, tooDistantValue):
+    closureDict = {}
+    for key in edgesDict.keys(): closureDict[key] = []  # create dictionary where each cluster will contain all edges that lie on the closure
+    for (i,j) in graph.getEdges():
+        if graph[i,j][VALUE] < minimumValidIndex or graph[i,j][CLUSTER] == -1: continue
+        merged = intersection(graph.getNeighbours(i), graph.getNeighbours(j))
+        sameClassPoints = []; otherClassPoints = []
+        for v in merged:
+            if graph[i, v][VALUE] >= minimumValidIndex and graph[j, v][VALUE] >= minimumValidIndex: sameClassPoints.append(v)
+            elif graph[i, v][VALUE] == graph[j, v][VALUE] == differentClassValue: otherClassPoints.append(v)
+            elif graph[i,v][VALUE] == tooDistantValue or graph[j,v][VALUE] == tooDistantValue:
+                for n in graph.getNeighbours(v):
+                    if graph[v,n][VALUE] == differentClassValue and n not in otherClassPoints: otherClassPoints.append(n)
+        outer = 1; outer2 = 0
+        if sameClassPoints == []: outer = 0
+        elif len(sameClassPoints) > 0:
+            dir = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[sameClassPoints[0]][0].value, graph.objects[sameClassPoints[0]][1].value)
+            for val in sameClassPoints[1:]:
+                dir2 = getPosition(graph.objects[i][0].value, graph.objects[i][1].value, graph.objects[j][0].value, graph.objects[j][1].value, graph.objects[val][0].value, graph.objects[val][1].value)
+                if dir != dir2: outer = 0; break
+            if otherClassPoints != []:   # test if a point from a different class is lying inside one of the triangles
+                for o in otherClassPoints:
+                    val = 0; nearerPoint = 0
+                    for s in sameClassPoints:
+                        # check if o is inside (i,j,s) triangle
+                        val += pointInsideCluster (graph.objects, [(i,j), (j,s), (s,i)], graph.objects[o][0].value, graph.objects[o][1].value)
+                        # check if another point from sameClassPoints is inside (i,j,o) triangle - if it is, then (i,j) definitely isn't on the closure
+                        nearerPoint += pointInsideCluster(graph.objects, [(i,j), (j,o), (o,i)], graph.objects[s][0].value, graph.objects[s][1].value)
+                    if val > 0 and nearerPoint == 0: outer2 = 1
+        if outer + outer2 == 1:      # if outer is 0 or more than 1 than it is not an outer edge
+            graph[i,j][VALUE] = outerEdgeValue
+            closureDict[graph[i,j][CLUSTER]].append((i,j))
+        else:
+            graph[i,j][VALUE] = innerEdgeValue
+    return closureDict
+
+# produce a dictionary with edges, clusters and vertices. clusters are enumerated from 1 up. Each cluster has a different value.
+# minimumValidValue - edges that have smaller value than this will be ignored and will represent boundary between different clusters
+def enumerateClusters(graph, minimumValidValue):    
+    clusterIndex = 1
+    verticesDict = {}
+    clusterDict = {}
+    edgesDict = {}
+    for (i,j) in graph.getEdges(): graph[i,j][CLUSTER] = -1   # initialize class cluster
+    for i in range(graph.nVertices): clusterDict[i] = -1
+    
+    for i in range(graph.nVertices):
+        if graph.getNeighbours(i) == [] or clusterDict[i] != -1: continue
+        edgesDict[clusterIndex] = []
+        verticesDict[clusterIndex] = []
+        verticesToSearch = [i]
+        while verticesToSearch != []:
+            current = verticesToSearch.pop()
+            if clusterDict[current] != -1: continue
+            clusterDict[current] = clusterIndex
+            verticesDict[clusterIndex].append(current)
+            for n in graph.getNeighbours(current):
+                if graph[current,n][VALUE] < minimumValidValue: continue
+                if clusterDict[n] == -1:
+                    verticesToSearch.append(n)
+                    edgesDict[clusterIndex].append((n, current))
+                    graph[current, n][CLUSTER] = clusterIndex
+        clusterIndex += 1
+    return (edgesDict, clusterDict, verticesDict, clusterIndex-1)
+
+# for edges that have too small number of vertices set edge value to insignificantEdgeValue
+# for edges that fall apart because of the distance between points set value to removedEdgeValue
+def computeAlphaShapes(graph, edgesDict, alphaShapesValue, insignificantEdgeValue, removedEdgeValue):
+    for key in edgesDict.keys():
+        edges = edgesDict[key]
+        if len(edges) < 5:
+            for (i,j) in edges: graph[i,j][VALUE] = insignificantEdgeValue
+            continue
+
+        # remove edges that are of lenghts average + alphaShapesValue * standard deviation        
+        lengths = [graph[i,j][DISTANCE] for (i,j) in edges]
+        ave = sum(lengths) / len(lengths)
+        std = sqrt(sum([(x-ave)*(x-ave) for x in lengths])/len(lengths))
+        allowedDistance = ave + alphaShapesValue * std
+        for index in range(len(lengths)):
+            if lengths[index] > allowedDistance: graph[edges[index][0], edges[index][1]][VALUE] = removedEdgeValue
+        
+
+# alphashapes removed some edges. if after clustering two poins of the edge still belong to the same cluster, restore the deleted edges
+def fixDeletedEdges(graph, edgesDict, clusterDict, deletedEdgeValue, repairValue, deleteValue):
+    for (i,j) in graph.getEdges():
+        if graph[i,j][VALUE] == deletedEdgeValue:
+            if clusterDict[i] == clusterDict[j]:           # points still belong to the same cluster. restore the values
+                graph[i,j][VALUE] = repairValue            # restore the value of the edge
+                graph[i,j][CLUSTER] = clusterDict[i]       # reset the edge value
+                edgesDict[clusterDict[i]].append((i,j))    # re-add the edge to the list of edges
+            else:       # points belong to a different clusters. delete the values
+                if deleteValue == None: graph[i,j] = None
+                else:                   graph[i,j][VALUE] = deleteValue
+        
+
+# compute the area of the polygons that are not necessarily convex
+# can be used to measure how good one cluster is. Currently is is not used
+def computeAreas(graph, edgesDict, clusterDict, verticesDict, closureDict, outerEdgeValue):
+    areaDict = {}
+    
+    for key in closureDict.keys():
+        # first check if the closure is really a closure, by checking if it is connected into a circle
+        # if it is not, remove this closure from all dictionaries
+        vertices = [i for (i,j) in closureDict[key]] + [j for (i,j) in closureDict[key]]
+        vertices.sort()
+        valid = 1
+        if len(vertices) % 2 != 0: valid = 0
+        else:
+            for i in range(len(vertices)/2):
+                if vertices[2*i] != vertices[2*i+1]: valid = 0; break
+        if not valid:
+            print "found and ignored an invalid group", graph.objects.domain[0].name, graph.objects.domain[1].name, closureDict[key]
+            areaDict[key] = 0
+            continue
+
+        # then compute its area size        
+        currArea = 0.0
+        edges = closureDict[key] # select outer edges
+        coveredEdges = []
+        while len(coveredEdges) < len(edges):
+            for (e1, e2) in edges:
+                if (e1, e2) not in coveredEdges and (e2, e1) not in coveredEdges: break
+            polygons = computePolygons(graph, (e1, e2), outerEdgeValue)
+            for poly in polygons:
+                currArea += computeAreaOfPolygon(graph, poly)       # TO DO: currently this is incorrect. we should first check if the polygon poly lies inside one of the other polygons. if true, than the area should be subtracted
+                for i in range(len(poly)-2): coveredEdges.append((poly[i], poly[i+1]))
+                coveredEdges.append((poly[0], poly[-1]))
+        areaDict[key] = currArea
+    return areaDict
+
+# used when computing area of polygon
+# for a given graph and starting edge return a set of polygons that represent the boundaries. in the simples case there will be only one polygon.
+# However there can be also subpolygons and connected polygons
+# this method is unable to guaranty correct computation of polygons in case there is an ambiguity - such as in case of 3 connected triangles where each shares two vertices with the other two triangles.
+def computePolygons(graph, startingEdge, outerEdgeValue):
+    waitingEdges = [startingEdge]
+    takenEdges = []
+    polygons = []
+    while waitingEdges != []:
+        (start, end) = waitingEdges.pop()
+        if (start, end) in takenEdges or (end,start) in takenEdges: continue
+        subpath = [start]
+        while end != subpath[0]:
+            neighbors = graph.getNeighbours(end)
+            outerEdges = []
+            for n in neighbors:
+                if graph[end, n][VALUE] == outerEdgeValue and n != start and (n, end) not in takenEdges and (end, n) not in takenEdges:
+                    outerEdges.append(n)
+            if end in subpath:
+                i = subpath.index(end)
+                polygons.append(subpath[i:])
+                subpath = subpath[:i]
+            if outerEdges == []:
+                print "there is a bug in computePolygons function", graph.objects.domain, startingEdge, end, neighbors
+                break
+            subpath.append(end)
+            takenEdges.append((start, end))
+            start = end; end = outerEdges[0]
+            outerEdges.remove(end)
+            if len(outerEdges) > 0:
+                for e in outerEdges:
+                    if (start, e) not in waitingEdges and (e, start) not in waitingEdges: waitingEdges.append((start, e))
+        takenEdges.append((subpath[-1], subpath[0]))
+        polygons.append(subpath)
+    return polygons
+
+# fast computation of the area of the polygon
+# formula can be found at http://en.wikipedia.org/wiki/Polygon
+def computeAreaOfPolygon(graph, polygon):
+    polygon = polygon + [polygon[0]]
+    tempArea = 0.0
+    for i in range(len(polygon)-1):
+        tempArea += graph.objects[polygon[i]][0]*graph.objects[polygon[i+1]][1] - graph.objects[polygon[i+1]][0]*graph.objects[polygon[i]][1]
+    return abs(tempArea)
+
+# does the point lie inside or on the edge of a cluster described with edges in closure
+# algorithm from computational geometry in c (Jure Zabkar)
+def pointInsideCluster(data, closure, xTest, yTest):
+    # test if the point is the same as one of the points in the closure
+    for (p1, p2) in closure:
+        if data[p1][0] == xTest and data[p1][1] == yTest: return 1
+        if data[p2][0] == xTest and data[p2][1] == yTest: return 1
+        
+    count = 0
+    for (p2, p3) in closure:
+        x1 = data[p2][0] - xTest; y1 = data[p2][1] - yTest
+        x2 = data[p3][0] - xTest; y2 = data[p3][1] - yTest
+        if (y1 > 0 and y2 <= 0) or (y2 > 0 and y1 <= 0):
+            x = (x1 * y2 - x2 * y1) / (y2 - y1)
+            if x > 0: count += 1
+    return count % 2 
+        
+
+# compute average distance between points inside each cluster
+def computeAverageDistance(graph, edgesDict):
+    ave_distDict = {}
+    for key in edgesDict.keys():
+        distArray = []
+        for (v1,v2) in edgesDict[key]:
+            d = sqrt((graph.objects[v1][0]-graph.objects[v2][0])*(graph.objects[v1][0]-graph.objects[v2][0]) + (graph.objects[v1][1]-graph.objects[v2][1])*(graph.objects[v1][1]-graph.objects[v2][1]))
+            distArray.append(d)
+        ave_distDict[key] = sum(distArray) / float(max(1, len(distArray)))
+    return ave_distDict
+
+
+# ############################################################################################################################################
+# #############################      FUNCTIONS FOR COMPUTING ENLARGED CLOSURE     ############################################################
+# ############################################################################################################################################
+
+# return a list of vertices that are connected to vertex and have an edge value value
+def getNeighboursWithValue(graph, vertex, value):
+    ret = []
+    for n in graph.getNeighbours(vertex):
+        if graph[vertex, n][VALUE] == value: ret.append(n)
+    return ret
+
+# for neighbors of v find which left and right vertices will represent the boundary of the enlarged closure
+# this is only called when a vertex has more than 2 edges that we know that lie on the closure. in this case we have to figure out which pairs of vertices in ns belong together
+def getNextPoints(graph, v, ns, closure):
+    ret = []
+    status = {}
+    while ns != []:
+        e = ns.pop()
+        x_e = 0.999*graph.objects[v][0] + 0.001*graph.objects[e][0]; y_e = 0.999*graph.objects[v][1] + 0.001*graph.objects[e][1]
+        for e2 in ns:
+            x_e2 = 0.999*graph.objects[v][0] + 0.001*graph.objects[e2][0]; y_e2 = 0.999*graph.objects[v][1] + 0.001*graph.objects[e2][1]
+            intersect = 0
+            for test in ns:
+                if test == e2: continue
+                intersect += lineIntersect((x_e, y_e), (x_e2, y_e2), (graph.objects[v][0], graph.objects[v][1]), (graph.objects[test][0], graph.objects[test][1]))
+            status[(e,e2)] = intersect
+
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        if status[(e,e2)] == 0:
+            ret.append((e,e2))
+            for (f, f2) in status.keys():
+                if f == e or f == e2 or f2 == e or f2 == e2:
+                    status.pop((f,f2))
+
+    for (e,e2) in status.keys():
+        if not status.has_key((e,e2)): continue
+        ret.append((e,e2))
+        for (f, f2) in status.keys():
+            if f == e or f == e2 or f2 == e or f2 == e2:
+                status.pop((f,f2))
+    return ret
+
+# add val to the dictionary under the key key
+def addPointsToDict(dictionary, key, val):
+    if dictionary.has_key(key): dictionary[key] = dictionary[key] + [val]
+    else: dictionary[key] = [val]
+
+# return a list that possibly contains multiple lists. in each list there are vertices sorted in the way as they are ordered on the closure
+def getSortedClosurePoints(graph, closure):
+    dicts = []
+    tempDicts = []
+    tempD = {}
+
+    pointDict = {}
+    points = union([i for (i,j) in closure], [j for (i,j) in closure])
+    for p in points:
+        ns = getNeighboursWithValue(graph, p, 2)
+        if len(ns) > 2:
+            split = getNextPoints(graph, p, ns, closure)       # splited is made of [(l1, r1), (l2, r2), ...]
+        else: split = [(ns[0], ns[1])]
+        pointDict[p] = split
+
+    lists = []
+    #print pointDict
+    while pointDict.keys() != []:
+        for start in pointDict.keys():
+            if len(pointDict[start]) == 1:
+                currList = [start, pointDict[start][0][0]]
+                last = pointDict[start][0][1]
+                pointDict.pop(start)
+                break
+        lastAdded = currList[-1]
+        while lastAdded != start:
+            for (l,r) in pointDict[lastAdded]:
+                if l == currList[-2]:
+                    currList.append(r)
+                    pointDict[lastAdded].remove((l,r))
+                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
+                    lastAdded = r
+                    break
+                elif r == currList[-2]:
+                    currList.append(l)
+                    pointDict[lastAdded].remove((l,r))
+                    if pointDict[lastAdded] == []: pointDict.pop(lastAdded)
+                    lastAdded = l
+                    break
+        lists.append(currList[:-1])
+    return lists
+
+# we are trying to blown a cluster. we therefore compute the new position of point point that lies outside the current cluster
+def getEnlargedPointPosition(graph, point, left, right, dist, closure):
+    y_diff1 = graph.objects[point][0] - graph.objects[left][0]
+    x_diff1 = - (graph.objects[point][1] - graph.objects[left][1])
+    d = sqrt(x_diff1*x_diff1 + y_diff1*y_diff1)
+    x_diff1 /= d; y_diff1 /= d
+
+    y_diff2 = graph.objects[right][0] - graph.objects[point][0]
+    x_diff2 = - (graph.objects[right][1] - graph.objects[point][1])
+    d = sqrt(x_diff2*x_diff2 + y_diff2*y_diff2)
+    x_diff2 /= d; y_diff2 /= d
+
+    x_diff = x_diff1 + x_diff2; y_diff = y_diff1 + y_diff2
+    d = sqrt(x_diff*x_diff + y_diff*y_diff)
+    x_diff /= d; y_diff /= d
+    x_diff *= dist; y_diff *= dist
+
+    x = graph.objects[point][0] + x_diff*0.001
+    y = graph.objects[point][1] + y_diff*0.001
+    if pointInsideCluster(graph.objects, closure, 0.99*graph.objects[left][0] + 0.01*x, 0.99*graph.objects[left][1] + 0.01*y):
+        return (graph.objects[point][0] - x_diff, graph.objects[point][1] - y_diff)
+    else:
+        return (graph.objects[point][0] + x_diff, graph.objects[point][1] + y_diff)
+
+
+# this function computes a blown cluster. The cluster is enlarged for a half of average distance between edges inside the cluster
+def enlargeClosure(graph, closure, aveDist):
+    halfAveDist = aveDist / 2.0
+    sortedClosurePoints = getSortedClosurePoints(graph, closure)
+    merged = []
+    for group in sortedClosurePoints:
+        currMerged = []
+        for i in range(len(group)):
+            p = group[i]
+            l = group[i-1]; r = group[(i+1)%len(group)]
+            x, y = getEnlargedPointPosition(graph, p, l, r, halfAveDist, closure)
+            currMerged.append((x,y))
+        merged.append(currMerged)
+    return merged
+
 
 
 #test widget appearance
