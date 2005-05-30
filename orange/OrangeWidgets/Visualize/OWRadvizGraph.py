@@ -221,7 +221,7 @@ class OWRadvizGraph(OWVisGraph):
 
         dataSize = len(self.rawdata)
         validData = self.getValidList(indices)
-        transProjData = self.createProjectionAsNumericArray(indices, validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, useAnchorData = 1, removeMissingData = 0)
+        transProjData = self.createProjectionAsNumericArray(indices, validData, scaleFactor = self.scaleFactor, normalize = self.normalizeExamples, jitterSize = -1, useAnchorData = 1, removeMissingData = 0)
         projData = Numeric.transpose(transProjData)
         x_positions = projData[0]
         y_positions = projData[1]
@@ -644,8 +644,12 @@ class OWRadvizGraph(OWVisGraph):
 
         if not validData and removeMissingData: validData = self.getValidList(attrIndices)
 
-        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(self.noJitteringScaledData, attrIndices))
-        else:                 selectedData = Numeric.take(self.noJitteringScaledData, attrIndices)
+        # if jitterSize is set below zero we use scaledData that has already jittered data
+        if jitterSize < 0.0: data = self.scaledData
+        else:                data = self.noJitteringScaledData
+
+        if removeMissingData: selectedData = Numeric.compress(validData, Numeric.take(data, attrIndices))
+        else:                 selectedData = Numeric.take(data, attrIndices)
         
         if not classList:
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]

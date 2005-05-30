@@ -622,7 +622,7 @@ class PreferencesDlg(QDialog):
             self.channels[name] = str(self.editFullName.text()) + "::" + str(self.editPriority.currentText()) + "::" + str(self.editColor.currentText())
 
     def addNewSignal(self):
-        (Qstring,ok) = QInputDialog.getText("Add New Channel Name", "Enter new symbolic channel name")
+        (Qstring,ok) = QInputDialog.getText("Qt Add New Channel Name", "Enter new symbolic channel name")
         string = str(Qstring)
         if ok:
             self.editColor.setCurrentItem(0)
