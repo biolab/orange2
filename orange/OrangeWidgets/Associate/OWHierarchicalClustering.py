@@ -1,7 +1,7 @@
 """
 <name>Hierarchical Clustering</name>
 <description>Constructs a hierarchical clustering tree and prints it</description>
-<icon>bla</icon>
+<icon>HierarchicalClustering.png</icon>
 <prority>1550</priority>
 """
 
