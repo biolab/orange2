@@ -8,6 +8,9 @@ import os, sys
 TRUE  = 1
 FALSE = 0
 
+ERROR = 0
+WARNING = 1
+
 class MyCanvasText(QCanvasText):
     def __init__(self, canvas, text, x, y, flags=Qt.AlignLeft, bold=0, show=1):
         apply(QCanvasText.__init__, (self, text, canvas))
@@ -244,6 +247,43 @@ class CanvasLine(QCanvasLine):
     def rtti(self):
         return 1002
 
+
+class CanvasWidgetState(QCanvasRectangle):
+    def __init__(self, parent, canvas, view, pixmapArray):
+        apply(QCanvasRectangle.__init__, (self,canvas))
+        self.pixmapArray = pixmapArray
+        self.activePixmap = -1
+        self.text = ""
+        self.lastStateRect = QRect(0,0,0,0)
+        self.view = view
+        self.parent = parent
+
+    def activatePixmap(self, index, text = ""):
+        self.activePixmap = index
+        self.text = text
+        self.updateTooltip()
+        if self.activePixmap >= 0: self.show()
+        else:                      self.hide()
+        self.updatePosition()
+
+    def drawShape(self, painter):
+        if self.activePixmap == -1: return
+        painter.drawPixmap(self.x(), self.y(), self.pixmapArray[self.activePixmap])
+
+    def removeTooltip(self):
+        QToolTip.remove(self.view, self.lastStateRect)
+
+    def updateTooltip(self):
+        self.removeTooltip()
+        if self.activePixmap >= 0:
+            self.lastStateRect = QRect(self.x(), self.y(), self.pixmapArray[self.activePixmap].width(), self.pixmapArray[self.activePixmap].height())
+            QToolTip.add(self.view, self.lastStateRect, self.text)
+
+    def updatePosition(self):
+        self.updateTooltip()
+        self.move(self.parent.x() + 15, self.parent.y() - 25)
+        
+
 # #######################################
 # # CANVAS WIDGET
 # #######################################
@@ -276,7 +316,8 @@ class CanvasWidget(QCanvasRectangle):
         self.viewYPos = 0 # tooltip placement inside canvasView
         self.lastRect = QRect(0,0,0,0)
         self.isProcessing = 0   # is this widget currently processing signals
-
+        self.widgetStateRect = CanvasWidgetState(self, canvas, view, [self.canvasDlg.errorIcon, self.canvasDlg.warningIcon])
+        
         # import widget class and create a class instance
         #code = compile("from " + widget.fileName + " import *", ".", "single")
         #exec(code)
@@ -291,6 +332,7 @@ class CanvasWidget(QCanvasRectangle):
         self.instance = eval(code)
         self.instance.setProgressBarHandler(self.view.progressBarHandler)   # set progress bar event handler
         self.instance.setProcessingHandler(self.view.processingHandler)
+        self.instance.setWidgetStateHandler(self.refreshWidgetState)
         if os.path.exists(widget.getFullIconName()):                                            self.instance.setWidgetIcon(widget.getFullIconName())
         elif os.path.exists(os.path.join(canvasDlg.widgetDir, widget.getIconName())):            self.instance.setWidgetIcon(os.path.join(canvasDlg.widgetDir, widget.getIconName()))
         elif os.path.exists(os.path.join(canvasDlg.picsDir, widget.getIconName())):                self.instance.setWidgetIcon(os.path.join(canvasDlg.picsDir, widget.getIconName()))
@@ -312,6 +354,22 @@ class CanvasWidget(QCanvasRectangle):
         self.progressRect.setZ(-50)
         self.progressText.setZ(-10)
 
+        
+    def refreshWidgetState(self):
+        widgetState = self.instance.widgetState
+        self.widgetStateRect.text = None
+
+        if widgetState:
+            currText = ""
+            for ind, arr in enumerate(widgetState):
+                for (type, text) in arr:
+                    currText = currText + text + "<br><hr>"
+                self.widgetStateRect.activatePixmap(ind, currText[:-8])
+                return
+        else:
+            self.widgetStateRect.activatePixmap(-1)
+            self.widgetStateRect.updateTooltip()
+
     # get the list of connected signal names
     def getInConnectedSignalNames(self):
         signals = []
@@ -332,9 +390,11 @@ class CanvasWidget(QCanvasRectangle):
         self.progressBarRect.hide()
         self.progressRect.hide()
         self.progressText.hide()
+        self.widgetStateRect.hide()
         self.progressBarRect.setCanvas(None)
         self.progressRect.setCanvas(None)
         self.progressText.setCanvas(None)
+        self.widgetStateRect.setCanvas(None)
 
         self.hide()
         self.setCanvas(None)    # hide the widget
@@ -370,7 +430,7 @@ class CanvasWidget(QCanvasRectangle):
         self.progressRect.move(self.xPos+8, self.yPos - 20)
         self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
 
-    
+
     # set coordinates of the widget
     def setCoords(self, x, y):
         if x > 0 and x < self.canvas.width():  self.xPos = x
@@ -379,6 +439,10 @@ class CanvasWidget(QCanvasRectangle):
         self.updateTextCoords()
         self.updateLinePosition()
         self.updateProgressBarPosition()
+
+    def move(self, x, y):
+        QCanvasRectangle.move(self, x, y)
+        self.widgetStateRect.updatePosition()
 
 
     # move existing coorinates by dx, dy
@@ -450,6 +514,7 @@ class CanvasWidget(QCanvasRectangle):
             painter.setBrush(QBrush(self.blue))
             if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
             if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+
 
     def printShape(self, painter):
         painter.setPen(QPen(self.black))
@@ -541,6 +606,7 @@ class CanvasWidget(QCanvasRectangle):
         self.lastRect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         QToolTip.add(self.view, self.lastRect, string)
 
+
     def setViewPos(self, x, y):
         self.viewXPos = x
         self.viewYPos = y
@@ -549,6 +615,7 @@ class CanvasWidget(QCanvasRectangle):
         #rect = QRect(self.x()-self.viewXPos, self.y()-self.viewYPos, self.width(), self.height())
         #QToolTip.remove(self.view, self.rect())
         QToolTip.remove(self.view, self.lastRect)
+        
 
     def showProgressBar(self):
         self.progressRect.setSize(0, self.progressRect.height())
