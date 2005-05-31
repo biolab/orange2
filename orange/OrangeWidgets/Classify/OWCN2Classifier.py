@@ -20,7 +20,7 @@ class OWCN2Classifier(OWWidget):
         OWWidget.__init__(self,parent,signalManager,"CN2Classifier")
         #OWWidget.__init__(self,parent,"Rules")
         self.inputs=[("ExampleTable", orange.ExampleTable, self.dataset)]
-        self.outputs=[("Learner", orange.Learner),("Classiffier",orange.Classifier)]
+        self.outputs=[("Learner", orange.Learner),("Classifier",orange.Classifier),("CN2UnorderedClassifier", orngCN2.CN2UnorderedClassifier)]
         self.QualityButton=0
         self.CoveringButton=0
         self.Alpha=0.2
@@ -91,8 +91,8 @@ class OWCN2Classifier(OWWidget):
         self.learner.name=self.LearnerName
         self.send("Learner",self.learner)
         ruleFinder=orange.RuleBeamFinder()
-        print self.Alpha
-        print self.Weight
+        #print self.Alpha
+        #print self.Weight
         if self.QualityButton==0:
             ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
         elif self.QualityButton==1:
@@ -101,8 +101,8 @@ class OWCN2Classifier(OWWidget):
         elif self.QualityButton==2:
             ruleFinder.evaluator=orngCN2.WRACCEvaluator()
 
-        ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha)#
-                    #min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
+        ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.Alpha,
+                    min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
         ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
         self.learner.ruleFinder=ruleFinder
 
@@ -122,6 +122,7 @@ class OWCN2Classifier(OWWidget):
         print self.classifier
         print self.learner
         self.send("Classifier", self.classifier)
+        self.send("CN2Classifier", self.classifier)
 
     def dataset(self, data):
         self.data=data
@@ -130,6 +131,7 @@ class OWCN2Classifier(OWWidget):
         else:
             self.send("Learner",None)
             self.send("Classifier",None)
+            self.send("CN2UnorderedClassifier",None)
 
 
     def qualityButtonPressed(self):
