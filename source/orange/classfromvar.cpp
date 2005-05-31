@@ -152,6 +152,8 @@ TValue TClassifierFromVarFD::operator ()(const TExample &example)
   
   if (example.domain==domain)
     return processValue(transformer, example[position], distributionForUnknown, transformUnknowns);
-  else
-    return processValue(transformer, example.getValue(domain->getVar(position)), distributionForUnknown, transformUnknowns);
+  else {
+    PVariable var = domain->getVar(position);
+    return processValue(transformer, example.getValue(var), distributionForUnknown, transformUnknowns);
+  }
 }
