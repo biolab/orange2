@@ -103,8 +103,12 @@ class OWBasicSVM(OWWidget):
 
     def applySettings(self):
         self.learner = BasicSVMLearner()
-        for attr in ("name", "kernel", "degree", "gamma", "coef0", "C", "p", "eps", "nu", "shrinking"):
+        for attr in ("name", "kernel", "degree", "shrinking"):
             setattr(self.learner, attr, getattr(self, attr))
+
+        for attr in ("gamma", "coef0", "C", "p", "eps", "nu"):
+            setattr(self.learner, attr, float(getattr(self, attr)))
+            
         self.learner.for_nomogram = 1
 
         ### XXX What to do with this?!
