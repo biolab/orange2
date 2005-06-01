@@ -10,6 +10,7 @@ regtestdir = os.getcwd().replace("\\", "/")
 re_israndom = re.compile(r"#\s*xtest\s*:\s*RANDOM")
 
 date = "%2.2i-%2.2i-%2.2i" % time.localtime()[:3]
+error_status = 0
 
 def findFileNode(files, name, dir):
     for node in files.childNodes:
@@ -241,7 +242,10 @@ def testScripts(complete):
             result = rstrip(report.readline())
             testNode.setAttribute("RESULT", result)
             runTestNode.setAttribute("RESULT", result)
-            
+
+            results = ["OK", "changed", "random", "error"]
+            error_status = max(error_status, results.index(result))
+                
             if result == "error":
                 err_iter = rstrip(report.readline())
                 err_msg = reduce(add, report.readlines())
@@ -341,3 +345,4 @@ def do_errors():
 os.chdir("../doc")
 parseArguments()
 vars()["do_"+command]()
+sys.exit(error_status)
