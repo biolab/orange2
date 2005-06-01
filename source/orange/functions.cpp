@@ -289,4 +289,7 @@ PyObject *setrandseed(PyObject *, PyObject *args) PYARGS(METH_VARARGS, "(int see
   RETURN_NONE;
 }
 
+/* This is to trick makedep.py
+#include "functions.px"
+*/
 
