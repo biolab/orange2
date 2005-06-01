@@ -168,6 +168,7 @@ def do_help():
     print "              (more than one -dir can be given)"
 
 def testScripts(complete):
+    global error_status
     if sys.platform == "win32":
         import win32process, win32api
         win32process.SetPriorityClass(win32api.GetCurrentProcess(), 64)
@@ -234,7 +235,7 @@ def testScripts(complete):
                 if os.path.exists(remname):
                     os.remove(remname)
                 
-            
+            sys.stdout.flush()
             titerations = re_israndom.search(open(name, "rt").read()) and 1 or iterations
             os.spawnl(os.P_WAIT, sys.executable, "-c", regtestdir+"/xtest1.py", name, `titerations`, `runNo`, `int(isNewFile)`, outputsdir)
             report = open("xtest1_report", "rt")
