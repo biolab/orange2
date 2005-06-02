@@ -21,6 +21,8 @@ notice = \
        (feel free to edit it and pyprops will feel free to undo your changes). */
 """
 
+win32 = sys.platform == "win32"
+
 def printNQ(str):
   if not quiet:
     print str
@@ -120,7 +122,7 @@ def detectBuiltInProperties(hppfile):
       if found and candidate:
         storeClass(currentClass, hppfile)
         currentClass = ClassDefinition(candidate, candidateBase, found.group("abstract")!=None)
-        if not hasapi:
+        if not hasapi and win32:
           print "%s(%i): Warning: class '%s' is not exported to DLL" % (hppfile, lcount, candidate)
         continue
 
