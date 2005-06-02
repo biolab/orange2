@@ -1,6 +1,6 @@
 import orange
 
-def ruleToString(rule):
+def ruleToString(rule, showDistribution = True):
     def selectSign(oper):
         if oper == orange.ValueFilter_continuous.Less:
             return "<"
@@ -11,28 +11,38 @@ def ruleToString(rule):
         elif oper == orange.ValueFilter_continuous.GreaterEqual:
             return ">="
         else: return "="
-        
+
+    conds = rule.filter.conditions
+    domain = rule.filter.domain
+    
     ret = "IF "
-    if len(rule.filter.conditions)==0:
+    if len(conds)==0:
         ret = ret + "TRUE"
 
-    for i,c in enumerate(rule.filter.conditions):
+    for i,c in enumerate(conds):
         if i > 0:
-            ret = ret + " AND "
-        if type(rule.filter.conditions[i]) == orange.ValueFilter_discrete:
-            ret = ret + rule.filter.domain[rule.filter.conditions[i].position].name + "=" + str([rule.filter.domain[rule.filter.conditions[i].position].values[int(v)] for v in rule.filter.conditions[i].values])
-        elif type(rule.filter.conditions[i]) == orange.ValueFilter_continuous:
-            ret = ret + rule.filter.domain[rule.filter.conditions[i].position].name + selectSign(rule.filter.conditions[i].oper) \
-                      + str(rule.filter.conditions[i].ref)
-    if rule.classifier:
-        ret = ret + " THEN "+rule.filter.domain.classVar.name+"="+str(rule.classifier.defaultDistribution.modus())
+            ret += " AND "
+        if type(c) == orange.ValueFilter_discrete:
+            ret += domain[c.position].name + "=" + str([domain[c.position].values[int(v)] for v in c.values])
+        elif type(c) == orange.ValueFilter_continuous:
+            ret += domain[c.position].name + selectSign(c.oper) + str(c.ref)
+    if rule.classifier and type(rule.classifier) == orange.DefaultClassifier and rule.classifier.defaultVal:
+        ret = ret + " THEN "+domain.classVar.name+"="+\
+        str(rule.classifier.defaultValue)
+        if showDistribution:
+            ret += str(rule.classDistribution)
+    elif rule.classifier and type(rule.classifier) == orange.DefaultClassifier and type(domain.classVar) == orange.EnumVariable:
+        ret = ret + " THEN "+domain.classVar.name+"="+\
+        str(rule.classDistribution.modus())
+        if showDistribution:
+            ret += str(rule.classDistribution)
     return ret        
 
 class LaplaceEvaluator(orange.RuleEvaluator):
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if not rule.classDistribution:
             return 0.
-        sumDist = sum(rule.classDistribution)
+        sumDist = rule.classDistribution.cases
         if not sumDist or (targetClass>-1 and not rule.classDistribution[targetClass]):
             return 0.
         # get distribution
@@ -45,19 +55,40 @@ class WRACCEvaluator(orange.RuleEvaluator):
     def __call__(self, rule, data, weightID, targetClass, apriori):
         if not rule.classDistribution:
             return 0.
-        sumDist = sum(rule.classDistribution)
+        sumDist = rule.classDistribution.cases
         if not sumDist or (targetClass>-1 and not rule.classDistribution[targetClass]):
             return 0.
         # get distribution
-        pRule = sumDist/sum(apriori)
         if targetClass>-1:
+            pRule = rule.classDistribution[targetClass]/apriori[targetClass]
             pTruePositive = rule.classDistribution[targetClass]/sumDist
-            pClass = apriori[targetClass]/sum(apriori)
+            pClass = apriori[targetClass]/apriori.cases
         else:
+            pRule = sumDist/apriori.cases
             pTruePositive = max(rule.classDistribution)/sumDist
             pClass = apriori[rule.classDistribution.modus()]/sum(apriori)
-        return pRule*(pTruePositive-pClass)
-                
+        if pTruePositive>pClass:
+            return pRule*(pTruePositive-pClass)
+        else: return (pTruePositive-pClass)/max(pRule,1e-6)
+
+class mEstimate(orange.RuleEvaluator):
+    def __init__(self, m=2):
+        self.m = m
+    def __call__(self, rule, data, weightID, targetClass, apriori):
+        if not rule.classDistribution:
+            return 0.
+        sumDist = rule.classDistribution.cases
+        if not sumDist or (targetClass>-1 and not rule.classDistribution[targetClass]):
+            return 0.
+        # get distribution
+        if targetClass>-1:
+            p = rule.classDistribution[targetClass]+self.m*apriori[targetClass]/apriori.cases
+            p = p / (rule.classDistribution.cases + self.m)
+        else:
+            p = max(rule.classDistribution)+2*self.m*apriori[rule.classDistribution.modus()]/apriori.cases
+            p = p / (rule.classDistribution.cases + self.m)      
+        return p
+    
 def CN2Learner(examples = None, weightID=0, **kwds):
     cn2 = CN2LearnerClass(**kwds)
     if examples:
@@ -72,7 +103,6 @@ class CN2LearnerClass(orange.RuleLearner):
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
-        #self.classifierConstructor = CN2Classifier
         
     def __call__(self, examples, weight=0):
         if examples.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -123,7 +153,6 @@ def CN2UnorderedLearner(examples = None, weightID=0, **kwds):
 # Kako nastavim v c++, da mi ni potrebno dodati imena
 class CN2UnorderedLearnerClass(orange.RuleLearner):
     def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 0.05, **kwds):
-#    def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 0.05):
         self.__dict__ = kwds
         self.ruleFinder = orange.RuleBeamFinder()
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
@@ -131,7 +160,6 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
         self.ruleStopping = orange.RuleStoppingCriteria_NegativeDistribution()
         self.dataStopping = orange.RuleDataStoppingCriteria_NoPositives()
-        ##self.classifierConstructor = CN2UnorderedClassifier
         
     def __call__(self, examples, weight=0):
         if examples.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -141,7 +169,8 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         for targetClass in examples.domain.classVar:
             self.targetClass = targetClass
             cl = orange.RuleLearner.__call__(self,examples,weight)
-            rules += cl.rules
+            for r in cl.rules:
+                rules.append(r)
         return CN2UnorderedClassifier(rules, examples, weight)
 
 class CN2UnorderedClassifier(orange.RuleClassifier):
@@ -172,6 +201,7 @@ class CN2UnorderedClassifier(orange.RuleClassifier):
         else:
             classifier = orange.DefaultClassifier(example.domain.classVar, retDist.modus(),
                                                   defaultDistribution = retDist)
+        classifier.defaultDistribution.normalize()
         # return classifier(example, result_type=result_type)
         if result_type == orange.GetValue:
           return classifier(example)
@@ -195,7 +225,7 @@ class CovererAndRemover_multWeights(orange.RuleCovererAndRemover):
                 example[weights] = 1.
         newWeightsID = orange.newmetaid()
         for example in examples:
-            if rule(example):
+            if rule(example) and example.getclass() == rule.classifier(example,orange.GetValue):
                 example[newWeightsID]=example[weights]*self.mult
             else:
                 example[newWeightsID]=example[weights]
@@ -211,9 +241,7 @@ def CN2SDUnorderedLearner(examples = None, weightID=0, **kwds):
     
 class CN2SDUnorderedLearnerClass(CN2UnorderedLearnerClass):
     def __init__(self, evaluator = WRACCEvaluator(), beamWidth = 5, alpha = 0.05, mult=0.7, **kwds):
-#    def __init__(self, evaluator = LaplaceEvaluator(), beamWidth = 5, alpha = 0.05):
         CN2UnorderedLearnerClass.__init__(self, evaluator = evaluator,
                                           beamWidth = beamWidth, alpha = alpha, **kwds)
         self.coverAndRemove = CovererAndRemover_multWeights(mult=mult)
-        ##self.classifierConstructor = CN2UnorderedClassifier
         
