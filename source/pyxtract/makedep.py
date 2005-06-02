@@ -35,6 +35,7 @@ def finddeps(filename):
       if (depname[-3:]==".px"):
         if depname not in px_files:
           px_files.append( depname)
+          print depname
         if not filename in px_timestamp_dep:
           px_timestamp_dep.append(filename)
 
