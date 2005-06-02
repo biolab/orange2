@@ -959,7 +959,7 @@ def readArguments(args):
       opt=args[i][1:]
       if opt=="q":
         quiet = 1
-      if opt=="v":
+      elif opt=="v":
         verbose=1
       elif opt=="V":
         verbose=2

@@ -21,6 +21,10 @@ notice = \
        (feel free to edit it and pyprops will feel free to undo your changes). */
 """
 
+def printNQ(str):
+  if not quiet:
+    print str
+
 def samefiles(n1, n2):
   f1, f2 = open(n1, "rt"), open(n2, "rt")
   same = (f1.readlines()==f2.readlines())
@@ -272,7 +276,7 @@ vwrappers = {}
 args = sys.argv
 
 modulename = ""
-i=0
+i = quite = 0
 while(i<len(args)):
   if args[i][0]=="-":
     if args[i][1]=="l":
@@ -291,6 +295,8 @@ while(i<len(args)):
       i += 1
       import os
       os.chdir(args[i])
+    elif args[i][1]=="q":
+      quiet = 1
   i += 1
 
 if not modulename:
