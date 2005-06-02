@@ -400,27 +400,30 @@ class OWBaseWidget(QDialog):
     def information(self, text = None):
         self.printEvent("Information", text)
 
-    def warning(self, code = 0, text = ""):
-        self.setState(WARNING, code, text)
+    def warning(self, text = "", code = 0):
+        self.setState(WARNING, text, code)
         
-        if text and not self.widgetStateHandler:
+        if text and type(text) == str and not self.widgetStateHandler:
             self.printEvent("Warning", text)
 
-    def error(self, code = 0, text = ""):
-        self.setState(ERROR, code, text)
+    def error(self, text = "", code = 0):
+        self.setState(ERROR, text, code)
 
-        if text and not self.widgetStateHandler:
+        if text and type(text) == str and not self.widgetStateHandler:
             self.printEvent("Error", text)
 
-    def setState(self, type, code, text):
+    def setState(self, stateType, text, code):
         if not self.widgetState: self.widgetState = [[], []]
 
-        if code == 0: self.widgetState[type] = []
+        if type(text) == int:
+            code = text; text = ""        # when we want to remove an error we can call simply error(int_val). in this case text will actually be an integer
+
+        if not text and code == 0: self.widgetState[stateType] = []
         else:
-            for (c, t) in self.widgetState[type]:
-                if c == code: self.widgetState[type].remove((c,t))
+            for (c, t) in self.widgetState[stateType]:
+                if c == code: self.widgetState[stateType].remove((c,t))
             if text:
-                self.widgetState[type].append((code, text))
+                self.widgetState[stateType].append((code, text))
 
         if self.widgetState == [[],[]]: self.widgetState = None
 
