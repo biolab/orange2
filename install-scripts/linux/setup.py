@@ -21,6 +21,7 @@ try:
     from distutils import sysconfig
     from distutils.core import setup,Extension
     from glob import glob
+    from stat import *
 except:
     traceback.print_exc()
     print "Unable to import python distutils."
@@ -32,9 +33,9 @@ gotPython = sys.version.split()[0]
 if not hasattr(sys, 'version_info') or sys.version_info < (2,3,0,'alpha',0):
     raise SystemExit, "Python 2.3 or later is required to build Orange."
 
-if os.geteuid() != 0:
-    print "This script should be run as superuser!"
-    sys.exit(1)
+#if os.geteuid() != 0:
+#    print "This script should be run as superuser!"
+#    sys.exit(1)
 
 try:
     import qt,pyqtconfig
@@ -136,6 +137,10 @@ class uninstall(Command):
             self.orangepath = OrangeInstallDir
     
     def run(self):
+        if os.geteuid() != 0:
+            print "Uninstallation should be run as superuser!"
+            sys.exit(1)
+            
         self.orangepath = os.path.join(sys.prefix, self.orangepath)
         print "Removing installation directory "+self.orangepath+" ...",
         self.rmdir(self.orangepath)
@@ -197,6 +202,9 @@ class install_wrap(install):
     user_options = install.user_options
 
     def run(self):
+        if os.geteuid() != 0:
+            print "Installation should be run as superuser!"
+            sys.exit(1)
         install.run(self)
 
         print "Linking libraries...",
@@ -224,7 +232,21 @@ class install_wrap(install):
                 fo.write(os.path.join(root,name)+"\n")
         fo.close()
         print "success"
-        print ""
+       	print "Preparing filename masks...",
+	for root, dirs, files in os.walk(OrangeInstallDir):
+	    for name in files:
+		if name in OrangeLibList: # libraries must have +x flag too
+			os.chmod(os.path.join(root,name),   
+				 S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)
+
+		else:
+	        	os.chmod(os.path.join(root,name),
+        	        	 S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH)
+	    for name in dirs:
+        	os.chmod(os.path.join(root,name),
+                	 S_IRUSR|S_IWUSR|S_IXUSR|S_IRGRP|S_IXGRP|S_IROTH|S_IXOTH)
+        print "success"
+	print ""
         print "Python version: "+gotPython
         print "PyQt version: "+gotPyQt
         print "Qt version: "+gotPy
@@ -272,12 +294,14 @@ for currentLib in OrangeLibList:
 
 OrangeWidgetIcons = glob(os.path.join("OrangeWidgets", "icons", "*.png"))
 OrangeCanvasIcons = glob(os.path.join("OrangeCanvas",  "icons", "*.png"))
+OrangeCanvasPyw   = glob(os.path.join("OrangeCanvas", "orngCanvas.pyw"));
 
 data_files = [(OrangeInstallDir, OrangeLibs),
               (os.path.join(OrangeInstallDir, "OrangeWidgets", "icons"),
                OrangeWidgetIcons),
               (os.path.join(OrangeInstallDir, "OrangeCanvas", "icons"),
-               OrangeCanvasIcons)]
+               OrangeCanvasIcons),
+	      (os.path.join(OrangeInstallDir, "OrangeCanvas"), OrangeCanvasPyw)]
 
 # Adding each doc/* directory by itself
 for root, dirs, files in os.walk(os.path.join("doc")):
