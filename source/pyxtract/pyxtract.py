@@ -354,7 +354,7 @@ def parseFiles():
       filestem=parsedFile
 
     infile=open(parsedFile, "rt")
-    printV0("Parsing" + parsedFile)
+    printNQ("Parsing" + parsedFile)
     global lineno
     lineno=0
 
@@ -401,7 +401,7 @@ def classdefsEffects(classdefs):
     classdef=classdefs[typename]
     classdef.datastructure = findDataStructure(classdefs, typename)
     if not classdefs[typename].datastructure:
-      printV0("Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename)
+      printNQ("Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename)
       del classdefs[typename]
 
 
@@ -875,9 +875,9 @@ def renewfiles(newfiles):
     if recreate or not oldexists or not samefiles("px/"+i, "px/"+i+".new"):
       if oldexists:
         os.remove("px/"+i)
-        printV0("Renewing %s" % i)
+        printNQ("Renewing %s" % i)
       else:
-        printV0("Creating %s" % i)
+        printNQ("Creating %s" % i)
       os.rename("px/"+i+".new", "px/"+i)
     else:
       os.remove("px/"+i+".new")
@@ -950,13 +950,15 @@ def removeFiles():
 
 
 def readArguments(args):
-  global filenames, verbose, recreate, action, libraries, modulename
+  global filenames, verbose, recreate, action, libraries, modulename, quiet
   filenames, libraries, verbose, recreate, modulename = [], [], 0, 0, ""
-  action = []
+  action, quiet = [], 0
   i=0
   while(i<len(args)):
     if args[i][0]=="-":
       opt=args[i][1:]
+      if opt=="q":
+        quiet = 1
       if opt=="v":
         verbose=1
       elif opt=="V":
@@ -991,6 +993,10 @@ def readArguments(args):
     sys.exit()
   if not len(action):
     action=["make"]
+
+def printNQ(str):
+  if not quiet:
+    print str
     
 def printV0(str="", tup=()):
   print "%20s:%4i:" % (parsedFile, lineno),

@@ -34,13 +34,13 @@ def renew(oldfile, newfile):
         if not samefiles(oldfile, newfile):
           os.remove(oldfile)
           os.rename(newfile, oldfile)
-          print "Renewing " + oldfile
+          printNQ("Renewing " + oldfile)
         else:
           os.remove(newfile)
 #          print "Keeping " + pppfile
     else:
         os.rename(newfile, oldfile)
-        print "Creating " + oldfile
+        printNQ("Creating " + oldfile)
         
 class ClassDefinition:
     def __init__(self, name, parent, abstract = 0):

@@ -127,14 +127,14 @@ makedepsfile.write("\n\n")
 
 if ppp_timestamp_dep:
   makedepsfile.write("ppp/stamp: %s\n" % reduce(lambda a, b: a+" "+b, ppp_timestamp_dep))
-  makedepsfile.write("\tpython ../pyxtract/pyprops.py -n %s" % modulename)
+  makedepsfile.write("\tpython ../pyxtract/pyprops.py -q -n %s" % modulename)
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/ppp/stamp")
   makedepsfile.write("\n\n")
 
 if px_timestamp_dep:
   makedepsfile.write("px/stamp: %s\n" % reduce(lambda a, b: a+" "+b, px_timestamp_dep))
-  makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -n %s %s" % (modulename, reduce(lambda x,y: x+" "+y, px_timestamp_dep)))
+  makedepsfile.write("\tpython ../pyxtract/pyxtract.py -m -q -n %s %s" % (modulename, reduce(lambda x,y: x+" "+y, px_timestamp_dep)))
   if modulename != "ORANGE":
     makedepsfile.write(" -l ../orange/px/stamp")
   makedepsfile.write("\n\n")
