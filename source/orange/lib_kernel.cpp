@@ -2362,7 +2362,7 @@ PyObject *ExampleTable_native(PyObject *self, PyObject *args, PyObject *keywords
   PyCATCH
 }
 
-
+/*
 PyTypeObject *gsl_matrixType = NULL;
 
 bool load_gsl()
@@ -2377,7 +2377,7 @@ bool load_gsl()
   gsl_matrixType = (PyTypeObject *)PyDict_GetItemString(PyModule_GetDict(matrixModule), "matrix");
   return gsl_matrixType != NULL;
 }
-
+*/
 
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_Ignore, 0)
 PYCLASSCONSTANT_INT(ExampleTable, Multinomial_AsOrdinal, 1)
@@ -2445,12 +2445,13 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
                          vector<bool> &include);
 
 #if defined(XXXX) && !defined(NO_GSL) && !defined(NO_NUMERIC)
-
+/*
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
 #include "gslconversions.hpp"
+*/
 #include "numeric_interface.hpp"
-
+/*
 typedef struct {
     PyObject_HEAD
     gsl_matrix* m;
@@ -2469,7 +2470,7 @@ PyObject *gsl2pygsl(gsl_vector *gslv, int dim)
 }
 
 
-PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords) PYARGS(METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> gsl matrix")
+PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords) P Y A R G S (METH_VARARGS, "([contents[, weightID[, multinomialTreatment]]]) -> gsl matrix")
 {
   PyTRY
     if (!gsl_matrixType && !load_gsl())
@@ -2528,14 +2529,14 @@ PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
     return packMatrixTuple(pymatrix, pyclasses, pyweights, contents);
   PyCATCH
 }
-
+*/
 #else
-
+/*
 PyObject *ExampleTable_toGsl(PyObject *self, PyObject *args, PyObject *keywords)
 {
   PYERROR(PyExc_SystemError, "This build does not support module 'pygsl'", PYNULL);
 }
-
+*/
 #endif
 
 #ifndef NO_NUMERIC
@@ -2549,7 +2550,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
     char *contents = NULL;
     int weightID = 0;
     int multinomialTreatment = 1;
-    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.gsl", &contents, &weightID, &multinomialTreatment))
+    if (!PyArg_ParseTuple(args, "|sii:ExampleTable.toNumeric", &contents, &weightID, &multinomialTreatment))
       return PYNULL;
 
     if (!contents)
@@ -2638,7 +2639,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                       *mp++ = 1;
                     }
                     else
-                      raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                      raiseErrorWho("exampleGenerator2numeric", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
                   }
                   else {
                     *Xp++ = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
@@ -2659,7 +2660,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
                     *mp++ = 1;
                   }
                   else
-                    raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+                    raiseErrorWho("exampleGenerator2Numeric", "example %i has undefined class", row);
                 }
                 else {
                   *Xp++ = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
@@ -2699,7 +2700,7 @@ PyObject *ExampleTable_toNumericOrMA(PyObject *self, PyObject *args, PyObject *k
               *mpy++ = 1;
             }
             else
-              raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+              raiseErrorWho("exampleGenerator2numeric", "example %i has undefined class", row);
           }
           else
             *yp++ = classVal.varType == TValue::FLOATVAR ? classVal.floatV : float(classVal.intV);

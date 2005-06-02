@@ -19,14 +19,16 @@
     Contact: janez.demsar@fri.uni-lj.si
 */
 
+/*
 #include "gsl/gsl_matrix.h"
 #include "gsl/gsl_vector.h"
+*/
 #include <vector>
 
 #include "vars.hpp"
 #include "examplegen.hpp"
 
-
+/*
 #ifndef _DEBUG
 // I prefer to see exceptions when debugging
 extern "C" void my_gsl_error_handler(const char *reason, const char *file, int line, int)
@@ -34,7 +36,7 @@ extern "C" void my_gsl_error_handler(const char *reason, const char *file, int l
 
 gsl_error_handler_t *fooerrh = gsl_set_error_handler(my_gsl_error_handler);
 #endif
-
+*/
 
 void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
                          bool &hasClass, bool &classVector, bool &weightVector, bool &classIsDiscrete, int &columns,
@@ -157,7 +159,7 @@ void parseMatrixContents(PExampleGenerator egen, const int &weightID, const char
 }
 
 
-
+/*
 void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const char *contents, const int &multiTreatment,
                           gsl_matrix *&X, gsl_vector *&y, gsl_vector *&w, int &rows, int &columns)
 {
@@ -181,7 +183,7 @@ void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const cha
       
       /* This is all optimized assuming that each symbol (A, C, W) only appears once. 
          If it would be common for them, we could cache the values, but since this is
-         unlikely, caching would only slow down the conversion */
+         unlikely, caching would only slow down the conversion 
       for(const char *cp = contents; *cp && (*cp!='/'); cp++) {
         switch (*cp) {
           case 'A':
@@ -249,3 +251,5 @@ void exampleGenerator2gsl(PExampleGenerator egen, const int &weightID, const cha
     throw;
   }
 }
+
+*/

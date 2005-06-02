@@ -64,7 +64,7 @@ void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char 
             for(; vi != ve; eei++, vi++, bi++)
               if (*bi) {
                 if ((*eei).isSpecial())
-                  raiseErrorWho("exampleGenerator2gsl", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
+                  raiseErrorWho("exampleGenerator2numeric", "value of attribute '%s' in example '%i' is undefined", (*vi)->name.c_str(), row);
                 *Xi = (*vi)->varType == TValue::FLOATVAR ? (*eei).floatV : float((*eei).intV);
                 Xi += rows;
               }
@@ -76,7 +76,7 @@ void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char 
             if (hasClass) {
               const TValue &classVal = (*ei).getClass();
               if (classVal.isSpecial())
-                raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+                raiseErrorWho("exampleGenerator2numeric", "example %i has undefined class", row);
               *Xi = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
               Xi += rows;
             }
@@ -104,7 +104,7 @@ void exampleGenerator2r(PExampleGenerator egen, const int &weightID, const char 
       if (y) {
         const TValue &classVal = (*ei).getClass();
         if (classVal.isSpecial())
-          raiseErrorWho("exampleGenerator2gsl", "example %i has undefined class", row);
+          raiseErrorWho("exampleGenerator2numeric", "example %i has undefined class", row);
         *(yi++) = classIsDiscrete ? float(classVal.intV) : classVal.floatV;
       }
 
