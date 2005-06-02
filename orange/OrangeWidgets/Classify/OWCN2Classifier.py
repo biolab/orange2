@@ -1,6 +1,6 @@
 """
 <name>CN2 Classifier</name>
-<desctiption>Constructs CN2 learner and classifier from example table </description>
+<description>Constructs CN2 learner and classifier from example table </description>
 <icon>CN2Classifier.png</icon>
 <priority> 300</priority>
 """
@@ -60,15 +60,20 @@ class OWCN2Classifier(OWWidget):
         a=OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.05, label="Alpha",
                 orientation="horizontal", labelWidth=labelWidth)
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum Coverage",
-                orientation="horizontal", labelWidth=labelWidth)
+                orientation="horizontal", labelWidth=labelWidth, tooltip=
+                "Minimum number of examples a rule must\ncover (use 0 for dont care)")
         OWGUI.spin(self.ruleValidationGroup, self, "MaxRuleLength", 0, 100,label="Max. Rule Length",
-                orientation="horizontal", labelWidth=labelWidth)
+                orientation="horizontal", labelWidth=labelWidth, tooltip=
+                "Maximum number of conditions in the left\npart of the rule (use 0 for dont care)")
         
         self.coveringAlgBG=OWGUI.radioButtonsInBox(self.coveringAlgGroup, self, "CoveringButton",
                             btnLabels=["Exclusive covering ","Weighted Covering"],
+                            tooltips=["Each example will only be used once\n for the construction of a rule",
+                                      "Examples can take part in the construction\n of many rules(CN2-SD Algorthim)"],
                             box="Covering algorithm", callback=self.coveringAlgButtonPressed)
         self.weightSpin=OWGUI.doubleSpin(self.coveringAlgGroup, self, "Weight",0, 0.95,0.05,label= "Weight",
-                orientation="horizontal", labelWidth=labelWidth)
+                orientation="horizontal", labelWidth=labelWidth, tooltip=
+                "Multiplication constant by which the weight of\nthe example will be reduced")
  
         #layout=QVBoxLayout(self.controlArea)
         #layout.add(self.ruleQualityGroup)
@@ -96,8 +101,7 @@ class OWCN2Classifier(OWWidget):
         if self.QualityButton==0:
             ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
         elif self.QualityButton==1:
-            #ruleFinder.evaluator=orngCN2.mEstimate(self.m)
-            ruleFinder.evaluator=mEstimate(self.m)
+            ruleFinder.evaluator=orngCN2.mEstimate(self.m)
         elif self.QualityButton==2:
             ruleFinder.evaluator=orngCN2.WRACCEvaluator()
 
@@ -119,10 +123,10 @@ class OWCN2Classifier(OWWidget):
                 self.classifier.setattr("data",self.data)
             except orange.KernelException, (errValue):
                 self.classifier=None
-        print self.classifier
-        print self.learner
+        #print self.classifier
+        #print self.learner
         self.send("Classifier", self.classifier)
-        self.send("CN2Classifier", self.classifier)
+        self.send("CN2UnorderedClassifier", self.classifier)
 
     def dataset(self, data):
         self.data=data
@@ -150,23 +154,6 @@ class OWCN2Classifier(OWWidget):
 
     def applySettings(self):
         self.setLearner()
-
-class mEstimate(orange.RuleEvaluator):
-    def __init__(self, m):
-        orange.RuleEvaluator(self)
-        self.m=m
-        
-    def __call__(self, rule, data, weightID, targetClass, apriori):
-        if not rule.classDistribution:
-            return 0
-        sumDist=sum(rule.classDistribution)
-        if not sumDist:
-            return 0
-        p=1/len(rule.classDistribution)
-        if targetClass>-1:
-            return (rule.classDistribution[targetClass]+self.m*p)/(sumDist+self.m)
-        else:
-            return (max(rule.classDistribution)+self.m*p)/(sumDist+len(data.domain.classVar.values)+self.m)
         
 if __name__=="__main__":
     app=QApplication(sys.argv)
