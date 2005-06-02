@@ -274,7 +274,6 @@ def detectHierarchy(line, classdefs):
 def detectCallDoc(line, classdefs):
   found=calldocdef.search(line)
   if found:
-    print line
     typename, doc = found.group("typename", "doc")
     printV2("%s: definition/declaration of description" % typename)
     addClassDef(classdefs, typename, parsedFile, "description", doc)
@@ -355,7 +354,7 @@ def parseFiles():
       filestem=parsedFile
 
     infile=open(parsedFile, "rt")
-    print "Parsing", parsedFile
+    printV0("Parsing" + parsedFile)
     global lineno
     lineno=0
 
@@ -402,7 +401,7 @@ def classdefsEffects(classdefs):
     classdef=classdefs[typename]
     classdef.datastructure = findDataStructure(classdefs, typename)
     if not classdefs[typename].datastructure:
-      print "Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename
+      printV0("Warning: %s looked like a class, but is ignored since no corresponding data structure was found" % typename)
       del classdefs[typename]
 
 
@@ -876,9 +875,9 @@ def renewfiles(newfiles):
     if recreate or not oldexists or not samefiles("px/"+i, "px/"+i+".new"):
       if oldexists:
         os.remove("px/"+i)
-        print "Renewing %s" % i
+        printV0("Renewing %s" % i)
       else:
-        print "Creating %s" % i
+        printV0("Creating %s" % i)
       os.rename("px/"+i+".new", "px/"+i)
     else:
       os.remove("px/"+i+".new")
