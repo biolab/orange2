@@ -8,9 +8,10 @@ filestemdef=re.compile(r'(?P<filestem>.*)\.(?P<fileextension>[^.]*)$')
 
 def findfiles():
   files = {}
-  for filename in os.listdir("."):
-    if filenamedef.match(filename):
-      files[filename] = []
+  for dir in dirs:
+    for filename in os.listdir(dir):
+      if filenamedef.match(filename):
+        files[filename] = []
   return files
 
 ppp_timestamp_dep = []
@@ -58,9 +59,10 @@ def recdeps(rootname, filename):
 
 
 def readArguments(args):
-  global filenames, verbose, recreate, action, libraries, modulename
+  global filenames, verbose, recreate, action, libraries, modulename, dirs
   filenames, libraries, verbose, recreate, modulename = [], [], 0, 0, ""
   action = []
+  dirs = ["."]
   i = 0
   while(i<len(args)):
     if args[i][0]=="-":
@@ -75,6 +77,9 @@ def readArguments(args):
       elif opt=="px":
         i += 1
         px_timestamp_dep.append(args[i])
+      elif opt=="a":
+        i += 1
+        dirs.append(args[i])
       else:
         print "Unrecognized option %s" % args[i]
     elif not "makedep" in args[i]:
