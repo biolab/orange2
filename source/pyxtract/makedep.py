@@ -77,13 +77,10 @@ def readArguments(args):
       elif opt=="px":
         i += 1
         px_timestamp_dep.append(args[i])
-      elif opt=="a":
-        i += 1
-        dirs.append(args[i])
       else:
         print "Unrecognized option %s" % args[i]
     elif not "makedep" in args[i]:
-      print "Unrecognized option %s" % args[i]
+      dirs.append(args[i])
     i += 1
 
   if not modulename:
