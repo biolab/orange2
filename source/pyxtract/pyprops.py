@@ -278,7 +278,7 @@ vwrappers = {}
 args = sys.argv
 
 modulename = ""
-i = quite = 0
+i = quiet = 0
 while(i<len(args)):
   if args[i][0]=="-":
     if args[i][1]=="l":

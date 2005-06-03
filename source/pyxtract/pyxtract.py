@@ -354,7 +354,7 @@ def parseFiles():
       filestem=parsedFile
 
     infile=open(parsedFile, "rt")
-    printNQ("Parsing" + parsedFile)
+    printNQ("Parsing " + parsedFile)
     global lineno
     lineno=0
 
