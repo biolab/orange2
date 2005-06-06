@@ -695,8 +695,8 @@ class OWSelectData(OWWidget):
         self.onCurrentCriteriaChange(row, 1)
             
 if __name__=="__main__":
-    data = orange.ExampleTable('dicty_800_genes_from_table07.tab')
-    
+    #data = orange.ExampleTable('dicty_800_genes_from_table07.tab')
+    data = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
     a=QApplication(sys.argv)
     ow=OWSelectData()
     a.setMainWidget(ow)

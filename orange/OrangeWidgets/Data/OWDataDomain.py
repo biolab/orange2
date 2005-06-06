@@ -518,7 +518,7 @@ class OWDataDomain(OWWidget):
             self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
             
 if __name__=="__main__":
-    data = orange.ExampleTable('iris.tab')
+    data = orange.ExampleTable(r'..\..\doc\datasets\iris.tab')
     
     a=QApplication(sys.argv)
     ow=OWDataDomain()

@@ -119,7 +119,7 @@ class OWFile(OWWidget):
                 elif cl.varType == orange.VarTypes.Discrete:
                     self.infob.setText('Classification; Discrete class with %d value%s.' % sp(cl.values))
                 else:
-                    self.infob.setText("This won't work. Class neither descrete nor continuous.")
+                    self.infob.setText("Class neither descrete nor continuous.")
             else:
                 self.infob.setText('Classless domain')
 
