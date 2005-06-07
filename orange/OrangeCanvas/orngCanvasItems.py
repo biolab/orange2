@@ -362,6 +362,7 @@ class CanvasWidget(QCanvasRectangle):
         if widgetState:
             currText = ""
             for ind, arr in enumerate(widgetState):
+                if arr == []: continue
                 for (type, text) in arr:
                     currText = currText + text + "<br><hr>"
                 self.widgetStateRect.activatePixmap(ind, currText[:-8])

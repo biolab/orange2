@@ -60,7 +60,7 @@ class OrangeCanvasDlg(QMainWindow):
             self.errorIcon = None
             print "Unable to load all necessary icons. Please reinstall Orange."
 
-        warningIconName = os.path.join(self.canvasDir, "icons/triangle-red.png")
+        warningIconName = os.path.join(self.canvasDir, "icons/triangle-blue.png")
         if os.path.exists(canvasIconName):
             self.warningIcon = QPixmap(warningIconName)
         else:
