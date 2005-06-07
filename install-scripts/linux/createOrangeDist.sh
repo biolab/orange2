@@ -12,12 +12,12 @@
 #	 - vsi fajli ki so zlistani v orange/OrangeWidgets/Genomics/BCMonly.lst
 
 if [ $# -lt 4 ]; then
-    echo "Usage: ./build.sh <output file> <CVS tag> <type of build> <version>"
+    echo "Usage: ./build.sh <CVS tag> <output filename> <type of build> <version>"
     exit 1
 fi
 
-OUT=$1
-TAG=$2
+OUT=$2
+TAG=$1
 REL=$3
 VER=$4
 
