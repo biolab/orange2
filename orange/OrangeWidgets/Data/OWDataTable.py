@@ -28,13 +28,13 @@ class OWDataTable(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.dataset, 0)]
         self.outputs = []
         
-        self.data = {}
-        self.showMetas = True
+        self.data = {}          # key: id, value: ExampleTable
+        self.showMetas = {}     # key: id, value: (True/False, columnList)
 
         # info box
         #self.controlArea.layout().setResizeMode(QLayout.Minimum)
         infoBox = QVGroupBox("Info", self.controlArea)
-        self.infoEx = QLabel('No data loaded.', infoBox)
+        self.infoEx = QLabel('No data on input.', infoBox)
         self.infoMiss = QLabel('', infoBox)
         QLabel('', infoBox)
         self.infoAttr = QLabel('', infoBox)
@@ -46,10 +46,11 @@ class OWDataTable(OWWidget):
 
         # settings box        
         boxSettings = QVGroupBox("Settings", self.controlArea)
-##        self.cbShowMeta = OWGUI.checkBox(boxSettings, self, 'graph.showAttrValues', 'Show meta attributes', callback = not(self.showMetas))
         self.cbShowMeta = QCheckBox('Show meta attributes', boxSettings)
+        self.cbShowMeta.setChecked(True)
+        self.cbShowMeta.setEnabled(False)
         self.connect(self.cbShowMeta, SIGNAL("clicked()"), self.cbShowMetaClicked)
-        self.btnResetSort = QPushButton("Reset Sorting", boxSettings)
+        self.btnResetSort = QPushButton("Restore Original Order", boxSettings)
         self.connect(self.btnResetSort, SIGNAL("clicked()"), self.btnResetSortClicked)
         boxSettings.setMaximumHeight(boxSettings.sizeHint().height())
         
@@ -59,7 +60,7 @@ class OWDataTable(OWWidget):
         self.id2table = {}  # key: widget id, value: table
         self.table2id = {}  # key: table, value: widget id
         layout.addWidget(self.tabs)
-        self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.updateInfo)
+        self.connect(self.tabs,SIGNAL("currentChanged(QWidget*)"),self.tabClicked)
         
 
     def dataset(self, data, id=None):
@@ -71,10 +72,12 @@ class OWDataTable(OWWidget):
             if self.data.has_key(id):
                 # remove existing table
                 self.data.pop(id)
+                self.showMetas.pop(id)
                 self.id2table[id].hide()
                 self.tabs.removePage(self.id2table[id])
                 self.table2id.pop(self.id2table.pop(id))
             self.data[id] = data
+            self.showMetas[id] = (True, [])
             self.progressBarInit()
             table=QTable(None)
             table.setSelectionMode(QTable.NoSelection)
@@ -88,43 +91,86 @@ class OWDataTable(OWWidget):
             self.tabs.showPage(table)
             self.progressBarFinished()
             self.set_info(data)
+            # enable showMetas checkbox only if metas exist
+            self.cbShowMeta.setEnabled(len(self.showMetas[id][1])>0)
         elif self.data.has_key(id):
             self.data.pop(id)
+            self.showMetas.pop(id)
             self.id2table[id].hide()
             self.tabs.removePage(self.id2table[id])
             self.table2id.pop(self.id2table.pop(id))
             self.set_info(self.data.get(self.table2id.get(self.tabs.currentPage(),None),None))
+        # disable showMetas checkbox if there is no data on input
+        if len(self.data) == 0:
+            self.cbShowMeta.setEnabled(False)
 
 
-    def updateInfo(self, qTableInstance):
-        """Updates the info box when a tab is clicked.
+    def tabClicked(self, qTableInstance):
+        """Updates the info box and showMetas checkbox when a tab is clicked.
         """
-        self.set_info(self.data.get(self.table2id.get(qTableInstance,None),None))
+        id = self.table2id.get(qTableInstance,None)
+        self.set_info(self.data.get(id,None))
+        show_col = self.showMetas.get(id,None)
+        if show_col:
+            self.cbShowMeta.setChecked(show_col[0])
+            self.cbShowMeta.setEnabled(len(show_col[1])>0)
+
+    def cbShowMetaClicked(self):
+        table = self.tabs.currentPage()
+        id = self.table2id.get(table, None)
+        if self.showMetas.has_key(id):
+            show,col = self.showMetas[id]
+            self.showMetas[id] = (not(show),col)
+        if show:
+            for c in col:
+                table.hideColumn(c)
+        else:
+            for c in col:
+                table.showColumn(c)
+                # we need to readjust the column width
+                table.adjustColumn(c)
+                table.setColumnWidth(c, table.columnWidth(c)+22)
+
+
+    def btnResetSortClicked(self):
+        """Sort the data by the last (hidden) column.
+        """
+        self.sortby = 0
+        table = self.tabs.currentPage()
+        if table:
+            self.sort(table.numCols()-1)
 
 
     def set_info(self, data):
         """Updates data info.
         """
-        def sp(l):
+        def sp(l, capitalize=False):
             n = len(l)
-            if n <> 1: return n, 's'
-            else: return n, ''
+            if n == 0:
+                if capitalize:                    
+                    return "No", "s"
+                else:
+                    return "no", "s"
+            elif n == 1:
+                return str(n), ''
+            else:
+                return str(n), 's'
         
         if not data:
-            self.infoEx.setText('No data loaded.')
+            self.infoEx.setText('No data on input.')
             self.infoMiss.setText('')
             self.infoAttr.setText('')
             self.infoMeta.setText('')
             self.infoClass.setText('')
         else:
-            self.infoEx.setText("%i example%s," % sp(data))
+            self.infoEx.setText("%s example%s," % sp(data))
             missData = orange.Preprocessor_takeMissing(data)
-            self.infoMiss.setText('%i (%.1f%s) with missing values.' % (len(missData), 100.*len(missData)/len(data), "%"))
-            self.infoAttr.setText("%i attribute%s," % sp(data.domain.attributes))
-            self.infoMeta.setText("%i meta%s." % sp(data.domain.getmetas()))
+            self.infoMiss.setText('%s (%.1f%s) with missing values.' % (len(missData), 100.*len(missData)/len(data), "%"))
+            self.infoAttr.setText("%s attribute%s," % sp(data.domain.attributes,True))
+            self.infoMeta.setText("%s meta attribute%s." % sp(data.domain.getmetas()))
             if data.domain.classVar:
                 if data.domain.classVar.varType == orange.VarTypes.Discrete:
-                    self.infoClass.setText('Discrete class with %d value%s.' % sp(data.domain.classVar.values))
+                    self.infoClass.setText('Discrete class with %s value%s.' % sp(data.domain.classVar.values))
                 elif data.domain.classVar.varType == orange.VarTypes.Continuous:
                     self.infoClass.setText('Continuous class.')
                 else:
@@ -140,15 +186,11 @@ class OWDataTable(OWWidget):
         if data==None:
             return
         vars = data.domain.variables
-        if self.showMetas:
-            m = data.domain.getmetas() # getmetas returns a dictionary
-            ml = [(k, m[k]) for k in m]
-            ml.sort(lambda x,y: cmp(y[0], x[0]))
-            metas = [x[1] for x in ml]
-            metaKeys = [x[0] for x in ml]
-        else:
-            metas = []
-            metaKeys = []
+        m = data.domain.getmetas() # getmetas returns a dictionary
+        ml = [(k, m[k]) for k in m]
+        ml.sort(lambda x,y: cmp(y[0], x[0]))
+        metas = [x[1] for x in ml]
+        metaKeys = [x[0] for x in ml]
         varsMetas = vars + metas
         numVars = len(data.domain.variables)
         numMetas = len(metas)
@@ -156,13 +198,15 @@ class OWDataTable(OWWidget):
         numEx = len(data)
         numSpaces = int(math.log(numEx, 10))+1
 
-        table.setNumCols(numVarsMetas)
+        table.setNumCols(numVarsMetas+1)
         table.setNumRows(numEx)
+        id = self.table2id.get(table,None)
 
         # set the header (attribute names)
-        self.header=table.horizontalHeader()
+        hheader=table.horizontalHeader()
         for i,var in enumerate(varsMetas):
-            self.header.setLabel(i, var.name)
+            hheader.setLabel(i, var.name)
+        hheader.setLabel(numVarsMetas, "")
 
         # set the contents of the table (values of attributes)
         # iterate variables
@@ -172,6 +216,7 @@ class OWDataTable(OWWidget):
                 bgColor = QColor(160,160,160)
             elif attr in metas:
                 bgColor = QColor(220,220,200)
+                self.showMetas[id][1].append(j) # store indices of meta attributes
             else:
                 bgColor = Qt.white
             # generate list of tuples (attribute value, instance index) and sort by attrVal
@@ -184,12 +229,24 @@ class OWDataTable(OWWidget):
                 OWGUI.tableItem(table, i, j, str(data[i][key]), editType=QTableItem.Never, background=bgColor, sortingKey=self.sortingKey(idx2rankDict[i], numSpaces))
             # adjust the width of the table
             table.adjustColumn(j)
+            table.setColumnWidth(j, table.columnWidth(j)+22)
 
+        # add hidden column with consecutive numbers for restoring the original order of examples
+        for i in range(numEx):
+            OWGUI.tableItem(table, i, numVarsMetas, "", editType=QTableItem.Never, sortingKey=self.sortingKey(i, numSpaces))
+        table.hideColumn(numVarsMetas)
+
+        # adjust vertical header
+        table.verticalHeader().setClickEnabled(False)
+        table.verticalHeader().setResizeEnabled(False)
+        table.verticalHeader().setMovingEnabled(False)
+        
         # manage sorting (not correct, does not handle real values)
-        self.connect(self.header,SIGNAL("clicked(int)"),self.sort)
+        self.connect(hheader,SIGNAL("clicked(int)"),self.sort)
         self.sortby = 0
         #table.setColumnMovingEnabled(1)
         qApp.restoreOverrideCursor()
+        table.setCurrentCell(-1,-1)
         table.show()
 
 
@@ -203,7 +260,7 @@ class OWDataTable(OWWidget):
             self.sortby = col+1
         table = self.tabs.currentPage()
         table.sortColumn(col, self.sortby>=0, TRUE)
-        table.horizontalHeader().setSortIndicator(col, self.sortby>=0)
+        table.horizontalHeader().setSortIndicator(col, self.sortby<0)
 ##        table.setSortIndicator(col, self.sortby>=0)
         qApp.restoreOverrideCursor()
 
@@ -237,5 +294,5 @@ if __name__=="__main__":
 ##    ow.dataset(d3,"sponge")
 ##    ow.dataset(None,"voting")
 ##    ow.dataset(None,"sponge")
-##    ow.dataset(d4,"wpbc")
+    ow.dataset(d4,"wpbc")
     a.exec_loop()
