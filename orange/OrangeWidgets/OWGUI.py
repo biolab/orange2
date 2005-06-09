@@ -466,15 +466,22 @@ class Disabler:
 # some table related widgets
 
 class tableItem(QTableItem):
-    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white):
+    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None):
         self.background = background
         QTableItem.__init__(self, table, editType, text)
         table.setItem(x, y, self)
+        self.sortingKey = sortingKey
 
     def paint(self, painter, colorgroup, rect, selected):
         g = QColorGroup(colorgroup)
         g.setColor(QColorGroup.Base, self.background)
         QTableItem.paint(self, painter, g, rect, selected)
+
+    def key(self):
+        if self.sortingKey:
+            return self.sortingKey
+        else:
+            return self.text()
 
 ##############################################################################
 # progress bar management
