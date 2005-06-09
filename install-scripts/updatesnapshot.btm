@@ -7,6 +7,7 @@ set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
 set SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.zip
 
 set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
+set PLINK_LINUX_GENOMICS_SNAPSHOT=orange-linux-genomics-snap-%daystr.tgz
 set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
 set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
 
@@ -31,7 +32,7 @@ del /qsyfx orange
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD orange
 cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD genomics
 cd orange
-cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -r HEAD source
+cvs -d :sspi:cvso@estelle.fri.uni-lj.si:/CVS -Q checkout -kb -r HEAD source
 
 
 rem ************************************************
@@ -86,5 +87,8 @@ call updateVersionsPy__.btm
 
 popd
 
+start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT
+
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
+
 
