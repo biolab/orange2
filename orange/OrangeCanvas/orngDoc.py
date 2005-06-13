@@ -235,7 +235,7 @@ class SchemaDoc(QMainWindow):
         
     # ####################################
     # add new widget
-    def addWidget(self, widget, x= -1, y=-1, caption = ""):
+    def addWidget(self, widget, x= -1, y=-1, caption = "", activateSettings = 1):
         qApp.setOverrideCursor(QWidget.waitCursor)
         try:
             newwidget = orngCanvasItems.CanvasWidget(self.signalManager, self.canvas, self.canvasView, widget, self.canvasDlg.defaultPic, self.canvasDlg)
@@ -273,7 +273,8 @@ class SchemaDoc(QMainWindow):
             newwidget.show()
             newwidget.updateTooltip()
             newwidget.setProcessing(1)
-            newwidget.instance.activateLoadedSettings()
+            if activateSettings:
+                newwidget.instance.activateLoadedSettings()
             newwidget.setProcessing(0)
         except:
             type, val, traceback = sys.exc_info()
@@ -318,10 +319,10 @@ class SchemaDoc(QMainWindow):
         self.enableSave(TRUE)
 
     # return a new widget instance of a widget with filename "widgetName"
-    def addWidgetByFileName(self, widgetName, x, y, caption):
+    def addWidgetByFileName(self, widgetName, x, y, caption, activateSettings = 1):
         for widget in self.canvasDlg.tabs.allWidgets:
             if widget.getFileName() == widgetName:
-                return self.addWidget(widget, x, y, caption)
+                return self.addWidget(widget, x, y, caption, activateSettings)
         return None
 
     # return the widget instance that has caption "widgetName"
@@ -475,7 +476,7 @@ class SchemaDoc(QMainWindow):
             widgetList = widgets.getElementsByTagName("widget")
             for widget in widgetList:
                 name = widget.getAttribute("widgetName")
-                tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"))
+                tempWidget = self.addWidgetByFileName(name, int(widget.getAttribute("xPos")), int(widget.getAttribute("yPos")), widget.getAttribute("caption"), activateSettings = 0)
                 if not tempWidget:
                     QMessageBox.information(self,'Orange Canvas','Unable to create instance of widget \"'+ name + '\"',  QMessageBox.Ok + QMessageBox.Default)
                 else:
