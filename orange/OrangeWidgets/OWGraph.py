@@ -40,6 +40,7 @@ class OWGraph(QwtPlot):
         self.tipRight = None
         self.tipBottom = None
 
+        self.showAxisScale = 1
         self.showMainTitle = FALSE
         self.mainTitle = None
         self.showXaxisTitle = FALSE
@@ -63,6 +64,15 @@ class OWGraph(QwtPlot):
         
     def setYLlabels(self, labels):
         "Sets the Y-axis labels on the left."
+        if not self.showAxisScale:
+            self.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
+            self.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
+            self.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
+            return
+
+        self.axisScaleDraw(QwtPlot.yLeft).setTickLength(1, 1, 3)
+        self.axisScaleDraw(QwtPlot.yLeft).setOptions(1)
+        
         if (labels <> None):
             self.setAxisScaleDraw(QwtPlot.yLeft, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.yLeft, 0, len(labels) - 1, 1)
@@ -77,6 +87,15 @@ class OWGraph(QwtPlot):
 
     def setYRlabels(self, labels):
         "Sets the Y-axis labels on the right."
+        if not self.showAxisScale:
+            self.setAxisScaleDraw(QwtPlot.yRight, HiddenScaleDraw())
+            self.axisScaleDraw(QwtPlot.yRight).setTickLength(0, 0, 0)
+            self.axisScaleDraw(QwtPlot.yRight).setOptions(0) 
+            return
+
+        self.axisScaleDraw(QwtPlot.yRight).setTickLength(1, 1, 3)
+        self.axisScaleDraw(QwtPlot.yRight).setOptions(1)
+        
         if (labels <> None):
             self.setAxisScaleDraw(QwtPlot.yRight, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.yRight, 0, len(labels) - 1, 1)
@@ -92,6 +111,15 @@ class OWGraph(QwtPlot):
     def setXlabels(self, labels):
         "Sets the x-axis labels if x-axis discrete."
         "Or leave up to QwtPlot (MaxMajor, MaxMinor) if x-axis continuous."
+        if not self.showAxisScale:
+            self.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
+            self.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)
+            self.axisScaleDraw(QwtPlot.xBottom).setOptions(0) 
+            return
+
+        self.axisScaleDraw(QwtPlot.xBottom).setTickLength(1, 1, 3)
+        self.axisScaleDraw(QwtPlot.xBottom).setOptions(1)
+        
         if (labels <> None):
             self.setAxisScaleDraw(QwtPlot.xBottom, DiscreteAxisScaleDraw(labels))
             self.setAxisScale(QwtPlot.xBottom, 0, len(labels) - 1, 1)

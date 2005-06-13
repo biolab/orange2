@@ -21,7 +21,7 @@ import OWToolbars
 ##### WIDGET : Scatterplot visualization
 ###########################################################################################
 class OWScatterPlot(OWWidget):
-    settingsList = ["graph.pointWidth", "showXAxisTitle", "showYAxisTitle", "showVerticalGridlines", "showHorizontalGridlines",
+    settingsList = ["graph.pointWidth", "graph.showXaxisTitle", "graph.showYLaxisTitle", "showVerticalGridlines", "showHorizontalGridlines", "graph.showAxisScale",
                     "graph.enabledLegend", "graphGridColor", "graphCanvasColor", "graph.jitterSize", "graph.jitterContinuous", "graph.showFilledSymbols",
                     "graph.showDistributions", "autoSendSelection", "graph.optimizedDrawing", "toolbarSelection", "graph.showClusters",
                     "VizRankClassifierName", "clusterClassifierName", "learnerIndex"]
@@ -34,9 +34,7 @@ class OWScatterPlot(OWWidget):
         self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Learner", orange.Learner)]
 
-        # local variables
-        self.showXAxisTitle = 1
-        self.showYAxisTitle = 1
+        # local variables    
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
         self.autoSendSelection = 1
@@ -52,18 +50,6 @@ class OWScatterPlot(OWWidget):
         self.graph = OWScatterPlotGraph(self, self.mainArea)
         self.optimizationDlg = kNNOptimization(self, self.signalManager, self.graph, "ScatterPlot")
         self.clusterDlg = ClusterOptimization(self, self.signalManager, self.graph, "ScatterPlot")
-
-        # graph variables
-        self.graph.pointWidth = 5
-        self.graph.enabledLegend = 1
-        self.graph.showDistributions = 0
-        self.graph.optimizedDrawing = 1
-        self.graph.showClusters = 0
-        self.graph.tooltipKind = 1
-        self.graph.jitterContinuous = 0
-        self.graph.jitterSize = 5
-        self.graph.showFilledSymbols = 1
-        self.graph.showAxisScale = 1
        
         self.data = None
 
@@ -159,15 +145,15 @@ class OWScatterPlot(OWWidget):
         
         # general graph settings
         box = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
-        OWGUI.checkBox(box, self, 'showXAxisTitle', 'X axis title', callback = self.updateAxisTitle)
-        OWGUI.checkBox(box, self, 'showYAxisTitle', 'Y axis title', callback = self.updateAxisTitle)
-        OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
-        OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
-        OWGUI.checkBox(box, self, 'graph.showAxisScale', 'Show axis scale', callback = self.setAxisScale)
+        OWGUI.checkBox(box, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
         #OWGUI.checkBox(box, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
         OWGUI.checkBox(box, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
         OWGUI.checkBox(box, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
+        OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
         OWGUI.checkBox(box, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
 
         box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
@@ -190,12 +176,8 @@ class OWScatterPlot(OWWidget):
     # OPTIONS
     # #########################
     def activateLoadedSettings(self):
-        self.setAxisScale()
-        self.graph.setShowXaxisTitle(self.showXAxisTitle)
-        self.graph.setShowYLaxisTitle(self.showYAxisTitle)
         self.graph.enableGridXB(self.showVerticalGridlines)
         self.graph.enableGridYL(self.showHorizontalGridlines)
-        
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         self.graph.setGridPen(QPen(QColor(self.graphGridColor)))
                 
@@ -243,11 +225,12 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.clearResults()
         self.optimizationDlg.disableControls()
 
-        # sort attributes according to the heuristic
-        attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data)
-
-        # evaluate projections
-        self.graph.getOptimalSeparation(attributeNameOrder, self.optimizationDlg.addResult)
+        try:
+            attributeNameOrder = self.optimizationDlg.getEvaluatedAttributes(self.data) # sort attributes according to the heuristic
+            self.graph.getOptimalSeparation(attributeNameOrder, self.optimizationDlg.addResult) # evaluate projections
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
@@ -263,10 +246,12 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.pointStability = None
         self.clusterDlg.disableControls()
 
-        attributeNameOrder = self.clusterDlg.getEvaluatedAttributes(self.data)
-
-        # evaluate projections
-        self.graph.getOptimalClusters(attributeNameOrder, self.clusterDlg.addResult)
+        try:
+            attributeNameOrder = self.clusterDlg.getEvaluatedAttributes(self.data)
+            self.graph.getOptimalClusters(attributeNameOrder, self.clusterDlg.addResult)    # evaluate projections
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
@@ -395,10 +380,9 @@ class OWScatterPlot(OWWidget):
         self.graph.insideColors = None
         self.graph.clusterClosure = None
         
-        self.optimizationDlg.setData(data)  # set k value to sqrt(n)
+        self.optimizationDlg.setData(data)
         self.clusterDlg.setData(data, clearResults)
         
-       
         if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
             self.initAttrValues()
 
@@ -431,39 +415,14 @@ class OWScatterPlot(OWWidget):
         
     # ################################################
 
-
     # #######################################
     # SCATTERPLOT SETTINGS
-    # #######################################
-
-    def setAxisScale(self):
-        if not self.graph.showAxisScale:
-            self.graph.setAxisScaleDraw(QwtPlot.xBottom, HiddenScaleDraw())
-            self.graph.setAxisScaleDraw(QwtPlot.yLeft, HiddenScaleDraw())
-            self.graph.axisScaleDraw(QwtPlot.xBottom).setTickLength(0, 0, 0)
-            self.graph.axisScaleDraw(QwtPlot.yLeft).setTickLength(0, 0, 0)
-            self.graph.axisScaleDraw(QwtPlot.xBottom).setOptions(0) 
-            self.graph.axisScaleDraw(QwtPlot.yLeft).setOptions(0) 
-        else:
-            self.graph.setAxisScaleDraw(QwtPlot.xBottom, QwtScaleDraw())
-            self.graph.setAxisScaleDraw(QwtPlot.yLeft, QwtScaleDraw())
-            self.graph.axisScaleDraw(QwtPlot.xBottom).setTickLength(1, 1, 3)
-            self.graph.axisScaleDraw(QwtPlot.yLeft).setTickLength(1, 1, 3)
-            self.graph.axisScaleDraw(QwtPlot.xBottom).setOptions(1) 
-            self.graph.axisScaleDraw(QwtPlot.yLeft).setOptions(1)
-        self.graph.repaint()
-
-
+    # ######################################
     def replotCurves(self):
         for key in self.graph.curveKeys():
             symbol = self.graph.curveSymbol(key)
             self.graph.setCurveSymbol(key, QwtSymbol(symbol.style(), symbol.brush(), symbol.pen(), QSize(self.graph.pointWidth, self.graph.pointWidth)))
         self.graph.repaint()
-
-    def updateAxisTitle(self):
-        self.graph.setShowXaxisTitle(self.showXAxisTitle)
-        self.graph.setShowYLaxisTitle(self.showYAxisTitle)
-        self.updateGraph()
 
     def setVerticalGridlines(self):
         self.graph.enableGridXB(self.showVerticalGridlines)
@@ -497,13 +456,12 @@ class OWScatterPlot(OWWidget):
         self.graph.pointWidth = 4
         self.graph.enabledLegend = 0
         self.graph.showClusters = 0
-        self.showXAxisTitle = 0
-        self.showYAxisTitle = 0
+        self.graph.showXaxisTitle = 0
+        self.graph.showYLaxisTitle = 0
+        self.graph.showAxisScale = 0
         self.showVerticalGridlines = 0
         self.showHorizontalGridlines = 0
         self.autoSendSelection = 0
-        self.graph.showAxisScale = 0
-        #self.setAxisScale()
         #self.updateValues()
 
     def restoreGraphProperties(self):

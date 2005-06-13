@@ -42,7 +42,8 @@ DONT_SHOW_TOOLTIPS = 0
 VISIBLE_ATTRIBUTES = 1
 ALL_ATTRIBUTES = 2
 
-                
+MIN_SHAPE_SIZE = 6
+
 ###########################################################################################
 ##### CLASS : OWSCATTERPLOTGRAPH
 ###########################################################################################
@@ -50,19 +51,23 @@ class OWScatterPlotGraph(OWVisGraph):
     def __init__(self, scatterWidget, parent = None, name = None):
         "Constructs the graph"
         OWVisGraph.__init__(self, parent, name)
-
+    
+        self.pointWidth = 5
         self.jitterContinuous = 0
-        self.jitterSize = 0
-        self.enabledLegend = 0
-        self.showDistributions = 1
-        self.toolRects = []
-        self.tooltipData = []
+        self.jitterSize = 5
+        self.showAxisScale = 1
+        self.showXaxisTitle= 1
+        self.showYLaxisTitle = 1
+        self.enabledLegend = 1
+        self.showDistributions = 0        
         self.optimizedDrawing = 1
         self.showClusters = 0
         self.tooltipKind = 1
+        self.showFilledSymbols = 1
+        
+        self.toolRects = []
+        self.tooltipData = []
         self.scatterWidget = scatterWidget
-        self.optimizeForPrinting = 0
-        self.showAxisScale = 1
         self.kNNOptimization = None
         self.clusterOptimization = None
         self.insideColors = None
@@ -96,9 +101,7 @@ class OWScatterPlotGraph(OWVisGraph):
         (yVarMin, yVarMax) = self.attrValues[yAttr]; yVar = yVarMax - yVarMin
         xAttrIndex = self.attributeNameIndex[xAttr]
         yAttrIndex = self.attributeNameIndex[yAttr]
-        
-        MIN_SHAPE_SIZE = 6
-        MAX_SHAPE_DIFF = self.pointWidth
+    
 
         # #######################################################
         # set axis for x attribute
@@ -109,12 +112,13 @@ class OWScatterPlotGraph(OWVisGraph):
             attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
             if self.showAxisScale: self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
             xmin = xVarMin - (self.jitterSize + 10.)/100. ; xmax = xVarMax + (self.jitterSize + 10.)/100.
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.35, 1)
         else:
             self.setXlabels(None)
             off  = (xVarMax - xVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             xmin = xVarMin - off; xmax = xVarMax + off
-            
-        self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.35, 1)
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.35)
+        
         # #######################################################
         
    
@@ -130,12 +134,14 @@ class OWScatterPlotGraph(OWVisGraph):
         else:
             self.setYLlabels(None)
             off  = (yVarMax - yVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
-            self.setAxisScale(QwtPlot.yLeft, yVarMin - off, yVarMax + off, 1)
+            self.setAxisScale(QwtPlot.yLeft, yVarMin - off, yVarMax + off)
         # #######################################################
-
             
         if self.showXaxisTitle == 1: self.setXaxisTitle(xAttr)
+        else: self.setXaxisTitle(None)
+
         if self.showYLaxisTitle == 1: self.setYLaxisTitle(yAttr)
+        else: self.setYLaxisTitle(None)
 
         colorIndex = -1
         if colorAttr != "" and colorAttr != "(One color)":
@@ -319,7 +325,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.rawdata[i][shapeIndex].value]]
 
                     size = self.pointWidth
-                    if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
+                    if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
 
                     selected = 1
                     if haveSubsetData and self.rawdata[i] not in self.subsetData: selected = 0
@@ -357,7 +363,7 @@ class OWScatterPlotGraph(OWVisGraph):
                         if shapeIndex != -1: Symbol = self.curveSymbols[shapeIndices[self.subsetData[i][shapeIndex].value]]
 
                         size = self.pointWidth
-                        if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * MAX_SHAPE_DIFF)
+                        if sizeShapeIndex != -1: size = MIN_SHAPE_SIZE + round(self.noJitteringScaledData[sizeShapeIndex][i] * self.pointWidth)
                         self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
 
         
@@ -394,7 +400,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 varValues = getVariableValuesSorted(self.rawdata, sizeShapeIndex)
                 for ind in range(num):
                     val[0].append(self.rawdata.domain[sizeShapeIndex].name + "=" + varValues[ind])
-                    val[2].append(MIN_SHAPE_SIZE + round(ind*MAX_SHAPE_DIFF/len(varValues)))
+                    val[2].append(MIN_SHAPE_SIZE + round(ind*self.pointWidth/len(varValues)))
                 legendKeys[sizeShapeIndex] = val
 
             for key in legendKeys.keys()  :
