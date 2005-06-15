@@ -17,6 +17,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.debugMode = 1        # print extra output for debuging
         self.setCaption("Qt Orange Canvas")
         self.windows = []    # list of id for windows in Window menu
+        self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
         self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
         self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
@@ -192,23 +193,23 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuFile.insertItem( "&Close", self.menuItemClose )
         self.menuFile.insertSeparator()
         self.menuSaveID = self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_save)), "&Save", self.menuItemSave, Qt.CTRL+Qt.Key_S )
-        self.menuSaveAsID = self.menuFile.insertItem( "&Save As...", self.menuItemSaveAs)
+        self.menuSaveAsID = self.menuFile.insertItem( "Save &As...", self.menuItemSaveAs)
         self.menuFile.insertItem( "&Save As Application (Tabs)...", self.menuItemSaveAsAppTabs)
         self.menuFile.insertItem( "&Save As Application (Buttons)...", self.menuItemSaveAsAppButtons)
         self.menuFile.insertSeparator()
         self.menuFile.insertItem(QIconSet(QPixmap(orngResources.file_print)), "&Print Schema / Save image", self.menuItemPrinter, Qt.CTRL+Qt.Key_P )
         self.menuFile.insertSeparator()
-        self.menuFile.insertItem( "Recent Files", self.menuRecent)
+        self.menuFile.insertItem( "&Recent Files", self.menuRecent)
         self.menuFile.insertSeparator()
         #self.menuFile.insertItem( "E&xit",  qApp, SLOT( "quit()" ), Qt.CTRL+Qt.Key_Q )
         self.menuFile.insertItem( "E&xit",  self.close, Qt.CTRL+Qt.Key_Q )
 
         self.menuEdit = QPopupMenu( self )
-        self.menuEdit.insertItem( "Cut",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
-        self.menuEdit.insertItem( "Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
-        self.menuEdit.insertItem( "Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
+        self.menuEdit.insertItem( "Cu&t",  self.menuItemCut, Qt.CTRL+Qt.Key_X )
+        self.menuEdit.insertItem( "&Copy",  self.menuItemCopy, Qt.CTRL+Qt.Key_C )
+        self.menuEdit.insertItem( "&Paste",  self.menuItemPaste, Qt.CTRL+Qt.Key_V )
         self.menuFile.insertSeparator()
-        self.menuEdit.insertItem( "Select All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
+        self.menuEdit.insertItem( "Select &All",  self.menuItemSelectAll, Qt.CTRL+Qt.Key_A )
 
         self.menuOptions = QPopupMenu( self )
         #self.menuOptions.insertItem( "Grid",  self.menuItemGrid )
@@ -225,13 +226,13 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.insertSeparator()
         #self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
+        self.menuOptions.insertItem( "&Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "Canvas options...",  self.menuItemCanvasOptions)
+        self.menuOptions.insertItem( "Canvas &options...",  self.menuItemCanvasOptions)
         
         self.menuWindow = QPopupMenu( self )        
-        self.menuWindow.insertItem("Cascade", self.workspace.cascade)
-        self.menuWindow.insertItem("Tile", self.workspace.tile)
+        self.menuWindow.insertItem("&Cascade", self.workspace.cascade)
+        self.menuWindow.insertItem("&Tile", self.workspace.tile)
         self.menuWindow.insertSeparator()
         
         self.connect(self.menuWindow, SIGNAL("aboutToShow()"), self.showWindows)
@@ -250,14 +251,14 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.menuWindow.insertSeparator()
         self.menuOutput = QPopupMenu(self)
-        self.menuWindow.insertItem( "Output Window", self.menuOutput)
+        self.menuWindow.insertItem( "Output &Window", self.menuOutput)
         self.menuOutput.insertItem("Show Output Window", self.menuItemShowOutputWindow)
         self.menuOutput.insertItem("Clear Output Window", self.menuItemClearOutputWindow)
         self.menuOutput.insertSeparator()
         self.menuOutput.insertItem("Save Output Text...", self.menuItemSaveOutputWindow)
         self.menuWindow.insertSeparator()
 
-        self.menuWindow.insertItem("Minimize All", self.menuMinimizeAll)
+        self.menuWindow.insertItem("&Minimize All", self.menuMinimizeAll)
         self.menuWindow.insertItem("Restore All", self.menuRestoreAll)
         self.menuWindow.insertItem("Close All", self.menuCloseAll)
         self.menuWindow.insertSeparator()
@@ -286,21 +287,18 @@ class OrangeCanvasDlg(QMainWindow):
 
 
     def showWindows(self):
-        for id in self.windows:
+        for id in self.windowsDict.keys():
             self.menuWindow.removeItem(id)
-        self.windows = []
+        self.windowsDict = {}
         wins = self.workspace.windowList()
-        for win in wins:
-            #id = self.menuWindow.insertItem(str(win.caption()), SLOT("windowsMenuActivated( int )"), self.activateWindow)
-            id = self.menuWindow.insertItem(str(win.caption()), self.activateWindow)
-            self.windows.append(id)
+        for i in range(len(wins)):
+            txt = str(i+1) + ' ' + str(wins[i].caption())
+            if i<10: txt = "&" + txt
+            id = self.menuWindow.insertItem(txt, self.activateWindowById)
+            self.windowsDict[id]=wins[i]
 
-    def activateWindow(self, id):
-        caption = self.menuWindow.text(id)
-        winList = self.workspace.windowList()
-        for win in winList:
-            if str(win.caption()) == caption:
-                win.setFocus()
+    def activateWindowById(self, id):
+        self.windowsDict[id].setFocus()
 
     def menuItemNewSchema(self):
         win = orngDoc.SchemaDoc(self, self.workspace, "", Qt.WDestructiveClose)
@@ -374,7 +372,8 @@ class OrangeCanvasDlg(QMainWindow):
         self.settings["RecentFiles"] = recentDocs
         
         for i in range(len(recentDocs)):
-            shortName = os.path.basename(recentDocs[i])
+            shortName = str(i) + " " + os.path.basename(recentDocs[i])
+            if i<10: shortName = "&" + shortName
             self.menuRecent.insertItem(shortName, eval("self.menuItemRecent"+str(i+1)))
 
     def openRecentFile(self, index):
