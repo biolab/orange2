@@ -22,6 +22,9 @@ class OWDataDomain(OWWidget):
     def __init__(self,parent = None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Data Domain") #initialize base class
 
+        buttonWidth = 50
+        applyButtonWidth = 101
+
         # set member variables
         self.data = None
         self.internalSelectionUpdateFlag = 0
@@ -34,7 +37,8 @@ class OWDataDomain(OWWidget):
         self.outputs = [("OutputData", ExampleTable), ("OutputDataWithClass", ExampleTableWithClass)]
 
         # GUI
-        self.mainArea.setFixedWidth(1)
+        self.mainArea.setFixedWidth(0)
+        #self.buttonBackground.hide()
         ca=QFrame(self.controlArea)
         ca.adjustSize()
         gl=QGridLayout(ca,4,3,5)
@@ -52,8 +56,11 @@ class OWDataDomain(OWWidget):
         vbAttr = QVBox(ca)
         gl.addWidget(vbAttr, 0,1)
         self.attributesButtonUp = OWGUI.button(vbAttr, self, "Up", self.onAttributesButtonUpClick)
+        self.attributesButtonUp.setMaximumWidth(buttonWidth)
         self.attributesButton = OWGUI.button(vbAttr, self, ">",self.onAttributesButtonClicked)        
+        self.attributesButton.setMaximumWidth(buttonWidth)
         self.attributesButtonDown = OWGUI.button(vbAttr, self, "Down", self.onAttributesButtonDownClick)
+        self.attributesButtonDown.setMaximumWidth(buttonWidth)
         boxAttr = QVGroupBox(ca)
         boxAttr.setTitle('Attributes')
         gl.addWidget(boxAttr, 0,2)
@@ -65,6 +72,7 @@ class OWDataDomain(OWWidget):
 
         # class        
         self.classButton = OWGUI.button(ca, self, ">", self.onClassButtonClicked)
+        self.classButton.setMaximumWidth(buttonWidth)
         gl.addWidget(self.classButton, 1,1)
         boxClass = QVGroupBox(ca)
         boxClass.setTitle('Class')
@@ -80,8 +88,11 @@ class OWDataDomain(OWWidget):
         vbMeta = QVBox(ca)
         gl.addWidget(vbMeta, 2,1)
         self.metaButtonUp = OWGUI.button(vbMeta, self, "Up", self.onMetaButtonUpClick)
+        self.metaButtonUp.setMaximumWidth(buttonWidth)
         self.metaButton = OWGUI.button(vbMeta, self, ">",self.onMetaButtonClicked)
+        self.metaButton.setMaximumWidth(buttonWidth)
         self.metaButtonDown = OWGUI.button(vbMeta, self, "Down", self.onMetaButtonDownClick)
+        self.metaButtonDown.setMaximumWidth(buttonWidth)
         boxMeta = QVGroupBox(ca)
         boxMeta.setTitle('Meta Attributes')
         gl.addWidget(boxMeta, 2,2)
@@ -96,9 +107,14 @@ class OWDataDomain(OWWidget):
         gl.addMultiCellWidget(boxApply, 3,3,0,2)
         self.applyButton = OWGUI.button(boxApply, self, "Apply", callback = self.setOutput)
         self.applyButton.setEnabled(False)
-        self.applyButton.setMaximumWidth(101)
+        self.applyButton.setMaximumWidth(applyButtonWidth)
         self.resetButton = OWGUI.button(boxApply, self, "Reset", callback = self.reset)
-        self.resetButton.setMaximumWidth(101)
+        self.resetButton.setMaximumWidth(applyButtonWidth)
+
+        # icons
+        self.icons = {orange.VarTypes.Continuous: self.createAttributePixmap("C"),
+                      orange.VarTypes.Discrete: self.createAttributePixmap("D"),
+                      orange.VarTypes.String: self.createAttributePixmap("S")}
 
         self.resize(400,480)       
 
@@ -118,15 +134,15 @@ class OWDataDomain(OWWidget):
         if data:
             #set up normal attributes
             for attr in data.domain.attributes:
-                self.attributesList.insertItem(self.createListItem(attr.varType, attr.name))
+                self.attributesList.insertItem(self.icons[attr.varType], attr.name)
 
             #set up class variable
             if data and data.domain.classVar:
-                self.classList.insertItem(self.createListItem(data.domain.classVar.varType, data.domain.classVar.name))
+                self.classList.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
 
             #set up meta attriutes
             for attr in data.domain.getmetas().values():
-                self.metaList.insertItem(self.createListItem(attr.varType, attr.name))
+                self.metaList.insertItem(self.icons[attr.varType], attr.name)
 
             self.setInputAttributesListElements()
 
@@ -275,7 +291,7 @@ class OWDataDomain(OWWidget):
                 if (self.inputAttributesList.isSelected(i)):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
-                    self.attributesList.insertItem(self.createListItem(itemType,itemText))
+                    self.attributesList.insertItem(self.icons[itemType],itemText)
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -296,7 +312,7 @@ class OWDataDomain(OWWidget):
                 if (self.inputAttributesList.isSelected(i)):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
-                    self.classList.insertItem(self.createListItem(itemType,itemText))
+                    self.classList.insertItem(self.icons[itemType],itemText)
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -318,7 +334,7 @@ class OWDataDomain(OWWidget):
                 if (self.inputAttributesList.isSelected(i)):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
-                    self.metaList.insertItem(self.createListItem(itemType,itemText))
+                    self.metaList.insertItem(self.icons[itemType],itemText)
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -351,31 +367,18 @@ class OWDataDomain(OWWidget):
     ## Utility functions #######################################################################################################################################
     ############################################################################################################################################################
         
-    def createListItem(self, varType, text):
-            marks = {}
-            marks[orange.VarTypes.Continuous] = 'C'
-            marks[orange.VarTypes.Discrete] = 'D'
-            marks[orange.VarTypes.String] = 'S'
+    def createAttributePixmap(self, char):
+        pixmap = QPixmap()
+        pixmap.resize(13,13)
+        painter = QPainter()
+        painter.begin(pixmap)
+        painter.setPen( Qt.black );
+        painter.setBrush( Qt.white );
+        painter.drawRect( 0, 0, 13, 13 );
+        painter.drawText(3, 11, char)
+        painter.end()
+        return pixmap
 
-
-            pixmap = QPixmap()
-            pixmap.resize(13,13)
-
-            painter = QPainter()
-            painter.begin(pixmap)
-
-
-            painter.setPen( Qt.black );
-            painter.setBrush( Qt.white );
-            painter.drawRect( 0, 0, 13, 13 );
-            painter.drawText(3, 11, marks[varType])
-
-            painter.end()
-            
-            listItem= QListBoxPixmap(pixmap)
-            listItem.setText(text)
-
-            return listItem
 
     def computeSelectionCount(self, listBox):
         result = 0
@@ -416,10 +419,10 @@ class OWDataDomain(OWWidget):
             if (listBox.isSelected(i)):
                 selection.append(i)
         for i in selection:
-            item1 = self.createListItem(self.data.domain[str(listBox.text(i-1))].varType, str(listBox.text(i-1)))
-            item2 = self.createListItem(self.data.domain[str(listBox.text(i))].varType, str(listBox.text(i)))
-            listBox.changeItem(item1, i)
-            listBox.changeItem(item2, i-1)
+            txt1 = str(listBox.text(i-1))
+            txt2 = str(listBox.text(i))
+            listBox.changeItem(self.icons[self.data.domain[txt1].varType], txt1, i)
+            listBox.changeItem(self.icons[self.data.domain[txt2].varType], txt2, i-1)
         listBox.clearSelection()
         for i in selection:
             listBox.setSelected(i-1, True)
@@ -433,10 +436,10 @@ class OWDataDomain(OWWidget):
 
         selection.reverse()        
         for i in selection:
-            item1 = self.createListItem(self.data.domain[str(listBox.text(i))].varType, str(listBox.text(i)))
-            item2 = self.createListItem(self.data.domain[str(listBox.text(i+1))].varType, str(listBox.text(i+1)))
-            listBox.changeItem(item1, i+1)
-            listBox.changeItem(item2, i)
+            txt1 = str(listBox.text(i))
+            txt2 = str(listBox.text(i+1))
+            listBox.changeItem(self.icons[self.data.domain[txt1].varType], txt1, i+1)
+            listBox.changeItem(self.icons[self.data.domain[txt2].varType], txt2, i)
         listBox.clearSelection()
         for i in selection:
             listBox.setSelected(i+1, True)
@@ -445,17 +448,13 @@ class OWDataDomain(OWWidget):
         self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
         self.inputAttributesList.clear()
         if self.data:
-            #set up normal attributes
-            for attr in self.data.domain.attributes:
-                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
-
-            #set up class variable
-            if self.data.domain.classVar:
-                self.inputAttributesList.insertItem(self.createListItem(self.data.domain.classVar.varType, self.data.domain.classVar.name))
+            #set up normal attributes + class
+            for attr in self.data.domain.variables:
+                self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
 
             #set up meta attriutes
             for attr in self.data.domain.getmetas().values():
-                self.inputAttributesList.insertItem(self.createListItem(attr.varType, attr.name))
+                self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
 
         for i in range(self.inputAttributesList.count(), -1, -1):
             item = self.attributesList.findItem(str(self.inputAttributesList.text(i)))
@@ -492,7 +491,11 @@ class OWDataDomain(OWWidget):
             
 if __name__=="__main__":
     data = orange.ExampleTable(r'..\..\doc\datasets\iris.tab')
-    
+    # add meta attribute
+    data.domain.addmeta(orange.newmetaid(), orange.StringVariable("name"))
+    for ex in data:
+        ex["name"] = str(ex.getclass())
+
     a=QApplication(sys.argv)
     ow=OWDataDomain()
     a.setMainWidget(ow)
