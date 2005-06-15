@@ -3,7 +3,7 @@
 #    tab for showing widgets and widget button class
 #
 from qt import *
-import os.path
+import os.path, sys
 from string import strip
 import orngDoc, orngOutput, orngResources
 from orngSignalManager import InputSignal, OutputSignal
@@ -282,36 +282,41 @@ class WidgetTabs(QTabWidget):
         
         widgetList = category.getElementsByTagName("widget")
         for widget in widgetList:
-            name = str(widget.getAttribute("name"))
-            fileName = str(widget.getAttribute("file"))
-            author = str(widget.getAttribute("author"))
-            inputs = [InputSignal(*signal) for signal in eval(widget.getAttribute("in"))]
-            outputs = [OutputSignal(*signal) for signal in eval(widget.getAttribute("out"))]
-            priority = int(widget.getAttribute("priority"))
-            iconName = widget.getAttribute("icon")
-            
-            # it's a complicated way to get to the widget description
-            description = ""
-            for node in widget.childNodes:
-                if node.nodeType == node.TEXT_NODE:
-                    description = description + node.nodeValue
-                else:
-                    for n2 in node.childNodes:
-                        if n2.nodeType == node.TEXT_NODE:
-                            description = description + n2.nodeValue
+            try:
+                name = str(widget.getAttribute("name"))
+                fileName = str(widget.getAttribute("file"))
+                author = str(widget.getAttribute("author"))
+                inputs = [InputSignal(*signal) for signal in eval(widget.getAttribute("in"))]
+                outputs = [OutputSignal(*signal) for signal in eval(widget.getAttribute("out"))]
+                priority = int(widget.getAttribute("priority"))
+                iconName = widget.getAttribute("icon")
+                
+                # it's a complicated way to get to the widget description
+                description = ""
+                for node in widget.childNodes:
+                    if node.nodeType == node.TEXT_NODE:
+                        description = description + node.nodeValue
+                    else:
+                        for n2 in node.childNodes:
+                            if n2.nodeType == node.TEXT_NODE:
+                                description = description + n2.nodeValue
 
-            description = strip(description)
-            i = 0
-            while i < len(priorityList) and priority > priorityList[i]:
-                i = i + 1
-            priorityList.insert(i, priority)
-            nameList.insert(i, name)
-            authorList.insert(i, author)
-            fileNameList.insert(i, fileName)
-            iconNameList.insert(i, iconName)
-            descriptionList.insert(i, description)
-            inputList.insert(i, inputs)
-            outputList.insert(i, outputs)
+                description = strip(description)
+                i = 0
+                while i < len(priorityList) and priority > priorityList[i]:
+                    i = i + 1
+                priorityList.insert(i, priority)
+                nameList.insert(i, name)
+                authorList.insert(i, author)
+                fileNameList.insert(i, fileName)
+                iconNameList.insert(i, iconName)
+                descriptionList.insert(i, description)
+                inputList.insert(i, inputs)
+                outputList.insert(i, outputs)
+            except:
+                print "Error at reading settings for %s widget." % (name)
+                type, val, traceback = sys.exc_info()
+                sys.excepthook(type, val, traceback)  # print the exception
 
         exIndex = 0
         for i in range(len(priorityList)):            
