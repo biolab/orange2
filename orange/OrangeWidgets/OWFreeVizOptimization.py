@@ -4,7 +4,7 @@ from OWkNNOptimization import *
 import orange, math, random, orangeom
 import OWGUI, OWVisAttrSelection, OWVisTools, DESolver, Numeric
 from math import sqrt
-
+from OWRadvizGraph import buildPermutationIndexList
 
 class FreeVizOptimization(OWBaseWidget):
     settingsList = ["stepsBeforeUpdate", "lockToCircle", "attractG", "repelG", "differentialEvolutionPopSize",
@@ -33,6 +33,7 @@ class FreeVizOptimization(OWBaseWidget):
         self.s2nPlaceAttributes = 50
         self.s2nMixData = None
         self.autoSetParameters = 1
+        self.classPermutationList = None
 
         # differential evolution
         self.differentialEvolutionPopSize = 100
@@ -118,6 +119,7 @@ class FreeVizOptimization(OWBaseWidget):
     def setData(self, data):
         self.rawdata = data
         self.s2nMixData = None
+        self.classPermutationList = None
         
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
@@ -303,23 +305,27 @@ class FreeVizOptimization(OWBaseWidget):
     # if not then just use current parameters to place anchors
     def s2nMixAnchorsAutoSet(self):
         if self.autoSetParameters:
-            results = []
+            results = {}
             oldVal = self.parentWidget.optimizationDlg.qualityMeasure
             self.parentWidget.optimizationDlg.qualityMeasure = AVERAGE_CORRECT
             self.s2nSpread = 0
-            first = 1
-            for val in self.attrsNum:
-                if val > len(self.rawdata.domain.attributes):
-                    if not first: continue
-                    else: first = 0         # allow the computations once
-                self.s2nPlaceAttributes = val
-                self.s2nMixAnchors()
-                qApp.processEvents()
-                acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
-                results.append(acc)
-            self.s2nPlaceAttributes = self.attrsNum[results.index(max(results))]
+            classPerms = {}
+            buildPermutationIndexList(range(len(self.rawdata.domain.classVar.values)), [], classPerms)
+            for perm in classPerms.values():
+                self.classPermutationList = perm
+                for val in self.attrsNum:
+                    if self.attrsNum[self.attrsNum.index(val)-1] > len(self.rawdata.domain.attributes): continue    # allow the computations once
+                    self.s2nPlaceAttributes = val
+                    self.s2nMixAnchors(0)
+                    qApp.processEvents()
+                    acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(None, useAnchorData = 1))
+                    if results.keys() != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results.keys())))
+                    else:                    self.setStatusBarText("Current projection value is %.2f" % (acc))
+                                                             
+                    results[acc] = (perm, val)
+            self.classPermutationList, self.s2nPlaceAttributes = results[max(results.keys())]
             qApp.processEvents()
-            self.s2nMixAnchors()        # update the best number of attributes
+            self.s2nMixAnchors(0)        # update the best number of attributes
 
             results = []
             anchors = self.graph.anchorData
@@ -329,15 +335,20 @@ class FreeVizOptimization(OWBaseWidget):
                 self.s2nSpread = val
                 acc, other = self.parentWidget.optimizationDlg.kNNComputeAccuracy(self.graph.createProjectionAsExampleTable(attrIndices, useAnchorData = 1))
                 results.append(acc)
+                if results != []: self.setStatusBarText("Current projection value is %.2f (best is %.2f)" % (acc, max(results)))
+                else:             self.setStatusBarText("Current projection value is %.2f" % (acc))
             self.s2nSpread = results.index(max(results))
-            
+
             self.parentWidget.optimizationDlg.qualityMeasure = oldVal       # restore the old quality measure
-        else:
-            self.s2nMixAnchors()
+            self.setStatusBarText("Best projection value is %.2f" % (max(results)))
+
+        # always call this. if autoSetParameters then because we need to set the attribute list in radviz. otherwise because it finds the best attributes for current settings
+        self.s2nMixAnchors()
+
 
 
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
-    def s2nMixAnchors(self):
+    def s2nMixAnchors(self, setAttributeListInRadviz = 1):
         # compute the quality of attributes only once
         if self.s2nMixData == None:
             rankedAttrs, rankedAttrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.rawdata, OWVisAttrSelection.S2NMeasureMix())
@@ -351,11 +362,13 @@ class FreeVizOptimization(OWBaseWidget):
         arr = [0]       # array that will tell where to put the next attribute
         for i in range(1,len(attrs)/2): arr += [i,-i]
 
+        if len(attrs) == 0: return
         phi = (2*math.pi*self.s2nSpread)/(len(attrs)*10.0)
         anchorData = []; start = []
         arr2 = arr[:(len(attrs)/classCount)+1]
         for cls in range(classCount):
             startPos = (2*math.pi*cls)/classCount
+            if self.classPermutationList: cls = self.classPermutationList[cls]
             attrsCls = attrs[cls::classCount]
             tempData = [(arr2[i], math.cos(startPos + arr2[i]*phi), math.sin(startPos + arr2[i]*phi), attrsCls[i]) for i in range(min(len(arr2), len(attrsCls)))]
             start.append(len(anchorData) + len(arr2)/2) # starting indices for each class value
@@ -365,9 +378,15 @@ class FreeVizOptimization(OWBaseWidget):
         anchorData = anchorData[(len(attrs)/(2*classCount)):] + anchorData[:(len(attrs)/(2*classCount))]
         self.graph.anchorData = anchorData
         attrNames = [anchor[2] for anchor in anchorData]
-        self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
+        if setAttributeListInRadviz:
+            self.parentWidget.setShownAttributeList(self.rawdata, attrNames)
         self.graph.updateData(attrNames)
         self.graph.repaint()
+
+
+    def setStatusBarText(self, text):
+        self.statusBar.message(text)
+        qApp.processEvents()
 
 # ###############################################################
 # Optimize anchor position using differential evolution 
@@ -430,11 +449,13 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         keepMinMaxVals = self.radvizWidget.data != None and str(self.radvizWidget.data.domain.attributes) == str(data.domain.attributes)
         self.radvizWidget.cdata(data, keepMinMaxVals = keepMinMaxVals)
+        #self.radvizWidget.cdata(data)
 
         self.optimizationDlg.s2nMixAnchorsAutoSet()
 
         if nrOfFreeVizSteps > 0:
             self.optimizationDlg.optimize(nrOfFreeVizSteps)
+            #self.radvizWidget.optimize()
 
     # for a given example run argumentation and find out to which class it most often fall        
     def __call__(self, example, returnType):        
@@ -444,6 +465,8 @@ class S2NHeuristicClassifier(orange.Classifier):
 
         attrListIndices = [attributeNameIndex[val[2]] for val in anchorData]
         attrVals = [scaleFunction(example, index) for index in attrListIndices]
+        if max(attrVals) > 1 or min(attrVals) < 0:
+            print "values out of 0-1 range"
         
         [xTest, yTest] = self.radvizWidget.graph.getProjectedPointPosition(attrListIndices, attrVals, useAnchorData = 1)
         xTest*= self.radvizWidget.graph.trueScaleFactor

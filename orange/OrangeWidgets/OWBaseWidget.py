@@ -432,9 +432,14 @@ class OWBaseWidget(QDialog):
 
     def __setattr__(self, name, value):
         if name.count(".") > 0:
-            code = compile("self." + name[:name.rindex(".")], ".", "eval")  # get the instance of the object
-            inst = eval(code)
-            inst.__dict__[name[name.rindex(".")+1:]] = value
+            try:
+                names = name.split(".")
+                lastobj = self
+                for name in names[:-1]:
+                    lastobj = getattr(lastobj, name)
+                lastobj.__dict__[names[-1]] = value
+            except:
+                print "unable to set setting ", name, " to value ", value
         else:
             if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
             else:                               self.__dict__[name] = value             # for windows platform

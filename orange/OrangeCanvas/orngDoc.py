@@ -55,7 +55,7 @@ class SchemaDoc(QMainWindow):
             return
 
         #QMainWindow.closeEvent(self, ce)
-        res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','Yes','No','Cancel',0,1)
+        res = QMessageBox.information(self,'Orange Canvas','Do you want to save changes made to schema?','&Yes','&No','&Cancel',0)
         if res == 0:
             self.saveDocument()
             ce.accept()
