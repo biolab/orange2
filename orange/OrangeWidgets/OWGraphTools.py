@@ -6,6 +6,11 @@ from math import sqrt
 
 colorHueValues = [240, 0, 120, 30, 60, 300, 180, 150, 270, 90, 210, 330, 15, 135, 255, 45, 165, 285, 105, 225, 345]
 
+colorHSVValues = [(240, 255, 255), (0, 255, 255), (120, 255, 255), (30, 255, 255), (60, 255, 255),
+                  (300, 255, 255), (180, 255, 255), (270, 255, 255), (210, 255, 255), (45, 127, 255),
+                  (45, 127, 127), (30, 255, 92), (120, 255, 84), (60, 255, 192), (180, 255, 127),
+                  (0, 255, 128), (300, 255, 127)]
+
 #ColorBrewer color set - bad when there are small points
 colorRGBValues = [(228, 26, 28), (0, 140, 255), (77, 175, 74), (152, 78, 163), (255, 127, 0), (255, 255, 51), (166, 86, 40), (247, 129, 191), (153, 153, 153)]
 
@@ -23,13 +28,12 @@ class ColorPaletteHSV:
         self.hueValues = []
         if self.numberOfColors == -1: return  # used for coloring continuous variables
         #elif self.numberOfColors <= len(colorRGBValues): 
-        elif self.numberOfColors <= len(colorHueValues): # is predefined list of hue values enough?
-            for i in range(self.numberOfColors):
+        elif self.numberOfColors <= len(colorHSVValues):
+            self.hueValues = colorHSVValues[:self.numberOfColors]
+            for i in self.hueValues:
                 c = QColor()
-                c.setHsv(colorHueValues[i], 255, 255)
+                c.setHsv(*i)
                 self.colors.append(c)
-                #self.colors.append(QColor(colorRGBValues[i][0], colorRGBValues[i][1], colorRGBValues[i][2]))
-            self.hueValues = list(colorHueValues[:self.numberOfColors])
         else:   
             self.hueValues = [int(float(x*self.maxHueVal)/float(self.numberOfColors)) for x in range(self.numberOfColors)]
             for hue in self.hueValues:
