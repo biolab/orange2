@@ -466,7 +466,7 @@ class Disabler:
 # some table related widgets
 
 class tableItem(QTableItem):
-    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None):
+    def __init__(self, table, x, y, text, editType=QTableItem.WhenCurrent, background=Qt.white, sortingKey=None, wordWrap=False):
         self.background = background
         QTableItem.__init__(self, table, editType, text)
         table.setItem(x, y, self)
