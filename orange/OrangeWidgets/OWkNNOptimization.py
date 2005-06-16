@@ -49,7 +49,7 @@ class kNNOptimization(OWBaseWidget):
                     "lastSaveDirName", "attrCont", "attrDisc", "showRank", "showAccuracy", "showInstances",
                     "evaluationAlgorithm", "createSnapshots", "evaluationTimeIndex", "parentWidget.VizRankClassifierName",
                     "argumentCountIndex", "canUseMoreArguments", "moreArgumentsIndex", "reevaluateProjections",
-                    "recentProjectionFiles", "optimizeBestProjection", "optimizeBestProjectionIndex",
+                    "optimizeBestProjection", "optimizeBestProjectionIndex",
                     "useHeuristicToFindAttributeOrders", "argumentValueFormula", "localOptimizeMaxAttrs", "localOptimizeProjectionCount"]
     resultsListLenNums = [ 10, 100 ,  250 ,  500 ,  1000 ,  5000 ,  10000, 20000, 50000, 100000, 500000 ]
     percentDataNums = [ 5 ,  10 ,  15 ,  20 ,  30 ,  40 ,  50 ,  60 ,  70 ,  80 ,  90 ,  100 ]
@@ -102,7 +102,6 @@ class kNNOptimization(OWBaseWidget):
         self.useHeuristicToFindAttributeOrders = 0
         self.reevaluateProjections = 0
         self.argumentValueFormula = 1
-        #self.recentProjectionFiles = ["(None)"]
         self.localOptimizeMaxAttrs = 20
         self.localOptimizeProjectionCount = 20
         self.evaluatedAttributes = (None, None, None)   # (save last evaluated attributes as (contMeasure, discMeasure, results)
@@ -117,13 +116,13 @@ class kNNOptimization(OWBaseWidget):
         self.cancelOptimization = 0
         self.argumentCountIndex = 1     # when classifying use 10 best arguments
         #self.autoSetTheKValue = 1       # automatically set the value k
-        self.autoSetTheKValue = 1       # automatically set the value k 
+        self.autoSetTheKValue = 1       # automatically set the value k
+
+        # 0 - set to sqrt(N)
+        # 1 - set to N / c
+        self.kValueFormula = 1          
 
         self.loadSettings()
-        """
-        for i in range(len(self.recentProjectionFiles))[::-1]:
-            if self.recentProjectionFiles[i] != "(None)" and not os.path.exists(self.recentProjectionFiles[i]): self.recentProjectionFiles.remove(self.recentProjectionFiles[i])
-        """
 
         self.tabs = QTabWidget(self, 'tabWidget')
         self.controlArea.addWidget(self.tabs)
@@ -353,29 +352,6 @@ class kNNOptimization(OWBaseWidget):
                 # remove from listbox and original list of results
                 self.resultList.removeItem(i)
                 self.shownResults.remove(self.shownResults[i])
-    """
-    # set the projection file list
-    def setProjectionFileList(self):
-        self.projectionFileCombo.clear()
-        for file in self.recentProjectionFiles:
-            if file == "(None)": self.projectionFileCombo.insertItem("(None)")
-            else:                self.projectionFileCombo.insertItem(os.path.split(file)[1])
-    
-    def selectProjectionFile(self, n):
-        if n < len(self.recentProjectionFiles) :
-            name = self.recentProjectionFiles[n]
-            self.recentProjectionFiles.remove(name)
-            self.recentProjectionFiles.insert(0, name)
-            self.setProjectionFileList()
-            
-    def browseProjectionFile(self, filename = None):
-        if not filename:
-            filename = str(QFileDialog.getOpenFileName( self.lastSaveDirName, 'VizRank Projection Files (*.proj)', None,'Open VizRank Projection File'))
-        if filename != "":
-            if filename in self.recentProjectionFiles: self.recentProjectionFiles.remove(filename)
-            self.recentProjectionFiles.insert(0, filename)
-        self.setProjectionFileList()
-    """
         
     # ##############################################################
     # ##############################################################
@@ -443,6 +419,7 @@ class kNNOptimization(OWBaseWidget):
         if self.rawdata and data and self.rawdata.domain == data.domain: sameDomain = 1
         self.rawdata = data
         self.clearArguments()
+        self.evaluatedAttributes = (None, None, None)   # remove the info about attributes
         if not sameDomain: self.clearResults()
         
         if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):
@@ -452,9 +429,8 @@ class kNNOptimization(OWBaseWidget):
             return
 
         if self.autoSetTheKValue:
-            correct = sqrt(len(data));
-            #correct = len(data) / len(data.domain.classVar.values)  #set value of k to N/n where N is number of examples and n is number of class values
-            #correct = len(data) / 2
+            if self.kValueFormula == 0: correct = sqrt(len(data))                                 # k = sqrt(N)
+            elif self.kValueFormula == 1: correct = len(data) / len(data.domain.classVar.values)  # k = N / c (c = # of class values)
             i=0
             while i < len(self.kNeighboursNums) and self.kNeighboursNums[i] < correct: i+=1
             self.kValue = self.kNeighboursNums[max(0, i-1)]
@@ -471,8 +447,6 @@ class kNNOptimization(OWBaseWidget):
             self.classesList.selectAll(1)
             if len(data.domain.classVar.values) > 0: self.classValueList.setCurrentItem(0)
 
-        self.evaluatedAttributes = (None, None, None)   # remove the info about attributes
-
 
     # save subsetdata. first example from this dataset can be used with argumentation - it can find arguments for classifying the example to the possible class values
     def setSubsetData(self, subsetdata):
@@ -484,69 +458,59 @@ class kNNOptimization(OWBaseWidget):
     def getEvaluatedAttributes(self, data):
         self.setStatusBarText("Evaluating attributes...")
         qApp.setOverrideCursor(QWidget.waitCursor)
-        selectedClassesStr = [data.domain.classVar.values[i] for i in self.selectedClasses]
-        nonSelectedClassesStr = []
-        for val in data.domain.classVar.values:
-            if val not in selectedClassesStr: nonSelectedClassesStr.append(val)
-
-        if len(nonSelectedClassesStr) > 0:
-            selection = orange.EnumVariable("Selection", values = selectedClassesStr + ["nonSelectedClass"])
-
-            shortData1 = data.select({data.domain.classVar.name: selectedClassesStr})
-            shortData2 = data.select({data.domain.classVar.name: nonSelectedClassesStr})
-
-            selection.getValueFrom = lambda ex, what: ex[data.domain.classVar]
-            d1 = orange.Domain(shortData1.domain.attributes + [selection])
-            data1 = orange.ExampleTable(d1, shortData1)
-
-            selection.getValueFrom = lambda ex, what: orange.Value(selection, "nonSelectedClass")
-            data2 = orange.ExampleTable(d1, shortData2)
-            data1.extend(data2)
-            data = data1
-
         attrs = None
-        # is this the radviz widget, where anchors are not on the circle. if yes, then use the distance from the center of the circle as an indication of attribute usefulness. more distant attributes
-        # are expected to be more important for discriminating between classes
-        if self.parentName == "Radviz" and self.parentWidget.graph.anchorData != []:
-            for i in range(min(5, self.parentWidget.shownAttribsLB.count())):
-                if attrs == None and abs(self.parentWidget.graph.anchorData[i][0]**2 + self.parentWidget.graph.anchorData[i][1]**2 -1) > 0.001:
-                    c = self.parentWidget.shownAttribsLB.count()
-                    attrs = [(self.graph.anchorData[j][0]**2 + self.graph.anchorData[j][1]**2, self.graph.anchorData[j][2]) for j in range(len(self.graph.anchorData))]
-                    attrs.sort()
-                    attrs.reverse()
-                    attrs = [attr for (val, attr) in attrs]
 
-        # evaluate attributes using the selected attribute measure
-        if attrs == None:
-            if self.evaluatedAttributes[0] != self.attrCont or self.evaluatedAttributes[1] != self.attrDisc or self.evaluatedAttributes[2] == None: 
-                attrs = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
-                self.evaluatedAttributes = (self.attrCont, self.attrDisc, attrs)
-            else:
-                attrs = self.evaluatedAttributes[2]
+        try:
+            if data.domain.classVar.varType == orange.VarTypes.Discrete:
+                selectedClassesStr = [data.domain.classVar.values[i] for i in self.selectedClasses]
+                nonSelectedClassesStr = []
+                for val in data.domain.classVar.values:
+                    if val not in selectedClassesStr: nonSelectedClassesStr.append(val)
 
+                if len(nonSelectedClassesStr) > 0:
+                    selection = orange.EnumVariable("Selection", values = selectedClassesStr + ["nonSelectedClass"])
+
+                    shortData1 = data.select({data.domain.classVar.name: selectedClassesStr})
+                    shortData2 = data.select({data.domain.classVar.name: nonSelectedClassesStr})
+
+                    selection.getValueFrom = lambda ex, what: ex[data.domain.classVar]
+                    d1 = orange.Domain(shortData1.domain.attributes + [selection])
+                    data1 = orange.ExampleTable(d1, shortData1)
+
+                    selection.getValueFrom = lambda ex, what: orange.Value(selection, "nonSelectedClass")
+                    data2 = orange.ExampleTable(d1, shortData2)
+                    data1.extend(data2)
+                    data = data1
+            
             """
-            # do we want to use information from a projection file. 
-            if self.recentProjectionFiles[0] != "(None)" and os.path.exists(self.recentProjectionFiles[0]):
-                self.setStatusBarText("Reading attributes from the projection file...")
-                f = open(self.recentProjectionFiles[0], "rt")
-                f.readline(); f.readline()
-                line = f.readline()[:-1]
-                projAttrs = []; validProjectionFile = 1
-                while (line != "") and validProjectionFile:
-                    (acc, other_results, lenTable, attrList, tryIndex, attrReverseList) = eval(line)
-                    for attr in attrList:
-                        if attr not in projAttrs:
-                            if attr not in attrs: validProjectionFile = 0
-                            projAttrs.append(attr)
-                    line = f.readline()[:-1]
-                f.close()
-                if validProjectionFile:
-                    for attr in projAttrs: attrs.remove(attr)
-                    attrs = projAttrs + attrs
+            # is this the radviz widget, where anchors are not on the circle. if yes, then use the distance from the center of the circle as an indication of attribute usefulness. more distant attributes
+            # are expected to be more important for discriminating between classes
+            if self.parentName == "Radviz" and self.parentWidget.graph.anchorData != []:
+                for i in range(min(5, self.parentWidget.shownAttribsLB.count())):
+                    if attrs == None and abs(self.parentWidget.graph.anchorData[i][0]**2 + self.parentWidget.graph.anchorData[i][1]**2 -1) > 0.001:
+                        c = self.parentWidget.shownAttribsLB.count()
+                        attrs = [(self.graph.anchorData[j][0]**2 + self.graph.anchorData[j][1]**2, self.graph.anchorData[j][2]) for j in range(len(self.graph.anchorData))]
+                        attrs.sort()
+                        attrs.reverse()
+                        attrs = [attr for (val, attr) in attrs]
             """
+            
+            # evaluate attributes using the selected attribute measure
+            if attrs == None:
+                if self.evaluatedAttributes[0] != self.attrCont or self.evaluatedAttributes[1] != self.attrDisc or self.evaluatedAttributes[2] == None: 
+                    attrs = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
+                    self.evaluatedAttributes = (self.attrCont, self.attrDisc, attrs)
+                else:
+                    attrs = self.evaluatedAttributes[2]
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
+            
         self.setStatusBarText("")
         qApp.restoreOverrideCursor()
-        return attrs
+
+        if attrs == None: return []
+        else:             return attrs
 
     
     def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList = []):
@@ -620,14 +584,13 @@ class kNNOptimization(OWBaseWidget):
         # ###############################
         # select a subset of the data if necessary
         # ###############################
+        
         if self.percentDataUsed != 100:
             indices = orange.MakeRandomIndices2(table, 1.0-float(self.percentDataUsed)/100.0)
             testTable = table.select(indices)
         else: testTable = table
 
-        currentClassDistribution = orange.Distribution(testTable.domain.classVar, testTable)
-        currentClassDistribution = [int(v) for v in currentClassDistribution]
-        prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
+        if len(testTable) == 0: return 0,0
         
         # ###############################
         # do we want to use very fast heuristic
@@ -638,6 +601,9 @@ class kNNOptimization(OWBaseWidget):
                 discX = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
                 discY = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
                 testTable = testTable.select([discX, discY, testTable.domain.classVar])
+
+            currentClassDistribution = [int(v) for v in orange.Distribution(testTable.domain.classVar, testTable)]
+            prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
 
             # create a new attribute that is a cartesian product of the two visualized attributes
             nattr = orange.EnumVariable(values=['i' for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
@@ -673,6 +639,9 @@ class kNNOptimization(OWBaseWidget):
             
             # compute classification success using selected measure
             if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
+                currentClassDistribution = [int(v) for v in orange.Distribution(testTable.domain.classVar, testTable)]
+                prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
+        
                 if self.qualityMeasure == AVERAGE_CORRECT:
                     for res in results.results:
                         prediction[res.actualClass] += res.probabilities[0][res.actualClass]
@@ -710,6 +679,7 @@ class kNNOptimization(OWBaseWidget):
             # for continuous class we can't compute brier score and classification accuracy
             else:
                 val = 0.0
+                if not results.results or not results.results[0].probabilities[0]: return 0,0
                 for res in results.results:  val += res.probabilities[0].density(res.actualClass)
                 val/= float(len(results.results))
                 if self.percentDataUsed != 100: del testTable
@@ -742,7 +712,8 @@ class kNNOptimization(OWBaseWidget):
         else:
             # for continuous class we can't compute brier score and classification accuracy
             for res in results.results:
-                returnTable.append(res.probabilities[0].density(res.actualClass))
+                if not res.probabilities[0]: returnTable.append(0)
+                else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
 
         del knn, results
         return returnTable
