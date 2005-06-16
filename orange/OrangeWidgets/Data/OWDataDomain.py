@@ -14,6 +14,12 @@ import OWGUI
 
 import sys
 
+
+AVAILABLE_ATTR = 0
+ATTRIBUTE  = 1
+CLASS_ATTR = 2
+META_ATTR  = 3
+
 class OWDataDomain(OWWidget):
 
     ############################################################################################################################################################
@@ -27,14 +33,16 @@ class OWDataDomain(OWWidget):
 
         # set member variables
         self.data = None
+        self.attributes = {}
         self.internalSelectionUpdateFlag = 0
         self.attributesButtonLeft = False
         self.classButtonLeft = False
         self.metaButtonLeft = False        
+        self.receivedAttrList = None
         
         # set channels
-        self.inputs = [("InputData", ExampleTable, self.onDataInput)]
-        self.outputs = [("OutputData", ExampleTable), ("OutputDataWithClass", ExampleTableWithClass)]
+        self.inputs = [("Examples", ExampleTable, self.onDataInput), ("Attribute Subset", AttributeList, self.onAttributeList)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
 
         # GUI
         self.mainArea.setFixedWidth(0)
@@ -122,26 +130,57 @@ class OWDataDomain(OWWidget):
     ############################################################################################################################################################
     ## Data input and output management ########################################################################################################################
     ############################################################################################################################################################
+    def onAttributeList(self, attrList):
+        self.receivedAttrList = attrList
+        self.onDataInput(self.data)
+        
 
     def onDataInput(self, data):
+        if self.data and data and self.data.checksum() == data.checksum(): return   # we received the same dataset again
+        
         self.data = data
+        self.attributes = {}
+        
+        if self.receivedAttrList:
+            self.onAttributeList(self.receivedAttrList)
+            return
 
         self.inputAttributesList.clear()
         self.attributesList.clear()
         self.classList.clear()
         self.metaList.clear()        
 
-        if data:
+        if data and self.receivedAttrList:
+            for attr in self.data.domain.attributes:
+                self.attributes[attr.name] = (attr.name in self.receivedAttrList)
+                if attr.name in self.receivedAttrList:      self.attributesList.insertItem(self.icons[attr.varType], attr.name)
+                else:                                       self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
+
+            #set up class variable
+            if self.data.domain.classVar and self.data.domain.classVar.name not in self.receivedAttrList:
+                self.attributes[self.data.domain.classVar.name] = CLASS_ATTR
+                self.classList.insertItem(self.icons[self.data.domain.classVar.varType], self.data.domain.classVar.name)
+
+            #set up meta attributes
+            for attr in self.data.domain.getmetas().values():
+                self.attributes[attr.name] = META_ATTR
+                if attr.name not in self.receivedAttrList:
+                    self.metaList.insertItem(self.icons[attr.varType], attr.name)
+                    
+        elif data:
             #set up normal attributes
             for attr in data.domain.attributes:
+                self.attributes[attr.name] = ATTRIBUTE
                 self.attributesList.insertItem(self.icons[attr.varType], attr.name)
 
             #set up class variable
             if data and data.domain.classVar:
+                self.attributes[data.domain.classVar.name] = CLASS_ATTR
                 self.classList.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
 
             #set up meta attriutes
             for attr in data.domain.getmetas().values():
+                self.attributes[attr.name] = META_ATTR
                 self.metaList.insertItem(self.icons[attr.varType], attr.name)
 
             self.setInputAttributesListElements()
@@ -177,7 +216,9 @@ class OWDataDomain(OWWidget):
             self.send("OutputDataWithClass", None)
         
     def reset(self):
-        self.onDataInput(self.data)
+        data = self.data
+        self.data = None
+        self.onDataInput(data)
 
         
     ############################################################################################################################################################
@@ -292,6 +333,7 @@ class OWDataDomain(OWWidget):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
                     self.attributesList.insertItem(self.icons[itemType],itemText)
+                    self.attributes[itemText] = ATTRIBUTE
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -306,6 +348,7 @@ class OWDataDomain(OWWidget):
 
     def onClassButtonClicked(self):
         self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag + 1
+        if self.classList.count() > 0: self.attributes[str(self.classList.text(0))] = AVAILABLE_ATTR
         self.classList.clear()
         if not self.classButtonLeft:
             for i in range(0, self.inputAttributesList.count()):
@@ -313,6 +356,7 @@ class OWDataDomain(OWWidget):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
                     self.classList.insertItem(self.icons[itemType],itemText)
+                    self.attributes[itemText] = CLASS_ATTR
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -335,6 +379,7 @@ class OWDataDomain(OWWidget):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
                     self.metaList.insertItem(self.icons[itemType],itemText)
+                    self.attributes[itemText] = 3
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -399,6 +444,7 @@ class OWDataDomain(OWWidget):
     def removeSelectedItems(self, listBox):
         for i in range(listBox.count(), -1, -1):
             if (listBox.isSelected(i)):
+                self.attributes[str(listBox.text(i))] = AVAILABLE_ATTR
                 listBox.removeItem(i)
 
     def isConsecutiveSelection(self, listBox):
@@ -449,27 +495,12 @@ class OWDataDomain(OWWidget):
         self.inputAttributesList.clear()
         if self.data:
             #set up normal attributes + class
-            for attr in self.data.domain.variables:
-                self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
+            for attr in self.data.domain:
+                if self.attributes[attr.name] == AVAILABLE_ATTR: self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
 
-            #set up meta attriutes
+            #set up meta attributes
             for attr in self.data.domain.getmetas().values():
-                self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
-
-        for i in range(self.inputAttributesList.count(), -1, -1):
-            item = self.attributesList.findItem(str(self.inputAttributesList.text(i)))
-            if item:
-                self.inputAttributesList.removeItem(i)
-
-        for i in range(self.inputAttributesList.count(), -1, -1):
-            item = self.classList.findItem(str(self.inputAttributesList.text(i)))
-            if item:
-                self.inputAttributesList.removeItem(i)
-
-        for i in range(self.inputAttributesList.count(), -1, -1):
-            item = self.metaList.findItem(str(self.inputAttributesList.text(i)))
-            if item:
-                self.inputAttributesList.removeItem(i)
+                if self.attributes[attr.name] == AVAILABLE_ATTR: self.inputAttributesList.insertItem(self.icons[attr.varType], attr.name)
 
         self.internalSelectionUpdateFlag = self.internalSelectionUpdateFlag - 1
         
