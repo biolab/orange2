@@ -3,7 +3,7 @@
 <description>Show all possible projections of the data</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/ScatterPlotMatrix.png</icon>
-<priority>120</priority>
+<priority>1100</priority>
 """
 # ScatterPlotMatrix.py
 #

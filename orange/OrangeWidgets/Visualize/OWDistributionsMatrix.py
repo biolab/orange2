@@ -2,7 +2,7 @@
 <name>Distributions Matrix</name>
 <description>Create a matrix with distributions.</description>
 <icon>icons/Distribution.png</icon>
-<priority>1050</priority>
+<priority>150</priority>
 """
 
 #

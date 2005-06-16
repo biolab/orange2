@@ -2,7 +2,7 @@
 <name>Attribute Statistics</name>
 <description>Show basic statistics about attributes.</description>
 <icon>icons/AttributeStatistics.png</icon>
-<priority>1100</priority>
+<priority>200</priority>
 """
 #
 # OWAttributeStatistics.py

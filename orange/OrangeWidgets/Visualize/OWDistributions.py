@@ -2,7 +2,7 @@
 <name>Distributions</name>
 <description>Widget for comparing distributions of two datasets with same domain and different examples.</description>
 <icon>icons/Distribution.png</icon>
-<priority>1000</priority>
+<priority>100</priority>
 """
 
 #
