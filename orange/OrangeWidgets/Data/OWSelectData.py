@@ -66,33 +66,26 @@ class OWSelectData(OWWidget):
         self.connect(self.lbAttr, SIGNAL('selectionChanged()'), self.lbAttrChange)
 
         # operators
-##        boxOper = QHGroupBox('Operator', frmAttrCond)
-##        glac.addWidget(boxOper,0,1)
-##        self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "NOT")
-##        self.lbOperator = QListBox(boxOper, 'SelAttr')
-##        self.connect(self.lbOperator, SIGNAL('selectionChanged()'), self.lbOperatorChange)
         boxOper = QHGroupBox('Operator', frmAttrCond)
         glac.addWidget(boxOper,0,1)
         self.cbNot = OWGUI.checkBox(boxOper, self, "NegateCondition", "NOT")
-        self.operatorStack = QWidgetStack(boxOper)
         # operators 0: empty
-        self.lbOperatosNone = QListBox(None, 'SelAttr')
-        self.operatorStack.addWidget(self.lbOperatosNone, 0)
+        self.lbOperatosNone = QListBox(boxOper, 'SelAttr')
         # operators 1: discrete
-        self.lbOperatorsD = QListBox(None, 'SelAttr')
-        self.operatorStack.addWidget(self.lbOperatorsD, orange.VarTypes.Discrete)
+        self.lbOperatorsD = QListBox(boxOper, 'SelAttr')
+        self.lbOperatorsD.hide()
         self.connect(self.lbOperatorsD, SIGNAL('selectionChanged()'), self.lbOperatorsChange)
         for op in Operator.operatorsD + [Operator.operatorDef]:
             self.lbOperatorsD.insertItem(op)
         # operators 2: continuous
-        self.lbOperatorsC = QListBox(None, 'SelAttr')
-        self.operatorStack.addWidget(self.lbOperatorsC, orange.VarTypes.Continuous)
+        self.lbOperatorsC = QListBox(boxOper, 'SelAttr')
+        self.lbOperatorsC.hide()
         self.connect(self.lbOperatorsC, SIGNAL('selectionChanged()'), self.lbOperatorsChange)
         for op in Operator.operatorsC + [Operator.operatorDef]:
             self.lbOperatorsC.insertItem(op)
         # operators 6: string
-        self.lbOperatorsS = QListBox(None, 'SelAttr')
-        self.operatorStack.addWidget(self.lbOperatorsS, orange.VarTypes.String)
+        self.lbOperatorsS = QListBox(boxOper, 'SelAttr')
+        self.lbOperatorsS.hide()
         self.connect(self.lbOperatorsS, SIGNAL('selectionChanged()'), self.lbOperatorsChange)
         for op in Operator.operatorsS + [Operator.operatorDef]:
             self.lbOperatorsS.insertItem(op)
@@ -129,7 +122,7 @@ class OWSelectData(OWWidget):
         # buttons New, Update, Remove, Disjunction, Up, Down
         self.boxButtons = QHBox(ca)
         gl.addMultiCellWidget(self.boxButtons, 1,1,0,2)
-        btnNew = OWGUI.button(self.boxButtons, self, "New", self.OnNewCondition)        
+        btnNew = OWGUI.button(self.boxButtons, self, "New", self.OnNewCondition)
         self.btnUpdate = OWGUI.button(self.boxButtons, self, "Update", self.OnUpdateCondition)
         self.btnRemove = OWGUI.button(self.boxButtons, self, "Remove", self.OnRemoveCondition)        
         self.btnOR = OWGUI.button(self.boxButtons, self, "OR", self.OnDisjunction)        
@@ -153,9 +146,11 @@ class OWSelectData(OWWidget):
 ##        self.criteriaTable.verticalHeader().setMovingEnabled(True)
         hheader=self.criteriaTable.horizontalHeader()
         hheader.setClickEnabled(False)
-        hheader.setLabel(0, "Active")
+        hheader.setLabel(0, "Active      ")
         hheader.setLabel(1, "Condition")
-        self.connect(self.criteriaTable, SIGNAL('currentChanged(int, int)'), self.currentCriteriaChange)        
+        self.connect(self.criteriaTable, SIGNAL('currentChanged(int, int)'), self.currentCriteriaChange)
+        self.criteriaTable.adjustColumn(0)
+        self.criteriaTable.setColumnWidth(1, 500)
 ##        self.connect(self.criteriaTable.verticalHeader(), SIGNAL("indexChange(int, int, int)"), self.onMoveRow3)
 ##        self.connect(self.criteriaTable.verticalHeader(), SIGNAL("moved (int, int)"), self.onMoveRow2)
 
@@ -278,50 +273,14 @@ class OWSelectData(OWWidget):
         self.updateInfoOut(matchingOutput)
 
 
-##    def constructFilter(self, domain, conditions, condIdx=None):
-##        """Returns an orange filter in disjunctive normal form.
-##        Given the condtition index (condIdx!=None), it returns a conjunction of filters around the given condition, e.g.:
-##        if cond=[c1,c2,OR,c3,c4] and condIdx=1, then returns orange.Filter_conjunction([filt1,filt2]).
-##        """
-##        if condIdx != None:
-##            idx1 = 0
-##            idx2 = len(conditions)
-##            for i in range(condIdx,idx1-1,-1):
-##                if conditions[i].type == "OR":
-##                    idx1 = i
-##                    break
-##            for i in range(condIdx+1,idx2):
-##                if conditions[i].type == "OR":
-##                    idx2 = i
-##                    break
-##            conditions = conditions[idx1:idx2]
-##        fdList = [[]]
-##        active = [True]
-##        for cond in conditions:
-##            if cond.type == "OR":
-##                fdList.append([])
-##                active.append(cond.enabled)
-##            elif cond.enabled:
-##                fdList[-1].append(cond.operator.getFilter(domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive))
-##        for i in range(len(fdList)-1,-1,-1):
-##            if len(fdList[i]) == 0 or not active[i]:
-##                fdList.pop(i)
-##        if len(fdList)>0:
-##            return orange.Filter_disjunction([orange.Filter_conjunction(l) for l in fdList])
-##        else:
-##            # return a filter that does nothing
-##            return orange.Filter_conjunction([])
-
     def getFilterList(self, domain, conditions, enabledOnly, removeEmpty):
         """Returns list of lists of orange filters, e.g. [[f1,f2],[f3]].
         OR is always enabled (with no respect to cond.enabled)
         """
         fdList = [[]]
-##        activeConjunctions = [True]
         for cond in conditions:
             if cond.type == "OR":
                 fdList.append([])
-##                activeConjunctions.append(cond.enabled)
             elif cond.enabled or not enabledOnly:
                 fdList[-1].append(cond.operator.getFilter(domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive))
         # remove empty lists (a conjunction of an empty list creates a filter that does nothing)
@@ -329,10 +288,6 @@ class OWSelectData(OWWidget):
             for i in range(len(fdList)-1,-1,-1):
                 if len(fdList[i]) == 0:
                     fdList.pop(i)
-##        if enabledOnly:
-##            for i in range(len(fdList)-1,-1,-1):
-##                if not activeConjunctions[i]:
-##                    fdList.pop(i)
         return fdList
 
 
@@ -480,6 +435,9 @@ class OWSelectData(OWWidget):
         self.criteriaTable.updateCell(currRow-1, 0)
         self.criteriaTable.updateCell(currRow-1, 1)
         self.updateFilteredDataLens()
+        # send out new data 
+        if self.SendingOption == 0:
+            self.setOutput()        
 
         
     def btnMoveDownClicked(self):
@@ -497,6 +455,9 @@ class OWSelectData(OWWidget):
         self.criteriaTable.updateCell(currRow+1, 0)
         self.criteriaTable.updateCell(currRow+1, 1)
         self.updateFilteredDataLens()
+        # send out new data 
+        if self.SendingOption == 0:
+            self.setOutput()        
 
 
     def currentCriteriaChange(self, row, col):
@@ -517,7 +478,11 @@ class OWSelectData(OWWidget):
         # not
         self.cbNot.setChecked(cond.negated)
         # operator
-        self.operatorStack.raiseWidget(self.name2var[cond.varName].varType)
+        for vt,lb in self.lbOperatorsDict.items():
+            if vt == self.name2var[cond.varName].varType:
+                lb.show()
+            else:
+                lb.hide()
         lbItem = self.lbOperatorsDict[self.name2var[cond.varName].varType].findItem(str(cond.operator))
         if lbItem:
             self.lbOperatorsDict[self.name2var[cond.varName].varType].setCurrentItem(lbItem)
@@ -546,9 +511,6 @@ class OWSelectData(OWWidget):
         condition.enabled = active
         # update the number of examples that match that filter
         row = self.Conditions.index(condition)
-##        self.criteriaTable.cellWidget(row, 0).setText(str(len(orange.Filter_conjunction(fdList[row])(self.data))))
-####################        cb1 = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
-##        self.updateFilteredDataLens( OR ROW!!!
         # disabling "OR" also disables conditions below up to the next "OR"
         if condition.type == "OR":
             for currIdx in range(row+1, len(self.Conditions)):
@@ -577,7 +539,11 @@ class OWSelectData(OWWidget):
             varType = self.currentVar.varType
         else:
             varType = 0
-        self.operatorStack.raiseWidget(varType)
+        for vt,lb in self.lbOperatorsDict.items():
+            if vt == varType:
+                lb.show()
+            else:
+                lb.hide()
 
 
     def updateValuesStack(self):
@@ -646,12 +612,6 @@ class OWSelectData(OWWidget):
         self.putContitionToTable(row, cond)
         self.criteriaTable.setCurrentCell(row,1)
 
-
-####    def setCriteriaTableNumExamples(self):
-####        """Reports the number of examples that match individual criteria.
-####        """
-####        pass
-
         
     def getCondtionFromSelection(self):
         """Returns a condition according to the currently selected attribute / operator / values.
@@ -676,15 +636,6 @@ class OWSelectData(OWWidget):
         # column 0 getFilter(self, domain, variable, value1, value2, negate, caseSensitive)
         if cond.type == "OR":
             cb1 = QCheckBox("", self)
-##            idx1 = self.Conditions.index(cond)
-##            idx2 = len(self.Conditions)
-##            for i in range(idx1+1, idx2):
-##                if self.Conditions[i].type == "OR":
-##                    idx2 = i
-##                    break
-##            filt = self.constructFilter(self.data.domain, self.Conditions[idx1+1:idx2], self.Conditions.index(cond))
-####            filt = self.constructFilter(self.data.domain, self.Conditions, self.Conditions.index(cond))
-##            cb1 = QCheckBox(str(len(filt(self.data))), self)
         else:
             cb1 = QCheckBox(str(len(cond.operator.getFilter(self.data.domain, cond.varName, cond.val1, cond.val2, cond.negated, cond.caseSensitive)(self.data))), self)
         cb1.setChecked(cond.enabled)
