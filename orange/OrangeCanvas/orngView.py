@@ -45,6 +45,7 @@ class SchemaView(QCanvasView):
         self.linePopup = QPopupMenu(self, "Link")
         self.menupopupLinkEnabledID = self.linePopup.insertItem( "Enabled",  self.toggleEnabledLink)
         self.linePopup.insertSeparator()
+        self.linePopup.insertItem( "Reset Signals",  self.resetLineSignals)
         self.linePopup.insertItem( "Remove",  self.deleteSelectedLine)
         self.linePopup.insertSeparator() 
 
@@ -110,6 +111,7 @@ class SchemaView(QCanvasView):
 
     # popMenuAction - delete selected link
     def deleteSelectedLine(self):
+        if not self.selectedLine: return
         if self.doc.signalManager.signalProcessingInProgress:
              QMessageBox.information( None, "Orange Canvas", "Unable to remove connection while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
              return
@@ -122,6 +124,13 @@ class SchemaView(QCanvasView):
             self.doc.removeLine1(line)
       
 
+    def resetLineSignals(self):
+        if self.selectedLine:
+            self.doc.resetActiveSignals(self.selectedLine.outWidget, self.selectedLine.inWidget, enabled = self.doc.signalManager.getLinkEnabled(self.selectedLine.outWidget.instance, self.selectedLine.inWidget.instance))
+            self.selectedLine.inWidget.updateTooltip()
+            self.selectedLine.outWidget.updateTooltip()
+            self.selectedLine.updateTooltip()
+    
     # ###########################################
     # ###########################################
     
@@ -370,9 +379,12 @@ class SchemaView(QCanvasView):
             self.openActiveWidget()
         elif line:
             if self.doc.signalManager.signalProcessingInProgress:
-                QMessageBox.information( None, "Orange Canvas", "Unable to modify signals while signal processing is in progress. Please wait.", QMessageBox.Ok + QMessageBox.Default )
+                QMessageBox.information( None, "Orange Canvas", "Please wait until Orange finishes processing signals.", QMessageBox.Ok + QMessageBox.Default )
                 return
             self.doc.resetActiveSignals(line.outWidget, line.inWidget, enabled = self.doc.signalManager.getLinkEnabled(line.outWidget.instance, line.inWidget.instance))
+            line.inWidget.updateTooltip()
+            line.outWidget.updateTooltip()
+            line.updateTooltip()
 
 
     # if we scroll the view, we have to update tooltips for widgets
