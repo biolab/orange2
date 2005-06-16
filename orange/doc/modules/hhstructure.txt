@@ -1,0 +1,10 @@
+Orange Modules ---> default.htm
+	Association rules ---> orngAssoc.htm
+	Constructive induction ---> orngCI.htm
+	Discretization ---> orngDisc.htm
+	Ensemble methods ---> orngEnsemble.htm
+	Feature subset selection ---> orngFSS.htm
+	Lookup classifiers ---> orngLookup.htm
+	Classification performance statistics ---> orngStat.htm
+	Sampling and testing ---> orngTest.htm
+	Classification trees ---> orngTree.htm
