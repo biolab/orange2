@@ -3,7 +3,7 @@
 <description>Shows data using scatterplot</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/ScatterPlot.png</icon>
-<priority>100</priority>
+<priority>1000</priority>
 """
 # ScatterPlot.py
 #
