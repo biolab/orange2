@@ -216,6 +216,12 @@ class OWRadvizGraph(OWVisGraph):
         else:    # if we have a continuous class
             valLen = 0
 
+        # if we have a continuous class we need a bit more space on the right to show a color legend
+        if self.rawdata.domain.classVar:
+            self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13 + 0.1*(self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous), 1)
+        else:
+            self.setAxisScale(QwtPlot.xBottom, -1.13, 1.13, 1)
+
         useDifferentSymbols = 0
         if self.useDifferentSymbols and self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete and valLen < len(self.curveSymbols): useDifferentSymbols = 1
 
@@ -313,7 +319,7 @@ class OWRadvizGraph(OWVisGraph):
                     dataVals = [self.scaleExampleValue(self.subsetData[i], ind) for ind in indices]
                     if min(dataVals) < 0.0 or max(dataVals) > 1.0:
                         self.radvizWidget.information("Subset data values are in different range than the original data values. Points can be therefore a bit displaced.")
-                        for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
+                        #for j in range(len(dataVals)):  dataVals[j] = min(1.0, max(0.0, dataVals[j]))    # scale to 0-1 interval
 
                     [x,y] = self.getProjectedPointPosition(indices, dataVals, useAnchorData = 1, anchorRadius = anchorRadius)  # compute position of the point
                     x *= self.trueScaleFactor

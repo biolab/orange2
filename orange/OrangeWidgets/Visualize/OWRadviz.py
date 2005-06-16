@@ -308,38 +308,33 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.clearResults()
         self.optimizationDlg.disableControls()
 
-        # ################################################################################################
-        # use the heuristic to test only most interesting attribute orders
-        if self.optimizationDlg.useHeuristicToFindAttributeOrders:
-            self.optimizationDlg.setStatusBarText("Evaluating attributes...")
-            attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
-            self.optimizationDlg.setStatusBarText("")
-
-            try:
+        try:
+            # ################################################################################################
+            # use the heuristic to test only most interesting attribute orders
+            if self.optimizationDlg.useHeuristicToFindAttributeOrders:
+                self.optimizationDlg.setStatusBarText("Evaluating attributes...")
+                attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
+                self.optimizationDlg.setStatusBarText("")
                 self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, self.optimizationDlg.addResult)
-            except:
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # print the exception
 
-        # ################################################################################################
-        # evaluate all attribute orders
-        else:
-            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-            possibilities = 0
-            for i in range(minLen, maxLen+1):
-                possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
-                
-            self.graph.totalPossibilities = possibilities
-            self.graph.triedPossibilities = 0
-        
-            if self.graph.totalPossibilities > 200000:
-                self.warning("There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities)))
+            # ################################################################################################
+            # evaluate all attribute orders
+            else:
+                listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+                possibilities = 0
+                for i in range(minLen, maxLen+1):
+                    possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+                    
+                self.graph.totalPossibilities = possibilities
+                self.graph.triedPossibilities = 0
             
-            try:
+                if self.graph.totalPossibilities > 200000:
+                    print "Warning: There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities))
+                                
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
-            except:
-                type, val, traceback = sys.exc_info()
-                sys.excepthook(type, val, traceback)  # print the exception
+        except:
+            type, val, traceback = sys.exc_info()
+            sys.excepthook(type, val, traceback)  # print the exception
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
@@ -354,34 +349,34 @@ class OWRadviz(OWWidget):
             QMessageBox.critical( None, "Cluster Detection Dialog", 'Clusters can be detected only in data sets with a discrete class value', QMessageBox.Ok)
             return
 
-        listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
-
-        text = str(self.optimizationDlg.attributeCountCombo.currentText())
-        if text == "ALL": maxLen = len(listOfAttributes)
-        else:             maxLen = int(text)
-        
-        if self.clusterDlg.getOptimizationType() == self.clusterDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
-        else: minLen = 3
-
         self.clusterDlg.clearResults()
         self.clusterDlg.clusterStabilityButton.setOn(0)
         self.clusterDlg.pointStability = None
-        
-        possibilities = 0
-        for i in range(minLen, maxLen+1): possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
-            
-        self.graph.totalPossibilities = possibilities
-        self.graph.triedPossibilities = 0
-    
-        if self.graph.totalPossibilities > 20000:
-            proj = str(self.graph.totalPossibilities)
-            l = len(proj)
-            for i in range(len(proj)-2, 0, -1):
-                if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
-            self.warning("There are %s possible radviz projections using currently visualized attributes"% (proj))
-        
-        self.clusterDlg.disableControls()
+
         try:
+            listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
+            text = str(self.optimizationDlg.attributeCountCombo.currentText())
+            if text == "ALL": maxLen = len(listOfAttributes)
+            else:             maxLen = int(text)
+            
+            if self.clusterDlg.getOptimizationType() == self.clusterDlg.EXACT_NUMBER_OF_ATTRS: minLen = maxLen
+            else: minLen = 3
+                        
+            possibilities = 0
+            for i in range(minLen, maxLen+1): possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+                
+            self.graph.totalPossibilities = possibilities
+            self.graph.triedPossibilities = 0
+        
+            if self.graph.totalPossibilities > 20000:
+                proj = str(self.graph.totalPossibilities)
+                l = len(proj)
+                for i in range(len(proj)-2, 0, -1):
+                    if (l-i)%3 == 0: proj = proj[:i] + "," + proj[i:]
+                print "Warning: There are %s possible radviz projections using currently visualized attributes"% (proj)
+            
+            self.clusterDlg.disableControls()
+            
             self.graph.getOptimalClusters(listOfAttributes, minLen, maxLen, self.clusterDlg.addResult)
         except:
             type, val, traceback = sys.exc_info()

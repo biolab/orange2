@@ -31,6 +31,7 @@ class OWFeatureSubsetSelection(OWWidget):
         self.attrCountC = 10
         self.attrCountD = 10
         self.data = None
+        self.sentData = None
     
         #get settings from the ini file, if they exist
         self.loadSettings()
@@ -53,6 +54,7 @@ class OWFeatureSubsetSelection(OWWidget):
 
     def dataset(self, data):
         self.data = data
+        self.sentData = None
         self.updateChanges()
 
     def activateLoadedSettings(self):
@@ -86,8 +88,8 @@ class OWFeatureSubsetSelection(OWWidget):
         discAttrs.reverse()
         contAttrs = [attr[1] for attr in contAttrs[:self.attrCountC]]
         discAttrs = [attr[1] for attr in discAttrs[:self.attrCountD]]
-        data = self.data.select(contAttrs + discAttrs + [self.data.domain.classVar.name])
-        self.send("Classified Examples", data)
+        self.sentData = self.data.select(contAttrs + discAttrs + [self.data.domain.classVar.name])
+        self.send("Classified Examples", self.sentData)
 
         self.applyButton.setEnabled(0)
         

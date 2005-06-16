@@ -382,10 +382,10 @@ class OWParallelCoordinates(OWWidget):
         
         if self.exampleSelectionList and data and len(data) == len(self.exampleSelectionList):
             self.graph.setData(data.select(self.exampleSelectionList))
-            self.warning(None)
+            self.warning()
         else:
             if self.exampleSelectionList and data: self.warning("Table with selected indices is not of the same size as the data set. Full data set is shown.")
-            else:                                  self.warning(None)
+            else:                                  self.warning()
             self.graph.setData(self.data)
             
         self.optimizationDlg.setData(data)
