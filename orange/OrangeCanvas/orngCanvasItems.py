@@ -221,6 +221,7 @@ class CanvasLine(QCanvasLine):
         string = "<nobr><b>" + self.outWidget.caption + "</b> --> <b>" + self.inWidget.caption + "</b></nobr><br><hr>Signals:<br>"
         for (outSignal, inSignal) in self.signals:
             string += "<nobr> &nbsp &nbsp - " + outSignal + " --> " + inSignal + "</nobr><br>"
+        string = string[:-4]
 
         xDiff = p2.x() - p1.x()
         yDiff = p2.y() - p1.y()
@@ -240,7 +241,9 @@ class CanvasLine(QCanvasLine):
         if self.showSignalNames:
             for (outSignal, inSignal) in self.signals:
                 caption += outSignal + "\n"
+        self.text.hide()
         self.text.setText(caption)
+        self.text.show()
         self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+10)/2.0)
 
     # we need this to separate line objects and widget objects
