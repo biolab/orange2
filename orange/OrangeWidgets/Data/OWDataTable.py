@@ -84,7 +84,8 @@ class OWDataTable(OWWidget):
             self.id2table[id] = table
             self.table2id[table] = id
             tabName = data.name
-            if not tabName: tabName = str(id)
+            if not tabName:
+                tabName = str(len(self.data))
             #tabName = data.name + " " + str(id)
             self.tabs.insertTab(table, tabName)
             self.set_table(table, data)
@@ -287,6 +288,7 @@ if __name__=="__main__":
     d2 = orange.ExampleTable(r'..\..\doc\datasets\voting.tab')
     d3 = orange.ExampleTable(r'..\..\doc\datasets\sponge.tab')
     d4 = orange.ExampleTable(r'..\..\doc\datasets\wpbc.csv')
+    d5 = orange.ExampleTable(r'..\..\doc\datasets\adult_sample.tab')
     ow.show()
     ow.dataset(d1,"auto-mpg")
     ow.dataset(d2,"voting")
@@ -295,4 +297,5 @@ if __name__=="__main__":
 ##    ow.dataset(None,"voting")
 ##    ow.dataset(None,"sponge")
     ow.dataset(d4,"wpbc")
+    ow.dataset(d5,"adult_sample")
     a.exec_loop()
