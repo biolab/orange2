@@ -103,7 +103,7 @@ class FreeVizOptimization(OWBaseWidget):
         self.controlArea.addWidget(self.statusBar)
         self.controlArea.activate()
 
-        self.resize(310,450)
+        self.resize(310,500)
         self.setMinimumWidth(310)
         self.tabs.setMinimumWidth(310)
 
@@ -304,6 +304,10 @@ class FreeVizOptimization(OWBaseWidget):
     # if autoSetParameters is set then try different values for parameters and see how good projection do we get
     # if not then just use current parameters to place anchors
     def s2nMixAnchorsAutoSet(self):
+        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+            return
+        
         if self.autoSetParameters:
             results = {}
             oldVal = self.parentWidget.optimizationDlg.qualityMeasure
@@ -349,6 +353,10 @@ class FreeVizOptimization(OWBaseWidget):
 
     # place a subset of attributes around the circle. this subset must contain "good" attributes for each of the class values
     def s2nMixAnchors(self, setAttributeListInRadviz = 1):
+        if not self.rawdata.domain.classVar or not self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
+            QMessageBox.critical( None, "Error", 'This heuristic works only in data sets with a discrete class value.', QMessageBox.Ok)
+            return
+        
         # compute the quality of attributes only once
         if self.s2nMixData == None:
             rankedAttrs, rankedAttrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.rawdata, OWVisAttrSelection.S2NMeasureMix())
