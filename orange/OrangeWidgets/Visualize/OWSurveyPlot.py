@@ -26,8 +26,8 @@ class OWSurveyPlot(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Survey Plot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata)]
-        self.outputs = [("Selection", list)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.outputs = [("Attribute Selection List", AttributeList)]
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)
@@ -44,6 +44,7 @@ class OWSurveyPlot(OWWidget):
         self.graph.tooltipKind = 1
         self.attrDiscOrder = "None"
         self.attrContOrder = "None"
+        self.attributeSelectionList = None
         self.graphCanvasColor = str(Qt.white.name())
 
         #load settings
@@ -65,12 +66,12 @@ class OWSurveyPlot(OWWidget):
         self.shownAttribsGroup.setTitle("Shown attributes")
         self.hiddenAttribsGroup.setTitle("Hidden attributes")
 
-        self.primarySortCB = QCheckBox('Enable sorting primary', self.sortingAttrGB)
+        self.primarySortCB = QCheckBox('Enable primary sorting by:', self.sortingAttrGB)
         self.primaryAttr = QComboBox(self.sortingAttrGB)
         self.connect(self.primarySortCB, SIGNAL("clicked()"), self.sortingClick)
         self.connect(self.primaryAttr, SIGNAL('activated ( const QString & )'), self.sortingClick)
 
-        self.secondarySortCB = QCheckBox('Enable sorting secondary', self.sortingAttrGB)
+        self.secondarySortCB = QCheckBox('Enable secondary sorting by:', self.sortingAttrGB)
         self.secondaryAttr = QComboBox(self.sortingAttrGB)
         self.connect(self.secondarySortCB, SIGNAL("clicked()"), self.sortingClick)
         self.connect(self.secondaryAttr, SIGNAL('activated ( const QString & )'), self.sortingClick)
@@ -115,7 +116,9 @@ class OWSurveyPlot(OWWidget):
         self.gSetCanvasColorB = QPushButton("Canvas Color", self.SettingsTab)
         self.connect(self.gSetCanvasColorB, SIGNAL("clicked()"), self.setGraphCanvasColor)
 
-        # add a settings dialog and initialize its values
+        self.icons = self.createAttributeIconDict()
+
+        # add a settings dialog and initialize its values        
         self.activateLoadedSettings()
         self.resize(700,700)
 
@@ -131,11 +134,10 @@ class OWSurveyPlot(OWWidget):
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
-        for i in range(self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i) and i != 0:
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i-1)
+        for i in range(1, self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
+                self.shownAttribsLB.removeItem(i+1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
         self.updateGraph()
 
@@ -144,9 +146,8 @@ class OWSurveyPlot(OWWidget):
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
                 self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i+1)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
 
@@ -155,9 +156,9 @@ class OWSurveyPlot(OWWidget):
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
+                
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
@@ -168,9 +169,9 @@ class OWSurveyPlot(OWWidget):
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
                 self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
+                
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
@@ -181,9 +182,9 @@ class OWSurveyPlot(OWWidget):
         self.primaryAttr.clear()
         self.secondaryAttr.clear()
         if not self.data: return
-        for i in range(len(self.data.domain)):
-            self.primaryAttr.insertItem(self.data.domain[i].name)
-            self.secondaryAttr.insertItem(self.data.domain[i].name)
+        for attr in self.data.domain:
+            self.primaryAttr.insertItem(self.icons[attr.varType], attr.name)
+            self.secondaryAttr.insertItem(self.icons[attr.varType], attr.name)
         self.primaryAttr.setCurrentItem(0)
         self.secondaryAttr.setCurrentItem(len(self.data.domain)>1)
     
@@ -225,24 +226,35 @@ class OWSurveyPlot(OWWidget):
         
     # ###### SHOWN ATTRIBUTE LIST ##############
     # set attribute list
-    def setShownAttributeList(self, data):
+    def setShownAttributeList(self, data, shownAttributes = None):
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
+
         if data == None: return
-        
-        shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-        if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
-            self.shownAttribsLB.insertItem(data.domain.classVar.name)
-        for attr in shown:
-            self.shownAttribsLB.insertItem(attr)
-        for attr in hidden:
-            self.hiddenAttribsLB.insertItem(attr)
+
+        if shownAttributes:
+            for attr in shownAttributes:
+                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
+                
+            for attr in data.domain:
+                if attr.name not in shownAttributes:
+                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+        else:
+            shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
+            if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
+                self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
+            for attr in shown:
+                self.shownAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)
+            for attr in hidden:
+                self.hiddenAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)    
+        self.sendShownAttributes()
         
     def getShownAttributeList (self):
-        list = []
-        for i in range(self.shownAttribsLB.count()):
-            list.append(str(self.shownAttribsLB.text(i)))
-        return list
+        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]
+
+    def sendShownAttributes(self):
+        self.send("Attribute Selection List", self.getShownAttributeList())
+    
     ##############################################
     
     
@@ -271,16 +283,13 @@ class OWSurveyPlot(OWWidget):
 
     ####### SELECTION signal ################################
     # receive info about which attributes to show
-    def selection(self, list):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
-        if self.data == None: return
-
-        for attr in self.data.domain:
-            if attr.name in list: self.shownAttribsLB.insertItem(attr.name)
-            else:                 self.hiddenAttribsLB.insertItem(attr.name)
-
+    def attributeSelection(self, attributeSelectionList):
+        self.attributeSelectionList = attributeSelectionList
+        if self.data and self.attributeSelectionList:
+            for attr in self.attributeSelectionList:
+                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
+                    return
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
         self.updateGraph()
     #################################################
 

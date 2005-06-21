@@ -11,7 +11,7 @@
 from OWWidget import *
 from qt import *
 from qtcanvas import *
-import orngInteract
+import orngInteract, OWGUI
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 
@@ -25,7 +25,9 @@ class OWSieveDiagram(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Sieve diagram", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.data, 1), ("Attribute selection", list, self.attributeSelection, 1)]
+        self.controlArea.setMinimumWidth(250)
+
+        self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Attribute selection", list, self.attributeSelection, 1)]
         self.outputs = []
 
         #set default settings
@@ -35,8 +37,14 @@ class OWSieveDiagram(OWWidget):
         self.lines = []
         self.tooltips = []
 
-        #load settings
+        self.attrX = ""
+        self.attrY = ""
+        self.attrCondition = None
+        self.attrConditionValue = None
         self.showLines = 1
+        self.attributeSelectionList = None
+
+        #load settings
         self.loadSettings()
 
         self.box = QVBoxLayout(self.mainArea)
@@ -47,49 +55,26 @@ class OWSieveDiagram(OWWidget):
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         
         #GUI
-        #add controls to self.controlArea widget
-        self.controlArea.setMinimumWidth(220)
-        self.attrSelGroup = QVGroupBox(self.controlArea)
-        self.attrSelGroup.setTitle("Shown attributes")
+        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = " Shown attributes ")
 
-        self.hbox1 = QHBox(self.attrSelGroup, "x")
-        self.attrXCaption = QLabel("X attribute: ", self.hbox1)
-        self.attrX = QComboBox(self.hbox1)
-        self.connect(self.attrX, SIGNAL('activated ( const QString & )'), self.updateData)
+        self.attrXCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrX", "X Attribute:", tooltip = "Select an attribute to be shown on the X axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
+        self.attrYCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrY", "Y Attribute:", tooltip = "Select an attribute to be shown on the Y axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
-        self.hbox2 = QHBox(self.attrSelGroup, "y")
-        self.attrYCaption = QLabel( "Y attribute: ", self.hbox2)
-        self.attrY = QComboBox(self.hbox2)
-        self.connect(self.attrY, SIGNAL('activated ( const QString & )'), self.updateData)
+        self.conditionGroup = OWGUI.widgetBox(self.controlArea, box = " Condition ")
+        self.attrConditionCombo      = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrCondition", "Attribute:", callback = self.updateConditionAttr, sendSelectedValue = 1, valueType = str, labelWidth = 70)
+        self.attrConditionValueCombo = OWGUI.comboBoxWithCaption(self.conditionGroup, self, "attrConditionValue", "Value:", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
 
-        self.conditionGroup = QVButtonGroup("Condition", self.controlArea)
-        self.box3 = QHBox(self.conditionGroup, "attribute")
-        self.box4 = QHBox(self.conditionGroup, "value")
-        self.conditionAttrLabel = QLabel("Attribute:", self.box3)
-        self.conditionAttr = QComboBox(self.box3)
-        self.conditionValLabel = QLabel("Value:", self.box4)
-        self.conditionAttrValues  = QComboBox(self.box4)
-        self.connect(self.conditionAttr, SIGNAL("activated(int)"), self.updateConditionAttr)
-        self.connect(self.conditionAttrValues, SIGNAL("activated(int)"), self.updateConditionAttrValue)
-
-        self.visualSettingsGroup = QVButtonGroup("Visual settings", self.controlArea)        
-        self.showLinesCB = QCheckBox('Show lines', self.visualSettingsGroup)
-        self.connect(self.showLinesCB, SIGNAL("toggled(bool)"), self.updateData)
-
-        self.interestingGroupBox = QVGroupBox ("Interesting attribute pairs", self.space)
-        self.calculateButton =QPushButton("Calculate chi squares", self.interestingGroupBox)
+        OWGUI.checkBox(self.controlArea, self, "showLines", "Show Lines", box = " Visual Settings ", callback = self.updateData)
+        
+        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = "Interesting Attribute Pairs")
+        self.calculateButton = QPushButton("Calculate Chi Squares", self.interestingGroupBox)
         self.connect(self.calculateButton, SIGNAL("clicked()"),self.calculatePairs)
         self.interestingList = QListBox(self.interestingGroupBox)
         self.connect(self.interestingList, SIGNAL("selectionChanged()"),self.showSelectedPair)
 
-        self.statusBar = QStatusBar(self.mainArea)
-        self.box.addWidget(self.statusBar)
-        
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
+        self.icons = self.createAttributeIconDict()
         self.resize(800, 550)
-
-        #connect controls to appropriate functions
-        self.activateLoadedSettings()
 
     ###############################################################
     # when clicked on a list box item, show selected attribute pair
@@ -97,41 +82,27 @@ class OWSieveDiagram(OWWidget):
         if self.interestingList.count() == 0: return
 
         index = self.interestingList.currentItem()
-        (chisquare, strName, xAttr, yAttr) = self.chisquares[index]
-        attrXName = self.data.domain[xAttr].name
-        attrYName = self.data.domain[yAttr].name
-        for i in range(self.attrX.count()):
-            if attrXName == str(self.attrX.text(i)): self.attrX.setCurrentItem(i)
-            if attrYName == str(self.attrY.text(i)): self.attrY.setCurrentItem(i)
+        (chisquare, strName, self.attrX, self.attrY) = self.chisquares[index]        
         self.updateData()
 
     def calculatePairs(self):
         self.chisquares = []
         self.interestingList.clear()
-        if self.data == None: return
         data = self.getConditionalData()
+        if not data: return
 
-        self.statusBar.message("Please wait. Computing...")
-        total = len(data)
         conts = {}
         #dc = orange.DomainContingency(data)
         dc = []
         for i in range(len(data.domain)):
             dc.append(orange.ContingencyAttrAttr(data.domain[i], data.domain[i], data))
                       
-        for i in range(len(data.domain)):
-            if data.domain[i].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
+        for attr in data.domain:
+            if attr.varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
 
-            cont = dc[i]   # distribution of X attribute
-            vals = []
-            # compute contingency of x attribute
-            for key in cont.keys():
-                sum = 0
-                try:
-                    for val in cont[key]: sum += val
-                except: pass
-                vals.append(sum)
-            conts[data.domain[i].name] = (cont, vals)
+            dc = orange.ContingencyAttrAttr(attr, attr, data)   # distribution of X attribute
+            vals = [sum(dc[key]) for key in dc.keys()]          # compute contingency of x attribute
+            conts[attr.name] = (dc, vals)
 
         for attrX in range(len(data.domain)):
             if data.domain[attrX].varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
@@ -145,7 +116,7 @@ class OWSieveDiagram(OWWidget):
                 # create cartesian product of selected attributes and compute contingency 
                 (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attrX], data.domain[attrY]])
                 tempData = data.select(list(data.domain) + [cart])
-                contXY = orange.ContingencyAttrAttr(cart, cart, tempData)   # distribution of X attribute
+                contXY = orange.ContingencyAttrAttr(cart, cart, tempData)   # distribution of the merged attribute
 
                 # compute chi-square
                 chisquare = 0.0
@@ -159,11 +130,11 @@ class OWSieveDiagram(OWWidget):
                             for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actual += val
                         except:
                             actual = 0
-                        expected = float(valx * valy) / float(total)
+                        expected = float(valx * valy) / float(len(data))
                         if expected == 0: continue
                         pearson2 = (actual - expected)*(actual - expected) / expected
                         chisquare += pearson2
-                self.chisquares.append((chisquare, "%s - %s" % (data.domain[attrX].name, data.domain[attrY].name), attrX, attrY))
+                self.chisquares.append((chisquare, "%s - %s" % (data.domain[attrX].name, data.domain[attrY].name), data.domain[attrX].name, data.domain[attrY].name))
 
         ########################
         # populate list box with highest chisquares
@@ -171,64 +142,50 @@ class OWSieveDiagram(OWWidget):
         self.chisquares.reverse()
         for (chisquare, attrs, x, y) in self.chisquares:
             str = "%s (%.3f)" % (attrs, chisquare)
-            self.interestingList.insertItem(str)        
-
-        self.statusBar.message("")
+            self.interestingList.insertItem(str)
         
-    def activateLoadedSettings(self):
-        self.showLinesCB.setChecked(self.showLines)
 
     ######################################
     # create data subset depending on conditional attribute and value
     def getConditionalData(self):
-        attr = str(self.conditionAttr.currentText())
-        if attr == "[None]":
-            return self.data
-        
-        attrValue = str(self.conditionAttrValues.currentText())
-        return self.data.select({attr:attrValue})
+        if not self.data: return None
+        if self.attrCondition == "[None]":  return self.data
+        else:                               return self.data.select({self.attrCondition:self.attrConditionValue})
 
     ######################################
     # new conditional attribute was set - update graph
-    def updateConditionAttr(self, index):
-        self.conditionAttrValues.clear()
+    def updateConditionAttr(self):
+        self.attrConditionValueCombo.clear()
         
-        if index == 0:
+        if self.attrCondition == "[None]":
             self.updateData()
             return
-        attrName = str(self.conditionAttr.text(index))
-        values = self.data.domain[attrName].values
 
-        for val in values:
-            self.conditionAttrValues.insertItem(val)
-        self.conditionAttrValues.setCurrentItem(0)
-        self.updateConditionAttrValue(0)
-
-    ##########################################
-    # new conditional attribute value was set - update graph
-    def updateConditionAttrValue(self, index):
+        for val in self.data.domain[self.attrCondition].values:
+            self.attrConditionValueCombo.insertItem(val)
+        self.attrConditionValue = str(self.attrConditionValueCombo.text(0))
         self.updateData()
 
     ##################################################
     # initialize lists for shown and hidden attributes
-    def initCombos(self, data):
-        self.attrX.clear()
-        self.attrY.clear()
-        self.conditionAttr.clear()
-        self.conditionAttrValues.clear()
-        self.conditionAttr.insertItem("[None]")
+    def initCombos(self):
+        self.attrXCombo.clear()
+        self.attrYCombo.clear()
+        self.attrConditionCombo.clear()        
+        self.attrConditionCombo.insertItem("[None]")
+        self.attrConditionValueCombo.clear()
 
-        if not data: return
-        for attr in data.domain:
-            if attr.varType == orange.VarTypes.Discrete:
-                self.attrX.insertItem(attr.name)
-                self.attrY.insertItem(attr.name)
-                self.conditionAttr.insertItem(attr.name)
-        self.conditionAttr.setCurrentItem(0)
-        self.updateConditionAttr(0)
+        if not self.data: return
+        for i in range(len(self.data.domain)):
+            if self.data.domain[i].varType == orange.VarTypes.Continuous: continue
+            self.attrXCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
+            self.attrYCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
+            self.attrConditionCombo.insertItem(self.icons[self.data.domain[i].varType], self.data.domain[i].name)
+        self.attrCondition = self.attrConditionCombo.text(0)
 
-        if self.attrX.count() > 0:  self.attrX.setCurrentItem(0)
-        if self.attrY.count() > 1:  self.attrY.setCurrentItem(1)
+        if self.attrXCombo.count() > 0:
+            self.attrX = str(self.attrXCombo.text(0))
+            self.attrY = str(self.attrYCombo.text(self.attrYCombo.count() > 1))
 
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
@@ -236,35 +193,32 @@ class OWSieveDiagram(OWWidget):
         self.updateData()
 
     ######################################################################
-    ## Attribute selection signal
-    def attributeSelection(self, list):
-        if not self.data or len(list) < 2: return
-
-        ind1 = -1; ind2 = -1; classInd = 0
-        for i in range(self.attrX.count()):
-            if str(self.attrX.text(i)) == list[0]: ind1 = i
-            if str(self.attrX.text(i)) == list[1]: ind2 = i
-
-        if ind1 == ind2 == -1:
-            print "no valid attributes found"
-            return    # something isn't right
-
-        self.attrX.setCurrentItem(ind1)
-        self.attrY.setCurrentItem(ind2)
-        self.updateData()
-
-    ######################################################################
     ## DATA signal
     # receive new data and update all fields
-    def data(self, data):
+    def cdata(self, data):
         self.interestingList.clear()
         exData = self.data
         self.data = None
         if data: self.data = orange.Preprocessor_dropMissing(data)
 
         if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)):  # preserve attribute choice if the domain is the same
-            self.initCombos(self.data)
+            self.initCombos()
+        self.attributeSelection(self.attributeSelectionList)
+
+
+    ######################################################################
+    ## Attribute selection signal
+    def attributeSelection(self, attrList):
+        self.attributeSelectionList = attrList
+        if self.data and self.attributeSelectionList and len(attrList) >= 2: 
+            try:        # maybe not all attributes in attrList are in current data domain
+                self.attrX = attrList[0]
+                self.attrY = attrList[1]
+            except:
+                pass
+        
         self.updateData()
+
 
     def clearGraph(self):
         for rect in self.rects: rect.hide()
@@ -279,21 +233,15 @@ class OWSieveDiagram(OWWidget):
     ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
         self.clearGraph()
-        if self.data == None : return
+        if not self.data: return
 
-        self.showLines = self.showLinesCB.isOn()
-        
-        attrX = str(self.attrX.currentText())
-        attrY = str(self.attrY.currentText())
-
-        if attrX == "" or attrY == "": return
+        if not self.attrX or not self.attrY: return
         data = self.getConditionalData()
 
-        total = len(data)
         valsX = []
         valsY = []
-        contX = orange.ContingencyAttrAttr(attrX, attrX, data)   # distribution of X attribute
-        contY = orange.ContingencyAttrAttr(attrY, attrY, data)   # distribution of Y attribute
+        contX = orange.ContingencyAttrAttr(self.attrX, self.attrX, data)   # distribution of X attribute
+        contY = orange.ContingencyAttrAttr(self.attrY, self.attrY, data)   # distribution of Y attribute
 
         # compute contingency of x and y attributes
         for key in contX.keys():
@@ -311,7 +259,7 @@ class OWSieveDiagram(OWWidget):
             valsY.append(sum)
 
         # create cartesian product of selected attributes and compute contingency 
-        (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attrX], data.domain[attrY]])
+        (cart, profit) = FeatureByCartesianProduct(data, [data.domain[self.attrX], data.domain[self.attrY]])
         tempData = data.select(list(data.domain) + [cart])
         contXY = orange.ContingencyAttrAttr(cart, cart, tempData)   # distribution of X attribute
 
@@ -327,10 +275,10 @@ class OWSieveDiagram(OWWidget):
                     for val in contXY['%s-%s' %(contX.keys()[i], contY.keys()[j])]: actualProb += val
                 except:
                     actualProb = 0
-                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, total)
+                probs['%s-%s' %(contX.keys()[i], contY.keys()[j])] = ((contX.keys()[i], valx), (contY.keys()[j], valy), actualProb, len(data))
 
         # get text width of Y attribute name        
-        text = QCanvasText(data.domain[attrY].name, self.canvas);
+        text = QCanvasText(data.domain[self.attrY].name, self.canvas);
         font = text.font(); font.setBold(1); text.setFont(font)
         xOff = text.boundingRect().right() - text.boundingRect().left() + 40
         yOff = 50
@@ -338,14 +286,10 @@ class OWSieveDiagram(OWWidget):
         if sqareSize < 0: return    # canvas is too small to draw rectangles
 
         # print graph name
-        condition = str(self.conditionAttr.currentText())
-        attr1 = str(self.attrX.currentText())
-        attr2 = str(self.attrY.currentText())
-        if condition == "[None]":
-            name  = "P(%s, %s) =\\= P(%s)*P(%s)" %(attr1, attr2, attr1, attr2)
+        if self.attrCondition == "[None]":
+            name  = "P(%s, %s) =\\= P(%s)*P(%s)" %(self.attrX, self.attrY, self.attrX, self.attrY)
         else:
-            condVal = str(self.conditionAttrValues.currentText())
-            name = "P(%s, %s | %s = %s) =\\= P(%s | %s = %s)*P(%s | %s = %s)" %(attr1, attr2, condition, condVal, attr1, condition, condVal, attr2, condition, condVal)
+            name = "P(%s, %s | %s = %s) =\\= P(%s | %s = %s)*P(%s | %s = %s)" %(self.attrX, self.attrY, self.attrCondition, self.attrConditionValue, self.attrX, self.attrCondition, self.attrConditionValue, self.attrY, self.attrCondition, self.attrConditionValue)
         self.addText(name, xOff+ sqareSize/2, 10, Qt.AlignHCenter, 1)
         self.addText("N = " + str(len(data)), xOff+ sqareSize/2, 30, Qt.AlignHCenter, 0)
 
@@ -366,13 +310,13 @@ class OWSieveDiagram(OWWidget):
         for i in range(len(valsX)):
             if valsX[i] == 0: continue
             currY = yOff
-            width = int(float(sqareSize * valsX[i])/float(total))
+            width = int(float(sqareSize * valsX[i])/float(len(data)))
 
             #for j in range(len(valsY)):
             for j in range(len(valsY)-1, -1, -1):   # this way we sort y values correctly
                 ((xAttr, xVal), (yAttr, yVal), actual, sum) = probs['%s-%s' %(contX.keys()[i], contY.keys()[j])]
                 if valsY[j] == 0: continue
-                height = int(float(sqareSize * valsY[j])/float(total))
+                height = int(float(sqareSize * valsY[j])/float(len(data)))
 
                 # create rectangle
                 rect = QCanvasRectangle(currX+2, currY+2, width-4, height-4, self.canvas)
@@ -385,14 +329,14 @@ class OWSieveDiagram(OWWidget):
 
                 currY += height
                 if currX == xOff:
-                    self.addText(data.domain[attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, 0)
+                    self.addText(data.domain[self.attrY].values[j], xOff - 10, currY - height/2, Qt.AlignRight+Qt.AlignVCenter, 0)
 
-            self.addText(data.domain[attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, 0)
+            self.addText(data.domain[self.attrX].values[i], currX + width/2, yOff + sqareSize + 5, Qt.AlignCenter, 0)
             currX += width
 
         # show attribute names
-        self.addText(data.domain[attrY].name, 5, yOff + sqareSize/2, Qt.AlignLeft, 1)
-        self.addText(data.domain[attrX].name, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, 1)
+        self.addText(self.attrY, 5, yOff + sqareSize/2, Qt.AlignLeft, 1)
+        self.addText(self.attrX, xOff + sqareSize/2, yOff + sqareSize + 15, Qt.AlignCenter, 1)
 
         self.canvas.update()
 
@@ -506,4 +450,6 @@ if __name__=="__main__":
     ow=OWSieveDiagram()
     a.setMainWidget(ow)
     ow.show()
+    ow.cdata(orange.ExampleTable(r"c:\Development\Python23\Lib\site-packages\Orange\datasets\crush injury - cont.tab"))
     a.exec_loop()
+    ow.saveSettings()

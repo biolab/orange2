@@ -168,6 +168,8 @@ class OWScatterPlot(OWWidget):
         self.colorButtonsBox = OWGUI.widgetBox(self.SettingsTab, " Change Colors ", orientation = "horizontal")
         OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor)
         OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor)
+
+        self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
         self.resize(900, 700)
@@ -327,11 +329,11 @@ class OWScatterPlot(OWWidget):
         contList = []
         discList = []
         for attr in self.data.domain:
-            self.attrXCombo.insertItem(attr.name)
-            self.attrYCombo.insertItem(attr.name)
-            self.attrColorCombo.insertItem(attr.name)
-            self.attrSizeCombo.insertItem(attr.name)
-            if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.insertItem(attr.name)
+            self.attrXCombo.insertItem(self.icons[attr.varType], attr.name)
+            self.attrYCombo.insertItem(self.icons[attr.varType], attr.name)
+            self.attrColorCombo.insertItem(self.icons[attr.varType], attr.name)
+            self.attrSizeCombo.insertItem(self.icons[attr.varType], attr.name)
+            if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.insertItem(self.icons[attr.varType], attr.name)
 
 
         self.attrX = str(self.attrXCombo.text(0))

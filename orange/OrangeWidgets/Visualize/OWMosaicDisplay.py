@@ -16,8 +16,7 @@ import orngInteract
 from math import sqrt, floor, ceil, pow
 from orngCI import FeatureByCartesianProduct
 from copy import copy
-import OWGraphTools
-from OWGUI import checkBox
+import OWGraphTools, OWGUI 
 
 
 ###########################################################################################
@@ -37,7 +36,6 @@ class OWMosaicDisplay(OWWidget):
         self.names = []     # class values
         self.symbols = []   # squares for class values
         
-
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata)]
         self.outputs = []
     
@@ -45,9 +43,14 @@ class OWMosaicDisplay(OWWidget):
         self.showDistribution = 1
         self.showAprioriDistribution = 1
         self.horizontalDistribution = 1
+        self.attr1 = ""
+        self.attr2 = ""
+        self.attr3 = ""
+        self.attr4 = ""
         self.cellspace = 6
         self.attributeNameOffset = 30
         self.attributeValueOffset = 15
+        
         self.loadSettings()
 
         # add a settings dialog and initialize its values
@@ -62,36 +65,34 @@ class OWMosaicDisplay(OWWidget):
         
         #GUI
         #add controls to self.controlArea widget
-        self.group = QVGroupBox(self.controlArea)
-        self.group.setMinimumWidth(200)
-        self.attrSelGroup = QVGroupBox(self.group)
-        self.attrSelGroup.setTitle("Shown attributes")
+        self.controlArea.setMinimumWidth(220)
+        box1 = OWGUI.widgetBox(self.controlArea, " 1st Attribute ")
+        box2 = OWGUI.widgetBox(self.controlArea, " 2nd Attribute ")
+        box3 = OWGUI.widgetBox(self.controlArea, " 3rd Attribute ")
+        box4 = OWGUI.widgetBox(self.controlArea, " 4th Attribute ")
+        self.attr1Combo = OWGUI.comboBox(box1, self, "attr1", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
+        self.attr2Combo = OWGUI.comboBox(box2, self, "attr2", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
+        self.attr3Combo = OWGUI.comboBox(box3, self, "attr3", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
+        self.attr4Combo = OWGUI.comboBox(box4, self, "attr4", None, callback = self.updateData, sendSelectedValue = 1, valueType = str)
 
-        self.attr1Group = QVButtonGroup("1st attribute", self.attrSelGroup)
-        self.attr1 = QComboBox(self.attr1Group)
-        self.connect(self.attr1, SIGNAL('activated ( const QString & )'), self.updateData)
+        box1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        box2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        box3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        box4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        
+        box5 = OWGUI.widgetBox(self.controlArea, "Visual Settings")
+        box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        OWGUI.checkBox(box5, self, 'showDistribution', 'Show Distribution', callback = self.updateData, tooltip = "Do you wish to see class distribution or only class purity?")
+        OWGUI.checkBox(box5, self, 'showAprioriDistribution', 'Show Apriori Distribution', callback = self.updateData, tooltip = "Do you wish to see lines showing apriori class distribution?")
+        OWGUI.checkBox(box5, self, 'horizontalDistribution', 'Show Distribution Horizontally', callback = self.updateData, tooltip = "Do you wish to see distribution drawn horizontally or vertically?")
 
-        self.attr2Group = QVButtonGroup("2nd attribute", self.attrSelGroup)
-        self.attr2 = QComboBox(self.attr2Group)
-        self.connect(self.attr2, SIGNAL('activated ( const QString & )'), self.updateData)
-
-        self.attr3Group = QVButtonGroup("3rd attribute", self.attrSelGroup)
-        self.attr3 = QComboBox(self.attr3Group)
-        self.connect(self.attr3, SIGNAL('activated ( const QString & )'), self.updateData)
-
-        self.attr4Group = QVButtonGroup("4th attribute", self.attrSelGroup)
-        self.attr4 = QComboBox(self.attr4Group)
-        self.connect(self.attr4, SIGNAL('activated ( const QString & )'), self.updateData)        
-
-        checkBox(self.group, self, 'showDistribution', 'Show distribution', callback = self.updateData, tooltip = "Do you wish to see class distribution or only class purity?")
-        checkBox(self.group, self, 'showAprioriDistribution', 'Show apriori distribution', callback = self.updateData, tooltip = "Do you wish to see lines showing apriori class distribution?")
-        checkBox(self.group, self, 'horizontalDistribution', 'Show distribution horizontally', callback = self.updateData, tooltip = "Do you wish to see distribution drawn horizontally or vertically?")
+        b = QVBox(self.controlArea)
 
         self.statusBar = QStatusBar(self.mainArea)
         self.box.addWidget(self.statusBar)
         
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
-
+        self.icons = self.createAttributeIconDict()
         self.resize(680, 480)
 
         #connect controls to appropriate functions
@@ -101,51 +102,32 @@ class OWMosaicDisplay(OWWidget):
     ##################################################
     # initialize combo boxes with discrete attributes
     def initCombos(self, data):
-        self.attr1.clear(); self.attr2.clear(); self.attr3.clear(); self.attr4.clear()
+        self.attr1Combo.clear(); self.attr2Combo.clear(); self.attr3Combo.clear(); self.attr4Combo.clear()
 
         if data == None: return
 
-        self.attr3.insertItem("(none)")
-        self.attr4.insertItem("(none)")
+        self.attr3Combo.insertItem("(None)")
+        self.attr4Combo.insertItem("(None)")
 
         for attr in data.domain:
             if attr.varType == orange.VarTypes.Discrete:
-                self.attr1.insertItem(attr.name)
-                self.attr2.insertItem(attr.name)
-                self.attr3.insertItem(attr.name)
-                self.attr4.insertItem(attr.name)
+                self.attr1Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
+                self.attr2Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
+                self.attr3Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
+                self.attr4Combo.insertItem(self.icons[orange.VarTypes.Discrete], attr.name)
 
-        if self.attr1.count() > 0:
-            self.attr1.setCurrentItem(0)
-        if self.attr2.count() > 1:
-            self.attr2.setCurrentItem(1)
-        self.attr3.setCurrentItem(0)
-        self.attr4.setCurrentItem(0)
+        if self.attr1Combo.count() > 0:
+            self.attr1 = str(self.attr1Combo.text(0))
+            self.attr2 = str(self.attr2Combo.text(self.attr2Combo.count() > 1))
+        self.attr3 = str(self.attr3Combo.text(0))
+        self.attr4 = str(self.attr4Combo.text(0))
+        
 
     ######################################################################
     ##  when we resize the widget, we have to redraw the data
     def resizeEvent(self, e):
         OWWidget.resizeEvent(self,e)
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
-        self.updateData()
-
-    ######################################################################
-    ## VIEW signal
-    def view(self, (attr1, attr2)):
-        if self.data == None:
-            return
-
-        ind1 = 0; ind2 = 0; classInd = 0
-        for i in range(self.attr1.count()):
-            if str(self.attr1.text(i)) == attr1: ind1 = i
-            if str(self.attr1.text(i)) == attr2: ind2 = i
-
-        if ind1 == ind2 == 0:
-            print "no valid attributes found"
-            return    # something isn't right
-
-        self.attr1.setCurrentItem(ind1)
-        self.attr2.setCurrentItem(ind2)
         self.updateData()
 
     ######################################################################
@@ -174,10 +156,10 @@ class OWMosaicDisplay(OWWidget):
         
         if self.data == None : return
 
-        attrList = [str(self.attr1.currentText()), str(self.attr2.currentText())]
-        if str(self.attr3.currentText()) != "(none)": attrList.append(str(self.attr3.currentText()))
-        if str(self.attr4.currentText()) != "(none)": attrList.append(str(self.attr4.currentText()))
-
+        attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
+        while "(None)" in attrList:
+            attrList.remove("(None)")
+        
         # get the maximum width of rectangle
         text = QCanvasText(self.data.domain[attrList[1]].name, self.canvas);
         font = text.font(); font.setBold(1); text.setFont(font)
@@ -353,12 +335,12 @@ class OWMosaicDisplay(OWWidget):
         #pen = rect.pen(); pen.setWidth(2); rect.setPen(pen)
         self.rects.append(rect)
         
-        if not data: return rect
+        if not data or not data.domain.classVar or not data.domain.classVar.varType == orange.VarTypes.Discrete:
+            return rect
 
-        if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
-            originalDist = orange.Distribution(data.domain.classVar.name, self.data)
-            dist = orange.Distribution(data.domain.classVar.name, data)
-            self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist)
+        originalDist = orange.Distribution(data.domain.classVar.name, self.data)
+        dist = orange.Distribution(data.domain.classVar.name, data)
+        self.addTooltip(x0, y0, x1-x0, y1-y0, condition, originalDist, dist)
 
         if self.showDistribution:
             total = 0
@@ -391,7 +373,7 @@ class OWMosaicDisplay(OWWidget):
     #################################################
     # add tooltips
     def addTooltip(self, x, y, w, h, condition, apriori, actual):
-        print "actual = ", actual, type(actual)
+        #print "actual = ", actual, type(actual)
         examples = sum(list(actual))
         apriori = [val*100.0/float(sum(apriori)) for val in apriori]
         actual = [val*100.0/float(sum(actual)) for val in actual]

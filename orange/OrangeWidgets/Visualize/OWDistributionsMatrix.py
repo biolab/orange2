@@ -96,6 +96,8 @@ class OWDistributionsMatrix(OWWidget):
 
         self.barSizeSlider = OWGUI.hSlider(box5, self, 'lineWidth', box=' Line width ', minValue=1, maxValue=9, step=1, callback=self.setLineWidth, ticks=1)
 
+        self.icons = self.createAttributeIconDict()
+        
         self.tabs.insertTab(self.GeneralTab, "General")
         self.tabs.insertTab(self.SettingsTab, "Settings")
         
@@ -115,7 +117,7 @@ class OWDistributionsMatrix(OWWidget):
             
             i = 0
             for attr in self.data.domain.attributes:
-                self.attributesLB.insertItem(attr.name)
+                self.attributesLB.insertItem(self.icons[attr.varType], attr.name)
                 self.attributesLB.setSelected(i, i < 9)
                 i+=1
 

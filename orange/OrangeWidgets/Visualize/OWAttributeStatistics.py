@@ -56,6 +56,8 @@ class OWAttributeStatistics(OWWidget):
         self.layout.addWidget ( self.canvasview )
         self.canvasview.show()
 
+        self.icons = self.createAttributeIconDict()    
+
     def resizeEvent(self, event):
         if self.canvas and self.HighlightedAttribute>=0:
             # canvas height should be a bit less than the height of the widget frame
@@ -79,11 +81,11 @@ class OWAttributeStatistics(OWWidget):
         self.LastAttributeSelected = self.dataset.domain.attributes[ind].name
 
     def data(self,data):
+        self.attributes.clear()
         if data==None:
             self.dataset = None
             self.canvasview.hide()
         else:
-            self.attributes.clear()
             self.canvasview.show()
             # we do a trick here, and make a new domain that includes the class var, if one exists
             # this for a reason to change any of the code, plus to be able to use such functions
@@ -91,8 +93,10 @@ class OWAttributeStatistics(OWWidget):
             newdomain = orange.Domain(data.domain.attributes+[data.domain.classVar],0)
             self.dataset = orange.ExampleTable(newdomain, data)
             self.dist = orange.DomainDistributions(self.dataset)
+
             for a in self.dataset.domain.attributes:
-                self.attributes.insertItem(a.name)
+                self.attributes.insertItem(self.icons[a.varType], a.name)
+                
             atts = [x.name for x in self.dataset.domain.attributes]
             if self.LastAttributeSelected in atts:
                 ind = atts.index(self.LastAttributeSelected)

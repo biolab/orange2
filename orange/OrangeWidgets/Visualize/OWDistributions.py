@@ -380,6 +380,8 @@ class OWDistributions(OWWidget):
         self.connect(self.variablesQCB, SIGNAL('activated (const QString &)'), self.setVariable)
         self.connect(self.targetQCB, SIGNAL('activated (const QString &)'), self.setTarget)
         self.connect(self.outcomesQLB, SIGNAL("selectionChanged()"), self.outcomeSelectionChange)
+
+        self.icons = self.createAttributeIconDict()    
         
         self.activateLoadedSettings()
 
@@ -473,7 +475,7 @@ class OWDistributions(OWWidget):
 
     def cdata(self, data):
         if data == None:
-            self.setVariablesComboBox([])
+            self.setVariablesComboBox(None)
             self.setOutcomeNames([])
             self.targetQCB.clear()
             self.graph.setXlabels(None)
@@ -488,10 +490,6 @@ class OWDistributions(OWWidget):
         self.graph.setData(None, None)
         self.graph.setTargetValue(None)
         self.graph.setVisibleOutcomes(None)
-        
-        names = [attr.name for attr in self.data.domain.attributes]
-        if self.graph.attributeName not in names:
-            self.graph.attributeName = names[0]
 
         self.targetQCB.clear()
         if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -499,20 +497,29 @@ class OWDistributions(OWWidget):
                 self.targetQCB.insertItem(val)
             self.setTarget(self.data.domain.classVar.values[0])
                 
-        self.setVariablesComboBox(names, names.index(self.graph.attributeName))
+        self.setVariablesComboBox(self.data, self.graph.attributeName)
         self.setOutcomeNames([])
         if self.data.domain.classVar:
             self.setOutcomeNames(self.data.domain.classVar.values.native())
 
 
-    def setVariablesComboBox(self, list, defaultItem = 0):
+    def setVariablesComboBox(self, data, defaultItem = None):
         "Set the variables with the suplied list."
         self.variablesQCB.clear()
-        for i in list:    self.variablesQCB.insertItem(i)
-        if len(list) > 0:
-            self.graph.setData(self.data, list[defaultItem])
-            self.variablesQCB.setCurrentItem(defaultItem)
-            self.setVariable(self.variablesQCB.text(defaultItem))
+        if not data: return
+        
+        for attr in data.domain.attributes:
+            self.variablesQCB.insertItem(self.icons[attr.varType], attr.name)
+
+        try:
+            index = data.domain.index(defaultItem)
+        except:
+            index = 0
+
+        if data and len(data.domain.attributes) > 0:
+            self.graph.setData(data, data.domain.attributes[index].name)
+            self.variablesQCB.setCurrentItem(index)
+            self.setVariable(self.variablesQCB.text(index))
 
 
     def setOutcomeNames(self, list):

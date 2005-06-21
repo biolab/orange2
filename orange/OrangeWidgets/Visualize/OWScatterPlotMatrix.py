@@ -62,6 +62,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.shownAttrCount = 0
         self.graphGridColor = str(Qt.black.name())
         self.graphCanvasColor = str(Qt.white.name())
+        self.attributeSelection = None
 
         #load settings
         self.loadSettings()
@@ -109,6 +110,7 @@ class OWScatterPlotMatrix(OWWidget):
         self.graphParameters = []
 
         # add a settings dialog and initialize its values
+        self.icons = self.createAttributeIconDict()    
         self.activateLoadedSettings()
         self.resize(900, 700)
         
@@ -362,31 +364,38 @@ class OWScatterPlotMatrix(OWWidget):
             if self.graphs != []: self.createGraphs()   # if we had already created graphs, redraw them with new data
             return  
 
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
+        if not self.selection(self.attributeSelection):
+            self.shownAttribsLB.clear()
+            self.hiddenAttribsLB.clear()
         
-        for attr in self.data.domain.attributes:
-            self.shownAttribsLB.insertItem(attr.name)
+            for attr in self.data.domain.attributes:
+                self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
 
-        #self.createGraphs()
+            #self.createGraphs()
 
     #################################################
 
-    def selection(self, list):
+    def selection(self, attrList):
+        self.attributeSelection = attrList
+
+        if not self.data or not attrList: return 0
+
+        domain = [attr.name for attr in self.data.domain]
+        for attr in attrList:
+            if attr not in domain: return 0  # this attribute list belongs to a new dataset that has not come yet
+        
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
-        if self.data == None: return
-
-        for attr in list:
-            self.shownAttribsLB.insertItem(attr)
+        for attr in attrList:
+            self.shownAttribsLB.insertItem(self.icons[self.data.domain[attr].varType], attr)
 
         for attr in self.data.domain.attributes:
-            if attr.name not in list:
-                self.hiddenAttribsLB.insertItem(attr.name)
-
+            if attr.name not in attrList:
+                self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+                
         self.createGraphs()
-
+        return 1
 
 
     ################################################
@@ -396,21 +405,17 @@ class OWScatterPlotMatrix(OWWidget):
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
-
 
     def removeAttribute(self):
         count = self.shownAttribsLB.count()
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
                 self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
-
-
+                
     def resizeEvent(self, e):
         w = self.mainArea.width()
         h = self.mainArea.height()

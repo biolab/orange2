@@ -166,10 +166,10 @@ class OWPolyviz(OWWidget):
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        self.icons = self.createAttributeIconDict()
         
         # add a settings dialog and initialize its values
-        self.activateLoadedSettings()
-
+        self.activateLoadedSettings()        
         self.resize(900, 700)
 
 
@@ -301,9 +301,10 @@ class OWPolyviz(OWWidget):
 
         for i in range(self.shownAttribsLB.count()):
             if str(self.shownAttribsLB.item(i).text()) == str(item.text()):
-                self.shownAttribsLB.removeItem(i)
-                if self.attributeReverse[name] == 1:    self.shownAttribsLB.insertItem(name + ' -', i)
-                else:                                   self.shownAttribsLB.insertItem(name + ' +', i)
+                
+                if self.attributeReverse[name] == 1:    self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), name + ' -', i)
+                else:                                   self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), name + ' +', i)
+                self.shownAttribsLB.removeItem(i+1)
                 self.shownAttribsLB.setCurrentItem(i)
                 self.updateGraph()
                 return
@@ -316,24 +317,18 @@ class OWPolyviz(OWWidget):
         if not val: return
         (accuracy, other_results, tableLen, attrList, tryIndex, attrReverseList) = val
         
-        # check if all attributes in list really exist in domain
-        for attr in attrList:
-            if not self.graph.attributeNameIndex.has_key(attr):
-                return
-        
         self.shownAttribsLB.clear()
         self.hiddenAttribsLB.clear()
 
         reverseDict = dict([(attrList[i], attrReverseList[i]) for i in range(len(attrList))])
 
-        for attr in attrList:
-            if reverseDict[attr]: self.shownAttribsLB.insertItem(attr + " -")
-            else: self.shownAttribsLB.insertItem(attr + " +")
-            self.attributeReverse[attr] = reverseDict[attr]
-
         for attr in self.data.domain:
-            if attr.name not in attrList:
-                self.hiddenAttribsLB.insertItem(attr.name + " +")
+            if attr.name in attrList:
+                if reverseDict[attr]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " -")
+                else: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " +")
+                self.attributeReverse[attr] = reverseDict[attr]
+            else:
+                self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
                 self.attributeReverse[attr.name] = 0
 
         self.updateGraph()
@@ -355,11 +350,10 @@ class OWPolyviz(OWWidget):
 
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
-        for i in range(self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i) and i != 0:
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i-1)
+        for i in range(1, self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
+                self.shownAttribsLB.removeItem(i+1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
         self.updateGraph()
 
@@ -368,9 +362,8 @@ class OWPolyviz(OWWidget):
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
                 self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i+1)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.updateGraph()
 
@@ -379,9 +372,8 @@ class OWPolyviz(OWWidget):
         pos   = self.shownAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
 
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
@@ -393,9 +385,8 @@ class OWPolyviz(OWWidget):
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
                 self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.updateGraph()
@@ -418,28 +409,27 @@ class OWPolyviz(OWWidget):
         if data == None: return
 
         if shownAttributes:
-            # we already have the list of attributes to show
-            shown = shownAttributes;  hidden = []
-            if shownAttributes != None:
-                for attr in data.domain:
-                    if attr.name not in shown: hidden.append(attr.name)
-            for attr in shown:
-                if self.attributeReverse[attr]: self.shownAttribsLB.insertItem(attr + " -")
-                else:                           self.shownAttribsLB.insertItem(attr + " +")
-            for attr in hidden:
-                self.attributeReverse[attr] = 0
-                self.hiddenAttribsLB.insertItem(attr + " +")
+            for attr in shownAttributes:
+                if self.attributeReverse[attr] == 1: self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr + ' -')
+                else:                                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr + ' +')
+                
+            for attr in data.domain:
+                if attr.name not in shownAttributes:
+                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
+                    self.attributeReverse[attr.name] = 0
         else:
             for attr in data.domain.attributes[:10]:
-                if self.attributeReverse[attr.name]: self.shownAttribsLB.insertItem(attr.name + " -")
-                else:                                self.shownAttribsLB.insertItem(attr.name + " +")
+                if self.attributeReverse[attr.name]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name + " -")
+                else:                                self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
             if len(data.domain.attributes) > 10:
                 for attr in data.domain.attributes[10:]:
                     self.attributeReverse[attr.name] = 0
-                    self.hiddenAttribsLB.insertItem(attr.name + " +")
+                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
             if data.domain.classVar:
-                if self.attributeReverse[attr.name]: self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " -")
-                else:                                self.hiddenAttribsLB.insertItem(data.domain.classVar.name + " +")
+                if self.attributeReverse[data.domain.classVar.name]:
+                    self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name + " -")
+                else:
+                    self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name + " +")
                 
         self.sendShownAttributes()
     
@@ -473,15 +463,12 @@ class OWPolyviz(OWWidget):
     # receive info about which attributes to show
     def attributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
-        if self.data and attributeSelectionList:
-            domain = [attr.name for attr in self.data.domain]
-            for attr in attributeSelectionList:
-                if attr not in domain or not self.attributeReverse.has_key(attr): return  # this attribute list belongs to a new dataset that has not come yet
-
-            self.setShownAttributeList(self.data, attributeSelectionList)
-            self.attributeSelectionList = None
+        if self.data and self.attributeSelectionList:
+            for attr in self.attributeSelectionList:
+                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
+                    return
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.selectionChanged()
-    
         self.updateGraph()
 
     # #########################

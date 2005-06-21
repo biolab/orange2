@@ -235,11 +235,12 @@ class OWRadviz(OWWidget):
         self.connect(self.attrRemoveButton, SIGNAL("clicked()"), self.removeAttribute)
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
+        self.icons = self.createAttributeIconDict()
+
         # add a settings dialog and initialize its values
         self.activateLoadedSettings()
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
-
 
     # #########################
     # OPTIONS
@@ -581,36 +582,34 @@ class OWRadviz(OWWidget):
         if data == None: return
 
         if shownAttributes:
-            # we already have the list of attributes to show
-            shown = shownAttributes;  hidden = []
-            if shownAttributes != None:
-                for attr in data.domain:
-                    if attr.name not in shown: hidden.append(attr.name)
-            for attr in shown:  self.shownAttribsLB.insertItem(attr)
-            for attr in hidden: self.hiddenAttribsLB.insertItem(attr)
+            for attr in shownAttributes:
+                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
+                
+            for attr in data.domain:
+                if attr.name not in shownAttributes:
+                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
         else:
             if self.showAllAttributes:
-                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(attr.name)
+                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
             else:
-                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(attr.name)
+                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
                 if len(data.domain.attributes) > 10:
-                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(attr.name)
-            if data.domain.classVar: self.hiddenAttribsLB.insertItem(data.domain.classVar.name)
+                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+            if data.domain.classVar: self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
         self.sendShownAttributes()
     
     # move selected attribute in "Attribute Order" list one place up
     def moveAttrUP(self):
         self.graph.removeAllSelections()
         self.graph.insideColors = None; self.graph.clusterClosure = None
-        for i in range(self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i) and i != 0:
-                text = self.shownAttribsLB.text(i)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i-1)
+        for i in range(1, self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
+                self.shownAttribsLB.removeItem(i+1)
                 self.shownAttribsLB.setSelected(i-1, TRUE)
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
-        self.updateGraph()
+        self.updateGraph(1)
 
     # move selected attribute in "Attribute Order" list one place down  
     def moveAttrDOWN(self):
@@ -619,13 +618,12 @@ class OWRadviz(OWWidget):
         count = self.shownAttribsLB.count()
         for i in range(count-2,-1,-1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
                 self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, i+1)
                 self.shownAttribsLB.setSelected(i+1, TRUE)
         self.sendShownAttributes()
         self.graph.potentialsBmp = None
-        self.updateGraph()
+        self.updateGraph(1)
 
     def cbShowAllAttributes(self):
         if self.showAllAttributes:
@@ -643,8 +641,8 @@ class OWRadviz(OWWidget):
             if addAll or self.hiddenAttribsLB.isSelected(i):
                 text = self.hiddenAttribsLB.text(i)
                 if text == classVarName: continue
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
                 self.hiddenAttribsLB.removeItem(i)
-                self.shownAttribsLB.insertItem(text, pos)
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()
@@ -658,9 +656,9 @@ class OWRadviz(OWWidget):
         pos   = self.hiddenAttribsLB.count()
         for i in range(count-1, -1, -1):
             if self.shownAttribsLB.isSelected(i):
-                text = self.shownAttribsLB.text(i)
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
                 self.shownAttribsLB.removeItem(i)
-                self.hiddenAttribsLB.insertItem(text, pos)
+                
         if self.graph.globalValueScaling == 1:
             self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
         self.sendShownAttributes()
@@ -715,13 +713,12 @@ class OWRadviz(OWWidget):
     # receive info about which attributes to show
     def attributeSelection(self, attributeSelectionList):
         self.attributeSelectionList = attributeSelectionList
-        if self.data and attributeSelectionList:
-            domain = [attr.name for attr in self.data.domain]
-            for attr in attributeSelectionList:
-                if attr not in domain: return  # this attribute list belongs to a new dataset that has not come yet
+        if self.data and self.attributeSelectionList:
+            for attr in self.attributeSelectionList:
+                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
+                    return
 
-            self.setShownAttributeList(self.data, attributeSelectionList)
-            self.attributeSelectionList = None
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.selectionChanged()
     
         self.updateGraph(1)
