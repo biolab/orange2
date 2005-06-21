@@ -178,10 +178,7 @@ class OWSelectData(OWWidget):
         btnUpdate = OWGUI.button(boxSettings, self, "Update", self.setOutput)        
 
         # icons
-        self.icons = {orange.VarTypes.Continuous: self.createAttributePixmap("C"),
-                      orange.VarTypes.Discrete: self.createAttributePixmap("D"),
-                      orange.VarTypes.String: self.createAttributePixmap("S")}
-
+        self.icons = self.createAttributeIconDict()
         self.onDataInput(None)
         self.lbOperatorsD.setCurrentItem(0)
         self.lbOperatorsC.setCurrentItem(0)
@@ -749,19 +746,6 @@ class OWSelectData(OWWidget):
     ############################################################################################################################################################
     ## Utility functions #######################################################################################################################################
     ############################################################################################################################################################
-
-    def createAttributePixmap(self, char):
-        pixmap = QPixmap()
-        pixmap.resize(13,13)
-        painter = QPainter()
-        painter.begin(pixmap)
-        painter.setPen( Qt.black );
-        painter.setBrush( Qt.white );
-        painter.drawRect( 0, 0, 13, 13 );
-        painter.drawText(3, 11, char)
-        painter.end()
-        return pixmap
-
 
     def sp(self, l, capitalize=True):
         """Input: list; returns tupple (str(len(l)), "s"/"")

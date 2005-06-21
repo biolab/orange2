@@ -120,9 +120,7 @@ class OWDataDomain(OWWidget):
         self.resetButton.setMaximumWidth(applyButtonWidth)
 
         # icons
-        self.icons = {orange.VarTypes.Continuous: self.createAttributePixmap("C"),
-                      orange.VarTypes.Discrete: self.createAttributePixmap("D"),
-                      orange.VarTypes.String: self.createAttributePixmap("S")}
+        self.icons = self.createAttributeIconDict()
 
         self.resize(400,480)       
 
@@ -204,16 +202,16 @@ class OWDataDomain(OWWidget):
                 domain.addmeta(orange.newmetaid(), self.data.domain[str(self.metaList.text(i))])
             newdata = orange.ExampleTable(domain, self.data)
             newdata.name = self.data.name
-            self.send("OutputData", newdata)
+            self.send("Examples", newdata)
 
             #create domaing with  class atribute
             if self.classList.count()>0:
-                self.send("OutputDataWithClass", newdata)
+                self.send("Classified Examples", newdata)
             else:
-                self.send("OutputDataWithClass", None)
+                self.send("Classified Examples", None)
         else:
-            self.send("OutputData", None)
-            self.send("OutputDataWithClass", None)
+            self.send("Examples", None)
+            self.send("Classified Examples", None)
         
     def reset(self):
         data = self.data
@@ -379,7 +377,7 @@ class OWDataDomain(OWWidget):
                     itemText = str(self.inputAttributesList.text(i))
                     itemType = self.data.domain[itemText].varType
                     self.metaList.insertItem(self.icons[itemType],itemText)
-                    self.attributes[itemText] = 3
+                    self.attributes[itemText] = META_ATTR
 
         self.inputAttributesList.clearSelection()                                
         self.attributesList.clearSelection()
@@ -411,19 +409,6 @@ class OWDataDomain(OWWidget):
     ############################################################################################################################################################
     ## Utility functions #######################################################################################################################################
     ############################################################################################################################################################
-        
-    def createAttributePixmap(self, char):
-        pixmap = QPixmap()
-        pixmap.resize(13,13)
-        painter = QPainter()
-        painter.begin(pixmap)
-        painter.setPen( Qt.black );
-        painter.setBrush( Qt.white );
-        painter.drawRect( 0, 0, 13, 13 );
-        painter.drawText(3, 11, char)
-        painter.end()
-        return pixmap
-
 
     def computeSelectionCount(self, listBox):
         result = 0
