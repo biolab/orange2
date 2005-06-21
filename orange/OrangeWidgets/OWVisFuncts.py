@@ -40,8 +40,71 @@ def combinations(items, count):
 # returns: array, where some items are removed. it rotates items in each array and checks if the item is already in the array. it also tries to flip the items ([::-1])
 # for the above case, it would return [[1,2,3]]
 # used for radviz
+"""
 def removeRotationAndMirroringDuplicates(arr):
     final = []
+    projDict = {}
+    print "start...", arr
+    a2 = removeRotationAndMirroringDuplicates2(copy(arr))
+    for a in arr:
+        #print a
+        if type(a[0]) == int: key = tuple([a[i]-a[i+1] for i in range(-1, len(a)-1)])
+        else:                 key = tuple([(a[i][0]-a[i+1][0], a[i][1]-a[i+1][1]) for i in range(-1, len(a)-1)])
+        if projDict.has_key(key): continue
+        found = 0
+        kkey = copy(key)
+        for i in range(len(kkey)):
+            kkey = tuple(list(kkey[1:]) + [kkey[0]])
+            #kkey = kkey[1:] + [kkey[0]]
+            if projDict.has_key(kkey) or projDict.has_key(kkey[::-1]):
+                found = 1
+                if a in a2: print "not found:  ", a, "\nsame as in: ",
+                if projDict.has_key(kkey): print projDict[kkey], "\n", key, "\n", kkey
+                else: print projDict[kkey[::-1]], "\n", key, "\n", kkey
+                break
+        if not found: projDict[key] = a
+    print "end...", len(projDict.values()), len(a2)
+    return projDict.values()
+"""
+def removeRotationDuplicates(arr, removeFlipDuplicates = 1):
+    final = []
+    projDict = {}
+    for a in arr:
+        if type(a[0]) == int:
+            key = tuple([a[i]-a[i+1] for i in range(-1, len(a)-1)])
+            rkey = tuple([a[i+1]-a[i] for i in range(-1, len(a)-1)])
+        else:
+            key = tuple([(a[i][0]-a[i+1][0], a[i][1]-a[i+1][1]) for i in range(-1, len(a)-1)])
+            rkey = tuple([(a[i+1][0]-a[i][0], a[i+1][1]-a[i][1]) for i in range(-1, len(a)-1)])
+
+        if projDict.has_key(key) or projDict.has_key(rkey): continue
+        
+        found = 0
+        kkey = copy(key)
+        for i in range(len(kkey)):
+            kkey = tuple(list(kkey[1:]) + [kkey[0]])
+            if projDict.has_key(kkey):
+                found = 1
+                break
+
+        # try also if there is a flipped duplicate
+        if not found and removeFlipDuplicates:
+            for i in range(len(rkey)):
+                rkey = tuple(list(rkey[1:]) + [rkey[0]])
+                if projDict.has_key(rkey):
+                    found = 1
+                    break
+        if not found: projDict[key] = a
+    return projDict.values()
+        
+"""
+# input: array where items are arrays, e.g.: [[1,2,3], [1,3,2], [2,1,3], [2,3,1], [3,1,2], [3,2,1]]
+# returns: array, where some items are removed. it rotates items in each array and checks if the item is already in the array. it also tries to flip the items ([::-1])
+# for the above case, it would return [[1,2,3]]
+# used for radviz
+def removeRotationAndMirroringDuplicates2(arr):
+    final = []
+
     while arr != []:
         perm = arr.pop()
         if perm[::-1] in arr: continue
@@ -67,17 +130,14 @@ def removeRotationDuplicates(arr):
                 break
         if not found: final.append(perm)
     return final
-
+"""
 
 # create possible combinations with the given set of numbers in arr
 def createMixCombinations(arrs, removeFlipDuplicates):
     projs = [[]]
     for i in range(len(arrs)):
         projs = addProjs(projs, arrs[i], i)
-    if removeFlipDuplicates:
-        return removeRotationAndMirroringDuplicates(projs)
-    else:
-        return removeRotationDuplicates(projs)
+    return removeRotationDuplicates(projs, removeFlipDuplicates)
 
 
 def addProjs(projs, count, i):
@@ -115,7 +175,7 @@ def createProjections(numClasses, maxProjLen, removeFlipDuplicates = 1):
         perms = differentClassPermutationsDict[(numClasses, removeFlipDuplicates)]
     else:
         perms = permutations(range(numClasses))
-        perms = removeRotationAndMirroringDuplicates(perms)
+        perms = removeRotationDuplicates(perms, removeFlipDuplicates)
         differentClassPermutationsDict[(numClasses, removeFlipDuplicates)] = perms
             
     final = []
