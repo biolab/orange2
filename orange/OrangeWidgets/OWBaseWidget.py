@@ -118,6 +118,32 @@ class OWBaseWidget(QDialog):
         elif os.path.exists(self.widgetDir + "icons/Unknown.png"):
             QDialog.setIcon(self, QPixmap(self.widgetDir + "icons/Unknown.png"))
 
+    # ##############################################
+    def createAttributeIconDict(self):
+        return {orange.VarTypes.Continuous: self.createAttributePixmap("C", QColor(202,0,32)),
+                      orange.VarTypes.Discrete: self.createAttributePixmap("D", QColor(26,150,65)),
+                      orange.VarTypes.String: self.createAttributePixmap("S", Qt.black)}
+
+    def createAttributePixmap(self, char, color = Qt.black):
+        pixmap = QPixmap()
+        pixmap.resize(13,13)
+        painter = QPainter()
+        painter.begin(pixmap)
+        """
+        painter.setPen( color );
+        painter.setBrush( Qt.white );
+        painter.drawRect( 0, 0, 13, 13 );
+        painter.drawText(3, 11, char)
+        painter.end()
+        """
+        painter.setPen( color );
+        painter.setBrush( color );
+        painter.drawRect( 0, 0, 13, 13 );
+        painter.setPen( Qt.white)
+        painter.drawText(3, 11, char)
+        painter.end()
+        return pixmap
+    # ###############################################
 
     def setCaption(self, caption):
         if self.parent != None and isinstance(self.parent, QTabWidget): self.parent.changeTab(self, caption)
@@ -334,7 +360,6 @@ class OWBaseWidget(QDialog):
                     for j in range(len(self.linksIn[signalName][i][3])):
                         (val, ID) = self.linksIn[signalName][i][3][j]
                         if ID == id:
-                            print self.linksIn[signalName][i][3][j][0], value
                             self.linksIn[signalName][i][3][j] = (value, id)
                             found = 1
                     if not found:

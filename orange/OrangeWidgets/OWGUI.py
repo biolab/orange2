@@ -179,7 +179,7 @@ def radioButton(widget, master, value, label, box = None, tooltip = None, callba
         master.connect(w, SIGNAL("stateChanged(int)"), FunctionCallback(master, callback))
     return w
 
-def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat="%d", ticks=0, divideFactor = 1.0):
+def hSlider(widget, master, value, box=None, minValue=0, maxValue=10, step=1, callback=None, labelFormat=" %d", ticks=0, divideFactor = 1.0):
     if box:
         sliderBox = QHButtonGroup(box, widget)
     else:

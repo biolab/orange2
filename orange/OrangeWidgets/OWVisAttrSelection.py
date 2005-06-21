@@ -345,7 +345,8 @@ def evaluateAttributes(data, contMeasure, discMeasure):
     attrs = []
     corr = MeasureCorrelation()
     for attr in data.domain.attributes:
-        if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
+        #if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
+        if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((1, attr.name))
         elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.1, attr.name))
         elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
         elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))

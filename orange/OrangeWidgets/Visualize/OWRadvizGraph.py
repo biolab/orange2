@@ -820,7 +820,7 @@ class OWRadvizGraph(OWVisGraph):
                 YAnchors = anchorList[u+1-minLength][1]
                 
                 for comb in combinations:
-                    comb = comb + [z]  # remove the value of this attribute subset
+                    comb += [z]  # remove the value of this attribute subset
                     counts = [0 for i in range(numClasses)]
                     for v in comb: counts[v%numClasses] += 1
                     if min(counts) < (u+1) / numClasses: continue   # ignore combinations that don't have good attributes for all class values
@@ -856,7 +856,7 @@ class OWRadvizGraph(OWVisGraph):
                                 tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
 
                             self.triedPossibilities += 1
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z))
+                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z+1))
                             qApp.processEvents()        # allow processing of other events
                             del permutation, table
                         except:
