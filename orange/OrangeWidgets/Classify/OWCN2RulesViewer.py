@@ -9,6 +9,7 @@ import orange
 import orngCN2
 from OWWidget import *
 import OWGUI
+import OWGraphTools
 import qt
 from qtcanvas import *
 import sys
@@ -48,11 +49,11 @@ class MyCanvasView(QCanvasView):
             self.parent.selRect=[]
             for r in self.parent.rectObj:
                 r.setBrush(QBrush(Qt.NoBrush))
-        if index in self.parent.selRect:
-            self.parent.selRect.remove(index)
+        if rect in self.parent.selRect:
+            self.parent.selRect.remove(rect)
             rect.setBrush(QBrush(Qt.NoBrush))
         else:
-            self.parent.selRect.append(index)
+            self.parent.selRect.append(rect)
             rect.setBrush(self.brush)
         self.parent.canvas.update()
         #print self.parent.selRect
@@ -72,6 +73,9 @@ class OWCN2RulesViewer(OWWidget):
         self.RuleLen=1
         self.RuleQ=1
         self.Coverage=1
+        self.Class=1
+        self.Dist=1
+        self.DistBar=1
         self.Commit=0
         self.Rule=1
         self.Sort=0
@@ -88,14 +92,19 @@ class OWCN2RulesViewer(OWWidget):
         self.headerView.setVScrollBarMode(QScrollView.AlwaysOff)
         layout.addWidget(self.headerView)
         layout.addWidget(self.canvasView)
-        b=OWGUI.widgetBox(self.controlArea, 1)
-        box=OWGUI.widgetBox(b,1)
+        box=OWGUI.widgetBox(self.controlArea,"Show info on")
         OWGUI.checkBox(box,self,"RuleLen","Rule length",callback=self.showRules)
         OWGUI.checkBox(box,self,"RuleQ","Rule quality",callback=self.showRules)
-        OWGUI.checkBox(box,self,"Coverage","Covearge",callback=self.showRules)
+        OWGUI.checkBox(box,self,"Coverage","Coverage",callback=self.showRules)
+        OWGUI.checkBox(box,self,"Class","Predicted class", callback=self.showRules)
+        OWGUI.checkBox(box,self,"Dist","Distribution", callback=self.showRules)
+        OWGUI.checkBox(box,self,"DistBar","Distribution(Bar)",callback=self.showRules)
 
-        self.sortBox=OWGUI.comboBox(b, self, "Sort", box="Sorting", label="Sort by", callback=self.drawRules)
-        box=OWGUI.widgetBox(b,1)
+        self.sortBox=OWGUI.comboBox(self.controlArea, self, "Sort", box="Sorting",
+                                    items=["Rule length", "Rule quality", "Coverage", "Predicted class",
+                                           "Distribution"]
+                                    ,callback=self.drawRules)
+        box=OWGUI.widgetBox(self.controlArea,1)
         OWGUI.checkBox(box,self,"Commit", "Commit on change")
         OWGUI.button(box,self,"&Commit",callback=self.commit)
         
@@ -109,6 +118,9 @@ class OWCN2RulesViewer(OWWidget):
         self.ctrlPressed=False
         self.setFocusPolicy(QWidget.StrongFocus)
 
+        self.connect(self.canvasView.horizontalScrollBar(),SIGNAL("valueChanged(int)"),
+                self.headerView.horizontalScrollBar().setValue)
+
     def clear(self):
         for e in self.obj:
             e.setCanvas(None)
@@ -118,79 +130,98 @@ class OWCN2RulesViewer(OWWidget):
         self.clear()
         text=[]
         items=[]
-        if self.RuleLen:
-            items.append("Lenght")
-        if self.RuleQ:
-            items.append("Quality")
-        if self.Coverage:
-            items.append("Coverage")
-        if self.Rule:
-            items.append("Rule")
-        self.sortBox.clear()
-        for s in items:
-            self.sortBox.insertItem(s)
-        self.sortMap=range(len(self.rules))
-        for r in self.rules:
-            l=[]
-            if self.RuleLen:
-                t=QCanvasText(self.canvas)
-                t.setText("%10s" % str(r.complexity))
-                l.append(t)
-            if self.RuleQ:
-                t=QCanvasText(self.canvas)
-                t.setText("%10s" % ("%.3f" % r.quality))
-                l.append(t)
-            if self.Coverage:
-                t=QCanvasText(self.canvas)
-                t.setText("%15s" % str(len(self.classifier.examples.filterref(r.filter))))
-                l.append(t)
-            if self.Rule:
-                t=QCanvasText(self.canvas)
-                t.setText(self.ruleText(r))
-                l.append(t)
-            l.append(QCanvasText(self.canvas))
+        for i, r in enumerate(self.rules):
+            l=[str(r.complexity), "%.3f" % r.quality, "%10s" % str(len(self.classifier.examples.filterref(r.filter))),
+                "%10s" % str(r.classifier.defaultValue), str(r.classDistribution), r]
             text.append(l)
-            self.obj.extend(l)
         self.text=text
-        self.items=items
+        #self.items=items
         self.drawRules()
         
 
     def drawRules(self):
         self.sort()
-        text=self.text
+        self.clear()
         for r in self.rectObj:
             r.setCanvas(None)
         self.rectObj=[]
-        textMapV=[10]+map(lambda s:max([t.boundingRect().height()+10 for t in s]), text)
-        textMapH=[[s[i].boundingRect().width()+10 for s in text] for i in range(len(text[0]))]
-        textMapH=[10]+map(lambda s:max(s), textMapH)
+        text=self.text
+        filter=[self.RuleLen, self.RuleQ, self.Coverage, self.Class, self.Dist, self.DistBar,self.Rule]
+        l=[]
+        a=["Length","Quality","Coverage","Class","Distribution", "Distribution(Bar)", "Rule"]
+        for i, k in enumerate(a):
+            if filter[i]:
+                t=QCanvasText(self.headerCanvas)
+                t.setText(k)
+                l.append(t)
+        l.append(QCanvasText(self.canvas))
+        items=[]
+        items.append(l)
+        self.obj.extend(l)
         
+        for text in self.text:
+            l=[]
+            if self.RuleLen:
+                t=QCanvasText(self.canvas)
+                t.setText("%10s" % text[0])
+                l.append(t)
+            if self.RuleQ:
+                t=QCanvasText(self.canvas)
+                t.setText("%10s" % text[1])
+                l.append(t)
+            if self.Coverage:
+                t=QCanvasText(self.canvas)
+                t.setText("%15s" % text[2])
+                l.append(t)
+            if self.Class:
+                t=QCanvasText(self.canvas)
+                t.setText("%15s" % text[3])
+                l.append(t)
+            if self.Dist:
+                t=QCanvasText(self.canvas)
+                t.setText("%15s" % text[4])
+                l.append(t)
+            if self.DistBar:
+                t=DistBar(text[4],text[-1],self.canvas)
+                l.append(t)                    
+            if self.Rule:
+                t=QCanvasText(self.canvas)
+                t.setText(self.ruleText(text[-1]))
+                l.append(t)
+            l.append(QCanvasText(self.canvas))
+            self.obj.extend(l)
+            items.append(l)
+        #print len(items)
+                
+        textMapV=[10]+map(lambda s:max([t.boundingRect().height()+10 for t in s]), items[1:])
+        textMapH=[[s[i].boundingRect().width()+10 for s in items] for i in range(len(items[0]))]
+        textMapH=[10]+map(lambda s:max(s), textMapH)
+
+        #print len(textMapV)
         for i in range(1,len(textMapV)):
             textMapV[i]+=textMapV[i-1]
 
         for i in range(1,len(textMapH)):
             textMapH[i]+=textMapH[i-1]
             
-        for i in range(len(textMapV)-1):
+        for i in range(1,len(textMapV)):
             for j in range(len(textMapH)-2):
-                text[i][j].move(textMapH[j], textMapV[i])
-                text[i][j].setZ(0)
-                text[i][j].show()
-            r=QCanvasRectangle(textMapH[0],textMapV[i], textMapH[-1], textMapV[i+1]-textMapV[i], self.canvas)
+                items[i][j].move(textMapH[j], textMapV[i-1])
+                items[i][j].setZ(0)
+                items[i][j].show()
+            r=QCanvasRectangle(textMapH[0],textMapV[i], textMapH[-1], textMapV[i-1]-textMapV[i], self.canvas)
             r.setZ(-20)
             r.setPen(QPen(Qt.NoPen))
             r.show()
-            r.index=i
+            r.index=i+1
+            r.rule=self.text[i-1][-1]
             self.obj.append(r)
             self.rectObj.append(r)
             
         self.canvas.resize(textMapH[-1], textMapV[-1])
-        for i, k in enumerate(self.items):
-            t=QCanvasText(k, self.headerCanvas)
+        for i,t in enumerate(items[0][:-1]):
             t.move(textMapH[i],0)
             t.show()
-            self.obj.append(t)
         self.headerCanvas.update()
         self.headerCanvas.resize(textMapH[-1],20)
         self.canvas.update()
@@ -210,7 +241,7 @@ class OWCN2RulesViewer(OWWidget):
         #print list
         str="".join(list)
         list=re.split("<[0-9., ]*>$", str)
-        print list
+        #print list
         str=list[0]
         str="AND\n   ".join(str.split("AND"))
         str="\nTHEN".join(str.split("THEN"))
@@ -219,11 +250,11 @@ class OWCN2RulesViewer(OWWidget):
     def select(self):
         examples=[]
         source=self.classifier.examples
-        for i in self.selRect:
-            examples.extend(source.filterref(self.rules[self.sortMap[i]].filter))
-            self.rules[self.sortMap[i]].filter.negate=1
-            source=source.filterref(self.rules[self.sortMap[i]].filter)
-            self.rules[self.sortMap[i]].filter.negate=0
+        for r in self.selRect:
+            examples.extend(source.filterref(r.rule.filter))
+            r.rule.filter.negate=1
+            source=source.filterref(r.rule.filter)
+            r.rule.filter.negate=0
         if not examples:
             self.examples=None
             self.commit()
@@ -246,20 +277,24 @@ class OWCN2RulesViewer(OWWidget):
         self.commit()
 
     def compare(self,a,b):
-        if str(a[0][self.Sort].text())<str(b[0][self.Sort].text()):
+        if str(a[self.sortBy])<str(b[self.sortBy]):
             return -1
-        elif str(a[0][self.Sort].text())>str(b[0][self.Sort].text()):
+        elif str(a[self.sortBy])>str(b[self.sortBy]):
             return 1
         else:
             return 0
         
     def sort(self):
         text=[]
-        l=[(a,i) for a,i in zip(self.text,self.sortMap)]
-        l.sort(self.compare)
-        self.text=[a[0]  for a in l]
-        self.sortMap=[a[1] for a in l]
-        print self.sortMap
+        if self.Sort>5:
+            self.sortBy=self.Sort+1
+        else:
+            self.sortBy=self.Sort
+        self.text.sort(self.compare)
+        #print self.text
+        if self.Sort>=1:
+            self.text.reverse()
+        #print self.sortMap
     
         
             
@@ -290,8 +325,48 @@ class OWCN2RulesViewer(OWWidget):
             self.ctrlPressed=False
         else:
             key.ignore()
-            
 
+barWidth=80
+barHeight=20
+class DistBar(QCanvasRectangle):
+    def __init__(self, dist,rule,canvas, *args):
+        apply(QCanvasRectangle.__init__,(self,canvas)+args)
+        self.dist=dist
+        self.rule=rule
+        self.canvas=canvas
+        self.rect=[]
+        distSum=sum(rule.classDistribution)
+        classColor=OWGraphTools.ColorPaletteHSV(len(rule.classDistribution))
+        defClass=rule.classifier.defaultValue
+        m=max(rule.classDistribution)
+        #print len(rule.classDistribution)
+        for i in range(len(rule.classDistribution)):
+            dist=rule.classDistribution
+            r=QCanvasRectangle(self.canvas)
+            r.setSize(dist[i]/distSum*barWidth,barHeight)
+            r.setPen(QPen(QColor(classColor[i]),2))
+            if dist[i]==m:
+                r.setBrush(QBrush(classColor[i]))
+            self.rect.append(r)
+        #print len(self.rect)
+        
+        
+    def move(self, x,y):
+        pos=0
+        for r in self.rect:
+            r.move(x+pos,y+5)
+            pos+=r.width()
+            
+    def show(self):
+        for r in self.rect:
+            r.show()
+    def setCanvas(self, canvas):
+        for r in self.rect:
+            r.setCanvas(canvas)
+    def text(self):
+        return str(self.dist)
+    
+    
 if __name__=="__main__":
     ap=QApplication(sys.argv)
     w=OWCN2RulesViewer()

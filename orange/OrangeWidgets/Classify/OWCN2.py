@@ -24,7 +24,7 @@ class OWCN2(OWWidget):
         self.QualityButton=0
         self.CoveringButton=0
         self.Alpha=0.2
-        self.BeamWidth=50
+        self.BeamWidth=5
         self.MinCoverage=0
         self.MaxRuleLength=0
         self.Weight=0.9
