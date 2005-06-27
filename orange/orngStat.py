@@ -23,11 +23,6 @@ def gettotsize(res):
     else:
         raise SystemError, "Cannot compute the score: no examples."
 
-def gettotconfm(confm):
-    tot = confm.TP + confm.FP + confm.TN + confm.FN
-    checkNonZero(tot)
-    return tot
-
 def sqr(x):
     return x*x
 
@@ -469,7 +464,11 @@ def sens(confm):
         return [sens(cm) for cm in confm]
     else:
         tot = confm.TP+confm.FN
-        checkNonZero(tot)
+        if tot < 1e-6:
+            import warnings
+            warnings.warn("Can't compute sensitivity: one or both classes have no instances")
+            return -1
+
         return confm.TP/tot
 
 
@@ -478,7 +477,10 @@ def spec(confm):
         return [spec(cm) for cm in confm]
     else:
         tot = confm.FP+confm.TN
-        checkNonZero(tot)
+        if tot < 1e-6:
+            import warnings
+            warnings.warn("Can't compute specificity: one or both classes have no instances")
+            return -1
         return confm.TN/tot
   
 
@@ -487,7 +489,10 @@ def PPV(confm):
         return [PPV(cm) for cm in confm]
     else:
         tot = confm.TP+confm.TN
-        checkNonZero(tot)
+        if tot < 1e-6:
+            import warnings
+            warnings.warn("Can't compute PPV: one or both classes have no instances")
+            return -1
         return confm.TP/tot
 
 
@@ -496,7 +501,10 @@ def NPV(confm):
         return [NPV(cm) for cm in confm]
     else:
         tot = confm.TP+confm.TN
-        checkNonZero(tot)
+        if tot < 1e-6:
+            import warnings
+            warnings.warn("Can't compute NPV: one or both classes have no instances")
+            return -1
         return confm.TP/tot
 
 def AUCWilcoxon(res, classIndex=-1, **argkw):
@@ -910,7 +918,11 @@ def ROCsFromCDT(cdt, **argkw):
 
     C, D, T = cdt.C, cdt.D, cdt.T
     N = C+D+T
-    checkNonZero(N)
+    if N < 1e-6:
+        import warnings
+        warnings.warn("Can't compute AUC: one or both classes have no instances")
+        return (-1,)*8
+
     som = (C-D)/N
     c = 0.5*(1+som)
   
