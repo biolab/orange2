@@ -39,7 +39,7 @@ class OWSurveyPlot(OWWidget):
         #set default settings
         self.data = None
         self.graph.globalValueScaling = 0
-        self.graph.exampleTracking = 1
+        self.graph.exampleTracking = 0
         self.graph.enabledLegend = 1
         self.graph.tooltipKind = 1
         self.attrDiscOrder = "None"
