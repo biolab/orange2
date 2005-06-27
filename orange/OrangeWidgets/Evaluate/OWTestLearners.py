@@ -29,7 +29,7 @@ class OWTestLearners(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "TestLearners")
         
-        self.inputs = [("Test Data Set", ExampleTableWithClass, self.cdata), ("Learner", orange.Learner, self.learner, 0)]
+        self.inputs = [("Data", ExampleTableWithClass, self.cdata), ("Separate Test Data", ExampleTableWithClass, self.testdata), ("Learner", orange.Learner, self.learner, 0)]
         self.outputs = [("Evaluation Results", orngTest.ExperimentResults)]
 
         # Settings
@@ -42,11 +42,12 @@ class OWTestLearners(OWWidget):
         self.loadSettings()
         
         self.data = None                    # input data set
+        self.testdata = None                # separate test data set
         self.learnDict = {}; self.learners = []
         self.results = None; self.scores = None
 
         # GUI
-        self.s = [None, None, None, None]
+        self.s = [None] * 5
         self.sBox = QVButtonGroup("Sampling", self.controlArea)        
         self.s[0] = QRadioButton('Cross Validation', self.sBox)
 
@@ -69,11 +70,14 @@ class OWTestLearners(OWWidget):
         OWGUI.hSlider(box, self, 'pLearning', minValue=10, maxValue=100, step=1, ticks=10, labelFormat="   %d%%")        
 
         self.s[3] = QRadioButton('Test on Train Data', self.sBox)        
+        self.s[4] = self.testDataBtn = QRadioButton('Test on Test Data', self.sBox)
 
         QWidget(self.sBox).setFixedSize(0, 8)
         self.applyBtn = QPushButton("&Apply", self.sBox)
         self.applyBtn.setDisabled(TRUE)
 
+        if self.sampleMethod == 4:
+            self.sampleMethod = 0
         self.s[self.sampleMethod].setChecked(TRUE)        
         OWGUI.separator(self.controlArea)
         
@@ -114,13 +118,20 @@ class OWTestLearners(OWWidget):
     # be tested. the list in results should either be recomputed or added
     # else, if learner=None, all results are recomputed (user pressed apply button)
     def test(self, learner=None):
-        pb = ProgressBar(self, iterations=self.nFolds)
-
         # testing
         if self.results and learner:
             learners = [learner]
         else:
             learners = self.learnDict.values()
+            if not learners:
+                return
+
+        if self.sampleMethod==4 and not self.testdata:
+            self.results = None
+            self.setStatTable()
+            return
+
+        pb = ProgressBar(self, iterations=self.nFolds)
 
         if self.sampleMethod==0:
             res = orngTest.crossValidation(learners, self.data, folds=self.nFolds, strat=orange.MakeRandomIndices.StratifiedIfPossible, callback=pb.advance)
@@ -130,6 +141,8 @@ class OWTestLearners(OWWidget):
             res = orngTest.proportionTest(learners, self.data, self.pLearning/100., times=self.pRepeat)
         elif self.sampleMethod==3:
             res = orngTest.learnAndTestOnLearnData(learners, self.data)
+        elif self.sampleMethod==4:                
+            res = orngTest.learnAndTestOnTestData(learners, self.data, self.testdata)
 
         cm = orngStat.computeConfusionMatrices(res, classIndex = self.classindex)
         cdt = orngStat.computeCDT(res, classIndex = self.classindex)
@@ -189,15 +202,26 @@ class OWTestLearners(OWWidget):
 #            QMessageBox.critical(self, self.title + ": Execution error", "Error while testing: '%s'" % msg)
 
     # slots: handle input signals        
-    def cdata(self,data):
+    def cdata(self, data):
         if not data:
             self.data = None
+            self.results = None
+            self.setStatTable()
             return # have to handle this appropriately
+        if self.testdata and data.domain <> self.testdata.domain:
+            self.testdata = None
+            self.results = None
+            self.setStatTable()
         self.data = orange.Filter_hasClassValue(data)
         self.classindex = 0 # data.targetValIndx
         if self.learners:
             self.applyBtn.setDisabled(FALSE)
             self.results = None; self.scores = None
+            self.test()
+
+    def testdata(self, data):
+        self.testdata = data
+        if self.sampleMethod == 4:
             self.test()
 
     def learner(self, learner, id=None):
@@ -236,10 +260,16 @@ class OWTestLearners(OWWidget):
             self.tab.hideColumn(id+1)
 
     def sChanged(self, value, id):
-        self.sampleMethod = id
+        if self.sampleMethod <> id:
+            self.sampleMethod = id
+            self.results = None
+            self.test()
 
     # reporting on evaluation results
     def setStatTable(self):
+        if not self.results:
+            self.tab.setNumRows(0)
+            return
         self.tab.setNumCols(len(self.stat)+1)
         self.tabHH=self.tab.horizontalHeader()
         self.tabHH.setLabel(0, 'Classifier')
@@ -254,7 +284,10 @@ class OWTestLearners(OWWidget):
 
         for i in range(len(self.learners)):
             for j in range(len(self.stat)):
-                self.tab.setText(i, j+1, prec % self.scores[j][i])
+                if self.scores[j][i] < 1e-8:
+                    self.tab.setText(i, j+1, "N/A")
+                else:
+                    self.tab.setText(i, j+1, prec % self.scores[j][i])
 
         for i in range(len(self.stat)+1):
             self.tab.adjustColumn(i)
