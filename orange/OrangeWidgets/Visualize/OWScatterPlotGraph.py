@@ -112,12 +112,12 @@ class OWScatterPlotGraph(OWVisGraph):
             attrXIndices = getVariableValueIndices(self.rawdata, xAttrIndex)
             if self.showAxisScale: self.setXlabels(getVariableValuesSorted(self.rawdata, xAttrIndex))
             xmin = xVarMin - (self.jitterSize + 10.)/100. ; xmax = xVarMax + (self.jitterSize + 10.)/100.
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.35, 1)
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07, 1)
         else:
             self.setXlabels(None)
             off  = (xVarMax - xVarMin) * (self.jitterSize * self.jitterContinuous + 2) / 100.0
             xmin = xVarMin - off; xmax = xVarMax + off
-            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.35)
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax + showColorLegend * xVar * 0.07)
         
         # #######################################################
         
@@ -411,8 +411,8 @@ class OWScatterPlotGraph(OWVisGraph):
             
         # ##############################################################
         # draw color scale for continuous coloring attribute
-        if colorIndex != -1 and showColorLegend == 1 and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
-            x0 = xmax
+        if colorIndex != -1 and showColorLegend and self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous:
+            x0 = xmax + xVar*1.0/100.0
             x1 = x0 + xVar*5.0/100.0
             colors = ColorPaletteHSV()
 
@@ -424,8 +424,8 @@ class OWScatterPlotGraph(OWVisGraph):
 
             # add markers for min and max value of color attribute
             (colorVarMin, colorVarMax) = self.attrValues[colorAttr]
-            self.addMarker("%s = %.3f" % (colorAttr, colorVarMin), x1 + xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignRight)
-            self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x1 + xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignRight)
+            self.addMarker("%s = %.3f" % (colorAttr, colorVarMin), x0 - xVar*1./100.0, yVarMin + yVar*0.04, Qt.AlignLeft)
+            self.addMarker("%s = %.3f" % (colorAttr, colorVarMax), x0 - xVar*1./100.0, yVarMin + yVar*0.96, Qt.AlignLeft)
         # ##############################################################
 
         # restore the correct showFilledSymbols

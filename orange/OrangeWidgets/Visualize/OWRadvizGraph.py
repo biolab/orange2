@@ -581,11 +581,11 @@ class OWRadvizGraph(OWVisGraph):
     # try to find the optimal attribute order by trying all diferent circular permutations
     # and calculating a variation of mean K nearest neighbours to evaluate the permutation
     def getProjectionQuality(self, attrList, useAnchorData = 0):
-        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], useAnchorData))
+        return self.kNNOptimization.kNNComputeAccuracy(self.createProjectionAsExampleTable([self.attributeNameIndex[attr] for attr in attrList], useAnchorData = useAnchorData))
 
      # save projection (xAttr, yAttr, classVal) into a filename fileName
     def saveProjectionAsTabData(self, fileName, attrList, useAnchorData = 0):
-        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData))
+        orange.saveTabDelimited(fileName, self.createProjectionAsExampleTable([self.attributeNameIndex[i] for i in attrList], useAnchorData = useAnchorData))
 
     # ############################################################## 
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
@@ -661,18 +661,20 @@ class OWRadvizGraph(OWVisGraph):
             classList = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
             if removeMissingData: classList = Numeric.compress(validData, classList)    
 
-        if useAnchorData or not (XAnchors and YAnchors):
+        if useAnchorData:
             XAnchors = Numeric.array([val[0] for val in self.anchorData])
             YAnchors = Numeric.array([val[1] for val in self.anchorData])
             r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
             if normalize == 1 or (normalize == None and self.normalizeExamples):
                 XAnchors *= r                                               
                 YAnchors *= r
+        elif (XAnchors and YAnchors):
+            r = Numeric.sqrt(XAnchors*XAnchors + YAnchors*YAnchors)     # compute the distance of each anchor from the center of the circle
         else:
             XAnchors = self.createXAnchors(len(attrIndices))
             YAnchors = self.createYAnchors(len(attrIndices))
             r = Numeric.ones(len(XAnchors), Numeric.Float)
-
+    
         x_positions = Numeric.matrixmultiply(XAnchors, selectedData)
         y_positions = Numeric.matrixmultiply(YAnchors, selectedData)
 
