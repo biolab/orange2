@@ -186,7 +186,7 @@ class kNNOptimization(OWBaseWidget):
         self.measureCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
         self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
 
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures])
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.updateHeuristicCheckBox)
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ordering of Discrete Attributes: ", items = [val for (val, m) in discMeasures])
 
         OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeProjectionCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
@@ -290,13 +290,23 @@ class kNNOptimization(OWBaseWidget):
                 self.vizRankLearner = VizRankLearner(self, self.parentWidget)
                 self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
 
+        self.updateHeuristicCheckBox()
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
         
+        
     # ##############################################################
     # EVENTS
     # ##############################################################
+
+    # the heuristic checkbox is enabled only if the signal to noise OVA measure is selected
+    def updateHeuristicCheckBox(self):
+        self.useHeuristicToFindAttributeOrderCheck.setEnabled(contMeasures[self.attrCont][0] == "Signal to Noise OVA")
+        if not self.rawdata or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
+        
+        
     def changeLearnerName(self, text = None):
         if self.parentWidget:
             if hasattr(self.parentWidget, "learnersArray"):
@@ -420,6 +430,7 @@ class kNNOptimization(OWBaseWidget):
         self.rawdata = data
         self.clearArguments()
         self.evaluatedAttributes = (None, None, None)   # remove the info about attributes
+        self.updateHeuristicCheckBox()
         if not sameDomain: self.clearResults()
         
         if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):
@@ -1143,7 +1154,10 @@ class VizRankClassifier(orange.Classifier):
             reevaluate = 1
 
         keepMinMaxVals = self.visualizationWidget.data != None and str(self.visualizationWidget.data.domain.attributes) == str(data.domain.attributes)
-        self.visualizationWidget.cdata(data, clearResults = not reevaluate, keepMinMaxVals = keepMinMaxVals)
+        if self.kNNOptimizationDlg.parentName == "Radviz":
+            self.visualizationWidget.cdata(data, clearResults = not reevaluate, keepMinMaxVals = keepMinMaxVals)
+        else:
+            self.visualizationWidget.cdata(data, clearResults = not reevaluate)
 
         self.evaluating = 1
         t = QTimer(self.visualizationWidget)
@@ -1158,7 +1172,7 @@ class VizRankClassifier(orange.Classifier):
         self.evaluating = 0
 
         # do we want to optimize current projection. if yes then spend the same amount of time to optimize it            
-        if self.kNNOptimizationDlg.optimizeBestProjectionCheck.isEnabled() and self.kNNOptimizationDlg.optimizeBestProjection:
+        if self.kNNOptimizationDlg.parentName == "Radviz" and self.kNNOptimizationDlg.optimizeBestProjectionCheck.isEnabled() and self.kNNOptimizationDlg.optimizeBestProjection:
             t.start(self.kNNOptimizationDlg.evaluationTimeNums[self.kNNOptimizationDlg.optimizeBestProjectionIndex] * 60 * 1000)
             self.evaluating = 1
             self.visualizationWidget.optimizeGivenProjectionClick(bestFeatureSubsetSize, maxProjLen)

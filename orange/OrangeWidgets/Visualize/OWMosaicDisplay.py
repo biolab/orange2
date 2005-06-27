@@ -149,6 +149,7 @@ class OWMosaicDisplay(OWWidget):
     ## UPDATEDATA - gets called every time the graph has to be updated
     def updateData(self, *args):
         # hide all rectangles
+        self.warning()
         for rect in self.rects: rect.hide()
         for text in self.texts: text.hide()
         for tip in self.tooltips: QToolTip.remove(self.canvasView, tip)
@@ -273,24 +274,24 @@ class OWMosaicDisplay(OWWidget):
             perc = float(len(tempData))/float(len(data))
             if bHorizontal:
                 size = ceil(whole*perc);
-                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + "<b>" + attr + ":</b> " + val + "<br>")
-                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal, condition + "<b>" + attr + ":</b> " + val + "<br>")
+                if len(attrList) == 1:  self.addRect(x0+currPos, x0+currPos+size, y0, y1, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0+currPos, x0+currPos+size), (y0, y1), not bHorizontal, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
             else:
                 size = ceil(whole*perc)
-                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + "<b>" + attr + ":</b> " + val + "<br>")
-                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal, condition + "<b>" + attr + ":</b> " + val + "<br>")
+                if len(attrList) == 1:  self.addRect(x0, x1, y0+currPos, y0+currPos+size, tempData, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
+                else:                   self.DrawData(tempData, attrList[1:], (x0, x1), (y0+currPos, y0+currPos+size), not bHorizontal, condition + 4*" &nbsp " + "<b>" + attr + ":</b> " + val + "<br>")
             currPos += size + edge
 
 
      # draw the class legend below the square
     def DrawClasses(self, data, (x0, x1), (y0, y1)):
-        # compute the x position of the center of the legend
-        if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous or not self.showDistribution: return
-
         for name in self.names: name.hide()
         self.names = []
         for symbol in self.symbols: symbol.hide()
         self.symbols = []
+
+        # compute the x position of the center of the legend
+        if not data.domain.classVar or data.domain.classVar.varType == orange.VarTypes.Continuous or not self.showDistribution: return
         
         x = (x0+x1)/2
         y = y1 + self.attributeNameOffset + 20
@@ -318,8 +319,8 @@ class OWMosaicDisplay(OWWidget):
 
     # draws text with caption name at position x,y with alignment and style
     def addText(self, name, x, y, alignment, bold):
-        text = QCanvasText(name, self.canvas);
-        text.setTextFlags(alignment);
+        text = QCanvasText(name, self.canvas)
+        text.setTextFlags(alignment)
         font = text.font(); font.setBold(bold); text.setFont(font)
         text.move(x, y)
         text.show()
@@ -379,12 +380,12 @@ class OWMosaicDisplay(OWWidget):
         actual = [val*100.0/float(sum(actual)) for val in actual]
         aprioriText = ""; actualText = ""
         for i in range(len(apriori)):
-            aprioriText += "%.2f, " %(apriori[i])
-            actualText += "%.2f, " %(actual[i])
+            aprioriText += "%.1f, " %(apriori[i])
+            actualText += "%.1f, " %(actual[i])
         aprioriText = "[ " + aprioriText[:-2] + " ]"
         actualText = "[ " +  actualText[:-2] + " ]"
        
-        tooltipText = condition + "<hr>Number of examples: " + str(int(examples)) + "<br>Apriori distribution: " + aprioriText + "<br>Actual distribution: " + actualText
+        tooltipText = "<b>Examples in this area have:</b><br>" + condition + "<hr>Number of examples: " + str(int(examples)) + "<br>Apriori distribution: " + aprioriText + "<br>Actual distribution: " + actualText
         tipRect = QRect(x, y, w, h)
         QToolTip.add(self.canvasView, tipRect, tooltipText)
         self.tooltips.append(tipRect)
