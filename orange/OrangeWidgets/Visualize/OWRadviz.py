@@ -412,6 +412,7 @@ class OWRadviz(OWWidget):
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
+        self.optimizationDlg.removeTooSimilarProjections()  # remove projections that are too similar
         self.showSelectedAttributes()
 
     # send signals with selected and unselected examples as two datasets

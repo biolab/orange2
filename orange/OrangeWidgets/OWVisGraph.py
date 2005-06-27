@@ -12,6 +12,8 @@ import Numeric, RandomArray, MA
 from MA import transpose
 from OWTools import *
 
+
+NOTHING = 0
 ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
@@ -97,6 +99,7 @@ class OWVisGraph(OWGraph):
         self.subsetData = None
 
         self.state = ZOOMING
+        self.zoomKey = None
         self.tempSelectionCurve = None
         self.selectionCurveKeyList = []
         self.autoSendSelectionCallback = None   # callback function to call when we add new selection polygon or rectangle
@@ -552,7 +555,8 @@ class OWVisGraph(OWGraph):
                 xmin = min(self.xpos, e.x());  xmax = max(self.xpos, e.x())
                 ymin = min(self.ypos, e.y());  ymax = max(self.ypos, e.y())
                 
-                self.removeCurve(self.zoomKey)
+                if self.zoomKey: self.removeCurve(self.zoomKey)
+                self.zoomKey = None
                 self.tempSelectionCurve = None
 
                 if staticClick or (xmax-xmin)+(ymax-ymin) < 4: return
