@@ -16,7 +16,6 @@ class FixedTreeLearner(orange.Learner):
         self.name = name
 
     def __call__(self, *d):
-        print self.classifier
         return self.classifier
 
 class OWITree(OWClassificationTreeViewer):
@@ -69,7 +68,7 @@ class OWITree(OWClassificationTreeViewer):
     def updateTree(self):
         self.setTreeView()
         self.learner = FixedTreeLearner(self.tree, self.title)
-        self.send("Classified Exampls", self.tree)
+#        self.send("Classified Examples", self.tree)
         self.send("Classifier", self.tree)
         self.send("Tree Learner", self.learner)
 
@@ -78,7 +77,7 @@ class OWITree(OWClassificationTreeViewer):
         node.examples = data
         node.contingency = orange.DomainContingency(data)
         node.distribution = node.contingency.classes
-        nodeLearner = self.treeLearner and self.treeLearner.nodeLearner or orange.MajorityLearner()
+        nodeLearner = self.treeLearner and getattr(self.treeLearner, "nodeLearner", None) or orange.MajorityLearner()
         node.nodeClassifier = nodeLearner(data)
         return node
 
@@ -157,8 +156,12 @@ class OWITree(OWClassificationTreeViewer):
             self.tree.tree = self.newTreeNode(self.data)
         else:
             self.tree = None
-            
+            self.send("Classifier", self.tree)
+            self.send("Tree Learner", self.learner)
+        
+        self.send("Classified Examples", None)
         self.updateTree()
+        self.v.setSelected(self.v.firstChild(), TRUE)
 
     def learner(self, learner):
         self.treeLearner = learner

@@ -228,11 +228,12 @@ class OWTestLearners(OWWidget):
         if not learner: # remove a learner and corresponding results
             # print 'Remove', id
             indx = self.learners.index(self.learnDict[id])
-            for i,r in enumerate(self.results.results):
-                del r.classes[indx]
-                del r.probabilities[indx]
-            del self.results.classifierNames[indx]
-            self.results.numberOfLearners -= 1
+            if self.results: # this is to avoid crashes when the widget is removed
+                for i,r in enumerate(self.results.results):
+                    del r.classes[indx]
+                    del r.probabilities[indx]
+                del self.results.classifierNames[indx]
+                self.results.numberOfLearners -= 1
             for (i, stat) in enumerate(self.stat):
                 del self.scores[i][indx]
             del self.learners[indx]

@@ -27,7 +27,7 @@ def checkColumn(widget, master, text, value):
     return wa
 
 class OWClassificationTreeViewer(OWWidget):
-    settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "expslider"]
+    settingsList = ["maj", "pmaj", "ptarget", "inst", "dist", "adist", "expslider"]
 
     def __init__(self, parent=None, signalManager = None, name='Classification Tree Viewer'):
         OWWidget.__init__(self, parent, signalManager, name)
@@ -36,7 +36,8 @@ class OWClassificationTreeViewer(OWWidget):
                   ('Probability of majority class', 'P(Class)'),
                   ('Probability of target class', 'P(Target)'),
                   ('Number of instances', '#Inst'),
-                  ('Class distribution', 'Distribution'))
+                  ('Relative distribution', 'Rel. distr.'),
+                  ('Absolute distribution', 'Abs. distr.'))
 
         self.callbackDeposit = []
 
@@ -44,7 +45,7 @@ class OWClassificationTreeViewer(OWWidget):
         self.outputs = [("Classified Examples", ExampleTableWithClass)]
 
         # Settings
-        for s in self.settingsList[:5]:
+        for s in self.settingsList[:6]:
             setattr(self, s, 1)
         self.expslider = 5
         self.loadSettings()
@@ -111,11 +112,12 @@ class OWClassificationTreeViewer(OWWidget):
                     f % (dist[int(ncl.defaultVal)]/a),
                     f % (dist[self.tar]/a),
                     f % dist.cases,
-                    reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist])
+                    reduce(lambda x,y: x+':'+y, [self.precFrmt % (x/a) for x in dist]),
+                    reduce(lambda x,y: x+':'+y, [self.precFrmt % x for x in dist])
                    )
                    
             col = 1
-            for j in range(5):
+            for j in range(6):
                 if getattr(self, self.settingsList[j]):
                     listviewitem.setText(col, colf[j])
                     col += 1
@@ -155,8 +157,9 @@ class OWClassificationTreeViewer(OWWidget):
             self.nodeClassDict = {}
             li = QListViewItem(self.v, "<root>")
             li.setOpen(1)
-            self.nodeClassDict[li] = self.tree.tree
-            walkcreate(self.tree.tree, li)
+            if self.tree:
+                self.nodeClassDict[li] = self.tree.tree
+                walkcreate(self.tree.tree, li)
             self.rule.setText("")
         walkupdate(self.v.firstChild())
         self.v.show()
