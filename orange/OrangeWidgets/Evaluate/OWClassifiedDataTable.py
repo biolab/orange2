@@ -30,7 +30,7 @@ class OWClassifiedDataTable(OWWidget):
 
         self.callbackDeposit = []
         self.inputs = [("Examples", ExampleTable, self.dataset),("Classifiers", orange.Classifier, self.classifier, 0)]
-        self.outputs = [("Selected Examples", ExampleTable)]
+        self.outputs = [("Selected Examples", ExampleTableWithClass)]
         self.classifiers = {}
 
         # saveble settings
