@@ -83,6 +83,10 @@ class OWScatterPlot(OWWidget):
         OWGUI.checkBox(box, self, 'showColorLegend', 'Show color legend', callback = self.updateGraph)
         self.attrColorCombo = OWGUI.comboBox(box, self, "attrColor", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
+        # labelling
+        self.attrLabel = ""
+        self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
+
         # shaping
         self.attrShape = ""
         self.attrShapeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrShape", " Shape Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
@@ -317,14 +321,20 @@ class OWScatterPlot(OWWidget):
         self.attrXCombo.clear()
         self.attrYCombo.clear()
         self.attrColorCombo.clear()
+        self.attrLabelCombo.clear()
         self.attrShapeCombo.clear()
         self.attrSizeCombo.clear()
 
         if self.data == None: return
 
         self.attrColorCombo.insertItem("(One color)")
+        self.attrLabelCombo.insertItem("(No labels)")
         self.attrShapeCombo.insertItem("(One shape)")
         self.attrSizeCombo.insertItem("(One size)")
+
+        #labels are usually chosen from meta variables, put them on top
+        for metavar in [self.data.domain.getmeta(mykey) for mykey in self.data.domain.getmetas().keys()]:
+            self.attrLabelCombo.insertItem(self.icons[metavar.varType], metavar.name)
 
         contList = []
         discList = []
@@ -334,7 +344,7 @@ class OWScatterPlot(OWWidget):
             self.attrColorCombo.insertItem(self.icons[attr.varType], attr.name)
             self.attrSizeCombo.insertItem(self.icons[attr.varType], attr.name)
             if attr.varType == orange.VarTypes.Discrete: self.attrShapeCombo.insertItem(self.icons[attr.varType], attr.name)
-
+            self.attrLabelCombo.insertItem(self.icons[attr.varType], attr.name)
 
         self.attrX = str(self.attrXCombo.text(0))
         if self.attrYCombo.count() > 1: self.attrY = str(self.attrYCombo.text(1))
@@ -352,7 +362,7 @@ class OWScatterPlot(OWWidget):
         self.updateGraph()
 
     def updateGraph(self, *args):
-        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend)
+        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
 
@@ -477,6 +487,7 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWScatterPlot()
     a.setMainWidget(ow)
+
     ow.show()
     a.exec_loop()
 

@@ -75,7 +75,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
-    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, **args):
+    def updateData(self, xAttr, yAttr, colorAttr, shapeAttr = "", sizeShapeAttr = "", showColorLegend = 0, labelAttr = None, **args):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
@@ -288,6 +288,26 @@ class OWScatterPlotGraph(OWVisGraph):
 
                     # we add a tooltip for this point
                     self.addTip(x, y, toolTipList, i)
+
+                    # Show a label by each marker
+                    if labelAttr:
+                        all_accessible = [self.rawdata.domain.getmeta(mykey) for mykey in self.rawdata.domain.getmetas().keys()] + [var for var in self.rawdata.domain.attributes]
+                        if self.rawdata.domain.classVar:
+                            all_accessible.append(self.rawdata.domain.classVar)
+                        metanames = [myvar.name for myvar in all_accessible ]
+                        if labelAttr in metanames:
+                            if labelAttr==self.rawdata.domain.classVar.name:
+                                lbl = str(self.rawdata.domain.classVar.values[int(self.rawdata[i][labelAttr])])
+                            else:
+                                if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
+                                    lbl = "%4.1f" % orange.Value(self.rawdata[i][labelAttr])
+                                else:
+                                    lbl = str(orange.Value(self.rawdata[i][labelAttr]))
+                            mkey = self.insertMarker(lbl)
+                            self.marker(mkey).setXValue(float(x))
+                            self.marker(mkey).setYValue(float(y))
+                            self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
+                        
 
                 for i in range(classCount):
                     newColor = QColor(0,0,0)
