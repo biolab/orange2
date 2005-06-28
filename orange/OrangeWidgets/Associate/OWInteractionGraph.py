@@ -1,6 +1,6 @@
 """
 <name>Interaction Graph</name>
-<description>Show interaction graph</description>
+<description>Interaction graph construction and viewer.</description>
 <icon>icons/InteractionGraph.png</icon>
 <priority>4000</priority>
 """

@@ -1,6 +1,6 @@
 """
 <name>Hierarchical Clustering</name>
-<description>Constructs a hierarchical clustering tree and prints it</description>
+<description>Hierarchical clustering based on distance matrix, and a dendrogram viewer.</description>
 <icon>HierarchicalClustering.png</icon>
 <prority>1550</priority>
 """

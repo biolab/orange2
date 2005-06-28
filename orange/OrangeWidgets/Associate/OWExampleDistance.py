@@ -1,6 +1,6 @@
 """
 <name>Example Distance</name>
-<description>Creates a distance matrix from a set of examples at the input.</description>
+<description>Computes a distance matrix from a set of data examples.</description>
 <icon>icons/ExampleDistance.png</icon>
 <priority>1050</priority>
 """

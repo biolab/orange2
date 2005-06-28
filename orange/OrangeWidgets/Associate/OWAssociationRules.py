@@ -1,6 +1,6 @@
 """
 <name>Association Rules</name>
-<description>Association rules inducer</description>
+<description>Induces association rules from data.</description>
 <icon>icons/AssociationRules.png</icon>
 <priority>100</priority>
 """

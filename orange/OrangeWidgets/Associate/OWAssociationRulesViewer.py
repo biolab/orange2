@@ -1,6 +1,6 @@
 """
 <name>Association Rules Viewer</name>
-<description>Association rules viewer</description>
+<description>Association rules viewer.</description>
 <icon>icons/AssociationRulesViewer.png</icon>
 <priority>300</priority>
 """

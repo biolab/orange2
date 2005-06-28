@@ -1,6 +1,6 @@
 """
 <name>Association Rules Print</name>
-<description>Association rules print</description>
+<description>Textual display of association rules.</description>
 <category>Associations</category>
 <icon>icons/AssociationRulesPrint.png</icon>
 <priority>400</priority>

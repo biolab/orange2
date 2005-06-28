@@ -1,6 +1,6 @@
 """
 <name>Association Rules Filter</name>
-<description>Association rules filter</description>
+<description>Association rules filter.</description>
 <icon>icons/AssociationRulesFilter.png</icon>
 <priority>200</priority>
 """

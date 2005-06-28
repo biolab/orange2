@@ -1,6 +1,6 @@
 """
 <name>Attribute Distance</name>
-<description>Creates a attribute distance matrix from a set of examples at the input.</description>
+<description>Computes attribute distance for given data set.</description>
 <icon>icons/AttributeDistance.png</icon>
 <priority>1100</priority>
 """
