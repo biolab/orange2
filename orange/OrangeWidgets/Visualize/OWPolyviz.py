@@ -324,9 +324,9 @@ class OWPolyviz(OWWidget):
 
         for attr in self.data.domain:
             if attr.name in attrList:
-                if reverseDict[attr]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " -")
-                else: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " +")
-                self.attributeReverse[attr] = reverseDict[attr]
+                if reverseDict[attr.name]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr + " -")
+                else: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
+                self.attributeReverse[attr.name] = reverseDict[attr.name]
             else:
                 self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name + " +")
                 self.attributeReverse[attr.name] = 0
