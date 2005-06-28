@@ -1,6 +1,6 @@
 """
 <name>Majority</name>
-<description>Constructs a learner that always predicts the majority class</description>
+<description>Majority class learner/classifier.</description>
 <icon>icons/Majority.png</icon>
 <priority>50</priority>
 """

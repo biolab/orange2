@@ -1,6 +1,6 @@
 """
 <name>Data Sampler</name>
-<description>Selects a subset of instances from the data set</description>
+<description>Selects a subset of instances from the data set.</description>
 <icon>icons/DataSampler.png</icon>
 <priority>1125</priority>
 """

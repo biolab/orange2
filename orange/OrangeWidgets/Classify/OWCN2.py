@@ -1,6 +1,6 @@
 """
 <name>CN2</name>
-<description>Rule-based learner and classifier based on CN2 algorithm</description>
+<description>Rule-based (CN2) learner/classifier.</description>
 <icon>CN2.png</icon>
 <priority>300</priority>
 """

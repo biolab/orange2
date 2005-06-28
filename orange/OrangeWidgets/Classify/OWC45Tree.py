@@ -1,7 +1,6 @@
 """
 <name>C4.5</name>
-<description>C45 widget constructs a classification tree learner by the original
-Quinlan's C45 algorithm.</description>
+<description>C45 (classification tree) learner/classifier.</description>
 <icon>icons/C45.png</icon>
 <priority>50</priority>
 """

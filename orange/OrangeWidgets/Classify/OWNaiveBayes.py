@@ -1,7 +1,6 @@
 """
 <name>Naive Bayes</name>
-<description>NaiveBayes widget can either construct a Naive Bayesian learner, or 
-(if given a data set) a Naive Bayesian classifier.</description>
+<description>Naive Bayesian learner/classifier.</description>
 <icon>icons/NaiveBayes.png</icon>
 <priority>10</priority>
 """

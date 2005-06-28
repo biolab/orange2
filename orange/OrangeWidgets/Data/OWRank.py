@@ -1,7 +1,6 @@
 """
 <name>Rank</name>
-<description>Rank is an Orange Widget that shows ranking of attributes 
-by their relevance for particular classification.</description>
+<description>Ranks attributes by their relevance.</description>
 <icon>icons/Rank.png</icon>
 <priority>2150</priority>
 """

@@ -1,7 +1,6 @@
 """
 <name>Logistic Regression</name>
-<description>LogisticRegression widget can eithet construct a Logistic learner, or (if given a data set)
-a Logistic regression classifier. </description>
+<description>Logistic regression learner/classifier.</description>
 <icon>icons/LogisticRegression.png</icon>
 <priority>15</priority>
 """

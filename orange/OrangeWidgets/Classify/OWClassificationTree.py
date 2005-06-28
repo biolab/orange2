@@ -1,7 +1,6 @@
 """
 <name>Classification Tree</name>
-<description>Classification Tree widget can construct a classification tree learner or (if given
-a data set) a classification tree classifier.</description>
+<description>Classification tree learner/classifier.</description>
 <icon>icons/ClassificationTree.png</icon>
 <priority>50</priority>
 """

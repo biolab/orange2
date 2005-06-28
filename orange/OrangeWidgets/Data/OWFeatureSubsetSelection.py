@@ -1,6 +1,6 @@
 """
 <name>Feature Subset Selection</name>
-<description>Selection of the top-ranked features.</description>
+<description>Selection of the top-ranked attributes.</description>
 <icon>icons/Outcome.png</icon>
 <priority>3000</priority>
 """

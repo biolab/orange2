@@ -1,6 +1,6 @@
 """
 <name>Data Table</name>
-<description>DataTable shows the data set in a spreadsheet.</description>
+<description>Shows data in a spreadsheet.</description>
 <icon>icons/DataTable.png</icon>
 <priority>100</priority>
 """

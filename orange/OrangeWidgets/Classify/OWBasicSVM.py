@@ -1,6 +1,6 @@
 """
 <name>SVM</name>
-<description>Basic SVM</description>
+<description>Support Vector Machines learner/classifier.</description>
 <icon>icons/BasicSVM.png</icon>
 <priority>100</priority>
 """

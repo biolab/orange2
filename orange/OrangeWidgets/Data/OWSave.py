@@ -1,6 +1,6 @@
 """
 <name>Save</name>
-<description>The Widget for saving the data into a file.</description>
+<description>Saves data to a file.</description>
 <icon>icons/Save.png</icon>
 <priority>11</priority>
 """

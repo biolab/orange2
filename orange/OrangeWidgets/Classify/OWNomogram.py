@@ -1,6 +1,6 @@
 """
 <name>Nomogram</name>
-<description>Visualizes Naive Bayesian or logistic regression or any linear classifier using interactive nomogram.</description>
+<description>Nomogram viewer for Naive Bayesian, logistic regression or linear SVM classifiers.</description>
 <icon>icons/Nomogram.png</icon>
 <priority>2500</priority>
 """

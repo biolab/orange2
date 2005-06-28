@@ -1,6 +1,6 @@
 """
 <name>CN2 Rules Viewer</name>
-<description>Displays the rules of the CN2 classfier</description>
+<description>Viewer of classification rules.</description>
 <icon>CN2RulesViewer.png</icon>
 <priority>2120</priority>
 """

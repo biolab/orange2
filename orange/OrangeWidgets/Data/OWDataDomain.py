@@ -1,8 +1,6 @@
 """
-<name>Data Domain</name>
-<description>This widget obtains the data set on the input, and allows the user to redefine the domain
-(select which attributes to use,select if and which attribute will be used as a class variable,
-and which attributes will be used as meta attributes), and output a new data set with that domain.</description>
+<name>Select Attributes</name>
+<description>Manual selection of attributes.</description>
 <icon>icons/SelectAttributes.png</icon>
 <priority>1100</priority>
 """

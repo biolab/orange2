@@ -1,6 +1,6 @@
 """
 <name>Classification Tree Viewer</name>
-<description>ClassificationTreeViewer displays a classification tree in a hierarchical list view.</description>
+<description>Classification tree viewer (hierarchical list view).</description>
 <icon>icons/ClassificationTreeViewer.png</icon>
 <priority>2100</priority>
 """

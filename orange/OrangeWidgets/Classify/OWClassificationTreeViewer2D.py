@@ -1,6 +1,6 @@
 """
 <name>Classification Tree Viewer 2D</name>
-<description>Classification Tree</description>
+<description>Classification tree viewer (graph view).</description>
 <icon>icons/ClassificationTreeViewer2D.png</icon>
 <priority>2110</priority>
 """
