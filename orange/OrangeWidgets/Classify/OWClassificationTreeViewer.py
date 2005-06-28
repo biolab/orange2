@@ -161,7 +161,8 @@ class OWClassificationTreeViewer(OWWidget):
                 self.nodeClassDict[li] = self.tree.tree
                 walkcreate(self.tree.tree, li)
             self.rule.setText("")
-        walkupdate(self.v.firstChild())
+        if self.tree:
+            walkupdate(self.v.firstChild())
         self.v.show()
 
     # slots: handle input signals        
@@ -208,27 +209,31 @@ class OWClassificationTreeViewer(OWWidget):
 
     # signal processing
     def viewSelectionChanged(self, item):
-        data = self.nodeClassDict[item].examples
-        self.send("Classified Examples", data)
+        if self.tree:
+            data = self.nodeClassDict[item].examples
+            self.send("Classified Examples", data)
 
-        tx = ""
-        f = 1
-        nodeclsfr = self.nodeClassDict[item].nodeClassifier
-        while item and item.parent():
-            if f:
-                tx = str(item.text(0))
-                f = 0
+            tx = ""
+            f = 1
+            nodeclsfr = self.nodeClassDict[item].nodeClassifier
+            while item and item.parent():
+                if f:
+                    tx = str(item.text(0))
+                    f = 0
+                else:
+                    tx = str(item.text(0)) + " AND\n    "+tx
+                    
+                item = item.parent()
+
+            classLabel = str(nodeclsfr.defaultValue)
+            className = str(nodeclsfr.classVar.name)
+            if tx:
+                self.rule.setText("IF %s\nTHEN %s = %s" % (tx, className, classLabel))
             else:
-                tx = str(item.text(0)) + " AND\n    "+tx
-                
-            item = item.parent()
-
-        classLabel = str(nodeclsfr.defaultValue)
-        className = str(nodeclsfr.classVar.name)
-        if tx:
-            self.rule.setText("IF %s\nTHEN %s = %s" % (tx, className, classLabel))
+                self.rule.setText("%s = %s" % (className, classLabel))
         else:
-            self.rule.setText("%s = %s" % (className, classLabel))
+            self.send("Classified Examples", None)
+            self.rule.setText("")
 
     def sliderChanged(self, value):
         self.expandTree(value)
