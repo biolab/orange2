@@ -152,7 +152,7 @@ class OWDistributionGraph(OWVisGraph):
 
             # change the attribute value (which is discretized) into the subinterval start value
             # keep the same DomainContingency data
-            curPos = d_variable.getValueFrom.transformer.firstVal
+            curPos = d_variable.getValueFrom.transformer.firstVal - d_variable.getValueFrom.transformer.step
             self.subIntervalStep = d_variable.getValueFrom.transformer.step
             self.hdata = {}
             for key in tmphdata.keys():
@@ -323,7 +323,7 @@ class OWDistributions(OWWidget):
 
         # inputs
         # data and graph temp variables
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1), ("Target Class value", int, self.target, 1)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata, 1)]
         
         self.data = None
         self.targetValue = 0
@@ -464,7 +464,6 @@ class OWDistributions(OWWidget):
         self.targetValue = self.data.domain.classVar.values.index(str(targetVal))
         self.graph.setTargetValue(self.targetValue)
 
-
     def target(self, targetValue):
         self.targetValue = targetValue
         #self.updateGraphSettings()
@@ -475,7 +474,7 @@ class OWDistributions(OWWidget):
 
     def cdata(self, data):
         if data == None:
-            self.setVariablesComboBox(None)
+            self.variablesQCB.clear()
             self.setOutcomeNames([])
             self.targetQCB.clear()
             self.graph.setXlabels(None)
@@ -485,42 +484,44 @@ class OWDistributions(OWWidget):
             self.graph.setData(None, None)
             self.data = None
             return
+       
+        # if same domain, don't reset variable, target and outcome
+	sameDomain = data and self.data and data.domain == self.data.domain
+	
+        self.data = orange.Preprocessor_dropMissingClasses(data)	
+	if sameDomain:
+            self.graph.setData(self.data, self.graph.attributeName)
+	    ##self.graph.setTargetValue(self.graph.targetValue)
+            ##self.graph.setVisibleOutcomes(None)
+        else:
+            self.graph.setData(None, None)
+            self.graph.setTargetValue(None)
+            self.graph.setVisibleOutcomes(None)
 
-        self.data = orange.Preprocessor_dropMissingClasses(data)
-        self.graph.setData(None, None)
-        self.graph.setTargetValue(None)
-        self.graph.setVisibleOutcomes(None)
+            # set targets
+            self.targetQCB.clear()
+            if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
+                for val in self.data.domain.classVar.values:
+                    self.targetQCB.insertItem(val)
+                self.setTarget(self.data.domain.classVar.values[0])
 
-        self.targetQCB.clear()
-        if self.data.domain.classVar and self.data.domain.classVar.varType == orange.VarTypes.Discrete:
-            for val in self.data.domain.classVar.values:
-                self.targetQCB.insertItem(val)
-            self.setTarget(self.data.domain.classVar.values[0])
-                
-        self.setVariablesComboBox(self.data, self.graph.attributeName)
-        self.setOutcomeNames([])
-        if self.data.domain.classVar:
-            self.setOutcomeNames(self.data.domain.classVar.values.native())
+            # set variable combo box
+	    self.variablesQCB.clear()
+            for attr in self.data.domain.attributes:
+                self.variablesQCB.insertItem(self.icons[attr.varType], attr.name)
 
+            if self.data and len(self.data.domain.attributes) > 0:
+                self.graph.setData(self.data, self.data.domain.attributes[0].name) # pick first variable
+                self.variablesQCB.setCurrentItem(0) # select first variable
+                self.setVariable(self.variablesQCB.text(0)) # select first variable
+	                
+            self.targetValue = 0  # self.data.domain.classVar.values.index(str(targetVal))
+            self.graph.setTargetValue(0) #str(self.data.domain.classVar.values[0])) # pick first target
 
-    def setVariablesComboBox(self, data, defaultItem = None):
-        "Set the variables with the suplied list."
-        self.variablesQCB.clear()
-        if not data: return
-        
-        for attr in data.domain.attributes:
-            self.variablesQCB.insertItem(self.icons[attr.varType], attr.name)
-
-        try:
-            index = data.domain.index(defaultItem)
-        except:
-            index = 0
-
-        if data and len(data.domain.attributes) > 0:
-            self.graph.setData(data, data.domain.attributes[index].name)
-            self.variablesQCB.setCurrentItem(index)
-            self.setVariable(self.variablesQCB.text(index))
-
+            # set outcomes
+            self.setOutcomeNames([])
+            if self.data.domain.classVar:
+                self.setOutcomeNames(self.data.domain.classVar.values.native())
 
     def setOutcomeNames(self, list):
         "Sets the outcome target names."
