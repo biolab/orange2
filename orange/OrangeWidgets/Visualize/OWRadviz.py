@@ -1,6 +1,6 @@
 """
 <name>Radviz</name>
-<description>Shows data using radviz visualization method</description>
+<description>Radviz (multiattibute) visualization.</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/Radviz.png</icon>
 <priority>3100</priority>

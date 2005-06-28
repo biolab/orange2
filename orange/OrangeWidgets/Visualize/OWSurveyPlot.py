@@ -1,6 +1,6 @@
 """
 <name>Survey Plot</name>
-<description>Shows data using survey plot visualization method</description>
+<description>Survey plot (multiattribute) visualization.</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/SurveyPlot.png</icon>
 <priority>3250</priority>

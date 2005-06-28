@@ -1,6 +1,6 @@
 """
 <name>Scatterplot</name>
-<description>Shows data using scatterplot</description>
+<description>Scatterplot visualization.</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/ScatterPlot.png</icon>
 <priority>1000</priority>

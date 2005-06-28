@@ -1,6 +1,6 @@
 """
 <name>Classifications</name>
-<description>Shows a set of data instances and predictions of one or more classifiers.</description>
+<description>Shows prediction of classifiers on a data set.</description>
 <icon>icons/Classifications.png</icon>
 <priority>300</priority>
 """

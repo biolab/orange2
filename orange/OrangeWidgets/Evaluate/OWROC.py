@@ -1,6 +1,6 @@
 """
 <name>ROC Anaylsis</name>
-<description>None.</description>
+<description>Displays Receiver Operating Characteristics curve based on evaluation of classifiers.</description>
 <icon>ROCAnalysis.png</icon>
 <priority>1010</priority>
 """

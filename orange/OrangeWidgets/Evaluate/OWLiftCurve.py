@@ -1,6 +1,6 @@
 """
 <name>Lift Curve</name>
-<description>None.</description>
+<description>Displays a lift curve based on evaluation of classifiers.</description>
 <icon>LiftCurve.png</icon>
 <priority>1020</priority>
 """

@@ -1,6 +1,6 @@
 """
 <name>Sieve Diagram</name>
-<description>Show sieve diagram</description>
+<description>Sieve diagram.</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/SieveDiagram.png</icon>
 <priority>4100</priority>

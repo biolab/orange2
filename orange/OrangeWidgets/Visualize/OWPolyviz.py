@@ -1,6 +1,6 @@
 """
 <name>Polyviz</name>
-<description>Shows data using Polyviz visualization method</description>
+<description>Polyviz (multiattribute) visualization.</description>
 <author>Gregor Leban (gregor.leban@fri.uni-lj.si)</author>
 <icon>icons/Polyviz.png</icon>
 <priority>3150</priority>

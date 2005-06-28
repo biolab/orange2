@@ -1,6 +1,6 @@
 """
 <name>Distributions</name>
-<description>Widget for comparing distributions of two datasets with same domain and different examples.</description>
+<description>Displays attribute value distributions.</description>
 <icon>icons/Distribution.png</icon>
 <priority>100</priority>
 """

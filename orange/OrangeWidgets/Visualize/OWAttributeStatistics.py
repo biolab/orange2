@@ -1,6 +1,6 @@
 """
 <name>Attribute Statistics</name>
-<description>Show basic statistics about attributes.</description>
+<description>Basic attribute statistics.</description>
 <icon>icons/AttributeStatistics.png</icon>
 <priority>200</priority>
 """

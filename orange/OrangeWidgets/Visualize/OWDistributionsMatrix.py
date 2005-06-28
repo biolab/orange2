@@ -1,8 +1,8 @@
 """
 <name>Distributions Matrix</name>
-<description>Create a matrix with distributions.</description>
-<icon>icons/Distribution.png</icon>
-<priority>150</priority>
+<description>Displays a matrix with attribute value distributions.</description>
+<icon>icons/DistributionsMatrix.png</icon>
+<priority>1050</priority>
 """
 
 #
