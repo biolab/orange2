@@ -479,7 +479,8 @@ class OWRadviz(OWWidget):
                     if E > min(minE*0.99, minE*1.01):
                         noChange += 1
                     else:
-                        minE = E
+                        if E < minE:
+                            minE = E
                         noChange = 0
 
     def singleStep(self): self.freeAttributes(1, 1, True)

@@ -146,7 +146,7 @@ class OWDistributionGraph(OWVisGraph):
             dc = orange.DomainContingency(self.data) #!!!
             g = orange.ConditionalProbabilityEstimatorConstructor_loess(dc[self.attributeName]) #!!!
             # print [ps.variances for (x, ps) in g.probabilities.items()]
-            self.probGraphValues = [(x, ps, [math.sqrt(v)*1.96 for v in ps.variances]) for (x, ps) in g.probabilities.items()]
+            self.probGraphValues = [(x, ps, [(v>=0 and math.sqrt(v)*1.96 or 0.0) for v in ps.variances]) for (x, ps) in g.probabilities.items()]
             # calculate the weighted CI=math.sqrt(prob*(1-prob)/(0.0+self.sums[curcol])),
             # where self.sums[curcol] = g.probabilities.items()[example][1].cases
 

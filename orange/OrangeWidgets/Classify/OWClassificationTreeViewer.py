@@ -60,10 +60,12 @@ class OWClassificationTreeViewer(OWWidget):
         
         self.dBox = QVGroupBox(self.controlArea)
         self.dBox.setTitle('Show Data')
+        self.dBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         for i in range(len(self.dataLabels)):
             checkColumn(self.dBox, self, self.dataLabels[i][0], self.settingsList[i])
 
         self.expBox = QHGroupBox(self.controlArea)
+        self.expBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.expBox.setTitle('Expand/Shrink to Level')
         self.slider = QSlider(1, 9, 1, self.expslider, QSlider.Horizontal, self.expBox)
         self.sliderlabel = QLabel("%2i" % self.expslider, self.expBox)
