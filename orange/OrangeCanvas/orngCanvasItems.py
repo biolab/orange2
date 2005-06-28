@@ -267,6 +267,7 @@ class CanvasWidgetState(QCanvasRectangle):
         self.updateTooltip()
         if self.activePixmap >= 0: self.show()
         else:                      self.hide()
+        self.view.repaintContents(QRect(self.x(), self.y(), self.pixmapArray[0].width(), self.pixmapArray[0].height()))
         self.updatePosition()
 
     def drawShape(self, painter):

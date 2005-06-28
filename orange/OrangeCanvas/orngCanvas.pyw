@@ -226,9 +226,9 @@ class OrangeCanvasDlg(QMainWindow):
         self.menuOptions.insertSeparator()
         #self.menuOptions.insertItem( "Channel preferences",  self.menuItemPreferences)
         #self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "&Rebuild widget registry",  self.menuItemRebuildWidgetRegistry)
+        self.menuOptions.insertItem( "&Rebuild Widget Registry",  self.menuItemRebuildWidgetRegistry)
         self.menuOptions.insertSeparator()
-        self.menuOptions.insertItem( "Canvas &options...",  self.menuItemCanvasOptions)
+        self.menuOptions.insertItem( "Canvas &Options...",  self.menuItemCanvasOptions)
         
         self.menuWindow = QPopupMenu( self )        
         self.menuWindow.insertItem("&Cascade", self.workspace.cascade)
@@ -243,7 +243,7 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.showToolbar: self.toolbar.hide()
         self.menuWindow.setItemChecked(self.menupopupShowToolbarID, self.showToolbar)
 
-        self.menupopupShowWidgetToolbarID = self.menuWindow.insertItem( "Widget toolbar",  self.menuItemShowWidgetToolbar)
+        self.menupopupShowWidgetToolbarID = self.menuWindow.insertItem( "Widget Toolbar",  self.menuItemShowWidgetToolbar)
         if self.settings.has_key("showWidgetToolbar"): self.showWidgetToolbar = self.settings["showWidgetToolbar"]
         else:                                    self.showWidgetToolbar = TRUE
         if not self.showWidgetToolbar: self.widgetsToolBar.hide()
@@ -265,15 +265,15 @@ class OrangeCanvasDlg(QMainWindow):
 
         localHelp = 0
         self.menuHelp = QPopupMenu( self )
-        if os.path.exists(os.path.join(self.orangeDir, "doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, "doc/canvas/default.htm")):
-            if os.path.exists(os.path.join(self.orangeDir, "doc/reference/default.htm")): self.menuHelp.insertItem("Orange help", self.menuOpenLocalOrangeHelp)
-            if os.path.exists(os.path.join(self.orangeDir, "doc/canvas/default.htm")): self.menuHelp.insertItem("Orange Canvas help", self.menuOpenLocalCanvasHelp)
+        if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")) or os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")):
+            if os.path.exists(os.path.join(self.orangeDir, r"doc/reference/default.htm")): self.menuHelp.insertItem("Orange Help", self.menuOpenLocalOrangeHelp)
+            if os.path.exists(os.path.join(self.orangeDir, r"doc/canvas/default.htm")): self.menuHelp.insertItem("Orange Canvas Help", self.menuOpenLocalCanvasHelp)
             self.menuHelp.insertSeparator()
         
         self.menuHelp.insertItem("Orange On-line help", self.menuOpenOnlineOrangeHelp)
-        self.menuHelp.insertItem("Orange Canvas On-line help", self.menuOpenOnlineCanvasHelp)
-        self.menuHelp.insertSeparator()
-        self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
+        #self.menuHelp.insertItem("Orange Canvas On-line help", self.menuOpenOnlineCanvasHelp)
+        #self.menuHelp.insertSeparator()
+        #self.menuHelp.insertItem("About Orange Canvas", self.menuHelpAbout)
         
 
         self.menuBar = QMenuBar( self ) 
@@ -525,7 +525,7 @@ class OrangeCanvasDlg(QMainWindow):
             win.showNormal()
 
     def menuOpenLocalOrangeHelp(self):
-        webbrowser.open(os.path.join(self.orangeDir, "doc/reference/default.htm"))
+        webbrowser.open("file:///" + os.path.join(self.orangeDir, "doc/reference/default.htm"))
 
     def menuOpenLocalCanvasHelp(self):
         webbrowser.open(os.path.join(self.orangeDir, "doc/canvas/default.htm"))
