@@ -349,9 +349,7 @@ def testWithIndices(learners, examples, indices, indicesrandseed="*", pps=[], ca
             classifiers = [None]*nLrn
             for i in range(nLrn):
                 if not cache or not testResults.loaded[i]:
-
-
-                    classifiers[i] = learners[i](learnset, weight)
+                   classifiers[i] = learners[i](learnset, weight)
             if storeclassifiers:    
                 testResults.classifiers.append(classifiers)
 
