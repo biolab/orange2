@@ -156,7 +156,7 @@ class OWClassifiedDataTable(OWWidget):
         for i in range(len(self.data)):
             self.table.setText(i, 0, str(i+1))
             for j in range(len(self.data.domain.attributes)):
-                self.table.setText(i, j+1, str(self.data[i][j].native()))
+                self.table.setText(i, j+1, str(self.data[i][j]))
         col = 1+len(self.data.domain.attributes)
 
         self.classifications = [[]] * len(self.data)
@@ -196,6 +196,7 @@ class OWClassifiedDataTable(OWWidget):
         self.data = data
         if not data:
             self.table.hide()
+            self.send("Selected Examples", None)
         else:
             if not self.classifiers:
                 self.ShowTrueClass = 1
@@ -230,8 +231,11 @@ class OWClassifiedDataTable(OWWidget):
         # following should be more complicated and depends on what data are we showing
         cond = self.data<>None and (len(self.classifiers)>1 or len(self.classifiers)>0 and self.ShowTrueClass)
         self.outBox.setEnabled(cond)
-        if cond and self.commitOnChange:
-            self.senddata()
+        if self.commitOnChange:
+            if cond:
+                self.senddata()
+            else:
+                self.send("Selected Examples", None)
 
         self.trueClassCheckBox.setEnabled(self.data<>None and self.data.domain.classVar<>None)
 ##        self.options.setEnabled(len(self.classifiers)>0)
@@ -246,15 +250,18 @@ class OWClassifiedDataTable(OWWidget):
         if self.commitOnChange and self.outBox.isEnabled():
             self.senddata()
 
-    # assumes that the data and display conditions (enough classes are displayed) have been checked
+    # assumes that the data and display conditions
+    # (enough classes are displayed) have been checked
+    
     def senddata(self):
         def cmpclasses(clist):
             ref = clist[0]
             for c in clist[1:]:
                 if c<>ref: return 0
             return 1
-        
-        if not self.sendDataType:
+
+        if not self.sendDataType or not self.data or not self.classifiers:
+            print "NONE"
             self.send("Selected Examples", None)
             return
 
