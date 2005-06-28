@@ -1,8 +1,8 @@
 """
 <name>Interactive Tree Builder</name>
 <description>Interactive Tree Builder</description>
-<icon>icons/Unknown.png</icon>
-<priority>20</priority>
+<icon>icons/ITree.png</icon>
+<priority>50</priority>
 """
 from OWWidget import *
 from OWFile import *
@@ -89,7 +89,7 @@ class OWITree(OWClassificationTreeViewer):
 
     def findCurrentNode(self, exhaustively=0):
         sitem = self.v.selectedItem()
-        if not sitem and exhaustively:
+        if not sitem and (1 or exhaustively):
             sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.firstChild())
             if sitem.childCount():
                 return
@@ -121,7 +121,7 @@ class OWITree(OWClassificationTreeViewer):
             node.branchDescriptions=node.branchSelector.classVar.values
             node.branchSizes = orange.Distribution(attr, node.examples)
 
-        splitter = self.treeLearner and self.treeLearner.splitter or orange.TreeExampleSplitter_IgnoreUnknowns()
+        splitter = self.treeLearner and getattr(self.treeLearner, "splitter", None) or orange.TreeExampleSplitter_IgnoreUnknowns()
         node.branches = [subset and self.newTreeNode(subset) or None   for subset in splitter(node, node.examples)[0]]
         self.updateTree()
 
