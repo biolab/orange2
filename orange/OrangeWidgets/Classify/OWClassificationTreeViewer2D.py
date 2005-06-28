@@ -313,7 +313,7 @@ class OWClassificationTreeViewer2D(OWWidget):
     settingsList = ["ZoomAutoRefresh", "AutoArrange", "NodeBubblesEnabled",
                     "Zoom", "VSpacing", "HSpacing", "MaxTreeDepth", "MaxTreeDepthB",
                     "LineWidth", "LineWidthMethod",
-                    "NodeSize", "NodeInfo", "NodeInfoSorted", "NodeColorMethod",
+                    "NodeSize", "NodeInfo", "NodeColorMethod",
                     "ShowPies", "TruncateText"]
 
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
@@ -323,7 +323,7 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.selectedNode = None
         OWWidget.__init__(self, parent, signalManager, name) 
         
-        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree), ("Target Class Value", int, self.target)]
+        self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
 
         # some globaly used variables (get rid!)
@@ -336,7 +336,7 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.MaxTreeDepth = 5; self.MaxTreeDepthB = 0
         self.LineWidth = 5; self.LineWidthMethod = 0
         self.NodeSize = 5
-        self.NodeInfo = []
+        self.NodeInfo = [0, 1]
         
         self.NodeColorMethod = 0
         self.ShowPies = 1
@@ -345,8 +345,7 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.TruncateText = 1
 
         self.loadSettings()
-        self.NodeInfoSorted = copy.copy(self.NodeInfo)
-        self.NodeInfoSorted.sort()
+        self.NodeInfo.sort()
         self.scaleSizes()
 
         # GUI definition
@@ -386,7 +385,8 @@ class OWClassificationTreeViewer2D(OWWidget):
         self.NodeInfoW = []; self.dummy = 0
         for i in range(len(nodeInfoButtons)):
             setattr(self, nodeInfoSettings[i], i in self.NodeInfo)
-            w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
+            w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
+                               nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
         
         OWGUI.radioButtonsInBox(NodeTab, self, 'NodeColorMethod', ['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color', 
@@ -421,8 +421,7 @@ class OWClassificationTreeViewer2D(OWWidget):
             self.NodeInfo.append(id)
         else:
             self.NodeInfo.remove(id)
-        self.NodeInfoSorted = copy.copy(self.NodeInfo)
-        self.NodeInfoSorted.sort()
+        self.NodeInfo.sort()
 
         if self.root:
             self.setTreeParam()
@@ -589,9 +588,9 @@ class OWClassificationTreeViewer2D(OWWidget):
 
     def setNodeParam(self ,node):
         for i in range(2):
-            if i < len(self.NodeInfoSorted):
-                node.parameter[i].setText(str(node.info[self.NodeInfoSorted[i]]))
-                node.Texts[i+1].text = str(node.info[self.NodeInfoSorted[i]])
+            if i < len(self.NodeInfo):
+                node.parameter[i].setText(str(node.info[self.NodeInfo[i]]))
+                node.Texts[i+1].text = str(node.info[self.NodeInfo[i]])
             else:
                 node.parameter[i].setText('')
                 node.Texts[i+1].text = ''
@@ -929,7 +928,7 @@ class OWClassificationTreeViewer2D(OWWidget):
                 for pie in node.pies:
                     pie.show()
             else:
-                node.pieFrame.hide()
+                node.pieF<rame.hide()
                 for pie in node.pies:
                     pie.hide()
 
@@ -988,6 +987,7 @@ if __name__=="__main__":
     a = QApplication(sys.argv)
     ow = OWClassificationTreeViewer2D()
     a.setMainWidget(ow)
+    ow.activateLoadedSettings()
 
 #    data = orange.ExampleTable('../../doc/datasets/voting')
     data = orange.ExampleTable('insi')
