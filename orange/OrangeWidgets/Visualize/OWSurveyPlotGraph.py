@@ -26,7 +26,7 @@ class OWSurveyPlotGraph(OWVisGraph):
 
         self.attrLabels = labels        
         self.length = len(labels)
-        indices = []
+        indices = [self.attributeNameIndex[label] for label in labels]
         #if self.tooltipKind == DONT_SHOW_TOOLTIPS: MyQToolTip.tip(self.tooltip, QRect(0,0,0,0), "")
 
 
@@ -35,17 +35,8 @@ class OWSurveyPlotGraph(OWVisGraph):
             self.setAxisScale(QwtPlot.yLeft, 0, 1, 1)
             return
 
-        # create a table of indices that stores the sequence of variable indices
-        for label in labels:
-            index = self.attributeNameIndex[label]
-            indices.append(index)
-
-        validData = [1] * len(self.rawdata)
-        for i in range(len(self.rawdata)):
-            for j in range(self.length):
-                if self.noJitteringScaledData[indices[j]][i] == "?": validData[i] = 0
-        totalValid = 0
-        for val in validData: totalValid += val
+        validData = self.getValidList(indices)
+        totalValid = sum(validData)
 
         self.setAxisScale(QwtPlot.yLeft, 0, totalValid, totalValid)
         self.setAxisScale(QwtPlot.xBottom, -0.5, len(labels)-0.5, 1)

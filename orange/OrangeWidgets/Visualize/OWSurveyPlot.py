@@ -243,9 +243,9 @@ class OWSurveyPlot(OWWidget):
             shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
             if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
                 self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
-            for attr in shown:
+            for attr in shown[:10]:
                 self.shownAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)
-            for attr in hidden:
+            for attr in shown[10:] + hidden:
                 self.hiddenAttribsLB.insertItem(self.icons[data.domain[attr].varType], attr)    
         self.sendShownAttributes()
         
