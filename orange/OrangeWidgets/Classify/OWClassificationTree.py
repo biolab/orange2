@@ -39,7 +39,7 @@ class OWClassificationTree(OWWidget):
         self.bin = 0; self.subset = 0
         self.preLeafInstP = 2; self.preNodeInstP = 5; self.preNodeMajP = 95
         self.preLeafInst = 1; self.preNodeInst = 0; self.preNodeMaj = 0
-        self.postMaj = 0; self.postMPruning = 0; self.postM = 2.0
+        self.postMaj = 1; self.postMPruning = 1; self.postM = 2.0
         
         self.loadSettings()
         
