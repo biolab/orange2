@@ -299,7 +299,7 @@ class OWDistanceMap(OWWidget):
         if not self.matrix:
             return
         lo = self.CutEnabled and self.CutLow   or self.lowerBound
-        hi = self.CutEnabled and self.CutHigh  or self.upperBound
+        hi = round(self.CutEnabled and self.CutHigh  or self.upperBound, 1)
 
         self.offsetX = 5
         
@@ -312,8 +312,8 @@ class OWDistanceMap(OWWidget):
         if self.ShowLegend==1:
             self.legendImage = self.createColorStripe(self.colorPalette.getCurrentColorSchema().getPalette())
             self.offsetY = v_legend_height + 30
-            self.legendText1.setText(str(self.CutLow))
-            self.legendText2.setText(str(self.CutHigh))
+            self.legendText1.setText(str(lo))
+            self.legendText2.setText(str(hi))
             self.legendText1.show()
             self.legendText2.show()
         else:
