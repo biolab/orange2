@@ -308,7 +308,8 @@ class OWScatterPlot(OWWidget):
     def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
         if not self.data: return
         self.attrX = attrList[0]; self.attrY = attrList[1]
-        self.attrColor = self.data.domain.classVar.name
+        if self.data.domain.classVar:
+            self.attrColor = self.data.domain.classVar.name
 
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = insideColors, clusterClosure = clusterClosure)
         self.graph.repaint()        

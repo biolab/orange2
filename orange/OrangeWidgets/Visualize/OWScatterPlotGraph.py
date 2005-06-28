@@ -296,7 +296,7 @@ class OWScatterPlotGraph(OWVisGraph):
                             all_accessible.append(self.rawdata.domain.classVar)
                         metanames = [myvar.name for myvar in all_accessible ]
                         if labelAttr in metanames:
-                            if labelAttr==self.rawdata.domain.classVar.name:
+                            if self.rawdata.domain.classVar and labelAttr==self.rawdata.domain.classVar.name:
                                 lbl = str(self.rawdata.domain.classVar.values[int(self.rawdata[i][labelAttr])])
                             else:
                                 if self.rawdata[i][labelAttr].varType==orange.VarTypes.Continuous:
