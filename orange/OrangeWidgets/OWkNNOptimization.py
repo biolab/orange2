@@ -120,7 +120,7 @@ class kNNOptimization(OWBaseWidget):
 
         # 0 - set to sqrt(N)
         # 1 - set to N / c
-        self.kValueFormula = 1          
+        self.kValueFormula = 0          
 
         self.loadSettings()
 
