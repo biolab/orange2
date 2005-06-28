@@ -2,7 +2,7 @@
 <name>Classification Tree</name>
 <description>Classification tree learner/classifier.</description>
 <icon>icons/ClassificationTree.png</icon>
-<priority>50</priority>
+<priority>30</priority>
 """
 
 from OWWidget import *

@@ -2,7 +2,7 @@
 <name>C4.5</name>
 <description>C45 (classification tree) learner/classifier.</description>
 <icon>icons/C45.png</icon>
-<priority>50</priority>
+<priority>35</priority>
 """
 
 from OWWidget import *

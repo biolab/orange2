@@ -2,7 +2,7 @@
 <name>Majority</name>
 <description>Majority class learner/classifier.</description>
 <icon>icons/Majority.png</icon>
-<priority>50</priority>
+<priority>20</priority>
 """
 
 from OWWidget import *

@@ -2,7 +2,7 @@
 <name>k Nearest Neighbours</name>
 <description>K-nearest neighbours learner/classifier.</description>
 <icon>icons/kNN.png</icon>
-<priority>50</priority>
+<priority>25</priority>
 """
 
 from OWWidget import *
