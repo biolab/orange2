@@ -10,13 +10,22 @@ from OWIRankOptions import *
 from OWClassificationTreeViewer import *
 import OWGUI, sys, orngTree
 
+class FixedTreeLearner(orange.Learner):
+    def __init__(self, classifier, name):
+        self.classifier = classifier
+        self.name = name
+
+    def __call__(self, *d):
+        print self.classifier
+        return self.classifier
+
 class OWITree(OWClassificationTreeViewer):
     settingsList = OWClassificationTreeViewer.settingsList + ["discretizationMethod"]
     
     def __init__(self,parent = None, signalManager = None):
         OWClassificationTreeViewer.__init__(self, parent, signalManager, 'I&nteractive Tree Builder')
         self.inputs = [("Examples", ExampleTable, self.cdata, 1), ("Tree Learner", orange.Learner, self.learner, 1)]
-        self.outputs = [("Classified Examples", ExampleTableWithClass), ("Classifier", orange.TreeClassifier)]
+        self.outputs = [("Classified Examples", ExampleTableWithClass), ("Classifier", orange.TreeClassifier), ("Tree Learner", orange.Learner)]
 
         self.discretizationMethod = 0
         self.attridx = 0
@@ -27,30 +36,42 @@ class OWITree(OWClassificationTreeViewer):
         self.treeLearner = None
         self.tree = None
 
-        box = OWGUI.widgetBox(self.space, "Interactive construction")
-        sbox = OWGUI.widgetBox(box)
-        self.attrsCombo = OWGUI.comboBox(sbox, self, 'attridx', label = "Split by", orientation="horizontal", callback=self.cbAttributeSelected)
-        self.cutoffEdit = OWGUI.lineEdit(sbox, self, 'cutoffPoint', label = 'Cut off point: ', orientation='horizontal', validator=QDoubleValidator(self))
-        OWGUI.button(sbox, self, "Split", callback=self.btnSplitClicked)
+        OWGUI.separator(self.space, height=40)
+        box = OWGUI.widgetBox(self.space, "Split selection")
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+#        OWGUI.widgetLabel(box, "Split By:")
+        self.attrsCombo = OWGUI.comboBox(box, self, 'attridx', orientation="horizontal", callback=self.cbAttributeSelected)
+        self.cutoffEdit = OWGUI.lineEdit(box, self, 'cutoffPoint', label = 'Cut off point: ', orientation='horizontal', validator=QDoubleValidator(self))
+        OWGUI.button(box, self, "Split", callback=self.btnSplitClicked)
+
+        OWGUI.separator(self.space)
+        box = OWGUI.widgetBox(self.space, "Modify Tree")
+        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         self.btnPrune = OWGUI.button(box, self, "Cut", callback = self.btnPruneClicked)
         self.btnBuild = OWGUI.button(box, self, "Build", callback = self.btnBuildClicked)
 
+        b = QVBox(self.controlArea)
         self.activateLoadedSettings()
+        self.space.updateGeometry()
 
     def cbAttributeSelected(self):
+        val = ""
         if self.data:
             attr = self.data.domain[self.attridx]
-            self.cutoffEdit.setDisabled(attr.varType != orange.VarTypes.Continuous)
-        else:
-            self.cutoffEdit.setDisabled(True)
+            if attr.varType == orange.VarTypes.Continuous:
+                val = str(orange.Value(attr, self.basstat[attr].avg))
+        self.cutoffEdit.setDisabled(not val)
+        self.cutoffEdit.setText(val)
 
     def activateLoadedSettings(self):
         self.cbAttributeSelected()
 
     def updateTree(self):
         self.setTreeView()
-        self.send("ctree", self.tree)
-        self.send("classifier", self.tree)
+        self.learner = FixedTreeLearner(self.tree, self.title)
+        self.send("Classified Exampls", self.tree)
+        self.send("Classifier", self.tree)
+        self.send("Tree Learner", self.learner)
 
     def newTreeNode(self, data):
         node = orange.TreeNode()
@@ -62,13 +83,22 @@ class OWITree(OWClassificationTreeViewer):
         return node
 
     def cutNode(self, node):
+        if not node:
+            return
         node.branchDescriptions = node.branchSelector = node.branchSizes = node.branches = None
 
-    def btnSplitClicked(self):
+    def findCurrentNode(self, exhaustively=0):
         sitem = self.v.selectedItem()
-        if not sitem:
+        if not sitem and exhaustively:
+            sitem = self.v.currentItem() or (self.v.childCount() == 1 and self.v.firstChild())
+            if sitem.childCount():
+                return
+        return sitem and self.nodeClassDict[sitem]
+
+    def btnSplitClicked(self):
+        node = self.findCurrentNode(1)
+        if not node:
             return
-        node = self.nodeClassDict[sitem]
         
         attr = self.data.domain[self.attridx]
         if attr.varType == orange.VarTypes.Continuous:
@@ -96,14 +126,13 @@ class OWITree(OWClassificationTreeViewer):
         self.updateTree()
 
     def btnPruneClicked(self):
-        self.cutNode(node = self.nodeClassDict[self.v.selectedItem()])
+        self.cutNode(node = self.findCurrentNode())
         self.updateTree()
 
     def btnBuildClicked(self):
-        sitem = self.v.selectedItem()
-        if not sitem:
+        node = self.findCurrentNode()
+        if not node:
             return
-        node = self.nodeClassDict[sitem]
 
         newtree = (self.treeLearner or orngTree.TreeLearner(storeExamples = 1))(node.examples)
         for k, v in newtree.tree.__dict__.items():
@@ -111,7 +140,7 @@ class OWITree(OWClassificationTreeViewer):
         self.updateTree()
 
     def cdata(self, data):
-        if self.data and data.domain == self.data.domain:
+        if self.data and data and data.domain == self.data.domain and data.version == self.data.version:
             return
 
         self.attrsCombo.clear()
@@ -119,10 +148,12 @@ class OWITree(OWClassificationTreeViewer):
         if self.data:
             for attr in data.domain.attributes:
                 self.attrsCombo.insertItem(attr.name)
-            self.attrsCombo.adjustSize()
+            self.basstat = orange.DomainBasicAttrStat(data)
+#            self.attrsCombo.adjustSize()
             self.attridx = 0
             self.cbAttributeSelected()
-            self.tree = orange.TreeClassifier()
+            self.tree = orange.TreeClassifier(domain = data.domain)
+            self.tree.descender = orange.TreeDescender_UnknownMergeAsBranchSizes()
             self.tree.tree = self.newTreeNode(self.data)
         else:
             self.tree = None
@@ -137,8 +168,8 @@ if __name__ == "__main__":
     a=QApplication(sys.argv)
     owi=OWITree()
 
-    d = orange.ExampleTable('d:\\ai\\orange\\test\\iris')
-#    d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
+#    d = orange.ExampleTable('d:\\ai\\orange\\test\\iris')
+    d = orange.ExampleTable('d:\\ai\\orange\\test\\crush')
     owi.cdata(d)
 
     a.setMainWidget(owi)
