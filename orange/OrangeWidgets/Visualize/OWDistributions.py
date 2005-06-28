@@ -287,7 +287,7 @@ class OWDistributions(OWWidget):
         # settings
         self.numberOfBars = 5
         self.barSize = 50
-        self.showProbabilities = 0
+        self.showProbabilities = 1
         self.showConfidenceIntervals = 0
         self.smoothLines = 0
         self.lineWidth = 1

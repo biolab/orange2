@@ -36,7 +36,7 @@ class OWClassifiedDataTable(OWWidget):
         # saveble settings
         self.ShowProb = 1; self.ShowClass = 1; self.ShowTrueClass = 0
         self.ShowAttributeMethod = 0
-        self.sendDataType = 0; self.commitOnChange = 0
+        self.sendDataType = 0; self.commitOnChange = 1
         self.loadSettings()
 
         self.freezeAttChange = 0 # 1 to block table update followed by changes in attribute list box
