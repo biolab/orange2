@@ -82,9 +82,9 @@ class OWMosaicDisplay(OWWidget):
         
         box5 = OWGUI.widgetBox(self.controlArea, "Visual Settings")
         box5.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        OWGUI.checkBox(box5, self, 'showDistribution', 'Show Distribution', callback = self.updateData, tooltip = "Do you wish to see class distribution or only class purity?")
-        OWGUI.checkBox(box5, self, 'showAprioriDistribution', 'Show Apriori Distribution', callback = self.updateData, tooltip = "Do you wish to see lines showing apriori class distribution?")
-        OWGUI.checkBox(box5, self, 'horizontalDistribution', 'Show Distribution Horizontally', callback = self.updateData, tooltip = "Do you wish to see distribution drawn horizontally or vertically?")
+        OWGUI.checkBox(box5, self, 'showDistribution', 'Show Distribution', callback = self.updateData, tooltip = "Show the class distribution for each bar")
+        OWGUI.checkBox(box5, self, 'showAprioriDistribution', 'Show Apriori Distribution', callback = self.updateData, tooltip = "Show the lines that represent the apriori class distribution")
+        OWGUI.checkBox(box5, self, 'horizontalDistribution', 'Show Distribution Horizontally', callback = self.updateData, tooltip = "Do you wish to see class distribution drawn horizontally or vertically?")
 
         b = QVBox(self.controlArea)
 
