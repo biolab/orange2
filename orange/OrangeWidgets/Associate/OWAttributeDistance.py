@@ -23,7 +23,7 @@ class OWAttributeDistance(OWWidget):
 
     def __init__(self, parent=None, signalManager = None, name='AttributeDistance'):
         self.callbackDeposit = [] # deposit for OWGUI callback functions
-        OWWidget.__init__(self, parent, signalManager, name, 'Attribute Distance') 
+        OWWidget.__init__(self, parent, signalManager) 
 
         self.inputs = [("Examples", ExampleTable, self.dataset)]
         self.outputs = [("Distance Matrix", orange.SymMatrix)]
@@ -31,7 +31,7 @@ class OWAttributeDistance(OWWidget):
         self.ClassInteractions = 0
         self.loadSettings()
         self.classIntCB = OWGUI.checkBox(self.controlArea, self, "ClassInteractions", "Use class information", callback=self.toggleClass, disabled=1)
-        self.resize(100,100)
+        self.resize(215,100)
 
     ##############################################################################
     # callback functions
@@ -69,7 +69,11 @@ class OWAttributeDistance(OWWidget):
 # test script
 
 if __name__=="__main__":
-    data = orange.ExampleTable(r'../../doc/datasets/voting')
+    import os
+    if os.path.isfile(r'../../doc/datasets/voting'):
+        data = orange.ExampleTable(r'../../doc/datasets/voting')
+    else:
+        data = orange.ExampleTable('voting')
     a = QApplication(sys.argv)
     ow = OWAttributeDistance()
     a.setMainWidget(ow)
