@@ -179,39 +179,62 @@ PClassifier TTreeLearner::operator()(PExampleGenerator ogen, const int &weight)
 
 PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weightID, PDistribution apriorClass, vector<bool> &candidates, const int &depth)
 {
-  PDomainContingency contingency = contingencyComputer
-                            ? contingencyComputer->call(examples, weightID)
-                            : PDomainContingency(mlnew TDomainContingency(examples, weightID));
+  PDomainContingency contingency;
+  PDomainDistributions domainDistributions;
+  PDistribution classDistribution;
 
-  if (!contingency->classes->abs)
+  if (!examples->numberOfExamples())
     return PTreeNode();
 
+  if (contingencyComputer)
+    contingency = contingencyComputer->call(examples, weightID);
+
+  if (storeContingencies)
+    contingency = mlnew TDomainContingency(examples, weightID);
+
+  if (contingency)
+    classDistribution = contingency->classes;
+  else if (storeDistributions)
+    classDistribution = getClassDistribution(examples, weightID);
+
+  if (classDistribution) {
+    if (!classDistribution->abs)
+      return PTreeNode();
+  }
+  else
+    if (examples->weightOfExamples() < 1e-10)
+      return PTreeNode();
+  
   TTreeNode *utreeNode = mlnew TTreeNode();
   PTreeNode treeNode = utreeNode;
 
   utreeNode->weightID = weightID;
 
-  utreeNode->contingency = contingency;
-
-  if (storeDistributions)
-    utreeNode->distribution = contingency->classes;
-
   bool isLeaf = ((maxDepth>=0) && (depth == maxDepth)) || stop->call(examples, weightID, contingency);
 
   if (isLeaf || storeNodeClassifier) {
     utreeNode->nodeClassifier = nodeLearner
-                              ? nodeLearner->smartLearn(examples, weightID, contingency)
-                              : TMajorityLearner().smartLearn(examples, weightID, contingency);
+                              ? nodeLearner->smartLearn(examples, weightID, contingency, domainDistributions, classDistribution)
+                              : TMajorityLearner().smartLearn(examples, weightID, contingency, domainDistributions, classDistribution);
 
-    if (isLeaf)
+    if (isLeaf) {
+      if (storeContingencies)
+        utreeNode->contingency = contingency;
+      if (storeDistributions)
+        utreeNode->distribution = classDistribution;
+
       return treeNode;
+    }
   }
+
+  utreeNode->contingency = contingency;
+  utreeNode->distribution = classDistribution;
 
   float quality;
   int spentAttribute;
   utreeNode->branchSelector = split->call(utreeNode->branchDescriptions, utreeNode->branchSizes, quality, spentAttribute,
                                           examples, weightID, contingency,
-                                          apriorClass ? apriorClass : contingency->classes,
+                                          apriorClass ? apriorClass : classDistribution,
                                           candidates, utreeNode->nodeClassifier);
 
 
@@ -235,6 +258,8 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
 
     if (!storeContingencies)
       utreeNode->contingency = PDomainContingency();
+    if (!storeDistributions)
+      utreeNode->distribution = PDistribution();
 
     vector<int>::iterator nwi = newWeights.begin(), nwe = newWeights.end();
     PITERATE(TExampleGeneratorList, gi, subsets) {
@@ -268,10 +293,13 @@ PTreeNode TTreeLearner::operator()(PExampleGenerator examples, const int &weight
   else { // no split constructed
     if (!storeContingencies)
       utreeNode->contingency = PDomainContingency();
+    if (!storeDistributions)
+      utreeNode->distribution = PDistribution();
+
     if (!utreeNode->nodeClassifier)
       utreeNode->nodeClassifier = nodeLearner
-                                ? nodeLearner->smartLearn(examples, weightID, contingency)
-                                : TMajorityLearner().smartLearn(examples, weightID, contingency);
+                              ? nodeLearner->smartLearn(examples, weightID, contingency, domainDistributions, classDistribution)
+                              : TMajorityLearner().smartLearn(examples, weightID, contingency, domainDistributions, classDistribution);
   }
 
   return treeNode;

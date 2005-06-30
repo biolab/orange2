@@ -134,6 +134,28 @@ TTreeSplitConstructor_Attribute::TTreeSplitConstructor_Attribute(PMeasureAttribu
 {}
 
 
+// if there are less than two branches with at least minSubset examples, skip the attribute
+// also, skip it if all examples are in the same branch
+bool checkDistribution(const TDiscDistribution &dist, const float &minSubset)
+{
+  int nonzero = 0;
+  for(TDiscDistribution::const_iterator dvi(dist.begin()), dve(dist.end()); (dvi!=dve) && (nonzero<2); dvi++)
+    if ((*dvi > 0) && (*dvi >= minSubset))
+      nonzero++;
+
+  return nonzero >= 2;
+}
+
+
+
+inline bool noCandidates(const vector<bool> &candidates)
+{
+  vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
+  while(ci!=ce && !*ci)
+    ci++;
+  return ci==ce;
+}
+
 PClassifier TTreeSplitConstructor_Attribute::operator()(
                              PStringList &descriptions, PDiscDistribution &subsetSizes, float &quality, int &spentAttribute,
 
@@ -149,10 +171,9 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
   bool cse = candidates.size()==0;
   vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
   if (!cse) {
-    while(ci!=ce && !*ci)
-      ci++;
-    if (ci==ce)
+    if (noCandidates(candidates))
       return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
     ci = candidates.begin();
   }
 
@@ -164,25 +185,48 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
   int thisAttr = 0, bestAttr = -1, wins = 0;
   quality = 0.0;
 
-  if (measure->needs < TMeasureAttribute::Generator) {
+  if (measure->needs == TMeasureAttribute::Contingency_Class) {
+    vector<bool> myCandidates;
+    if (cse) {
+      myCandidates.reserve(gen->domain->attributes->size());
+      PITERATE(TVarList, vi, gen->domain->attributes)
+        myCandidates.push_back((*vi)->varType == TValue::INTVAR);
+    }
+    else {
+      myCandidates.reserve(candidates.size());
+      TVarList::const_iterator vi(gen->domain->attributes->begin());
+      for(; ci != ce; ci++, vi++)
+        myCandidates.push_back(*ci && ((*vi)->varType == TValue::INTVAR));
+    }
+
+    if (!dcont || dcont->classIsOuter)
+      dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID, myCandidates));
+
+    ci = myCandidates.begin();
+    ce = myCandidates.end();
+    TDomainContingency::iterator dci(dcont->begin()), dce(dcont->end());
+    for(; (ci != ce) && (dci!=dce); dci++, ci++, thisAttr++)
+      if (*ci && checkDistribution((const TDiscDistribution &)((*dci)->outerDistribution.getReference()), minSubset)) {
+        float thisMeas = measure->call(thisAttr, dcont, apriorClass);
+
+        if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
+            || ((thisMeas==quality) && rgen.randbool(++wins))) {
+          quality = thisMeas;
+          subsetSizes = (*dci)->outerDistribution;
+          bestAttr = thisAttr;
+        }
+      }
+  }
+
+  else if (measure->needs == TMeasureAttribute::DomainContingency) {
     if (!dcont || dcont->classIsOuter)
       dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID));
 
     TDomainContingency::iterator dci(dcont->begin()), dce(dcont->end());
     for(; (cse || (ci!=ce)) && (dci!=dce); dci++, thisAttr++)
-      if ((cse || *(ci++)) && ((*dci)->outerVariable->varType==TValue::INTVAR)) {
-        // if there are less than two branches with at least minSubset examples, skip the attribute
-        // also, skip it if all examples are in the same branch
-        int nonzero = 0;
-        for(TDistributionVector::const_iterator dvi((*dci)->discrete->begin()), dve((*dci)->discrete->end());
-            (dvi!=dve) && (nonzero<2);
-            dvi++)
-          if ( ((*dvi)->abs > 0)  &&  ((*dvi)->abs >= minSubset) )
-            nonzero++;
-
-        if (nonzero<2)
-          continue;
-
+      if (    (cse || *(ci++))
+           && ((*dci)->outerVariable->varType==TValue::INTVAR)
+           && checkDistribution((const TDiscDistribution &)((*dci)->outerDistribution.getReference()), minSubset)) {
         float thisMeas = measure->call(thisAttr, dcont, apriorClass);
 
         if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
@@ -201,19 +245,7 @@ PClassifier TTreeSplitConstructor_Attribute::operator()(
     for(; (cse || (ci!=ce)) && (ddi!=dde); ddi++, thisAttr++)
       if (cse || *(ci++)) {
         TDiscDistribution *discdist = (*ddi).AS(TDiscDistribution);
-        if (discdist) {
-          // if there are less than two branches with at least minSubset examples, skip the attribute
-          // also, skip it if all examples are in the same branch
-          int nonzero = 0;
-          for(TDiscDistribution::const_iterator dvi(discdist->begin()), dve(discdist->end());
-              (dvi!=dve) && (nonzero<2);
-              dvi++)
-            if ( (*dvi > 0)  &&  (*dvi >= minSubset) )
-              nonzero++;
-
-          if (nonzero<2)
-            continue;
-
+        if (discdist && checkDistribution(*discdist, minSubset)) {
           float thisMeas = measure->call(thisAttr, gen, apriorClass, weightID);
 
           if (   ((!wins || (thisMeas>quality)) && ((wins=1)==1))
@@ -253,14 +285,6 @@ TTreeSplitConstructor_ExhaustiveBinary::TTreeSplitConstructor_ExhaustiveBinary(P
 {}
 
 
-inline bool noCandidates(const vector<bool> &candidates)
-{
-  vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
-  while(ci!=ce && !*ci)
-    ci++;
-  return ci==ce;
-}
-
 
 /* Prepares the common stuff for binarization in classification trees:
    - a binary attribute 
@@ -272,9 +296,6 @@ inline bool noCandidates(const vector<bool> &candidates)
 void prepareBinaryCheat(PExampleGenerator gen, const int &weightID, PVariable &bvar, PDomainContingency &dcont, int &newpos,
                         TDiscDistribution *&dis0, TDiscDistribution *&dis1, TContDistribution *&con0, TContDistribution *&con1)
 {
-  if (!dcont || dcont->classIsOuter)
-    dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID));
-
   TEnumVariable *ebvar = mlnew TEnumVariable("");
   ebvar->addValue("0");
   ebvar->addValue("1");
@@ -321,6 +342,11 @@ PClassifier TTreeSplitConstructor_ExhaustiveBinary::operator()(
   bool cse = candidates.size()==0;
   if (!cse && noCandidates(candidates))
     return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+  if (!dcont || dcont->classIsOuter) {
+    dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID));
+    raiseWarningWho("TreeSplitConstructor_ExhaustiveBinary", "this class is not optimized for 'candidates' list and can be very slow");
+  }
 
   int N = gen ? gen->numberOfExamples() : -1;
   if (N<0)
@@ -513,21 +539,44 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
 { checkProperty(measure);
 
   // This we cannot offer: we would need to go through all examples each time and the attribute measure (say Relief) as well. Too slow.
-  if (measure->needs==TMeasureAttribute::Generator)
-    raiseError("cannot use a measure that require example set");
+  if (measure->needs > TMeasureAttribute::Contingency_Class)
+    raiseError("cannot use a measure that requires an example set or domain contingency");
 
   measure->checkClassTypeExc(gen->domain->classVar->varType);
 
+
   bool cse = candidates.size()==0;
-  if (!cse && noCandidates(candidates))
+  bool haveCandidates = false;
+
+  vector<bool> myCandidates;
+  if (cse) {
+    myCandidates.reserve(gen->domain->attributes->size());
+    PITERATE(TVarList, vi, gen->domain->attributes) {
+      bool co = (*vi)->varType == TValue::FLOATVAR;
+      myCandidates.push_back(co);
+      haveCandidates = haveCandidates || co;
+    }
+  }
+  else {
+    myCandidates.reserve(candidates.size());
+    TVarList::const_iterator vi(gen->domain->attributes->begin());
+    for(vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end()); ci != ce; ci++, vi++) {
+      bool co = *ci && ((*vi)->varType == TValue::FLOATVAR);
+      myCandidates.push_back(co);
+      haveCandidates = haveCandidates || co;
+    }
+  }
+
+  if (!haveCandidates)
     return returnNothing(descriptions, subsetSizes, quality, spentAttribute);
+
+  if (!dcont || dcont->classIsOuter)
+    dcont = PDomainContingency(mlnew TDomainContingency(gen, weightID, myCandidates));
 
   int N = gen ? gen->numberOfExamples() : -1;
   if (N<0)
     N = dcont->classes->cases;
   TSimpleRandomGenerator rgen(N);
-
-  vector<bool>::const_iterator ci(candidates.begin()), ce(candidates.end());
 
   PVariable bvar;
   int newpos;
@@ -543,9 +592,10 @@ PClassifier TTreeSplitConstructor_Threshold::operator()(
   float leftExamples, rightExamples;
   float bestThreshold = 0.0;
 
+  vector<bool>::const_iterator ci(myCandidates.begin()), ce(myCandidates.end());
   TDomainContingency::iterator dci(dcont->begin()), dce(dcont->end());
-  for(; (cse || (ci!=ce)) && (dci!=dce); dci++, thisAttr++)
-    if ((cse || *(ci++)) && ((*dci)->outerVariable->varType==TValue::FLOATVAR) && (*dci)->continuous->size()>=2) {
+  for(; (ci!=ce) && (dci!=dce); dci++, ci++, thisAttr++)
+    if (*ci && ((*dci)->outerVariable->varType==TValue::FLOATVAR) && ((*dci)->continuous->size()>=2)) {
       const TDistributionMap &distr = *(*dci)->continuous;
 
       outerDistribution->unknowns = (*dci)->outerDistribution->unknowns;

@@ -91,6 +91,8 @@ public:
       NOEX_INFINITE (when the number is known to be infinite) or NOEX_DONT_KNOW when nothing can be said about it. */
   virtual int numberOfExamples() =0;
 
+  virtual float weightOfExamples(const int &weightID = 0) const;
+
   /*  Iterators handling methods should mostly be defined in derived classes. Methods
       increaseIterator and sameIterators are abstract, while deleteIterator does nothing and
       'copyIterator' throws an error saying that 'Iterators of this type cannot be copied.  */

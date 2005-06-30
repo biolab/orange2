@@ -511,6 +511,15 @@ int TExampleTable::numberOfExamples()
 }
 
 
+float TExampleTable::weightOfExamples(const int &weightID) const
+{
+  float weight = 0;
+  for(TExample **ri = examples; ri != _Last; ri++)
+    weight += WEIGHT(**ri);
+  return weight;
+}
+
+
 void TExampleTable::addExample(const TExample &example, bool filterMetas)
 {
   if (ownsExamples)

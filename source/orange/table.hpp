@@ -96,6 +96,7 @@ public:
   TValue operator ()(const TExample &);
 
   virtual int  numberOfExamples();
+  virtual float weightOfExamples(const int &weightID = 0) const;
 
   virtual void addExample(const TExample &, bool filterMetas = false);
   virtual void addExample(TExample *);

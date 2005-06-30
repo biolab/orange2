@@ -583,7 +583,13 @@ TDomainContingency::TDomainContingency(PExampleGenerator gen, const long weightI
 { computeMatrix(gen, weightID); }
 
 
-void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weightID, PDomain newDomain)
+// Extract TContingency values for all attributes, by iterating through all examples from the generator
+TDomainContingency::TDomainContingency(PExampleGenerator gen, const long weightID, const vector<bool> &attributes, bool acout)
+: classIsOuter(acout)
+{ computeMatrix(gen, weightID, &attributes); }
+
+
+void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weightID, const vector<bool> *attributes, PDomain newDomain)
 // IMPORTANT NOTE: When weightID and newDomain are specified, weights are computed from the original examples
 // (this is to avoid the need to copy the meta-attributes)
 { PDomain myDomain = newDomain ? newDomain : gen->domain;
@@ -601,7 +607,22 @@ void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weight
   if (classVar->varType==TValue::INTVAR)
     lastClassValue = TValue(classVar->noOfValues()-1);
 
+  vector<bool>::const_iterator ai, ae;
+  if (attributes) {
+    ai = attributes->begin();
+    ae = attributes->end();
+  }
   PITERATE(TVarList, vli, myDomain->attributes) {
+    if (attributes) {
+      if (ai == ae)
+        break;
+
+      if (!*ai++) {
+        push_back(NULL);
+        continue;
+      }
+    }
+        
     if (classIsOuter)
       push_back(mlnew TContingencyClassAttr(*vli, myDomain->classVar));
     else
@@ -615,7 +636,7 @@ void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weight
   }
 
   iterator si;
-  int Na=myDomain->attributes->size();
+  int Na = myDomain->attributes->size();
   TExample newExample(myDomain);
   TExample::iterator vi, cli;
 
@@ -631,7 +652,8 @@ void TDomainContingency::computeMatrix(PExampleGenerator gen, const long &weight
     float xmplWeight=WEIGHT(*fi);
     classes->add(*cli, xmplWeight);
     for(si=begin(); vi!=cli; vi++, si++)
-      (*si)->add_attrclass(*vi, *cli, xmplWeight);
+      if (*si)
+        (*si)->add_attrclass(*vi, *cli, xmplWeight);
   }
 }
 

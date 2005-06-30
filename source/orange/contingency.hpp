@@ -203,8 +203,9 @@ public:
   TDomainContingency(bool acout=false); // this is the preferred constructor; use computeMatrix to fill the matrix
   TDomainContingency(PExampleGenerator, const long weightID=0, bool acout=false);  // obsolete; use ComputeDomainContingency instead
 //  TDomainContingency(const TDomainContingency &, PProbabilityEstimator);
+  TDomainContingency(PExampleGenerator, const long weightID, const vector<bool> &attributes, bool acout = false);  // obsolete; use ComputeDomainContingency instead
 
-  virtual void computeMatrix(PExampleGenerator, const long &weightID, PDomain newDomain=PDomain());
+  virtual void computeMatrix(PExampleGenerator, const long &weightID, const vector<bool> *attributes = NULL, PDomain newDomain=PDomain());
 
   void normalize();
   PDomainDistributions getDistributions();

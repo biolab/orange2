@@ -113,9 +113,9 @@ PClassifier TLearner::operator()(PExampleGenerator gen, const int &weight)
 
 
 PClassifier TLearner::smartLearn(PExampleGenerator gen, const int &weight,
-                                 PDomainContingency dcont,
-                                 PDomainDistributions ddist,
-                                 PDistribution dist)
+                                 PDomainContingency &dcont,
+                                 PDomainDistributions &ddist,
+                                 PDistribution &dist)
 { 
   switch (needs) {
 
@@ -133,22 +133,25 @@ PClassifier TLearner::smartLearn(PExampleGenerator gen, const int &weight,
         return operator()(ddist->back());
       else if (dcont)
         return operator()(dcont->classes);
-      else
-        return operator()(getClassDistribution(gen, weight));
+      else {
+        dist = getClassDistribution(gen, weight);
+        return operator()(dist);
+      }
 
     case NeedsDomainDistribution:
       if (ddist)
         return operator()(ddist);
       else if (dcont)
         return operator()(dcont->getDistributions());
-      else
-        return operator()(PDomainDistributions(mlnew TDomainDistributions(gen, weight)));
+      else {
+        ddist = PDomainDistributions(mlnew TDomainDistributions(gen, weight));
+        return operator()(ddist);
+      }
 
     case NeedsDomainContingency:
-      if (dcont)
-        return operator()(dcont);
-      else
-        return operator()(PDomainContingency(mlnew TDomainContingency(gen, weight)));
+      if (!dcont)
+        dcont = PDomainContingency(mlnew TDomainContingency(gen, weight));
+      return operator()(dcont);
 
     case NeedsExampleGenerator:
       return operator()(gen, weight);

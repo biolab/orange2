@@ -52,7 +52,7 @@ PDomainContingency TComputeDomainContingency_DomainTransformation::operator()(PE
   }
 
   PDomainContingency domainContingency;
-  domainContingency->computeMatrix(eg, weightID, domain);
+  domainContingency->computeMatrix(eg, weightID, NULL, domain);
 
   if (resultInOriginalDomain) {
     TVarList::iterator oi(eg->domain->attributes->begin());

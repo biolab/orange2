@@ -78,7 +78,6 @@ TExampleIterator TExampleGenerator::end()
 { return TExampleIterator(this); }
 
 
-
 void TExampleGenerator::examplesHaveChanged()
 { version = ++generatorVersion; }
 
@@ -103,6 +102,13 @@ int TExampleGenerator::checkSum()
     (*ei).addToCRC(crc);
   FINISH_CRC(crc);
   return int(crc & 0x7fffffff);
+}
+
+
+float TExampleGenerator::weightOfExamples(const int &weightID) const
+{
+  raiseError("cannot compute the weight of examples");
+  return 0.0;
 }
 
 
