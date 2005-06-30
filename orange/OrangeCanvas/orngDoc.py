@@ -289,6 +289,8 @@ class SchemaDoc(QMainWindow):
     # ####################################
     # remove widget
     def removeWidget(self, widget):
+        if not widget:
+            return
         while widget.inLines != []: self.removeLine1(widget.inLines[0])
         while widget.outLines != []:  self.removeLine1(widget.outLines[0])
                 
