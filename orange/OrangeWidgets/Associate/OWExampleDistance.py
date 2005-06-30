@@ -37,7 +37,7 @@ class OWExampleDistance(OWWidget):
         #set default settings
         items = [x[0] for x in self.metrics]
         OWGUI.comboBox(self.controlArea, self, "Metrics", box="Distance Metrics", items=items,
-                       tooltip="Choose etrics to measure pairwise distance between examples.", callback=self.computeMatrix)
+                       tooltip="Choose metrics to measure pairwise distance between examples.", callback=self.computeMatrix)
         self.labelCombo = OWGUI.comboBox(self.controlArea, self, "Label", box="Example Label", items=[],
                                          tooltip="Choose attribute which will be used as a label of the example.", callback=self.setLabel,
                                          sendSelectedValue = 1)
@@ -89,7 +89,11 @@ class OWExampleDistance(OWWidget):
 # test script
 
 if __name__=="__main__":
-    data = orange.ExampleTable(r'../../doc/datasets/glass')
+    import os
+    if os.path.isfile(r'../../doc/datasets/glass'):
+        data = orange.ExampleTable(r'../../doc/datasets/glass')
+    else:
+        data = orange.ExampleTable('glass')
     a = QApplication(sys.argv)
     ow = OWExampleDistance()
     a.setMainWidget(ow)
