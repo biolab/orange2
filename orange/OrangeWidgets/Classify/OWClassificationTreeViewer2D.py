@@ -363,6 +363,12 @@ class OWClassificationTreeViewer2D(OWWidget):
         OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node Bubbles', tooltip='When mouse over the node show info bubble')
         OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate Text To Fit Margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
         
+        self.infBox = QVGroupBox(GeneralTab)
+        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.infBox.setTitle('Tree Size Info')
+	self.infoa = QLabel('No tree.', self.infBox)
+        self.infob = QLabel('', self.infBox)
+        
         self.tabs.insertTab(GeneralTab, "General")
 
         # TREE TAB
@@ -484,6 +490,9 @@ class OWClassificationTreeViewer2D(OWWidget):
             for i in self.canvas.allItems():
                 i.setCanvas(None)
         if not tree:
+            self.infoa.setText('No tree.')
+            self.infob.setText('')
+
             if self.canvas:
                 self.canvas.update()
             return
@@ -503,6 +512,9 @@ class OWClassificationTreeViewer2D(OWWidget):
         # Annotate Orange tree and show it
         self.buildTree2D()
         self.canvas.update()
+
+        self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
+        self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
 
     def target(self, target):
         self.TargetClassIndex = target

@@ -9,6 +9,8 @@ from OWWidget import *
 from orngTreeLearner import TreeLearner
 from OWGUI import *
 
+import orngTree
+
 class ColumnCallback:
     def __init__(self, widget, attribute, f = None):
         self.widget = widget
@@ -70,6 +72,12 @@ class OWClassificationTreeViewer(OWWidget):
         self.expBox.setTitle('Expand/Shrink to Level')
         self.slider = QSlider(1, 9, 1, self.expslider, QSlider.Horizontal, self.expBox)
         self.sliderlabel = QLabel("%2i" % self.expslider, self.expBox)
+
+        self.infBox = QVGroupBox(self.controlArea)
+        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        self.infBox.setTitle('Tree Size Info')
+	self.infoa = QLabel('No tree.', self.infBox)
+        self.infob = QLabel('', self.infBox)
 
         # list view
         self.layout=QVBoxLayout(self.mainArea)
@@ -170,6 +178,13 @@ class OWClassificationTreeViewer(OWWidget):
     def ctree(self, tree):
         self.tree = tree
         self.setTreeView()
+
+        if tree:
+            self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
+            self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
+        else:
+            self.infoa.setText('No tree.')
+            self.infob.setText('')
 
     def target(self, target):
         def updatetarget(listviewitem):
