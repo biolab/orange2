@@ -5,11 +5,8 @@ def getobjectname(x, default=""):
         return x
       
     for i in ["name", "shortDescription", "description", "func_doc", "func_name"]:
-        try:
-            if len(getattr(x, i, "")):
-                return getattr(x, i)
-        except Exception:
-            pass
+        if getattr(x, i, ""):
+            return getattr(x, i)
 
     if hasattr(x, "__class__"):
         r = repr(x.__class__)

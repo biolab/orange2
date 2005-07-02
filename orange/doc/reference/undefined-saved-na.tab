@@ -3,12 +3,12 @@ a	b	c
 		
 0	0	0
 1	1	1
-?	?	1
-~	~	~
-?	?	?
-?	?	?
-?	?	?
-~	~	~
-?	X	X
-?	UNK	UNK
-UNAVAILABLE	?	UNAVAILABLE
+NA	NA	1
+NA	NA	NA
+NA	NA	NA
+NA	NA	NA
+NA	NA	NA
+NA	NA	NA
+NA	X	X
+NA	UNK	UNK
+UNAVAILABLE	NA	UNAVAILABLE

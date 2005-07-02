@@ -95,13 +95,15 @@ class OWClassificationTree(OWWidget):
 
         # apply button
         OWGUI.separator(self.controlArea)
-        OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Changes", callback = self.setLearner, disabled=0)
 
         self.resize(100,400)
 
     # main part:         
 
     def setLearner(self):
+        if hasattr(self, "btnApply"):
+            self.btnApply.setFocus()
         self.learner = orngTree.TreeLearner(measure = self.measures[self.estim][1],
             reliefK = self.relK, reliefM = self.relM,
             binarization = self.bin,
