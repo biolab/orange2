@@ -125,7 +125,7 @@ class FreeVizOptimization(OWBaseWidget):
     def setSubsetData(self, subsetdata):
         self.subsetdata = subsetdata
                     
-    def destroy(self, dw, dsw):
+    def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
     def setStatusBarText(self, text):

@@ -17,7 +17,7 @@ class OWSelectData(OWWidget):
 
         # set channels
         self.inputs = [("Examples", ExampleTable, self.onDataInput, 1)]
-        self.outputs = [("MatchingExamples", ExampleTable), ("MatchingClassifiedExamples", ExampleTableWithClass),("NonMatchingExamples", ExampleTable), ("NonMatchingClassifiedExamples", ExampleTableWithClass)]
+        self.outputs = [("Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass),("Non-Matching Examples", ExampleTable), ("Non-Matching Classified Examples", ExampleTableWithClass)]
 
         # manually set member variables
         self.name2var = {}   # key: variable name, item: orange.Variable
@@ -259,14 +259,15 @@ class OWSelectData(OWWidget):
             filter.negate = True
             nonMatchingOutput = filter(self.data)
             nonMatchingOutput.name = self.data.name + " (filtered, non-matched)"
-        self.send("MatchingExamples", matchingOutput)
-        self.send("NonMatchingExamples", nonMatchingOutput)
+        self.send("Matching Examples", matchingOutput)
+        self.send("Non-Matching Examples", nonMatchingOutput)
+
         if hasClass:
-            self.send("MatchingClassifiedExamples", matchingOutput)
-            self.send("NonMatchingClassifiedExamples", nonMatchingOutput)
+            self.send("Matching Classified Examples", matchingOutput)
+            self.send("Non-Matching Classified Examples", nonMatchingOutput)
         else:
-            self.send("MatchingClassifiedExamples", None)
-            self.send("NonMatchingClassifiedExamples", None)
+            self.send("Matching Classified Examples", None)
+            self.send("Non-Matching Classified Examples", None)
         self.updateInfoOut(matchingOutput)
 
 

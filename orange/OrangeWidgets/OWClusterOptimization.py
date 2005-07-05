@@ -762,7 +762,7 @@ class ClusterOptimization(OWBaseWidget):
     def isOptimizationCanceled(self):
         return self.cancelOptimization
 
-    def destroy(self, dw, dsw):
+    def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
     def setStatusBarText(self, text):

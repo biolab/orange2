@@ -19,6 +19,7 @@ class OrangeCanvasDlg(QMainWindow):
         self.windows = []    # list of id for windows in Window menu
         self.windowsDict = {}    # dict. with id:menuitem for windows in Window menu
 
+        #self.setFocusPolicy(QWidget.StrongFocus)
         self.orangeDir = os.path.split(os.path.abspath(orange.__file__))[0]
         self.widgetDir = os.path.join(self.orangeDir, "OrangeWidgets")
         if not os.path.exists(self.widgetDir): 
@@ -85,6 +86,10 @@ class OrangeCanvasDlg(QMainWindow):
         
         self.useLargeIcons = self.settings["useLargeIcons"]
         self.snapToGrid = self.settings["snapToGrid"]
+        
+        self.widgetSelectedColor = QColor(self.settings["widgetSelectedColor"][0], self.settings["widgetSelectedColor"][1], self.settings["widgetSelectedColor"][2])
+        self.widgetActiveColor   = QColor(self.settings["widgetActiveColor"][0], self.settings["widgetActiveColor"][1], self.settings["widgetActiveColor"][2])
+        self.lineColor           = QColor(self.settings["lineColor"][0], self.settings["lineColor"][1], self.settings["lineColor"][2])
         
         self.toolbar = QToolBar(self, 'Toolbar')
         self.widgetsToolBar = QToolBar( self, 'Widgets')
@@ -369,11 +374,11 @@ class OrangeCanvasDlg(QMainWindow):
             if not os.path.exists(recentDocs[i]):
                 recentDocs.remove(recentDocs[i])
 
+        recentDocs = recentDocs[:9]
         self.settings["RecentFiles"] = recentDocs
         
         for i in range(len(recentDocs)):
-            shortName = str(i) + " " + os.path.basename(recentDocs[i])
-            if i<10: shortName = "&" + shortName
+            shortName = "&" + str(i+1) + " " + os.path.basename(recentDocs[i])
             self.menuRecent.insertItem(shortName, eval("self.menuItemRecent"+str(i+1)))
 
     def openRecentFile(self, index):
@@ -413,6 +418,18 @@ class OrangeCanvasDlg(QMainWindow):
 
     def menuItemRecent5(self):
         self.openRecentFile(5)
+
+    def menuItemRecent6(self):
+        self.openRecentFile(6)
+
+    def menuItemRecent7(self):
+        self.openRecentFile(7)
+
+    def menuItemRecent8(self):
+        self.openRecentFile(8)
+
+    def menuItemRecent9(self):
+        self.openRecentFile(9)
 
     def menuItemCut(self):
         return
@@ -500,11 +517,13 @@ class OrangeCanvasDlg(QMainWindow):
         if self.showWidgetToolbar: self.widgetsToolBar.show()
         else: self.widgetsToolBar.hide()
 
+    """
     def menuItemPreferences(self):
         dlg = orngDlgs.PreferencesDlg(self, None, "", TRUE)
         dlg.exec_loop()
         if dlg.result() == QDialog.Accepted:
             self.rebuildSignals()
+    """
 
     def menuItemRebuildWidgetRegistry(self):
         self.createWidgetsToolbar(TRUE)
@@ -624,6 +643,16 @@ class OrangeCanvasDlg(QMainWindow):
             self.settings["canvasWidth"] =  int(str(dlg.widthEdit.text()))
             self.settings["showSignalNames"] = dlg.showSignalNamesCB.isChecked()
 
+            self.settings["widgetSelectedColor"] = (dlg.selectedWidgetIcon.color.red(), dlg.selectedWidgetIcon.color.green(), dlg.selectedWidgetIcon.color.blue())
+            self.settings["widgetActiveColor"]   = (dlg.activeWidgetIcon.color.red(), dlg.activeWidgetIcon.color.green(), dlg.activeWidgetIcon.color.blue())
+            self.settings["lineColor"]           = (dlg.lineIcon.color.red(), dlg.lineIcon.color.green(), dlg.lineIcon.color.blue())
+
+            self.widgetSelectedColor = dlg.selectedWidgetIcon.color
+            self.widgetActiveColor   = dlg.activeWidgetIcon.color
+            self.lineColor           = dlg.lineIcon.color
+
+            for win in self.workspace.getDocumentList(): win.canvasView.repaint()
+
             # update tooltips for lines in all documents
             show = dlg.showSignalNamesCB.isChecked()
             for doc in self.workspace.getDocumentList():
@@ -678,6 +707,10 @@ class OrangeCanvasDlg(QMainWindow):
         if not self.settings.has_key("snapToGrid"): self.settings["snapToGrid"] = 1
         if not self.settings.has_key("writeLogFile"): self.settings["writeLogFile"] = 1
 
+        if not self.settings.has_key("widgetSelectedColor"): self.settings["widgetSelectedColor"] = (0, 255, 0)
+        if not self.settings.has_key("widgetActiveColor"):   self.settings["widgetActiveColor"] = (0,0,255)
+        if not self.settings.has_key("lineColor"):           self.settings["lineColor"] = (0,255,0)
+
         #if not self.settings.has_key("catchException"): self.settings["catchException"] = 1
         #if not self.settings.has_key("catchOutput"): self.settings["catchOutput"] = 1
         if not self.settings.has_key("focusOnCatchException"): self.settings["focusOnCatchException"] = 1
@@ -715,6 +748,7 @@ class OrangeCanvasDlg(QMainWindow):
 
     def keyPressEvent(self, e):
         QMainWindow.keyPressEvent(self,e)
+        print "state", e.state(), Qt.ControlButton
         if e.state() & Qt.ControlButton != 0:
             self.ctrlPressed = 1
 

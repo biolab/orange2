@@ -304,6 +304,7 @@ class kNNOptimization(OWBaseWidget):
     def updateHeuristicCheckBox(self):
         self.useHeuristicToFindAttributeOrderCheck.setEnabled(contMeasures[self.attrCont][0] == "Signal to Noise OVA")
         if not self.rawdata or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+            self.useHeuristicToFindAttributeOrders = 0
             self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
         
         
@@ -862,6 +863,8 @@ class kNNOptimization(OWBaseWidget):
 
     # disable all controls while evaluating projections
     def disableControls(self):
+        self.buttonBox.setEnabled(0)
+        self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
         self.startOptimizationButton.hide()
         self.stopOptimizationButton.show()
         self.resultsDetailsBox.setEnabled(0)
@@ -871,7 +874,9 @@ class kNNOptimization(OWBaseWidget):
         self.ClassificationTab.setEnabled(0)
         self.ArgumentationTab.setEnabled(0)
         
-    def enableControls(self):    
+    def enableControls(self):
+        self.buttonBox.setEnabled(1)
+        self.useHeuristicToFindAttributeOrderCheck.setEnabled(1)
         self.startOptimizationButton.show()
         self.stopOptimizationButton.hide()
         self.resultsDetailsBox.setEnabled(1)
@@ -986,7 +991,7 @@ class kNNOptimization(OWBaseWidget):
     def isOptimizationCanceled(self):
         return self.cancelOptimization
 
-    def destroy(self, dw, dsw):
+    def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
 
