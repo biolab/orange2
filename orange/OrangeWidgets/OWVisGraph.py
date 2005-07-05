@@ -143,15 +143,15 @@ class OWVisGraph(OWGraph):
         self.attributeFlipInfo = {}
         if not keepMinMaxVals or self.globalValueScaling == 1:
             self.attrValues = {}
-        
+
         self.rawdata = data
-        
+                
         if data == None or len(data) == 0:
             self.originalData = self.scaledData = self.noJitteringScaledData = self.validDataArray = None
             return
-        else:
-            self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information 
         
+        self.attributeFlipInfo = dict([(attr.name, 0) for attr in data.domain]) # reset the fliping information
+
         self.domainDataStat = orange.DomainBasicAttrStat(data)
         self.offsets = []
         self.normalizers = []
@@ -409,10 +409,9 @@ class OWVisGraph(OWGraph):
                     text += "%s = %s; " % (data.domain[index].name, str(example[index]))
 
             # show values of meta attributes
-            if len(data.domain.getmetas()) != 0:
-                for m in data.domain.getmetas().values():
-                    try: text += "%s = %s; " % (m.name, str(example[m]))
-                    except: pass
+            for key in data.domain.getmetas():
+                try: text += "%s = %s; " % (data.domain[key].name, str(example[data.domain[key]]))
+                except: pass
         except:
             print "Unable to set tooltip"
             text = ""
@@ -461,18 +460,30 @@ class OWVisGraph(OWGraph):
                 self.removeCurve(key)
 
     def removeLastSelection(self):
+        removed = 0
         if self.selectionCurveKeyList != []:
             lastCurve = self.selectionCurveKeyList.pop()
             self.removeCurve(lastCurve)
             self.tempSelectionCurve = None
+            removed = 1
         self.replot()
         if self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+        return removed
         
     def removeAllSelections(self, send = 1):
         for key in self.selectionCurveKeyList: self.removeCurve(key)
         self.selectionCurveKeyList = []
         self.replot()
         if send and self.autoSendSelectionCallback: self.autoSendSelectionCallback() # do we want to send new selection
+
+    def zoomOut(self):
+        if len(self.zoomStack):
+            (xmin, xmax, ymin, ymax) = self.zoomStack.pop()
+            self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
+            self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
+            self.replot()
+            return 1
+        return 0
 
 
     # ###############################################
@@ -522,7 +533,9 @@ class OWVisGraph(OWGraph):
         yFloat = self.invTransform(QwtPlot.yLeft, e.y())
 
         text = ""
-        if not self.mouseCurrentlyPressed: (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
+        if not self.mouseCurrentlyPressed:
+            (text, x, y) = self.tips.maybeTip(xFloat, yFloat)
+            if type(text) == int: text = self.buildTooltip(text)
         
         if self.statusBar != None:  self.statusBar.message(text)
         if text != "": self.showTip(self.transform(QwtPlot.xBottom, x), self.transform(QwtPlot.yLeft, y), text[:-2].replace("; ", "\n"))
@@ -577,17 +590,15 @@ class OWVisGraph(OWGraph):
 
         elif e.button() == Qt.RightButton:
             if self.state == ZOOMING:
-                if len(self.zoomStack):
-                    (xmin, xmax, ymin, ymax) = self.zoomStack.pop()
-                    self.setAxisScale(QwtPlot.xBottom, xmin, xmax)
-                    self.setAxisScale(QwtPlot.yLeft, ymin, ymax)
-                    self.replot()
-                else:
-                    self.blankClick = 1 # we just clicked and released the button at the same position. This is used in OWSmartVisualization
+                ok = self.zoomOut()
+                if not ok:
+                    self.removeLastSelection()                
+                    self.blankClick = 1 # we just clicked and released the button at the same position
                     return
 
             elif self.state == SELECT_RECTANGLE:
-                self.removeLastSelection()      # remove the rectangle
+                ok = self.removeLastSelection()      # remove the rectangle
+                if not ok: self.zoomOut()
 
             elif self.state == SELECT_POLYGON:
                 if self.tempSelectionCurve:
@@ -599,7 +610,8 @@ class OWVisGraph(OWGraph):
                         self.tempSelectionCurve.replaceLastPoint(self.invTransform(QwtPlot.xBottom, e.x()), self.invTransform(QwtPlot.yLeft, e.y()))
                     self.replot()
                 else:
-                    self.removeLastSelection()
+                    ok = self.removeLastSelection()
+                    if not ok: self.zoomOut()
                 
         #self.replot()
         self.event(e)
