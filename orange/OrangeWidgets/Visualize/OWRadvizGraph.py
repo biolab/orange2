@@ -684,8 +684,7 @@ class OWRadvizGraph(OWVisGraph):
             y_positions /= sum_i
             self.trueScaleFactor = scaleFactor
         else:
-            abss = x_positions*x_positions + y_positions*y_positions
-            self.trueScaleFactor = 1 / sqrt(abss[Numeric.argmax(abss)])
+            self.trueScaleFactor = 1. / sqrt(max(x_positions*x_positions + y_positions*y_positions))
 
         if self.trueScaleFactor != 1.0:
             x_positions *= self.trueScaleFactor

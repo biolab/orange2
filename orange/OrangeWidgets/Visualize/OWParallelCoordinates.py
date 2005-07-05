@@ -595,7 +595,7 @@ class ParallelOptimization(OWBaseWidget):
         if self.orderAllAttributes: self.setAllAttributeRadio()
         else:                       self.setSubsetAttributeRadio()
 
-    def destroy(self, dw, dsw):
+    def destroy(self, dw = 1, dsw = 1):
         self.saveSettings()
 
     def setAllAttributeRadio(self):

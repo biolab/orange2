@@ -141,27 +141,27 @@ class OWScatterPlot(OWWidget):
 
         # #####
         # jittering options
-        box = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
-        box2 = OWGUI.widgetBox(box, orientation = "horizontal")
-        self.jitterLabel = QLabel('Jittering size (% of size)  ', box2)
-        self.jitterSizeCombo = OWGUI.comboBox(box2, self, "graph.jitterSize", callback = self.updateGraph, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
-        OWGUI.checkBox(box, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.updateGraph, tooltip = "Does jittering apply also on continuous attributes?")
+        box2 = OWGUI.widgetBox(self.SettingsTab, " Jittering Options ")
+        box3 = OWGUI.widgetBox(box2, orientation = "horizontal")
+        self.jitterLabel = QLabel('Jittering size (% of size)  ', box3)
+        self.jitterSizeCombo = OWGUI.comboBox(box3, self, "graph.jitterSize", callback = self.updateGraph, items = self.jitterSizeNums, sendSelectedValue = 1, valueType = float)
+        OWGUI.checkBox(box2, self, 'graph.jitterContinuous', 'Jitter continuous attributes', callback = self.updateGraph, tooltip = "Does jittering apply also on continuous attributes?")
         
         # general graph settings
-        box = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
-        OWGUI.checkBox(box, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
-        #OWGUI.checkBox(box, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
-        OWGUI.checkBox(box, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
-        OWGUI.checkBox(box, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
-        OWGUI.checkBox(box, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
-        OWGUI.checkBox(box, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
-        OWGUI.checkBox(box, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
+        box4 = OWGUI.widgetBox(self.SettingsTab, " General Graph Settings ")
+        OWGUI.checkBox(box4, self, 'graph.showXaxisTitle', 'X axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showYLaxisTitle', 'Y axis title', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.showAxisScale', 'Show axis scale', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.enabledLegend', 'Show legend', callback = self.updateGraph)
+        #OWGUI.checkBox(box4, self, 'graph.showDistributions', 'Show distributions', callback = self.updateGraph, tooltip = "When visualizing discrete attributes on x and y axis show pie chart for better distribution perception")
+        OWGUI.checkBox(box4, self, 'graph.showFilledSymbols', 'Show filled symbols', callback = self.updateGraph)
+        OWGUI.checkBox(box4, self, 'graph.optimizedDrawing', 'Optimize drawing', callback = self.updateGraph, tooltip = "Speed up drawing by drawing all point belonging to one class value at once")
+        OWGUI.checkBox(box4, self, 'showVerticalGridlines', 'Vertical gridlines', callback = self.setVerticalGridlines)
+        OWGUI.checkBox(box4, self, 'showHorizontalGridlines', 'Horizontal gridlines', callback = self.setHorizontalGridlines)
+        OWGUI.checkBox(box4, self, 'graph.showClusters', 'Show clusters', callback = self.updateGraph, tooltip = "Show a line boundary around a significant cluster")
 
-        box3 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
-        OWGUI.comboBox(box3, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
+        box5 = OWGUI.widgetBox(self.SettingsTab, " Tooltips Settings ")
+        OWGUI.comboBox(box5, self, "graph.tooltipKind", items = ["Don't show tooltips", "Show visible attributes", "Show all attributes"], callback = self.updateGraph)
 
         self.activeLearnerCombo = OWGUI.comboBox(self.SettingsTab, self, "learnerIndex", box = " Set Active Learner ", items = ["VizRank Learner", "Cluster Learner"], tooltip = "Select which of the possible learners do you want to send on the widget output.")
         self.connect(self.activeLearnerCombo, SIGNAL("activated(int)"), self.setActiveLearner)
@@ -173,6 +173,7 @@ class OWScatterPlot(OWWidget):
         OWGUI.button(self.colorButtonsBox, self, "Canvas", self.setGraphCanvasColor)
         OWGUI.button(self.colorButtonsBox, self, "Grid", self.setGraphGridColor)
 
+        self.SettingsTab.setMinimumWidth(max(self.GeneralTab.sizeHint().width(), self.SettingsTab.sizeHint().width())+20)
         self.icons = self.createAttributeIconDict()
         
         self.activateLoadedSettings()
@@ -481,7 +482,11 @@ class OWScatterPlot(OWWidget):
         if hasattr(self, "oldSettings"):
             for key in self.oldSettings:
                 self.__setattr__(key, self.oldSettings[key])
-
+        
+    def destroy(self, dw = 1, dsw = 1):
+        self.clusterDlg.hide()
+        self.optimizationDlg.hide()
+        OWWidget.destroy(self, dw, dsw)
 
 #test widget appearance
 if __name__=="__main__":

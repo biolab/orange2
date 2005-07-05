@@ -9,7 +9,7 @@ import OWGUI
 ###########################################################################
 class TestWidget(OWWidget):
     def __init__(self, parent=None, name='TestWidget'):
-        OWWidget.__init__(self, parent, name, 'Microarray Heat Map', FALSE, FALSE)
+        OWWidget.__init__(self, parent, name, 'Microarray Heat Map', FALSE)
 
         #self.colorPalette = ColorPalette(self.space, self, "", additionalColors = ["Cell Outline", "Selected Cells"])
         self.colorPalette = ColorPalette(self.space, self, "", additionalColors = None)

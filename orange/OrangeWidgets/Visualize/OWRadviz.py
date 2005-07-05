@@ -806,7 +806,11 @@ class OWRadviz(OWWidget):
         self.graph.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
         self.graph.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
 
-
+    def destroy(self, dw = 1, dsw = 1):
+        self.clusterDlg.hide()
+        self.optimizationDlg.hide()
+        self.freeVizDlg.hide()
+        OWWidget.destroy(self, dw, dsw)
 
     
 #test widget appearance

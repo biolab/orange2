@@ -72,6 +72,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.clusterOptimization = None
         self.insideColors = None
         self.clusterClosure = None
+        self.shownAttributeIndices = []
 
     #########################################################
     # update shown data. Set labels, coloring by className ....
@@ -79,8 +80,9 @@ class OWScatterPlotGraph(OWVisGraph):
         self.removeDrawingCurves()  # my function, that doesn't delete selection curves
         self.removeMarkers()
         self.tips.removeAll()
-        self.enableLegend(0)
-        self.removeTooltips()
+        if not self.enabledLegend: self.enableLegend(0)
+        #self.enableLegend(0)
+        #self.removeTooltips()
         self.tooltipData = []
         
         # if we have some subset data then we show the examples in the data set with full symbols, others with empty
@@ -158,8 +160,9 @@ class OWScatterPlotGraph(OWVisGraph):
         if sizeShapeAttr != "" and sizeShapeAttr != "(One size)":
             sizeShapeIndex = self.attributeNameIndex[sizeShapeAttr]
 
-        toolTipList = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
-        while -1 in toolTipList: toolTipList.remove(-1)
+        attrIndices = [xAttrIndex, yAttrIndex, colorIndex, shapeIndex, sizeShapeIndex]
+        while -1 in attrIndices: attrIndices.remove(-1)
+        self.shownAttributeIndices = attrIndices
         
 
         # #######################################################
@@ -248,15 +251,19 @@ class OWScatterPlotGraph(OWVisGraph):
                 for j in range(len(self.insideColors)):
                     fillColor = classColors.getColor(classValueIndices[shortData[j].getclass().value], 255*self.insideColors[j])
                     edgeColor = classColors.getColor(classValueIndices[shortData[j].getclass().value])
-                    x=0; y=0
-                    if discreteX == 1: x = attrXIndices[shortData[j][0].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-                    else:              x = shortData[j][0].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-                    if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                    else:              y = shortData[j][1].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                    
+                    if discreteX == 1: x = attrXIndices[shortData[j][0].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     x = shortData[j][0].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+                    else:                           x = shortData[j][0].value
+
+                    if discreteY == 1: y = attrYIndices[shortData[j][1].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     y = shortData[j][1].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+                    else:                           y = shortData[j][1].value
+
                     key = self.addCurve(str(j), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], toolTipList) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
+                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
 
             # ##############################################################
             # create a small number of curves which will make drawing much faster
@@ -266,19 +273,18 @@ class OWScatterPlotGraph(OWVisGraph):
                     classCount = len(colorIndices)
                     classColors = ColorPaletteHSV(classCount)
                 else: classCount = 1
-                    
-                pos = [[ [] , [], [] ] for i in range(classCount)]
 
+                pos = [[ [] , [], [] ] for i in range(classCount)]
                 for i in range(len(self.rawdata)):
-                    if self.rawdata[i][xAttrIndex].isSpecial() == 1: continue
-                    if self.rawdata[i][yAttrIndex].isSpecial() == 1: continue
                     if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
 
-                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-                    else:              x = self.rawdata[i][xAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+                    else:                           x = self.rawdata[i][xAttrIndex].value
 
-                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                    else:              y = self.rawdata[i][yAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+                    else:                           y = self.rawdata[i][yAttrIndex].value
 
                     if colorIndex != -1: index = colorIndices[self.rawdata[i][colorIndex].value]
                     else: index = 0
@@ -287,7 +293,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     pos[index][2].append(i)
 
                     # we add a tooltip for this point
-                    self.addTip(x, y, toolTipList, i)
+                    self.tips.addToolTip(x, y, i)
 
                     # Show a label by each marker
                     if labelAttr:
@@ -307,7 +313,7 @@ class OWScatterPlotGraph(OWVisGraph):
                             self.marker(mkey).setXValue(float(x))
                             self.marker(mkey).setYValue(float(y))
                             self.marker(mkey).setLabelAlignment(Qt.AlignCenter + Qt.AlignBottom)
-                        
+                     
 
                 for i in range(classCount):
                     newColor = QColor(0,0,0)
@@ -330,11 +336,13 @@ class OWScatterPlotGraph(OWVisGraph):
                     if shapeIndex != -1 and self.rawdata[i][shapeIndex].isSpecial() == 1: continue
                     if sizeShapeIndex != -1 and self.rawdata[i][sizeShapeIndex].isSpecial() == 1: continue
                     
-                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-                    else:              x = self.rawdata[i][xAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+                    else:                           x = self.rawdata[i][xAttrIndex].value
 
-                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                    else:              y = self.rawdata[i][yAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+                    else:                           y = self.rawdata[i][yAttrIndex].value
 
                     if colorIndex != -1:
                         if self.rawdata.domain[colorIndex].varType == orange.VarTypes.Continuous: newColor = QColor(); newColor.setHsv(self.noJitteringScaledData[colorIndex][i] * classColors.maxHueVal, 255, 255)
@@ -355,7 +363,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.addCurve(str(i), newColor, newColor, size, symbol = Symbol, xData = [x], yData = [y])
                         
                     # we add a tooltip for this point
-                    self.addTip(x, y, toolTipList, i)
+                    self.tips.addToolTip(x, y, i)
 
                 # if we have a data subset that contains examples that don't exist in the original dataset we show them here
                 if haveSubsetData and len(self.subsetData) != shownSubsetCount:
@@ -367,11 +375,13 @@ class OWScatterPlotGraph(OWVisGraph):
                         if shapeIndex != -1 and self.subsetData[i][shapeIndex].isSpecial() : continue
                         if sizeShapeIndex != -1 and self.subsetData[i][sizeShapeIndex].isSpecial() : continue
                         
-                        if discreteX == 1: x = attrXIndices[self.subsetData[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
-                        else:              x = self.subsetData[i][xAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * xVar) / 100.0)
+                        if discreteX == 1: x = attrXIndices[self.subsetData[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                        elif self.jitterContinuous:     x = self.subsetData[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+                        else:                           x = self.subsetData[i][xAttrIndex].value
 
-                        if discreteY == 1: y = attrYIndices[self.subsetData[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
-                        else:              y = self.subsetData[i][yAttrIndex].value + self.jitterContinuous * self.rndCorrection(float(self.jitterSize * yVar) / 100.0)
+                        if discreteY == 1: y = attrYIndices[self.subsetData[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                        elif self.jitterContinuous:     y = self.subsetData[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+                        else:                           y = self.subsetData[i][yAttrIndex].value
 
                         if colorIndex != -1 and not self.subsetData[i][colorIndex].isSpecial():
                             val = min(1.0, max(0.0, self.scaleExampleValue(self.subsetData[i], colorIndex)))    # scale to 0-1 interval
@@ -496,14 +506,21 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # add tooltip for point at x,y
     # ##############################################################
-    def addTip(self, x, y, toolTipList = None, dataindex = None, text = None):
+    def addTip(self, x, y, attrIndices = None, dataindex = None, text = None):
         if self.tooltipKind == DONT_SHOW_TOOLTIPS: return
         if text == None:
             if self.tooltipKind == VISIBLE_ATTRIBUTES:
-                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], toolTipList)
+                text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], attrIndices)
             elif self.tooltipKind == ALL_ATTRIBUTES:
                 text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[dataindex], range(len(self.attributeNames)))
         self.tips.addToolTip(x, y, text)
+
+    def buildTooltip(self, exampleIndex):
+        if self.tooltipKind == VISIBLE_ATTRIBUTES:
+            text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[exampleIndex], self.shownAttributeIndices)
+        elif self.tooltipKind == ALL_ATTRIBUTES:
+            text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[exampleIndex], range(len(self.rawdata.domain)))
+        return text
 
     # ##############################################################
     # compute how good is a specific projection with given xAttr and yAttr
@@ -713,10 +730,6 @@ class OWScatterPlotGraph(OWVisGraph):
         for rect in self.toolRects: QToolTip.remove(self, rect)
         self.toolRects = []
 
-    def updateLayout(self):
-        OWVisGraph.updateLayout(self)
-        self.removeTooltips()
-        self.addTooltips()
 
     def onMouseReleased(self, e):
         OWVisGraph.onMouseReleased(self, e)
