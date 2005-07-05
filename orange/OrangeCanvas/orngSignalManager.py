@@ -179,7 +179,7 @@ class SignalManager:
         # if channel is enabled, send data through it
         if enabled:
             for key in widgetFrom.linksOut[signalNameFrom].keys():
-                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key)
+                widgetTo.updateNewSignalData(widgetFrom, signalNameTo, widgetFrom.linksOut[signalNameFrom][key], key, signalNameFrom)
             
         # reorder widgets if necessary
         if self.widgets.index(widgetTo) < self.widgets.index(widgetFrom):
@@ -212,7 +212,7 @@ class SignalManager:
         for (widget, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if widget == widgetTo and signalFrom == signalNameFrom and signalTo == signalNameTo:
                 for key in widgetFrom.linksOut[signalFrom].keys():
-                    widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, key)
+                    widgetTo.updateNewSignalData(widgetFrom, signalNameTo, None, key, signalNameFrom)
                 self.links[widgetFrom].remove((widget, signalFrom, signalTo, enabled))
                 if not self.freezing and not self.signalProcessingInProgress: self.processNewSignals(widgetFrom)
         widgetTo.removeInputConnection(widgetFrom, signalNameTo)
@@ -229,7 +229,7 @@ class SignalManager:
                 links[i] = (widget, nameFrom, nameTo, enabled)
                 if enabled:
                     for key in widgetFrom.linksOut[nameFrom].keys():
-                        widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][key], key)
+                        widgetTo.updateNewSignalData(widgetFrom, nameTo, widgetFrom.linksOut[nameFrom][key], key, nameFrom)
 
         if enabled: self.processNewSignals(widgetTo)
 
@@ -250,7 +250,7 @@ class SignalManager:
         for (widgetTo, signalFrom, signalTo, enabled) in self.links[widgetFrom]:
             if signalFrom == signalNameFrom and enabled == 1:
                 #print "signal from ", widgetFrom, " to ", widgetTo, " signal: ", signalNameFrom, " value: ", value, " id: ", id
-                widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id)
+                widgetTo.updateNewSignalData(widgetFrom, signalTo, value, id, signalNameFrom)
                 
 
         if not self.freezing and not self.signalProcessingInProgress:
@@ -261,7 +261,7 @@ class SignalManager:
     def sendOnNewLink(self, widgetFrom, widgetTo, signals):
         for (outName, inName) in signals:
             for key in widgetFrom.linksOut[outName].keys():
-                widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][key], key)
+                widgetTo.updateNewSignalData(widgetFrom, inName, widgetFrom.linksOut[outName][key], key, outName)
 
 
     def processNewSignals(self, firstWidget):

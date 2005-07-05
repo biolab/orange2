@@ -21,9 +21,10 @@ class SchemaView(QCanvasView):
         self.bLineDragging = FALSE
         self.bMultipleSelection = FALSE
         self.movingWidget = None
-        self.moving_start = QPoint(0,0)
-        self.moving_ex_pos = QPoint(0,0)
+        self.mouseDownPosition = QPoint(0,0)
+        self.lastMousePosition = QPoint(0,0)
         self.tempLine = None
+        self.tempRect = None
         self.selectedLine = None
         self.tempWidget = None
         self.selWidgets = []
@@ -130,6 +131,10 @@ class SchemaView(QCanvasView):
             self.selectedLine.inWidget.updateTooltip()
             self.selectedLine.outWidget.updateTooltip()
             self.selectedLine.updateTooltip()
+
+    def unselecteAllWidgets(self):
+        for item in self.selWidgets: item.setSelected(0)
+        self.selWidgets = []
     
     # ###########################################
     # ###########################################
@@ -173,11 +178,16 @@ class SchemaView(QCanvasView):
 
     # mouse button was pressed
     def contentsMousePressEvent(self, ev):
+        self.mouseDownPosition = QPoint(ev.pos().x(), ev.pos().y())
+        if self.tempRect:
+            self.tempRect.hide()
+            self.tempRect.setCanvas(None)
+            self.tempRect = None
+        
         for item in self.doc.widgets:
-            if item not in self.selWidgets:
-                item.selected = FALSE
-            item.hide()
-            item.show()
+            if item not in self.selWidgets: item.setSelected(0)
+            #item.hide()
+            #item.show()
 
         rect = QRect(ev.pos().x()-5, ev.pos().y()-5,10,10)        
         activeItems = self.canvas().collisions(rect)
@@ -185,12 +195,8 @@ class SchemaView(QCanvasView):
             self.tempWidget = None
             self.tempRect = None
             self.bMultipleSelection = TRUE
-            for item in self.selWidgets:
-                item.selected = FALSE
-            self.selWidgets = []
-            self.moving_start = QPoint(ev.pos().x(), ev.pos().y())
-            self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
-
+            self.unselecteAllWidgets()
+            
         # we clicked on a widget or on a line            
         elif activeItems != []:
             widget = self.findFirstItemType(activeItems, orngCanvasItems.CanvasWidget)
@@ -198,28 +204,25 @@ class SchemaView(QCanvasView):
             # if we clicked on a widget
             if widget != None:
                 self.tempWidget = widget
-                self.tempWidget.selected = TRUE
+                self.tempWidget.setSelected(1)
 
                 # did we click inside the boxes to draw connections
                 if ev.button() == QMouseEvent.LeftButton and (widget.mouseInsideLeftChannel(rect) or widget.mouseInsideRightChannel(rect)):
-                    if not self.doc.signalManager.signalProcessingInProgress:  # if we are processing some signals, don't allow to add lines
+                    if not self.doc.signalManager.signalProcessingInProgress:   # if we are processing some signals, don't allow to add lines
                         self.bLineDragging = TRUE
                         pos = widget.getEdgePoint(rect)
-                        self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvas)
+                        self.tempLine = orngCanvasItems.TempCanvasLine(self.doc.canvasDlg, self.doc.canvas)
                         self.tempLine.setPoints(pos.x(), pos.y(), pos.x(), pos.y())
                         self.tempLine.show()
+                        self.unselecteAllWidgets()
                         self.canvas().update()
                     
                 # we clicked inside the widget and we start dragging it
                 elif ev.button() == QMouseEvent.LeftButton:
                     self.bWidgetDragging = TRUE
-                    self.moving_start = QPoint(ev.pos().x(), ev.pos().y())
-                    self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
-                    self.moving_mouseOffset = QPoint(ev.pos().x() - widget.x(), ev.pos().y() - widget.y())
 
                     if widget not in self.selWidgets and self.doc.canvasDlg.ctrlPressed == 0:
-                        for item in self.selWidgets:
-                            item.selected = FALSE
+                        self.unselecteAllWidgets()
                         self.selWidgets = [widget]
                         self.bMultipleSelection = FALSE
                     elif self.doc.canvasDlg.ctrlPressed == 1:
@@ -227,32 +230,36 @@ class SchemaView(QCanvasView):
                             self.selWidgets.append(widget)
                         else:
                             self.selWidgets.remove(widget)
-                            widget.selected = FALSE
-                        self.doc.canvas.update()
+                            widget.setSelected(0)
+                        #self.doc.canvas.update()
 
-                    for widget in self.selWidgets:
-                        widget.setCoords(widget.x(), widget.y())
-                        widget.savePosition()
-                        widget.removeTooltip()
-                        widget.setAllLinesFinished(FALSE)
-                        widget.repaintAllLines()
+                    for w in self.selWidgets:
+                        w.setCoords(w.x(), w.y())
+                        w.savePosition()
+                        w.removeTooltip()
+                        w.setAllLinesFinished(FALSE)
+                        w.repaintAllLines()
                     
                 # is we clicked the right mouse button we show the popup menu for widgets
                 elif ev.button() == QMouseEvent.RightButton:
                     self.widgetPopup.popup(ev.globalPos())
+                else:
+                    self.unselecteAllWidgets()
 
             # if we right clicked on a line we show a popup menu
             elif line != None and ev.button() == QMouseEvent.RightButton:
                 self.bMultipleSelection = FALSE
-                for item in self.selWidgets:
-                    item.selected = FALSE
-                self.selWidgets = []
+                self.unselecteAllWidgets()
                 self.selectedLine = line
                 self.linePopup.setItemChecked(self.menupopupLinkEnabledID, self.selectedLine.getEnabled()) 
                 self.linePopup.popup(ev.globalPos())
 
+            else:
+                self.unselecteAllWidgets()
+
         self.doc.canvas.update()
         self.bMouseDown = TRUE
+        self.lastMousePosition = QPoint(ev.pos().x(), ev.pos().y())
 
 
     # ###################################################################
@@ -261,11 +268,15 @@ class SchemaView(QCanvasView):
         #if not self.bLineDragging and (ev.x() < 0 or ev.x() > self.contentsX() + self.visibleWidth() or ev.y() < 0 or ev.y() > self.contentsY() + self.visibleHeight()):
         #    self.contentsMouseReleaseEvent(ev)
         #    return
+        if self.tempRect:
+            self.tempRect.hide()
+            self.tempRect.setCanvas(None)
+            self.tempRect = None
 
         if self.bWidgetDragging:
             for item in self.selWidgets:
                 ex_pos = QPoint(item.x(), item.y())
-                item.setCoordsBy(ev.pos().x() - self.moving_ex_pos.x(), ev.pos().y() - self.moving_ex_pos.y())
+                item.setCoordsBy(ev.pos().x() - self.lastMousePosition.x(), ev.pos().y() - self.lastMousePosition.y())
                 if self.doc.canvasDlg.snapToGrid:
                     item.moveToGrid()
                 else:
@@ -276,39 +287,38 @@ class SchemaView(QCanvasView):
                 if count > 1: item.invalidPosition = TRUE
                 else:         item.invalidPosition = FALSE
                 item.updateLineCoords()
-            self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
             
         elif self.bLineDragging:
             if self.tempLine: self.tempLine.setPoints(self.tempLine.startPoint().x(), self.tempLine.startPoint().y(), ev.pos().x(), ev.pos().y())
 
         elif self.bMultipleSelection:
-            rect = QRect(min (self.moving_start.x(), ev.pos().x()), min (self.moving_start.y(), ev.pos().y()), abs(self.moving_start.x() - ev.pos().x()), abs(self.moving_start.y() - ev.pos().y()))
-            if self.tempRect: self.tempRect.hide()
-
+            rect = QRect(min (self.mouseDownPosition.x(), ev.pos().x()), min (self.mouseDownPosition.y(), ev.pos().y()), abs(self.mouseDownPosition.x() - ev.pos().x()), abs(self.mouseDownPosition.y() - ev.pos().y()))
             self.tempRect = QCanvasRectangle(rect, self.doc.canvas)
             self.tempRect.show()
-            self.moving_ex_pos = QPoint(ev.pos().x(), ev.pos().y())
 
             # select widgets in rectangle
-            for item in self.selWidgets: item.selected = FALSE
-            self.selWidgets = []
             items = self.canvas().collisions(rect)
             widgets = self.findAllItemType(items, orngCanvasItems.CanvasWidget)
-            for widget in widgets:
-                widget.selected = TRUE
-                widget.savePosition()
-                widget.repaintWidget()
-                self.selWidgets.append(widget)
+
             for widget in self.doc.widgets:
-                if widget not in widgets:
-                    widget.selected = FALSE
-                    widget.repaintWidget()
+                if widget in widgets and widget not in self.selWidgets:
+                    widget.setSelected(1); widget.savePosition()
+                elif widget not in widgets and widget in self.selWidgets:
+                    widget.setSelected(0)
+
+            self.selWidgets = widgets
 
         self.canvas().update()
+        self.lastMousePosition = QPoint(ev.pos().x(), ev.pos().y())
 
     # ###################################################################
     # mouse button was released #########################################
-    def contentsMouseReleaseEvent(self, ev):
+    def contentsMouseReleaseEvent(self, ev):        
+        if self.tempRect:
+            self.tempRect.hide()
+            self.tempRect.setCanvas(None)
+            self.tempRect = None
+        
         # if we are moving a widget
         if self.bWidgetDragging:
             validPos = TRUE
@@ -321,7 +331,7 @@ class SchemaView(QCanvasView):
             for item in self.selWidgets:
                 item.invalidPosition = FALSE
                 if not validPos:
-                    #item.setCoordsBy(self.moving_start.x() - ev.pos().x(), self.moving_start.y() - ev.pos().y())
+                    #item.setCoordsBy(self.mouseDownPosition.x() - ev.pos().x(), self.mouseDownPosition.y() - ev.pos().y())
                     item.restorePosition()
                 item.updateTooltip()
                 item.updateLineCoords()
@@ -358,11 +368,9 @@ class SchemaView(QCanvasView):
                 
             if self.tempLine != None:
                 self.tempLine.setPoints(0,0,0,0)
-                self.tempLine.hide() 
+                self.tempLine.hide()
+                self.tempLine.setCanvas(None)
                 self.tempLine = None
-
-        elif self.bMultipleSelection:
-            if self.tempRect: self.tempRect.hide()
                 
         self.canvas().update()
         self.bMouseDown = FALSE

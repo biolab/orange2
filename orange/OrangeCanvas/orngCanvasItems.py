@@ -24,9 +24,10 @@ class MyCanvasText(QCanvasText):
             self.show()
 
 class TempCanvasLine(QCanvasLine):
-    def __init__(self, *args):
+    def __init__(self, canvasDlg, *args):
         apply(QCanvasLine.__init__,(self,)+ args)
         self.setZ(-10)
+        self.canvasDlg = canvasDlg
 
     def remove(self):
         self.hide()
@@ -37,7 +38,7 @@ class TempCanvasLine(QCanvasLine):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
         (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
         
-        painter.setPen(QPen(QColor("green"), 1, Qt.SolidLine))
+        painter.setPen(QPen(self.canvasDlg.lineColor, 1, Qt.SolidLine))
         painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
 
         
@@ -79,7 +80,7 @@ class CanvasLine(QCanvasLine):
         outPoint = outWidget.getRightEdgePoint()
         inPoint = inWidget.getLeftEdgePoint()
         self.setPoints(outPoint.x(), outPoint.y(), inPoint.x(), inPoint.y())
-        self.setPen(QPen(QColor("green"), 5, Qt.SolidLine))
+        self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.SolidLine))
         self.tooltipRects = []
 
         self.showSignalNames = canvasDlg.settings["showSignalNames"]
@@ -104,8 +105,8 @@ class CanvasLine(QCanvasLine):
         else: return 0
 
     def setEnabled(self, enabled):
-        if enabled: self.setPen(QPen(QColor("green"), 5, Qt.SolidLine))
-        else:       self.setPen(QPen(QColor("green"), 5, Qt.DashLine))
+        if enabled: self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.SolidLine))
+        else:       self.setPen(QPen(self.canvasDlg.lineColor, 5, Qt.DashLine))
         self.updateTooltip()
 
 
@@ -133,6 +134,17 @@ class CanvasLine(QCanvasLine):
                         index = i
                 self.colors.append(tempList[index][2])
                 tempList.pop(index)
+
+    def drawShape(self, painter):
+        (startX, startY) = (self.startPoint().x(), self.startPoint().y())
+        (endX, endY)  = (self.endPoint().x(), self.endPoint().y())
+
+        if self.getEnabled(): lineStyle = Qt.SolidLine
+        else:                 lineStyle = Qt.DashLine 
+
+        painter.setPen(QPen(self.canvasDlg.lineColor, 5 , lineStyle))
+        painter.drawLine(QPoint(startX, startY), QPoint(endX, endY))
+        
         
     """
     # draw the line
@@ -161,8 +173,7 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY)   , QPoint(endX, endY))
             painter.setPen(QPen(QColor(self.colors[0]), 2, lineStyle))
             painter.drawLine(QPoint(startX, startY-3), QPoint(endX, endY-3))
-    """
-
+    
     # draw the line on the printer
     def printShape(self, painter):
         (startX, startY) = (self.startPoint().x(), self.startPoint().y())
@@ -190,7 +201,7 @@ class CanvasLine(QCanvasLine):
             painter.drawLine(QPoint(startX, startY-1), QPoint(endX, endY-1))
             painter.setPen(QPen(QColor(self.colors[2]), 2*fact, lineStyle))
             painter.drawLine(QPoint(startX, startY+1), QPoint(endX, endY+1))
-
+    """
         
     # set the line positions based on the position of input and output widgets
     def updateLinePos(self):
@@ -244,7 +255,7 @@ class CanvasLine(QCanvasLine):
         self.text.hide()
         self.text.setText(caption)
         self.text.show()
-        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+10)/2.0)
+        self.text.move((self.startPoint().x() + self.endPoint().x())/2.0, (self.startPoint().y() + self.endPoint().y()+25)/2.0)
 
     # we need this to separate line objects and widget objects
     def rtti(self):
@@ -409,6 +420,8 @@ class CanvasWidget(QCanvasRectangle):
             try:    self.instance.saveSettings()
             except: print "Unable to successfully save settings for %s widget" % (self.instance.title)
             self.instance.hide()
+            self.instance.destroy()
+            del self.instance
         self.removeTooltip()
         self.text.hide()
         
@@ -434,6 +447,10 @@ class CanvasWidget(QCanvasRectangle):
         self.progressBarRect.move(self.xPos+8, self.yPos - 20)
         self.progressRect.move(self.xPos+8, self.yPos - 20)
         self.progressText.move(self.xPos + self.width()/2, self.yPos - 20 + 7)
+
+    def setSelected(self, selected):
+        self.selected = selected
+        self.repaintWidget()
 
 
     # set coordinates of the widget
@@ -501,16 +518,21 @@ class CanvasWidget(QCanvasRectangle):
     # draw the widget        
     def drawShape(self, painter):
         if self.isProcessing:
-            painter.setPen(QPen(self.blue))
-            painter.setBrush(QBrush(self.blue))
-            painter.drawRect(self.x()+8, self.y(), 52, 52)
+            painter.setPen(QPen(self.canvasDlg.widgetActiveColor))
+            painter.setBrush(QBrush(self.canvasDlg.widgetActiveColor))
+            #painter.drawRect(self.x()+8, self.y(), 52, 52)
+            painter.drawRect(self.x()+7, self.y(), 54, 54)
         elif self.selected:
-            if self.invalidPosition: painter.setPen(QPen(self.red))
-            else:                    painter.setPen(QPen(self.green))
-            painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
-            painter.drawRect(self.x()+8, self.y(), 52, 52)
+            if self.invalidPosition: color = self.red
+            else:                    color = self.canvasDlg.widgetSelectedColor
+            painter.setPen(QPen(color))
+            painter.setBrush(QBrush(color))
+            #painter.drawRect(self.x()+8+1, self.y()+1, 50, 50)
+            #painter.drawRect(self.x()+8, self.y(), 52, 52)
+            painter.drawRect(self.x()+7, self.y(), 54, 54)
 
-        painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
+        
+        painter.drawPixmap(self.x()+2+8, self.y()+3, self.image)
 
         if self.imageEdge != None:
             if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
@@ -520,25 +542,27 @@ class CanvasWidget(QCanvasRectangle):
             if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
             if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
-
+    """
     def printShape(self, painter):
         painter.setPen(QPen(self.black))
         painter.drawRect(self.x()+8, self.y(), 52, 52)
 
         painter.setBrush(QBrush(self.black))
         
-        if self.widget.getInputs() != []:
-            painter.drawRect(self.x(), self.y() + 18, 8, 16)
-
-        if self.widget.getOutputs() != []:
-            painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
+        if self.imageEdge != None:
+            if self.widget.getInputs() != []:    painter.drawPixmap(self.x(), self.y() + 18, self.imageEdge)
+            if self.widget.getOutputs() != []:   painter.drawPixmap(self.x()+60, self.y() + 18, self.imageEdge)
+        else:
+            painter.setBrush(QBrush(self.blue))
+            if self.widget.getInputs() != []:    painter.drawRect(self.x(), self.y() + 18, 8, 16)
+            if self.widget.getOutputs() != []:   painter.drawRect(self.x() + 60, self.y() + 18, 8, 16)
 
         #painter.setBrush(QBrush(self.NoBrush))
         #rect = painter.boundingRect(0,0,200,20,0,self.caption)
         #self.captionWidth = rect.width()
         #painter.drawText(self.x()+34-rect.width()/2, self.y()+52+2, rect.width(), rect.height(), 0, self.caption)
         #painter.drawPixmap(self.x()+2+8, self.y()+2, self.image)
-        
+    """ 
 
     def addOutLine(self, line):
         self.outLines.append(line)
@@ -624,7 +648,7 @@ class CanvasWidget(QCanvasRectangle):
 
     def showProgressBar(self):
         self.progressRect.setSize(0, self.progressRect.height())
-        self.progressText.setText("0%")
+        self.progressText.setText("0 %")
         self.progressBarRect.show()
         self.progressRect.show()
         self.progressText.show()

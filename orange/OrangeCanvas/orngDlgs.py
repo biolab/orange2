@@ -322,6 +322,7 @@ class SignalDialog(QDialog):
     def getPossibleConnections(self, outputs, inputs, outConnected, inConnected):
         possibleLinks = []
         canConnect = 0
+        sameType = 0
         for outS in outputs:
             outType = self.outWidget.instance.getOutputType(outS.name)
             if outType == None:
@@ -335,8 +336,11 @@ class SignalDialog(QDialog):
                 if issubclass(outType, inType):
                     canConnect = 1
                     if (outS.name in outConnected) or (inS.name in inConnected): continue
-                    possibleLinks += [(outS.name, inS.name)]
-        return possibleLinks, canConnect
+                    if issubclass(inType, outType):
+                        possibleLinks.insert(sameType, (outS.name, inS.name))
+                        sameType += 1
+                    else:   possibleLinks.append((outS.name, inS.name))
+        return possibleLinks, canConnect, sameType
 
     def addDefaultLinks(self):
         canConnect = 0
@@ -367,21 +371,20 @@ class SignalDialog(QDialog):
         for s in allOutputs:
             if not self.outWidget.instance.hasOutputName(s.name): return -1
 
-        pL1,can1 = self.getPossibleConnections(majorOutputs, majorInputs, [], inConnected)
-        pL2,can2 = self.getPossibleConnections(majorOutputs, minorInputs, [v[0] for v in pL1], inConnected + [v[1] for v in pL1])
-        pL3,can3 = self.getPossibleConnections(minorOutputs, majorInputs, [v[0] for v in pL1+pL2], inConnected + [v[1] for v in pL1+pL2])
-        pL4,can4 = self.getPossibleConnections(minorOutputs, minorInputs, [v[0] for v in pL1+pL2+pL3], inConnected + [v[1] for v in pL1+pL2+pL3])
+        pL1,can1,sameType1 = self.getPossibleConnections(majorOutputs, majorInputs, [], inConnected)
+        pL2,can2,sameType2 = self.getPossibleConnections(majorOutputs, minorInputs, [v[0] for v in pL1], inConnected + [v[1] for v in pL1])
+        pL3,can3,sameType3 = self.getPossibleConnections(minorOutputs, majorInputs, [v[0] for v in pL1+pL2], inConnected + [v[1] for v in pL1+pL2])
+        pL4,can4,sameType4 = self.getPossibleConnections(minorOutputs, minorInputs, [v[0] for v in pL1+pL2+pL3], inConnected + [v[1] for v in pL1+pL2+pL3])
 
-        if pL1: self.addLink(pL1[0][0], pL1[0][1])
-        elif pL2: self.addLink(pL2[0][0], pL2[0][1])
-        elif pL3: self.addLink(pL3[0][0], pL3[0][1])
-        elif pL4: self.addLink(pL4[0][0], pL4[0][1])
-        
-        #for (o,i) in pL1+pL2+pL3+pL4:
-        #    self.addLink(o,i)
-        
-        self.multiplePossibleConnections = (len(pL1) > 1 or len(pL2) > 1 or len(pL3) > 1 or len(pL4) > 1)
-        return (can1+can2+can3+can4 > 0)
+        all = pL1 + pL2 + pL3 + pL4
+        if all != []:
+            self.addLink(all[0][0], all[0][1])
+        else: return 0
+
+        same = [sameType1, sameType2, sameType3, sameType4]
+        can = [can1, can2, can3, can4]
+        self.multiplePossibleConnections = (same[can.index(1)] != 1)
+        return len(all) > 0
         """
         # try to add links between non minor signals
         for outS in majorOutputs:
@@ -461,6 +464,24 @@ class SignalDialog(QDialog):
         return self._links
 
 
+class ColorIcon(QPushButton):
+    def __init__(self, parent, color):
+        QPushButton.__init__(self, parent, "")
+        self.color = color
+        self.parent = parent
+        self.setMaximumSize(20,20)
+        self.connect(self, SIGNAL("clicked()"), self.showColorDialog)
+
+    def drawButtonLabel(self, painter):
+        painter.setBrush(QBrush(self.color))
+        painter.setPen(QPen(self.color))
+        painter.drawRect(3, 3, self.width()-6, self.height()-6)
+
+    def showColorDialog(self):
+        color = QColorDialog.getColor(self.color, self.parent)        
+        if color.isValid():
+            self.color = color
+            self.repaint()
 
 # canvas dialog
 class CanvasOptionsDlg(QDialog):
@@ -480,24 +501,41 @@ class CanvasOptionsDlg(QDialog):
         self.tabs.insertTab(ExceptionsTab, "Exception handling")
         self.tabs.insertTab(TabOrderTab, "Widget tab order")
 
-        # general tab options
+        # #################################################################
+        # GENERAL TAB
         self.snapToGridCB = QCheckBox("Snap widgets to grid", GeneralTab)
         self.useLargeIconsCB = QCheckBox("Show widgets using large icons and text", GeneralTab)
         self.writeLogFileCB  = QCheckBox("Write content of Output window to log file", GeneralTab)
         self.showSignalNamesCB = QCheckBox("Show signal names between widgets", GeneralTab)
 
         canvasSizeBox = QVGroupBox(GeneralTab)
-        canvasSizeBox.setTitle("Orange Canvas size")
+        canvasSizeBox.setTitle("Default Size of Orange Canvas")
         widthBox = QHBox(canvasSizeBox)
-        widthLabel = QLabel("Width: ", widthBox)
+        widthLabel = QLabel("Width:  ", widthBox)
         self.widthEdit = QLineEdit(widthBox)
 
         heightBox = QHBox(canvasSizeBox)
         heightLabel = QLabel("Height: ", heightBox)
         self.heightEdit = QLineEdit(heightBox)
 
+        colorsBox = QVGroupBox(GeneralTab)
+        colorsBox.setTitle("Set Colors")
 
-        # exception tab options
+        selectedWidgetBox = QHBox(colorsBox)
+        self.selectedWidgetIcon = ColorIcon(selectedWidgetBox, canvasDlg.widgetSelectedColor)
+        selectedWidgetLabel = QLabel(" Selected Widget", selectedWidgetBox)
+
+        activeWidgetBox = QHBox(colorsBox)
+        self.activeWidgetIcon = ColorIcon(activeWidgetBox, canvasDlg.widgetActiveColor)
+        activeWidgetLabel = QLabel(" Active Widget", activeWidgetBox)
+
+        lineBox = QHBox(colorsBox)
+        self.lineIcon = ColorIcon(lineBox, canvasDlg.lineColor)
+        lineLabel = QLabel(" Line", lineBox)
+        
+
+        # #################################################################
+        # EXCEPTION TAB
         exceptions = QVGroupBox("Exceptions", ExceptionsTab)
         #self.catchExceptionCB = QCheckBox('Catch exceptions', exceptions)
         self.focusOnCatchExceptionCB = QCheckBox('Focus output window on catch', exceptions)
