@@ -92,7 +92,7 @@ class OWBaseWidget(QDialog):
         self.linksIn = {}      # signalName : (dirty, widgetFrom, handler, signalData)
         self.linksOut = {}       # signalName: (signalData, id)
         self.connections = {}   # dictionary where keys are (control, signal) and values are wrapper instances. Used in connect/disconnect
-        self.controledAttributes = []
+        self.controledAttributes = {}
         self.progressBarHandler = None  # handler for progress bar events
         self.processingHandler = None   # handler for processing events
         self.eventHandler = None
@@ -332,11 +332,11 @@ class OWBaseWidget(QDialog):
                 
                 qApp.setOverrideCursor(QWidget.waitCursor)
                 try:                    
-                    for (value, id) in signalData:
+                    for (value, id, nameFrom) in signalData:
                         if self.signalIsOnlySingleConnection(key):
                             handler(value)
                         else:
-                            handler(value, (widgetFrom, id))
+                            handler(value, (widgetFrom, nameFrom, id))
                 except:
                     type, val, traceback = sys.exc_info()
                     sys.excepthook(type, val, traceback)  # we pretend that we handled the exception, so that we don't crash other widgets
@@ -348,22 +348,22 @@ class OWBaseWidget(QDialog):
         self.needProcessing = 0
 
     # set new data from widget widgetFrom for a signal with name signalName
-    def updateNewSignalData(self, widgetFrom, signalName, value, id):
+    def updateNewSignalData(self, widgetFrom, signalName, value, id, signalNameFrom):
         if not self.linksIn.has_key(signalName): return
         for i in range(len(self.linksIn[signalName])):
             (dirty, widget, handler, signalData) = self.linksIn[signalName][i]
             if widget == widgetFrom:
                 if self.linksIn[signalName][i][3] == []:
-                    self.linksIn[signalName][i] = (1, widget, handler, [(value, id)])
+                    self.linksIn[signalName][i] = (1, widget, handler, [(value, id, signalNameFrom)])
                 else:
                     found = 0
                     for j in range(len(self.linksIn[signalName][i][3])):
-                        (val, ID) = self.linksIn[signalName][i][3][j]
-                        if ID == id:
-                            self.linksIn[signalName][i][3][j] = (value, id)
+                        (val, ID, nameFrom) = self.linksIn[signalName][i][3][j]
+                        if ID == id and nameFrom == signalNameFrom:
+                            self.linksIn[signalName][i][3][j] = (value, id, signalNameFrom)
                             found = 1
                     if not found:
-                        self.linksIn[signalName][i] = (1, widget, handler, self.linksIn[signalName][i][3] + [(value, id)])
+                        self.linksIn[signalName][i] = (1, widget, handler, self.linksIn[signalName][i][3] + [(value, id, signalNameFrom)])
         self.needProcessing = 1
 
 
@@ -460,8 +460,8 @@ class OWBaseWidget(QDialog):
             try:
                 names = name.split(".")
                 lastobj = self
-                for name in names[:-1]:
-                    lastobj = getattr(lastobj, name)
+                for n in names[:-1]:
+                    lastobj = getattr(lastobj, n)
                 lastobj.__dict__[names[-1]] = value
             except:
                 print "unable to set setting ", name, " to value ", value
@@ -469,11 +469,10 @@ class OWBaseWidget(QDialog):
             if hasattr(QDialog, "__setattr__"): QDialog.__setattr__(self, name, value)  # for linux and mac platforms
             else:                               self.__dict__[name] = value             # for windows platform
 
-        if hasattr(self, "controledAttributes"):
-            for attrname, func in self.controledAttributes:
-                if attrname == name:
-                    func(value)
-                    return
+        if not hasattr(self, "controledAttributes"): return
+
+        if self.controledAttributes.has_key(name):
+            self.controledAttributes[name](value)
 
     
 if __name__ == "__main__":  
