@@ -286,6 +286,7 @@ class kNNOptimization(OWBaseWidget):
         if self.parentWidget:
             if hasattr(self.parentWidget, "learnersArray"):
                 self.parentWidget.learnersArray[0] = VizRankLearner(self, self.parentWidget)
+                self.vizRankLearner = self.parentWidget.learnersArray[0]
             else:
                 self.vizRankLearner = VizRankLearner(self, self.parentWidget)
                 self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
