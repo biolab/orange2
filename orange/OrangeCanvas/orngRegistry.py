@@ -55,6 +55,7 @@ class WidgetsToXML:
             priorityStr = self.GetCustomText(data, '<priority>.*</priority>')
             if priorityStr == None:    priorityStr = "5000"
             if author      == None: author = ""
+            if icon        == None: icon = "icon/Unknown.png"
 
             description = self.GetDescription(data)
             inputList   = self.GetAllInputs(data)
