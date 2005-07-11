@@ -26,9 +26,6 @@ class OWClassificationTree(OWWidget):
     
     def __init__(self, parent=None, signalManager = None, name='Classification Tree'):
         OWWidget.__init__(self, parent, signalManager, name)
-        
-        self.callbackDeposit = []
-        self.controledAttributes = []
 
         self.inputs = [("Classified Examples", ExampleTableWithClass, self.dataset)]
         self.outputs = [("Learner", orange.Learner),("Classifier", orange.Classifier),("Classification Tree", orange.TreeClassifier)]
