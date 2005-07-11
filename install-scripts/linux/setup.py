@@ -119,6 +119,7 @@ else:
 # uninstall deletes everything which was installed
 from distutils.core import Command
 from distutils.command.install import install
+from distutils.command.install_data import install_data
 
 class uninstall(Command):
     description = "uninstall current version"
@@ -127,21 +128,49 @@ class uninstall(Command):
                     ('docpath=', None, "Orange documentaiton path"),
                     ('libpath=', None, "Orange library path")]
 
+    
     def initialize_options (self):
-        self.orangepath = OrangeInstallDir
-        self.docpath = OrangeInstallDoc
-        self.libpath = OrangeInstallLib
+        self.orangepath = None
+        self.docpath = None
+        self.libpath = None
+        self.systemUninstall = False
         
     def finalize_options(self):
         if self.orangepath is None:
-            self.orangepath = OrangeInstallDir
-    
-    def run(self):
-        if os.geteuid() != 0:
-            print "Uninstallation should be run as superuser!"
-            sys.exit(1)
+            try:
+                fo = file(sys.argv[0].replace("/setup.py", "/user_install"), "r")
+                self.orangepath=fo.read()
+                fo.close
+            except:
+                print "user_install file could not be opened, performing system uninstall"
+
+        else:
+            self.systemUninstall = False
             
-        self.orangepath = os.path.join(sys.prefix, self.orangepath)
+        if self.orangepath is None:
+            self.systemUninstall = True
+            if self.orangepath is None:
+                self.orangepath = os.path.join("lib", PythonVer,
+                                               "site-packages", "orange")
+            if self.docpath is None:
+                self.docpath = os.path.join(sys.prefix, "share", "doc", OrangeVer)
+            if self.libpath is None:
+                self.libpath = os.path.join(sys.prefix, "lib")
+        else:
+            if self.docpath is None:
+                self.docpath = os.path.join(self.orangepath, "doc")
+                self.orangepath = os.path.join(self.orangepath, "orange")
+                
+    def run(self):
+        if self.systemUninstall is True:
+            if os.geteuid() != 0:
+                print "Uninstallation should be run as superuser!"
+                sys.exit(1)
+            self.orangepath = os.path.join(sys.prefix, self.orangepath)
+            print "Performing system uninstallation from: "+self.orangepath
+        else:
+            print "Performing user uninstallation from: "+self.orangepath
+            
         print "Removing installation directory "+self.orangepath+" ...",
         self.rmdir(self.orangepath)
         os.rmdir(self.orangepath)
@@ -150,10 +179,12 @@ class uninstall(Command):
         self.rmdir(self.docpath)
         os.rmdir(self.docpath)
         print "done!"
-        print "Removing symbolic links for the orange libraries ...",
-        for orngLib in OrangeLibList:
-            os.remove(os.path.join(self.libpath, "lib"+orngLib))
-        print "done!"
+        if self.systemUninstall is True:
+            print "Removing symbolic links for the orange libraries ...",
+            for orngLib in OrangeLibList:
+                os.remove(os.path.join(self.libpath, "lib"+orngLib))
+            print "done!"
+
 
     def rmdir(self,top):
         for root, dirs, files in os.walk(top, topdown=False):
@@ -194,46 +225,125 @@ class compile(Command):
         print "done"
         os.chdir(BaseDir)
 
+# change correct directories in data_files (we don't know target directory in
+# the 'main' script
+
+class install_data_wrap(install_data):
+    description = "Orange specific data installation"
+
+    print "Orange specific data installation"
+
+    global OrangeInstallDir
+    
+    user_options = install_data.user_options
+    
+    def initialize_options(self):
+        install_data.initialize_options(self)
+
+    def finalize_options(self):
+        install_data.finalize_options(self)
+        if self.install_dir != sys.prefix:
+            OrangeInstallDir = os.path.join(self.install_dir, "orange")
+            OrangeInstallDoc = os.path.join(self.install_dir, "doc", OrangeVer)
+#            OrangeInstallLib = os.path.join(self.install_dir, "lib")
+            self.data_files = [(OrangeInstallDir, OrangeLibs),
+                               (os.path.join(OrangeInstallDir,
+                                             "OrangeWidgets", "icons"),
+                                OrangeWidgetIcons),
+                               (os.path.join(OrangeInstallDir,
+                                             "OrangeCanvas", "icons"),
+                                OrangeCanvasIcons),
+                               (os.path.join(OrangeInstallDir, "OrangeCanvas"),
+                                OrangeCanvasPyw)]
+            for root, dirs, files in os.walk(os.path.join("doc")):
+                OrangeDocs = glob(os.path.join("", "")) # Create a Docs file list
+                if 'CVS' in dirs:
+                    dirs.remove('CVS')  # don't visit CVS directories
+                for name in files:
+                    OrangeDocs += glob(os.path.join(root,name))
+                if(root.split('doc/')[-1] == 'doc/'):
+                    root = ''
+                self.data_files += [(os.path.join(OrangeInstallDoc,
+                                             root.split('doc/')[-1]), OrangeDocs)]
+
+            self.data_files += [(OrangeInstallDoc,['setup.py'])]
+            
+    def run(self):
+        install_data.run(self)
+
 # install is 'normal distutils' install, after installation symlinks libraries
 # and calles ldconfig
 class install_wrap(install):
     description = "Orange specific installation"
 
-    user_options = install.user_options
+    user_options = install.user_options + [('orangepath=',
+                                            None, "Orange install directory")]
 
+    def initialize_options(self):
+        install.initialize_options(self)
+        self.orangepath = None;
+
+    def finalize_options(self):
+        if self.orangepath == None:
+            print "Using default system initialization, checking for privileges..."
+            if os.geteuid() != 0:
+                print "should be run as superuser or --orangepath should be used"
+                sys.exit(1)
+            print "done"
+            self.OrangeInstallDir = os.path.join("lib", PythonVer,
+                                            "site-packages", "orange")
+            self.OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
+                                            OrangeVer)
+            self.OrangeInstallLib = os.path.join(sys.prefix, "lib")
+        else:
+            self.install_purelib = self.orangepath;
+            self.install_data = self.orangepath;
+
+        install.finalize_options(self);
+ 
     def run(self):
-        if os.geteuid() != 0:
-            print "Installation should be run as superuser!"
-            sys.exit(1)
         install.run(self)
 
-        print "Linking libraries...",
-        for currentLib in OrangeLibList:
-            try:
-                os.symlink(os.path.join(sys.prefix,
-                                        OrangeInstallDir,currentLib),
-                           os.path.join(OrangeInstallLib,"lib"+currentLib))
-            except:
-                print "problems with "+currentLib+"... ignoring"
-                
-        os.system("/sbin/ldconfig")
-        print "success"
+        if self.orangepath == None:
+            print "Linking libraries...",
+            for currentLib in OrangeLibList:
+                try:
+                    os.symlink(os.path.join(sys.prefix,
+                                            self.OrangeInstallDir,currentLib),
+                               os.path.join(self.OrangeInstallLib,"lib"+currentLib))
+                    
+                except:
+                    print "problems with "+currentLib+"... ignoring... ",
+                    
+                os.system("/sbin/ldconfig")
+                print "success"
+        else:
+            print "Libraries was not exported to the system library path (using 'non-system' installation)"
+            
         print "Creating path file...",
-        pth = os.path.join(sys.prefix,OrangeInstallDir,"..","orange.pth")
+        if self.orangepath == None:
+            pth = os.path.join(sys.prefix,self.OrangeInstallDir,"..","orange.pth")
+        else:
+            pth = os.path.join(self.orangepath, "orange.pth")
 
         if os.access(pth, os.F_OK) is True:
             os.remove(pth)
 
         fo = file(pth,"w+")
-        fo.write(os.path.join(sys.prefix,OrangeInstallDir)+"\n")
-        for root,dirs,files in os.walk(os.path.join(sys.prefix,
-                                                    OrangeInstallDir)):
+
+        if self.orangepath == None:
+            pthInstallDir = os.path.join(sys.prefix, self.OrangeInstallDir)
+        else:
+            pthInstallDir = os.path.join(self.orangepath, "orange")
+            
+        fo.write(pthInstallDir+"\n")
+        for root,dirs,files in os.walk(pthInstallDir):
             for name in dirs:
                 fo.write(os.path.join(root,name)+"\n")
         fo.close()
         print "success"
        	print "Preparing filename masks...",
-	for root, dirs, files in os.walk(OrangeInstallDir):
+	for root, dirs, files in os.walk(pthInstallDir):
 	    for name in files:
 		if name in OrangeLibList: # libraries must have +x flag too
 			os.chmod(os.path.join(root,name),   
@@ -254,19 +364,35 @@ class install_wrap(install):
         print "Qwt version: "+gotQwt
         print "GCC version: "+gotGcc
         print "Gsl version: "+gotGsl
-        
-        print "Orange installation dir: "+sys.prefix+OrangeInstallDir
-        print "Orange documentation dir: "+OrangeInstallDoc
-        print "Orange library links in: "+OrangeInstallLib
-        print ""
-        print "To uninstall Orange type:"
-        print "    python "+OrangeInstallDoc+"/setup.py uninstall"
+
+        if self.orangepath != None:
+            # we save orangepath for uninstallation to the file user_install
+            fo = file(os.path.join(self.orangepath, "doc",
+                                  OrangeVer, "user_install"), "w+")
+            fo.write(self.orangepath)
+            fo.close()
+            OrangeInstallDir = os.path.join(self.orangepath, "orange")
+            OrangeInstallDoc = os.path.join(self.orangepath, "doc", OrangeVer)
+            print "Orange installation dir: "+OrangeInstallDir
+            print "Orange documentation dir: "+OrangeInstallDoc
+            print "To uninstall Orange type:"
+            print ""
+            print "    python "+OrangeInstallDoc+"/setup.py uninstall"
+        else:
+            print "Orange installation dir: "+sys.prefix+self.OrangeInstallDir
+            print "Orange library links in: "+self.OrangeInstallLib
+            print "Orange documentation dir: "+self.OrangeInstallDoc
+            print "To uninstall Orange type:"
+            print ""
+            print "    python "+self.OrangeInstallDoc+"/setup.py uninstall"
+            
         print ""
         print "It will remove Orange, Orange documentation and links to Orange libraries"
             
 # preparing data for Distutils
 
 PythonVer = "python"+sys.version[:3]
+
 OrangeInstallDir = os.path.join("lib", PythonVer, "site-packages", "orange")
 OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
                                 OrangeVer)
@@ -332,5 +458,6 @@ setup (name = "orange",
        data_files = data_files,
        cmdclass = { 'uninstall': uninstall,
                     'compile'  : compile,
-                    'install'  : install_wrap}
+                    'install'  : install_wrap,
+                    'install_data' : install_data_wrap}
        )
