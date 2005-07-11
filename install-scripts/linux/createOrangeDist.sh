@@ -12,7 +12,7 @@
 #	 - vsi fajli ki so zlistani v orange/OrangeWidgets/Genomics/BCMonly.lst
 
 if [ $# -lt 4 ]; then
-    echo "Usage: ./build.sh <CVS tag> <output filename> <type of build> <version>"
+    echo "Usage: ./build.sh <CVS tag> <output filename> <type of build> <version> <compile>"
     exit 1
 fi
 
@@ -20,6 +20,8 @@ OUT=$2
 TAG=$1
 REL=$3
 VER=$4
+ 
+COMPILE=$5
 
 # check which kind of package should build, default is 'normal'
 if [ $REL == "Genomics" ]; then
@@ -70,9 +72,9 @@ find orange -name '*.dll' -type f -exec rm -rf {} \; > /dev/null  2>&1
 # clean everything out of exclude.lst file
 cat orange/exclude.lst | xargs rm -rf
 
-if [ $REL -eq 1 ]; then # cleanup of BCMonly.lst file
-    cat orange/OrangeWidgets/Genomics/BCMonly.lst | xargs rm -rf
-fi
+#if [ $REL -eq 1 ]; then # cleanup of BCMonly.lst file
+#    cat orange/OrangeWidgets/Genomics/BCMonly.lst | xargs rm -rf
+#fi
 echo "done"
 
 echo -n "Updating Orange version to Orange-$VER..."
@@ -80,7 +82,19 @@ cat orange/setup.py | sed s/"OrangeVer=\"ADDVERSION\""/"OrangeVer=\"Orange-$VER\
 mv -f orange/new.py orange/setup.py
 echo "done"
 
+if [ $COMPILE -eq 1 ]; then
+	cd orange/source
+	make
+	mkdir ../tmp_lib
+	mv ../*.so ../*.a ../tmp_lib/ 
+	make clean
+	mv ../tmp_lib/* ..
+	rm -rf ../tmp_lib
+	cd ../..
+fi
+
 echo -n "Packing orange to $OUT..."
 tar czpvf $OUT orange > packing.log 2>&1
 echo "done"
+
 #python setup.py install
