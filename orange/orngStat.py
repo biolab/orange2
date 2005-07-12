@@ -691,7 +691,7 @@ def TCverticalAverageROC(ROCcurves, samples = 10):
         elif fp < FPsample:
             return INTERPOLATE(ROC[i], ROC[i+1], FPsample)
         raise SystemError, "cannot compute: TP_FOR_FP in TCverticalAverageROC"
-        return 0.0
+        #return 0.0
 
     average = []
     stdev = []
