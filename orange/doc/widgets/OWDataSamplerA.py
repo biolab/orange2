@@ -9,7 +9,7 @@ import OWGUI
 
 class OWDataSamplerA(OWWidget):
     
-   def __init__(self, parent=None, signalManager=None):
+    def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self, parent, signalManager, 'SampleDataA')
         
         self.inputs = [("Data", ExampleTable, self.data)]
