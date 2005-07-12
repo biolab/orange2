@@ -187,9 +187,9 @@ class OWLogisticRegression(OWWidget):
         self.data=data
         self.setLearner()
 
-    def pp():
+    def pp(self):
         pass
-        # include preprocessing!!!
+        # TODO: include preprocessing!!!
 
     def refreshControls(self):
         self.acBox.setEnabled(self.use_swlr_CB.isOn())
