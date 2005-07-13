@@ -295,11 +295,13 @@ TClusterW *THierarchicalClustering::merge_SingleLinkage(TClusterW **clusters, fl
     }
 
     for(cluster = cluster->next; cluster; cluster = cluster->next) {
-      if (cluster->distances[rawIndex2] < cluster->distances[rawIndex1]) {
+      if (cluster->distances[rawIndex2] < cluster->distances[rawIndex1])
         cluster->distances[rawIndex1] = cluster->distances[rawIndex2];
-        if (rawIndex2 == cluster->rawIndexMinDistance)
-          cluster->rawIndexMinDistance = rawIndex1; // the smallest element got moved
-      }
+
+      // don't nest this in the above if -- both distances can be equal, yet index HAS TO move
+      if (rawIndex2 == cluster->rawIndexMinDistance)
+        cluster->rawIndexMinDistance = rawIndex1; // the smallest element got moved
+
       cluster->distances[rawIndex2] = -1;
     }
 

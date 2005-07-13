@@ -320,14 +320,14 @@ PClassifier TTreeSplitConstructor_Python::operator()(
     throw pyexception();
   }
 
-  if (pydesc)
+  if (classifier && pydesc)
     if (PyOrStringList_Check(pydesc))
       descriptions = PyOrange_AsStringList(pydesc);
     else {
       descriptions = PStringList_FromArguments(pydesc);
       if (!descriptions) {
         Py_DECREF(res);
-        return NULL;
+        throw pyexception();
       }
     }
   else
