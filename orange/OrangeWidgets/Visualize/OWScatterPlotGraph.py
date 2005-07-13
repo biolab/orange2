@@ -275,8 +275,11 @@ class OWScatterPlotGraph(OWVisGraph):
                 else: classCount = 1
 
                 pos = [[ [] , [], [] ] for i in range(classCount)]
+                indices = [colorIndex, xAttrIndex, yAttrIndex]
+                if -1 in indices: indices.remove(-1)
+                validData = self.getValidList(indices)
                 for i in range(len(self.rawdata)):
-                    if colorIndex != -1 and self.rawdata[i][colorIndex].isSpecial() == 1: continue
+                    if not validData[i]: continue
 
                     if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
                     elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
