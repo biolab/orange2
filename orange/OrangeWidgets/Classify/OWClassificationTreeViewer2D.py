@@ -5,387 +5,204 @@
 <priority>2110</priority>
 """
 
-""" KNOWN BUGS
-- setting the target does not work
-"""
+from OWTreeViewer2D import *
+import OWGraphTools
 
-## viewportToContents
+class ClassificationNode(CanvasNode):
+    def __init__(self,attrVal,*args):
+        CanvasNode.__init__(self,*args)
+        self.dist=self.tree.distribution
+        self.attrVal=attrVal
+        maxInst=max(self.dist)
+        #self.majClass=ind=list(self.dist).index(maxProb)
+        self.majClass = filter(lambda i, m=maxInst: self.dist[i]==m, range(len(self.dist)))
+        ind=self.majClass[0]
+        self.majClassName=self.dist.items()[ind][0]
+        self.majClassProb=maxInst/self.dist.cases
+        self.tarClassProb=self.dist.items()[0][1]/self.dist.cases
+        self.numInst=self.dist.cases
+        self.title=QCanvasText(attrVal,self.canvas())
+        self.texts=[self.majClassName, "%.3f" % self.majClassProb, "%.3f" % self.tarClassProb, "%.1f" % self.numInst]
+        self.name = (self.tree.branches and self.tree.branchSelector.classVar.name) or self.majClassName
+        self.textAdvance=12
+        self.addTextLine(attrVal, fitSquare=False)
+        self.addTextLine("", fitSquare=False)
+        self.addTextLine("", fitSquare=False)
+        self.addTextLine(fitSquare=False)
+        self.addTextLine(self.name, fitSquare=False)
+            
+        self.rule=(isinstance(self.parent, QCanvasRectangle) and self.parent.rule+[(self.parent.tree.branchSelector.classVar, attrVal)]) or []
+        
+        #print self.rule
+        #self.textObj.extend([self.title, self.name]+self.textList)
+        self.textInd=[]        
+        self.pieObj=[]
+        distSum=sum(self.dist)
+        color=OWGraphTools.ColorPaletteHSV(len(self.dist))
+        startAngle=0
+        for i in range(len(self.dist)):
+            angle=360/distSum*self.dist[i]*16
+            e=QCanvasEllipse(self.height()*0.8,self.height()*0.8,startAngle,angle,self.canvas())
+            e.setBrush(QBrush(color[i]))
+            e.move(self.height()/2,self.width())
+            e.setZ(0)
+            startAngle+=angle
+            self.pieObj.append(e)
+        e=QCanvasEllipse(self.height()*0.8+4,self.height()*0.8+4,0,360*16,self.canvas())
+        e.setBrush(QBrush(Qt.black))
+        e.move(self.height(), self.width())
+        e.setZ(-1)
+        self.pieObj.append(e)
+        self.canvasObj.extend(self.pieObj)
+        self.isPieShown=True            
 
-import copy, time
-import orange, orngTree
-import OWGUI
-from qt import *
-from qtcanvas import *
-from OWWidget import *
-from qwt import *
-from OWGraph import ColorPaletteHSV
+    def setSize(self,w,h):
+        CanvasNode.setSize(self,w,h)
+        self.updateText()
+        for e in self.pieObj:
+            e.setSize(h*0.8,h*0.8)
+            e.move(self.x()+self.width(),self.y()+self.height()/2)
+        self.pieObj[-1].setSize(h*0.8+2,h*0.8+2)
 
-ScreenSize = [640, 480]
+    def setBrush(self, brush):
+        CanvasTextContainer.setBrush(self, brush)
+        if self.textObj:
+            self.textObj[0].setColor(Qt.black)
+            
+    def show(self):
+        CanvasNode.show(self)
+        if not self.isPieShown:
+            for e in self.pieObj:
+                e.hide()
 
-PopupBubble = 2
-PopupSubtree = 3
-PopupFocus = 4
-PopupRedraw = 5
+    def setPieVisible(self, b=True):
+        self.isPieShown=b
+        if self.isShown and b:
+            for e in self.pieObj:
+                e.show()
+        else:
+            for e in self.pieObj:
+                e.hide()
+                
+    def setText(self, textInd=[]):
+        self.textInd=textInd
+        j=1
+        for i in textInd:
+            CanvasNode.setText(self, j, self.texts[i], fitSquare=False)
+            j+=1
+        for i in range(len(textInd),2):
+            CanvasNode.setText(self, i+1, "", fitSquare=False)
+        
+    def updateText(self):
+        self.textAdvance=float(self.height())/3
+        self.lineSpacing=0
+        self.setFont(QFont("",self.textAdvance*0.7), False)
+        self.reArangeText(False, -self.textAdvance-self.lineSpacing)
 
-RefreshBubble = False
 
-# resolution to catch mouse events
-CanvasResolution = 3
+    def reArangeText(self, fitSquare=True, startOffset=0):
+        self.textOffset=startOffset
+        x,y=self.x(),self.y()
+        for i in range(4):
+            self.textObj[i].move(x+1, y+(i-1)*self.textAdvance)
+        self.spliterObj[0].move(x, y+self.height()-self.textAdvance)
 
-# radius of a dropplet at the bottom of node with hidden childreen
-DroppletRadious_Default = 7
+import re
+import sets
+def parseRules(rules):
+    def joinCont(rule1, rule2):
+        int1, int2=["(",-1e1000,1e1000,")"], ["(",-1e1000,1e1000,")"]
+        rule=[rule1, rule2]
+        interval=[int1, int2]
+        for i in [0,1]:
+            if rule[i][1].startswith("in"):
+                r=rule[i][1][2:]
+                interval[i]=[r.strip(" ")[0]]+map(lambda a: float(a), r.strip("()[] ").split(","))+[r.strip(" ")[-1]]
+            else:
+                if "<" in rule[i][1]:
+                    interval[i][3]=("=" in rule[i][1] and "]") or ")"
+                    interval[i][2]=float(rule[i][1].strip("<>= "))
+                else:
+                    interval[i][0]=("=" in rule[i][1] and "[") or "("
+                    interval[i][1]=float(rule[i][1].strip("<>= "))
+               
+        inter=[None]*4
 
-# pricakovana velikost bubbla, da ge je videti tudi za robna vozlisca 
-ExpectedBubbleWidth_Default = 200
-ExpectedBubbleHeigth_Default = 200
+        if interval[0][1]<interval[1][1] or (interval[0][1]==interval[1][1] and interval[0][0]=="["):
+            interval.reverse()
+        inter[:2]=interval[0][:2]
 
-# Zacetne nastavitve pisave
-TextFont = 'Cyrillic'
+        if interval[0][2]>interval[1][2] or (interval[0][2]==interval[1][2] and interval[0][3]=="]"):
+            interval.reverse()
+        inter[2:]=interval[0][2:]
+            
+
+        if 1e1000 in inter or -1e1000 in inter:
+            rule=((-1e1000==inter[1] and "<") or ">")
+            rule+=(("[" in inter or "]" in inter) and "=") or ""
+            rule+=(-1e1000==inter[1] and str(inter[2])) or str(inter[1])
+        else:
+            rule="in "+inter[0]+str(inter[1])+","+str(inter[2])+inter[3]
+        return (rule1[0], rule)
+    
+    def joinDisc(rule1, rule2):
+        r1,r2=rule1[1],rule2[1]
+        r1=re.sub("^in ","",r1)
+        r2=re.sub("^in ","",r2)
+        r1=r1.strip("[]=")
+        r2=r2.strip("[]=")
+        s1=sets.Set([s.strip(" ") for s in r1.split(",")])
+        s2=sets.Set([s.strip(" ") for s in r2.split(",")])
+        s=s1 & s2
+        if len(s)==1:
+            return (rule1[0], "= "+str(list(s)[0]))
+        else:
+            return (rule1[0], "in ["+",".join([str(st) for st in s])+"]")
+
+    rules.sort(lambda a,b: (a[0].name<b[0].name and -1) or 1 )
+    newRules=[rules[0]]
+    for r in rules[1:]:
+        if r[0].name==newRules[-1][0].name:
+            if re.search("(a-zA-Z\"')+",r[1].lstrip("in")):
+                newRules[-1]=joinDisc(r,newRules[-1])
+            else:
+                newRules[-1]=joinCont(r,newRules[-1])
+        else:
+            newRules.append(r)
+    return newRules      
 
 BodyColor_Default = QColor(255, 225, 10)
 BodyCasesColor_Default = QColor(0, 0, 128)
 
-BubbleWidth_Default = 100
-BubbleHeight_Default = 200
-
-# set items of text boxes (used in definition of node body and in bubbles)
-def setTextSeparator(container, canvas):
-    s = QCanvasLine(canvas)
-    s.isSeparator = 1
-    container.append(s)
-
-def setTextLine(container, canvas, text, color=None, separator=0, font=None, truncated=0):
-    line = QCanvasText(canvas)
-    line.setText(text)
-    line.isSeparator = 0
-    if color:
-        line.setColor(color)
-    line.text = text  # this stores the full text of the label
-    container.append(line)
-    if separator: setTextSeparator(container, canvas)
-##    elif truncated and 0:
-##        if font:
-##            line.setFont(font)
-##        w = line.boundingRect().width()
-##        if w > truncated:
-##            for i in range(3): # this is approximite, as we compute the average char width and
-##                nchars = int(len(text) * truncated / w)  # based on this reduce string
-##                text = text[:nchars]                     # as the line may still be too long, we iterate
-##                line.setText(text)
-##                w = line.boundingRect().width()
-##                if w < truncated: break
-    return line
-
-class BubbleInfo(QCanvasRectangle):
-    def __init__(self, *args):
-        apply(QCanvasRectangle.__init__, (self,) + args)
-        self.canvas = args[0]
-        self.setBrush(QBrush(QColor(255, 255, 255)))
-        self.setZ(60)
-        self.bubbleShadow = QCanvasRectangle(self.canvas)
-        self.bubbleShadow.setBrush(QBrush(QColor(128, 128, 128)))
-        self.bubbleShadow.setPen(QPen(QColor(128, 128, 128)))
-        self.bubbleShadow.setZ(50)
-        
-    # set the text container plus some separation lines
-    def setText(self, master, node):
-        self.text = []      # stores text lines of the bubble
-
-        # rule that led to the node (IF ... THEN ...)
-        if len(node.rule):
-            text = 'IF ' + reduce(lambda x,y: x + ' AND\n    ' + y, node.rule) + '\n'
-        else:
-            text = ''
-        classes = map(lambda i,c=master.classes: c[i], node.majClass)
-        text += 'THEN ' + reduce(lambda x,y: x + ' OR\n           ' + y, classes)
-        setTextLine(self.text, self.canvas, text, separator=1)
-        
-        # instances
-        text = 'Instances: %d (%5.1f%s)' % (node.distribution.cases, 100. * node.distribution.cases / master.root.distribution.cases, '%')
-        setTextLine(self.text, self.canvas, text, separator=1)
-        
-        # distribution
-        distItems = node.distribution.items()
-        for i in range(len(distItems)):
-            dist = distItems[i]
-            if dist[1] > 0:     # we show the class distribution only if non-zero instances
-                text = "%s: %d (%5.1f%s)" % (master.classes[i], dist[1], 100. * dist[1] / node.distribution.cases, '%')
-                setTextLine(self.text, self.canvas, text, color = master.ClassColors[i])
-
-        setTextSeparator(self.text, self.canvas)
-
-        # partition attribute info (or leaf)
-        if node.branches:
-            text = 'Partition on: ' + node.branchSelector.classVar.name
-        else:
-            text = '(leaf)'
-        setTextLine(self.text, self.canvas, text)
-
-        for line in self.text:
-            line.setZ(70)
-
-    def moveit(self, x, y):
-        self.showit()
-        self.move(x, y)
-        self.bubbleShadow.move(x+5, y+5)
-        distance = 0
-        sizeX = 0
-        sizeY = 0
-
-        # set position of text and separators
-        for text in self.text:
-            if text.isSeparator:
-                distance += 2
-                text.setX(x)
-                text.setY(y + distance)
-                distance += 2
-            else:
-                text.setX(x + 2)
-                text.setY(y + distance)
-                sizeX = max(text.boundingRect().width(), sizeX)
-                distance += text.boundingRect().height()
-
-        # set the size of the bubble border
-        sizeX += 5
-        sizeY = distance + 5
-
-        #dolocim dolzino crt
-        for line in self.text:
-            if line.isSeparator:
-                line.setPoints(line.startPoint().x(), line.startPoint().y(), line.startPoint().x() + sizeX - 1, line.startPoint().y())
-        self.setSize(sizeX , sizeY)
-        self.bubbleShadow.setSize(sizeX, sizeY)
-
-    def showit(self):
-        self.show()
-        self.bubbleShadow.show()
-        for text in self.text:
-            text.show()
-
-    def hideit(self):
-        self.hide()
-        self.bubbleShadow.hide()
-        for text in self.text:
-            text.hide()
-
-class MyCanvasView(QCanvasView):
-    def __init__(self, *args):
-        apply(QCanvasView.__init__,(self,) + args)
-        #self.doc = doc
-        self.canvas = args[0]
-        self.viewport().setMouseTracking(True)
-        
-        (self.x, self.y) = (0,0) # coordinates of the last event
-        self.dropplet = None     # last dropplet changed in color
-        # Kazalec na trenutno odprti bubble
-        self.bubbleShown = None
-        # Vozlisce, na katerem trenutno izvajamo akcije
-        self.selectedNode = None
-        # Ali se bubble prikazuje?
-        self.bubbleIsShown = True
-        # Popup izbirni menu
-        self.popup = QPopupMenu(self)
-        self.popup.setCheckable(True)
-        self.popup.insertItem("Show subtree", self.showSubtree, 0, PopupSubtree)
-        self.popup.setItemChecked(PopupSubtree, True)
-        self.popup.insertItem("Bubble enabled", self.showBubble, 0, PopupBubble)
-        self.popup.setItemChecked(PopupBubble, True)
-
-    def infoSet(self, master = None):
-        self.master = master
-
-    def coordInNode(self, node, x, y):
-        return (node.x <= x) and ((node.x + self.master.BodyWidth + self.master.PieWidth/2) >= x) and (node.y <= y) and (node.y + self.master.BodyHeight >= y)
-
-    # Skrije ali prikaze poddrevo trenutnega vozlisca
-    def showSubtree(self):
-        if self.selectedNode != None:
-            if self.popup.isItemChecked(PopupSubtree) == True:
-                TreeWalk_setVisible(self.selectedNode, False)
-                self.popup.setItemChecked(PopupSubtree, False)
-            else:
-                TreeWalk_setVisible(self.selectedNode, True, True)
-                self.popup.setItemChecked(PopupSubtree, True)
-            self.canvas.update()
-        self.viewport().setMouseTracking(self.bubbleIsShown)
-
-    # Skrije ali prikaze bubble s podatki
-    def showBubble(self):
-        if self.popup.isItemChecked(PopupBubble) == True:
-            self.bubbleIsShown = False
-        else:
-            self.bubbleIsShown = True
-        self.viewport().setMouseTracking(self.bubbleIsShown)
-        self.popup.setItemChecked(PopupBubble, self.bubbleIsShown)
-
-    def contentsMousePressEvent(self, event):
-        self.viewport().setMouseTracking(self.bubbleIsShown)
-        if event.button() == QEvent.LeftButton:
-            items = filter(lambda ci: ci.z()<15 and ci.z()>5, self.canvas.collisions(event.pos()))
-            if len(items)==0: # nothing significant was clicked on
-                self.master.deselectNode() # deselect node (if it was selected)
-                return
-            node = items[0].node
-            if items[0].z() == 10: # click on a node
-                self.master.selectNode(node)
-            else: # click on a dropplet
-                if node.borderline:  # should open node's siblings, they are new borderline
-                    node.borderline = 0
-                    for sibling in node.branches:
-                        self.master.visibleToBorderline(sibling)
-                else:
-                    node.borderline = 1
-                    for sibling in node.branches:
-                        self.master.hideTree(sibling)
-                    if self.master.selectedNode and not self.master.selectedNode.visible:
-                        self.master.deselectNode()
-                if self.master.AutoArrange:
-                    self.master.rescaleTree()
-                self.canvas.update()
-
-        elif event.button() == QEvent.RightButton:
-            for node in master.nodes:
-                if node.visible and self.coordInNode(node, event.x(), event.y()):
-                    self.bubbleIsShown = self.viewport().hasMouseTracking()
-                    self.viewport().setMouseTracking(False)
-                    if self.bubbleShown != None:
-                        self.bubbleShown.hideit()
-                    self.selectedNode = node
-                    self.popup.setItemChecked(PopupBubble, self.bubbleIsShown)
-                    self.popup.popup(event.globalPos())
-        self.canvas.update()
-
-    def contentsMouseMoveEvent(self, event):
-        items = filter(lambda ci: ci.z()<15 and ci.z()>5, self.canvas.collisions(event.pos()))
-        if len(items) == 0: # mouse over nothing special
-            if self.bubbleShown:
-                self.bubbleShown.hideit()
-                self.canvas.update()
-            if self.dropplet:
-                self.dropplet.setBrush(QBrush(Qt.gray))
-                self.dropplet = None
-                self.canvas.update()
-        elif items[0].z() == 10: # mose over the node
-            if not self.master.NodeBubblesEnabled:
-                return
-            node = items[0].node
-            self.x = event.x()
-            self.y = event.y()
-            if node.bubble == None:  # create the bubble for the node if it does not exist yet
-                if self.bubbleShown: # an old bubble is still on (mouse moved fast)
-                    self.bubbleShown.hideit()
-                node.bubble = BubbleInfo(self.canvas)
-                node.bubble.setText(self.master, node)
-                self.bubbleShown = node.bubble
-                node.bubble.showit()
-            elif self.bubbleShown: # a buble is visible
-                if self.bubbleShown <> node.bubble: # but it is not the right one (mouse moved fast)
-                    self.bubbleShown.hideit()
-                    self.bubbleShown = node.bubble
-                    self.bubbleShown.showit()
-
-            node.bubble.moveit(event.x()+20, event.y()+20)
-            self.canvas.update()
-        else: # mouse over the dropplet
-            dropplet = items[0].node.dropplet
-            if dropplet <> self.dropplet:
-                if self.dropplet:
-                    self.dropplet.setBrush(QBrush(Qt.gray))
-                self.dropplet = dropplet
-                dropplet.setBrush(QBrush(Qt.black))
-                self.canvas.update()
-
-
-##############################################################################
-# main class
-
-PieWidth_Default = 15
-PieHeight_Default = 15
-BodyWidth_Default = 30
-BodyHeight_Default = 20
-AttributeBoundBoxHeight_Default = 6
-AttributeTextSize_Default = AttributeBoundBoxHeight_Default * 0.65
-
-import warnings
-warnings.filterwarnings("ignore", ".*TreeNode.*", orange.AttributeWarning)
-
-class OWClassificationTreeViewer2D(OWWidget):	
-    settingsList = ["ZoomAutoRefresh", "AutoArrange", "NodeBubblesEnabled",
-                    "Zoom", "VSpacing", "HSpacing", "MaxTreeDepth", "MaxTreeDepthB",
-                    "LineWidth", "LineWidthMethod",
-                    "NodeSize", "NodeInfo", "NodeColorMethod",
-                    "ShowPies", "TruncateText"]
-
+class OWClassificationTreeViewer2D(OWTreeViewer2D):
     def __init__(self, parent=None, signalManager = None, name='ClassificationTreeViewer2D'):
-        self.callbackDeposit = [] # deposit for OWGUI callback functions
-        self.canvas = None
-        self.root = None
-        self.selectedNode = None
-        OWWidget.__init__(self, parent, signalManager, name) 
+        OWTreeViewer2D.__init__(self, parent, signalManager, name)
+        self.settingsList=self.settingsList+["ShowPie","TargetClassIndex"]
         
         self.inputs = [("Classification Tree", orange.TreeClassifier, self.ctree)]
         self.outputs = [("Classified Examples", ExampleTableWithClass), ("Examples", ExampleTable)]
-
-        # some globaly used variables (get rid!)
-        self.TargetClassIndex = 0
-
-        #set default settings
-        self.ZoomAutoRefresh = 0
-        self.AutoArrange = 0
-        self.NodeBubblesEnabled = 1
-        self.MaxTreeDepth = 5; self.MaxTreeDepthB = 0
-        self.LineWidth = 5; self.LineWidthMethod = 0
-        self.NodeSize = 5
-        self.NodeInfo = [0, 1]
         
-        self.NodeColorMethod = 0
-        self.ShowPies = 1
-        self.Zoom = 5
-        self.VSpacing = 5; self.HSpacing = 5
-        self.TruncateText = 1
+        self.ShowPies=1
+        self.TargetClassIndex=0
+        self.canvas=TreeCanvas(self)
+        self.canvasView=TreeCanvasView(self, self.canvas, self.mainArea, "CView")
+        layout=QVBoxLayout(self.mainArea)
+        layout.addWidget(self.canvasView)
+        self.canvas.resize(800,800)
+        self.canvasView.bubbleConstructor=self.classificationBubbleConstructor
+        self.navWidget=QWidget(None, "Navigator")
+        self.navWidget.lay=QVBoxLayout(self.navWidget)
+        canvas=TreeCanvas(self.navWidget)
+        self.treeNav=TreeNavigator(self.canvasView,self,canvas,self.navWidget, "Nav")
+        self.treeNav.setCanvas(canvas)
+        self.navWidget.lay.addWidget(self.treeNav)
+        self.canvasView.setNavigator(self.treeNav)
+        self.navWidget.resize(400,400)
+        self.navWidget.setCaption("Qt Navigator")
+        OWGUI.button(self.TreeTab,self,"Navigator",self.toggleNavigator)
+        self.setMouseTracking(True)
 
-        self.loadSettings()
-        self.NodeInfo.sort()
-        self.scaleSizes()
-
-        # GUI definition
-        self.tabs = QTabWidget(self.controlArea, 'tabWidget')
-
-        # GENERAL TAB
-        GeneralTab = QVGroupBox(self)
-
-        OWGUI.hSlider(GeneralTab, self, 'Zoom', box='Zoom', minValue=1, maxValue=10, step=1, callback=self.toggleZoomSlider, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'VSpacing', box='Vertical Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleVSpacing, ticks=1)
-        OWGUI.hSlider(GeneralTab, self, 'HSpacing', box='Horizontal Spacing', minValue=1, maxValue=10, step=1, callback=self.toggleHSpacing, ticks=1)
-
-        OWGUI.checkBox(GeneralTab, self, 'ZoomAutoRefresh', 'Auto Refresh After Zoom', tooltip='Refresh after change of zoom setting?')
-        OWGUI.checkBox(GeneralTab, self, 'AutoArrange', 'Auto Arrange', tooltip='Auto arrange the position of the nodes\nafter any change of nodes visibility')
-        OWGUI.checkBox(GeneralTab, self, 'NodeBubblesEnabled', 'Node Bubbles', tooltip='When mouse over the node show info bubble')
-        OWGUI.checkBox(GeneralTab, self, 'TruncateText', 'Truncate Text To Fit Margins', tooltip='Truncate any text to fit the node width', callback=self.toggleTruncateText)
-        
-        self.infBox = QVGroupBox(GeneralTab)
-        self.infBox.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
-        self.infBox.setTitle('Tree Size Info')
-	self.infoa = QLabel('No tree.', self.infBox)
-        self.infob = QLabel('', self.infBox)
-        
-        self.tabs.insertTab(GeneralTab, "General")
-
-        # TREE TAB
-        TreeTab = QVGroupBox(self)
-        OWGUI.checkWithSpin(TreeTab, self, 'Max Tree Depth:', 1, 20, 'MaxTreeDepthB', "MaxTreeDepth", tooltip='Defines the depth of the tree displayed', checkCallback=self.toogleTreeDepth, spinCallback=self.toogleTreeDepth)
-        OWGUI.spin(TreeTab, self, 'LineWidth', min=1, max=10, step=1, label='Max Line Width:', tooltip='Defines max width of the edges that connect tree nodes', callback=self.toggleLineWidth)
-        OWGUI.radioButtonsInBox(TreeTab, self,  'LineWidthMethod', ['No Dependency', 'Root Node', 'Parent Node'], box='Baseline for Line Width',
-                                tooltips=['All edges are of the same width', 'Line width is relative to number of cases in root node', 'Line width is relative to number of cases in parent node'],
-                                callback=self.toggleLineWidth)
-        self.tabs.insertTab(TreeTab, "Tree")
-
-        # NODE TAB
-        NodeTab = QVGroupBox(self)
-        # Node size options
-        OWGUI.hSlider(NodeTab, self, 'NodeSize', box='Node Width', minValue=1, maxValue=10, step=1, callback=self.toggleNodeSize, ticks=1)
-        # Node information
-        nodeInfoBox = QVButtonGroup("Show Info On", NodeTab)
+        nodeInfoBox = QVButtonGroup("Show Info On", self.NodeTab)
         nodeInfoButtons = ['Majority Class', 'Majority Class Probability', 'Target Class Probability', 'Number of Instances']
         nodeInfoSettings = ['maj', 'majp', 'tarp', 'inst']
         self.NodeInfoW = []; self.dummy = 0
@@ -394,615 +211,141 @@ class OWClassificationTreeViewer2D(OWWidget):
             w = OWGUI.checkBox(nodeInfoBox, self, nodeInfoSettings[i], \
                                nodeInfoButtons[i], callback=self.setNodeInfo, getwidget=1, id=i)
             self.NodeInfoW.append(w)
-        
-        OWGUI.radioButtonsInBox(NodeTab, self, 'NodeColorMethod', ['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color', 
-                                tooltips=['Use the default color for all nodes in the tree.', 'The node color saturation of the color depends on the \nnumber of instances in node (lighter, fewer instances)', 'The saturation of depends on the \nprobability of the prevailing class',
-                                          'The saturation of depends on the \nprobability of the target clas', 'Shows the distribution of instances with target class (100% at the root)\nthrough the nodes of the tree'],
+
+        OWGUI.comboBox(self.NodeTab, self, 'NodeColorMethod', items=['Default', 'Instances in Node', 'Majority Class Probability', 'Target Class Probability', 'Target Class Distribution'], box='Node Color',                            
                                 callback=self.toggleNodeColor)
-        # pies
-        OWGUI.checkBox(NodeTab, self, 'ShowPies', 'Show Pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
 
-        self.tabs.insertTab(NodeTab, "Node")
+        OWGUI.checkBox(self.NodeTab, self, 'ShowPies', 'Show Pies', box='Pies', tooltip='Show pie graph with class distribution?', callback=self.togglePies)
+        self.targetCombo=OWGUI.comboBox(self.NodeTab,self, "TargetClassIndex",items=[],box="TargetClass",callback=self.toggleTargetClass)
+        OWGUI.button(self.controlArea, self, "Save As", callback=self.saveGraph)
+        self.NodeInfoSorted=list(self.NodeInfo)
+        self.NodeInfoSorted.sort()
         
-        # refresh button at the bottom
-        RefreshButton=QPushButton('Refresh', self.controlArea)
-        #OWGUI.button(self.controlArea, self, 'Test', self.test)
-        #self.connect(RefreshButton, SIGNAL('clicked()'), self.refresh)
-
-        self.setMouseTracking(True)
-
-        self.canvasView = None
-        self.layout=QVBoxLayout(self.mainArea)
-
-    def test(self):
-        pass
-
-    ##########################################################################
-    # callbacks (rutines called after some GUI event, like click on a button)
-
     def setNodeInfo(self, widget=None, id=None):
-        if widget.isChecked():
-            if len(self.NodeInfo) == 2:
-                self.NodeInfoW[self.NodeInfo[0]].setChecked(0)
-            self.NodeInfo.append(id)
-        else:
-            self.NodeInfo.remove(id)
-        self.NodeInfo.sort()
+        if widget:
+            if widget.isChecked():
+                if len(self.NodeInfo) == 2:
+                    self.NodeInfoW[self.NodeInfo[0]].setChecked(0)
+                self.NodeInfo.append(id)
+            else:
+                self.NodeInfo.remove(id)
+            self.NodeInfoSorted=list(self.NodeInfo)
+            self.NodeInfoSorted.sort()
+            self.NodeInfoMethod=id
+        #print self.NodeInfoSorted
+        for n in self.canvas.nodeList:
+            n.setText(self.NodeInfoSorted)
+        self.canvas.update()
 
-        if self.root:
-            self.setTreeParam()
-            self.truncateTreeText()
-            self.canvas.update()
-
-    def toggleZoomSlider(self):
-        self.scaleSizes()
-        if self.ZoomAutoRefresh and self.canvasView and self.root:
-            self.rescaleTree()
-            self.canvas.update()
-
-    def toggleVSpacing(self):
-        if self.canvasView and self.root:
-            self.rescaleTreeY()
-            self.canvas.update()
-
-    def toggleHSpacing(self):
-        if self.canvasView and self.root:
-            self.rescaleTreeX()
-            self.canvas.update()
-
-    def toggleNodeSize(self):
-        self.truncateTreeText()
-        pass
-
-    def togglePies(self):
-        if self.root:
-            self.showTreePies()
-            self.canvas.update()
-
-    def toggleLineWidth(self):
-        if self.root:
-            self.setTreeEdges(self.root)
-            self.canvas.update()
-
+    def activateLoadedSettings(self):
+        if not self.tree:
+            return 
+        OWTreeViewer2D.activateLoadedSettings(self)
+        self.setNodeInfo()
+        self.toggleNodeColor()
+        
     def toggleNodeColor(self):
-        self.setColorOfNodes()
-        self.canvas.update()
-
-    def toogleTreeDepth(self):
-        if self.root:
-            self.setTreeVisibility()
-            if self.AutoArrange:
-                self.rescaleTree()
-            self.showTree()
-            self.canvas.update()
-
-    def toggleTruncateText(self):
-        self.truncateTreeText()
-        self.canvas.update()
-
-    ##########################################################################
-    # handling of input signals
-
-    import time
-    def ctree(self, tree):
-        # XXX CLEAR SELECTION, EMPTY OUTPUT SIGNALS
-        if self.canvas != None:
-            for i in self.canvas.allItems():
-                i.setCanvas(None)
-        if not tree:
-            self.infoa.setText('No tree.')
-            self.infob.setText('')
-
-            if self.canvas:
-                self.canvas.update()
-            return
-        if not self.canvas:         
-            self.canvas = QCanvas(200, 200)
-            self.canvasView = MyCanvasView(self.canvas, self.mainArea)
-            self.canvasView.infoSet(master = self)
-            self.layout.add(self.canvasView)
-
-        self.tree = tree
-        self.root = tree.tree
-        self.classes = [x[0] for x in self.root.distribution.items()]
-        self.numInstances = self.root.distribution.cases
-        
-        self.ClassColors = ColorPaletteHSV(len(self.classes))
-
-        # Annotate Orange tree and show it
-        self.buildTree2D()
-        self.canvas.update()
-
-        self.infoa.setText('Number of nodes: ' + str(orngTree.countNodes(tree)))
-        self.infob.setText('Number of leaves: ' + str(orngTree.countLeaves(tree)))
-
-    def target(self, target):
-        self.TargetClassIndex = target
-        self.refresh()
-
-    ##########################################################################
-    # definition of a tree
-
-    def buildTree2D(self):
-        # Annotate tree nodes (with attributes specific to 2D drawing)
-        self.nodes = []
-        self.annotateTree(self.root)
-        self.constructNodeSelection()
-        self.setTreeVisibility()
-        
-        self.rescaleTree()
-        self.setTreeEdges(self.root)
-        self.setColorOfNodes()
-        self.showTree()
-
-    # selectedSortAttribute = node.branchSelector.classVar.name
-    # selectedAttributeVal =  node.branchDescriptions
-    # numCases = node.distribution.cases
-    def annotateTree(self, node, prevAttributeVal=None, prevAttributeName=None, rule=[], depth=0):
-        self.nodes.append(node)
-
-        node.prevAttributeName = prevAttributeName
-        node.prevAttributeVal = prevAttributeVal
-        node.bubble = None
-        node.inverted = 0
-        node.depth = depth + 1
-        node.borderline = node.branches and self.MaxTreeDepthB and (node.depth == self.MaxTreeDepth)
-
-        crule = copy.copy(rule)
-        if prevAttributeName <> None:
-            crule.append(prevAttributeName + ' = ' + prevAttributeVal)
-        node.rule = crule
-        
-        # finds indices of classes for which instances is in majority
-        majClassInstances = max(node.distribution)
-        node.majClass = filter(lambda i, m=majClassInstances: node.distribution[i]==m, range(len(node.distribution)))
-
-        # info ['Majority Class', 'Majority Class Probability', 'Target Class Probability', 'Number of Instances']
-        node.majClassName = node.distribution.items()[node.majClass[0]][0]
-        node.majClassProb = max(node.distribution) / node.distribution.cases
-        node.targetClassProb = node.distribution[self.TargetClassIndex] / node.distribution.cases
-        node.info = [node.majClassName, "%5.3f" % node.majClassProb, "%5.3f" % node.targetClassProb, node.distribution.cases]
-
-        if node.branches:
-            node.name = node.branchSelector.classVar.name
-        else:
-            node.name = node.majClassName
-        
-        self.drawNode(node)
-        
-        # recurse on childreen
-        if node.treesize() > 1:
-            for i in range(len(node.branches)):
-                if node.branches[i]: # check for null-leaf
-                    self.annotateTree(node.branches[i], node.branchDescriptions[i], node.branchSelector.classVar.name, crule, depth+1)
-
-    def setTreeVisibility(self):
-        for node in self.nodes:
-            node.visible = (not self.MaxTreeDepthB) or (node.depth <= self.MaxTreeDepth)
-            node.borderline = node.branches and self.MaxTreeDepthB and (node.depth == self.MaxTreeDepth)
-        if self.selectedNode and not self.selectedNode.visible:
-            self.deselectNode()
-
-
-    ##########################################################################
-    # CONSTRUCTION OF VISUAL ELEMENTS OF THE TREE
-    
-    def constructNodeBody(self, node):
-        node.body = QCanvasRectangle(self.canvas)
-        node.body.node = node # used for event handling (canvas returns an object mouse is on)
-        node.body.setBrush(QBrush(BodyColor_Default))
-        node.body.setZ(10)
-        if node.branches:
-            node.dropplet = QCanvasEllipse(self.canvas)
-            node.dropplet.node = node
-            node.dropplet.setBrush(QBrush(Qt.gray))
-            node.dropplet.setZ(9)
-
-    def setNodeParam(self ,node):
-        for i in range(2):
-            if i < len(self.NodeInfo):
-                node.parameter[i].setText(str(node.info[self.NodeInfo[i]]))
-                node.Texts[i+1].text = str(node.info[self.NodeInfo[i]])
-            else:
-                node.parameter[i].setText('')
-                node.Texts[i+1].text = ''
-
-    def setTreeParam(self):
-        for node in self.nodes:
-            self.setNodeParam(node)
-
-    def constructNodeText(self, node):
-        node.Texts = []
-        setTextLine(node.Texts, self.canvas, node.prevAttributeVal)
-        node.parameter = [None] * 2
-        for i in range(2):
-            node.parameter[i] = setTextLine(node.Texts, self.canvas, '')  # this is a bit wastefull
-        self.setNodeParam(node)
-        
-        # separator
-        setTextSeparator(node.Texts, self.canvas)
-        
-        # the name of the partition attribute
-        setTextLine(node.Texts, self.canvas, node.name)
-        
-        for t in node.Texts:
-            if not t.isSeparator:
-                t.setFont(self.nodeFont) # this is also a bit wastefull (sets font for second time for some)
-            t.setZ(30)
-
-    def constructInEdge(self, node):
-        node.edge = QCanvasLine(self.canvas)
-        node.edge.setZ(3)
-
-    def constructNodePie(self, node):
-        node.pieFrame = QCanvasEllipse(self.canvas)
-        node.pieFrame.setBrush(QBrush(Qt.black))
-        node.pieFrame.setZ(50)
-        
-        # construction of sections of pie
-        node.pies=[]
-        startAngle = 0
-        i = 0
-        for count in node.distribution:
-            if count > 0:
-                sizeAngle = (count / node.distribution.cases) * 360
-                pie = QCanvasEllipse(self.canvas)
-                pie.setAngles(startAngle*16, sizeAngle*16)
-                pie.setBrush(QBrush(self.ClassColors[i]))
-                pie.setZ(51)
-                node.pies.append(pie)
-                startAngle += sizeAngle
-            i += 1
-
-    def drawNode(self, node):
-        self.constructNodeBody(node)
-        self.constructNodeText(node)
-        self.constructInEdge(node)
-        self.constructNodePie(node)
-
-    ##########################################################################
-    # SET PROPERTIES OF NODES AND EDGES (LIKE COLORS, LINE WIDTHS)...
-
-    # light: 100 is neutral, 150 is 50% lighter
-    def setNodeInfoColor(self, node, color):
-        qc = QColor(color)
-        for i in range(2):
-            node.parameter[i].setColor(qc)
-        node.Texts[3].setPen(QPen(color, 1))
-        node.Texts[4].setColor(qc)
-
-    def checkInvertColor(self, node, reference, light):
-        if light <= reference: # darker
-            if not node.inverted:
-                self.setNodeInfoColor(node, Qt.white)
-                node.inverted = 1
-        else:
-            if node.inverted:
-                self.setNodeInfoColor(node, Qt.black)
-                node.inverted = 0
-
-    def setColorOfNodes(self):
-        for node in self.nodes:
-            body = node.body
+        for node in self.canvas.nodeList:
             if self.NodeColorMethod == 0:   # default
-                body.setBrush(QBrush(BodyColor_Default))
+                node.setBrush(QBrush(BodyColor_Default))
             elif self.NodeColorMethod == 1: # instances in node
-                light = 400 - 300*node.distribution.cases/self.numInstances
-                body.setBrush(QBrush(BodyCasesColor_Default.light(light)))
-                self.checkInvertColor(node, 200, light)
+                light = 400 - 300*node.tree.distribution.cases/self.tree.distribution.cases
+                node.setBrush(QBrush(BodyCasesColor_Default.light(light)))
             elif self.NodeColorMethod == 2: # majority class probability
-                body.setBrush(QBrush(self.ClassColors[node.majClass[0]].light(400 - 300 * node.majClassProb)))
+                light=400- 300*node.majClassProb
+                node.setBrush(QBrush(self.ClassColors[node.majClass[0]].light(light)))
             elif self.NodeColorMethod == 3: # target class probability
-                body.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(400 - 300*node.targetClassProb)))
+                light=400-300*node.dist[self.TargetClassIndex]/node.dist.cases
+                node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
             elif self.NodeColorMethod == 4: # target class distribution
-                body.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(400 - 300*node.distribution[self.TargetClassIndex]/self.root.distribution[self.TargetClassIndex])))
-            if self.NodeColorMethod <> 1:
-                if node.inverted:
-                    self.setNodeInfoColor(node, Qt.black)
-                    node.inverted = 0
+                light=200 - 100*node.dist[self.TargetClassIndex]/self.tree.distribution[self.TargetClassIndex]
+                node.setBrush(QBrush(self.ClassColors[self.TargetClassIndex].light(light)))
+        self.canvas.update()
+        self.treeNav.leech()
 
-    def setTreeEdges(self, node):
-        if node.branches:
-            for sibling in node.branches:
-                if sibling: # not null-leaf?
-                    if self.LineWidthMethod == 0:
-                        width = self.LineWidth
-                    elif self.LineWidthMethod == 1:
-                        width = (sibling.distribution.cases/self.root.distribution.cases) * self.LineWidth
-                    elif self.LineWidthMethod == 2:
-                        width = (sibling.distribution.cases/node.distribution.cases) * self.LineWidth
-                    sibling.edge.setPen(QPen(Qt.gray, width))
-                    self.setTreeEdges(sibling)
-
-    ##########################################################################
-    # SET THE SIZE AND POSITION OF GRAPHICAL ELEMENTS
-
-    def scaleSizes(self): # zz1
-        # we got the following from: k(1)=1.4, k(5)=2.5, k(10)=4
-        k = 0.0028 * (self.Zoom ** 2) + 0.2583 * self.Zoom + 1.1389
-        self.BodyWidth = BodyWidth_Default * k
-        self.BodyHeight = BodyHeight_Default * k
-        self.PieWidth = PieWidth_Default * k
-        self.PieHeight = PieHeight_Default * k
-        self.AttributeBoundBoxHeight = AttributeBoundBoxHeight_Default * k
-        self.DroppletRadious = DroppletRadious_Default * k
-        self.AttributeTextSize = self.AttributeBoundBoxHeight * 0.65
-        
-        self.nodeWidth = self.BodyWidth + self.PieWidth/2
-        self.xNodeToNode = self.nodeWidth * (1.0 + self.HSpacing * 0.15)
-        self.nodeHeight = self.BodyHeight
-        self.yNodeToNode = self.nodeHeight * (1.3 + self.VSpacing * 0.2)
-        self.nodeFont = QFont(TextFont, self.AttributeTextSize)
-
-    def setSizes(self):
-        for node in self.nodes:
-            node.body.setSize(self.BodyWidth, self.BodyHeight)
-            node.pieFrame.setSize(self.PieWidth + 2, self.PieHeight + 2)
-            for pie in node.pies:
-                pie.setSize(self.PieWidth, self.PieHeight)
-            for text in node.Texts:
-                if not text.isSeparator:
-                    text.setFont(QFont(TextFont, self.AttributeTextSize))
-            if node.branches:
-                node.dropplet.setSize(self.DroppletRadious, self.DroppletRadious)
-        self.setNodeSelectionSize()
-
-    def setNodePositionX(self, node, x):
-        node.x = x
-        node.body.setX(x)
-        for text in node.Texts:
-            text.setX(x + 3)
-        node.Texts[3].setX(x)
-        node.Texts[3].setPoints(0, 0, self.BodyWidth-1, 0)
-        for pie in [node.pieFrame] + node.pies:
-            pie.setX(x + self.BodyWidth)
-        if node.branches:
-            node.dropplet.setX(x+self.BodyWidth/2)
-    
-    def setNodePositionY(self, node, y):
-        node.y = y
-        node.body.setY(y)
-        node.Texts[0].setY(y-self.AttributeBoundBoxHeight)
-        node.Texts[1].setY(y+1)
-        node.Texts[2].setY(y+1+self.AttributeBoundBoxHeight)
-        node.Texts[4].setY(y+2+self.AttributeBoundBoxHeight*2)
-        node.Texts[3].setY(y+1+self.AttributeBoundBoxHeight*2)
-        for pie in [node.pieFrame] + node.pies:
-            pie.setY(y + self.BodyHeight/2)
-        if node.branches:
-            node.dropplet.setY(y+self.BodyHeight)
-
-    def setNodePosition(self, node, x, y):
-        self.setNodePositionX(node, x)
-        self.setNodePositionY(node, y)
-    
-    def setTreePositions(self, node, level=0):
-        self.setTreePositionsX(node, level=level)
-        self.setTreePositionsY(node, level=level)
-        return
-    
-        y = 10 + level * self.yNodeToNode
-        if (not node.branches) or (self.AutoArrange and node.borderline): # finish with leaf or last visible node
-            x = self.offset
-            self.offset = self.offset + self.xNodeToNode
-        else: # a node
-            for child in node.branches:
-                if child: # not null-leaf?
-                    self.setTreePositions(child, level + 1)
-            # place node in the middle, but watch out for null-leaves XXXXX
-            x = (node.branches[0].x+node.branches[-1].x) * 0.5 # place node in the middle
-        self.setNodePosition(node, x, y)
-        self.maxX = max(self.maxX, x + self.nodeWidth)
-        self.maxY = max(self.maxY, y + self.nodeHeight)
-
-    def setTreePositionsX(self, node, level=0):
-        if (not node.branches) or (self.AutoArrange and node.borderline): # finish with last visible node
-            x = self.offset
-            self.offset = self.offset + self.xNodeToNode
-        else:
-            for child in node.branches:
-                if child: # not null-leaf?
-                    self.setTreePositions(child, level + 1)
-            # have to figure out which is the leftmost and rightmost child (take care for null-leaves)
-            left = None; right = None
-            for left in node.branches:
-                if left:
-                    break
-            for i in range(len(node.branches)-1, -1, -1):
-                if node.branches[i]:
-                    right = node.branches[i]
-                    break
-            x = (left.x+right.x) * 0.5 #- self.nodeWidth
-#            x = (node.branches[0].x+node.branches[-1].x) * 0.5 #- self.nodeWidth
-        self.setNodePositionX(node, x)
-        self.maxX = max(self.maxX, x + self.nodeWidth)
-
-    def setTreePositionsY(self, node, level=0):
-        y = 10 + level * self.yNodeToNode
-        self.setNodePositionY(node, y)
-        self.maxY = max(self.maxY, y + self.nodeHeight)
-        if not((not node.branches) or (self.AutoArrange and node.borderline)):
-            for child in node.branches:
-                if child: # not null-leaf?
-                    self.setTreePositionsY(child, level + 1)
-
-    # set position of outgoing edges
-    def setEdgesPositions(self, node):
-        if node.branches and not (self.AutoArrange and node.borderline):
-            [x1, y1] = [node.x + self.BodyWidth/2, node.y + self.BodyHeight]  # CCC -5
-            for sibling in node.branches:
-                if sibling: # not null-leaf?
-                    [x2, y2] = [sibling.x + self.BodyWidth/2, sibling.y + 5]
-                    sibling.edge.setPoints(x1, y1, x2, y2)
-                    self.setEdgesPositions(sibling)
-
-    def rescaleTree(self):
-        self.maxX = 0; self.maxY = 0; self.offset = 10
-        self.setSizes()
-        self.setTreePositions(self.root)
-        if self.selectedNode:
-            self.setSelectedNodePosition()
-        self.setEdgesPositions(self.root)
-        self.truncateTreeText()
-        self.canvas.resize(self.maxX + ExpectedBubbleWidth_Default, self.maxY + ExpectedBubbleHeigth_Default)
-
-    def rescaleTreeX(self):
-        self.maxX = 0; self.offset = 10
-        self.scaleSizes()
-        self.setTreePositionsX(self.root)
-        if self.selectedNode:
-            self.setSelectedNodePosition()
-        self.setEdgesPositions(self.root)
-        self.canvas.resize(self.maxX + ExpectedBubbleWidth_Default, self.maxY + ExpectedBubbleHeigth_Default)
-
-    def rescaleTreeY(self):
-        self.maxY = 0
-        self.scaleSizes()
-        self.setTreePositionsY(self.root)
-        if self.selectedNode:
-            self.setSelectedNodePosition()
-        self.setEdgesPositions(self.root)
-        self.canvas.resize(self.maxX + ExpectedBubbleWidth_Default, self.maxY + ExpectedBubbleHeigth_Default)
-        
-    def truncateTreeText(self):
-        maxTextWidth = self.TruncateText and (self.BodyWidth - 10)
-        # assumes that the font of the text is set appropriately
-        for node in self.nodes:
-                for i in [1,2,4]:
-                    text = node.Texts[i]
-                    label = text.text
-                    text.setText(label)
-                    if self.TruncateText:
-                        w = text.boundingRect().width()
-                        if w > maxTextWidth:
-                            for i in range(3): # this is an approximate, as we compute the average char width and
-                                nchars = int(len(label) * maxTextWidth / w)  # based on this reduce string
-                                label = label[:nchars]                     # as the line may still be too long, we iterate
-                                text.setText(label)
-                                w = text.boundingRect().width()
-                                if w < maxTextWidth: break
-
-    ##########################################################################
-    # HANDLE SELECTION OF THE NODE
-
-    def constructNodeSelection(self): ## zzz
-        sl = [QCanvasLine(self.canvas) for i in range(8)]
-        for line in sl:
-            line.setZ(50)
-            line.setPen(QPen(QColor(0, 0, 150), 3))
-        self.selectionSquare = sl
-
-    def setNodeSelectionSize(self):
-        sl = self.selectionSquare
-        xleft = -3; xright = self.BodyWidth + 2
-        yup = -3; ydown = self.BodyHeight + 2
-        xspan = self.BodyWidth / 4; yspan = self.BodyHeight / 4
-        sl[0].setPoints(xleft, yup, xleft + xspan, yup)
-        sl[1].setPoints(xleft, yup-1, xleft, yup + yspan)
-        sl[2].setPoints(xright, yup, xright - xspan, yup)
-        sl[3].setPoints(xright, yup-1, xright, yup + yspan)
-        sl[4].setPoints(xleft, ydown, xleft + xspan, ydown)
-        sl[5].setPoints(xleft, ydown+2, xleft, ydown - yspan)
-        sl[6].setPoints(xright, ydown, xright - xspan, ydown)
-        sl[7].setPoints(xright, ydown+2, xright, ydown - yspan)
-
-    def setSelectedNodePosition(self):
-        (x, y) = (self.selectedNode.x, self.selectedNode.y)
-        for line in self.selectionSquare:
-            line.setX(x); line.setY(y)
-            line.show()
-
-    def deselectNode(self):
-        if self.selectedNode:
-            self.selectedNode = None
-            for line in self.selectionSquare:
-                line.hide()
-
-    def selectNode(self, node): # zzz
-        if node == self.selectedNode:
-            self.deselectNode()
-        else:
-            self.selectedNode = node
-            data = node.examples
-            if data <> None:
-                self.send("Classified Examples", data)
-                self.send("Examples", data)
-            self.setSelectedNodePosition()
+    def toggleTargetClass(self):
+        if self.NodeColorMethod in [3,4]:
+            self.toggleNodeColor()
+        for n in self.canvas.nodeList:
+            n.texts[2]="%.3f" % (n.dist.items()[self.TargetClassIndex][1]/n.dist.cases)
+            if 2 in self.NodeInfoSorted:
+                n.setText(self.NodeInfoSorted)
+        self.canvas.update()
+                
+    def togglePies(self):
+        for n in self.canvas.nodeList:
+            n.setPieVisible(self.ShowPies)
         self.canvas.update()
 
-    ##########################################################################
-    # SHOW / HIDE AND VISIBILITY OF NODES
+    def ctree(self, tree=None):
+        self.targetCombo.clear()
+        if tree:
+            for name in tree.tree.examples.domain.classVar.values:
+                self.targetCombo.insertItem(name)
+        if tree and len(tree.tree.distribution)>self.TargetClassIndex:
+            self.TargetClassIndex=0
+        OWTreeViewer2D.ctree(self, tree)
 
-    def showTreePies(self):
-        for node in self.nodes:
-            if node.visible and self.ShowPies:
-                node.pieFrame.show()
-                for pie in node.pies:
-                    pie.show()
-            else:
-                node.pieF<rame.hide()
-                for pie in node.pies:
-                    pie.hide()
+    def walkcreate(self, tree, parent=None, level=0, attrVal=""):
+        node=ClassificationNode(attrVal, tree, parent or self.canvas, self.canvas)
+        if tree.branches:
+            for i in range(len(tree.branches)):
+                if tree.branches[i]:
+                    self.walkcreate(tree.branches[i],node,level+1,tree.branchDescriptions[i])
+        return node
 
-    def showNode(self, node):
-        node.visible = 1
-        node.body.show()
-        for text in node.Texts:
-            text.show()
-        node.edge.show()
-        if node.branches:
-            node.dropplet.show()
-        if self.ShowPies:
-            node.pieFrame.show()
-            for pie in node.pies:
-                pie.show()
+    def classificationBubbleConstructor(self, node, pos, canvas):
+        b=CanvasBubbleInfo(node, pos,canvas)
+        rule=list(node.rule)
+        #print node.rule, rule
+        #rule.sort(lambda:a,b:a[0]<b[0])
+        # merge
+        if rule:
+            try:
+                rule=parseRules(list(rule))
+            except:
+                pass
+            text="IF "+" AND\n  ".join([a[0].name+" = "+a[1] for a in rule])+"\nTHEN "+node.majClassName
+        else:
+            text="THEN "+node.majClassName
+        b.addTextLine(text)
+        b.addTextLine()
+        text="Instances:"+str(node.numInst)+"(%.1f" % (node.numInst/self.tree.distribution.cases*100)+"%)"
+        b.addTextLine(text)
+        b.addTextLine()
+        for i,d in enumerate(node.dist.items()):
+            if d[1]!=0:
+                b.addTextLine("%s: %i (%.1f" %(d[0],int(d[1]),d[1]/sum(node.dist)*100)+"%)",self.ClassColors[i])
+        b.addTextLine()
+        b.addTextLine((node.tree.branches and "Partition on: "+node.name) or "(leaf)")
+        b.show()
+        return b
 
-    def hideNode(self, node):
-        node.visible = 0
-        node.body.hide()
-        for text in node.Texts:
-            text.hide()
-        node.edge.hide()
-        if node.branches:
-            node.dropplet.hide()
-        node.pieFrame.hide()
-        for pie in node.pies:
-            pie.hide()
-
-    def showTree(self):
-        for node in self.nodes:
-            if node.visible:
-                self.showNode(node)
-            else:
-                self.hideNode(node)
-
-    def hideTree(self, node):
-        self.hideNode(node)
-        if node.branches:
-            for sibling in node.branches:
-                if sibling: # not null-leaf?
-                    self.hideTree(sibling)
-
-    def visibleToBorderline(self, node):
-        self.showNode(node)
-        if not node.borderline and node.branches:
-            for sibling in node.branches:
-                if sibling: # not null-leaf?
-                    self.visibleToBorderline(sibling)
-
-##################################################################################################
-# TreeWalk constructs a visual definition of the tree that is a collection of the
-# visual defines for nodes
-
+    def saveGraph(self):
+        qfileName = QFileDialog.getSaveFileName("tree.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)\nDot Tree File(.DOT)", None, "Save to..")
+        fileName = str(qfileName)
+        if fileName == "": return
+        (fil,ext) = os.path.splitext(fileName)
+        ext = ext.replace(".","")
+        ext = ext.upper()
+        if ext=="DOT":
+            orngTree.printDot(self.tree, fileName)
+            return 
+        dSize= self.canvas.size()
+        buffer = QPixmap(dSize.width(),dSize.height()) # any size can do, now using the window size     
+        painter = QPainter(buffer)
+        
+        painter.fillRect(buffer.rect(), QBrush(QColor(255, 255, 255))) # make background same color as the widget's background
+        self.canvasView.drawContents(painter,0,0,dSize.width(), dSize.height())
+        painter.end()
+        buffer.save(fileName, ext)
+    
 if __name__=="__main__":
-    import orange
     a = QApplication(sys.argv)
     ow = OWClassificationTreeViewer2D()
     a.setMainWidget(ow)
-    ow.activateLoadedSettings()
 
-#    data = orange.ExampleTable('../../doc/datasets/voting')
-    data = orange.ExampleTable('insi')
+    data = orange.ExampleTable('../../doc/datasets/voting.tab')
     tree = orange.TreeLearner(data, storeExamples = 1)
     ow.ctree(tree)
 
