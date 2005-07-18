@@ -280,13 +280,13 @@ PyObject *ExampleTable_sort(PyObject *self, PyObject *args) PYARGS(METH_VARARGS,
 <P>Pyprops scans each hpp file for classes we want to export to Python (or, in general, some other scripting language). Properties can be <CODE>bool</CODE>, <CODE>int</CODE>, <CODE>float</CODE>, <CODE>string</CODE>, <CODE>TValue</CODE> or a wrapped Orange type.</P>
 
 <P>Pyprops' parser is essentially a trivial finite automaton. Class definition needs to look as follows.</P>
-<XMP class=code>class [ORANGE_API] &lt;classname&gt; [: public &lt;parentclass&gt; ]
+<XMP class=code>class [ORANGE_API] <classname>; [: public <parentclass> ]
 </XMP>
 
 <P>This should be in a single line. To mark the class for export, this should be followed by <CODE>REGISTER_CLASS</CODE> or <CODE>REGISTER_ABSTRACT_CLASS</CODE> before any properties or components are defined. The difference between the two, as far as pyprops is concerned, is that abstract classes don't define the <CODE>clone</CODE> method.</P>
 
 <P>To export a property, it should be defined like this.</P>
-<XMP class=code>&lt;type&gt; &lt;name&gt; //P[R|O] [>|+&lt;alias&gt;] &lt;description&gt;</XMP>
+<XMP class=code><type> <name> //P[R|O] [>|+<alias>] <description></XMP>
 
 <P>Pyprops doesn't check the type and won't object if you use other types than those listed above. Linker will complain about missing symbols, though. <CODE>//P</CODE> signals that we want to export the property. If followed by R or O, the property is read-only or obsolete. The property can also have an alias name; > renames it and + adds an alias. Description is not used at the time, but it is nevertheless a good practice to provide it.</P>
 
