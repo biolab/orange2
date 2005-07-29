@@ -193,6 +193,11 @@ class OWDataSampler(OWWidget):
             sample = self.data.select(self.ind, self.outFold-1)
             remainder = self.data.select(self.ind, self.outFold-1, negate=1)
             self.infoc.setText('Outputing fold %d of %d, %d instance(s).' % (self.outFold, self.Folds, len(sample)))
+        # set name (by PJ)
+        if sample:
+            sample.name = self.data.name
+        if remainder:
+            remainder.name = self.data.name
         # send data
         self.send("Sampled Data", sample)
         self.send("Remaining Data", remainder)

@@ -17,7 +17,7 @@ class OWSelectData(OWWidget):
 
         # set channels
         self.inputs = [("Examples", ExampleTable, self.onDataInput, 1)]
-        self.outputs = [("Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass),("Non-Matching Examples", ExampleTable), ("Non-Matching Classified Examples", ExampleTableWithClass)]
+        self.outputs = [("Matching Examples", ExampleTable), ("Non-Matching Examples", ExampleTable), ("Matching Classified Examples", ExampleTableWithClass), ("Non-Matching Classified Examples", ExampleTableWithClass)]
 
         # manually set member variables
         self.name2var = {}   # key: variable name, item: orange.Variable
@@ -255,10 +255,11 @@ class OWSelectData(OWWidget):
             else:
                 filter = orange.Filter_conjunction([]) # a filter that does nothing
             matchingOutput = filter(self.data)
-            matchingOutput.name = self.data.name + " (filtered, matched)"
-            filter.negate = True
-            nonMatchingOutput = filter(self.data)
-            nonMatchingOutput.name = self.data.name + " (filtered, non-matched)"
+            matchingOutput.name = self.data.name
+##            print "len(matchingOutput)", len(matchingOutput)
+            nonMatchingOutput = filter(self.data, negate=1)
+            nonMatchingOutput.name = self.data.name
+##            print "len(nonMatchingOutput)", len(nonMatchingOutput)
         self.send("Matching Examples", matchingOutput)
         self.send("Non-Matching Examples", nonMatchingOutput)
 
