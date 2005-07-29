@@ -85,8 +85,11 @@ class OWDataTable(OWWidget):
             self.table2id[table] = id
             tabName = data.name
             if not tabName:
-                tabName = str(len(self.data))
-            #tabName = data.name + " " + str(id)
+                tabName = "(Unnamed)"
+            tabName += " (" + str(id[1]) + ")"
+            if id[2]:
+                tabName += " [" + str(id[2]) + "]"
+##            tabName = data.name + " "+str(id)
             self.tabs.insertTab(table, tabName)
             self.set_table(table, data)
             self.tabs.showPage(table)
@@ -211,6 +214,7 @@ class OWDataTable(OWWidget):
 
         # set the contents of the table (values of attributes)
         # iterate variables
+        print m, ml, metas, metaKeys
         for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
             self.progressBarSet(j*100.0/numVarsMetas)
             if attr == data.domain.classVar:
