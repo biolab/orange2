@@ -594,7 +594,8 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 PRuleList TRuleBeamCandidateSelector_TakeAll::operator()(PRuleList existingRules, PExampleTable, const int &)
 {
   PRuleList candidates = mlnew TRuleList(existingRules.getReference());
-  existingRules->clear();
+//  existingRules->clear();
+  existingRules->erase(existingRules->begin(), existingRules->end());
   return candidates;
 }
 
@@ -667,10 +668,10 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
           if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
             _selectBestRule(*ni, bestRule, wins, rgen);
         }
-      } 
+      }  
     } 
     ruleFilter->call(ruleList,data,weightID);
-  } 
+  }  
 
   // set empty values if value was not set (used default)
   if (tempInitializer)
@@ -743,7 +744,7 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
 
     wdata = coverAndRemove->call(rule, wdata, currWeightID, currWeightID, targetClass);
     ruleList->push_back(rule);
-  }
+  } 
 
   // Restore values
   if (tempDataStopping) 
