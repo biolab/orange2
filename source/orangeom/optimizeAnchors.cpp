@@ -12,13 +12,12 @@ inline double sqr(const double &x)
 typedef struct {double x, y; } TPoint;
 
 
-float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *classes, TPoint *pts, TPoint *anc, double *sum, const double attractG, const double repelG, const int law)
+float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contClass, double *X, int *classes, TPoint *pts, TPoint *anc, double *sum, const double attractG, const double repelG, const int law)
 {
   double *Xi;
   double *sumi, *sume = sum + nExamples;
   TPoint *anci, *ance = anc + nAttrs;
   TPoint *ptsi, *ptsj, *ptse = pts + nExamples;
-  int *classesi, *classesj;
 
   for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
     ptsi->x = ptsi->y = 0.0;
@@ -32,66 +31,104 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, double *X, int *
 
   double E = 0.0;
 
-  switch(law) {
-    case TPNN::InverseLinear:
-      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          if (*classesi == *classesj) {
-            if (attractG != 0.0)
-              E += attractG * (sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y));
-          }
-          else {
-            if (repelG != 0.0) {
-              const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-              E += repelG * log(dist < 1e-15 ? 1e-15 : dist);
-            }
-          }
-        }
-      E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
-      break;
+  if (contClass) {
+    double *dclassesi, *dclassesj;
+    double *&dclasses = (double *&)classes;
 
-    case TPNN::InverseSquare:
-      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          if (*classesi == *classesj) {
-            if (attractG != 0.0) {
-              const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-              if (dist > 1e-15)
-                E += 100*attractG * exp(1.5 * log(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)))/3.0;
-            }
+    switch(law) {
+      case TPNN::InverseLinear:
+        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
+          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
+            const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E -= abs(*dclassesi - *dclassesj) * log(dist < 1e-15 ? 1e-15 : dist);
           }
-          else {
-            if (repelG != 0.0) {
-              double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-              E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
-            }
-          }
-        }
-      break;
+        E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
+        break;
 
-    case TPNN::InverseExponential:
-      for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-        for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-          if (*classesi == *classesj) {
-            if (attractG != 0.0)
-              E += attractG * exp(sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+      case TPNN::InverseSquare:
+        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
+          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
+            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E += abs(*dclassesi - *dclassesj) / (dist < 1e-15 ? 1e-15 : sqrt(dist));
           }
-          else {
-            if (repelG != 0.0)
-              E -= repelG * exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
-          }
-        }
-      break;
+        break;
 
+      case TPNN::InverseExponential:
+        for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
+          for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
+            E += abs(*dclassesi - *dclassesj) / exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+          }
+        break;
+
+    }
   }
+
+  else {
+    int *classesi, *classesj;
+
+    switch(law) {
+      case TPNN::InverseLinear:
+        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+            if (*classesi == *classesj) {
+              if (attractG != 0.0)
+                E += attractG * (sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y));
+            }
+            else {
+              if (repelG != 0.0) {
+                const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+                E += repelG * log(dist < 1e-15 ? 1e-15 : dist);
+              }
+            }
+          }
+        E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
+        break;
+
+      case TPNN::InverseSquare:
+        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+            if (*classesi == *classesj) {
+              if (attractG != 0.0) {
+                const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+                if (dist > 1e-15)
+                  E += 100*attractG * exp(1.5 * log(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)))/3.0;
+              }
+            }
+            else {
+              if (repelG != 0.0) {
+                double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+                E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
+              }
+            }
+          }
+        break;
+
+      case TPNN::InverseExponential:
+        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
+          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
+            if (*classesi == *classesj) {
+              if (attractG != 0.0)
+                E += attractG * exp(sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+            }
+            else {
+              if (repelG != 0.0)
+                E -= repelG * exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+            }
+          }
+        break;
+
+    }
+  }
+
   return E;
 }
 
 
 
 bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors, PyObject *pyattrIndices,
-                    int &nAttrs, int &nExamples,
-                    double *&X, int *&classes, TPoint *&anc, PyObject **&ll)
+                    int &nAttrs, int &nExamples, int &contClass,
+                    double *&X, int *&classes, TPoint *&anc, PyObject **&ll,
+                    double &minClass, double &maxClass)
 {
   if (!PyList_Check(scaledData) || !PyList_Check(pyclasses) || !PyList_Check(anchors))
     PYERROR(PyExc_TypeError, "scaled data, classes and anchors should be given a lists", false);
@@ -100,14 +137,13 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   nExamples = PyList_Size(scaledData);
 
   X = (double *)malloc(nExamples * nAttrs * sizeof(double));
-  classes = (int *)malloc(nExamples * sizeof(int));
+  classes = (int *)malloc(nExamples * (contClass ? sizeof(double) : sizeof(int)));
   anc = (TPoint *)malloc(nAttrs * sizeof(TPoint));
   ll = (PyObject **)malloc(nAttrs * sizeof(PyObject *));
 
   int *aii, *attrIndices = (int *)malloc(nAttrs * sizeof(int)), *aie = attrIndices + nAttrs;
   TPoint *anci;
   PyObject **lli;
-  int *classesi;
   double *Xi;
   int i;
    
@@ -117,9 +153,16 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
     *aii = PyInt_AsLong(PyList_GetItem(pyattrIndices, i));
   }
 
-  for(classesi = classes, Xi = X, i = 0; i < nExamples; classesi++, i++) {
-    *classesi = PyInt_AsLong(PyList_GetItem(pyclasses, i));
-
+  if (contClass) {
+    double *dclassesi;
+    for(dclassesi = (double *)classes, i = 0; i < nExamples; *dclassesi++ = PyFloat_AsDouble(PyList_GetItem(pyclasses, i++)));
+  }
+  else {
+    int *classesi;
+    for(classesi = classes, i = 0; i < nExamples; *classesi++ = PyInt_AsLong(PyList_GetItem(pyclasses, i++)));
+  }
+      
+  for(Xi = X, i = 0; i < nExamples; i++) {
     PyObject *ex = PyList_GetItem(scaledData, i);
     for(aii = attrIndices; aii < aie; aii++)
       *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
@@ -141,8 +184,9 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
     double attractG = 1.0, repelG = -1.0;
     int steps = 1;
     int law = 0;
+    int contClass = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law))
+    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &contClass))
       return NULL;
 
     double *X, *Xi;
@@ -150,8 +194,9 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
     TPoint *anci, *anc, *ance;
     PyObject **ll;
     int nAttrs, nExamples;
+    double minClass, maxClass;
 
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, X, classes, anc, ll))
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
 
     ance = anc + nAttrs;
@@ -170,7 +215,7 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
         *sumi = 1.0;
     }
 
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
+    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(X);
     free(classes);
@@ -197,8 +242,9 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     int law = TPNN::InverseLinear;
     int steps = 1;
     int normalizeExamples = 1;
+    int contClass = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &normalizeExamples))
+    if (!PyArg_ParseTuple(args, "OOOO|ddiiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &normalizeExamples, &contClass))
       return NULL;
 
     double *Xi, *X;
@@ -207,7 +253,10 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     PyObject **lli, **ll;
     int nAttrs, nExamples;
 
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, X, classes, anc, ll))
+    double minClass, maxClass;
+    double *&dclasses = (double *&)classes;
+
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
 
     ance = anc + nAttrs;
@@ -254,37 +303,52 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
       for(danci = danc; danci != dance; danci++)
         danci->x = danci->y = 0.0;
 
+
       for(u = 0; u < nExamples; u++) {
         for(v = u+1; v < nExamples; v++) {
           double druv;
 
-          if (classes[u] == classes[v]) {
-            if (attractG == 0.0)
-              continue;
-
+          if (contClass) {
             double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
             if (ruv < 1e-15)
               ruv = 1e-15;
 
             switch(law) {
-              case TPNN::InverseLinear: druv = attractG * sqrt(ruv); break;
-              case TPNN::InverseSquare: druv = 100*attractG * ruv; break;
-              case TPNN::InverseExponential: druv = attractG * exp(sqrt(ruv)); break;
+              case TPNN::InverseLinear: druv -= abs(classes[u]-classes[v]) / sqrt(ruv); break;
+              case TPNN::InverseSquare: druv -= abs(classes[u]-classes[v]) / ruv; break;
+              case TPNN::InverseExponential: druv -= abs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
             }
           }
 
           else {
-            if (repelG == 0.0)
-              continue;
+            if (classes[u] == classes[v]) {
+              if (attractG == 0.0)
+                continue;
 
-            double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-            if (ruv < 1e-15)
-              ruv = 1e-15;
+              double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
+              if (ruv < 1e-15)
+                ruv = 1e-15;
 
-            switch(law) {
-              case TPNN::InverseLinear: druv = repelG / sqrt(ruv); break;
-              case TPNN::InverseSquare: druv = repelG / ruv; break;
-              case TPNN::InverseExponential: druv = repelG / exp(sqrt(ruv)); break;
+              switch(law) {
+                case TPNN::InverseLinear: druv = attractG * sqrt(ruv); break;
+                case TPNN::InverseSquare: druv = 100*attractG * ruv; break;
+                case TPNN::InverseExponential: druv = attractG * exp(sqrt(ruv)); break;
+              }
+            }
+
+            else {
+              if (repelG == 0.0)
+                continue;
+
+              double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
+              if (ruv < 1e-15)
+                ruv = 1e-15;
+
+              switch(law) {
+                case TPNN::InverseLinear: druv = repelG / sqrt(ruv); break;
+                case TPNN::InverseSquare: druv = repelG / ruv; break;
+                case TPNN::InverseExponential: druv = repelG / exp(sqrt(ruv)); break;
+              }
             }
           }
 
@@ -384,7 +448,11 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
 
         double phi = atan2(anci_l->y, anci_l->x);
         double phi2 = atan2(anci_l2->y, anci_l2->x);
-        int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
+
+        // disabled to avoid the flips
+        // int sign = (phi2>phi) && (phi2-phi < 3.1419265) ? 1 : -1;
+        int sign = 1;
+
         double dphi = 3.1419265/2.0 - phi;
         double cs = cos(dphi)/maxr, sn = sin(dphi)/maxr;
 
@@ -411,7 +479,7 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
         *sumi = 1.0;
     }
 
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
+    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(anc);
     free(danc);
@@ -440,8 +508,9 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     double attractG = 1.0, repelG = -1.0;
     int law = TPNN::InverseLinear;
     int steps = 1;
+    int contClass = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps))
+    if (!PyArg_ParseTuple(args, "OOOO|ddiii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &steps, &contClass))
       return NULL;
 
     double *Xi, *X;
@@ -450,7 +519,9 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     PyObject **lli, **ll;
     int nAttrs, nExamples;
 
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, X, classes, anc, ll))
+    double minClass, maxClass;
+
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
 
     ance = anc + nAttrs;
@@ -548,7 +619,7 @@ PyObject *optimizeAnchorsRadial(PyObject *, PyObject *args, PyObject *keywords) 
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
       PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, law);
+    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, law);
 
     free(anc);
     free(dphi);
@@ -574,8 +645,9 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
     PyObject *pyattrIndices;
     double attractG = 1.0, repelG = -1.0;
     int steps = 1;
+    int contClass = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddi:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps))
+    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &steps, &contClass))
       return NULL;
 
     double *Xi, *X;
@@ -583,8 +655,9 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
     TPoint *anci, *anc, *ance;
     PyObject **lli, **ll;
     int nAttrs, nExamples;
+    double minClass, maxClass;
 
-    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, X, classes, anc, ll))
+    if (!loadRadvizData(scaledData, pyclasses, anchors, pyattrIndices, nAttrs, nExamples, contClass, X, classes, anc, ll, minClass, maxClass))
       return PYNULL;
 
     ance = anc + nAttrs;
@@ -711,7 +784,7 @@ PyObject *optimizeAnchorsR(PyObject *, PyObject *args, PyObject *keywords) PYARG
     for(i = 0, anci = anc, lli = ll;i < nAttrs; lli++, i++, anci++)
       PyList_SetItem(anchors, i, *ll ? Py_BuildValue("ddO", anci->x, anci->y, *lli) : Py_BuildValue("dd", anci->x, anci->y));
       
-    double E = computeEnergyLow(nExamples, nAttrs, X, classes, pts, anc, sum, attractG, repelG, 0);
+    double E = computeEnergyLow(nExamples, nAttrs, contClass, X, classes, pts, anc, sum, attractG, repelG, 0);
 
     free(anc);
     free(dr);
@@ -744,8 +817,11 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
       return PYNULL;
 
     TP2NN *tp2nn = &dynamic_cast<TP2NN &>(PyOrange_AsOrange(cls).getReference());
-    const int nClasses = tp2nn->classVar->noOfValues();
-    const int nShades = 255/nClasses;
+
+    bool contClass = tp2nn->classVar->varType == TValue::FLOATVAR;
+
+    const int nClasses = contClass ? 0 : tp2nn->classVar->noOfValues();
+    const int nShades = contClass ? 0 : 255/nClasses;
 
     const int oneLine = (2*rx + 3) & 0xfffffffc;
     const int bitmapSize = oneLine * 2*ry;
@@ -753,7 +829,12 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
     memset(bitmap, 255, bitmapSize);
     char *bitmapmid = bitmap + oneLine*ry + rx;
 
+    rx -= 1;
+    ry -= 1;
+
     float *probs = new float[nClasses], *pe = probs + nClasses;
+    const double minClass = tp2nn->minClass;
+    const double divClass = tp2nn->maxClass == minClass ? 0.0 : 255.0 / (tp2nn->maxClass - minClass);
 
     const double rxbysf = rx*scaleFactor;
     for(int y = -ry+1; y < ry-1; y+=cell) {
@@ -763,20 +844,34 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
       xe += cell - xe % cell;
       for(int x = -xe; x < xe; x+=cell) {
         const double realx = x/rxbysf;
-        tp2nn->classDistribution(realx, -realy, probs, nClasses);
-        double sprobs = *probs;
-        float *largest = probs;
-        for(float *pi = probs+1; pi != pe; pi++) {
-          sprobs += *pi;
-          if (*pi > *largest)
-            largest = pi;
+
+        unsigned char color;
+
+        if (contClass) {
+          const int icolor = (tp2nn->averageClass(realx, -realy) - minClass) * divClass;
+          if (icolor < 0)
+            color = 0;
+          else if (icolor > 255)
+            color = 255;
+          else
+            color = icolor;
         }
-        unsigned char color = floor(0.5 + nShades * (*largest/sprobs*nClasses - 1) / (nClasses - 1));
-        if (color >= nShades)
-          color = nShades - 1;
-        else if (color < 0)
-          color = 0;
-        color += nShades * (largest - probs);
+        else {
+          tp2nn->classDistribution(realx, -realy, probs, nClasses);
+          double sprobs = *probs;
+          float *largest = probs;
+          for(float *pi = probs+1; pi != pe; pi++) {
+            sprobs += *pi;
+            if (*pi > *largest)
+              largest = pi;
+          }
+          color = floor(0.5 + nShades * (*largest/sprobs*nClasses - 1) / (nClasses - 1));
+          if (color >= nShades)
+            color = nShades - 1;
+          else if (color < 0)
+            color = 0;
+          color += nShades * (largest - probs);
+        }
 /*
         const int ys = y+cell < ry ? cell : ry-y;
         for(char *yy = bitmapmid + y*oneLine + x, *yye = yy + ys*oneLine; yy < yye; yy += oneLine)
@@ -784,15 +879,20 @@ PyObject *potentialsBitmap(PyObject *, PyObject *args, PyObject *) PYARGS(METH_V
 */
         const int ys = y+cell < ry ? cell : ry-y;
         char *yy = bitmapmid + y*oneLine+x;
-        memset(yy, color, cell);
+
+/*        memset(yy, color, cell);
         yy += oneLine;
         for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
           *yy = yy[cell-1] = color;
         memset(yy, color, cell);
+*/
+        for(char *yye = yy + (ys-1)*oneLine; yy < yye; yy += oneLine)
+          memset(yy, color, cell-1);
       }
     }
 
-    return Py_BuildValue("s#i", bitmap, bitmapSize, nShades);
+    return contClass ? Py_BuildValue("s#", bitmap, bitmapSize)
+                     : Py_BuildValue("s#i", bitmap, bitmapSize, nShades);
 
   PyCATCH
 }

@@ -42,6 +42,7 @@ public:
 
   int nExamples; //PR the number of examples
   double *projections; // projections of examples + class
+  double minClass, maxClass; //PR the minimal and maximal class value (for regression problems only)
 
   enum { InverseLinear, InverseSquare, InverseExponential };
   int law; //P law
@@ -69,11 +70,24 @@ public:
   TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatList basesY, const int &law = InverseSquare, const bool normalizeExamples = true);
   TP2NN(PDomain, double *projections, const int &nExamples, double *bases, PFloatList off, PFloatList norm, PFloatList avgs, const int &law = InverseSquare, const bool normalizeExamples = true);
 
+  virtual TValue operator ()(const TExample &);
   virtual PDistribution classDistribution(const TExample &);
-  virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;
 
+  virtual void classDistribution(const double &, const double &, float *distribution, const int &nClasses) const;
+  double averageClass(const double &x, const double &y) const;
+  
   virtual void project(const TExample &, double &x, double &y);
   //virtual void project(double *, double *);
+
+  inline void getProjectionForClassification(const TExample &example, double &x, double &y)
+  {
+    if (example.domain == domain)
+      project(example, x, y);
+    else {
+      TExample nex(domain, example);
+      project(nex, x, y);
+    }
+  }
 };
 
 #endif

@@ -117,19 +117,26 @@ class OWRadvizGraph(OWVisGraph):
         ry = self.transform(QwtPlot.yLeft, 0) - self.transform(QwtPlot.yLeft, 1)
         if not getattr(self, "potentialsBmp", None) \
            or getattr(self, "potentialContext", None) != (rx, ry, self.trueScaleFactor, self.radvizWidget.law):
-            imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
-            classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-            colors = [(i.red(), i.green(), i.blue()) for i in classColors]
+            if self.potentialsClassifier.classVar.varType == orange.VarTypes.Continuous:
+                imagebmp = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+#                palette = [QColor(int(i/254.0*ColorPaletteHSV.maxHueVal), 255, 255, QColor.Hsv).rgb() for i in range(255)] + [qRgb(255, 255, 255)]
+#                palette = [qRgb(i, i, 255) for i in range(0, 254, 2)] + [qRgb(254, i, i) for i in range(255, 0, -2)] + [qRgb(255, 255, 255)]*2
+                palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
+            else:
+                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+                classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+                colors = [(i.red(), i.green(), i.blue()) for i in classColors]
 
-            palette = []
-            sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
-            for cls in self.potentialsClassifier.classVar.values:
-                color = colors[sortedClasses.index(cls)]
-                towhite = [255-c for c in color]
-                for s in range(nShades):
-                    si = 1-float(s)/nShades
-                    palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-            palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+                palette = []
+                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+                for cls in self.potentialsClassifier.classVar.values:
+                    color = colors[sortedClasses.index(cls)]
+                    towhite = [255-c for c in color]
+                    for s in range(nShades):
+                        si = 1-float(s)/nShades
+                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+
             image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
             self.potentialsBmp = QPixmap()
             self.potentialsBmp.convertFromImage(image)
@@ -206,8 +213,8 @@ class OWRadvizGraph(OWVisGraph):
         self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
-        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-        self.updateLayout()
+##        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+##        self.updateLayout()
 
         classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
@@ -238,7 +245,7 @@ class OWRadvizGraph(OWVisGraph):
             offsets = [self.offsets[i] for i in indices]
             normalizers = [self.normalizers[i] for i in indices]
             averages = [self.averages[i] for i in indices]
-            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([x_positions, y_positions, [float(ex.getclass()) for ex in self.rawdata]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=self.radvizWidget.law)
+            self.potentialsClassifier = orange.P2NN(domain, Numeric.transpose(Numeric.array([self.unscaled_x_positions, self.unscaled_y_positions, [float(ex.getclass()) for ex in self.rawdata]])), self.anchorData, offsets, normalizers, averages, self.normalizeExamples, law=self.radvizWidget.law)
 
            
         # do we have cluster closure information
@@ -342,10 +349,21 @@ class OWRadvizGraph(OWVisGraph):
         # ############################################################## 
         elif self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:
             colors = ColorPaletteHSV()
+
+            palette = [qRgb(255.*i/254., 255.*i/254., 255-(255.*i/254.)) for i in range(254)] + [qRgb(255, 255, 255)]
+
             for i in range(dataSize):
                 if not validData[i]: continue
                 newColor = QColor()
-                newColor.setHsv(self.noJitteringScaledData[classNameIndex][i] * colors.maxHueVal, 255, 255)
+#                newColor.setHsv(self.noJitteringScaledData[classNameIndex][i] * colors.maxHueVal, 255, 255)
+                c = self.noJitteringScaledData[classNameIndex][i]
+                newColor.setRgb(255*c, 255*c, 255-255*c)
+##                if c < 0.5:
+###                    newColor.setRgb(math.floor(c*511), math.floor(c*511), 255)
+##                    newColor.setRgb(0, 0, 255-math.floor(c*511))
+##                else:
+###                    newColor.setRgb(255, 255-math.floor(c*511), 255-math.floor(c*511))
+##                    newColor.setRgb(math.floor(c*511), 0, 0)
 
                 key = self.addCurve(str(i), newColor, newColor, self.pointWidth, symbol = QwtSymbol.Ellipse, xData = [x_positions[i]], yData = [y_positions[i]])
                 self.addTooltipKey(x_positions[i], y_positions[i], newColor, i)
@@ -356,7 +374,7 @@ class OWRadvizGraph(OWVisGraph):
         elif self.optimizedDrawing:
             pos = [[ [] , [], [] ] for i in range(valLen)]
             for i in range(dataSize):
-                if not validData[i]: continue
+#                if not validData[i]: continue
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 pos[index][0].append(x_positions[i])
                 pos[index][1].append(y_positions[i])
@@ -423,6 +441,9 @@ class OWRadvizGraph(OWVisGraph):
                 self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, minVal), xs[0] - 0.02, -1.0 + 0.04, Qt.AlignLeft)
                 self.addMarker("%s = %.3f" % (self.rawdata.domain.classVar.name, maxVal), xs[0] - 0.02, +1.0 - 0.04, Qt.AlignLeft)
 
+        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+        self.updateLayout()
+        
 
     # ############################################################## 
     # create a dictionary value for the data point
@@ -684,7 +705,9 @@ class OWRadvizGraph(OWVisGraph):
             y_positions /= sum_i
             self.trueScaleFactor = scaleFactor
         else:
-            self.trueScaleFactor = 1. / sqrt(max(x_positions*x_positions + y_positions*y_positions))
+            self.trueScaleFactor = scaleFactor / sqrt(max(x_positions*x_positions + y_positions*y_positions))
+
+        self.unscaled_x_positions, self.unscaled_y_positions = Numeric.array(x_positions), Numeric.array(y_positions)
 
         if self.trueScaleFactor != 1.0:
             x_positions *= self.trueScaleFactor

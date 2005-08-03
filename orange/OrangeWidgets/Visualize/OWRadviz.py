@@ -32,7 +32,7 @@ class OWRadviz(OWWidget):
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
-        
+    
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
@@ -460,15 +460,20 @@ class OWRadviz(OWWidget):
         optimizer = self.lockToCircle and orangeom.optimizeAnchorsRadial or orangeom.optimizeAnchors
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
+        contClass = self.data.domain.classVar.varType == orange.VarTypes.Continuous
     
         if not singleStep:
-            minE = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+            minE = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, contClass)
+            bestProjection = self.graph.anchorData
+        else:
+            bestProjection = None
         
         # repeat until less than 1% energy decrease in 5 consecutive iterations*steps steps
         noChange = 0
+        notBest = 1
         while noChange < 5:
             for i in range(iterations):
-                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples)
+                self.graph.anchorData, E = optimizer(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, steps, self.graph.normalizeExamples, contClass)
                 self.energyLabel.setText("Energy: %.3f" % E)
                 #self.energyLabel.repaint()
                 self.graph.potentialsBmp = None
@@ -476,15 +481,22 @@ class OWRadviz(OWWidget):
                 if singleStep:
                     noChange = 5
                 else:
-                    if E > min(minE*0.99, minE*1.01):
+                    if E > min(0.999*minE, 1.001*minE):
                         noChange += 1
+                        notBest = 1
                     else:
-                        if E < minE:
-                            minE = E
+                        minE = E
+                        bestProjection = self.graph.anchorData
                         noChange = 0
-
+                        
+        if notBest and bestProjection:
+            self.graph.anchorData = bestProjection
+            self.graph.potentialsBmp = None
+            self.updateGraph()
+            self.energyLabel.setText("Energy: %.3f" % minE)
+            
     def singleStep(self): self.freeAttributes(1, 1, True)
-    def optimize(self):   self.freeAttributes(1, 100)
+    def optimize(self):   self.freeAttributes(1, 10)
     def animate(self):   self.freeAttributes(10, 10)
     def slowAnimate(self):    self.freeAttributes(100, 1)
 
@@ -521,7 +533,7 @@ class OWRadviz(OWWidget):
         classes = [int(x.getclass()) for x in self.graph.rawdata]
         ai = self.graph.attributeNameIndex
         attrIndices = [ai[label] for label in self.getShownAttributeList()]
-        E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG)
+        E = orangeom.computeEnergy(Numeric.transpose(self.graph.scaledData).tolist(), classes, self.graph.anchorData, attrIndices, self.attractG, -self.repelG, self.law, self.data.domain.classVar.varType == orange.VarTypes.Continuous)
         self.energyLabel.setText("Energy: %.3f" % E)
         self.energyLabel.repaint()
 

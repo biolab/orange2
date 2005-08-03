@@ -52,6 +52,8 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   radii(new double[domain->attributes->size()]),
   nExamples(nEx),
   projections(new double[dim*nEx]),
+  minClass(0),
+  maxClass(0),
   law(alaw)
 {
   const int nAttrs = domain->attributes->size();
@@ -65,6 +67,8 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   
   double *pi, *pe;
   for(pi = projections, pe = projections + (dim+1)*nEx; pi != pe; *(pi++) = 0.0);
+
+  const bool contClass = domain->classVar->varType == TValue::FLOATVAR;
 
   for(double *example = examples, *examplee = examples + nEx*dimensions, *projection = projections; example != examplee; projection = pe) {
     offi = offb;
@@ -80,6 +84,18 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
     }
     if (normalizeExamples && (asum > 0.0))
       for(pi = projection; pi != pe; *(pi++) /= asum);
+
+    if (contClass) {
+      if (example == examples+dimensions-1)
+        minClass = maxClass = *example;
+      else {
+        if (*example < minClass)
+          minClass = *example;
+        else if (*example > maxClass)
+          maxClass = *example;
+      }
+    }
+
     *pe++ = *example++; // copy the class
   }
 }
@@ -109,6 +125,8 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
   double *pi, *pe;
   for(pi = projections, pe = projections + (dim+1)*nEx; pi != pe; *(pi++) = 0.0);
 
+  const bool contClass = domain->classVar->varType == TValue::FLOATVAR;
+
   for(double *example = examples, *examplee = examples + nEx*dimensions, *projection = projections; example != examplee; projection = pe, example += nOrigRow) {
     offi = offb;
     nori = norb;
@@ -123,7 +141,21 @@ TPNN::TPNN(PDomain domain, double *examples, const int &nEx, double *ba, const i
     }
     if (normalizeExamples && (asum > 0.0))
       for(pi = projection; pi != pe; *(pi++) /= asum);
-    *pe++ = example[nOrigRow-1]; // copy the class
+
+    const double cls = example[nOrigRow-1];
+
+    if (contClass) {
+      if (example == examples+dimensions-1)
+        minClass = maxClass = cls;
+      else {
+        if (cls < minClass)
+          minClass = cls;
+        else if (cls > maxClass)
+          maxClass = cls;
+      }
+    }
+
+    *pe++ = cls; // copy the class
   }
 }
 
@@ -170,6 +202,8 @@ TPNN &TPNN::operator =(const TPNN &old)
   nExamples = old.nExamples;
   law = old.law;
   normalizeExamples = old.normalizeExamples;
+  minClass = old.minClass;
+  maxClass = old.maxClass;
 
   return *this;
 }
@@ -335,6 +369,8 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
   double *pi, *pe;
   for(pi = projections, pe = projections + 3*nExamples; pi != pe; *(pi++) = 0.0);
 
+  const bool contClass = domain->classVar->varType == TValue::FLOATVAR;
+
   pi = projections;
   PEITERATE(ei,egen) {
     TValue &cval = (*ei)[classIdx];
@@ -368,6 +404,17 @@ TP2NN::TP2NN(PDomain domain, PExampleGenerator egen, PFloatList basesX, PFloatLi
 
     pi[2] = cval.varType == TValue::INTVAR ? float(cval.intV) : cval.floatV;
     pi += 3;
+
+    if (contClass) {
+      if (pi == projections + 3)
+        minClass = maxClass = cval.floatV;
+      else {
+        if (cval.floatV < minClass)
+          minClass = cval.floatV;
+        else if (cval.floatV > maxClass)
+          maxClass = cval.floatV;
+      }
+    }
   }
 }
 
@@ -434,6 +481,17 @@ TP2NN::TP2NN(PDomain dom, double *aprojections, const int &nEx, double *ba, PFlo
   for(double *radiii = radii, *radiie = radii + domain->attributes->size(), *bi = bases;
       radiii != radiie;
       *radiii++ = sqrt(sqr(*bi++) + sqr(*bi++)));
+
+  if (dom->classVar->varType == TValue::FLOATVAR) {
+    double *proj = projections+2, *proje = projections + 3*nEx + 2;
+    minClass = maxClass = *proj;
+    while( (proj+=3) != proje ) {
+      if (*proj < minClass)
+        minClass = *proj;
+      else if (*proj > maxClass)
+        maxClass = *proj;
+    }
+  }
 }
 
 
@@ -465,30 +523,44 @@ void TP2NN::project(const TExample &example, double &x, double &y)
 }
 
 
+TValue TP2NN::operator ()(const TExample &example)
+{
+  if (classVar->varType == TValue::INTVAR)
+    return TClassifier::call(example);
+
+  double x, y;
+  getProjectionForClassification(example, x, y);
+  return TValue(float(averageClass(x, y)));
+}
+    
+
+
 PDistribution TP2NN::classDistribution(const TExample &example)
 {
+
   double x, y;
-  const int nClasses = domain->classVar->noOfValues();
-  float *cprob = mlnew float[nClasses];
+  getProjectionForClassification(example, x, y);
   
-  try {
-    if (example.domain == domain)
-      project(example, x, y);
-    else {
-      TExample nex(domain, example);
-      project(nex, x, y);
-    }
-
-    classDistribution(x, y, cprob, nClasses);
-
-    TDiscDistribution *dist = mlnew TDiscDistribution(cprob, nClasses);
-    PDistribution wdist = dist;
-    dist->normalize();
-    return wdist;
+  if (classVar->varType == TValue::FLOATVAR) {
+    PContDistribution cont = mlnew TContDistribution(classVar);
+    cont->addfloat(float(averageClass(x, y)));
+    return cont;
   }
-  catch (...) {
-    delete cprob;
-    throw;
+
+  else {
+    const int nClasses = domain->classVar->noOfValues();
+    float *cprob = mlnew float[nClasses];
+
+    try {
+      classDistribution(x, y, cprob, nClasses);
+      PDiscDistribution wdist = mlnew TDiscDistribution(cprob, nClasses);
+      wdist->normalize();
+      return wdist;
+    }
+    catch (...) {
+      delete cprob;
+      throw;
+    }
   }
 
   return PDistribution();
@@ -522,4 +594,43 @@ void TP2NN::classDistribution(const double &x, const double &y, float *distribut
       }
       return;
   }
+}
+
+
+double TP2NN::averageClass(const double &x, const double &y) const
+{
+  double sum = 0.0;
+  double N = 0.0;
+  double *proj = projections, *proje = projections + 3*nExamples;
+
+  switch(law) {
+    case InverseLinear:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        const double w = dist<1e-8 ? 1e4 : 1.0/sqrt(dist);
+        sum += w * proj[2]; 
+        N += w;
+      }
+      break;
+
+    case InverseSquare:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        const double w = dist<1e-8 ? 1e4 : 1.0/dist;
+        sum += w * proj[2]; 
+        N += w;
+      }
+      break;
+
+    case InverseExponential:
+      for(; proj != proje; proj += 3) {
+        const double dist = sqr(proj[0] - x) + sqr(proj[1] - y);
+        const double w = dist<1e-8 ? 1e4 : exp(-sqrt(dist));
+        sum += w * proj[2]; 
+        N += w;
+      }
+      break;
+  }
+
+  return N > 1e-4 ? sum/N : 0.0;
 }

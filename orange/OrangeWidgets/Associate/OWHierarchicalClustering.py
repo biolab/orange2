@@ -197,11 +197,11 @@ class OWHierarchicalClustering(OWWidget):
             try:
                 print self.labelInd[self.Annotation-2]
                 self.rootCluster.mapping.setattr("objects",
-                                [e[self.labelInd[self.Annotation-2]].value for e in items])
+                                [str(e[self.labelInd[self.Annotation-2]]) for e in items])
             except IndexError:
                 self.Annotation=0
                 self.rootCluster.mapping.setattr("objects", \
-                                [e[0].value for e in items])
+                                [str(e[0]) for e in items])
         #print self.rootCluster.mapping
         self.dendogram.updateLabel()
 
