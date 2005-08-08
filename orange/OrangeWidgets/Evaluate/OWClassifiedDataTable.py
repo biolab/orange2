@@ -80,6 +80,7 @@ class OWClassifiedDataTable(OWWidget):
         self.sortby = -1
 
         self.layout.add(self.table)
+        self.table.hide()
 
     # updates the columns associated with the classifiers
     def updateTableOutcomes(self):
@@ -100,7 +101,7 @@ class OWClassifiedDataTable(OWWidget):
                     self.classifications[i].append(cl)
                     s = ''
                     if self.ShowProb and showatt:
-                        s += reduce(lambda x,y: x+' : '+y, map(lambda x: "%8.6f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
+                        s += reduce(lambda x,y: x+' : '+y, map(lambda x: "%5.3f"%x[1], filter(lambda x,s=attsel: s[x[0]], enumerate(p))))
                         if self.ShowClass:
                             s += ' -> '
                     if self.ShowClass:
@@ -111,9 +112,14 @@ class OWClassifiedDataTable(OWWidget):
             for i in range(len(self.data)):
                 for c in range(len(self.classifiers)):
                     self.table.setText(self.rindx[i], col+c, '')
+            col += len(self.classifiers)
     
         for i in range(sindx, col):
             self.table.adjustColumn(i)
+            if self.ShowClass or self.ShowProb:
+                self.table.showColumn(i)
+            else:
+                self.table.hideColumn(i)
 
     def updateTrueClass(self):
         if self.classifiers:
@@ -142,7 +148,7 @@ class OWClassifiedDataTable(OWWidget):
         self.table.setNumCols(1 + len(self.data.domain.attributes) + (self.ShowTrueClass) + len(self.classifiers))
         self.table.setNumRows(len(self.data))
 
-        # set the header (attribute names)
+        # HEADER: set the header (attribute names)
         self.header.setLabel(0, '#')
         for col in range(len(self.data.domain.attributes)):
             self.header.setLabel(col+1, self.data.domain.attributes[col].name)
@@ -152,7 +158,7 @@ class OWClassifiedDataTable(OWWidget):
         for (i,c) in enumerate(self.classifiers.values()):
             self.header.setLabel(col+i, c.name)
 
-        # set the contents of the table (values of attributes), data first
+        # ATTRIBUTE VALUES: set the contents of the table (values of attributes), data first
         for i in range(len(self.data)):
             self.table.setText(i, 0, str(i+1))
             for j in range(len(self.data.domain.attributes)):
@@ -261,7 +267,6 @@ class OWClassifiedDataTable(OWWidget):
             return 1
 
         if not self.sendDataType or not self.data or not self.classifiers:
-            print "NONE"
             self.send("Selected Examples", None)
             return
 
