@@ -307,6 +307,9 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
   TEnumVariable *evar=mlnew TEnumVariable("D_"+var->name);
   PVariable revar(evar);
 
+  TEnumVariable *cl_evar=mlnew TEnumVariable("D_"+var->name);
+  PVariable cl_revar(cl_evar);
+
   evar->ordered = true;
 
   if (!points->size())
@@ -348,11 +351,11 @@ PVariable TIntervalDiscretizer::constructVar(PVariable var)
     }
 
     evar->addValue(string(">")+ostr);
-  }
+  } 
 
-  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(revar, var);
+  TClassifierFromVar *tcfv = mlnew TClassifierFromVar(cl_revar, var);
   tcfv->transformer = this; // rewrapping
-  revar->getValueFrom = tcfv;
+  revar->getValueFrom = tcfv; 
   return revar;
 }
 
