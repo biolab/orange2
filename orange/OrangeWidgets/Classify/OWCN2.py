@@ -12,9 +12,18 @@ import orngCN2
 import qt
 import sys
 
+class CN2ProgressBar(orange.ProgressCallback):
+    def __init__(self,widget,start=0.0,end=0.0):
+        self.start = start
+        self.end = end
+        self.widget = widget
+        orange.ProgressCallback.__init__(self)
+    def __call__(self,value,a):
+        self.widget.progressBarSet(100*(self.start+(self.end-self.start)*value))
+
 class OWCN2(OWWidget):
     settingsList=["QualityButton","CoveringButton","m", "MaxRuleLength", "MinCoverage",
-         "BeamWidth", "Alpha", "Weight"]
+         "BeamWidth", "Alpha", "Weight", "stepAlpha"]
     callbackDeposit=[]
     def __init__(self, parent=None, signalManager=None):
         OWWidget.__init__(self,parent,signalManager,"CN2")
@@ -23,7 +32,8 @@ class OWCN2(OWWidget):
         self.outputs=[("Learner", orange.Learner),("Classifier",orange.Classifier),("CN2UnorderedClassifier", orngCN2.CN2UnorderedClassifier)]
         self.QualityButton=0
         self.CoveringButton=0
-        self.Alpha=0.2
+        self.Alpha=0.05
+        self.stepAlpha=0.2
         self.BeamWidth=5
         self.MinCoverage=0
         self.MaxRuleLength=0
@@ -66,8 +76,12 @@ class OWCN2(OWWidget):
         QRadioButton("WRACC",self.ruleQualityBG)
         self.connect(self.ruleQualityBG,SIGNAL("released(int)"),self.qualityButtonPressed)
         
-        a=OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.05, label="Alpha",
-                orientation="horizontal", labelWidth=labelWidth)
+        OWGUI.doubleSpin(self.ruleValidationGroup, self, "Alpha", 0, 1,0.001, label="Alpha",
+                orientation="horizontal", labelWidth=labelWidth,
+                tooltip="Significance of a complete rule compared to original data.")
+        OWGUI.doubleSpin(self.ruleValidationGroup, self, "stepAlpha", 0, 1,0.001, label="Alpha (Stepwise)",
+                orientation="horizontal", labelWidth=labelWidth,
+                tooltip="Requested significance of each specialization of a rule.")
         OWGUI.spin(self.ruleValidationGroup, self, "MinCoverage", 0, 100,label="Minimum Coverage",
                 orientation="horizontal", labelWidth=labelWidth, tooltip=
                 "Minimum number of examples a rule must\ncover (use 0 for dont care)")
@@ -98,9 +112,10 @@ class OWCN2(OWWidget):
         #layout.add(self.ruleValidationGroup)
         #layout.add(self.coveringAlgGroup)
 
-        OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
+        self.btnApply = OWGUI.button(self.controlArea, self, "&Apply Settings", callback=self.applySettings)
 
         self.Alpha=float(self.Alpha)
+        self.stepAlpha=float(self.stepAlpha)
         self.Weight=float(self.Weight)
 
         self.ruleQualityBG.setButton(self.QualityButton)
@@ -112,12 +127,18 @@ class OWCN2(OWWidget):
         self.setLearner()
 
     def setLearner(self):
+        if hasattr(self, "btnApply"):
+            self.btnApply.setFocus()
+        #progress bar
+        self.progressBarInit()
+
+        #learner        
         self.learner=orngCN2.CN2UnorderedLearner()
         self.learner.name=self.LearnerName
+        self.learner.progressCallback=CN2ProgressBar(self)
         self.send("Learner",self.learner)
+
         ruleFinder=orange.RuleBeamFinder()
-        #print self.Alpha
-        #print self.Weight
         if self.QualityButton==0:
             ruleFinder.evaluator=orange.RuleEvaluator_Laplace()
         elif self.QualityButton==1:
@@ -125,7 +146,9 @@ class OWCN2(OWWidget):
         elif self.QualityButton==2:
             ruleFinder.evaluator=orngCN2.WRACCEvaluator()
 
-        ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.Alpha,
+        ruleFinder.ruleStoppingValidator=orange.RuleValidator_LRS(alpha=self.stepAlpha,
+                    min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
+        ruleFinder.validator=orange.RuleValidator_LRS(alpha=self.Alpha,
                     min_coverage=self.MinCoverage, max_rule_complexity=self.MaxRuleLength)
         ruleFinder.ruleFilter=orange.RuleBeamFilter_Width(width=self.BeamWidth)
         self.learner.ruleFinder=ruleFinder
@@ -141,22 +164,27 @@ class OWCN2(OWWidget):
                 self.classifier=self.learner(self.data)
                 self.classifier.name=self.LearnerName
                 self.classifier.setattr("data",self.data)
+                self.error("")
             except orange.KernelException, (errValue):
                 self.classifier=None
-        #print self.classifier
-        #print self.learner
+                self.error(errValue)
+            except Exception:
+                self.classifier=None
+                if not self.data.domain.classVar:
+                    self.error("Classless domain!")
+                elif self.data.domain.classVar.varType == orange.VarTypes.Continuous:
+                    self.error("CN2 can learn only from discrete class!")
+                else:
+                    self.error("Unknown error")
+        else:
+            self.error("")
         self.send("Classifier", self.classifier)
         self.send("CN2UnorderedClassifier", self.classifier)
+        self.progressBarFinished()
 
     def dataset(self, data):
         self.data=data
-        if self.data:
-            self.setLearner()
-        else:
-            self.send("Learner",None)
-            self.send("Classifier",None)
-            self.send("CN2UnorderedClassifier",None)
-
+        self.setLearner()
 
     def qualityButtonPressed(self,id=0):
         id=self.QualityButton=self.ruleQualityBG.id(self.ruleQualityBG.selected())
@@ -178,7 +206,7 @@ class OWCN2(OWWidget):
 if __name__=="__main__":
     app=QApplication(sys.argv)
     w=OWCN2()
-    w.dataset(orange.ExampleTable("../../doc/datasets/titanic.tab"))
+    w.dataset(orange.ExampleTable("titanic.tab"))
     app.setMainWidget(w)
     w.show()
     app.exec_loop()
