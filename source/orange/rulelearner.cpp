@@ -26,6 +26,7 @@
 #include "discretize.hpp"
 #include "distvars.hpp"
 #include "classfromvar.hpp"
+#include "progress.hpp"
 
 #include "rulelearner.ppp"
 
@@ -538,7 +539,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
       if (discretization) {
         PVariable discretized;
         try {
-        discretized = discretization->call(rule.examples, *vi, weightID);
+          discretized = discretization->call(rule.examples, *vi, weightID);
         } catch(...) {
           continue;
         }
@@ -571,7 +572,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
             newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
             if (wrule->classDistribution->cases > wnewRule->classDistribution->cases)
               ruleList->push_back(newRule);
-          }
+          } 
 
           newRule = mlnew TRule(rule, false);
           ruleList->push_back(newRule);
@@ -579,11 +580,11 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 
           newRule->filter.AS(TFilter_values)->conditions->push_back(mlnew TValueFilter_continuous(pos,  TValueFilter_continuous::Greater, cutoffs.back(), 0, 0));
           newRule->filterAndStore(rule.examples, rule.weightID,targetClass);
-        }
+        } 
       }
       else
-        raiseWarning("discretizer not given, continuous attributes will be skipped");
-    }
+        raiseWarning("discretizer not given, continuous attributes will be skipped"); 
+    } 
   }
   if (!discretization)
     discretization = PDiscretization();
@@ -630,7 +631,6 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   checkProperty(refiner);
   checkProperty(evaluator);
   checkProperty(ruleFilter);
-  checkProperty(ruleStoppingValidator);
 
   PDistribution apriori = getClassDistribution(data, weightID);
 
@@ -657,12 +657,10 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
   int bestRuleLength = 0;
   while(ruleList->size()) {
     PRuleList candidateRules = candidateSelector->call(ruleList, data, weightID);
-    if (ruleList->size()>0)
-      raiseWarning("ruleList length to large.");
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
       PITERATE(TRuleList, ni, newRules) {
-        if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, data, weightID, targetClass, apriori)) {
+        if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, apriori)) {
           (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
           ruleList->push_back(*ni);
           if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
@@ -671,7 +669,7 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
       }  
     } 
     ruleFilter->call(ruleList,data,weightID);
-  }  
+  }
 
   // set empty values if value was not set (used default)
   if (tempInitializer)
@@ -734,6 +732,18 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
 
   int currWeightID = weightID;
 
+  float beginwe=0.0, currentwe;
+  if (progressCallback) {
+    if (targetClass==-1)
+      beginwe = wdata->weightOfExamples(weightID);
+    else {
+      PDistribution classDist = getClassDistribution(wdata, weightID);
+      TDiscDistribution *ddist = classDist.AS(TDiscDistribution);
+      beginwe = ddist->atint(targetClass);
+    }
+    progressCallback->call(0.0);
+  }
+
   while (!dataStopping || !dataStopping->call(wdata, currWeightID, targetClass)) {
     PRule rule = ruleFinder->call(wdata, currWeightID, targetClass, baseRules);
     if (!rule)
@@ -744,7 +754,21 @@ PClassifier TRuleLearner::operator()(PExampleGenerator gen, const int &weightID,
 
     wdata = coverAndRemove->call(rule, wdata, currWeightID, currWeightID, targetClass);
     ruleList->push_back(rule);
-  } 
+
+    if (progressCallback) {
+      if (targetClass==-1)
+        currentwe = wdata->weightOfExamples(weightID);
+      else {
+        PDistribution classDist = getClassDistribution(wdata, currWeightID);
+        TDiscDistribution *ddist = classDist.AS(TDiscDistribution);
+        currentwe = ddist->atint(targetClass);
+      }
+      progressCallback->call(1-currentwe/beginwe);
+    }
+  }
+  if (progressCallback)
+    progressCallback->call(1.0);
+
 
   // Restore values
   if (tempDataStopping) 

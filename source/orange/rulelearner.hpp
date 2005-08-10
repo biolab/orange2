@@ -27,6 +27,7 @@
 #include "classify.hpp"
 #include "learn.hpp"
 
+WRAPPER(ProgressCallback)
 WRAPPER(Rule)
 WRAPPER(Discretization)
 
@@ -311,6 +312,8 @@ public:
   PRuleCovererAndRemover coverAndRemove; //P
   PRuleFinder ruleFinder; //P
   PRuleClassifierConstructor classifierConstructor; //P classifier
+
+  PProgressCallback progressCallback; //P progress callback function
 
   bool storeExamples; //P
   int targetClass; //P
