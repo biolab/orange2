@@ -103,6 +103,7 @@ class CN2LearnerClass(orange.RuleLearner):
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
+        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = alpha)
         
     def __call__(self, examples, weight=0):
         if examples.domain.classVar.varType == orange.VarTypes.Continuous:
@@ -158,6 +159,7 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
         self.ruleFinder.ruleFilter = orange.RuleBeamFilter_Width(width = beamWidth)
         self.ruleFinder.evaluator = evaluator
         self.ruleFinder.validator = orange.RuleValidator_LRS(alpha = alpha)
+        self.ruleFinder.ruleStoppingValidator = orange.RuleValidator_LRS(alpha = alpha)
         self.ruleStopping = orange.RuleStoppingCriteria_NegativeDistribution()
         self.dataStopping = orange.RuleDataStoppingCriteria_NoPositives()
         
@@ -166,11 +168,22 @@ class CN2UnorderedLearnerClass(orange.RuleLearner):
             print "CN2 can learn only on discrete class!"
             return
         rules = orange.RuleList()
+        progress=getattr(self,"progressCallback",None)
+        if progress:
+            progress.start = 0.0
+            progress.end = 0.0
+            distrib = orange.Distribution(examples.domain.classVar, examples, weight)
+            distrib.normalize()
         for targetClass in examples.domain.classVar:
+            if progress:
+                progress.start = progress.end
+                progress.end += distrib[targetClass]
             self.targetClass = targetClass
             cl = orange.RuleLearner.__call__(self,examples,weight)
             for r in cl.rules:
                 rules.append(r)
+        if progress:
+            progress(1.0,None)
         return CN2UnorderedClassifier(rules, examples, weight)
 
 class CN2UnorderedClassifier(orange.RuleClassifier):
