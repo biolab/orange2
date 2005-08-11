@@ -153,7 +153,7 @@ class uninstall(Command):
                 self.orangepath = os.path.join("lib", PythonVer,
                                                "site-packages", "orange")
             if self.docpath is None:
-                self.docpath = os.path.join(sys.prefix, "share", "doc", OrangeVer)
+                self.docpath = os.path.join(sys.prefix, "share", "doc", "orange")
             if self.libpath is None:
                 self.libpath = os.path.join(sys.prefix, "lib")
         else:
@@ -244,7 +244,7 @@ class install_data_wrap(install_data):
         install_data.finalize_options(self)
         if self.install_dir != sys.prefix:
             OrangeInstallDir = os.path.join(self.install_dir, "orange")
-            OrangeInstallDoc = os.path.join(self.install_dir, "doc", OrangeVer)
+            OrangeInstallDoc = os.path.join(self.install_dir, "doc", "orange")
 #            OrangeInstallLib = os.path.join(self.install_dir, "lib")
             self.data_files = [(OrangeInstallDir, OrangeLibs),
                                (os.path.join(OrangeInstallDir,
@@ -293,7 +293,7 @@ class install_wrap(install):
             self.OrangeInstallDir = os.path.join("lib", PythonVer,
                                             "site-packages", "orange")
             self.OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
-                                            OrangeVer)
+                                            "orange")
             self.OrangeInstallLib = os.path.join(sys.prefix, "lib")
         else:
             self.install_purelib = self.orangepath;
@@ -368,11 +368,11 @@ class install_wrap(install):
         if self.orangepath != None:
             # we save orangepath for uninstallation to the file user_install
             fo = file(os.path.join(self.orangepath, "doc",
-                                  OrangeVer, "user_install"), "w+")
+                                  "orange", "user_install"), "w+")
             fo.write(self.orangepath)
             fo.close()
             OrangeInstallDir = os.path.join(self.orangepath, "orange")
-            OrangeInstallDoc = os.path.join(self.orangepath, "doc", OrangeVer)
+            OrangeInstallDoc = os.path.join(self.orangepath, "doc", "orange")
             print "Orange installation dir: "+OrangeInstallDir
             print "Orange documentation dir: "+OrangeInstallDoc
             print "To uninstall Orange type:"
@@ -395,7 +395,7 @@ PythonVer = "python"+sys.version[:3]
 
 OrangeInstallDir = os.path.join("lib", PythonVer, "site-packages", "orange")
 OrangeInstallDoc = os.path.join(sys.prefix, "share", "doc",
-                                OrangeVer)
+                                "orange")
 OrangeInstallLib = os.path.join(sys.prefix, "lib")
 
 OrangeLibList = ['orange.so','orangene.so','orangeom.so','statc.so','corn.so']
