@@ -40,7 +40,7 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contC
         for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
           for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
             const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E -= abs(*dclassesi - *dclassesj) * log(dist < 1e-15 ? 1e-15 : dist);
+            E -= fabs(*dclassesi - *dclassesj) * log(dist < 1e-15 ? 1e-15 : dist);
           }
         E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
         break;
@@ -49,14 +49,14 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contC
         for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
           for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
             double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-            E += abs(*dclassesi - *dclassesj) / (dist < 1e-15 ? 1e-15 : sqrt(dist));
+            E += fabs(*dclassesi - *dclassesj) / (dist < 1e-15 ? 1e-15 : sqrt(dist));
           }
         break;
 
       case TPNN::InverseExponential:
         for(ptsi = pts, dclassesi = dclasses; ptsi != ptse; ptsi++, dclassesi++)
           for(ptsj = pts, dclassesj = dclasses; ptsj != ptsi; ptsj++, dclassesj++) {
-            E += abs(*dclassesi - *dclassesj) / exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
+            E += fabs(*dclassesi - *dclassesj) / exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
           }
         break;
 
@@ -314,9 +314,9 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
               ruv = 1e-15;
 
             switch(law) {
-              case TPNN::InverseLinear: druv -= abs(classes[u]-classes[v]) / sqrt(ruv); break;
-              case TPNN::InverseSquare: druv -= abs(classes[u]-classes[v]) / ruv; break;
-              case TPNN::InverseExponential: druv -= abs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
+              case TPNN::InverseLinear: druv -= fabs(classes[u]-classes[v]) / sqrt(ruv); break;
+              case TPNN::InverseSquare: druv -= fabs(classes[u]-classes[v]) / ruv; break;
+              case TPNN::InverseExponential: druv -= fabs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
             }
           }
 
