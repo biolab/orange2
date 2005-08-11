@@ -141,4 +141,5 @@ if t__isChanged:
     t__sys.exit(3)
 
 t__message.write("OK")
+t__message.close()
 print "OK"
