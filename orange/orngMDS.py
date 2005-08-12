@@ -17,6 +17,8 @@ from Numeric import *
 from LinearAlgebra import *
 import RandomArray
 import copy
+from time import clock
+import orangemds
 
 # this function converts a bottom-triangular pseudo-matrix [[1],[2,3]]
 # into a proper matrix [[0,1,2],[1,0,3],[2,3,0]]
@@ -78,6 +80,8 @@ class MDS:
         self.W = None
         # initialize the points randomly
         self.X = RandomArray.random(shape=[self.n,dimensions])
+        self.dist=RandomArray.random(shape=[self.n, self.n])
+        self.stress=RandomArray.random(shape=[self.n, self.n])
         self.freshD = 0
 
     def setDim(self, dim):
@@ -87,31 +91,45 @@ class MDS:
     def getDistance(self):
         if not self.freshD:
             self.freshD = 1
+            """
             self.dist = resize(array([0.0]),(self.n,self.n))
-            for i in range(1,self.n):
-                for j in range(i):
+            for i in xrange(1,self.n):
+                for j in xrange(i):
                     s = 0.0
-                    for k in range(self.dim):
-                        s += (self.X[i][k]-self.X[j][k])**2
+                    #for k in range(self.dim):
+                    #    s += (self.X[i][k]-self.X[j][k])**2
+                    v=self.X[i]-self.X[j]
+                    s=dot(v,v)
                     s = sqrt(s)
                     self.dist[i][j] = s
                     self.dist[j][i] = s
-
+            """
+            orangemds.getDistance(self.X,self.dist)
     
     def getStress(self,stressf=default_stress):
-        self.getDistance()        
-        self.stress = resize(array([0.0]),(self.n,self.n))
-        self.arr = []
-        total = 0.0
-        for i in xrange(1,self.n):
-            for j in xrange(i):
-                r = stressf(self.O[i][j],self.dist[i][j])
-                self.stress[i][j] = r
-                self.stress[j][i] = r
-                self.arr.append((r,(i,j)))
-                total += abs(r)
-        self.arr.sort(_mycompare)
-        print "avg. stress: ",total/(self.n*self.n)
+        self.getDistance()
+        map={ KruskalStress:0, SammonStress:1, SgnSammonStress:2, SgnRelStress:3}
+        try:
+            if not isinstance(stressf, int):
+                i=map[stressf]
+            else:
+                i=stressf
+            self.arr=orangemds.getStress(self.O,self.dist,self.stress,i)
+        except:
+            self.stress = resize(array([0.0]),(self.n,self.n))
+            self.arr = []
+            total = 0.0
+            for i in xrange(1,self.n):
+                for j in xrange(i):
+                    r = stressf(self.O[i][j],self.dist[i][j])
+                    self.stress[i][j] = r
+                    self.stress[j][i] = r
+                    self.arr.append((r,(i,j)))
+                    total += abs(r)
+            self.arr.sort(_mycompare)
+            print "avg. stress: ",total/(self.n*self.n)
+        
+        
         
     def Torgerson(self):
         # Torgerson's initial approximation
@@ -220,7 +238,9 @@ class MDS:
     # perform one step of simple gradient descent SMACOF 
     def SMACOFstep(self):
         # compute the R (n*n) matrix
-        self.getDistance()        
+        self.getDistance()
+        st=clock()
+        """
         R = resize(array([0.0]),(self.n,self.n))
         sumv = array([0.0]*self.n)
         for i in xrange(self.n):
@@ -238,6 +258,9 @@ class MDS:
             R[i][i] = sumv[i]
         # compute the iteration step
         self.X = matrixmultiply(R,self.X)/(self.n+0.0)
+        """
+        orangemds.SMACOFStep(self.dist, self.O, self.X)
+        #print "SMACOF", clock()-st
         self.freshD = 0
 
     def SMACOFstepSlow(self):
