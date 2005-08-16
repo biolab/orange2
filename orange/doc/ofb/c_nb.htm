@@ -11,8 +11,6 @@ Up: <a href="c_pythonlearner.htm">Build Your Own Learner</a>
 
 <H1>My First Orange Classifier</H1>
 
-<br>
-
 <p>The naive Bayesian classification method we will implement in
 this lesson uses standard naive Bayesian algorithm also described
 in Michell: Machine Learning, 1997 (pages 177-180). Essentially, if
@@ -64,14 +62,12 @@ frequency as estimated from training data is taken.</p>
 <p>We will develop a module called bayes.py that will implement our
 naive Bayes learner and classifier. The structure of the module
 will be as with <a href="c_nb_disc.htm">previous example</a>.
-Again, we will implement a function Learner (equal to the one from
-previous example), and classes <code>Learner_Class</code> and <code>Classifier</code>. To
-start with, here is a <code>Learner_Class</code>:</p>
+Again, we will implement two classes, one for learning and the other
+on for classification. Here is a <code>Learner</code>: class</p>
 
 <p class="header">class Learner_Class from <a href=
 "bayes.py">bayes.py</a></p>
-<xmp class="code">
-class Learner_Class:
+<xmp class="code">class Learner_Class:
   def __init__(self, m=0.0, name='std naive bayes', **kwds):
   self.__dict__ = kwds
   self.m = m
@@ -128,8 +124,7 @@ classifiers, passing the probabilities along with some other
 variables required for classification.</p>
 
 <p class="header">class Classifier from <a href="bayes.py">bayes.py</a></p>
-<xmp class="code">
-class Classifier:
+<xmp class="code">class Classifier:
   def __init__(self, **kwds):
     self.__dict__ = kwds
 
@@ -195,8 +190,7 @@ reports classification accuracies just about 90% (somehow, on this
 data set, kNN does better; smrc&hellip;).</p>
 
 <p class="header"><a href="bayes_test.py">bayes_test.py</a> (uses <a href="bayes.py">bayes.py</a> and <a href="voting.tab">voting.tab</a>)</p>
-<xmp class="code">
-import orange, orngEval, bayes
+<xmp class="code">import orange, orngEval, bayes
 data = orange.ExampleTable("voting")
 
 bayes = bayes.Learner(m=2, name='my bayes')

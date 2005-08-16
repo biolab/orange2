@@ -11,8 +11,6 @@ Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
 
 <H1>Load-In The Data</H1>
 
-<br>
-
 <p>Orange is a machine learning and data mining suite, so
 loading-in the data is, as you may acknowledge, its essential
 functionality (we tried not to stop here, though, so read on).
@@ -37,8 +35,7 @@ But before we do that, let us see how the data set file is composed
 and how to read it in Orange.</p>
 
 <p class=header>first few lines of <a href="lenses.tab">lenses.tab</a></p>
-<xmp class=code>
-age       prescription  astigmatic    tear_rate     lenses
+<xmp class=code>age       prescription  astigmatic    tear_rate     lenses
 discrete  discrete      discrete      discrete      discrete 
                                                     class
 young     myope         no            reduced       none
@@ -132,8 +129,7 @@ data, prints out names of the attributes and class, and lists first
 
 
 <p class=header><a href="lenses.py">lenses.py</a> (uses <a href="lenses.tab">lenses.tab</a>)</p>
-<xmp class=code class=code>
-import orange
+<xmp class=code class=code>import orange
 data = orange.ExampleTable("lenses")
 print "Attributes:",
 for i in data.domain.attributes:

@@ -29,7 +29,7 @@ tree.name = "tree"
 classifiers = [bayes, tree]
 
 # compute accuracies
-acc = accuracy(data, classifiers)
+acc = accuracy(test_data, classifiers)
 print "Classification accuracies:"
 for i in range(len(classifiers)):
     print classifiers[i].name, acc[i]

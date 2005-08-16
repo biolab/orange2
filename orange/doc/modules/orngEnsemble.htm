@@ -1,55 +1,162 @@
-<html><HEAD>
-<LINK REL=StyleSheet HREF="../style.css" TYPE="text/css" MEDIA=screen>
-</HEAD>
+<html>
+
+<head>
+<title>orngEnsemble: Orange Bagging and Boosting Module</title>
+<link rel=stylesheet href="../style.css" type="text/css" media=screen>
+<link rel=stylesheet href="style-print.css" type="text/css" media=print>
+</head>
+
 <body>
 <h1>orngEnsemble: Orange Bagging and Boosting Module</h1>
 
-<br>
-<P>Module orngEnsemble implements Breiman's bagging and Freund and Schapire's boosting
-algorithms.</P>
-<HR>
+<p>Module orngEnsemble implements Breiman's bagging and Random Forest,
+and Freund and Schapire's boosting algorithms.</p> 
 
-<H2>Implementations</H2>
+<h2>BaggedLearner</h2>
 
-<H3>Functions</H3>
+<p><code>BaggedLearner</code> takes a learner and returns a bagged
+learner, which is essentially a wrapper around the learner passed as
+an argument. If examples are passed in arguments,
+<code>BaggedLearner</code> returns a bagged classifiers. Both learner
+and classifier then behave just like any other learner and classifier
+in Orange.</p>
 
-<DL>
-<DT><B>BaggedLearner</B>(<EM>learner=None</EM> [, <EM>examples=None</EM>])
-<DD class=ddfun>Takes the learner (<em>learner</em>) and passes it to a
-<code>BaggedLearnerClass</code> which returns a bagged learner. If examples are
-present, it calls <code>BaggedLearner</code> on the examples and returns a bagged
-classifier.
-</DD>
+<p class=section>Attributes</p>
+<dl class=attributes>
+  <dt>learner</dt>
+  <dd>A learner to be bagged.</dd>
 
-<DT><B>BoostedLearner</B>(<EM>learner=None</EM> [, <EM>examples=None</EM>])
-<DD class=ddfun>Takes the learner (<em>learner</em>) and passes it to a
-<code>BoostedLearnerClass</code> which returns a boosted learner. If examples are
-present, it calls <code>BoostedLearner</code> on the examples and returns a boosted
-classifier.
-</DD>
+  <dt>examples</dt>
+  <dd>If examples are passed to <code>BaggedLearner</code>, this
+  returns a <code>BaggedClassifier</code>, that is, creates
+  <code>t</code> classifiers using learner and a subset of examples,
+  as appropriate for bagging (default: None).</dd>
+
+  <dt>t</dt>
+  <dd>Number of bagged classifiers, that is, classifiers created when
+  examples are passed to bagged learner (default: 10).</dd>
+
+  <dt>name</dt>
+  <dd>The name of the learner (default: Bagging).</dd>
+</dl>
+
+<p>Bagging, in essence, takes a training data and a learner, and
+builds <code>t</code> classifiers each time presenting a learner a
+bootstrap sample from the training data. When given a test example,
+classifiers vote on class, and a bagged classifier returns a class
+with a highest number of votes. As implemented in Orange, when class
+probabilities are requested, these are proportional to the number of
+votes for a particular class.<p>
 
 
-</DL>
-<HR>
+<h2>BoostedLearner</h2>
+
+<p>Instead of drawing a series of bootstrap samples from the training
+set, bootstrap maintains a weight for each instance. When classifier
+is trained from the training set, the weights for misclassified
+instances are increased. Just like in bagged learner, the class is
+decided based on voting of classifiers, but in boosting votes are
+weighted by accuracy obtained on training set.</p>
+
+<p>BoostedLearner is an implementation of AdaBoost.M1 (Freund and
+Shapire, 1996). From user's viewpoint, the use of the
+<code>BoostedLearner</code> is similar to that of
+<code>BaggedLearner</code>. The learner passed as an argument needs to
+deal with example weights.</p>
+
+<p class=section>Attributes</p>
+<dl class=attributes>
+  <dt>learner</dt>
+  <dd>A learner to be boosted.</dd>
+
+  <dt>examples</dt>
+  <dd>If examples are passed to <code>BoostedLearner</code>, this
+  returns a <code>BoostedClassifier</code>, that is, creates
+  <code>t</code> classifiers using learner and a subset of examples,
+  as appropriate for AdaBoost.M1 (default: None).</dd>
+
+  <dt>t</dt> <dd>Number of boosted classifiers created from the
+  example set (default: 10).</dd>
+
+  <dt>name</dt>
+  <dd>The name of the learner (default: AdaBoost.M1).</dd>
+</dl>
+
+
+<h2>RandomForestLearner</h2>
+
+<p>Just like bagging, classifiers in random forests are trained from
+bootstrap samples of training data. Here, classifiers are trees, but to
+increase randomness build in the way that at each node the best
+attribute is chosen from a subset of attributes in the training
+set. We closely follows the original algorithm (Brieman, 2001) both in
+implementation and parameter defaults.</p>
+
+<p class=section>Attributes</p>
+<dl class=attributes>
+  <dt>examples</dt>
+  <dd>If these are passed, the call returns
+  <code>RandomForestClassifier</code>, that is, creates the required
+  set of decision trees, which, when presented with an examples, vote
+  for the predicted class.</dd>
+
+  <dt>trees</dt>
+  <dd>Number of trees in the forest (default: 100).</dd>
+
+  <dt>learner</dt>
+  <dd>Although not required, one can use this argument to pass one's
+  own tree induction algorithm. If none is passed,
+  <code>RandomForestLearner</code> will use Orange's tree induction
+  algorithm such that in induction nodes with less then 5 examples
+  will not be considered for (further) splitting. (default: None)</dd>
+
+  <dt>attributes</dt> 
+  <dd>Number of attributes used in a randomly drawn subset when
+  searching for best attribute to split the node in tree growing
+  (default: None, and if kept this way, this is turned into square
+  root of attributes in the training set, when this is presented to
+  learner).</dd>
+
+  <dt>rand</dt>
+  <dd>Random generator used in bootstrap sampling. If none is passed,
+  then Python's Random from random library is used, with seed
+  initialized to 0..</dd>
+
+  <dt>callback</dt>
+  <dd>A function to be called after every iteration of induction of
+  classifier. This is called with parameter (from 0.0 to 1.0) that
+  gives estimates on learning progress.</dd>
+
+  <dt>name</dt>
+  <dd>The name of the learner (default: Random Forest).</dd>
+</dl>
+
+<p>A note on voting. Random forest classifier uses decision trees
+induced from bootstrapped training set to vote on class of presented
+example. Most frequent vote is returned. However, in our
+implementation, if class probability is requested from a classifier,
+this will return the averaged probabilities from each of the trees.</p>
+
+
+<hr>
 
 <H2>Examples</H2>
-<P>
-Let us try boosting and bagging on a well known Iris data set and use <code>TreeLearner</code> with post-pruning as a base learner. For testing, we use 10-fold cross validation and observe classification accuracy.</p>
+
+<P>Let us try boosting and bagging on Iris data set and use
+<code>TreeLearner</code> with post-pruning as a base learner. For
+testing, we use 10-fold cross validation and observe classification
+accuracy.</p>
 
 <p class="header"><a href="ensemble.py">ensemble.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<XMP class=code>
-import orange, orngEnsemble, orngTree
+<XMP class=code>import orange, orngEnsemble, orngTree
 import orngTest, orngStat
 
-tree = orngTree.TreeLearner(mForPruning=2)
-tree.name = "tree"
-bs = orngEnsemble.BoostedLearner(tree)
-bs.name = "boosted tree"
-bg = orngEnsemble.BaggedLearner(tree)
-bg.name = "bagged tree"
+tree = orngTree.TreeLearner(mForPruning=2, name="tree")
+bs = orngEnsemble.BoostedLearner(tree, name="boosted tree")
+bg = orngEnsemble.BaggedLearner(tree, name="bagged tree")
 
-data = orange.ExampleTable("iris.tab")
+data = orange.ExampleTable("lymphography.tab")
 
 learners = [tree, bs, bg]
 results = orngTest.crossValidation(learners, data)
@@ -59,26 +166,96 @@ for i in range(len(learners)):
 </XMP>
 
 <p>Running this script, we may get something like:</p>
-<XMP class=code>
+<XMP class=code>Classification Accuracy:
 Classification Accuracy:
-           tree: 0.947
-   boosted tree: 0.953
-    bagged tree: 0.960
+           tree: 0.769
+   boosted tree: 0.782
+    bagged tree: 0.783
 </XMP>
 
-</P>
+
+<p>The following script assembles a random forest learner and compares
+it to a tree learner on a liver disorder (bupa) data set.</p>
+
+<p class="header"><a href="ensemble2.py">ensemble2.py</a> (uses <a href=
+"bupa.tab">bupa.tab</a>)</p>
+<xmp class=code>import orange, orngTree, orngEnsemble
+
+data = orange.ExampleTable('bupa.tab')
+forest = orngEnsemble.RandomForestLearner(trees=50, name="forest")
+tree = orngTree.TreeLearner(minExamples=2, mForPrunning=2, \
+                            sameMajorityPruning=True, name='tree')
+learners = [tree, forest]
+
+import orngTest, orngStat
+results = orngTest.crossValidation(learners, data, folds=10)
+print "Learner  CA     Brier  AUC"
+for i in range(len(learners)):
+    print "%-8s %5.3f  %5.3f  %5.3f" % (learners[i].name, \
+        orngStat.CA(results)[i], 
+        orngStat.BrierScore(results)[i],
+        orngStat.AUC(results)[i])
+</xmp>
+
+<p>Notice that our forest contains 50 trees. Learners are compared
+through 10-fold cross validation, and results reported on
+classification accuracy, brier score and area under ROC curve:</p>
+
+<xmp class=code>Learner  CA     Brier  AUC
+tree     0.667  0.667  0.654
+forest   0.725  0.380  0.771
+</xmp>
+
+<p>Perhaps the sole purpose of the following example is to show how to
+access the individual classifiers once they are assembled into the
+forest, and to show how we can assemble a tree learner to be used in
+random forests. The tree induction uses an attribute subset split
+constructor, which we have borrowed from orngEnsamble and from which
+we have requested the best attribute for decision nodes to be selected
+from three randomly chosen attributes.</p>
+
+<p class="header"><a href="ensemble3.py">ensemble3.py</a> (uses <a href=
+"bupa.tab">bupa.tab</a>)</p>
+<xmp class=code>import orange, orngTree, orngEnsemble
+
+data = orange.ExampleTable('bupa.tab')
+
+tree = orngTree.TreeLearner(storeNodeClassifier = 0, storeContingencies=0, \
+  storeDistributions=1, minExamples=5, ).instance()
+gini = orange.MeasureAttribute_gini()
+tree.split.discreteSplitConstructor.measure = \
+  tree.split.continuousSplitConstructor.measure = gini
+tree.maxDepth = 5
+tree.split = orngEnsemble.SplitConstructor_AttributeSubset(tree.split, 3)
+
+forestLearner = orngEnsemble.RandomForestLearner(learner=tree, trees=50)
+forest = forestLearner(data)
+
+for c in forest.classifiers:
+    print orngTree.countNodes(c),
+print
+</xmp>
+
+<p>Running the above code would report on sizes (number of nodes) of
+the tree in a constructed random forest.</p>
+
 <HR>
-
 <H2>References</H2>
-<P>
-JR Quinlan. Boosting, bagging, and C4.5. In Proceedings of 13th National Conference on Artificial Inteligence (AAAI'96). pp. 725-730, 1996.
-</P>
-<P>
-L Breiman. Bagging Predictors. Technical report No. 421. University of California, Berkeley, 1994.
-</P>
-<P>
-Y Freund, RE Schapire. Experiments with a New Boosting Algorithm. Machine Learning: Proceedings of the Thirteenth International Conference (ICML'96), 1996.
-</P>
 
-</BODY>
-</HTML> 
+<P>L Breiman. Bagging Predictors. Technical report No. 421. University of
+California, Berkeley, 1994. [<a href="http://www.stat.berkeley.edu/tech-reports/421.ps.Z">PS</a>]</P>
+
+<P>Y Freund, RE Schapire. Experiments with a New Boosting
+Algorithm. Machine Learning: Proceedings of the Thirteenth
+International Conference (ICML'96), 1996. [<a href="http://citeseer.ist.psu.edu/freund96experiments.html">Citeseer</a>]</P>
+
+<P>JR Quinlan. Boosting, bagging, and C4.5. In Proc. of 13th
+National Conference on Artificial Intelligence (AAAI'96). pp. 725-730,
+1996. [<a href="http://www.rulequest.com/Personal/q.aaai96.ps">PS</a>]</P>
+
+<p>L Brieman. Random Forests. Machine Learning, 45, 5-32, 2001. [<a href="http://www.springerlink.com/app/home/contribution.asp?wasp=bd3f27906cfa4bfdaa16527c7c167456&referrer=parent&backto=issue,1,5;journal,32,140;linkingpublicationresults,1:100309,1">SpringerLink</a>]</p>
+
+<p> M Robnik-Sikonja. Improving Random Forests. In Proc. of European Conference on Machine Learning (ECML 2004), pp. 359-370, 2004. [<a href="http://lkm.fri.uni-lj.si/rmarko/papers/robnik04-ecml.pdf">PDF</a>]</p>
+
+</body>
+</html>

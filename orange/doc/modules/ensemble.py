@@ -1,20 +1,17 @@
-# Author:      J Zabkar
-# Version:     1.0
-# Description: Demostration of use of orngEnsemble module
-# Category:    modelling
-# Uses:        iris.tab
+# Description: Demonstrates the use of boosting and bagging from orngEnsemble module
+# Category:    classification, ensembles
+# Classes:     BoostedLearner, BaggedLearner
+# Uses:        lymphography.tab
+# Referenced:  orngEnsemble.htm
 
 import orange, orngEnsemble, orngTree
 import orngTest, orngStat
 
-tree = orngTree.TreeLearner(mForPruning=2)
-tree.name = "tree"
-bs = orngEnsemble.BoostedLearner(tree)
-bs.name = "boosted tree"
-bg = orngEnsemble.BaggedLearner(tree)
-bg.name = "bagged tree"
+tree = orngTree.TreeLearner(mForPruning=2, name="tree")
+bs = orngEnsemble.BoostedLearner(tree, name="boosted tree")
+bg = orngEnsemble.BaggedLearner(tree, name="bagged tree")
 
-data = orange.ExampleTable("iris.tab")
+data = orange.ExampleTable("lymphography.tab")
 
 learners = [tree, bs, bg]
 results = orngTest.crossValidation(learners, data)

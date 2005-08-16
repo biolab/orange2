@@ -11,30 +11,28 @@ Up: <a href="other.htm">Other Techniques for Orange Scripting</a>
 
 <H1>Categorization</H1>
 
-<br>
-
-<p>Data categorization (or as in machine learning also referred to as discretization) is a procedure that
-takes a data set and converts all continuous attributes to
-categorical. In other words, it categorizes the continuous
-attributes. Orange's core supports three categorization
+<p>Data categorization (or as in machine learning also referred to as
+discretization) is a procedure that takes a data set and converts all
+continuous attributes to categorical. In other words, it categorizes
+the continuous attributes. Orange's core supports three categorization
 methods: first using equal-width intervals
-(<code>orange.EquiDistDiscretization</code>), second using equal-frequency
-intervals (<code>orange.EquiNDiscretization</code>) and class-aware
-categorization as introduced by Fayyad &amp; Irani (AAAI92) that
-uses MDL and entropy to find the best cut-off points
-(<code>orange.EntropyDiscretization</code>). The discretization methods are
-invoked through calling a preprocessor directive
+(<code>orange.EquiDistDiscretization</code>), second using
+equal-frequency intervals (<code>orange.EquiNDiscretization</code>)
+and class-aware categorization as introduced by Fayyad &amp; Irani
+(AAAI92) that uses MDL and entropy to find the best cut-off points
+(<code>orange.EntropyDiscretization</code>). The discretization
+methods are invoked through calling a preprocessor directive
 <code>orange.Preprocessor_discretize</code> which takes a data set and
 discretization method, and returns a data set with any continuous
 attribute being discretized.</p>
 
-<p>In machine learning and data mining categorization may be used
-for different purposes. It may be interesting to find informative
-cut-off points in the data (for instance, finding that the cut-off
-for blood's acidity is 7.3 may mean something to physicians).
-In machine learning, categorization may enable the use of some
-learning algorithms (for instance, the naive Bayes in orange does
-not handle continuous-valued attributes).</p>
+<p>In machine learning and data mining categorization may be used for
+different purposes. It may be interesting to find informative cut-off
+points in the data (for instance, finding that the cut-off for blood's
+acidity is 7.3 may mean something to physicians).  In machine
+learning, categorization may enable the use of some learning
+algorithms (for instance, the naive Bayes in orange does not handle
+continuous-valued attributes).</p>
 
 <h2>Categorization of A Complete Data Set</h2>
 
@@ -43,8 +41,7 @@ Orange's categorization functions:</p>
 
 <p class="header"><a href="disc.py">disc.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 
 def show_values(data, heading):
     print heading
@@ -72,8 +69,7 @@ discretized by adding &ldquo;D_&rdquo; at its start. Further notice
 that with Fayyad-Irani's discretization, all four attributes
 were found to have at least two meaningful cut-off points.</p>
 
-<xmp class="code">
-Entropy based discretization
+<xmp class="code">Entropy based discretization
 D_sepal length: <=5.50, (5.50000, 5.70000], >5.70
 D_sepal width: <=2.90, (2.90000, 3.00000], (3.00000, 3.30000], >3.30
 D_petal length: <=1.90, (1.90000, 4.70000], >4.70
@@ -104,8 +100,7 @@ trust us in what we are doing, just read on.</p>
 
 <p class="header"><a href="disc2.py">disc2.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
-def printexamples(data, inxs, msg="First %i examples"):
+<xmp class="code">def printexamples(data, inxs, msg="First %i examples"):
   print msg % len(inxs)
   for i in inxs:
     print i, data[i]
@@ -129,8 +124,7 @@ printexamples(d_iris, inxs, "%i examples before discretization")
 
 <p>And here is the output of this script:</p>
 
-<xmp class="code">
-5 examples before discretization
+<xmp class="code">5 examples before discretization
 0 [5.100000, 3.500000, 1.400000, 0.200000, 'Iris-setosa']
 15 [5.700000, 4.400000, 1.500000, 0.400000, 'Iris-setosa']
 35 [5.000000, 3.200000, 1.200000, 0.200000, 'Iris-setosa']
@@ -154,15 +148,13 @@ categorizes onto the given number of intervals of equal width.</p>
 is thus informative, but not easily readable. You can, however, always change names of
 values, as long as the number of values remains the same. Adding the line</p>
 
-<xmp class="code">
-pl.values = sl.values = ["very low", "low", "high", "very high"]
+<xmp class="code">pl.values = sl.values = ["very low", "low", "high", "very high"]
 </xmp>
 
 to our code after the introduction of this two attributes (the new script is in
 <a href="disc3.py">disc3.py</a>), following is the second part of the output:</p>
 
-<xmp class="code">
-5 examples before discretization
+<xmp class="code">5 examples before discretization
 0 [3.500000, 'very low', 5.100000, 'low', '<=5.50', 'Iris-setosa']
 15 [4.400000, 'very low', 5.700000, 'low', '(5.50, 6.10]', 'Iris-setosa']
 35 [3.200000, 'very low', 5.000000, 'very low', '<=5.50', 'Iris-setosa']
@@ -177,8 +169,7 @@ to our code after the introduction of this two attributes (the new script is in
 
 <p class="header"><a href="disc4.py">disc4.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 iris = orange.ExampleTable("iris")
 
 equiN = orange.EquiNDiscretization(numberOfIntervals=4)
@@ -195,8 +186,7 @@ for attribute in [pl, sl, sl_ent]:
 
 <p>Here's the output:</p>
 
-<xmp class="code">
-Cut-off points for D_petal length are <1.54999995232, 4.44999980927, 5.25>
+<xmp class="code">Cut-off points for D_petal length are <1.54999995232, 4.44999980927, 5.25>
 Cut-off points for D_sepal length are <5.05000019073, 5.75, 6.34999990463>
 Cut-off points for D_sepal length are <5.5, 6.09999990463>
 </xmp>
@@ -205,8 +195,7 @@ Cut-off points for D_sepal length are <5.5, 6.09999990463>
 
 <p class="header"><a href="disc5.py">disc5.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 iris = orange.ExampleTable("iris")
 
 equiN = orange.EquiNDiscretization(numberOfIntervals=4)
@@ -236,8 +225,7 @@ and with it we specify the cut-off points.</p>
 
 <p class="header"><a href="disc6.py">disc6.py</a> (uses <a href=
 "iris.tab">iris.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 
 def printexamples(data, inxs, msg="First %i examples"):
   print msg % len(inxs)
@@ -262,8 +250,7 @@ printexamples(d_iris, [0, 15, 35, 50, 98], "%i examples after discretization")
 
 <p>Notice that we have also named each of the three intervals, and constructed the data set that shows both original and categorized attribute:</p>
 
-<xmp class="code">
-5 examples after discretization
+<xmp class="code">5 examples after discretization
 [1.400000, 'low', 'Iris-setosa']
 [1.500000, 'low', 'Iris-setosa']
 [1.200000, 'low', 'Iris-setosa']

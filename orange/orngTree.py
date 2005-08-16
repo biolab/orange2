@@ -45,7 +45,6 @@ class TreeLearnerClass:
       tree = orange.TreePruner_m(tree, m = self.mForPruning)
     return tree
 
-
   def instance(self):
     learner = orange.TreeLearner()
 
@@ -87,8 +86,8 @@ class TreeLearnerClass:
       learner.stop = self.stop
     else:
       learner.stop = orange.TreeStopCriteria_common()
-      mm = getattr(self, "maxMajority", 0)
-      if mm:
+      mm = getattr(self, "maxMajority", 1.0)
+      if mm < 1.0:
         learner.stop.maxMajority = self.maxMajority
       me = getattr(self, "minExamples", 0)
       if me:
@@ -240,7 +239,7 @@ def __printNode(outputFormat, node, lev, name="0", continuous=0, cont="", major=
     s+= "null node\n"
   return s
 
-def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueIndex=-1, \
+def printTxt(tree, fileName=None, examplesLimit=0, depthLimit=None, baseValueIndex=None, \
         internalNodeFields=[], leafFields=["major","average"], decimalPlaces=3, confidenceLevel=0.95):
 
   out = None
@@ -250,9 +249,9 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
     confidenceLevel=0.95
   if not tree.distribution:
     raise "Class distributions haven't been not stored in the tree"
-  if fileName!="":
+  if fileName:
     out = open(fileName, 'w')
-  if depthLimit < 1 or tree.distribution and tree.distribution.abs < examplesLimit:
+  if (depthLimit and depthLimit < 1) or tree.distribution and tree.distribution.abs < examplesLimit:
     if out:
       out.close()
     return
@@ -278,7 +277,7 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
     distributionString = formatstring % (avg, avg-Z[confidenceLevel]*err, avg+Z[confidenceLevel]*err)
   else:
     # Discrete class
-    if baseValueIndex != -1:
+    if baseValueIndex:
       baseName = tree.distribution.variable.values[baseValueIndex]
       baseValueString = "%s: %s%s" % (baseName,str(tree.distribution[baseValueIndex]*100/tree.distribution.abs)[0:5],'%')
 
@@ -286,9 +285,11 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
     l = __maxx(tree.distribution)
     majorString = "%s%s" % (str(l[0][0]*100 / tree.distribution.abs)[0:5], '%')
 
-  s = __printNode('TXT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, examples=tree.distribution.abs, \
-          el=examplesLimit, depth=depthLimit, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
-          lshp="", inshp="", iNF=internalNodeFields, lF=leafFields, dP=decimalPlaces,z=confidenceLevel)
+  s = __printNode('TXT',tree, 0, continuous=continuous, cont=distributionString, \
+          major=majorString, examples=tree.distribution.abs, \
+          el=examplesLimit, depth=depthLimit or 10000, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
+          lshp="", inshp="", iNF=internalNodeFields, lF=leafFields, \
+          dP=decimalPlaces,z=confidenceLevel)
   if out:
     out.write(s)
     out.close()
@@ -301,10 +302,11 @@ def printTxt(tree, fileName="", examplesLimit=-1, depthLimit=10000, baseValueInd
 # depthLimit ... recursively write out the tree until depthLimit is reached
 # distribution ... 1=output class distribution for each node; 0=don't
 # pctOfMajor ... 1=output the percentage of majority class for each node; 0=no pct. of majority class output
-# baseValueIndex ... index of the base class; no baseValue pct. output if -1
+# baseValueIndex ... index of the base class; no baseValue pct. output if None
 # leafShape ... a shape of the leaf node in dot format
 # internalNodeShape ... a shape of the internal node in dot format
-def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseValueIndex=-1, \
+
+def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=None, baseValueIndex=None, \
       leafShape="plaintext", internalNodeShape="box", internalNodeFields=[], \
       leafFields=["major","average"], decimalPlaces=3, confidenceLevel=0.95):
 
@@ -315,7 +317,7 @@ def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseV
   if not tree.distribution:
     raise "Class distributions haven't been not stored in the tree"
   out = open(fileName, 'w')
-  if depthLimit < 1 or tree.distribution and tree.distribution.abs < examplesLimit:
+  if (depthLimit and depthLimit < 1) or tree.distribution and tree.distribution.abs < examplesLimit:
     out.close()
     return
   out.write("digraph G {\n")
@@ -341,7 +343,7 @@ def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseV
     distributionString = formatstring % (avg, avg - Z[confidenceLevel]*err, avg + Z[confidenceLevel]*err)
   else:
     # Discrete class
-    if baseValueIndex != -1:
+    if baseValueIndex:
       baseName = tree.distribution.variable.values[baseValueIndex]
       baseValueString = "%s: %s%s\\n" % (baseName,str(tree.distribution[baseValueIndex]*100/tree.distribution.abs)[0:5],'%')
 
@@ -350,7 +352,7 @@ def printDot(tree, fileName="out.dot", examplesLimit=-1, depthLimit=10000, baseV
     majorString = "%s%s\\n" % (str(l[0][0]*100 / tree.distribution.abs)[0:5], '%')
 
   s = __printNode('DOT',tree, 0, continuous=continuous, cont=distributionString, major=majorString, \
-          el=examplesLimit, depth=depthLimit, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
+          el=examplesLimit, depth=depthLimit or 10000, bi=baseValueIndex, bsn=baseName, bstr=baseValueString, \
           lshp=leafShape, inshp=internalNodeShape, iNF=internalNodeFields, lF=leafFields, dP=decimalPlaces,z=confidenceLevel)
   out.write(s+"}\n")
   out.close()

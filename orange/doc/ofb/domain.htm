@@ -11,18 +11,29 @@ Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
 
 <H1>Basic Data Manipulation</H1>
 
-<br>
-
-<p>A substantial part of Orange's functionality is data manipulation: constructing data sets, selecting instances and attributes, different filtering techniques... While all operations on attributes and instances can be done on your data set in your favorite spreadsheet program, this may not be very convenient as you may not want to jump from one environment to another, and can even be prohibitive if data manipulation is a part of your learning or testing scheme. In this section of tutorial we therefore expose some of the very basic data manipulation techniques incorporate in Orange, which in turn may be sufficient for those that want to implement their own feature or instance selection techniques, or even do something like constructive induction.</p>
+<p>A substantial part of Orange's functionality is data manipulation:
+constructing data sets, selecting instances and attributes, different
+filtering techniques... While all operations on attributes and
+instances can be done on your data set in your favorite spreadsheet
+program, this may not be very convenient as you may not want to jump
+from one environment to another, and can even be prohibitive if data
+manipulation is a part of your learning or testing scheme. In this
+section of tutorial we therefore expose some of the very basic data
+manipulation techniques incorporate in Orange, which in turn may be
+sufficient for those that want to implement their own feature or
+instance selection techniques, or even do something like constructive
+induction.</p>
 
 <h2>A Warm Up</h2>
 
-We will use the data set about car types and characteristics called <a href="imports-85.tab">imports-85.tab</a>. Before we do anything, let us write a script that examines what are the attributes that are included in this data set.
+We will use the data set about car types and characteristics called <a
+href="imports-85.tab">imports-85.tab</a>. Before we do anything, let
+us write a script that examines what are the attributes that are
+included in this data set.
 
 <p class="header">part of <a href="domain1.py">domain1.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 
 filename = "imports-85.tab"
 data = orange.ExampleTable(filename)
@@ -37,8 +48,7 @@ for i in range(len(data.domain.attributes)):
 
 <p>The script prints out a following report:</p>
 
-<xmp class="code">
-imports-85.tab includes 25 attributes and a class variable price 
+<xmp class="code">imports-85.tab includes 25 attributes and a class variable price 
 Attribute names and indices:
 ( 0) symboling         ( 1) normalized-losses ( 2) make             
 ( 3) fuel-type         ( 4) aspiration        ( 5) num-of-doors     
@@ -59,8 +69,7 @@ Attribute names and indices:
 
 <p class="header"><a href="domain2.py">domain2.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 
 def reportAttributes(dataset, header=None):
   if dataset.domain.classVar:
@@ -97,8 +106,7 @@ reportAttributes(newData4, "Attributes by domain")
 
 <p>The output produced by above script is therefore:</p>
 
-<xmp class="code">
-symboling normalized-losses make fuel-type aspiration num-of-doors
+<xmp class="code">symboling normalized-losses make fuel-type aspiration num-of-doors
 body-style drive-wheels engine-location wheel-base length width
 height curb-weight engine-type num-of-cylinders engine-size fuel-system
 bore stroke compression-ratio horsepower peak-rpm city-mpg
@@ -121,8 +129,7 @@ symboling curb-weight make
 
 <p class="header"><a href="domain3.py">domain3.py</a>  (uses <a href=
 "glass.tab">glass.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 domain = orange.ExampleTable("glass").domain
 
 tests = ( '(["Na", "Mg"], domain)',
@@ -165,8 +172,7 @@ for args in tests:
 
 <p class="header"><a href="domain7.py">domain7.py</a>  (uses <a href=
 "../datasets/adult_sample.tab">glass.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 
 def report_prob(header, data):
   print 'Size of %s: %i instances; ' % (header, len(data)), 
@@ -197,8 +203,7 @@ report_prob('data3, third dozen of instances', data3)
 
 <p>And here is its output:</p>
 
-<xmp class="code">
-Size of data: 977 instances;  p(>50K)=0.242
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
 Size of data1, first ten instances: 10 instances;  p(>50K)=0.200
 Size of data2, other than first ten instances: 967 instances;  p(>50K)=0.242
 Size of data3, third dozen of instances: 12 instances;  p(>50K)=0.583
@@ -210,8 +215,7 @@ Size of data3, third dozen of instances: 12 instances;  p(>50K)=0.583
 
 <p class="header"><a href="domain4.py">domain4.py</a>  (uses <a href=
 "glass.tab">adult_sample.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 
 def report_prob(header, data):
   print 'Size of %s: %i instances' % (header, len(data))
@@ -234,8 +238,7 @@ report_prob('data2', data2)
 
 <p>We have used instances from adult data set that for an individual described through a set of attributes states if her/his yearly earnings were above $50.000. Notice that we have selected instances based on their gender (<code>data1</code>) and gender and education (<code>data2</code>), and just to show how different are resulting data sets reported on number of instances and relative frequency of cases with higher earnings. Notice that when more than one attribute-value pair is given to <code>select</code>, conjunction of conditions are used. The output of above script is:</p>
 
-<xmp class="code">
-Size of original data set: 977 instances
+<xmp class="code">Size of original data set: 977 instances
 p(>50K)=0.242
 Size of data1: 624 instances
 p(>50K)=0.296
@@ -247,8 +250,7 @@ p(>50K)=0.632
 
 <p class="header">part of <a href="domain5.py">domain5.py</a>  (uses <a href=
 "glass.tab">adult_sample.tab</a>) </p>
-<xmp class=code>
-filename = "adult_sample.tab"
+<xmp class=code>filename = "adult_sample.tab"
 data = orange.ExampleTable(filename)
 report_prob('data', data)
 
@@ -269,8 +271,7 @@ report_prob('data2 (select, conjuction)', data2)
 
 <p>The results are reported as:</p>
 
-<xmp class="code">
-Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
+<xmp class="code">Size of data1 (conjunction): 38 instances;  p(>50K)=0.632
 Size of data1 (conjunction): 643 instances;  p(>50K)=0.302
 Size of data2 (select, conjunction): 38 instances;  p(>50K)=0.632
 </xmp>
@@ -281,8 +282,7 @@ Size of data2 (select, conjunction): 38 instances;  p(>50K)=0.632
 
 <p class="header">part of <a href="domain6.py">domain6.py</a>  (uses <a href=
 "glass.tab">adult_sample.tab</a>) </p>
-<xmp class=code>
-filename = "adult_sample.tab"
+<xmp class=code>filename = "adult_sample.tab"
 data = orange.ExampleTable(filename)
 report_prob('data', data)
 
@@ -295,8 +295,7 @@ report_prob('data2, younger than 30 or older than 40', data2)
 
 <p>Running this script shows that it pays to be in thirties (good for authors of this text, at the time of writing):</p>
 
-<xmp class="code">
-Size of data: 977 instances;  p(>50K)=0.242
+<xmp class="code">Size of data: 977 instances;  p(>50K)=0.242
 Size of data1, age from 30 to 40: 301 instances;  p(>50K)=0.312
 Size of data2, younger than 30 or older than 40: 301 instances;  p(>50K)=0.312
 </xmp>
@@ -315,8 +314,7 @@ Size of data2, younger than 30 or older than 40: 301 instances;  p(>50K)=0.312
 
 <p class="header"><a href="domain8.py">domain8.py</a>  (uses <a href=
 "glass.tab">adult_sample.tab</a>) </p>
-<xmp class=code>
-import orange, orngTest, orngStat
+<xmp class=code>import orange, orngTest, orngStat
 
 filename = "promoters.tab"
 data = orange.ExampleTable(filename)
@@ -339,8 +337,7 @@ for d in datasets:
 
 <p>Obviously, we expect that with added noise the performance of any classifier will degrade. This is indeed so for our example and naive Bayes learner:</p>
 
-<xmp class="code">
-           unspoiled   0.896
+<xmp class="code">           unspoiled   0.896
     class noise 0.20   0.811
     class noise 0.40   0.689
     class noise 0.60   0.632
@@ -356,8 +353,7 @@ for d in datasets:
 
 <p class="header"><a href="domain11.py">domain11.py</a>  (uses <a href=
 "glass.tab">iris.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 data = orange.ExampleTable('iris')
 
 sa = orange.FloatVariable("sepal area")
@@ -381,8 +377,7 @@ for i in [10,50,100,130]:
 
 <p>As we took care that four data instances from the new data set are nicely printed out, here is the output of the script:</p>
 
-<xmp class="code">
- sepal length   sepal width  petal length   petal width    sepal area    petal area             iris
+<xmp class="code"> sepal length   sepal width  petal length   petal width    sepal area    petal area             iris
          5.40          3.70          1.50          0.20         19.98          0.30      Iris-setosa
          7.00          3.20          4.70          1.40         22.40          6.58  Iris-versicolor
          6.30          3.30          6.00          2.50         20.79         15.00   Iris-virginica
@@ -396,8 +391,7 @@ Below is an example that adds a new attribute to car data set (see more at
 
 <p class="header"><a href="domain12.py">domain12.py</a>  (uses <a href=
 "glass.tab">car.tab</a>) </p>
-<xmp class=code>
-import orange
+<xmp class=code>import orange
 data = orange.ExampleTable('car')
 
 priceTable={}
@@ -438,8 +432,7 @@ for i in [1,200,300,1200,1700]:
 
 <p>The output of this code (we intentionally printed out five selected data instances):</p>
 
-<xmp class="code">
-    buying      maint      doors    persons    lugboot     safety      price          y
+<xmp class="code">    buying      maint      doors    persons    lugboot     safety      price          y
     v-high     v-high          2          2      small        med     v-high      unacc
     v-high       high     5-more          4      small       high     v-high      unacc
     v-high        med     5-more          2        med        low       high      unacc
@@ -451,8 +444,7 @@ for i in [1,200,300,1200,1700]:
 
 <p class="header"><a href="domain13.py">domain13.py</a>  (uses <a href=
 "glass.tab">iris.tab</a>) </p>
-<xmp class=code>
-import orange, orngTest, orngStat, orngTree
+<xmp class=code>import orange, orngTest, orngStat, orngTree
 data = orange.ExampleTable('iris')
 
 sa = orange.FloatVariable("sepal area")
@@ -478,8 +470,7 @@ print "original: %5.3f, new: %5.3f" % (orngStat.CA(res1)[0], orngStat.CA(res2)[0
 
 <p class="header"><a href="domain9.py">domain9.py</a>  (uses <a href=
 "voting.tab">voting.tab</a>) </p>
-<xmp class=code>
-import orange, orngTest, orngStat, orngTree
+<xmp class=code>import orange, orngTest, orngStat, orngTree
 
 def WrapperFSS(data, learner, verbose=0, folds=10):
   classVar = data.domain.classVar
@@ -526,16 +517,14 @@ print bestDomain
 
 <p>For a wrapper feature subset selection we have defined a function <code>WrapperFSS</code>, which takes the data, the learner, and can be optionally requested to report on the progress of search (<code>verbose=1</code>). Cross-validation is by default using ten folds, but you may change this through a parameter of <code>WrapperFSS</code>. Here is a result of a single run of the script, where we used classification tree as a learner:</p>
 
-<xmp class="code">
-gain: 0.343, attribute: physician-fee-freeze
+<xmp class="code">gain: 0.343, attribute: physician-fee-freeze
 stopped (0.000)
 [physician-fee-freeze, party]
 </xmp>
 
 <p>Notice that only a single attribute was selected (<code>party</code> is a class). You may explore the behavior of the algorithm in some more detail to see why this happens by calling the feature subset selection with <code>verbose=2</code>. You may also replace tree learner with some other algorithm. We did this and used naive Bayes (<code>learner = orange.BayesLearner()</code>), and got the following:</p>
 
-<xmp class="code">
-gain: 0.343, attribute: physician-fee-freeze
+<xmp class="code">gain: 0.343, attribute: physician-fee-freeze
 gain: 0.002, attribute: synfuels-corporation-cutback
 gain: 0.005, attribute: adoption-of-the-budget-resolution
 stopped (0.000)
@@ -547,8 +536,7 @@ adoption-of-the-budget-resolution, party]
 
 <p>[One think with naive Bayes is that it will report a bunch of warnings of the type</p>
 
-<xmp class="code">
-  classifiers[i] = learners[i](learnset, weight)
+<xmp class="code">  classifiers[i] = learners[i](learnset, weight)
 C:\PYTHON22\lib\orngTest.py:256: KernelWarning: 'BayesLearner':
 invalid conditional probability or no attributes
 (the classifier will use apriori probabilities)
@@ -556,8 +544,7 @@ invalid conditional probability or no attributes
 
 <p>This is because at the start of the feature subset selection, a set with no attributes other than class was give to the learner. This warnings are ok and can come in handy elsewhere, if you really do not like them here, add the following to the code:<p>
 
-<xmp class="code">
-import warnings
+<xmp class="code">import warnings
 warnings.filterwarnings("ignore", ".*'BayesLearner': .*",
 orange.KernelWarning)
 </xmp>
@@ -566,8 +553,7 @@ orange.KernelWarning)
 
 <p class="header">part of <a href="domain10.py">domain10.py</a>  (uses <a href=
 "voting.tab">voting.tab</a>) </p>
-<xmp class=code>
-def WrappedFSSLearner(learner, examples=None, verbose=0, folds=10, **kwds):
+<xmp class=code>def WrappedFSSLearner(learner, examples=None, verbose=0, folds=10, **kwds):
   kwds['verbose'] = verbose
   kwds['folds'] = folds
   learner = apply(WrappedFSSLearner_Class, (learner,), kwds)
@@ -625,8 +611,7 @@ for i in range(len(learners)):
 
 <p>The wrapped learner uses <code>WrapperFSS</code>, which is exactly the same function that we have developed in out previous script. The objects we have introduced in the script above mainly take care of the attributes, the code that really does something is actually in the <code>__call__</code> function of <code>WrappedFSSLearner_Class</code>. Running this script for classification tree, we get the same single-attribute set with <code>physician-fee-freeze</code> for all of the ten folds, and a minimal gain in accuracy. Something similar happens for naive Bayes, except that attributes included in the data set are <code>[physician-fee-freeze, synfuels-corporation-cutback, adoption-of-the-budget-resolution]</code>, and the statistics reported are quite higher than for the naive Bayes without feature subset selection:</p>
 
-<xmp class="code">
-Learner      CA     IS     Brier    AUC
+<xmp class="code">Learner      CA     IS     Brier    AUC
 bayes        0.901  0.758  0.177  0.976
 w fss        0.961  0.848  0.064  0.991
 </xmp>

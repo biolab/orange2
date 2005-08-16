@@ -11,8 +11,6 @@ Up: <a href="other.htm">Other Techniques for Orange Scripting</a>
 
 <H1>Feature Subset Selection</H1>
 
-<br>
-
 <p>
 While the core Orange provides mechanisms to estimate relevance of
 attributes that describe classified instances, a module called
@@ -26,8 +24,7 @@ a new data set.
 
 <p class="header"><a href="fss6.py">fss6.py</a> (uses <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<xmp class="code">
-import orange, orngFSS
+<xmp class="code">import orange, orngFSS
 data = orange.ExampleTable("adult_sample")
 
 def report_relevance(data):
@@ -51,8 +48,7 @@ report_relevance(ndata)
 
 <p>Notice that we have also defined a function <code>report_relevance</code> that takes the data, computes the relevance of attributes (by calling <code>orngFSS.attMeasure</code>) and then reports the computed relevance. Notice that (by chance!) both <code>orngFSS.attMeasure</code> and <code>orngFSS.FilterRelief</code> use the same measure to estimate attributes, so this code would actually get better if one would first set up an object that would measure the attributes, and give it to both  <code>orngFSS.FilterRelief</code> and <code>report_relevance</code> (we leave this for you as an exercise). The output of the above script is:</p>
 
-<xmp class="code">
-Before feature subset selection (14 attributes):
+<xmp class="code">Before feature subset selection (14 attributes):
 0.183 relationship
 0.154 marital-status
 0.063 occupation
@@ -85,8 +81,7 @@ Out of 14 attributes, 5 were considered to be most relevant. We can not check if
 
 <p class="header">an excerpt from <a href="fss7.py">fss7.py</a> (uses <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<xmp class="code">
-import orange, orngDisc, orngTest, orngStat, orngFSS
+<xmp class="code">import orange, orngDisc, orngTest, orngStat, orngFSS
 
 data = orange.ExampleTable("crx")
 
@@ -102,8 +97,7 @@ results = orngTest.crossValidation(learners, data, folds=10, storeClassifiers=1)
 Below is the result. In terms of classification accuracy, feature subset selection did not help. But, the rightmost column shows the number of features used in each classifier (results are averaged across ten trials of cross validation), and it is quite surprising that on average only the use of about two features was sufficient. 
 
 
-<xmp class="code">
-Learner         Accuracy  #Atts
+<xmp class="code">Learner         Accuracy  #Atts
 disc bayes      0.857     14.00
 bayes & fss     0.846      2.60
 </xmp>
@@ -113,8 +107,7 @@ The code that computes this statistics, as well as determines which are those fe
 
 <p class="header">another excerpt from <a href="fss7.py">fss7.py</a> (uses <a href=
 "../datasets/adult_sample.tab">adult_sample.tab</a>)</p>
-<xmp class="code">
-# how many attributes did each classifier use?
+<xmp class="code"># how many attributes did each classifier use?
 
 natt = [0.] * len(learners)
 for fold in range(results.numberOfIterations):
@@ -142,8 +135,7 @@ for a in used.keys():
 
 Following is the part of the output that shows the attribute usage. Quite interesting, four attributes were used in constructed classifiers, but only one (A9) in all ten classifiers constructed by cross validation.
 
-<xmp class="code">
-Attribute usage (in how many folds attribute was used?):
+<xmp class="code">Attribute usage (in how many folds attribute was used?):
 10 x A9
  2 x A10
  3 x A7

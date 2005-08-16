@@ -3,29 +3,73 @@
 </HEAD>
 <body>
 <h1>orngCI: Orange Constructive Induction Module</h1>
-<br>
 
 <p>Module orngCI implements classes and function that support
 constructive induction (CI). It includes minimal-complexity function
 decomposition and a much generalized minimal-error function
-decomposition. Both can be used as feature induction algorithms or as a standalone learning algorithm HINT (Zupan, 1997; Zupan et al, 1998). In addition, the module provides an interface to generalized Kramer's method (Kramer, 1994) and serveral other CI related algorithms.</P>
+decomposition. Both can be used as feature induction algorithms or as
+a standalone learning algorithm HINT (Zupan, 1997; Zupan et al,
+1998). In addition, the module provides an interface to generalized
+Kramer's method (Kramer, 1994) and serveral other CI related
+algorithms.</P>
 
 <hr>
 
 <H2>Constructive Induction in Orange</H2>
 
-<P>Constructive induction takes a subset of attributes, which we call <EM>bound attributes</EM> and creates a new attribute whose values are computed from values of the bound attributes. Orange supports the so-called data-driven constructive induction, where learning examples are used to decide how the new attribute is computed from the bound ones.</P>
+<P>Constructive induction takes a subset of attributes, which we call
+<EM>bound attributes</EM> and creates a new attribute whose values are
+computed from values of the bound attributes. Orange supports the
+so-called data-driven constructive induction, where learning examples
+are used to decide how the new attribute is computed from the bound
+ones.</P>
 
-<P>Feature constructors (orange objects that construct features) are thus given examples, a list of bound attributes, and, optionally, an id of the weight attribute. They construct a new attribute and return a tuple with the new feature and a value that estimates its quality.</p>
+<P>Feature constructors (orange objects that construct features) are
+thus given examples, a list of bound attributes, and, optionally, an
+id of the weight attribute. They construct a new attribute and return
+a tuple with the new feature and a value that estimates its
+quality.</p>
 
 <h3>Constructing a Constructor</h3>
 
-<p>Complex feature constructors, such as those for minimal-error decomposition and for Kramer's algorithm show the flexibility of Orange's component based approach. On the other hand, the hierarchy of components that need to be put together to construct a workable feature inducer is too complex even for an experienced user. The main mission of <CODE>orngCI</CODE> is thus to help the user by "flattening" the hierarchy. Defaults are provided for all the components so the user only needs to give the specific parts of the hierarchy.</p>
+<p>Complex feature constructors, such as those for minimal-error
+decomposition and for Kramer's algorithm show the flexibility of
+Orange's component based approach. On the other hand, the hierarchy of
+components that need to be put together to construct a workable
+feature inducer is too complex even for an experienced user. The main
+mission of <CODE>orngCI</CODE> is thus to help the user by
+"flattening" the hierarchy. Defaults are provided for all the
+components so the user only needs to give the specific parts of the
+hierarchy.</p>
 
-<p>For instance, let <code>fim</code> be an instance of <code>orange.FeatureIM</code>, a feature constructor for minimal error function decomposition. Its most crucial parameter, <em>m</em>, is "hidden" in <CODE>fim.clustersFromIM.columnAssessor.m</CODE>. Parameter <em>m</em> is an attribute of an m-estimate based column assessor component of the column quality assessor based algorithm for column clustering.
-To save the user from having to remember this, <CODE>orngCI</CODE> offers its own class <CODE>FeatureByIM</CODE>. Now, if <CODE>fim</CODE> is an instance of <CODE>orngCI.FeatureByIM</CODE> the user needs to set <CODE>fim.m</CODE>. Before the actual feature construction takes place, <CODE>orngCI.FeatureByIM</CODE> constructs an appropriate <CODE>orange.FeatureByIM</CODE> and sets its <CODE>clustersFromIM.columnAssessor.m</CODE> to <code>fim.m</code>. Constructing a structure and putting the user-supplied components at the right places is called <em>deflattening</em>.</P>
+<p>For instance, let <code>fim</code> be an instance of
+<code>orange.FeatureIM</code>, a feature constructor for minimal error
+function decomposition. Its most crucial parameter, <em>m</em>, is
+"hidden" in
+<CODE>fim.clustersFromIM.columnAssessor.m</CODE>. Parameter <em>m</em>
+is an attribute of an m-estimate based column assessor component of
+the column quality assessor based algorithm for column clustering.  To
+save the user from having to remember this, <CODE>orngCI</CODE> offers
+its own class <CODE>FeatureByIM</CODE>. Now, if <CODE>fim</CODE> is an
+instance of <CODE>orngCI.FeatureByIM</CODE> the user needs to set
+<CODE>fim.m</CODE>. Before the actual feature construction takes
+place, <CODE>orngCI.FeatureByIM</CODE> constructs an appropriate
+<CODE>orange.FeatureByIM</CODE> and sets its
+<CODE>clustersFromIM.columnAssessor.m</CODE> to
+<code>fim.m</code>. Constructing a structure and putting the
+user-supplied components at the right places is called
+<em>deflattening</em>.</P>
 
-<P>A general principle is that if you define a component, you also need to define its subcomponents as well. The default <code>columnAssessor</code> is <code>orange.ColumnAssessor_m</code>. If you leave it alone, all its subcomponents are set as well. However, if you set <CODE>columnAssessor</CODE> to <CODE>orange.ColumnAssessor_Measure</CODE>, it is your responsibility to set its attribute "measure", either by specifying it as a "measure" argument to <CODE>FeatureByIM</CODE> or by setting it directly in <CODE>columnAssessor.measure</CODE>.</P>
+<P>A general principle is that if you define a component, you also
+need to define its subcomponents as well. The default
+<code>columnAssessor</code> is
+<code>orange.ColumnAssessor_m</code>. If you leave it alone, all its
+subcomponents are set as well. However, if you set
+<CODE>columnAssessor</CODE> to
+<CODE>orange.ColumnAssessor_Measure</CODE>, it is your responsibility
+to set its attribute "measure", either by specifying it as a "measure"
+argument to <CODE>FeatureByIM</CODE> or by setting it directly in
+<CODE>columnAssessor.measure</CODE>.</P>
 
 
 <P><B>The rest of this section is intended for advanced users.</B></P>
@@ -37,12 +81,27 @@ To save the user from having to remember this, <CODE>orngCI</CODE> offers its ow
 <DD>Returns an instance of pure <CODE>orange</CODE> classes that perform the feature construction. The instance is also stored in <CODE>self</CODE>'s field <CODE>instance</CODE>.
 </DL>
 
-<p>Deflattening is initiated by the call operator. The call operator is given examples, bound attributes and, optionally, the id of the weight attribute, and returns a constructed attribute and an assessment of its quality. To do its job, the call operator needs an instance of a corresponding Orange feature constructor. Constructing such instances at each invocation of call would be too costly, therefore a kind of caching is implemented. When the call operator is invoked for the first time, <CODE>createInstance</CODE> is called to deflatten the structure and the result is stored in <CODE>self.instance</CODE>. In further calls, the stored <CODE>self.instance</CODE> is used again. However, when any of classes attributes that affect the feature construction (such as <CODE>fim.m</CODE>, see above example) are modified, <CODE>self.instance</CODE> is set to <CODE>None</CODE> and a new instance will be constructed at next call.</SMALL></P>
+<p>Deflattening is initiated by the call operator. The call operator
+is given examples, bound attributes and, optionally, the id of the
+weight attribute, and returns a constructed attribute and an
+assessment of its quality. To do its job, the call operator needs an
+instance of a corresponding Orange feature constructor. Constructing
+such instances at each invocation of call would be too costly,
+therefore a kind of caching is implemented. When the call operator is
+invoked for the first time, <CODE>createInstance</CODE> is called to
+deflatten the structure and the result is stored in
+<CODE>self.instance</CODE>. In further calls, the stored
+<CODE>self.instance</CODE> is used again. However, when any of classes
+attributes that affect the feature construction (such as
+<CODE>fim.m</CODE>, see above example) are modified,
+<CODE>self.instance</CODE> is set to <CODE>None</CODE> and a new
+instance will be constructed at next call.</SMALL></P>
 
-<P>Now, if you want to, say, tune <CODE>fim.m</CODE>, you can change it and cause reinstantiations of corresponding <CODE>orange</CODE> classes.</P>
+<P>Now, if you want to, say, tune <CODE>fim.m</CODE>, you can change
+it and cause reinstantiations of corresponding <CODE>orange</CODE>
+classes.</P>
 
-<xmp class="code">
-bound = data.domain[:2]
+<xmp class="code">bound = data.domain[:2]
 fim = orngCI.FeatureByIM()
 attrs = []
 for m in [0.1, 0.5, 1.0, 2.0]:
@@ -51,26 +110,41 @@ for m in [0.1, 0.5, 1.0, 2.0]:
   attrs.append(attr)
 </XMP>
 
-<P>This will construct features from the first two attributes of the domain, using different values of m. (It would be a blasphemy not to publish a shorted way to write the above code fragment: the last four lines can be replaced by <CODE>attrs = [fim(data, bound)[0] for fim.m in [0.1, 0.5, 1.0, 2.0]]</CODE>). However, at each call to <CODE>fim</CODE>, <CODE>createInstances</CODE> is called and a new set of components is constructed since setting <CODE>m</CODE> resets them. To make the program faster, you should replace
-<xmp class="code">
-fim.m = 2
-</xmp>
+<P>This will construct features from the first two attributes of the
+domain, using different values of m. (It would be a blasphemy not to
+publish a shorted way to write the above code fragment: the last four
+lines can be replaced by <CODE>attrs = [fim(data, bound)[0] for fim.m
+in [0.1, 0.5, 1.0, 2.0]]</CODE>). However, at each call to
+<CODE>fim</CODE>, <CODE>createInstances</CODE> is called and a new set
+of components is constructed since setting <CODE>m</CODE> resets
+them. To make the program faster, you should replace <xmp
+class="code"> fim.m = 2 </xmp>
 <P>by</P>
-<xmp class="code">
-fim.instance.clustersFromIM.columnAssessor.m = m
+
+<xmp class="code">fim.instance.clustersFromIM.columnAssessor.m = m
 </xmp>
 
 
 <h3>Constructing a Feature</h3>
 
-<p>To construct a feature, you need to call a constructor. The call operator expects two or three arguments: examples, bound-attributes and, optionally an id of a weight meta attribute. It returns a tuple containing the attribute and its quality estimation. This is the same for all feature constructors in <code>orngCI</code>, although some may ignore some arguments or return useless quality assesments.</p>
+<p>To construct a feature, you need to call a constructor. The call
+operator expects two or three arguments: examples, bound-attributes
+and, optionally an id of a weight meta attribute. It returns a tuple
+containing the attribute and its quality estimation. This is the same
+for all feature constructors in <code>orngCI</code>, although some may
+ignore some arguments or return useless quality assesments.</p>
 
-<p>The method of quality estimation depends upon the algorithm used - it can be a decrease of error, an increase of impurity, ets. Qualities returned by different feature constructors are not comparable. The quality can be either negative or positive; in any case, higher numbers mean better attributes. If the measure of quality is negated (ie. low numbers meaning better attributes), they will have a negative sign.</P>
+<p>The method of quality estimation depends upon the algorithm used -
+it can be a decrease of error, an increase of impurity, ets. Qualities
+returned by different feature constructors are not comparable. The
+quality can be either negative or positive; in any case, higher
+numbers mean better attributes. If the measure of quality is negated
+(ie. low numbers meaning better attributes), they will have a negative
+sign.</P>
 
 <P>The famous Monk 1 dataset (Thrun et al, 1991) has the goal concept <EM>y := a=b or e=1</EM>. When joining attributes 'a' and 'b', the new attribute should express equality of a and b. Let us see if the minimal-complexity function decomposition can find the appropriate function.</P>
 
-<xmp class="code">
->>> import orange, orngCI
+<xmp class="code">>>> import orange, orngCI
 >>> data = orange.ExampleTable("monk2")
 >>> ab, quality = orngCI.FeatureByMinComplexity(data, ["a", "b"])
 >>> ab.values
@@ -81,14 +155,12 @@ fim.instance.clustersFromIM.columnAssessor.m = m
 
 <P>Note that we specified the bound attributes by names. This is not the only way. If you want, you can give attribute descriptors, or even their indices in the domain. Thus, knowing that attributes "a" and "b" are the first two attributes, the above call could be replaced by</P>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByMinComplexity(data, data.domain[:2])
+<xmp class="code">>>> ab, quality = orngCI.FeatureByMinComplexity(data, data.domain[:2])
 </xmp>
 
 <P>or even</P>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByMinComplexity(data, [0, 1])
+<xmp class="code">>>> ab, quality = orngCI.FeatureByMinComplexity(data, [0, 1])
 </xmp>
 
 <P>or by any combination of names, descriptors and indices.</P>
@@ -97,8 +169,7 @@ fim.instance.clustersFromIM.columnAssessor.m = m
 
 <P>It makes sense to rename the values of the constructed feature. In our case, we shall call the first value "eq" and the second would be "diff".</P>
 
-<xmp class="code">
->>> ab.values = ["eq", "diff"]
+<xmp class="code">>>> ab.values = ["eq", "diff"]
 </xmp>
 
 <P>If any of bound attributes have values that include '-' or '+', the constructed attribute's values will be named "c1", "c2", "c3"...</P>
@@ -108,16 +179,14 @@ fim.instance.clustersFromIM.columnAssessor.m = m
 
 <P>Constructed features can be added to the domain and used in further processing of the data, such as, for instance, learning. If that is what you want, you do not need to read this section any further: if you have followed the above example, you can conclude it by</P>
 
-<xmp class="code">
->>> data2 = orngCI.addAnAttribute(ab, data)
+<xmp class="code">>>> data2 = orngCI.addAnAttribute(ab, data)
 </xmp>
 
 <P>This adds the attribute to the domain and returns a new example table.</p>
 
 <p>The feature knows how to compute itself from the values of the attributes it is constructed from. The usual Orange mechanism is used for this: the new feature has a <CODE>getValueFrom</CODE> pointing to a classifier that computes the feature's value. In short, when some method has an example and needs a value of a particular attribute, but this attribute is not in the example's domain, it can check whether the attribute has a <code>getValueFrom</code> defined. If it has, the method calls it, passing the example as an argument. The <code>getValueFrom</code> either computes the attribute's value or returns <em>don't know</em>.</P>
 
-<xmp class="code">
->>> ab.getValueFrom
+<xmp class="code">>>> ab.getValueFrom
 <ClassifierByLookupTable2 instance at 0x0197BEF0>
 >>> print ab.getValueFrom.lookupTable
 <eq, diff, diff, diff, eq, diff, diff, diff, eq>
@@ -131,16 +200,14 @@ EnumVariable 'b'
 
 <p>If you need to manually correct the feature, you can change the <CODE>lookupTable</CODE>:</P>
 
-<xmp class="code">
->>> ab.getValueFrom.lookupTable[0]="diff"
+<xmp class="code">>>> ab.getValueFrom.lookupTable[0]="diff"
 </XMP>
 
 <P>This would work for most cases, but it would fail when you start to mess with probability distributions of the new feature. The complete description of classifiers by lookup table is, however, out of scope of this text.</P>
 
 <P>Let us show an example of what <CODE>getValueFrom</CODE> can do. We shall compute the class distributions for different values of the new attribute:</P>
 
-<xmp class="code">
->>> c=orange.ContingencyAttrClass(ab, data)
+<xmp class="code">>>> c=orange.ContingencyAttrClass(ab, data)
 >>> for i in c:
 ...   i
 <0.000, 144.000>
@@ -153,8 +220,7 @@ EnumVariable 'b'
 
 <P>Feature inducers can be used to remove (or merge) redundant attribute values. In Monk 1, the attribute "e" has four values, but the goal concept only asks whether the value is "1" or not. Thus, values "2", "3" and "4" are equivalent. If minimal complexity decomposition is called to construct a new attribute from "e", it will easily remove the redundancies:</P>
 
-<xmp class="code">
->>> new_e, quality = orngCI.FeatureByMinComplexity(data, ["e"])
+<xmp class="code">>>> new_e, quality = orngCI.FeatureByMinComplexity(data, ["e"])
 >>> new_e.values
 <1, 2+3+4>
 </xmp>
@@ -163,8 +229,7 @@ EnumVariable 'b'
 
 <p>We can check the <code>lookupTable</code> again.</p>
 
-<xmp class="code">
->>> print new_e.getValueFrom.lookupTable
+<xmp class="code">>>> print new_e.getValueFrom.lookupTable
 <1, 2+3+4, 2+3+4, 2+3+4, 2+3+4>
 </xmp>
 
@@ -238,8 +303,7 @@ This component is independent of stopping criteria. The default default is <CODE
 
 <P>As an example, let us check how minimal-error decomposition performs on Monk 1. We shall check its performance with different values of <EM>m</EM>, and for each we shall print out the values of the constructed feature.</P>
 
-<xmp class="code">
->>> import orange, orngCI
+<xmp class="code">>>> import orange, orngCI
 >>> data = orange.ExampleTable("monk1")
 >>> for m in [0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]:
 ...     ab, quality = orngCI.FeatureByIM(data, ["a", "b"], m=m)
@@ -258,8 +322,7 @@ m=10.0: 0.186 <1-1+3-3+2-2+1-3+1-2+3-2+3-1+2-1+2-3>
 
 <P>Let us see whether Kramer's impurity measure can compete with this.</P>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"],
+<xmp class="code">>>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"],
       columnAssessor=orange.ColumnAssessor_Kramer())
 >>> print "%5.3f %s" % (quality, ab.values)
 6.917 <2-2+2-3+1-3+3-3+1-2+1-1+3-1+2-1, 3-2>
@@ -267,8 +330,7 @@ m=10.0: 0.186 <1-1+3-3+2-2+1-3+1-2+3-2+3-1+2-1+2-3>
 
 <P>It cannot. But what if we allow it to build a four-valued attribute?</P>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"],
+<xmp class="code">>>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"],
       columnAssessor=orange.ColumnAssessor_Kramer(), n=4)
 >>> print "%5.3f %s" % (quality, ab.values)
 2.917 <1-1+3-2+2-1+3-3+1-2+2-2, 1-3, 2-3, 3-1>
@@ -278,8 +340,7 @@ m=10.0: 0.186 <1-1+3-3+2-2+1-3+1-2+3-2+3-1+2-1+2-3>
 
 <P>As a more interesting test, let us see what happens if we construct an attribute with optimization of information gain.</P>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"], measure = orange.MeasureAttribute_info())
+<xmp class="code">>>> ab, quality = orngCI.FeatureByIM(data, ["a", "b"], measure = orange.MeasureAttribute_info())
 >>> print "%5.3f %s" % (quality, ab.values)
 0.000 <1-1+3-3+2-2, 2-3+3-1+1-3+3-2+1-2+2-1>>
 </xmp>
@@ -340,16 +401,14 @@ Note that this default is different than the one in analogous <code>orngCI.Featu
 
 <p>The class usage is essentially the same as that of <code>orngCI.FeatureByIM</code> except for different defaults for <code>distributionAssessor</code> and <code>stopCriterion</code>. This invokes the default Kramer's algorithm that uses Kramer's measure of impurity for distribution quality assessment and induces binary concepts:</p>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByKramer(data, ["a", "b"])
+<xmp class="code">>>> ab, quality = orngCI.FeatureByKramer(data, ["a", "b"])
 >>> print "%5.3f %s" % (quality, ab.values)
 -0.125 <2-1+2-3+1-2+3-1+1-3+3-2, 2-2+3-3+1-1>
 </xmp>
 
 <p>Setting <em>m</em> will replace the distribution estimator by <code>orange.DistributionAssessor_m</code> and, consequentially, <code>orange.StopDistributionClustering_noProfit</code> will be used as the stop criterion:</p>
 
-<xmp class="code">
->>> for m in [0.0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]:
+<xmp class="code">>>> for m in [0.0, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0]:
 ...    ab, quality = orngCI.FeatureByKramer(data, ["a", "b"], m=m)
 ...    print "m=%4.1f: %5.3f %s" % (m, quality, ab.values)
 ...
@@ -372,8 +431,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 <DT>n</dt><dd>Sets the number of values for the new feature</dd></dl>
 <p>As an example, we shall induce 30-valued random features:</p>
 
-<xmp class="code">
->>> for i in range(5):
+<xmp class="code">>>> for i in range(5):
 ...    ab, quality = orngCI.FeatureByRandom(data, ["a", "b"], n=3)
 ...    print "%5.3f %s" % (quality, ab.values)
 ...
@@ -393,8 +451,7 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <p>Let us construct a cartesian product-attribute and assess its quality using information gain:</p>
 
-<xmp class="code">
->>> ab, quality = orngCI.FeatureByCartesianProduct(data, ["a", "b"], ...               measure=orange.MeasureAttribute_gainRatio())
+<xmp class="code">>>> ab, quality = orngCI.FeatureByCartesianProduct(data, ["a", "b"], ...               measure=orange.MeasureAttribute_gainRatio())
 >>> print "%5.3f %s" % (quality, ab.values)
 0.145 <1-1, 1-2, 1-3, 2-1, 2-2, 2-3, 3-1, 3-2, 3-3>
 </xmp>
@@ -414,14 +471,12 @@ m=10.0: 1.334 <1-1+2-2+3-3, 3-1+1-2+2-1+2-3+3-2+1-3>
 
 <p>The core of the classes' code is really trivial. The class first checks whether the two fields are specified and provides the default for <code>subsetGenerator</code> if needed. Then it executes:</p>
 
-<xmp class="code">
-return [self.featureInducer(data, bound, weightID) for bound in ssgen]
+<xmp class="code">return [self.featureInducer(data, bound, weightID) for bound in ssgen]
 </xmp>
 
 <p>We will user the class to induce new features from all attribute pairs in Monk 1 using Kramer's algorithm.</p>
 
-<xmp class="code">
->>> fk = orngCI.FeatureByKramer()
+<xmp class="code">>>> fk = orngCI.FeatureByKramer()
 >>> features = orngCI.FeatureGenerator(data, featureInducer = fk)
 >>> for ab, quality in features:
 ...   names = [x.name for x in ab.getValueFrom.boundset()]
@@ -454,8 +509,7 @@ return [self.featureInducer(data, bound, weightID) for bound in ssgen]
 
 <P>This example shows how to induce a structure using Kramer's method for feature construction, where <CODE>data</CODE> stores examples for dataset Monk 1.</P>
 
-<xmp class="code">
->>> inducer = orngCI.FeatureByKramer()
+<xmp class="code">>>> inducer = orngCI.FeatureByKramer()
 >>> root = orngCI.StructureInducer(data, featureInducer=inducer)
 >>> orngCI.printHierarchy(root)
 y/2 <0, 1>

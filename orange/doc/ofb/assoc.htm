@@ -13,39 +13,45 @@ Up: <a href="default.htm">On Tutorial 'Orange for Beginners'</a>
 
 <H1>Association Rules</H1>
 
-<br>
-
-<p>Association rules are fun to do in Orange. One reason for this is Python, and particular implementation that allows a list of association rules to behave just like any list in Python. That is, you can select parts of the list, you can remove rules, even add them (yes, append() works on Orange association rules!).</p>
+<p>Association rules are fun to do in Orange. One reason for this is
+Python, and particular implementation that allows a list of
+association rules to behave just like any list in Python. That is, you
+can select parts of the list, you can remove rules, even add them
+(yes, append() works on Orange association rules!).</p>
 
 <p>But let's start with the basics. For association rules, Orange
-straightforwardly implements APRIORI algorithm
-(see Agrawal et al., Fast discovery of association rules, a
-chapter in Advances in knowledge discovery and data mining, 1996),
-Orange includes an optimized version of the algorithm that works on tabular data).
-For number of reasons (but mostly for convenience) association rules should be
-constructed and managed through the interface provided by <a href="../modules/orngAssoc.htm">orngAssoc module</a>.
-As implemented in Orange, association rules construction procedure does not handle continuous attributes,
-so make sure that your data is categorized. Also, class variables are treated just like attributes.
-For examples in this tutorial, we will use data from the data set
-<a href="imports-85.tab">imports-85.tab</a>, which surveys
-different types of cars and lists their characteristics. We will use
-only first ten attributes from this data set and categorize them so
-three equally populated intervals will be created for each continuous variable.
+straightforwardly implements APRIORI algorithm (see Agrawal et al.,
+Fast discovery of association rules, a chapter in Advances in
+knowledge discovery and data mining, 1996), Orange includes an
+optimized version of the algorithm that works on tabular data).  For
+number of reasons (but mostly for convenience) association rules
+should be constructed and managed through the interface provided by <a
+href="../modules/orngAssoc.htm">orngAssoc module</a>.  As implemented
+in Orange, association rules construction procedure does not handle
+continuous attributes, so make sure that your data is
+categorized. Also, class variables are treated just like attributes.
+For examples in this tutorial, we will use data from the data set <a
+href="imports-85.tab">imports-85.tab</a>, which surveys different
+types of cars and lists their characteristics. We will use only first
+ten attributes from this data set and categorize them so three equally
+populated intervals will be created for each continuous variable.
 This will be done through the following part of the code:</p>
 
-<XMP class=code>
-data = orange.ExampleTable("imports-85")
+<XMP class=code>data = orange.ExampleTable("imports-85")
 data = orange.Preprocessor_discretize(data, \
   method=orange.EquiNDiscretization(numberOfIntervals=3))
 data = data.select(range(10))
 </XMP>
 
-<p>Now, to our examples. First one uses the data set constructed with above script and shows how to build a list of association rules which will have support of at least 0.4. Next, we select a subset of first five rules, print them out, delete first three rules and repeat the printout. The script that does this is:</p>
+<p>Now, to our examples. First one uses the data set constructed with
+above script and shows how to build a list of association rules which
+will have support of at least 0.4. Next, we select a subset of first
+five rules, print them out, delete first three rules and repeat the
+printout. The script that does this is:</p>
 
 <p class="header">part of <a href="assoc1.py">assoc1.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>
-minSupport = 0.4
+<xmp class=code>minSupport = 0.4
 rules = orngAssoc.build(data, minSupport)
 
 print "%i rules with support higher than or equal to %5.3f found." % (len(rules), minSupport)
@@ -60,8 +66,7 @@ subset.printMeasures(['support','confidence'])
 
 The output of this script is:
 
-<xmp class="code">
-87 rules with support higher than or equal to 0.400 found.
+<xmp class="code">87 rules with support higher than or equal to 0.400 found.
 
 supp	conf 	rule
 0.888	0.984 	engine-location=front -> fuel-type=gas
@@ -76,14 +81,25 @@ supp	conf 	rule
 0.785	0.958 	fuel-type=gas -> aspiration=std
 </xmp>
 
-<p>Notice that the when printing out the rules, user can specify which rule evaluation measures are to be printed. Choose anything from <code>['support', 'confidence', 'lift', 'leverage', 'strength', 'coverage']</code>.</p>
+<p>Notice that the when printing out the rules, user can specify which
+rule evaluation measures are to be printed. Choose anything from
+<code>['support', 'confidence', 'lift', 'leverage', 'strength',
+'coverage']</code>.</p>
 
-<p>The second example uses the same data set, but first prints out five most confident rules. Then, it shows a rather advanced type of filtering: every rule has parameters that record its support, confidence, etc... These may be used when constructing your own filter functions. The one in our example uses <code>support</code> and <code>lift</code>. [If you have just started with Python: lambda is a compact way to specify a simple function without using def statement. As a function, it uses its own name space, so minimal lift and support requested in our example should be passed as function arguments]. Here goes the code:</p>
+<p>The second example uses the same data set, but first prints out
+five most confident rules. Then, it shows a rather advanced type of
+filtering: every rule has parameters that record its support,
+confidence, etc... These may be used when constructing your own filter
+functions. The one in our example uses <code>support</code> and
+<code>lift</code>. [If you have just started with Python: lambda is a
+compact way to specify a simple function without using def
+statement. As a function, it uses its own name space, so minimal lift
+and support requested in our example should be passed as function
+arguments]. Here goes the code:</p>
 
 <p class="header">part of <a href="assoc2.py">assoc2.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>
-minSupport = 0.4
+<xmp class=code>minSupport = 0.4
 rules = orngAssoc.build(data, minSupport)
 
 n = 5
@@ -100,8 +116,7 @@ rulesC.printMeasures(['confidence','support','lift'])
 
 <p>Just two rules with requested support and lift are found in our rule set:</p>
 
-<xmp class="code">
-5 most confident rules:
+<xmp class="code">5 most confident rules:
 conf	supp	lift 	rule
 1.000	0.556	1.015 	engine-location=front -> num-of-doors=four
 1.000	0.585	1.015 	engine-location=front -> drive-wheels=fwd
@@ -119,8 +134,7 @@ conf	supp	lift 	rule
 
 <p class="header">part of <a href="assoc3.py">assoc3.py</a>  (uses <a href=
 "imports-85.tab">imports-85.tab</a>) </p>
-<xmp class=code>
-minSupport = 0.2
+<xmp class=code>minSupport = 0.2
 rules = orngAssoc.build(data, minSupport)
 print "%i rules with support higher than or equal to %5.3f found.\n" % (len(rules), minSupport)
 
@@ -135,8 +149,7 @@ subset.printMeasures(['support','confidence'])
 
 <p>The output of this script is:</p>
 
-<xmp class="code">
-828 rules with support higher than or equal to 0.200 found.
+<xmp class="code">828 rules with support higher than or equal to 0.200 found.
 
 Best 5 rules:
 supp	conf 	rule

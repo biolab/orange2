@@ -1,24 +1,27 @@
-# Author:      B Zupan
-# Version:     1.0
+# Version:     1.1
 # Description: Class that implements the naive Bayesian learner and classifier (warning: just for educational purposes, for real, use naive Bayes as implemented in core Orange)
 # Category:    modelling
+# Referenced:  c_nb.htm
 
 import orange
 
-def Learner(examples=None, **kwds):
-    learner = apply(Learner_Class, (), kwds)
-    if examples:
-        return learner(examples)
-    else:
-        return learner
+class Learner(object):
+    def __new__(cls, examples=None, **kwds):
+        print "NEW"
+        learner = object.__new__(cls, **kwds)
+        if examples:
+            return learner(examples)
+        else:
+            return learner
 
-class Learner_Class:
     def __init__(self, m=0.0, name='std naive bayes', **kwds):
+        print 'INIT'
         self.__dict__ = kwds
         self.m = m
         self.name = name
 
     def __call__(self, examples, weight=None, **kwds):
+        print 'CALL'
         for k in kwds.keys():
             self.__dict__[k] = kwds[k]
         domain = examples.domain

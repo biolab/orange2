@@ -11,8 +11,6 @@ Up: <a href="classification.htm">Classification</a>
 
 <H1>My First Orange Classifier</H1>
 
-<br>
-
 <p>There are two types of objects that will be introduced in this
 lesson: learners and classifiers. Orange has a number of build-in
 learners. For instance, <code>orange.BayesLearner</code> is a naive Bayesian
@@ -30,8 +28,7 @@ will use it to classify the first five instances from this data set
 
 <p class="header" ><a href="classifier.py">classifier.py</a> (uses <a href=
 "voting.tab">voting.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 data = orange.ExampleTable("voting")
 classifier = orange.BayesLearner(data)
 for i in range(5):
@@ -52,8 +49,7 @@ Repository and voting-records data set for further description).
 This is how our classifier performs on the first five
 instances:</p>
 
-<xmp class="code">
-1: republican (originally republican)
+<xmp class="code">1: republican (originally republican)
 2: republican (originally republican)
 3: republican (originally democrat)
 4: democrat (originally democrat)
@@ -77,8 +73,7 @@ possible values in the desired order).</p>
 
 <p class="header"><a href="classifier2.py">classifier2.py</a> (uses <a href=
 "voting.tab">voting.tab</a>)</p>
-<xmp class="code">
-import orange
+<xmp class="code">import orange
 data = orange.ExampleTable("voting")
 classifier = orange.BayesLearner(data)
 print "Possible classes:", data.domain.classVar.values
@@ -90,8 +85,7 @@ for i in range(5):
 
 
 <p>The output of this script is:</p>
-<xmp class="code">
-Possible classes: <republican, democrat>
+<xmp class="code">Possible classes: <republican, democrat>
 Probabilities for democrats:
 1: 0.000 (originally republican)
 2: 0.000 (originally republican)

@@ -11,8 +11,6 @@ Up: <a href="classification.htm">Classification</a>
 
 <H1>Selected Classification Methods</H1>
 
-<br>
-
 <p>Orange supports a number of classification techniques, for instance
 classification trees, variants of naive Bayes,
 k-nearest neighbors, classification through association rules,
@@ -36,8 +34,7 @@ some usual (default) components. Here is a script with it:</p>
 
 <p class="header"><a href="tree.py">tree.py</a> (uses <a href=
 "voting.tab">voting.tab</a>)</p>
-<xmp class="code">
-import orange, orngTree
+<xmp class="code">import orange, orngTree
 data = orange.ExampleTable("voting")
 
 tree = orngTree.TreeLearner(data, sameMajorityPruning=1, mForPruning=2)
@@ -69,8 +66,7 @@ parameter m set to 2.0.</p>
 <p>The output of the script that uses classification tree learner
 is:</p>
 
-<xmp class="code">
-Possible classes: <republican, democrat>
+<xmp class="code">Possible classes: <republican, democrat>
 Probabilities for democrats:
 1: 0.051 (originally republican)
 2: 0.027 (originally republican)
@@ -86,8 +82,7 @@ by the last line in our script. The constructed tress is:</p>
 
 <p class="header">output of running the <a href=
 "tree_print.py">classifier4.py</a> script</p>
-<xmp class="code">
-physician-fee-freeze y: 
+<xmp class="code">physician-fee-freeze y: 
 |   synfuels-corporation-cutback n: republican (97.25%)
 |   synfuels-corporation-cutback y: 
 |   |   mx-missile n: 
@@ -148,8 +143,7 @@ of voting data set.</p>
 
 <p class="header"><a href="handful.py">handful.py</a>
 (uses <a href="voting.tab">voting.tab</a>)</p>
-<xmp class="code">
-import orange, orngTree
+<xmp class="code">import orange, orngTree
 data = orange.ExampleTable("voting")
 
 # setting up the classifiers
@@ -195,8 +189,7 @@ list. In our case, <code>apply</code> invokes our classifiers with a data
 instance and request to compute probabilities. The output of our
 script is:</p>
 
-<xmp class="code">
-Possible classes: <republican, democrat>
+<xmp class="code">Possible classes: <republican, democrat>
 Probability for republican:
 Original Class Majority      Naive Bayes   Tree          kNN
 (republican)   0.386         1.000         0.949         1.000
