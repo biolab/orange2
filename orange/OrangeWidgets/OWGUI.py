@@ -225,7 +225,8 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
     slider.setScaleMaxMinor(10)
     slider.setThumbWidth(20)
     slider.setThumbLength(12)
-    slider.setMaximumSize(maxWidth,40)
+    if maxWidth:
+        slider.setMaximumSize(maxWidth,40)
     if logarithmic:
         slider.setRange(math.log10(minValue), math.log10(maxValue), step)
         slider.setValue(math.log10(init))
@@ -233,7 +234,8 @@ def qwtHSlider(widget, master, value, box=None, label=None, labelWidth=None, min
         slider.setRange(minValue, maxValue, step)
         slider.setValue(init)
         
-    format = "%s%d.%df" % ("%", precision+3, precision)
+##    format = "%s%d.%df" % ("%", precision+3, precision)
+    format = " %s.%df" % ("%", precision)
     
     lbl = QLabel(hb)
     lbl.setText(format % minValue)
