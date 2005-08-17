@@ -18,9 +18,14 @@ import OWGraphTools
 import OWToolbars
 from random import random
 from OWWidget import *
-
-
 from OWVisGraph import *
+from sets import Set
+
+try:
+    from OWChipDataFiles import ChipData
+except:
+    class ChipData:
+        pass
 
 class OWMDS(OWWidget):
     settingsList=["graph.ColorAttr", "graph.SizeAttr", "graph.ShapeAttr", "graph.NameAttr", "graph.ShowStress", "graph.NumStressLines", "graph.ShowName",
@@ -40,7 +45,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=10
         self.inputs=[("Sym Matrix", orange.SymMatrix, self.cmatrix)]
-        self.outputs=[("Example Table", ExampleTable)]
+        self.outputs=[("Example Table", ExampleTable), ("ChipData", ChipData)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
                               ("Sammon stress", orngMDS.SammonStress),
@@ -110,38 +115,97 @@ class OWMDS(OWWidget):
         self.data=data=None
         if matrix:
             self.data=data=getattr(matrix, "items")
+        if data and type(data)==orange.ExampleTable:
+            self.setExampleTable(data)
+        elif type(data)==list:
+            self.setList(data)
             
-        if data:
-            self.colorCombo.clear()
-            self.sizeCombo.clear()
-            self.shapeCombo.clear()
-            self.nameCombo.clear()
-            attributes=[attr for attr in data.domain.variables+data.domain.getmetas().values() or [] ]
-            discAttributes=filter(lambda a: a.varType==orange.VarTypes.Discrete, attributes)
-            contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, attributes)
-            attrName=[attr.name for attr in attributes]
-            for name in ["One color"]+attrName:
-                self.colorCombo.insertItem(name)
-            for name in ["One size"]+map(lambda a:a.name, contAttributes):
-                self.sizeCombo.insertItem(name)
-            for name in ["One shape"]+map(lambda a: a.name, discAttributes):
-                self.shapeCombo.insertItem(name)
-            for name in ["No  name"]+attrName:
-                self.nameCombo.insertItem(name)
-                
-            self.attributes=attributes
-            self.discAttributes=discAttributes
-            self.contAttributes=contAttributes
                 
         if matrix:
             matrix=Numeric.array([m for m in matrix])
             self.mds=orngMDS.MDS(matrix)
             self.mds.getStress()
             self.stress=self.getAvgStress(self.stressFunc[self.StressFunc][1])
-            self.graph.setData(self.mds, self.data)
+            self.graph.setData(self.mds, self.colors, self.sizes, self.shapes, self.names)
         else:
             self.graph.clear()
 
+    def setExampleTable(self, data):
+        self.colorCombo.clear()
+        self.sizeCombo.clear()
+        self.shapeCombo.clear()
+        self.nameCombo.clear()
+        attributes=[attr for attr in data.domain.variables+data.domain.getmetas().values() or [] ]
+        discAttributes=filter(lambda a: a.varType==orange.VarTypes.Discrete, attributes)
+        contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, attributes)
+        attrName=[attr.name for attr in attributes]
+        for name in ["One color"]+attrName:
+            self.colorCombo.insertItem(name)
+        for name in ["One size"]+map(lambda a:a.name, contAttributes):
+            self.sizeCombo.insertItem(name)
+        for name in ["One shape"]+map(lambda a: a.name, discAttributes):
+            self.shapeCombo.insertItem(name)
+        for name in ["No  name"]+attrName:
+            self.nameCombo.insertItem(name)
+            
+        self.attributes=attributes
+        self.discAttributes=discAttributes
+        self.contAttributes=contAttributes
+
+        self.colors=[[Qt.black]*(len(attributes)+1) for i in range(len(data))]
+        self.shapes=[[QwtSymbol.Ellipse]*(len(attributes)+1) for i in range(len(data))]
+        self.sizes=[[5]*(len(attributes)+1) for i in range(len(data))]
+        self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
+
+        for j, attr in enumerate(attributes):
+            if attr.varType==orange.VarTypes.Discrete:
+                c=OWGraphTools.ColorPaletteHSV(len(attr.values))
+                for i in range(len(data)):
+                    self.colors[i][j+1]=c[int(data[i][attr])]
+                    self.shapes[i][j+1]=self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
+                    self.names[i][j+1]=str(data[i][attr])
+                    self.sizes[i][j+1]=5
+            elif attr.varType==orange.VarTypes.Continuous:
+                c=OWGraphTools.ColorPaletteHSV(-1)
+                val=[e[j] for e in data]
+                minVal=min(val)
+                maxVal=max(val)
+                for i in range(len(data)):
+                    self.colors[i][j+1]=c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
+                    self.shapes[i][j+1]=self.graph.shapeList[0]
+                    self.names[i][j+1]=str(data[i][attr])
+                    self.sizes[i][j+1]=int(self.data[i][attr]/maxVal*9)+1
+            else:
+                for i in range(len(data)):
+                    self.colors[i][j+1]=Qt.black
+                    self.shapes[i][j+1]=self.graph.shapeList[0]
+                    self.names[i][j+1]=str(data[i][attr])
+                    self.sizes[i][j+1]=5
+
+    def setList(self, data):
+        self.colorCombo.clear()
+        self.sizeCombo.clear()
+        self.shapeCombo.clear()
+        self.nameCombo.clear()
+        for name in ["One color", "strain"]:
+            self.colorCombo.insertItem(name)
+        for name in ["No name", "name", "strain"]:
+            self.nameCombo.insertItem(name)
+            
+        self.colors=[[Qt.black]*3 for i in range(len(data))]
+        self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
+        self.sizes=[[5] for i in range(len(data))]
+        self.names=[[""]*4 for i in range(len(data))]
+
+        
+        strains=list(Set([d.strain for d in data]))
+        c=OWGraphTools.ColorPaletteHSV(len(strains))
+        for i, d in enumerate(data):
+            self.colors[i][1]=c[strains.index(d.strain)]
+            self.names[i][1]=d.name
+            self.names[i][2]=d.strain
+        
+        
     def smacofStep(self):
         for i in range(self.NumIter):
             self.mds.SMACOFstep()
@@ -244,6 +308,13 @@ class OWMDS(OWWidget):
         for i,(x,y) in enumerate(self.mds.X):
             if self.graph.isPointSelected(x,y):
                 selectedInd+=[i]
+        if type(self.data)==orange.ExampleTable:
+            self.sendExampleTable(selectedInd)
+        elif type(self.data)==list:
+            self.sendList(selectedInd)
+
+
+    def sendExampleTable(self, selectedInd):
         if self.selectionOptions==0:
             self.send("Example Table", orange.ExampleTable(self.data.getitems(selectedInd)))
         else:
@@ -262,6 +333,25 @@ class OWMDS(OWWidget):
                 selection[i][xAttr]=self.mds.X[selectedInd[i]][0]
                 selection[i][yAttr]=self.mds.X[selectedInd[i]][1]
             self.send("Example Table", selection)
+
+    def sendList(self, selectedInd):
+        if not selectedInd:
+            self.send("ChipData", None)
+        else:
+            datasets=[self.data[i] for i in selectedInd]
+            names=list(Set([d.strain for d in datasets]))
+            #print names, datasets
+            data=[]
+            for name in names:
+                ds=[]
+                for d in datasets:
+                    if d.strain==name:
+                        ds.append(d)
+                ds=filter(lambda a:a.strain==name, datasets)
+                #d=[d for d in ds]
+                data.append((name,ds))
+            data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
+            self.send("ChipData",data)
 
 class MDSGraph(OWVisGraph):
     def __init__(self, parent=None, name=None):
@@ -282,7 +372,7 @@ class MDSGraph(OWVisGraph):
         self.lineKeys=[]
         self.colors=[]
         self.sizes=[]
-        self.shapes=[QwtSymbol.Ellipse,
+        self.shapeList=[QwtSymbol.Ellipse,
                                 QwtSymbol.Rect,
                                 QwtSymbol.Diamond,
                                 QwtSymbol.Triangle,
@@ -293,17 +383,15 @@ class MDSGraph(OWVisGraph):
                                 QwtSymbol.Cross, 
                                 QwtSymbol.XCross ]
 
-    def setData(self, mds, data):
+    def setData(self, mds, colors, sizes, shapes, names):
         if mds:
             self.mds=mds
-            self.data=data
-            self.discColors=[]
-            self.colors=[]
-            self.sizes=[]
-            if data:
-                self.attributes=[attr for attr in data.domain.variables+data.domain.getmetas().values() or [] ]
-                self.discAttributes=filter(lambda a: a.varType==orange.VarTypes.Discrete, self.attributes)
-                self.contAttributes=filter(lambda a: a.varType==orange.VarTypes.Continuous, self.attributes)
+            #self.data=data
+            self.colors=colors
+            self.sizes=sizes
+            self.shapes=shapes
+            self.names=names
+            
             self.updateData()
                 
     def updateData(self):
@@ -322,52 +410,13 @@ class MDSGraph(OWVisGraph):
         self.repaint()
 
     def setPoints(self):
-        if self.ColorAttr==0:
-            colors=[Qt.black]
-        elif self.attributes[self.ColorAttr-1].varType==orange.VarTypes.Discrete:
-            colors=OWGraphTools.ColorPaletteHSV(len(self.attributes[self.ColorAttr-1].values))
-        elif self.attributes[self.ColorAttr-1].varType==orange.VarTypes.Continuous:
-            colors=OWGraphTools.ColorPaletteHSV()
-            values=[self.data[i][self.attributes[self.ColorAttr-1]] for i in range(len(self.data))]
-            maxVal=max(values)
-            minVal=min(values)
-            #print minVal, maxVal
-        else:
-            colors=[Qt.black]
-        
-        if self.SizeAttr!=0:
-            values=[self.data[i][self.contAttributes[self.SizeAttr-1]] for i in range(len(self.data))]
-            sizeMinVal=min(values)
-            sizeMaxVal=max(values)
-
-        for i,(x,y) in enumerate(self.mds.X[:len(self.data)-1]):
-            # ########################
-            #Get the color , size and shape
-            if self.ColorAttr==0:
-                penColor=Qt.black
-            elif self.attributes[self.ColorAttr-1].varType==orange.VarTypes.Discrete:
-                penColor=colors[int(self.data[i][self.attributes[self.ColorAttr-1]])]
-            else:
-                #index=int(math.floor(float(self.data[i][self.attributes[self.ColorAttr-1]]-minVal)*100/abs(maxVal-minVal)))
-                #penColor=colors[index<100 and index or 99]
-                penColor=colors.getColor((self.data[i][self.attributes[self.ColorAttr-1]]-minVal)/abs(maxVal-minVal))
-
-            if self.SizeAttr==0:
-                size=5
-            else:
-                size=int(self.data[i][self.contAttributes[self.SizeAttr-1]]/sizeMaxVal*9)+1
-
-            if self.ShapeAttr==0:
-                symbol=self.shapes[0]
-            else:
-                symbol=self.shapes[int(self.data[i][self.discAttributes[self.ShapeAttr-1]])%len(self.shapes)]
-                
-            key=self.addCurve(str(i),penColor, penColor, size,symbol=symbol, xData=[x], yData=[y])
-            self.curveKeys+=[key]
-
+        for i in range(len(self.colors)):
+            self.addCurve("a", self.colors[i][self.ColorAttr], self.colors[i][self.ColorAttr], self.sizes[i][self.SizeAttr],
+                          symbol=self.shapes[i][self.ShapeAttr], xData=[self.mds.X[i][0]],yData=[self.mds.X[i][1]])
             if self.NameAttr!=0:
-                self.addMarker(str(self.data[i][self.attributes[self.NameAttr-1]]), x,y, Qt.AlignRight)
-                
+                self.addMarker(self.names[i][self.NameAttr], self.mds.X[i][0], self.mds.X[i][1], Qt.AlignRight)
+            
+                               
     def setLines(self, reset=False):
         def removeCurve(keys):
             self.removeCurve(keys[0])
