@@ -87,7 +87,7 @@ class OWDataTable(OWWidget):
             if not tabName:
                 tabName = "(Unnamed)"
             tabName += " (" + str(id[1]) + ")"
-            if id[2]:
+            if id[2] != None:
                 tabName += " [" + str(id[2]) + "]"
 ##            tabName = data.name + " "+str(id)
             self.tabs.insertTab(table, tabName)
