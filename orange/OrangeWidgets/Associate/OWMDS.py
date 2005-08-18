@@ -14,6 +14,7 @@ import qt
 import sys
 import math
 import time
+import os
 import OWGraphTools
 import OWToolbars
 from random import random
@@ -22,9 +23,9 @@ from OWVisGraph import *
 from sets import Set
 
 try:
-    from OWChipDataFiles import ChipData
+    from OWDataFiles import DataFiles
 except:
-    class ChipData:
+    class DataFiles:
         pass
 
 class OWMDS(OWWidget):
@@ -45,7 +46,7 @@ class OWMDS(OWWidget):
         self.ReDraw=1
         self.NumIter=10
         self.inputs=[("Sym Matrix", orange.SymMatrix, self.cmatrix)]
-        self.outputs=[("Example Table", ExampleTable), ("ChipData", ChipData)]
+        self.outputs=[("Example Table", ExampleTable), ("Structured Data Files", DataFiles)]
 
         self.stressFunc=[("Kruskal stress", orngMDS.KruskalStress),
                               ("Sammon stress", orngMDS.SammonStress),
@@ -156,7 +157,7 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse]*(len(attributes)+1) for i in range(len(data))]
         self.sizes=[[5]*(len(attributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
-
+        
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
                 c=OWGraphTools.ColorPaletteHSV(len(attr.values))
@@ -196,14 +197,16 @@ class OWMDS(OWWidget):
         self.shapes=[[QwtSymbol.Ellipse] for i in range(len(data))]
         self.sizes=[[5] for i in range(len(data))]
         self.names=[[""]*4 for i in range(len(data))]
-
-        
-        strains=list(Set([d.strain for d in data]))
-        c=OWGraphTools.ColorPaletteHSV(len(strains))
-        for i, d in enumerate(data):
-            self.colors[i][1]=c[strains.index(d.strain)]
-            self.names[i][1]=d.name
-            self.names[i][2]=d.strain
+        try:
+            #print dir(data[0][1][0])
+            strains=list(Set([d.strain for d in data]))
+            c=OWGraphTools.ColorPaletteHSV(len(strains))
+            for i, d in enumerate(data):
+                self.colors[i][1]=c[strains.index(d.strain)]
+                self.names[i][1]=d.name
+                self.names[i][2]=d.strain
+        except Exception, val:
+            print val
         
         
     def smacofStep(self):
@@ -285,7 +288,6 @@ class OWMDS(OWWidget):
             p1=abs(self.minStressDelta*oldStress)/max(sum(hist)/3, 1e-6)*100
             if p1>100: p1=0
             pcur=min(max([p1, float(numIter)/self.maxIterations*100, pcur]),99)
-            print p1, pcur
             self.progressBarSet(int(pcur))
 
             oldStress=stress
@@ -336,22 +338,12 @@ class OWMDS(OWWidget):
 
     def sendList(self, selectedInd):
         if not selectedInd:
-            self.send("ChipData", None)
+            self.send("Structured Data Files", None)
         else:
             datasets=[self.data[i] for i in selectedInd]
-            names=list(Set([d.strain for d in datasets]))
-            #print names, datasets
-            data=[]
-            for name in names:
-                ds=[]
-                for d in datasets:
-                    if d.strain==name:
-                        ds.append(d)
-                ds=filter(lambda a:a.strain==name, datasets)
-                #d=[d for d in ds]
-                data.append((name,ds))
+            names=list(Set([d.dirname for d in datasets]))
             data=[(name, [d for d in filter(lambda a:a.strain==name, datasets)]) for name in names]
-            self.send("ChipData",data)
+            self.send("Structured Data Files",data)
 
 class MDSGraph(OWVisGraph):
     def __init__(self, parent=None, name=None):
