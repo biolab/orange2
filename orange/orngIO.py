@@ -230,7 +230,7 @@ def toR(filename,t):
                 f.write('"%s" = ordered('%labels[i])
             else:
                 f.write('"%s" = factor('%labels[i])
-            f.write('levels=c('%(labels[i]))
+            f.write('levels=c(')
             for j in xrange(len(as[i].values)):
                 f.write('"x%s"'%(as[i].values[j]))
                 if j == len(as[i].values)-1:
