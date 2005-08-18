@@ -22,6 +22,7 @@ class OWBasicSVM(OWWidget):
         self.outputs = [("Learner", orange.Learner), ("Classifier", orange.Classifier), ("Support Vectors", ExampleTable)]
 
         self.name = "SVM Learner"
+	self.for_nomogram = 1
         self.kernel = 2
         self.gamma = 0.0
         self.coef0 = 0.0
