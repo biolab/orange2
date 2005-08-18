@@ -568,7 +568,8 @@ class MarginMetaLearner(orange.Learner):
         
     def __call__(self, examples, weight = 0):
         if not(examples.domain.classVar.varType == 1 and len(examples.domain.classVar.values)==2):
-            raise "Margin metalearner only works with binary discrete class."
+            # failing the assumptions of margin-metalearner...
+            return MarginMetaClassifierWrap(self.learner(examples))
 
         mv = orange.FloatVariable(name="margin")
         estdomain = orange.Domain([mv,examples.domain.classVar])
@@ -654,6 +655,23 @@ class MarginMetaLearner(orange.Learner):
 
         return MarginMetaClassifier(classifier, estimate, examples.domain, estdomain, coeff)
 
+
+class MarginMetaClassifierWrap(orange.Classifier):
+    def __init__(self, classifier):
+        self.classifier = classifier
+        self._name = 'MarginMetaClassifier'
+
+    def __call__(self, example, format = orange.GetValue):
+	try:
+		(v,p) = self.classifier(example,orange.GetBoth)
+	except:
+		v = self.classifier(example)
+        if format == orange.GetValue:
+            return v
+        if format == orange.GetBoth:
+            return (v,p)
+        if format == orange.GetProbabilities:
+            return p
 
 class MarginMetaClassifier(orange.Classifier):
     def __init__(self, classifier, estimator, domain, estdomain, coeff):

@@ -211,9 +211,9 @@ class BasicSVMClassifier(orange.Classifier):
         td = self.translate.extransform(example)
         margin = orngCRS.SVMClassifyM(self.cmodel,td)
         if self.normalize:
-            return -margin[0]*self.coefficient
+            return margin[0]*self.coefficient
         else:
-            return -margin[0]
+            return margin[0]
       else:
         # it can happen that there is a single class
         return 0.0

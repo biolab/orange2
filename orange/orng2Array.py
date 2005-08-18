@@ -441,7 +441,10 @@ class Standardizer:
             self.stddev += t*t
         self.stddev /= len(self.values)-1
         self.stddev = math.sqrt(self.stddev)
-        self.mult = 1.0/self.stddev
+	if self.stddev > 1e-6:
+		self.mult = 1.0/self.stddev
+	else:
+		self.mult = 1.0
         self.disp = self.avg
 
     def prepareSVM(self,nomo):
@@ -719,7 +722,7 @@ class DomainTranslation:
         self.mode = mode
         self.floatmode = float_mode
 
-    def analyse(self,examples,weight=0,warning=1):
+    def analyse(self,examples,weight=0,warning=0):
         # attributes
         self.trans = []
         self.weight = weight
