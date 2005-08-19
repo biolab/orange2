@@ -159,7 +159,9 @@ class LogRegLearnerClass:
                 attributes.remove(lr)
             else:
                 attributes.remove(lr.getValueFrom.variable)
-            examples = examples.select(orange.Domain(attributes, examples.domain.classVar))
+            newDomain = orange.Domain(attributes, examples.domain.classVar)
+            newDomain.addmetas(examples.domain.getmetas())
+            examples = examples.select(newDomain)
             lr = learner.fitModel(examples, weight)
         return lr
 
@@ -210,105 +212,206 @@ class LogRegLearnerClass_getPriors:
         self.removeSingular = removeSingular
     def __call__(self, examples, weight=0):
         # next function changes data set to a extended with unknown values 
-        def createLogRegExampleTable(data):
-            newDomain = orange.Domain(data.domain.attributes+[data.domain.classVar])
-            newDomain.addmeta(orange.newmetaid(), orange.FloatVariable("weight"))
-            dataOrig = data.select(newDomain) #original data
-            dataFinal = dataOrig.select(newDomain) #final results will be stored in this object
-
-            for d in dataFinal:
-                d["weight"]=1000000.
-
+        def createLogRegExampleTable(data, weightID):
+            setsOfData = []
             for at in data.domain.attributes:
                 # za vsak atribut kreiraj nov newExampleTable newData
-                newData = orange.ExampleTable(dataOrig)
-                
                 # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
                 if at.varType == orange.VarTypes.Continuous:
                     atDisc = orange.FloatVariable(at.name + "Disc")
-                    newDomain = orange.Domain(dataOrig.domain.attributes+[atDisc,dataOrig.domain.classVar])
-                    for (id, metaVar) in dataOrig.domain.getmetas().items():
-                        newDomain.addmeta(id, metaVar)
-                    dataOrig = dataOrig.select(newDomain)
-                    dataFinal = dataFinal.select(newDomain)
-                    newData = newData.select(newDomain)
-                    for d in dataOrig:
+                    newDomain = orange.Domain(data.domain.attributes+[atDisc,data.domain.classVar])
+                    newDomain.addmetas(data.domain.getmetas())
+                    newData = orange.ExampleTable(newDomain,data)
+                    altData = orange.ExampleTable(newDomain,data)
+                    for i,d in enumerate(newData):
                         d[atDisc] = 0
-                    for d in dataFinal:
-                        d[atDisc] = 0
-                    for d in newData:
+                        d[weightID] = 1*data[i][weightID]
+                    for i,d in enumerate(altData):
                         d[atDisc] = 1
                         d[at] = 0
-                
+                        d[weightID] = 0.000001*data[i][weightID]
+                elif at.varType == orange.VarTypes.Discrete:
                 # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
-                if at.varType == orange.VarTypes.Discrete:
-                    dataOrigOld = orange.ExampleTable(dataOrig)
-                    dataFinalOld = orange.ExampleTable(dataFinal)
                     atNew = orange.EnumVariable(at.name, values = at.values + [at.name+"X"])
-                    newDomain = orange.Domain(filter(lambda x: x!=at, dataOrig.domain.attributes)+[atNew,dataOrig.domain.classVar])
-                    for (id, metaVar) in dataOrig.domain.getmetas().items():
-                        newDomain.addmeta(id, metaVar)
-                    dataOrig = dataOrig.select(newDomain)
-                    dataFinal = dataFinal.select(newDomain)
-                    newData = newData.select(newDomain)
-                    for d in range(len(dataOrig)):
-                        dataOrig[d][atNew] = dataOrigOld[d][at]
-                    for d in range(len(dataFinal)):
-                        dataFinal[d][atNew] = dataFinalOld[d][at]
-                    for d in newData:
+                    newDomain = orange.Domain(filter(lambda x: x!=at, data.domain.attributes)+[atNew,data.domain.classVar])
+                    newDomain.addmetas(data.domain.getmetas())
+                    newData = orange.ExampleTable(newDomain,data)
+                    altData = orange.ExampleTable(newDomain,data)
+                    for i,d in enumerate(newData):
+                        d[atNew] = data[i][at]
+                        d[weightID] = 1*data[i][weightID]
+                    for i,d in enumerate(altData):
                         d[atNew] = at.name+"X"
-
-                for at in newData:
-                    at["weight"]=0.1
-
-                # v newData doloci temu atributu vrednost 1, v drugih dveh pa 0---DONEW
-                # skopiraj vse vrednosti iz newData v dataFinal
-                for d in newData:
-                    dataFinal.append(orange.Example(d))
-                    
-            return dataFinal            
-        def findZero(model, at):
-            if at.varType == orange.VarTypes.Discrete:
-                for i_a in range(len(model.domain.attributes)):
-                    if model.domain.attributes[i_a].name == at.name+"="+at.name+"X":
-                        return model.beta[i_a+1]
-            else:
-                for i_a in range(len(model.domain.attributes)):
-                    if model.domain.attributes[i_a].name == at.name+"Disc":
-                        return model.beta[i_a+1]
-                    
-        nexamples = orange.Preprocessor_dropMissing(examples)
+                        d[weightID] = 0.000001*data[i][weightID]
+                newData.extend(altData)
+                setsOfData.append(newData)
+            return setsOfData
+                  
+        learner = LogRegLearner(imputer = orange.ImputerConstructor_average(), removeSingular = self.removeSingular)
         # get Original Model
-        orig_model = LogRegLearner(examples)
+        orig_model = learner(examples,weight)
+        if orig_model.fit_status:
+            print "Warning: model did not converge"
 
         # get extended Model (you should not change data)
-        extended_examples = createLogRegExampleTable(examples)
-        extended_model = LogRegLearner(extended_examples, extended_examples.domain.getmeta("weight"))
+        if weight == 0:
+            weight = orange.newmetaid()
+            examples.addMetaAttribute(weight, 1.0)
+        extended_set_of_examples = createLogRegExampleTable(examples, weight)
+        extended_models = [learner(extended_examples, weight) \
+                           for extended_examples in extended_set_of_examples]
 
+##        print examples[0]
+##        printOUT(orig_model)
+##        print orig_model.domain
+##        print orig_model.beta
+##        print orig_model.beta[orig_model.continuizedDomain.attributes[-1]]
+##        for i,m in enumerate(extended_models):
+##            print examples.domain.attributes[i]
+##            printOUT(m)
+            
+        
         # izracunas odstopanja
         # get sum of all betas
         beta = 0
         betas_ap = []
-        for at in range(len(nexamples.domain.attributes)):
-            att = nexamples.domain.attributes[at]    
-            beta_add = findZero(extended_model, att)
+        for m in extended_models:
+            beta_add = m.beta[m.continuizedDomain.attributes[-1]]
             betas_ap.append(beta_add)
             beta = beta + beta_add
         
         # substract it from intercept
-        logistic_prior = extended_model.beta[0]+beta
+        #print "beta", beta
+        logistic_prior = orig_model.beta[0]+beta
         
         # compare it to bayes prior
-        bayes = orange.BayesLearner(nexamples)
+        bayes = orange.BayesLearner(examples)
         bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
 
         # normalize errors
-        k = (bayes_prior-extended_model.beta[0])/(logistic_prior-extended_model.beta[0])
+##        print "bayes", bayes_prior
+##        print "lr", orig_model.beta[0]
+##        print "lr2", logistic_prior
+##        print "dist", orange.Distribution(examples.domain.classVar,examples)
+##        print "prej", betas_ap
 
-        betas_ap = [k*x for x in betas_ap]                
+        # error normalization - to avoid errors due to assumption of independence of unknown values
+        dif = bayes_prior - logistic_prior
+        positives = sum(filter(lambda x: x>=0, betas_ap))
+        negatives = -sum(filter(lambda x: x<0, betas_ap))
+        if not negatives == 0:
+            kPN = positives/negatives
+            diffNegatives = dif/(1+kPN)
+            diffPositives = kPN*diffNegatives
+            kNegatives = (negatives-diffNegatives)/negatives
+            kPositives = positives/(positives-diffPositives)
+    ##        print kNegatives
+    ##        print kPositives
+
+            for i,b in enumerate(betas_ap):
+                if b<0: betas_ap[i]*=kNegatives
+                else: betas_ap[i]*=kPositives
+        #print "potem", betas_ap
 
         # vrni originalni model in pripadajoce apriorne niclele
         return (orig_model, betas_ap)
+        #return (bayes_prior,orig_model.beta[examples.domain.classVar],logistic_prior)
+
+class LogRegLearnerClass_getPriors_OneTable:
+    def __init__(self, removeSingular=0, **kwds):
+        self.__dict__ = kwds
+        self.removeSingular = removeSingular
+    def __call__(self, examples, weight=0):
+        # next function changes data set to a extended with unknown values 
+        def createLogRegExampleTable(data, weightID):
+            finalData = orange.ExampleTable(data)
+            origData = orange.ExampleTable(data)
+            for at in data.domain.attributes:
+                # za vsak atribut kreiraj nov newExampleTable newData
+                # v dataOrig, dataFinal in newData dodaj nov atribut -- continuous variable
+                if at.varType == orange.VarTypes.Continuous:
+                    atDisc = orange.FloatVariable(at.name + "Disc")
+                    newDomain = orange.Domain(origData.domain.attributes+[atDisc,data.domain.classVar])
+                    newDomain.addmetas(newData.domain.getmetas())
+                    finalData = orange.ExampleTable(newDomain,finalData)
+                    newData = orange.ExampleTable(newDomain,origData)
+                    origData = orange.ExampleTable(newDomain,origData)
+                    for d in origData:
+                        d[atDisc] = 0
+                    for d in finalData:
+                        d[atDisc] = 0
+                    for i,d in enumerate(newData):
+                        d[atDisc] = 1
+                        d[at] = 0
+                        d[weightID] = 100*data[i][weightID]
+                        
+                elif at.varType == orange.VarTypes.Discrete:
+                # v dataOrig, dataFinal in newData atributu "at" dodaj ee  eno  vreednost, ki ima vrednost kar  ime atributa +  "X"
+                    atNew = orange.EnumVariable(at.name, values = at.values + [at.name+"X"])
+                    newDomain = orange.Domain(filter(lambda x: x!=at, origData.domain.attributes)+[atNew,origData.domain.classVar])
+                    newDomain.addmetas(origData.domain.getmetas())
+                    temp_finalData = orange.ExampleTable(finalData)
+                    finalData = orange.ExampleTable(newDomain,finalData)
+                    newData = orange.ExampleTable(newDomain,origData)
+                    temp_origData = orange.ExampleTable(origData)
+                    origData = orange.ExampleTable(newDomain,origData)
+                    for i,d in enumerate(origData):
+                        d[atNew] = temp_origData[i][at]
+                    for i,d in enumerate(finalData):
+                        d[atNew] = temp_finalData[i][at]                        
+                    for i,d in enumerate(newData):
+                        d[atNew] = at.name+"X"
+                        d[weightID] = 10*data[i][weightID]
+                finalData.extend(newData)
+            return finalData
+                  
+        learner = LogRegLearner(imputer = orange.ImputerConstructor_average(), removeSingular = self.removeSingular)
+        # get Original Model
+        orig_model = learner(examples,weight)
+
+        # get extended Model (you should not change data)
+        if weight == 0:
+            weight = orange.newmetaid()
+            examples.addMetaAttribute(weight, 1.0)
+        extended_examples = createLogRegExampleTable(examples, weight)
+        extended_model = learner(extended_examples, weight)
+
+##        print examples[0]
+##        printOUT(orig_model)
+##        print orig_model.domain
+##        print orig_model.beta
+
+##        printOUT(extended_model)        
+        # izracunas odstopanja
+        # get sum of all betas
+        beta = 0
+        betas_ap = []
+        for m in extended_models:
+            beta_add = m.beta[m.continuizedDomain.attributes[-1]]
+            betas_ap.append(beta_add)
+            beta = beta + beta_add
+        
+        # substract it from intercept
+        #print "beta", beta
+        logistic_prior = orig_model.beta[0]+beta
+        
+        # compare it to bayes prior
+        bayes = orange.BayesLearner(examples)
+        bayes_prior = math.log(bayes.distribution[1]/bayes.distribution[0])
+
+        # normalize errors
+        #print "bayes", bayes_prior
+        #print "lr", orig_model.beta[0]
+        #print "lr2", logistic_prior
+        #print "dist", orange.Distribution(examples.domain.classVar,examples)
+        k = (bayes_prior-orig_model.beta[0])/(logistic_prior-orig_model.beta[0])
+        #print "prej", betas_ap
+        betas_ap = [k*x for x in betas_ap]                
+        #print "potem", betas_ap
+
+        # vrni originalni model in pripadajoce apriorne niclele
+        return (orig_model, betas_ap)
+        #return (bayes_prior,orig_model.beta[data.domain.classVar],logistic_prior)
 
 
 ######################################
@@ -320,11 +423,23 @@ def Pr(x, betas):
     return k / (1+k)
 
 def lh(x,y,betas):
-    return 0
+    llh = 0.0
+    for i,x_i in enumerate(x):
+        pr = Pr(x_i,betas)
+        llh += y[i]*log(max(pr,1e-6)) + (1-y[i])*log(max(1-pr,1e-6))
+    return llh
 
+
+def diag(vector):
+    mat = identity(len(vector), Float)
+    for i,v in enumerate(vector):
+        mat[i][i] = v
+    return mat
+    
 class simpleFitter(orange.LogRegFitter):
-    def __init__(self, penalty=0):
+    def __init__(self, penalty=0, se_penalty = False):
         self.penalty = penalty
+        self.se_penalty = se_penalty
     def __call__(self, data, weight=0):
         ml = data.native(0)
         for i in range(len(data.domain.attributes)):
@@ -334,22 +449,32 @@ class simpleFitter(orange.LogRegFitter):
               m[i] = a.values.index(m[i])
         for m in ml:
           m[-1] = data.domain.classVar.values.index(m[-1])
-
         Xtmp = array(ml)
         y = Xtmp[:,-1]   # true probabilities (1's or 0's)
         one = reshape(array([1]*len(data)), (len(data),1)) # intercept column
         X=concatenate((one, Xtmp[:,:-1]),1)  # intercept first, then data
 
         betas = array([0.0] * (len(data.domain.attributes)+1))
-
-# predict the probability for an instance, x and betas are vectors
-
-
-# start the computation
-
+        oldBetas = array([1.0] * (len(data.domain.attributes)+1))
         N = len(data)
-        likelihood = 0
-        for i in range(10):
+
+        pen_matrix = array([self.penalty] * (len(data.domain.attributes)+1))
+        if self.se_penalty:
+            p = array([Pr(X[i], betas) for i in range(len(data))])
+            W = identity(len(data), Float)
+            pp = p * (1.0-p)
+            for i in range(N):
+                W[i,i] = pp[i]
+            se = sqrt(diagonal(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X)))))
+            for i,p in enumerate(pen_matrix):
+                pen_matrix[i] *= se[i]
+        # predict the probability for an instance, x and betas are vectors
+        # start the computation
+        likelihood = 0.
+        likelihood_new = 1.
+        while abs(likelihood - likelihood_new)>1e-5:
+            likelihood = likelihood_new
+            oldBetas = betas
             p = array([Pr(X[i], betas) for i in range(len(data))])
 
             W = identity(len(data), Float)
@@ -360,30 +485,166 @@ class simpleFitter(orange.LogRegFitter):
             WI = inverse(W)
             z = matrixmultiply(X, betas) + matrixmultiply(WI, y - p)
 
-            tmpA = inverse(matrixmultiply(transpose(X), matrixmultiply(W, X))+self.penalty*identity(len(data.domain.attributes)+1, Float))
-            tmpB = matrixmultiply(transpose(X), matrixmultiply(W, z))
-            betas = matrixmultiply(tmpA, tmpB)
-            likelihood_new = lh(X,y,betas)
-            #if abs(likelihood_new-likelihood)<0.001:
-             #   break
+            tmpA = inverse(matrixmultiply(transpose(X), matrixmultiply(W, X))+diag(pen_matrix))
+            tmpB = matrixmultiply(transpose(X), y-p)
+            betas = oldBetas + matrixmultiply(tmpA,tmpB)
+#            betaTemp = matrixmultiply(matrixmultiply(matrixmultiply(matrixmultiply(tmpA,transpose(X)),W),X),oldBetas)
+#            print betaTemp
+#            tmpB = matrixmultiply(transpose(X), matrixmultiply(W, z))
+#            betas = matrixmultiply(tmpA, tmpB)
+            likelihood_new = lh(X,y,betas)-self.penalty*sum([b*b for b in betas])
+            print likelihood_new
 
-            likelihood = likelihood_new
             
             
-        XX = sqrt(diagonal(inverse(matrixmultiply(transpose(X),X))))
-        yhat = array([Pr(X[i], betas) for i in range(len(data))])
-        ss = sum((y - yhat) ** 2) / (N - len(data.domain.attributes) - 1)
-        sigma = math.sqrt(ss)
+##        XX = sqrt(diagonal(inverse(matrixmultiply(transpose(X),X))))
+##        yhat = array([Pr(X[i], betas) for i in range(len(data))])
+##        ss = sum((y - yhat) ** 2) / (N - len(data.domain.attributes) - 1)
+##        sigma = math.sqrt(ss)
+        p = array([Pr(X[i], betas) for i in range(len(data))])
+        W = identity(len(data), Float)
+        pp = p * (1.0-p)
+        for i in range(N):
+            W[i,i] = pp[i]
+        diXWX = sqrt(diagonal(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X)))))
+        xTemp = matrixmultiply(matrixmultiply(inverse(matrixmultiply(transpose(X), matrixmultiply(W, X))),transpose(X)),y)
         beta = []
         beta_se = []
+        print "likelihood ridge", likelihood
         for i in range(len(betas)):
             beta.append(betas[i])
+            beta_se.append(diXWX[i])
+        return (self.OK, beta, beta_se, 0)
+
+def Pr_bx(bx):
+    if bx > 35:
+        return 1
+    if bx < -35:
+        return 0
+    return exp(bx)/(1+exp(bx))
+
+class bayesianFitter(orange.LogRegFitter):
+    def __init__(self, penalty=0, anch_examples=[], tau = 0):
+        self.penalty = penalty
+        self.anch_examples = anch_examples
+        self.tau = tau
+
+##    def getInitialBeta(self, X, y, indices):
+##        A = array([X[i,:len(indices)] for i in indices])
+##        b = array([y[i] for i in indices])
+##        print A
+##        print b
+##        return solve_linear_equations(A,b) # A*beta = b
+
+    def createArrayData(self,data):
+        if not len(data):
+            return (array([]),array([]))
+        # convert data to numeric
+        ml = data.native(0)
+        for i in range(len(data.domain.attributes)):
+          a = data.domain.attributes[i]
+          if a.varType == orange.VarTypes.Discrete:
+            for m in ml:
+              m[i] = a.values.index(m[i])
+        for m in ml:
+          m[-1] = data.domain.classVar.values.index(m[-1])
+        Xtmp = array(ml)
+        y = Xtmp[:,-1]   # true probabilities (1's or 0's)
+        one = reshape(array([1]*len(data)), (len(data),1)) # intercept column
+        X=concatenate((one, Xtmp[:,:-1]),1)  # intercept first, then data
+        return (X,y)
+    
+    def __call__(self, data, weight=0):
+        (X,y)=self.createArrayData(data)
+
+        exTable = orange.ExampleTable(data.domain)
+        for id,ex in self.anch_examples:
+            exTable.extend(orange.ExampleTable(ex,data.domain))
+        (X_anch,y_anch)=self.createArrayData(exTable)
+
+        betas = array([0.0] * (len(data.domain.attributes)+1))
+##        initial_beta = self.getInitialBeta(X,y,self.anch_examples)
+##        for i,b in enumerate(initial_beta):
+##            betas[i] = b
+        N = len(y)
+
+        likelihood,betas = self.estimateBeta(X,y,betas,[0]*(len(betas)),X_anch,y_anch)
+        beta = []
+        beta_se = []
+        print "likelihood2", likelihood
+        for i in range(len(betas)):
+            beta.append(betas[i])
+#            beta_se.append(diXWX[i])
             beta_se.append(0.0)
         return (self.OK, beta, beta_se, 0)
 
+     
+        
+    def estimateBeta(self,X,y,betas,const_betas,X_anch,y_anch):
+        N,N_anch = len(y),len(y_anch)
+        r,r_anch = array([dot(X[i], betas) for i in range(N)]),\
+                   array([dot(X_anch[i], betas) for i in range(N_anch)])
+        p = array([Pr_bx(ri) for ri in r])
+        X_sq = X*X
 
+        max_delta = [1.]*len(const_betas)
+        likelihood = -1.e+10
+        likelihood_new = -1.e+9
+        while abs(likelihood - likelihood_new)>0.01 and max(max_delta)>0.01:
+            likelihood = likelihood_new
+            print likelihood
+            betas_temp = [b for b in betas]
+            for j in range(len(betas)):
+                if const_betas[j]: continue
+                dl = matrixmultiply(X[:,j],transpose(y-p))
+                for xi,x in enumerate(X_anch):
+                    dl += self.penalty*x[j]*(y_anch[xi] - Pr_bx(r_anch[xi]*self.penalty))
 
-
+                ddl = matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
+                #print "zacetek ddl", ddl
+                for xi,x in enumerate(X_anch):
+                    ddl += self.penalty*x[j]*Pr_bx(r[xi]*self.penalty)*(1-Pr_bx(r[xi]*self.penalty))
+                #print "ddl", ddl
+                #print "dl", dl
+                #print "dv", dl/max(ddl,1e-6)
+                if j==0:
+                    dv = dl/max(ddl,1e-6)
+                elif betas[j] == 0: # special handling due to non-defined first and second derivatives
+                    dv = (dl-self.tau)/max(ddl,1e-6)
+                    if dv < 0:
+                        dv = (dl+self.tau)/max(ddl,1e-6)
+                        if dv > 0:
+                            dv = 0
+                else:
+                    dl -= sign(betas[j])*self.tau
+                    dv = dl/max(ddl,1e-6)
+                    if not sign(betas[j] + dv) == sign(betas[j]):
+                        dv = -betas[j]
+##                dv = matrixmultiply(X[:,j],transpose(y-p))/matrixmultiply(X_sq[:,j],transpose(p*(1-p)))
+                dv = min(max(dv,-max_delta[j]),max_delta[j])
+                #print "dv2", dv
+                r+= X[:,j]*dv
+                p = array([Pr_bx(ri) for ri in r])
+                if N_anch:
+                    r_anch+=X_anch[:,j]*dv
+                betas[j] += dv
+                max_delta[j] = max(2*abs(dv),max_delta[j]/2)
+            likelihood_new = lh(X,y,betas)
+            for xi,x in enumerate(X_anch):
+                try:
+                    likelihood_new += y_anch[xi]*r_anch[xi]*self.penalty-log(1+exp(r_anch[xi]*self.penalty))
+                except:
+                    likelihood_new += r_anch[xi]*self.penalty*(y_anch[xi]-1)
+            likelihood_new -= sum([abs(b) for b in betas[1:]])*self.tau
+            if likelihood_new < likelihood:
+                max_delta = [md/4 for md in max_delta]
+                likelihood_new = likelihood
+                likelihood = likelihood_new + 1.
+                betas = [b for b in betas_temp]
+        print "betas", betas
+        print "init_like", likelihood_new
+        print "pure_like", lh(X,y,betas)
+        return (likelihood,betas)
     
 ############################################################
 ####  Feature subset selection for logistic regression  ####
@@ -412,6 +673,8 @@ def getLikelihood(fitter, examples):
     res = fitter(examples)
     if res[0] in [fitter.OK]: #, fitter.Infinity, fitter.Divergence]:
        status, beta, beta_se, likelihood = res
+       if sum([abs(b) for b in beta])<sum([abs(b) for b in beta_se]):
+           return -100*len(examples)
        return likelihood
     else:
        return -100*len(examples)
@@ -429,6 +692,9 @@ class StepWiseFSS_class:
         examples = self.imputer(examples)(examples)
     if getattr(self, "removeMissing", 0):
         examples = orange.Preprocessor_dropMissing(examples)
+    continuizer = orange.DomainContinuizer(zeroBased=1,continuousTreatment=orange.DomainContinuizer.Leave,
+                                           multinomialTreatment = orange.DomainContinuizer.FrequentIsBase,
+                                           classTreatment = orange.DomainContinuizer.Ignore)
     attr = []
     remain_attr = examples.domain.attributes[:]
 
@@ -438,13 +704,13 @@ class StepWiseFSS_class:
     tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
 
     ll_Old = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
+    ll_Best = -1000000
     length_Old = float(len(tempData))
 
     stop = 0
     while not stop:
         # LOOP until all variables are added or no further deletion nor addition of attribute is possible
         worstAt = None
-        print tempData.domain
         # if there are more than 1 attribute then perform backward elimination
         if len(attr) >= 2:
             minG = 1000
@@ -457,7 +723,8 @@ class StepWiseFSS_class:
                 tempAttr = filter(lambda x: x!=at, attr)
                 tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
                 # domain, calculate P for LL improvement.
-                tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
+                tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+                tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
 #                tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
                 ll_Delete = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
                 length_Delete = float(len(tempData))
@@ -498,13 +765,14 @@ class StepWiseFSS_class:
         maxG=-1
         ll_Best = ll_Old
         length_Best = length_Old
+        bestAt = None
         for at in remain_attr:
             tempAttr = attr + [at]
             tempDomain = orange.Domain(tempAttr,examples.domain.classVar)
             # domain, calculate P for LL improvement.
 #            tempData  = createNoDiscTable(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
-            tempData  = orange.Preprocessor_dropMissing(examples.select(tempDomain))
-            print tempData.domain
+            tempDomain  = continuizer(orange.Preprocessor_dropMissing(examples.select(tempDomain)))
+            tempData = orange.Preprocessor_dropMissing(examples.select(tempDomain))
             ll_New = getLikelihood(orange.LogRegFitter_Cholesky(), tempData)
 
             length_New = float(len(tempData)) # get number of examples in tempData to normalize likelihood
@@ -518,7 +786,10 @@ class StepWiseFSS_class:
                 maxG=G
                 ll_Best = ll_New
                 length_Best = length_New
-                
+        if not bestAt:
+            stop = 1
+            continue
+        
         if bestAt.varType==orange.VarTypes.Continuous:
             P=lchisqprob(maxG,1);
         else:
