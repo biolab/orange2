@@ -381,7 +381,11 @@ PDomain TDomainContinuizer::operator()(PExampleGenerator egen, const int &weight
         newvars.push_back(continuous2normalized(*vi, avgs[i], spans[i]));
       else
         newvars.push_back(*vi);
-    
-  return mlnew TDomain(newClassVar, newvars);
+  
+  TDomain *newDomain = mlnew TDomain(newClassVar, newvars);
+  PDomain wnewDomain = newDomain;
+  wnewDomain->metas = egen->domain->metas;
+
+  return wnewDomain;
 }
 
