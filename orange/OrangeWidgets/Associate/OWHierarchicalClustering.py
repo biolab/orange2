@@ -7,11 +7,19 @@
 
 from OWWidget import *
 from qtcanvas import *
+from sets import Set
 import qt
 import OWGUI
 import OWGraphTools
 import math
 import os
+
+try:
+    from OWDataFiles import DataFiles
+except:
+    class DataFiles:
+        pass
+
 
 class OWHierarchicalClustering(OWWidget):
     settingsList=["Linkage", "OverwriteMatrix", "Annotation", "Brightness", "PrintDepthCheck",
@@ -24,7 +32,7 @@ class OWHierarchicalClustering(OWWidget):
         self.parent=parent
         self.callbackDeposit=[]
         self.inputs=[("Distance matrix", orange.SymMatrix, self.dataset)]
-        self.outputs=[("Selected Examples", ExampleTable)]
+        self.outputs=[("Selected Examples", ExampleTable), ("Structured Data Files", DataFiles)]
         self.linkage=[("Single ", orange.HierarchicalClustering.Single),
                         ("Average", orange.HierarchicalClustering.Average),
                         ("Complete", orange.HierarchicalClustering.Complete)]
@@ -150,7 +158,7 @@ class OWHierarchicalClustering(OWWidget):
 
         self.matrixSource="Unknown"
         items=getattr(self.matrix, "items")
-        try:
+        if type(items)==orange.ExampleTable: #Example Table from Example Distance
             self.labels=["None","Default"]+ \
                     [a.name for a in items.domain.attributes]+\
                     [items.domain.classVar.name]
@@ -163,7 +171,11 @@ class OWHierarchicalClustering(OWWidget):
             self.numMeta=len(items.domain.getmetas())
             self.metaLabels=items.domain.getmetas().values()
             self.matrixSource="Example Distance"
-        except AttributeError:
+        elif  type(items)==list:   #Structured data files from Data Distance
+            self.labels=["None", "Default", "Name", "Strain"]
+            self.Annotation=0
+            self.matrixSource="Data Distance"
+        else:   #From Attribute Distance
             self.labels=["None","Attribute Name"]
             self.Annotation=0
             self.matrixSource="Attribute Distance"
@@ -187,12 +199,10 @@ class OWHierarchicalClustering(OWWidget):
                 [" " for i in range(len(items))])
 
         elif self.Annotation==1:
-            if self.matrixSource=="Example Distance":
-                self.rootCluster.mapping.setattr("objects",
-                                range(len(items)))
+            if self.matrixSource=="Example Distance" or self.matrixSource=="Data Distance":
+                self.rootCluster.mapping.setattr("objects", range(len(items)))
             elif self.matrixSource=="Attribute Distance":
-                self.rootCluster.mapping.setattr("objects",
-                                [a.name for a in items])
+                self.rootCluster.mapping.setattr("objects", [a.name for a in items])
         elif self.matrixSource=="Example Distance":
             try:
                 print self.labelInd[self.Annotation-2]
@@ -200,8 +210,12 @@ class OWHierarchicalClustering(OWWidget):
                                 [str(e[self.labelInd[self.Annotation-2]]) for e in items])
             except IndexError:
                 self.Annotation=0
-                self.rootCluster.mapping.setattr("objects", \
-                                [str(e[0]) for e in items])
+                self.rootCluster.mapping.setattr("objects", [str(e[0]) for e in items])
+        elif self.matrixSource=="Data Distance":
+            if self.Annotation==2:
+                self.rootCluster.mapping.setattr("objects", [a.name for a in items])
+            else:
+                self.rootCluster.mapping.setattr("objects", [a.strain for a in items])
         #print self.rootCluster.mapping
         self.dendogram.updateLabel()
 
@@ -246,7 +260,7 @@ class OWHierarchicalClustering(OWWidget):
         self.footerView.canvas().update()
 
     def updateSelection(self, selection):
-        if self.matrixSource!="Example Distance":
+        if self.matrixSource=="Attribute Distance":
             return
         self.selectionList=selection
         if self.CommitOnChange and self.dendogram.cutOffLineDragged==False:
@@ -255,31 +269,37 @@ class OWHierarchicalClustering(OWWidget):
     def commitData(self):
         self.selection=[]
         selection=self.selectionList
-        maps=[self.rootCluster.mapping[c.first:c.last] for c in \
-                [e.rootCluster for e in selection]]
-        self.selection=[self.matrix.items[k] for k in [j for i in \
-                range(len(maps)) for j in maps[i]]]
+        maps=[self.rootCluster.mapping[c.first:c.last] for c in [e.rootCluster for e in selection]]
+        self.selection=[self.matrix.items[k] for k in [j for i in range(len(maps)) for j in maps[i]]]
 
         if not self.selection:
+            self.send("Selected Examples",None)
+            self.send("Structured Data Files", None)
             return
-        if self.ClassifySelected:
-            classVar=orange.EnumVariable(self.ClassifyName ,
-                        values=[str(i) for i in range(len(maps))])
-            domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
-            domain.addmetas(self.matrix.items.domain.getmetas())
-            id=orange.newmetaid()
-            domain.addmeta(id,self.matrix.items.domain.classVar)
-            table1=orange.ExampleTable(domain)#orange.Domain(self.matrix.items.domain, classVar))
-            table1.extend(orange.ExampleTable(self.selection))
-            c=[i for i in range(len(maps)) for j in maps[i]]
-            for i in range(len(self.selection)):
-                table1[i].setclass(classVar(str(c[i])))
+        if self.matrixSource=="Example Distance":
+            if self.ClassifySelected:
+                classVar=orange.EnumVariable(self.ClassifyName ,
+                            values=[str(i) for i in range(len(maps))])
+                domain=orange.Domain(self.matrix.items.domain.attributes,classVar)
+                domain.addmetas(self.matrix.items.domain.getmetas())
+                id=orange.newmetaid()
+                domain.addmeta(id,self.matrix.items.domain.classVar)
+                table1=orange.ExampleTable(domain)#orange.Domain(self.matrix.items.domain, classVar))
+                table1.extend(orange.ExampleTable(self.selection))
+                c=[i for i in range(len(maps)) for j in maps[i]]
+                for i in range(len(self.selection)):
+                    table1[i].setclass(classVar(str(c[i])))
 
-            self.selectedExamples=table1
-        else:
-            table1=orange.ExampleTable(self.selection)
-            self.selectedExamples=table1
-        self.send("Selected Examples",self.selectedExamples)
+                self.selectedExamples=table1
+            else:
+                table1=orange.ExampleTable(self.selection)
+                self.selectedExamples=table1
+            self.send("Selected Examples",self.selectedExamples)
+            
+        elif self.matrixSource=="Data Distance":
+            names=list(Set([d.strain for d in self.selection]))
+            data=[(name, [d for d in filter(lambda a:a.strain==name, self.selection)]) for name in names]
+            self.send("Structured Data Files",data)
 
     def saveGraph(self):
         qfileName = QFileDialog.getSaveFileName("graph.png","Portable Network Graphics (.PNG)\nWindows Bitmap (.BMP)\nGraphics Interchange Format (.GIF)", None, "Save to..")
