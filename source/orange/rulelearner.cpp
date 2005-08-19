@@ -331,6 +331,9 @@ bool TRuleValidator_LRS::operator()(PRule rule, PExampleTable, const int &, cons
 
   const TDiscDistribution &exp_dist = dynamic_cast<const TDiscDistribution &>(apriori.getReference());
 
+  if (obs_dist.cases == exp_dist.cases) //it turns out that this happens quite often
+    return false; 
+
   if (targetClass == -1) {
     float lrs = 0.0;
     for(TDiscDistribution::const_iterator odi(obs_dist.begin()), ode(obs_dist.end()), edi(exp_dist.begin()), ede(exp_dist.end());
@@ -660,7 +663,7 @@ PRule TRuleBeamFinder::operator()(PExampleTable data, const int &weightID, const
     PITERATE(TRuleList, ri, candidateRules) {
       PRuleList newRules = refiner->call(*ri, data, weightID, targetClass);      
       PITERATE(TRuleList, ni, newRules) {
-        if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, apriori)) {
+        if (!ruleStoppingValidator || ruleStoppingValidator->call(*ni, (*ri)->examples, weightID, targetClass, (*ri)->classDistribution)) {
           (*ni)->quality = evaluator->call(*ni, data, weightID, targetClass, apriori);
           ruleList->push_back(*ni);
           if ((*ni)->quality >= bestRule->quality && (!validator || validator->call(*ni, data, weightID, targetClass, apriori)))
