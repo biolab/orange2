@@ -79,9 +79,9 @@ class OWMDS(OWWidget):
         OWGUI.button(init, self, "Torgerson", self.torgerson)
         opt=OWGUI.widgetBox(mds, "Optimization")
 
+        self.startButton=OWGUI.button(opt, self, "Start", self.start)
         OWGUI.button(opt, self, "LSMT", self.LSMT)
         OWGUI.button(opt, self, "Step", self.smacofStep)
-        self.startButton=OWGUI.button(opt, self, "Start", self.start)
         #OWGUI.button(opt, self, "Stop", self.stop)
         #OWGUI.button(opt, self, "Redraw graph", callback=self.graph.updateData)
         OWGUI.checkBox(opt, self, "ReDraw", "Redraw graph after each step")
@@ -120,6 +120,10 @@ class OWMDS(OWWidget):
             self.setExampleTable(data)
         elif type(data)==list:
             self.setList(data)
+        self.graph.ColorAttr=0
+        self.graph.SizeAttr=0
+        self.graph.ShapeAttr=0
+        self.graph.NameAttr=0
             
                 
         if matrix:
@@ -154,34 +158,39 @@ class OWMDS(OWWidget):
         self.contAttributes=contAttributes
 
         self.colors=[[Qt.black]*(len(attributes)+1) for i in range(len(data))]
-        self.shapes=[[QwtSymbol.Ellipse]*(len(attributes)+1) for i in range(len(data))]
-        self.sizes=[[5]*(len(attributes)+1) for i in range(len(data))]
+        self.shapes=[[QwtSymbol.Ellipse]*(len(discAttributes)+1) for i in range(len(data))]
+        self.sizes=[[5]*(len(contAttributes)+1) for i in range(len(data))]
         self.names=[[""]*(len(attributes)+1) for i in range(len(data))]
-        
+        contI=discI=attrI=1
         for j, attr in enumerate(attributes):
             if attr.varType==orange.VarTypes.Discrete:
                 c=OWGraphTools.ColorPaletteHSV(len(attr.values))
                 for i in range(len(data)):
-                    self.colors[i][j+1]=c[int(data[i][attr])]
-                    self.shapes[i][j+1]=self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
-                    self.names[i][j+1]=str(data[i][attr])
-                    self.sizes[i][j+1]=5
+                    self.colors[i][attrI]=c[int(data[i][attr])]
+                    self.shapes[i][discI]=self.graph.shapeList[int(data[i][attr])%len(self.graph.shapeList)]
+                    self.names[i][attrI]=" "+str(data[i][attr])
+                    #self.sizes[i][contI]=5
+                attrI+=1
+                discI+=1
             elif attr.varType==orange.VarTypes.Continuous:
                 c=OWGraphTools.ColorPaletteHSV(-1)
                 val=[e[j] for e in data]
                 minVal=min(val)
                 maxVal=max(val)
                 for i in range(len(data)):
-                    self.colors[i][j+1]=c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
-                    self.shapes[i][j+1]=self.graph.shapeList[0]
-                    self.names[i][j+1]=str(data[i][attr])
-                    self.sizes[i][j+1]=int(self.data[i][attr]/maxVal*9)+1
+                    self.colors[i][attrI]=c.getColor((data[i][attr]-minVal)/abs(maxVal-minVal))
+                    #self.shapes[i][discI]=self.graph.shapeList[0]
+                    self.names[i][attrI]=" "+str(data[i][attr])
+                    self.sizes[i][contI]=int(self.data[i][attr]/maxVal*9)+1
+                contI+=1
+                attrI+=1
             else:
                 for i in range(len(data)):
-                    self.colors[i][j+1]=Qt.black
-                    self.shapes[i][j+1]=self.graph.shapeList[0]
-                    self.names[i][j+1]=str(data[i][attr])
-                    self.sizes[i][j+1]=5
+                    self.colors[i][attrI]=Qt.black
+                    #self.shapes[i][j+1]=self.graph.shapeList[0]
+                    self.names[i][attrI]=" "+str(data[i][attr])
+                    #self.sizes[i][j+1]=5
+                attrI+=1
 
     def setList(self, data):
         self.colorCombo.clear()
@@ -203,8 +212,8 @@ class OWMDS(OWWidget):
             c=OWGraphTools.ColorPaletteHSV(len(strains))
             for i, d in enumerate(data):
                 self.colors[i][1]=c[strains.index(d.strain)]
-                self.names[i][1]=d.name
-                self.names[i][2]=d.strain
+                self.names[i][1]=" "+d.name
+                self.names[i][2]=" "+d.strain
         except Exception, val:
             print val
         
