@@ -110,14 +110,32 @@ PClassifier TLogRegLearner::fitModel(PExampleGenerator gen, const int &weight, i
     lrc->continuizedDomain = domainContinuizer ? domainContinuizer->call(imputed, weight) : (*logisticRegressionDomainContinuizer)(imputed, weight);
     imputed = mlnew TExampleTable(lrc->continuizedDomain, imputed);
   }
-  
+
+    // copy class value
 
   // construct a LR fitter
   fitter = fitter ? fitter : PLogRegFitter(mlnew TLogRegFitter_Cholesky());
 
+  PAttributedFloatList temp_beta, temp_beta_se;
   // fit logistic regression 
-  lrc->beta = fitter->call(imputed, weight, lrc->beta_se, lrc->likelihood, error, errorAt);
+
+  temp_beta = fitter->call(imputed, weight, temp_beta_se, lrc->likelihood, error, errorAt);
   lrc->fit_status = error;
+
+  // transform beta to AttributedList
+  PVarList enum_attributes = mlnew TVarList(); 
+  enum_attributes->push_back(imputed->domain->classVar);
+  PITERATE(TVarList, vl, imputed->domain->attributes) 
+    enum_attributes->push_back(*vl);
+	// tranfsorm *beta into a PFloatList
+	lrc->beta=mlnew TAttributedFloatList(enum_attributes);
+  lrc->beta_se=mlnew TAttributedFloatList(enum_attributes);
+
+  PITERATE(TAttributedFloatList, fi, temp_beta)
+		lrc->beta->push_back(*fi);
+
+  PITERATE(TAttributedFloatList, fi_se, temp_beta_se)
+    lrc->beta_se->push_back(*fi_se);
 
   if (error >= TLogRegFitter::Constant) 
     return cl;
