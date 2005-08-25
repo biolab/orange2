@@ -315,36 +315,51 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
         classes.push_back(tClass);
         classBoundaries[tClass+1]++;
       }
-      
-      TExample::const_iterator eii((*ei).begin());
 
-      float sumBri = 0.0;
-      float sumBriX = 0.0;
-      int sumX = 0;
-      int N = 0;
-      float thismax = -1e30f;
-      float thismin = 1e30f;
+      if (nColumns>1) {
+        TExample::const_iterator eii((*ei).begin());
+
+        float sumBri = 0.0;
+        float sumBriX = 0.0;
+        int sumX = 0;
+        int N = 0;
+        float thismax = -1e30f;
+        float thismin = 1e30f;
       
-      float *rai = i_floatMap;
-      for(int xpoint = 0; xpoint<nColumns; rai++, eii++, xpoint++) {
-        if ((*eii).isSpecial()) {
-          *rai = UNKNOWN_F;
+        float *rai = i_floatMap;
+        for(int xpoint = 0; xpoint<nColumns; rai++, eii++, xpoint++) {
+          if ((*eii).isSpecial()) {
+            *rai = UNKNOWN_F;
+          }
+          else {
+            *rai = (*eii).floatV;
+            sumBri += *rai;
+            sumBriX += *rai * xpoint;
+            sumX += xpoint;
+            N += 1;
+            if (*rai > thismax)
+              thismax = *rai;
+            if (*rai < thismin)
+              thismin = *rai;
+          }
+        }
+
+        tempLineAverages.push_back(N ? sumBri/N : UNKNOWN_F);
+        tempLineCenters.push_back(N && (thismax != thismin) ? (sumBriX - thismin * sumX) / (sumBri - thismin * N) : UNKNOWN_F);
+      }
+      else {
+        TValue val = *((*ei).begin());
+        if (val.isSpecial()) {
+          *i_floatMap = UNKNOWN_F;
+          tempLineAverages.push_back(UNKNOWN_F);
+          tempLineCenters.push_back(UNKNOWN_F);
         }
         else {
-          *rai = (*eii).floatV;
-          sumBri += *rai;
-          sumBriX += *rai * xpoint;
-          sumX += xpoint;
-          N += 1;
-          if (*rai > thismax)
-            thismax = *rai;
-          if (*rai < thismin)
-            thismin = *rai;
+          *i_floatMap = val.floatV;
+          tempLineAverages.push_back(val.floatV);
+          tempLineCenters.push_back(val.floatV);
         }
       }
-
-      tempLineAverages.push_back(N ? sumBri/N : UNKNOWN_F);
-      tempLineCenters.push_back(N && (thismax != thismin) ? (sumBriX - thismin * sumX) / (sumBri - thismin * N) : UNKNOWN_F);
     }
 
     if (haveBase) {
@@ -380,7 +395,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
     lineCenters.reserve(nRows);
     lineAverages.reserve(nRows);
 
-	if (pushSortIndices) {
+	if (sortIndices.size()) {
       ITERATE(vector<int>, si, sortIndices) {
         esorted.addExample(etable[*si]);
         lineCenters.push_back(tempLineCenters[*si]);
@@ -390,7 +405,7 @@ THeatmapConstructor::THeatmapConstructor(PExampleTable table, PHeatmapConstructo
 	  }
 	}
 	else {
-	  sortedExamples = mlnew TExampleTable(etable);
+	  sortedExamples = mlnew TExampleTable(PExampleGenerator(etable), false); // just references to examples, not copies
 	  lineCenters = tempLineCenters;
 	  lineAverages = tempLineAverages;
 	  floatMap = tempFloatMap;
