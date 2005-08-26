@@ -198,13 +198,13 @@ public:
 class ORANGE_API TRuleBeamCandidateSelector_Python : public TRuleBeamCandidateSelector {
 public:
   __REGISTER_CLASS
-  virtual PRuleList operator()(PRuleList existingRules, PExampleTable, const int &weightID);
+  virtual PRuleList operator()(PRuleList &existingRules, PExampleTable, const int &weightID);
 };
 
 class ORANGE_API TRuleBeamFilter_Python : public TRuleBeamFilter {
 public:
   __REGISTER_CLASS
-  virtual void operator()(PRuleList rules, PExampleTable, const int &weightID);
+  virtual void operator()(PRuleList &rules, PExampleTable, const int &weightID);
 };
 
 class ORANGE_API TRuleClassifierConstructor_Python : public TRuleClassifierConstructor {

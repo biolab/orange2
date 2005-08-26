@@ -426,7 +426,7 @@ TRuleBeamFilter_Width::TRuleBeamFilter_Width(const int &w)
 {}
 
 
-void TRuleBeamFilter_Width::operator()(PRuleList rules, PExampleTable, const int &)
+void TRuleBeamFilter_Width::operator()(PRuleList &rules, PExampleTable, const int &)
 {
   if (rules->size() > width) {
     // Janez poglej
@@ -595,7 +595,7 @@ PRuleList TRuleBeamRefiner_Selector::operator()(PRule wrule, PExampleTable data,
 }
 
 
-PRuleList TRuleBeamCandidateSelector_TakeAll::operator()(PRuleList existingRules, PExampleTable, const int &)
+PRuleList TRuleBeamCandidateSelector_TakeAll::operator()(PRuleList &existingRules, PExampleTable, const int &)
 {
   PRuleList candidates = mlnew TRuleList(existingRules.getReference());
 //  existingRules->clear();

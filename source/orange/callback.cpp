@@ -621,7 +621,7 @@ PRuleList TRuleBeamInitializer_Python::operator ()(PExampleTable table, const in
   return res;
 }
 
-PRuleList TRuleBeamCandidateSelector_Python::operator ()(PRuleList existingRules, PExampleTable table, const int &weightID)
+PRuleList TRuleBeamCandidateSelector_Python::operator ()(PRuleList &existingRules, PExampleTable table, const int &weightID)
 {
   if (!table)
     raiseError("invalid example table");
@@ -639,7 +639,7 @@ PRuleList TRuleBeamCandidateSelector_Python::operator ()(PRuleList existingRules
   return candidates;
 }
 
-void TRuleBeamFilter_Python::operator ()(PRuleList rules, PExampleTable table, const int &weightID)
+void TRuleBeamFilter_Python::operator ()(PRuleList &rules, PExampleTable table, const int &weightID)
 {
   if (!table)
     raiseError("invalid example table");

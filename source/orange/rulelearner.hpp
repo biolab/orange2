@@ -189,7 +189,7 @@ class ORANGE_API TRuleBeamCandidateSelector : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  virtual PRuleList operator()(PRuleList existingRules, PExampleTable, const int &weightID) = 0;
+  virtual PRuleList operator()(PRuleList &existingRules, PExampleTable, const int &weightID) = 0;
 };
 
 
@@ -197,7 +197,7 @@ class ORANGE_API TRuleBeamCandidateSelector_TakeAll : public TRuleBeamCandidateS
 public:
   __REGISTER_CLASS
 
-  virtual PRuleList operator()(PRuleList existingRules, PExampleTable, const int &weightID);
+  virtual PRuleList operator()(PRuleList &existingRules, PExampleTable, const int &weightID);
 };
 
 
@@ -206,7 +206,7 @@ class ORANGE_API TRuleBeamFilter : public TOrange {
 public:
   __REGISTER_ABSTRACT_CLASS
 
-  virtual void operator()(PRuleList existingRules, PExampleTable, const int &weightID) = 0;
+  virtual void operator()(PRuleList &existingRules, PExampleTable, const int &weightID) = 0;
 };
 
 
@@ -218,7 +218,7 @@ public:
 
   TRuleBeamFilter_Width(const int &w = 5);
 
-  void operator()(PRuleList rules, PExampleTable, const int &weightID);
+  void operator()(PRuleList &rules, PExampleTable, const int &weightID);
 };
 
 
