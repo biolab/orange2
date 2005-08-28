@@ -104,7 +104,8 @@ class kNNOptimization(OWBaseWidget):
         self.argumentValueFormula = 1
         self.localOptimizeMaxAttrs = 20
         self.localOptimizeProjectionCount = 20
-        self.evaluatedAttributes = (None, None, None)   # (save last evaluated attributes as (contMeasure, discMeasure, results)
+        self.evaluatedAttributes = None   # save last evaluated attributes
+        self.evaluatedAttributesByClass = None
 
         self.showRank = 0
         self.showAccuracy = 1
@@ -152,15 +153,13 @@ class kNNOptimization(OWBaseWidget):
         self.attributeLabel = QLabel(' attributes', self.buttonBox)
 
         self.startOptimizationButton = OWGUI.button(self.optimizationBox, self, "Start Evaluating Projections")
-        f = self.startOptimizationButton.font()
-        f.setBold(1)
-        self.startOptimizationButton.setFont(f)
+        f = self.startOptimizationButton.font(); f.setBold(1);   self.startOptimizationButton.setFont(f)
         self.stopOptimizationButton = OWGUI.button(self.optimizationBox, self, "Stop evaluation", callback = self.stopOptimizationClick)
         self.stopOptimizationButton.setFont(f)
         self.stopOptimizationButton.hide()
         self.optimizeGivenProjectionButton = OWGUI.button(self.optimizationBox, self, "Optimize current projection")
         self.optimizeGivenProjectionButton.hide()
-        self.useHeuristicToFindAttributeOrderCheck = OWGUI.checkBox(self.optimizationBox, self, 'useHeuristicToFindAttributeOrders', 'Use Heuristic to Find Attribute Orders', tooltip = "Don't try all possible permutations of an attribute subset but only those,\nthat will most likely produce interesting projections.")
+        self.useHeuristicToFindAttributeOrderCheck = OWGUI.checkBox(self.optimizationBox, self, 'useHeuristicToFindAttributeOrders', 'Use Heuristic to Find Attribute Orders', tooltip = "Don't try all possible permutations of an attribute subset but only those,\nthat will most likely produce interesting projections.", callback = self.removeEvaluatedAttributes)
         self.useHeuristicToFindAttributeOrderCheck.hide()
 
         self.resultList = QListBox(self.resultsBox)
@@ -186,11 +185,11 @@ class kNNOptimization(OWBaseWidget):
         self.measureCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
         self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
 
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.updateHeuristicCheckBox)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ordering of Discrete Attributes: ", items = [val for (val, m) in discMeasures])
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ordering of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
-        OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeProjectionCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
-        OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeMaxAttrs", "Maximum number of attributes in a projection: ", items = range(5,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
+        self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeProjectionCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
+        self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeMaxAttrs", "Maximum number of attributes in a projection: ", items = range(5,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
 
         self.resultListCombo = OWGUI.comboBoxWithCaption(self.miscSettingsBox, self, "resultListLen", "Maximum length of projection list:   ", tooltip = "Maximum length of the list of interesting projections. This is also the number of projections that will be saved if you click Save button.", items = self.resultsListLenNums, callback = self.updateShownProjections, sendSelectedValue = 1, valueType = int)
         #projFileBox = OWGUI.widgetBox(self.heuristicsSettingsBox, "Use Attribute Order From Projection File", orientation = "horizontal")
@@ -291,7 +290,7 @@ class kNNOptimization(OWBaseWidget):
                 self.vizRankLearner = VizRankLearner(self, self.parentWidget)
                 self.parentWidget.send("VizRank learner", self.vizRankLearner, 0)
 
-        self.updateHeuristicCheckBox()
+        self.removeEvaluatedAttributes()
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
@@ -302,9 +301,14 @@ class kNNOptimization(OWBaseWidget):
     # ##############################################################
 
     # the heuristic checkbox is enabled only if the signal to noise OVA measure is selected
-    def updateHeuristicCheckBox(self):
+    def removeEvaluatedAttributes(self):
+        # clear the list of evaluated attributes
+        self.evaluatedAttributes = None
+        self.evaluatedAttributesByClass = None
+        
+        # update heuristic check box
         self.useHeuristicToFindAttributeOrderCheck.setEnabled(contMeasures[self.attrCont][0] == "Signal to Noise OVA")
-        if not self.rawdata or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete:
+        if not self.rawdata or not self.rawdata.domain.classVar or self.rawdata.domain.classVar.varType != orange.VarTypes.Discrete or contMeasures[self.attrCont][0] != "Signal to Noise OVA":
             self.useHeuristicToFindAttributeOrders = 0
             self.useHeuristicToFindAttributeOrderCheck.setEnabled(0)
         
@@ -425,14 +429,14 @@ class kNNOptimization(OWBaseWidget):
 
     # set value of k to sqrt(n)
     def setData(self, data):
+        self.setStatusBarText("")
         if hasattr(data, "name"): self.datasetName = data.name
         else: self.datasetName = ""
         sameDomain = 0
         if self.rawdata and data and self.rawdata.domain == data.domain: sameDomain = 1
         self.rawdata = data
         self.clearArguments()
-        self.evaluatedAttributes = (None, None, None)   # remove the info about attributes
-        self.updateHeuristicCheckBox()
+        self.removeEvaluatedAttributes()
         if not sameDomain: self.clearResults()
         
         if not data or not (data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete):
@@ -469,9 +473,11 @@ class kNNOptimization(OWBaseWidget):
                 
     # given a dataset return a list of attributes where attribute are sorted by their decreasing importance for class discrimination
     def getEvaluatedAttributes(self, data):
+        if self.evaluatedAttributes: return self.evaluatedAttributes
+        
         self.setStatusBarText("Evaluating attributes...")
         qApp.setOverrideCursor(QWidget.waitCursor)
-        attrs = None
+        #attrs = None
 
         try:
             if data.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -506,8 +512,7 @@ class kNNOptimization(OWBaseWidget):
                         attrs.sort()
                         attrs.reverse()
                         attrs = [attr for (val, attr) in attrs]
-            """
-            
+
             # evaluate attributes using the selected attribute measure
             if attrs == None:
                 if self.evaluatedAttributes[0] != self.attrCont or self.evaluatedAttributes[1] != self.attrDisc or self.evaluatedAttributes[2] == None: 
@@ -515,6 +520,10 @@ class kNNOptimization(OWBaseWidget):
                     self.evaluatedAttributes = (self.attrCont, self.attrDisc, attrs)
                 else:
                     attrs = self.evaluatedAttributes[2]
+            """
+            
+            # evaluate attributes using the selected attribute measure
+            self.evaluatedAttributes = OWVisAttrSelection.evaluateAttributes(data, contMeasures[self.attrCont][1], discMeasures[self.attrDisc][1])
         except:
             type, val, traceback = sys.exc_info()
             sys.excepthook(type, val, traceback)  # print the exception
@@ -522,8 +531,8 @@ class kNNOptimization(OWBaseWidget):
         self.setStatusBarText("")
         qApp.restoreOverrideCursor()
 
-        if attrs == None: return []
-        else:             return attrs
+        if self.evaluatedAttributes == None: return []
+        else:             return self.evaluatedAttributes
 
     
     def addResult(self, accuracy, other_results, lenTable, attrList, tryIndex, attrReverseList = []):
@@ -575,9 +584,9 @@ class kNNOptimization(OWBaseWidget):
         self.attrLenList.clear()
         self.attrLenDict = {}
         maxLen = -1
-        for i in range(len(self.shownResults)):
-            if len(self.shownResults[i][ATTR_LIST]) > maxLen:
-                maxLen = len(self.shownResults[i][ATTR_LIST])
+        for i in range(len(self.allResults)):
+            if len(self.allResults[i][ATTR_LIST]) > maxLen:
+                maxLen = len(self.allResults[i][ATTR_LIST])
         if maxLen == -1: return
         if maxLen == 2: vals = [2]
         else: vals = range(3, maxLen+1)
@@ -1257,12 +1266,22 @@ class OWInteractionAnalysis(OWWidget):
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
 
-        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number Of Attributes', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
-        self.projectionCountSlider = OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number Of Projections', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
-        OWGUI.checkBox(self.controlArea, self, 'rotateXAttributes', label = "Rotate X Labels", box = 1, callback = self.updateGraph)
-        OWGUI.checkBox(self.controlArea, self, 'onlyLower', label = "Show Only Lower Diagonal", box = 1, callback = self.updateGraph)
-        box = OWGUI.widgetBox(self.controlArea, box = 1)
+        b1 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
+        b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
+        b3 = OWGUI.widgetBox(self.controlArea, box = 1)
+        b4 = OWGUI.widgetBox(self.controlArea, box = 1)
+        
+        OWGUI.hSlider(b1, self, 'attributeCount', minValue=5, maxValue = 200, step=1, callback = self.updateGraph, ticks=5)
+        self.projectionCountSlider = OWGUI.hSlider(b2, self, 'projectionCount', minValue=1, maxValue = 100000, step=1, callback = self.updateGraph, ticks=5)
+        OWGUI.checkBox(b3, self, 'rotateXAttributes', label = "Rotate X Labels", callback = self.updateGraph)
+        OWGUI.checkBox(b4, self, 'onlyLower', label = "Show Only Lower Diagonal", callback = self.updateGraph)
+        box = OWGUI.widgetBox(self.controlArea, "")
         box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
+
+        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
         
         self.updateGraph()
 
@@ -1386,21 +1405,33 @@ class OWGraphAttributeHistogram(OWWidget):
         self.rotateXAttributes = 1
         self.colorAttributes = 1
 
-        OWGUI.checkBox(self.controlArea, self, 'colorAttributes', label = "Color attributes according to class vote", box = 1, callback = self.updateGraph)
-        OWGUI.hSlider(self.controlArea, self, 'attributeCount', box='Number Of Attributes', minValue=0, maxValue = 2000, step = 10, callback = self.updateGraph, ticks = 50)
-        OWGUI.hSlider(self.controlArea, self, 'projectionCount', box='Number Of Projections', minValue = 0, maxValue = 100000, step=50, callback = self.updateGraph, ticks = 1000)
-        OWGUI.checkBox(self.controlArea, self, 'rotateXAttributes', label = "Rotate X Labels", box = 1, callback = self.updateGraph)
-        box = OWGUI.widgetBox(self.controlArea, box = 1)
-        box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
+        b1 = OWGUI.widgetBox(self.controlArea, box = 1)
+        b2 = OWGUI.widgetBox(self.controlArea, 'Number Of Attributes')
+        b3 = OWGUI.widgetBox(self.controlArea, 'Number Of Projections')
+        b4 = OWGUI.widgetBox(self.controlArea, box = 1)
+        box = OWGUI.widgetBox(self.controlArea)
+
+        OWGUI.checkBox(b1, self, 'colorAttributes', label = "Color attributes according to class vote", callback = self.updateGraph)
+        OWGUI.hSlider(b2, self, 'attributeCount', minValue=0, maxValue = 2000, step = 10, callback = self.updateGraph, ticks = 50)
+        OWGUI.hSlider(b3, self, 'projectionCount', minValue = 0, maxValue = 100000, step=50, callback = self.updateGraph, ticks = 1000)
+        OWGUI.checkBox(b4, self, 'rotateXAttributes', label = "Rotate X Labels", callback = self.updateGraph)
+        
+        b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        b4.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        #box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
 
         self.kNNOptimizationDlg = parent
         self.results = None
 
-        self.evaluatedAttributes = (None, None)
+        self.evaluatedAttributes = None
+        self.evaluatedAttributesByClass = None
 
     def setResults(self, results):
         self.results = results
-        self.evaluatedAttributes = (None, None)
+        self.evaluatedAttributes = None
+        self.evaluatedAttributesByClass = None
         self.updateGraph()
 
     def updateGraph(self):
@@ -1426,14 +1457,15 @@ class OWGraphAttributeHistogram(OWWidget):
         attrs.reverse()
         attrs = attrs[:self.attributeCount]
 
-        if self.colorAttributes and self.evaluatedAttributes == (None, None):
+        if self.colorAttributes and self.evaluatedAttributes == None:
             evalAttrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.kNNOptimizationDlg.rawdata, OWVisAttrSelection.S2NMeasureMix())
 
             classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.rawdata, self.kNNOptimizationDlg.rawdata.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
-            self.evaluatedAttributes = (evalAttrs, attrsByClass)
+            self.evaluatedAttributes = evalAttrs
+            self.evaluatedAttributesByClass = attrsByClass
         else:
-            (evalAttrs, attrsByClass) = self.evaluatedAttributes
+            (evalAttrs, attrsByClass) = (self.evaluatedAttributes, self.evaluatedAttributesByClass)
             classVariableValues = getVariableValuesSorted(self.kNNOptimizationDlg.rawdata, self.kNNOptimizationDlg.rawdata.domain.classVar.name)
             classColors = ColorPaletteHSV(len(classVariableValues))
             
