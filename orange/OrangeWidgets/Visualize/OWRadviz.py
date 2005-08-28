@@ -32,7 +32,7 @@ class OWRadviz(OWWidget):
     jitterSizeNums = [0.0, 0.01, 0.1,   0.5,  1,  2 , 3,  4 , 5, 7, 10, 15, 20]
     jitterSizeList = [str(x) for x in jitterSizeNums]
     scaleFactorNums = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0]
-    
+        
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
@@ -313,10 +313,11 @@ class OWRadviz(OWWidget):
             # ################################################################################################
             # use the heuristic to test only most interesting attribute orders
             if self.optimizationDlg.useHeuristicToFindAttributeOrders:
-                self.optimizationDlg.setStatusBarText("Evaluating attributes...")
-                attrs, attrsByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
-                self.optimizationDlg.setStatusBarText("")
-                self.graph.getOptimalSeparationUsingHeuristicSearch(attrs, attrsByClass, minLen, maxLen, self.optimizationDlg.addResult)
+                if not self.optimizationDlg.evaluatedAttributes or not self.optimizationDlg.evaluatedAttributesByClass:
+                    self.optimizationDlg.setStatusBarText("Evaluating attributes...")
+                    self.optimizationDlg.evaluatedAttributes, self.optimizationDlg.evaluatedAttributesByClass = OWVisAttrSelection.findAttributeGroupsForRadviz(self.data, OWVisAttrSelection.S2NMeasureMix())
+                    self.optimizationDlg.setStatusBarText("")
+                self.graph.getOptimalSeparationUsingHeuristicSearch(self.optimizationDlg.evaluatedAttributes, self.optimizationDlg.evaluatedAttributesByClass, minLen, maxLen, self.optimizationDlg.addResult)
 
             # ################################################################################################
             # evaluate all attribute orders
@@ -390,7 +391,7 @@ class OWRadviz(OWWidget):
 
     # ################################################################################################
     # try to find a better projection than the currently shown projection by adding other attributes to the projection and evaluating projections
-    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1, maxProjLen = -1):
+    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1, maxProjLen = -1, removeTooSimilar = 0):
         if numOfBestAttrs == -1:
             if self.data and len(self.data.domain.attributes) > 1000:
                 (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
@@ -408,11 +409,14 @@ class OWRadviz(OWWidget):
                 if not self.optimizationDlg.existsABetterSimilarProjection(i):
                     accs.append(self.graph.getProjectionQuality(self.optimizationDlg.allResults[i][ATTR_LIST])[0])
                     attrLists.append(self.optimizationDlg.allResults[i][ATTR_LIST])
+                if len(accs) >= self.optimizationDlg.localOptimizeProjectionCount:
+                    break
         self.graph.optimizeGivenProjection(attrLists, accs, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1, maxProjectionLen = self.optimizationDlg.localOptimizeMaxAttrs)
 
         self.optimizationDlg.enableControls()
         self.optimizationDlg.finishedAddingResults()
-        self.optimizationDlg.removeTooSimilarProjections()  # remove projections that are too similar
+        if removeTooSimilar:
+            self.optimizationDlg.removeTooSimilarProjections()  # remove projections that are too similar
         self.showSelectedAttributes()
 
     # send signals with selected and unselected examples as two datasets
@@ -488,7 +492,7 @@ class OWRadviz(OWWidget):
                         minE = E
                         bestProjection = self.graph.anchorData
                         noChange = 0
-                        
+
         if notBest and bestProjection:
             self.graph.anchorData = bestProjection
             self.graph.potentialsBmp = None
