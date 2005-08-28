@@ -123,19 +123,19 @@ class OWRadvizGraph(OWVisGraph):
 #                palette = [qRgb(i, i, 255) for i in range(0, 254, 2)] + [qRgb(254, i, i) for i in range(255, 0, -2)] + [qRgb(255, 255, 255)]*2
                 palette = [qRgb(255.*i/255., 255.*i/255., 255-(255.*i/255.)) for i in range(255)] + [qRgb(255, 255, 255)]
             else:
-                imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
-                classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
-                colors = [(i.red(), i.green(), i.blue()) for i in classColors]
+            imagebmp, nShades = orangeom.potentialsBitmap(self.potentialsClassifier, rx, ry, 3, self.trueScaleFactor)
+            classColors = ColorPaletteHSV(len(self.rawdata.domain.classVar.values))
+            colors = [(i.red(), i.green(), i.blue()) for i in classColors]
 
-                palette = []
-                sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
-                for cls in self.potentialsClassifier.classVar.values:
-                    color = colors[sortedClasses.index(cls)]
-                    towhite = [255-c for c in color]
-                    for s in range(nShades):
-                        si = 1-float(s)/nShades
-                        palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
-                palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
+            palette = []
+            sortedClasses = getVariableValuesSorted(self.potentialsClassifier, self.potentialsClassifier.domain.classVar.name)
+            for cls in self.potentialsClassifier.classVar.values:
+                color = colors[sortedClasses.index(cls)]
+                towhite = [255-c for c in color]
+                for s in range(nShades):
+                    si = 1-float(s)/nShades
+                    palette.append(qRgb(*tuple([color[i]+towhite[i]*si for i in (0, 1, 2)])))
+            palette.extend([qRgb(255, 255, 255) for i in range(256-len(palette))])
 
             image = QImage(imagebmp, (2*rx + 3) & ~3, 2*ry, 8, palette, 256, QImage.LittleEndian)
             self.potentialsBmp = QPixmap()
@@ -374,7 +374,7 @@ class OWRadvizGraph(OWVisGraph):
         elif self.optimizedDrawing:
             pos = [[ [] , [], [] ] for i in range(valLen)]
             for i in range(dataSize):
-#                if not validData[i]: continue
+                if not validData[i]: continue
                 index = classValueIndices[self.rawdata[i].getclass().value]
                 pos[index][0].append(x_positions[i])
                 pos[index][1].append(y_positions[i])
@@ -804,7 +804,8 @@ class OWRadvizGraph(OWVisGraph):
                         del permutation, table
                             
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z))
+                    #self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z))
+                    self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (createStringFromNumber(self.triedPossibilities)))
 
                     if self.kNNOptimization.onlyOnePerSubset:   # return only the best attribute placements
                         (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)

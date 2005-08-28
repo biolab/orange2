@@ -96,6 +96,8 @@ class OWScatterPlot(OWWidget):
         self.attrSizeCombo = OWGUI.comboBox(self.GeneralTab, self, "attrSize", " Size Attribute ", callback = self.updateGraph, sendSelectedValue=1, valueType = str)
         
         # optimization
+        self.optimizationDlg.optimizeGivenProjectionButton.show()
+        self.connect(self.optimizationDlg.optimizeGivenProjectionButton, SIGNAL("clicked()"), self.optimizeGivenProjectionClick)
         self.optimizationDlg.label1.hide()
         self.optimizationDlg.optimizationTypeCombo.hide()
         self.optimizationDlg.attributeCountCombo.hide()
@@ -124,7 +126,7 @@ class OWScatterPlot(OWWidget):
 
         # ####################################
         #K-NN OPTIMIZATION functionality
-        self.optimizationDlg.localOptimizationSettingsBox.hide()
+        #self.optimizationDlg.localOptimizationSettingsBox.hide()
         self.connect(self.optimizationDlg.evaluateProjectionButton, SIGNAL("clicked()"), self.evaluateCurrentProjection)
         self.connect(self.optimizationDlg.showKNNCorrectButton, SIGNAL("clicked()"), self.showKNNCorect)
         self.connect(self.optimizationDlg.showKNNWrongButton, SIGNAL("clicked()"), self.showKNNWrong)
@@ -263,6 +265,31 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
 
+
+    def optimizeGivenProjectionClick(self, numOfBestAttrs = -1):
+        if numOfBestAttrs == -1:
+            if self.data and len(self.data.domain.attributes) > 1000:
+                (text, ok) = QInputDialog.getText('Qt Optimize Current Projection', 'How many of the best ranked attributes do you wish to test?')
+                if not ok: return
+                numOfBestAttrs = int(str(text))
+            else: numOfBestAttrs = 10000
+        self.optimizationDlg.disableControls()
+
+        if self.optimizationDlg.localOptimizeProjectionCount == 1:
+            accs = [self.graph.getProjectionQuality([self.attrX, self.attrY])[0]]
+            attrLists = [[self.attrX, self.attrY]]
+        else:
+            attrLists = []; accs = []
+            for i in range(min(len(self.optimizationDlg.allResults), self.optimizationDlg.localOptimizeProjectionCount)):
+                accs.append(self.graph.getProjectionQuality(self.optimizationDlg.allResults[i][ATTR_LIST])[0])
+                attrLists.append(self.optimizationDlg.allResults[i][ATTR_LIST])
+        self.graph.optimizeGivenProjection(attrLists, accs, self.optimizationDlg.getEvaluatedAttributes(self.data)[:numOfBestAttrs], self.optimizationDlg.addResult, restartWhenImproved = 1)
+
+        self.optimizationDlg.enableControls()
+        self.optimizationDlg.finishedAddingResults()
+        self.showSelectedAttributes()
+
+        
 
     #update status on progress bar - gets called by OWScatterplotGraph
     def updateProgress(self, current, total):

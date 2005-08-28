@@ -715,6 +715,78 @@ class OWScatterPlotGraph(OWVisGraph):
         secs = time.time() - startTime
         self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %d projections in %d min, %d sec)" % (testIndex, secs/60, secs%60))
         self.scatterWidget.progressBarFinished()
+
+    # #######################################################################################################
+    # ####    OPTIMIZE GIVEN PROJECTION      ################################################################
+    # #######################################################################################################
+    def optimizeGivenProjection(self, attrLists, accuracys, attributes, addResultFunct, restartWhenImproved = 1):
+        classIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
+        self.triedPossibilities = 0
+
+        # replace attribute names with indices in domain - faster searching
+        attributes = [self.attributeNameIndex[name] for name in attributes]
+        lenOfAttributes = len(attributes)
+        attrLists = [[self.attributeNameIndex[name] for name in projection] for projection in attrLists]
+
+        # variables and domain for the table
+        domain = orange.Domain([orange.FloatVariable("xVar"), orange.FloatVariable("yVar"), self.rawdata.domain.classVar])
+        classListFull = Numeric.transpose(self.rawdata.toNumeric("c")[0])[0]
+        startTime = time.time()
+
+        for i in range(len(attrLists)):
+            projection = attrLists[i]
+            accuracy = accuracys[i]
+            optimizedProjection = 1
+            
+            while optimizedProjection:
+                significantImprovement = 0
+                
+                strTotalAtts = createStringFromNumber(lenOfAttributes)
+                listOfCanditates = []
+                for (attrIndex, attr) in enumerate(attributes):
+                    if attr in projection: continue
+                    if significantImprovement and restartWhenImproved: break        # if we found a projection that is significantly better than the currently best projection then restart the search with this projection
+
+                    projections = [[projection[0], attr], [attr, projection[1]]]
+                    
+                    tempList = []
+                    for testProj in projections:
+                        table = self.createProjectionAsExampleTable(testProj, domain = domain)
+                        acc, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
+                        
+                        # save the permutation
+                        tempList.append((acc, other_results, len(table), testProj))
+
+                        del table
+                        self.triedPossibilities += 1
+                        qApp.processEvents()        # allow processing of other events
+                        if self.kNNOptimization.isOptimizationCanceled(): return
+
+                    # return only the best attribute placements
+                    (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
+                    if self.kNNOptimization.getMaxFunct()(acc, accuracy) == acc:
+                        addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 0)
+                        self.kNNOptimization.setStatusBarText("Found a better projection with accuracy: %2.2f%%" % (acc))
+                        if max(acc, accuracy)/min(acc, accuracy) > 1.0001: optimizedProjection = 1
+                        #optimizedProjection = 1
+                        listOfCanditates.append((acc, attrList))
+                        if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
+                    else:
+                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
+                        if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
+                            addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
+
+                    del projections
+
+                # select the best new projection and say this is now our new projection to optimize    
+                if len(listOfCanditates) > 0:
+                    (accuracy, projection) = self.kNNOptimization.getMaxFunct()(listOfCanditates)
+                    self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
+
+        secs = time.time() - startTime
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+
+
            
 
     # ##############################################################
