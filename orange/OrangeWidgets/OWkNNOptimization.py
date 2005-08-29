@@ -74,6 +74,8 @@ class kNNOptimization(OWBaseWidget):
         self.setCaption("Qt VizRank Optimization Dialog")
         self.controlArea = QVBoxLayout(self)
 
+        self.learner = None
+        self.externalLearner = None
         self.graph = graph
         self.kValue = 10
         self.resultListLen = 1000
@@ -179,11 +181,11 @@ class kNNOptimization(OWBaseWidget):
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
         #self.miscSettingsBox.hide()
         
-        self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
-        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, sendSelectedValue = 1, valueType = int)
+        self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", callback = self.createkNNLearner, items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
+        self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, callback = self.createkNNLearner, sendSelectedValue = 1, valueType = int)
 
-        self.measureCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
-        self.testingCombo = OWGUI.comboBox(self.optimizationSettingsBox, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
+        self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
 
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
         OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ordering of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
@@ -294,6 +296,8 @@ class kNNOptimization(OWBaseWidget):
         self.resize(375,550)
         self.setMinimumWidth(375)
         self.tabs.setMinimumWidth(375)
+
+        self.createkNNLearner()
         
         
     # ##############################################################
@@ -613,51 +617,12 @@ class kNNOptimization(OWBaseWidget):
         else: testTable = table
 
         if len(testTable) == 0: return 0,0
-        
-        # ###############################
-        # do we want to use very fast heuristic
-        # ###############################
-        if self.evaluationAlgorithm == ALGORITHM_HEURISTIC:
-            # if input attributes are continuous (may be discrete for evaluating scatterplots, where we dicretize the whole domain...)
-            if testTable.domain[0].varType == orange.VarTypes.Continuous and testTable.domain[1].varType == orange.VarTypes.Continuous:
-                discX = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
-                discY = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
-                testTable = testTable.select([discX, discY, testTable.domain.classVar])
 
-            currentClassDistribution = [int(v) for v in orange.Distribution(testTable.domain.classVar, testTable)]
-            prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
-
-            # create a new attribute that is a cartesian product of the two visualized attributes
-            nattr = orange.EnumVariable(values=['i' for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
-            nattr.getValueFrom = orange.ClassifierByLookupTable2(nattr, testTable.domain[0], testTable.domain[1])
-            for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS): nattr.getValueFrom.lookupTable[i] = i
+        if self.evaluationAlgorithm == ALGORITHM_KNN or self.externalLearner:
+            if self.externalLearner: learner = self.externalLearner
+            else:                    learner = self.learner
             
-            for dist in orange.ContingencyAttrClass(nattr, testTable):
-                dist = list(dist)
-                if sum(dist) == 0: continue
-                m = max(dist)
-                prediction[dist.index(m)] += m * m / float(sum(dist))
-
-            prediction = [val*100.0 for val in prediction]             # turn prediction array into percents
-            acc = sum(prediction) / float(len(testTable))               # compute accuracy for all classes
-            val = 0.0; s = 0.0
-            for index in self.selectedClasses:                          # compute accuracy for selected classes
-                val += prediction[index]; s += currentClassDistribution[index]
-            for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
-            if self.percentDataUsed != 100: del testTable
-            return val/float(s), (acc, prediction, currentClassDistribution)
-
-
-        elif self.evaluationAlgorithm == ALGORITHM_FISHER:
-            val = OWVisTools.computeFisherQuality(testTable)
-            return val, None
-
-        # ###############################
-        # or we want to use k nearest neighbor algorithm
-        # ###############################
-        else:        
-            knn = self.createkNNLearner()
-            results = apply(testingMethods[self.testingMethod], [[knn], testTable])
+            results = apply(testingMethods[self.testingMethod], [[learner], testTable])
             
             # compute classification success using selected measure
             if testTable.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -695,7 +660,7 @@ class kNNOptimization(OWBaseWidget):
                 prediction = [prediction[i] / float(max(1, currentClassDistribution[i])) for i in range(len(prediction))] # turn to probabilities
 
                 if self.percentDataUsed != 100: del testTable        # remove the table that we created
-                del knn, results
+                del results
                 return val/float(s), (acc, prediction, list(currentClassDistribution))
                 
             # for continuous class we can't compute brier score and classification accuracy
@@ -707,6 +672,45 @@ class kNNOptimization(OWBaseWidget):
                 if self.percentDataUsed != 100: del testTable
                 del knn, results
                 return 100.0*val, (100.0*val)
+
+        
+        # ###############################
+        # do we want to use very fast heuristic
+        # ###############################
+        elif self.evaluationAlgorithm == ALGORITHM_HEURISTIC:
+            # if input attributes are continuous (may be discrete for evaluating scatterplots, where we dicretize the whole domain...)
+            if testTable.domain[0].varType == orange.VarTypes.Continuous and testTable.domain[1].varType == orange.VarTypes.Continuous:
+                discX = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
+                discY = orange.EquiDistDiscretization(testTable.domain[0], testTable, numberOfIntervals = NUMBER_OF_INTERVALS)
+                testTable = testTable.select([discX, discY, testTable.domain.classVar])
+
+            currentClassDistribution = [int(v) for v in orange.Distribution(testTable.domain.classVar, testTable)]
+            prediction = [0.0 for i in range(len(testTable.domain.classVar.values))]
+
+            # create a new attribute that is a cartesian product of the two visualized attributes
+            nattr = orange.EnumVariable(values=['i' for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS)])
+            nattr.getValueFrom = orange.ClassifierByLookupTable2(nattr, testTable.domain[0], testTable.domain[1])
+            for i in range(NUMBER_OF_INTERVALS*NUMBER_OF_INTERVALS): nattr.getValueFrom.lookupTable[i] = i
+            
+            for dist in orange.ContingencyAttrClass(nattr, testTable):
+                dist = list(dist)
+                if sum(dist) == 0: continue
+                m = max(dist)
+                prediction[dist.index(m)] += m * m / float(sum(dist))
+
+            prediction = [val*100.0 for val in prediction]             # turn prediction array into percents
+            acc = sum(prediction) / float(len(testTable))               # compute accuracy for all classes
+            val = 0.0; s = 0.0
+            for index in self.selectedClasses:                          # compute accuracy for selected classes
+                val += prediction[index]; s += currentClassDistribution[index]
+            for i in range(len(prediction)): prediction[i] /= float(currentClassDistribution[i])    # turn to probabilities
+            if self.percentDataUsed != 100: del testTable
+            return val/float(s), (acc, prediction, currentClassDistribution)
+
+
+        elif self.evaluationAlgorithm == ALGORITHM_FISHER:
+            val = OWVisTools.computeFisherQuality(testTable)
+            return val, None
 
         
     # ##############################################################
@@ -950,7 +954,7 @@ class kNNOptimization(OWBaseWidget):
     def createkNNLearner(self):
         kValue = self.kValue
         if self.percentDataUsed != 100: kValue = int(kValue * self.percentDataUsed / 100.0)
-        return orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+        self.learner = orange.kNNLearner(k = kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
         
     # return a function that is appropriate to find the best projection in a list in respect to the selected quality measure
     def getMaxFunct(self):
@@ -1050,8 +1054,11 @@ class kNNOptimization(OWBaseWidget):
             
             [xTest, yTest] = self.graph.getProjectedPointPosition(attrList, attrVals)
             table = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList])
-            knn = self.createkNNLearner()(table)
-            (classValue, prob) = knn(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
+            if self.externalLearner: learner = self.externalLearner
+            else: learner = self.learner
+            classifier = learner(table)
+            (classValue, prob) = classifier(orange.Example(table.domain, [xTest, yTest, "?"]), orange.GetBoth)
+            del classifier
             classValue = int(classValue)
             if self.argumentValueFormula == 0:
                 value = accuracy
