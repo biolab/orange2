@@ -36,7 +36,7 @@ class OWRadviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Radviz", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute Selection List", AttributeList, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Attribute Selection List", AttributeList), ("Learner", orange.Learner)]
 
         # local variables
@@ -741,14 +741,20 @@ class OWRadviz(OWWidget):
     
         self.updateGraph(1)
 
-
+    # ###########################################################
+    # visualize the results of the classification
     def test_results(self, results):
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
                 
         self.showAttributes(self.getShownAttributeList(), self.classificationResults, clusterClosure = self.graph.clusterClosure)
-        
+
+    
+    # ###########################################################
+    # set the learning method to be used in VizRank
+    def vizRankLearner(self, learner):
+        self.optimizationDlg.externalLearner = learner        
         
     # ################################################
 

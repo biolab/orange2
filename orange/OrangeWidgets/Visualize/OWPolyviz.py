@@ -34,7 +34,7 @@ class OWPolyviz(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "Polyviz", TRUE)
 
-        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection)]
+        self.inputs = [("Classified Examples", ExampleTableWithClass, self.cdata), ("Attribute Selection List", AttributeList, self.attributeSelection), ("VizRank Learner", orange.Learner, self.vizRankLearner, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass),("Attribute Selection List", AttributeList)]
 
         # local variables
@@ -470,6 +470,13 @@ class OWPolyviz(OWWidget):
             self.setShownAttributeList(self.data, self.attributeSelectionList)
             self.selectionChanged()
         self.updateGraph()
+
+
+    # ###########################################################
+    # set the learning method to be used in VizRank
+    def vizRankLearner(self, learner):
+        self.optimizationDlg.externalLearner = learner
+
 
     # #########################
     # POLYVIZ EVENTS

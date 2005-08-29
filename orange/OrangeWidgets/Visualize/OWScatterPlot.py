@@ -31,7 +31,7 @@ class OWScatterPlot(OWWidget):
     def __init__(self, parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "ScatterPlot", TRUE)
 
-        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results)]
+        self.inputs = [("Examples", ExampleTable, self.cdata), ("Example Subset", ExampleTable, self.subsetdata, 1, 1), ("Attribute selection", list, self.attributeSelection), ("Evaluation Results", orngTest.ExperimentResults, self.test_results), ("VizRank Learner", orange.Learner, self.vizRankLearner, 1)]
         self.outputs = [("Selected Examples", ExampleTableWithClass), ("Unselected Examples", ExampleTableWithClass), ("Example Distribution", ExampleTableWithClass), ("Learner", orange.Learner)]
 
         # local variables    
@@ -430,6 +430,7 @@ class OWScatterPlot(OWWidget):
         self.showAttributes([self.attrX, self.attrY], self.classificationResults, clusterClosure = self.graph.clusterClosure)
         self.sendSelections()
 
+    # ###########################################################
     # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
     def subsetdata(self, data, update = 1):
         if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
@@ -439,7 +440,8 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.setSubsetData(data)
         self.clusterDlg.setSubsetData(data)
        
-    
+
+    # ###########################################################
     # receive information about which attributes we want to show on x and y axis
     def attributeSelection(self, list):
         if not self.data or not list or len(list) < 2: return
@@ -447,12 +449,20 @@ class OWScatterPlot(OWWidget):
         self.attrY = list[1]
         self.updateGraph()
 
+    # ###########################################################
+    # visualize the results of the classification
     def test_results(self, results):        
         self.classificationResults = None
         if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
             self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
 
         self.showAttributes([self.attrX, self.attrY], self.classificationResults, clusterClosure = self.graph.clusterClosure)
+
+    # ###########################################################
+    # set the learning method to be used in VizRank
+    def vizRankLearner(self, learner):
+        self.optimizationDlg.externalLearner = learner
+        
         
     # ################################################
 
