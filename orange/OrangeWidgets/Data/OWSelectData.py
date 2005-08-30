@@ -575,7 +575,11 @@ class OWSelectData(OWWidget):
                     if self.lbVals.isSelected(i):
                         selectedItemNames.append(str(self.lbVals.item(i).text()))
                 self.lbVals.clear()
+                curVarValues = []
                 for value in self.currentVar:
+                    curVarValues.append(str(value))
+                curVarValues.sort()
+                for value in curVarValues:
                     self.lbVals.insertItem(str(value))
                 if currentOper.isInterval:
                     self.lbVals.setSelectionMode(QListBox.Multi)
