@@ -70,7 +70,7 @@ class OWExampleDistance(OWWidget):
         d = self.data
         self.labelCombo.clear()
         self.labelCombo.setDisabled(0)
-        labels = [m.name for m in d.domain.getmetas().values()] + [a.name for a in d.domain.attributes] + [d.domain.classVar.name]
+        labels = [m.name for m in d.domain.getmetas().values()] + [a.name for a in d.domain.variables]
         for l in labels:
             self.labelCombo.insertItem(l)
         # here we would need to use the domain dependent setting of the label id

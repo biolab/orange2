@@ -308,7 +308,7 @@ class OWParallelCoordinates(OWWidget):
                     self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
         else:
             shown, hidden, maxIndex = OWVisAttrSelection.selectAttributes(data, self.attrContOrder, self.attrDiscOrder)
-            if data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
+            if data.domain.classVar and data.domain.classVar.name not in shown and data.domain.classVar.name not in hidden:
                 self.shownAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
             for attr in shown:
                 self.shownAttribsLB.insertItem(self.icons[data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
