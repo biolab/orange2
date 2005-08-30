@@ -214,7 +214,6 @@ class OWDataTable(OWWidget):
 
         # set the contents of the table (values of attributes)
         # iterate variables
-        print m, ml, metas, metaKeys
         for j,(key,attr) in enumerate(zip(range(numVars) + metaKeys, varsMetas)):
             self.progressBarSet(j*100.0/numVarsMetas)
             if attr == data.domain.classVar:
