@@ -20,11 +20,13 @@ class OWFile(OWWidget):
     def __init__(self,parent=None, signalManager = None):
         OWWidget.__init__(self, parent, signalManager, "File Widget")
 
-        self.inputs = []
-        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass)]
+        self.inputs = [("Attribute Definitions", orange.Domain, self.setDomain)]
+        self.outputs = [("Examples", ExampleTable), ("Classified Examples", ExampleTableWithClass), ("Attribute Definitions", orange.Domain)]
     
         #set default settings
         self.recentFiles=["(none)"]
+        self.resetDomain = 0
+        self.domain = None
         #get settings from the ini file, if they exist
         self.loadSettings()
         
@@ -40,6 +42,11 @@ class OWFile(OWWidget):
         self.infoa = QLabel('No data loaded.', box)
         self.infob = QLabel('', box)
             
+        self.rbox = QHGroupBox("Reload", self.controlArea)
+        self.reloadBtn = OWGUI.button(self.rbox, self, "Reload File", callback = self.reload)
+        OWGUI.separator(self.rbox, 8, 0)
+        self.resetDomainCb = OWGUI.checkBox(self.rbox, self, "resetDomain", "Reset domain at next reload")
+
         self.resize(150,100)
 
 
@@ -60,17 +67,31 @@ class OWFile(OWWidget):
             name = self.recentFiles[n]
             self.recentFiles.remove(name)
             self.recentFiles.insert(0, name)
+        elif n:
+            self.browseFile(1)
+            
         if len(self.recentFiles) > 0:
             self.setFileList()
             self.openFile(self.recentFiles[0])
 
     # user pressed the "..." button to manually select a file to load
-    def browseFile(self):
+    def browseFile(self, inDemos=0):
         "Display a FileDialog and select a file"
-        if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
-            startfile="."
+        if inDemos:
+            try:
+                import win32api, win32con
+                t = win32api.RegOpenKey(win32con.HKEY_LOCAL_MACHINE, "SOFTWARE\\Python\\PythonCore\\%i.%i\\PythonPath\\Orange" % sys.version_info[:2], 0, win32con.KEY_READ)
+                t = win32api.RegQueryValueEx(t, "")[0]
+                startfile = t[:t.find("orange")] + "orange\\doc\\datasets"
+            except:
+                QMessageBox.information( None, "File", "Cannot find the directory with example data sets", QMessageBox.Ok + QMessageBox.Default)
+                return
         else:
-            startfile=self.recentFiles[0]
+            if len(self.recentFiles) == 0 or self.recentFiles[0] == "(none)":
+                startfile="."
+            else:
+                startfile=self.recentFiles[0]
+                
         filename = str(QFileDialog.getOpenFileName(startfile,
         'Tab-delimited files (*.tab *.txt)\nC4.5 files (*.data)\nAssistant files (*.dat)\nRetis files (*.rda *.rdo)\nAll files(*.*)',
         None,'Open Orange Data File'))
@@ -84,9 +105,16 @@ class OWFile(OWWidget):
     # set the file combo box
     def setFileList(self):
         self.filecombo.clear()
+        if not self.recentFiles:
+            self.filecombo.insertItem("(none)")
+            self.reloadBtn.disabled = 1
         for file in self.recentFiles:
-            if file == "(none)": self.filecombo.insertItem("(none)")
-            else:                self.filecombo.insertItem(os.path.split(file)[1])
+            if file == "(none)":
+                self.filecombo.insertItem("(none)")
+            else:
+                self.filecombo.insertItem(os.path.split(file)[1])
+                self.reloadBtn.disabled = 0
+        self.filecombo.insertItem("Browse documentation data sets...")
         #self.filecombo.adjustSize() #doesn't work properly :(
         self.filecombo.updateGeometry()
 
@@ -94,14 +122,20 @@ class OWFile(OWWidget):
         for (i, s) in enumerate(info):
             self.info[i].setText(s)            
 
+    def reload(self):
+        if self.recentFiles:
+            return self.openFile(self.recentFiles[0], 1)
+
     # Open a file, create data from it and send it over the data channel
-    def openFile(self,fn):
+    def openFile(self,fn, throughReload = 0):
+        dontCheckStored = throughReload and self.resetDomain
+        self.resetDomain = self.domain != None
         if fn != "(none)":
             fileExt=lower(os.path.splitext(fn)[1])
             if fileExt in (".txt",".tab",".xls"):
-                data = orange.ExampleTable(fn)
+                data = orange.ExampleTable(fn, dontCheckStored = dontCheckStored, use = self.domain)
             elif fileExt in (".c45",):
-                data = orange.C45ExampleGenerator(fn)
+                data = orange.C45ExampleGenerator(fn, dontCheckStored = dontCheckStored, use = self.domain)
             else:
                 return
                 
@@ -128,11 +162,26 @@ class OWFile(OWWidget):
             self.send("Examples", data)
             if data.domain.classVar:
                 self.send("Classified Examples", data)
+                self.send("Attribute Definitions", data.domain)
         else:
             self.send("Classified Examples", None)
             self.send("Examples", None)
+            self.send("Attribute Definitions", None)
         
+    def setDomain(self, domain):
+        domainChanged = self.domain != domain
+        self.domain = domain
         
+        if self.domain:
+            self.resetDomainCb.setDisabled(1)
+        else:
+            self.resetDomainCb.setDisabled(0)
+            
+        if domainChanged and len(self.recentFiles) > 0 and os.path.exists(self.recentFiles[0]):
+            self.resetDomain = 1
+            self.openFile(self.recentFiles[0], 1)
+            
+    
 if __name__ == "__main__":
     a=QApplication(sys.argv)
     owf=OWFile()

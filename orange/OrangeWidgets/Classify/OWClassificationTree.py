@@ -64,11 +64,12 @@ class OWClassificationTree(OWWidget):
         self.hbxRel1 = OWGUI.spin(qBox, self, "relM", 1, 1000, 10, label="Relief's reference examples: ")
         self.hbxRel2 = OWGUI.spin(qBox, self, "relK", 1, 50, label="Relief's neighbours")
         OWGUI.separator(self.controlArea)
-        self.measureChanged(self.estim)
-
+        
         # structure of the tree
-        OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
+        self.cbBin = OWGUI.checkBox(self.controlArea, self, 'bin', 'Binarization', box='Tree Structure')
         OWGUI.separator(self.controlArea)
+
+        self.measureChanged(self.estim)
 
         # prepruning
         self.pBox = QVGroupBox(self.controlArea)
@@ -123,7 +124,13 @@ class OWClassificationTree(OWWidget):
         self.estim = idx
         self.hbxRel1.setEnabled(idx == 3)
         self.hbxRel2.setEnabled(idx == 3)
-        self.bin = (idx == 2)
+        self.cbBin.setEnabled(idx != 3)
+        if idx==3:
+            self.prevBinState = self.bin
+            self.bin = 0
+        else:
+            if hasattr(self, "prevBinState"):
+                self.bin = self.prevBinState
         
     # handle input signals        
 

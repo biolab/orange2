@@ -524,8 +524,9 @@ class SchemaDoc(QMainWindow):
     # ###########################################
     def saveDocumentAsApp(self, asTabs = 1):
         # get filename
-        appName = os.path.splitext(self.applicationname)[0] + ".py"
-        qname = QFileDialog.getSaveFileName( os.path.join(self.applicationpath, appName) , "Orange Scripts (*.py)", self, "", "Save File as Application")
+        extension = sys.platform == "win32" and ".pyw" or ".py"
+        appName = os.path.splitext(self.applicationname)[0] + extension
+        qname = QFileDialog.getSaveFileName( os.path.join(self.applicationpath, appName) , "Orange Scripts (*%s)" % extension, self, "", "Save File as Application")
         if qname.isEmpty(): return
 
         saveDlg = saveApplicationDlg(None, "", TRUE)
@@ -545,7 +546,7 @@ class SchemaDoc(QMainWindow):
         
         (self.applicationpath, self.applicationname) = os.path.split(str(qname))
         fileName = os.path.splitext(self.applicationname)[0]
-        if os.path.splitext(self.applicationname)[1] != ".py": self.applicationname += ".py"
+        if os.path.splitext(self.applicationname)[1][:3] != ".py": self.applicationname += extension
 
         #format string with file content
         t = "    "  # instead of tab

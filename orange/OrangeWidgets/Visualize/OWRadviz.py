@@ -492,6 +492,7 @@ class OWRadviz(OWWidget):
                         minE = E
                         bestProjection = self.graph.anchorData
                         noChange = 0
+                        notBest = 0
 
         if notBest and bestProjection:
             self.graph.anchorData = bestProjection
