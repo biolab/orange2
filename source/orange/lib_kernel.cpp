@@ -142,7 +142,7 @@ PVarList knownVars(PyObject *keywords)
 {
   PVarList variables;
   PyObject *pyknownVars=keywords ? PyDict_GetItemString(keywords, "use") : PYNULL;
-  if (!pyknownVars)
+  if (!pyknownVars || (pyknownVars == Py_None))
     return PVarList();
 
   if (PyOrVarList_Check(pyknownVars))
@@ -169,7 +169,7 @@ PDomain knownDomain(PyObject *keywords)
 {
   PVarList variables;
   PyObject *pyknownDomain = keywords ? PyDict_GetItemString(keywords, "domain") : PYNULL;
-  if (!pyknownDomain)
+  if (!pyknownDomain || (pyknownDomain == Py_None))
     return PDomain();
 
   if (!PyOrDomain_Check(pyknownDomain))
@@ -185,7 +185,7 @@ TMetaVector *knownMetas(PyObject *keywords)
     return NULL;
 
   PyObject *pyknownDomain = PyDict_GetItemString(keywords, "domain");
-  if (pyknownDomain) {
+  if (pyknownDomain && (pyknownDomain != Py_None)) {
     if (!PyOrDomain_Check(pyknownDomain))
       raiseError("invalid value for 'domain' argument"); // PYERROR won't do - NULL is a valid value to return...
     return &PyOrange_AsDomain(pyknownDomain)->metas;

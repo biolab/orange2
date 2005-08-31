@@ -17,7 +17,7 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contC
   double *Xi;
   double *sumi, *sume = sum + nExamples;
   TPoint *anci, *ance = anc + nAttrs;
-  TPoint *ptsi, *ptsj, *ptse = pts + nExamples;
+  TPoint *ptsi, *ptsj, *ptse = pts + nExamples, *ptsie;
 
   for(sumi = sum, Xi = X, ptsi = pts; sumi != sume; sumi++, ptsi++) {
     ptsi->x = ptsi->y = 0.0;
@@ -64,59 +64,24 @@ float computeEnergyLow(const int &nExamples, const int &nAttrs, const int &contC
   }
 
   else {
-    int *classesi, *classesj;
-
-    switch(law) {
-      case TPNN::InverseLinear:
-        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-            if (*classesi == *classesj) {
-              if (attractG != 0.0)
-                E += attractG * (sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y));
-            }
-            else {
-              if (repelG != 0.0) {
-                const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-                E += repelG * log(dist < 1e-15 ? 1e-15 : dist);
-              }
-            }
+    for(int *classesi = classes; classesi[1]; classesi++) {
+      if (attractG != 0.0) {
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++)
+          for(ptsj = pts + *classesi; ptsj != ptsi; ptsj++) {
+            const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            if (dist > 1e-15)
+              E += 150 * attractG * exp(1.5 * log(dist))/3.0;
           }
-        E /= 2.0; // this is needed since we omitted a sqrt inside log or inside .5x^2
-        break;
+      }
 
-      case TPNN::InverseSquare:
-        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-            if (*classesi == *classesj) {
-              if (attractG != 0.0) {
-                const double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-                if (dist > 1e-15)
-                  E += 100*attractG * exp(1.5 * log(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)))/3.0;
-              }
-            }
-            else {
-              if (repelG != 0.0) {
-                double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
-                E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
-              }
-            }
+      if ((repelG != 0.0) && classesi[2]) {
+        for(ptsi = pts + *classesi, ptsie = pts + classesi[1]; ptsi != ptsie; ptsi++)
+          for(ptsj = ptsie; ptsj != ptse; ptsj++) {
+            double dist = sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y);
+            E -= repelG / (dist < 1e-15 ? 1e-15 : sqrt(dist));
           }
-        break;
 
-      case TPNN::InverseExponential:
-        for(ptsi = pts, classesi = classes; ptsi != ptse; ptsi++, classesi++)
-          for(ptsj = pts, classesj = classes; ptsj != ptsi; ptsj++, classesj++) {
-            if (*classesi == *classesj) {
-              if (attractG != 0.0)
-                E += attractG * exp(sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
-            }
-            else {
-              if (repelG != 0.0)
-                E -= repelG * exp(-sqrt(sqr(ptsi->x - ptsj->x) + sqr(ptsi->y - ptsj->y)));
-            }
-          }
-        break;
-
+      }
     }
   }
 
@@ -156,16 +121,41 @@ bool loadRadvizData(PyObject *scaledData, PyObject *pyclasses, PyObject *anchors
   if (contClass) {
     double *dclassesi;
     for(dclassesi = (double *)classes, i = 0; i < nExamples; *dclassesi++ = PyFloat_AsDouble(PyList_GetItem(pyclasses, i++)));
+
+    for(Xi = X, i = 0; i < nExamples; i++) {
+      PyObject *ex = PyList_GetItem(scaledData, i);
+      for(aii = attrIndices; aii < aie; aii++)
+        *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+    }
   }
+
   else {
-    int *classesi;
-    for(classesi = classes, i = 0; i < nExamples; *classesi++ = PyInt_AsLong(PyList_GetItem(pyclasses, i++)));
-  }
-      
-  for(Xi = X, i = 0; i < nExamples; i++) {
-    PyObject *ex = PyList_GetItem(scaledData, i);
-    for(aii = attrIndices; aii < aie; aii++)
-      *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+    int *classesi, *classese;
+    int maxCls = 0;
+    for(classesi = classes, i = 0; i < nExamples; classesi++) {
+      *classesi = PyInt_AsLong(PyList_GetItem(pyclasses, i++));
+      if (*classesi > maxCls)
+        maxCls = *classesi;
+    }
+
+    // we need maxCls+3: beginning of each of maxCls+1 classes, end of the last class, sentinel
+    int *rcls = (int *)malloc((maxCls+3) * sizeof(int));
+    memset(rcls, 0, (maxCls+3) * sizeof(int));
+    for(classesi = classes, classese = classes+nExamples; classesi != classese; rcls[1 + *classesi++]++);
+    for(int *rclsi = rcls+1, *rclse = rcls+maxCls+2; rclsi != rclse; *rclsi += rclsi[-1], rclsi++);
+
+    for(classesi = classes, i = 0; i < nExamples; i++, classesi++) {
+      PyObject *ex = PyList_GetItem(scaledData, i);
+      Xi = X + nAttrs * rcls[*classesi]++;
+      for(aii = attrIndices; aii < aie; aii++)
+        *Xi++ = PyFloat_AsDouble(PyList_GetItem(ex, *aii));
+    }
+
+    memmove(rcls+1, rcls, (maxCls+1) * sizeof(int));
+    *rcls = 0;
+
+    free(classes);
+    classes = rcls;
   }
 
   free(attrIndices);
@@ -186,7 +176,7 @@ PyObject *computeEnergy(PyObject *, PyObject *args, PyObject *keywords) PYARGS(M
     int law = 0;
     int contClass = 0;
 
-    if (!PyArg_ParseTuple(args, "OOOO|ddii:optimizeAnchors", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &contClass))
+    if (!PyArg_ParseTuple(args, "OOOO|ddii:computeEnergy", &scaledData, &pyclasses, &anchors, &pyattrIndices, &attractG, &repelG, &law, &contClass))
       return NULL;
 
     double *X, *Xi;
@@ -264,9 +254,11 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     int i, u, v;
     double *radi, *rad = (double *)malloc(nAttrs * sizeof(double)), *rade = rad + nAttrs;
     TPoint *danci, *danc = (TPoint *)malloc(nAttrs * sizeof(TPoint)), *dance = danc + nAttrs;
-    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples;
+    TPoint *ptsi, *pts = (TPoint *)malloc(nExamples * sizeof(TPoint)), *ptse = pts + nExamples, *ptsi2, *ptsie;
     double *sumi, *sum = (double *)malloc(nExamples * sizeof(double)), *sume = sum + nExamples;
-    TPoint *Ki, *K = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Ke = K + nExamples;
+    TPoint *Fai, *Fa = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fae = Fa + nExamples, *Fai2;
+    TPoint *Fri, *Fr = (TPoint *)malloc(nExamples * sizeof(TPoint)), *Fre = Fr + nExamples, *Fri2;
+    double FaTot, FrTot;
 
     while (steps--) {
       if (normalizeExamples) {
@@ -282,98 +274,125 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
           if (normalizeExamples)
             *sumi += *Xi * *radi;
         }
-        if (normalizeExamples) {
-          if (*sumi == 0.0)
-            *sumi = 1.0;
-          ptsi->x /= *sumi;
-          ptsi->y /= *sumi;
-        }
+        if (normalizeExamples)
+          if (*sumi != 0.0) {
+            ptsi->x /= *sumi;
+            ptsi->y /= *sumi;
+          }
+          else
+            *sumi = 1.0; // we also use *sumi later
       }
 
 
 /* XXX   TO OPTIMIZE:
        - use pointers instead of indexing
        - sort the examples by classes so you don't have to compare them all the time
-       - if attractive force are 0, you can gain some time by checking only the examples from different classes
+       - if attractive force is 0, you can gain some time by checking only the examples from different classes
 */
                      
-      for(Ki = K; Ki != Ke; Ki++)
-        Ki->x = Ki-> y = 0.0;
+      for(Fai = Fa; Fai != Fae; Fai++)
+        Fai->x = Fai-> y = 0.0;
+
+      for(Fri = Fr; Fri != Fre; Fri++)
+        Fri->x = Fri-> y = 0.0;
+
+      FaTot = FrTot = 0;
 
       for(danci = danc; danci != dance; danci++)
         danci->x = danci->y = 0.0;
 
 
-      for(u = 0; u < nExamples; u++) {
-        for(v = u+1; v < nExamples; v++) {
-          double druv;
-
-          if (contClass) {
-            double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-            if (ruv < 1e-15)
-              ruv = 1e-15;
-
-            switch(law) {
-              case TPNN::InverseLinear: druv -= fabs(classes[u]-classes[v]) / sqrt(ruv); break;
-              case TPNN::InverseSquare: druv -= fabs(classes[u]-classes[v]) / ruv; break;
-              case TPNN::InverseExponential: druv -= fabs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
-            }
-          }
-
-          else {
-            if (classes[u] == classes[v]) {
-              if (attractG == 0.0)
-                continue;
+      if (contClass) {
+        for(u = 0; u < nExamples; u++) {
+          for(v = u+1; v < nExamples; v++) {
+            double druv;
 
               double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
               if (ruv < 1e-15)
                 ruv = 1e-15;
 
               switch(law) {
-                case TPNN::InverseLinear: druv = attractG * sqrt(ruv); break;
-                case TPNN::InverseSquare: druv = 100*attractG * ruv; break;
-                case TPNN::InverseExponential: druv = attractG * exp(sqrt(ruv)); break;
+                case TPNN::InverseLinear: druv -= fabs(classes[u]-classes[v]) / sqrt(ruv); break;
+                case TPNN::InverseSquare: druv -= fabs(classes[u]-classes[v]) / ruv; break;
+                case TPNN::InverseExponential: druv -= fabs(classes[u]-classes[v]) / exp(sqrt(ruv)); break;
               }
             }
-
-            else {
-              if (repelG == 0.0)
-                continue;
-
-              double ruv = sqr(pts[u].x - pts[v].x) + sqr(pts[u].y - pts[v].y);
-              if (ruv < 1e-15)
-                ruv = 1e-15;
-
-              switch(law) {
-                case TPNN::InverseLinear: druv = repelG / sqrt(ruv); break;
-                case TPNN::InverseSquare: druv = repelG / ruv; break;
-                case TPNN::InverseExponential: druv = repelG / exp(sqrt(ruv)); break;
-              }
-            }
-          }
-
-          const double druvx = druv * (pts[u].x - pts[v].x);
-          K[u].x += druvx;
-          K[v].x -= druvx;
-
-          const double druvy = druv * (pts[u].y - pts[v].y);
-          K[u].y += druvy;
-          K[v].y -= druvy;
-        }
-
-        if (normalizeExamples) {
-          K[u].x /= sum[u];
-          K[u].y /= sum[u];
-        }
-
-        double *Xu = X + u * nAttrs;
-        for(i = 0; i < nAttrs; i++, Xu++) {
-          double ex = normalizeExamples ? *Xu/sum[u] : *Xu;
-          danc[i].x -= K[u].x * ex;
-          danc[i].y -= K[u].y * ex;
         }
       }
 
+      else {
+        for(int *classesi = classes; classesi[1]; classesi++) {
+
+          if (attractG != 0.0) {
+            
+            for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fai = Fa + *classesi; ptsi != ptsie; ptsi++, Fai++)
+              for(ptsi2 = pts + *classesi,                         Fai2 = Fa + *classesi; ptsi2 != ptsi; ptsi2++, Fai2++) {
+                const double dx = ptsi->x - ptsi2->x;
+                const double dy = ptsi->y - ptsi2->y;
+                const double r2 = sqr(dx) + sqr(dy);
+                if (r2 < 1e-15)
+                  continue;
+                const double TFa = 100 * attractG * r2;
+                FaTot += TFa;
+                const double druvx =  TFa * dx / sqrt(r2);
+                const double druvy = TFa * dy / sqrt(r2);
+                Fai->x  += druvx;
+                Fai2->x -= druvx;
+                Fai->y  += druvy;
+                Fai2->y -= druvy;
+              }
+          }
+
+          if ((repelG != 0.0) && classesi[2]) {
+            for(ptsi = pts + *classesi, ptsie = pts + classesi[1], Fri = Fr + *classesi; ptsi != ptsie; ptsi++, Fri++)
+              for(ptsi2 = ptsie, Fri2 = Fr + classesi[1]; ptsi2 != ptse; ptsi2++, Fri2++) {
+                const double dx = ptsi->x - ptsi2->x;
+                const double dy = ptsi->y - ptsi2->y;
+                double ruv = sqr(dx) + sqr(dy);
+                if (ruv < 1e-20)
+                  continue;
+
+                double fx = dx /sqrt(ruv);
+                double fy = dy /sqrt(ruv);
+                if (ruv < 1e-10)
+                  ruv = 1e-10;
+
+                const double TFr = repelG / ruv;
+                FrTot += TFr;
+                const double druvx = TFr * fx;
+                Fri->x  += druvx;
+                Fri2->x -= druvx;
+
+                const double druvy = TFr * fy;
+                Fri->y  += druvy;
+                Fri2->y -= druvy;
+              }
+          }
+        }
+      }
+
+      if (normalizeExamples) {
+        for(Fai = Fa, Fri = Fr, sumi = sum, Xi = X; Fri != Fre; Fai++, Fri++, sumi++) {
+          Fai->x /= *sumi;
+          Fai->y /= *sumi;
+          Fri->x /= *sumi;
+          Fri->y /= *sumi;
+          for(danci = danc; danci != dance; danci++, Xi++) {
+            danci->x -= (Fai->x+Fri->x) * *Xi; // previously, Xi was here additionally divided by *sumi -- don't know why
+            danci->y -= (Fai->y+Fri->y) * *Xi;
+          }
+        }
+      }
+
+      else {
+        const double k =  /*FrTot > 0.001 ? fabs(FaTot / FrTot) : */1.0;
+        for(Fai = Fa, Fri = Fr, Xi = X; Fri != Fre; Fri++, Fai++) {
+          for(danci = danc; danci != dance; danci++, Xi++) {
+            danci->x -= (Fai->x+k*Fri->x) * *Xi;
+            danci->y -= (Fai->y+k*Fri->y) * *Xi;
+          }
+        }
+      }
 
   // Scale the changes - normalize the jumps
       double scaling = 1e10;
@@ -488,7 +507,8 @@ PyObject *optimizeAnchors(PyObject *, PyObject *args, PyObject *keywords) PYARGS
     free(classes);
     free(X);
     free(sum);
-    free(K);
+    free(Fa);
+    free(Fr);
     free(rad);
 
     return Py_BuildValue("Od", anchors, E);

@@ -305,6 +305,7 @@ class TOrangeVector : public TOrange
 
     inline void clear()
     { _Destroy(_First, _Last);
+      free(_First);
       _First = _End = _Last = NULL;
     }
 
