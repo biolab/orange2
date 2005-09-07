@@ -44,6 +44,9 @@ def getRounding(d):
     else:
         rndFac = 2
     return rndFac
+
+def avg(l):
+    return sum(l)/len(l)
     
 
 class OWNomogram(OWWidget):
@@ -63,7 +66,7 @@ class OWNomogram(OWWidget):
         self.probability = 0
         self.showBaseLine = 1
         self.table = 0
-        self.verticalSpacing = 40
+        self.verticalSpacing = 60
         self.verticalSpacingContinuous = 100
         self.diff_between_ordinal = 30
         self.fontSize = 9
@@ -246,28 +249,29 @@ class OWNomogram(OWWidget):
                 curr_num = getStartingPoint(d, minAtValue)
                 rndFac = getRounding(d)                
 
+                values = []
                 for i in range(2*numOfPartitions):
                     if curr_num+i*d>=minAtValue and curr_num+i*d<=maxAtValue:
                         # get thickness
                         if self.data:
-                            curr_data = self.data.filter({att[at].name:(curr_num+i*d-d/2, curr_num+(i+1)*d+d/2)})
-                            #thickness = 1+round(20.*float(len(curr_data))/len(self.data))
-                            thickness = float(len(curr_data))/len(self.data)
+                            thickness = float(len(self.data.filter({att[at].name:(curr_num+i*d-d/2, curr_num+i*d+d/2)})))/len(self.data)
                         else:
-                            thickness = 0
+                            thickness = 0.0
                         d_filter = filter(lambda x: x>curr_num+i*d-d/2 and x<curr_num+i*d+d/2, cl.conditionalDistributions[at].keys())
                         if len(d_filter)>0:
-                            d_filter = d_filter[len(d_filter)/2]
-                            conditional0 = max(cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], aproxZero)
-                            conditional1 = max(1-cl.conditionalDistributions[at][d_filter][classVal[self.TargetClassIndex]], aproxZero)
+                            cd = cl.conditionalDistributions[at]
+                            conditional0 = avg([cd[f][classVal[self.TargetClassIndex]] for f in d_filter])
+                            conditional0 = min(1-aproxZero,max(aproxZero,conditional0))
+                            conditional1 = 1-conditional0
                             try:
                                 # compute error of loess in logistic space
-                                standard_error= math.sqrt(cl.conditionalDistributions[at][d_filter].variances[self.TargetClassIndex])
-                                lbconditional0 = max(conditional0-standard_error, aproxZero)
-                                lbconditional1 = max(conditional1-standard_error, aproxZero)
-                                
-                                # se = sqrt((log(P(c|a)+st_error / 1-P(c|a)-st_error) - log(P(c|a)-st_error / 1-P(c|a)+st_error))^2 + priorError^2)
-                                se = math.sqrt(math.pow(math.log((conditional0+standard_error)/lbconditional1/lbconditional0*(conditional1+standard_error)),2)+math.pow(priorError,2))
+                                var = avg([cd[f].variances[self.TargetClassIndex] for f in d_filter])
+                                standard_error= math.sqrt(var)
+                                rightError0 = (conditional0+standard_error)/max(conditional1-standard_error, aproxZero)
+                                leftError0  =  max(conditional0-standard_error, aproxZero)/(conditional1+standard_error)
+                                se = (math.log(rightError0) - math.log(leftError0))/2
+                                se = math.sqrt(math.pow(se,2)+math.pow(priorError,2))
+
                                 # add value to set of values                                
                                 a.addAttValue(AttValue(str(round(curr_num+i*d,rndFac)),
                                                        math.log(conditional0/conditional1/prior),
@@ -276,6 +280,7 @@ class OWNomogram(OWWidget):
                             except:
                                 pass
                 a.continuous = True
+                # invert values:
             # if there are more than 1 value in the attribute, add it to the nomogram
             if len(a.attValues)>1:
                 self.bnomogram.addAttribute(a)
@@ -733,20 +738,11 @@ if __name__=="__main__":
     a=QApplication(sys.argv)
     ow=OWNomogram()
     a.setMainWidget(ow)
-    data = orange.ExampleTable("titanic")
-
-    #discretizer = orange.EntropyDiscretization()
-    #catData = orange.Preprocessor_discretize(data, method=discretizer)
+    data = orange.ExampleTable("titanic.tab")
 
     bayes = orange.BayesLearner(data)
     bayes.setattr("data",data)
-    #l = orngSVM.BasicSVMLearner()
-    #l.kernel = 0 # linear SVM
-    #l.for_nomogram = 1
-    #svm = orngLR_Jakulin.MarginMetaLearner(l,folds = 1)(data)
-    #logistic = orngLR.LogRegLearner(data, removeSingular = 1)
     ow.classifier(bayes)
-#    ow.cdata(data)
 
     # here you can test setting some stuff
     ow.show()

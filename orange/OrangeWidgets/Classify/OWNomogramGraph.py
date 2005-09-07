@@ -677,7 +677,7 @@ class AttrLineCont(AttrLine):
 
 
         atLine = AttrLine("marker", canvas)
-        d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/(max_mapped-min_mapped)
+        d = 5*(self.cAtt.maxValue-self.cAtt.minValue)/max(max_mapped-min_mapped,aproxZero)
         for xc in Numeric.arange(self.cAtt.minValue, self.cAtt.maxValue+d, d):
             atLine.addAttValue(AttValue("", xc))
         
@@ -731,7 +731,7 @@ class AttrLineCont(AttrLine):
                     for i in range(len(m)):
                         if i<(len(m)-1):
                             if float(m[i].name)<=at.betaValue and float(m[i+1].name)>=at.betaValue:
-                                coeff = (at.betaValue-float(m[i].name))/(float(m[i+1].name)-float(m[i].name))
+                                coeff = (at.betaValue-float(m[i].name))/max(float(m[i+1].name)-float(m[i].name),aproxZero)
                                 retAttr.addAttValue(AttValue(str(at.betaValue),m[i].betaValue+coeff*(m[i+1].betaValue-m[i].betaValue)))
                                 retAttr.attValues[len(retAttr.attValues)-1].over = curr_over
 
@@ -749,10 +749,9 @@ class AttrLineCont(AttrLine):
 
         #draw legend from real values
         verticalRect = QRect(rect.top(), rect.left(), rect.height(), rect.width())
-        verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue)
+        verticalMapper = Mapper_Linear_Fixed(self.atNames.minValue, self.atNames.maxValue, verticalRect.left()+verticalRect.width()/4, verticalRect.right(), maxLinearValue = self.atNames.maxValue, minLinearValue = self.atNames.minValue, inverse=True)
         label = verticalMapper.getHeaderLine(canvas, verticalRect) 
         mapped_labels, error, min_lab, max_lab = verticalMapper(label) # return mapped values, errors, min, max --> mapper(self)        
-
         self.drawVerticalLabel(label, min_mapped, mapped_labels, canvas)            
             
         #create a vertical mapper
@@ -929,7 +928,7 @@ class BasicNomogramHeader(QCanvas):
         #if self.headerAttrLine:
         #    self.headerAttrLine.destroy()
         [item.setCanvas(None) for item in self.allItems()]
-        
+
         self.headerAttrLine = mapper.getHeaderLine(self, rect)
         self.headerAttrLine.name = self.nomogram.parent.pointsName[self.nomogram.parent.yAxis]
         self.headerAttrLine.paint(self, rect, mapper)
@@ -975,9 +974,9 @@ class BasicNomogramFooter(QCanvas):
         percentList = filter(lambda x:x>minPercent and x<maxPercent,Numeric.arange(0, maxPercent+0.1, 0.05))
         for p in percentList:
             if int(10*p) != round(10*p,1) and not p == percentList[0] and not p==percentList[len(percentList)-1]:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/(1-p)), markerWidth = 1, enable = False))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/max(1-p,aproxZero)), markerWidth = 1, enable = False))
             else:
-                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/(1-p)), markerWidth = 1))
+                percentLine.addAttValue(AttValue(" "+str(p)+" ", math.log(p/max(1-p,aproxZero)), markerWidth = 1))
         return percentLine  
         
        
@@ -1433,7 +1432,8 @@ def createSetOfVisibleValues(min, max, dif):
 
 
 class Mapper_Linear_Fixed:
-    def __init__(self, minBeta, maxBeta, left, right, maxLinearValue = 100, minLinearValue = -100):
+    def __init__(self, minBeta, maxBeta, left, right, maxLinearValue = 100, minLinearValue = -100, inverse = False):
+        self.inverse = inverse
         self.minBeta = minBeta
         self.maxBeta = maxBeta
         self.left = left
@@ -1488,12 +1488,13 @@ class Mapper_Linear_Fixed:
         return self.minValue
     def getMaxValue(self):
         return self.maxValue
-
-        
     
     # return proportional beta
-    def propBeta(self, betaVal, attrLine):        
-        return (betaVal-self.minGraphBeta)/max((self.maxGraphBeta-self.minGraphBeta), aproxZero)
+    def propBeta(self, betaVal, attrLine):
+        if self.inverse:
+            return (self.maxGraphBeta-betaVal)/max((self.maxGraphBeta-self.minGraphBeta), aproxZero)
+        else:
+            return (betaVal-self.minGraphBeta)/max((self.maxGraphBeta-self.minGraphBeta), aproxZero)
 
     # delay / offset that a mapper produces
     # in this case no aligning is uses, that is why delay is always 0
@@ -1514,25 +1515,21 @@ class Mapper_Linear_Fixed:
             conv = lambda x:x
         
         # set new graph values
-
         k = (self.maxGraphBeta - self.minGraphBeta)/max((self.maxGraphValue - self.minGraphValue), aproxZero)
-
         self.maxGraphBeta = (dSum[len(dSum)-1]- self.minGraphValue)*k + self.minGraphBeta                  
         self.minGraphBeta = (dSum[0]- self.minGraphValue)*k + self.minGraphBeta                  
-
         self.minGraphValue = dSum[0]
         self.maxGraphValue = dSum[len(dSum)-1]
-        
+       
         k = (self.maxGraphBeta-self.minGraphBeta)/max((self.maxGraphValue-self.minGraphValue), aproxZero)
-
+        dSumValues = [(d,self.minGraphBeta + (d-self.minGraphValue)*k) for d in dSum]
         headerLine = AttrLine("Points", canvas)
-        for at in range(len(dSum)):
-            headerLine.addAttValue(AttValue(" "+str(conv(dSum[at]))+" ", self.minGraphBeta + (dSum[at]-self.minGraphValue)*k, markerWidth = 1))
-            if at != len(dSum)-1:
-                val = AttValue(" "+str((dSum[at]+dSum[at+1])/2)+ " ", self.minGraphBeta + ((dSum[at]+dSum[at+1])/2-self.minGraphValue)*k, markerWidth = 1)
+        for d_i,d in enumerate(dSumValues):
+            headerLine.addAttValue(AttValue(" "+str(conv(d[0]))+" ", d[1], markerWidth = 1))
+            if d != dSumValues[-1]:
+                val = AttValue(" "+str((d[0]+dSumValues[d_i+1][0])/2)+ " ", (d[1]+dSumValues[d_i+1][1])/2, markerWidth = 1)
                 val.enable = False
                 headerLine.addAttValue(val)
-                
         return headerLine
 
 
@@ -1720,9 +1717,11 @@ class Mapper_Linear_Left:
         if maxnum<1:
             maxnum=1
         d = self.maxLinearValue/maxnum
-        dif = getDiff(d)
+        dif = max(getDiff(d),10e-6)
         dSum = []
         dSum = Numeric.arange(0, self.maxLinearValue+dif, dif)
+        if len(dSum)<1:
+            dSum = Numeric.arange(0, self.maxLinearValue+dif, dif/2.)
         dSum = map(lambda x:x, dSum)
         if round(dSum[0],0) == dSum[0] and round(dSum[len(dSum)-1],0) == dSum[len(dSum)-1] and round(dif,0) == dif:
             conv = int
