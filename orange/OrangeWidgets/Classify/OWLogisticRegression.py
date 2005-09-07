@@ -70,18 +70,18 @@ class OWLogisticRegression(OWWidget):
         QToolTip.add(self.removeSingularCB, "Remove attributes that cause singularity and constants")
         self.connect(self.removeSingularCB, SIGNAL("clicked()"), self.setRemoveSingular)
 
-        # use univariate logistic regression
-        self.univariateCB = QCheckBox("Univariate logistic regression", self.controlArea)
-        QToolTip.add(self.univariateCB, "Fit univariate logistic regression.")
-        self.connect(self.univariateCB, SIGNAL("clicked()"), self.setUnivariate)
-        self.univariateCB.setDisabled(True)
-
-        # get 0-point betas ?
-        self.zeroCB = QCheckBox("Calculate 0-point for nomograms", self.controlArea)
-        QToolTip.add(self.zeroCB, "Basic logistic regression does not compute prior contribution of each attribute to class \
-                                   If nomograms are used to visualize logistic regression model, this could be very helpful.")
-        self.connect(self.zeroCB, SIGNAL("clicked()"), self.setZeroPoint)
-        self.zeroCB.setDisabled(True)
+##        # use univariate logistic regression
+##        self.univariateCB = QCheckBox("Univariate logistic regression", self.controlArea)
+##        QToolTip.add(self.univariateCB, "Fit univariate logistic regression.")
+##        self.connect(self.univariateCB, SIGNAL("clicked()"), self.setUnivariate)
+##        self.univariateCB.setDisabled(True)
+##
+##        # get 0-point betas ?
+##        self.zeroCB = QCheckBox("Calculate 0-point for nomograms", self.controlArea)
+##        QToolTip.add(self.zeroCB, "Basic logistic regression does not compute prior contribution of each attribute to class \
+##                                   If nomograms are used to visualize logistic regression model, this could be very helpful.")
+##        self.connect(self.zeroCB, SIGNAL("clicked()"), self.setZeroPoint)
+##        self.zeroCB.setDisabled(True)
 
         self.imputationCombo = OWGUI.comboBox(self.controlArea, self, "imputation", items=self.imputationMethodsStr)
         
@@ -163,8 +163,6 @@ class OWLogisticRegression(OWWidget):
                 except orange.KernelException, (errValue):
                     self.classifier = None
                     self.error("LogRegFitter error:"+ str(errValue))
-#                    QMessageBox("LogRegFitter error:", str(errValue), QMessageBox.Warning,
-#                                QMessageBox.NoButton, QMessageBox.NoButton, QMessageBox.NoButton, self).show()
                     return
             self.classifier.setattr("betas_ap", None)
                     
@@ -174,12 +172,12 @@ class OWLogisticRegression(OWWidget):
 
     def activateLoadedSettings(self):
         self.removeSingularCB.setChecked(self.removeSingular)
-        self.univariateCB.setChecked(self.univariate)
+##        self.univariateCB.setChecked(self.univariate)
         self.use_swlr_CB.setChecked(self.stepwiseLR)
         self.addEdt = str(self.addCrit)
         self.removeEdt = str(self.removeCrit)
         self.attrEdt = self.numAttr
-        self.zeroCB.setChecked(self.zeroPoint)
+##        self.zeroCB.setChecked(self.zeroPoint)
         self.refreshControls()
         
         
