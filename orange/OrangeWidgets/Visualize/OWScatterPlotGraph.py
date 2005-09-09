@@ -243,11 +243,39 @@ class OWScatterPlotGraph(OWVisGraph):
             if self.insideColors != None:
                 # variables and domain for the table
                 classValueIndices = getVariableValueIndices(self.rawdata, self.rawdata.domain.classVar.name)
-                shortData = self.rawdata.select([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar])
-                shortData = orange.Preprocessor_dropMissing(shortData)
+
+                #shortData = self.rawdata.select([self.rawdata.domain[xAttrIndex], self.rawdata.domain[yAttrIndex], self.rawdata.domain.classVar])
+                #shortData = orange.Preprocessor_dropMissing(shortData)
                 if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
                 else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
 
+                (insideData, stringData) = self.insideColors
+                validData = self.getValidList([xAttrIndex, yAttrIndex])
+                j = 0
+                equalSize = len(self.rawdata) == len(insideData)
+                for i in range(len(self.rawdata)):
+                    if not validData[i]:
+                        j += equalSize
+                        continue
+                    
+                    fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
+                    edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+
+                    if discreteX == 1: x = attrXIndices[self.rawdata[i][xAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     x = self.rawdata[i][xAttrIndex].value + self.rndCorrection(float(self.jitterSize*xVar) / 100.0)
+                    else:                           x = self.rawdata[i][xAttrIndex].value
+
+                    if discreteY == 1: y = attrYIndices[self.rawdata[i][yAttrIndex].value] + self.rndCorrection(float(self.jitterSize) / 100.0)
+                    elif self.jitterContinuous:     y = self.rawdata[i][yAttrIndex].value + self.rndCorrection(float(self.jitterSize*yVar) / 100.0)
+                    else:                           y = self.rawdata[i][yAttrIndex].value
+
+                    key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x], yData = [y])
+
+                    # we add a tooltip for this point
+                    self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + stringData %(100*insideData[j]) + "; ")
+                    j+=1
+                    
+                """
                 for j in range(len(self.insideColors)):
                     fillColor = classColors.getColor(classValueIndices[shortData[j].getclass().value], 255*self.insideColors[j])
                     edgeColor = classColors.getColor(classValueIndices[shortData[j].getclass().value])
@@ -264,6 +292,7 @@ class OWScatterPlotGraph(OWVisGraph):
 
                     # we add a tooltip for this point
                     self.addTip(x, y, text = self.getExampleTextWithMeta(self.rawdata, self.rawdata[j], attrIndices) + "; Point value : " + "%.3f; "%(self.insideColors[j]))
+                """
 
             # ##############################################################
             # create a small number of curves which will make drawing much faster
@@ -599,7 +628,8 @@ class OWScatterPlotGraph(OWVisGraph):
     # ##############################################################
     # send 2 example tables. in first is the data that is inside selected rects (polygons), in the second is unselected data
     # ##############################################################
-    def getSelectionsAsExampleTables(self, xAttr, yAttr):
+    def getSelectionsAsExampleTables(self, attrList):
+        [xAttr, yAttr] = attrList
         if not self.rawdata: return (None, None, None)
         selected = orange.ExampleTable(self.rawdata.domain)
         unselected = orange.ExampleTable(self.rawdata.domain)
@@ -616,6 +646,22 @@ class OWScatterPlotGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
+
+    # ############################################################## 
+    def getSelectionsAsIndices(self, attrList):
+        [xAttr, yAttr] = attrList
+        if not self.rawdata: return []
+        
+        (xArray, yArray) = self.createProjection(xAttr, yAttr)
+        validData = self.getValidList([self.attributeNameIndex[xAttr], self.attributeNameIndex[yAttr]])
+                 
+        indices = []
+        for i in range(len(self.rawdata)):
+            if not validData[i]: continue
+            if self.isPointSelected(xArray[i], yArray[i]): indices.append(i)
+
+        return indices
+    
         
     # ##############################################################
     # evaluate the class separation for attribute pairs in the projections list

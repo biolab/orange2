@@ -45,6 +45,8 @@ class OWPolyviz(OWWidget):
         self.toolbarSelection = 0
         self.graphCanvasColor = str(Qt.white.name())
         self.VizRankClassifierName = "VizRank classifier (Polyviz)"
+        self.outlierValues = None
+        self.kNNExampleAccuracy = None
 
         #add a graph widget
         self.box = QVBoxLayout(self.mainArea)

@@ -213,8 +213,8 @@ class OWRadvizGraph(OWVisGraph):
         self.addCurve("circle", QColor(0,0,0), QColor(0,0,0), 1, style = QwtCurve.Lines, symbol = QwtSymbol.None, xData = xdata.tolist() + [xdata[0]], yData = ydata.tolist() + [ydata[0]])
 
         self.potentialsClassifier = None # remove the classifier so that repaint won't recompute it
-##        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
-##        self.updateLayout()
+        self.repaint()  # we have to repaint to update scale to get right coordinates for tooltip rectangles
+        self.updateLayout()
 
         classNameIndex = self.attributeNameIndex[self.rawdata.domain.classVar.name]
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:        # if we have a discrete class
@@ -276,11 +276,24 @@ class OWRadvizGraph(OWVisGraph):
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous:  classColors = ColorPaletteHSV(-1)
             else:                                                                   classColors = ColorPaletteHSV(len(classValueIndices))
 
-            for i in range(len(self.insideColors)):
-                if not validData[i]: continue
-                fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*self.insideColors[i])
-                edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
-                key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+            (insideData, stringData) = self.insideColors
+            if len(insideData) != len(self.rawdata):
+                #print "Warning: The information that was supposed to be used for coloring of points is not of the same size as the original data. Numer of data examples: %d, number of color data: %d" % (len(self.rawdata), len(self.insideColors))
+                j = 0
+                for i in range(len(self.rawdata)):
+                    if not validData[i]: continue
+                    fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[j])
+                    edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                    key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                    self.addTooltipKey(x_positions[i], y_positions[i], fillColor, i, stringData % (100*insideData[j]))
+                    j+= 1
+            else:
+                for i in range(len(self.rawdata)):
+                    if not validData[i]: continue
+                    fillColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value], 255*insideData[i])
+                    edgeColor = classColors.getColor(classValueIndices[self.rawdata[i].getclass().value])
+                    key = self.addCurve(str(i), fillColor, edgeColor, self.pointWidth, xData = [x_positions[i]], yData = [y_positions[i]])
+                    self.addTooltipKey(x_positions[i], y_positions[i], fillColor, i, stringData % (100*insideData[i]))
 
         # ############################################################## 
         # do we have a subset data to show?
@@ -448,10 +461,10 @@ class OWRadvizGraph(OWVisGraph):
     # ############################################################## 
     # create a dictionary value for the data point
     # this will enable to show tooltips faster and to make selection of examples available
-    def addTooltipKey(self, x, y, color, index):
+    def addTooltipKey(self, x, y, color, index, extraString = None):
         dictValue = "%.1f-%.1f"%(x, y)
         if not self.dataMap.has_key(dictValue): self.dataMap[dictValue] = []
-        self.dataMap[dictValue].append((x, y, color, index))
+        self.dataMap[dictValue].append((x, y, color, index, extraString))
 
     def showClusterLines(self, attributeIndices, validData, width = 1):
         if self.rawdata.domain.classVar.varType == orange.VarTypes.Continuous: return
@@ -538,13 +551,13 @@ class OWRadvizGraph(OWVisGraph):
             points = self.dataMap[dictValue]
             bestDist = 100.0
             nearestPoint = ()
-            for (x_i, y_i, color, index) in points:
+            for (x_i, y_i, color, index, extraString) in points:
                 currDist = sqrt((xFloat-x_i)*(xFloat-x_i) + (yFloat-y_i)*(yFloat-y_i))
                 if currDist < bestDist:
                     bestDist = currDist
-                    nearestPoint = (x_i, y_i, color, index)
+                    nearestPoint = (x_i, y_i, color, index, extraString)
 
-            (x_i, y_i, color, index) = nearestPoint
+            (x_i, y_i, color, index, extraString) = nearestPoint
             intX = self.transform(QwtPlot.xBottom, x_i)
             intY = self.transform(QwtPlot.yLeft, y_i)
             if len(self.anchorData) > 100:
@@ -592,6 +605,8 @@ class OWRadvizGraph(OWVisGraph):
                                 pass
                 text = text[:-2].replace("; ", "<br>")
                 text += "<hr>Example index = %d" % (index+1)
+                if extraString:
+                    text += "<hr>" + extraString
 
                 self.showTip(intX, intY, text)
                 
@@ -631,6 +646,26 @@ class OWRadvizGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
+    
+    # ############################################################## 
+    def getSelectionsAsIndices(self, attrList, useAnchorData = 1):
+        if not self.rawdata: return []
+        
+        if useAnchorData: indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
+        else:             indices = [self.attributeNameIndex[label] for label in attrList]
+        validData = self.getValidList(indices)
+        
+        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
+                 
+        indices = []
+        for i in range(len(validData)):
+            if not validData[i]: continue
+            
+            if self.isPointSelected(array[i][0], array[i][1]): indices.append(i)
+
+        return indices
+    
+    
 
     
     # for attributes in attrIndices and values of these attributes in values compute point positions

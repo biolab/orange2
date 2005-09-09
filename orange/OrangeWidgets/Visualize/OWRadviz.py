@@ -55,6 +55,7 @@ class OWRadviz(OWWidget):
         self.VizRankClassifierName = "VizRank classifier (Radviz)"
         self.clusterClassifierName = "Visual cluster classifier (Radviz)"
         self.classificationResults = None
+        self.outlierValues = None
         self.attributeSelectionList = None
         self.learnerIndex = 0
 
@@ -242,9 +243,7 @@ class OWRadviz(OWWidget):
         self.setValueScaling() # XXX is there any better way to do this?!
         self.resize(900, 700)
 
-    # #########################
-    # OPTIONS
-    # #########################
+
     def activateLoadedSettings(self):
         self.graph.setCanvasBackground(QColor(self.graphCanvasColor))
         apply([self.zoomSelectToolbar.actionZooming, self.zoomSelectToolbar.actionRectangleSelection, self.zoomSelectToolbar.actionPolygonSelection][self.toolbarSelection], [])
@@ -269,12 +268,12 @@ class OWRadviz(OWWidget):
 
     def showKNNCorect(self):
         self.optimizationDlg.showKNNWrongButton.setOn(0)
-        self.showSelectedAttributes()
+        self.updateGraph()
 
     # show quality of knn model by coloring accurate predictions with lighter color and bad predictions with dark color
     def showKNNWrong(self):
         self.optimizationDlg.showKNNCorrectButton.setOn(0) 
-        self.showSelectedAttributes()
+        self.updateGraph()
 
 
     # evaluate knn accuracy on current projection
@@ -310,7 +309,6 @@ class OWRadviz(OWWidget):
         self.optimizationDlg.disableControls()
 
         try:
-            # ################################################################################################
             # use the heuristic to test only most interesting attribute orders
             if self.optimizationDlg.useHeuristicToFindAttributeOrders:
                 if not self.optimizationDlg.evaluatedAttributes or not self.optimizationDlg.evaluatedAttributesByClass:
@@ -319,7 +317,6 @@ class OWRadviz(OWWidget):
                     self.optimizationDlg.setStatusBarText("")
                 self.graph.getOptimalSeparationUsingHeuristicSearch(self.optimizationDlg.evaluatedAttributes, self.optimizationDlg.evaluatedAttributesByClass, minLen, maxLen, self.optimizationDlg.addResult)
 
-            # ################################################################################################
             # evaluate all attribute orders
             else:
                 listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
@@ -386,7 +383,7 @@ class OWRadviz(OWWidget):
 
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
-        self.showSelectedAttributes()
+        self.showSelectedCluster()
    
 
     # ################################################################################################
@@ -431,8 +428,298 @@ class OWRadviz(OWWidget):
     def sendShownAttributes(self):
         self.send("Attribute Selection List", [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())])
 
-    # ####################################
-    # free attribute anchors
+
+    # show selected interesting projection
+    def showSelectedAttributes(self):
+        self.graph.removeAllSelections()
+
+        val = self.optimizationDlg.getSelectedProjection()
+        if not val: return
+        (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
+        
+        self.updateGraph(attrList, setAnchors = 1)
+
+
+    def showSelectedCluster(self):
+        self.graph.removeAllSelections()
+        val = self.clusterDlg.getSelectedCluster()
+        if not val: return
+        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = val
+
+        if self.clusterDlg.clusterStabilityButton.isOn():
+            validData = self.graph.getValidList([self.graph.attributeNames.index(attr) for attr in attrList])
+            insideColors = (Numeric.compress(validData, self.clusterDlg.pointStability), "Point inside a cluster in %.2f%%")
+        else: insideColors = None
+        
+        self.updateGraph(attrList, 1, insideColors, clusterClosure = (closure, enlargedClosure, classValue))        
+
+
+    def getShownAttributeList(self):
+        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]        
+
+    def setShownAttributeList(self, data, shownAttributes = None):
+        self.shownAttribsLB.clear()
+        self.hiddenAttribsLB.clear()
+
+        if data == None: return
+
+        if shownAttributes:
+            for attr in shownAttributes:
+                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
+                
+            for attr in data.domain:
+                if attr.name not in shownAttributes:
+                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+        else:
+            if self.showAllAttributes:
+                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+            else:
+                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+                if len(data.domain.attributes) > 10:
+                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
+            if data.domain.classVar: self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
+        self.sendShownAttributes()
+    
+    def updateGraph(self, attrList = None, setAnchors = 0, insideColors = None, clusterClosure = None, *args):
+        if not attrList:
+            attrList = self.getShownAttributeList()
+        else:
+            self.setShownAttributeList(self.data, attrList)
+        
+        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
+            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[attr] for attr in attrList])
+            kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(shortData)
+            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
+            else:   kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
+        else:
+            kNNExampleAccuracy = None
+
+        self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
+        self.graph.clusterClosure = clusterClosure
+
+        self.graph.updateData(attrList, setAnchors)
+        self.graph.repaint()
+        
+        """
+        self.graph.updateData(self.getShownAttributeList(), setAnchors)
+        self.graph.update()
+        self.repaint()
+        """
+
+    # ###############################################################################################################
+    # RADVIZ INPUT SIGNALS
+    # ###############################################################################################################
+    
+    # receive new data and update all fields
+    def cdata(self, data, clearResults = 1, keepMinMaxVals = 0):
+        if data:
+            name = getattr(data, "name", "")
+            data = orange.Preprocessor_dropMissingClasses(data)
+            data.name = name
+        if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        exData = self.data
+        self.data = data
+        self.graph.setData(self.data, keepMinMaxVals)
+        self.optimizationDlg.setData(data)  
+        self.clusterDlg.setData(data, clearResults)
+        self.freeVizDlg.setData(data)
+        self.graph.clusterClosure = None
+        self.graph.insideColors = None
+        
+        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
+            self.updateGraph(setAnchors = 1)            
+        else:        
+            self.updateGraph(setAnchors = 0)
+            
+        self.sendSelections()
+
+    def subsetdata(self, data, update = 1):
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        self.graph.subsetData = data
+        if update: self.updateGraph()
+        self.optimizationDlg.setSubsetData(data)
+        self.clusterDlg.setSubsetData(data)
+       
+
+    # attribute selection signal - info about which attributes to show
+    def attributeSelection(self, attributeSelectionList):
+        self.attributeSelectionList = attributeSelectionList
+        if self.data and self.attributeSelectionList:
+            for attr in self.attributeSelectionList:
+                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
+                    return
+
+            self.setShownAttributeList(self.data, self.attributeSelectionList)
+            self.selectionChanged()
+    
+        self.updateGraph(setAnchors = 1)
+
+    # visualize the results of the classification
+    def test_results(self, results):
+        self.classificationResults = None
+        if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
+            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
+            self.classificationResults = (self.classificationResults, "Probability of correct classificatioin = %.2f%%")
+                
+        self.updateGraph(setAnchors = 1)
+
+    
+    # set the learning method to be used in VizRank
+    def vizRankLearner(self, learner):
+        self.optimizationDlg.externalLearner = learner        
+        
+
+    # ###############################################################################################################
+    # RADVIZ EVENTS
+    # ###############################################################################################################
+
+    # move selected attribute in "Attribute Order" list one place up
+    def moveAttrUP(self):
+        self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        for i in range(1, self.shownAttribsLB.count()):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
+                self.shownAttribsLB.removeItem(i+1)
+                self.shownAttribsLB.setSelected(i-1, TRUE)
+        self.sendShownAttributes()
+        self.graph.potentialsBmp = None
+        self.updateGraph(setAnchors = 1)
+
+    # move selected attribute in "Attribute Order" list one place down  
+    def moveAttrDOWN(self):
+        self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        count = self.shownAttribsLB.count()
+        for i in range(count-2,-1,-1):
+            if self.shownAttribsLB.isSelected(i):
+                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
+                self.shownAttribsLB.removeItem(i)
+                self.shownAttribsLB.setSelected(i+1, TRUE)
+        self.sendShownAttributes()
+        self.graph.potentialsBmp = None
+        self.updateGraph(setAnchors = 1)
+
+    def cbShowAllAttributes(self):
+        if self.showAllAttributes:
+            self.addAttribute(True)
+        self.attrRemoveButton.setDisabled(self.showAllAttributes)
+        self.attrAddButton.setDisabled(self.showAllAttributes)
+
+    def addAttribute(self, addAll = False):
+        self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        count = self.hiddenAttribsLB.count()
+        pos   = self.shownAttribsLB.count()
+        classVarName = self.data and self.data.domain.classVar.name
+        for i in range(count-1, -1, -1):
+            if addAll or self.hiddenAttribsLB.isSelected(i):
+                text = self.hiddenAttribsLB.text(i)
+                if text == classVarName: continue
+                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
+                self.hiddenAttribsLB.removeItem(i)
+        if self.graph.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.sendShownAttributes()
+        self.updateGraph(setAnchors = 1)
+        self.graph.replot()
+
+    def removeAttribute(self):
+        self.graph.removeAllSelections()
+        self.graph.insideColors = None; self.graph.clusterClosure = None
+        count = self.shownAttribsLB.count()
+        pos   = self.hiddenAttribsLB.count()
+        for i in range(count-1, -1, -1):
+            if self.shownAttribsLB.isSelected(i):
+                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
+                self.shownAttribsLB.removeItem(i)
+                
+        if self.graph.globalValueScaling == 1:
+            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
+        self.sendShownAttributes()
+        self.updateGraph(setAnchors = 1)
+        self.graph.replot()
+
+
+    def resetBmpUpdateValues(self):
+        self.graph.potentialsBmp = None
+        self.updateGraph()
+
+    def setActiveLearner(self, idx):
+        self.send("Learner", self.learnersArray[self.learnerIndex])
+        
+    def setManualPosition(self):
+        self.graph.manualPositioning = self.manualPositioningButton.isOn()
+        
+    def resetGraphData(self):
+        self.graph.setData(self.data)
+        self.updateGraph()
+        
+    def setValueScaling(self):
+        self.graph.insideColors = self.graph.clusterClosure = None
+        if self.valueScalingType == 0:
+            self.graph.globalValueScaling = self.graph.scalingByVariance = 0
+        elif self.valueScalingType == 1:
+            self.graph.globalValueScaling = 1
+            self.graph.scalingByVariance = 0
+        else:
+            self.graph.globalValueScaling = 0
+            self.graph.scalingByVariance = 1
+        self.graph.setData(self.data)
+        self.graph.potentialsBmp = None
+        self.updateGraph()
+        
+
+    def selectionChanged(self):
+        if self.autoSendSelection:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
+            self.sendSelections()
+        else:
+            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
+        
+
+    def setGraphCanvasColor(self):
+        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
+        if newColor.isValid():
+            self.graphCanvasColor = str(newColor.name())
+            self.graph.setCanvasColor(QColor(newColor))
+
+
+    # ###############################################################################################################
+    # functions used by OWClusterOptimization class
+    # ###############################################################################################################
+    def setMinimalGraphProperties(self):
+        attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "autoSendSelection"]
+        self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
+        self.graph.pointWidth = 3
+        self.graph.showLegend = 0
+        self.graph.showClusters = 0
+        self.autoSendSelection = 0
+        self.graph.showAttributeNames = 0
+        self.graph.setAxisScale(QwtPlot.xBottom, -1.05, 1.05, 1)
+        self.graph.setAxisScale(QwtPlot.yLeft, -1.05, 1.05, 1)
+
+
+    def restoreGraphProperties(self):
+        if hasattr(self, "oldSettings"):
+            for key in self.oldSettings:
+                self.__setattr__(key, self.oldSettings[key])
+        self.graph.showAttributeNames = 1
+        self.graph.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
+        self.graph.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
+
+    def destroy(self, dw = 1, dsw = 1):
+        self.clusterDlg.hide()
+        self.optimizationDlg.hide()
+        self.freeVizDlg.hide()
+        OWWidget.destroy(self, dw, dsw)
+
+
+    # ###############################################################################################################
+    # FREEVIZ FUNCTIONS
+    # ###############################################################################################################
+
     def radialAnchors(self):
         attrList = self.getShownAttributeList()
         phi = 2*math.pi/len(attrList)
@@ -543,297 +830,6 @@ class OWRadviz(OWWidget):
         self.energyLabel.repaint()
 
         
-    # ####################################
-    # show selected interesting projection
-    def showSelectedAttributes(self):
-        self.graph.removeAllSelections()
-        val = self.optimizationDlg.getSelectedProjection()
-        if not val: return
-        (accuracy, other_results, tableLen, attrList, tryIndex, strList) = val
-        
-        values = self.classificationResults
-        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
-            shortData = self.graph.createProjectionAsExampleTable([self.graph.attributeNames.index(attr) for attr in attrList])
-            values = self.optimizationDlg.kNNClassifyData(shortData)
-            if self.optimizationDlg.showKNNCorrectButton.isOn(): values = [1.0 - val for val in values]
-            clusterClosure = self.graph.clusterClosure
-        else: clusterClosure = None
-
-        self.showAttributes(attrList, values, clusterClosure)
-
-
-    def showSelectedCluster(self):
-        self.graph.removeAllSelections()
-        val = self.clusterDlg.getSelectedCluster()
-        if not val: return
-        (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = val
-
-        if self.clusterDlg.clusterStabilityButton.isOn():
-            validData = self.graph.getValidList([self.graph.attributeNames.index(attr) for attr in attrList])
-            insideColors = Numeric.compress(validData, self.clusterDlg.pointStability)
-        else: insideColors = None
-        
-        self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))        
-
-        if type(other) == dict:
-            for vals in other.values():
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[vals[0]], vals[1], vals[2], vals[3], vals[5])
-        else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[other[0]], other[1], other[2], other[3], other[5])
-        print "---------------------------"
-        
-
-    def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
-        self.setShownAttributeList(self.data, attrList)
-        self.graph.updateData(attrList, setAnchors = 1, insideColors = insideColors, clusterClosure = clusterClosure)
-        self.graph.repaint()
-
-    # ####################
-    # LIST BOX FUNCTIONS
-    # ####################
-    def getShownAttributeList(self):
-        return [str(self.shownAttribsLB.text(i)) for i in range(self.shownAttribsLB.count())]        
-
-    def setShownAttributeList(self, data, shownAttributes = None):
-        self.shownAttribsLB.clear()
-        self.hiddenAttribsLB.clear()
-
-        if data == None: return
-
-        if shownAttributes:
-            for attr in shownAttributes:
-                self.shownAttribsLB.insertItem(self.icons[self.data.domain[self.graph.attributeNameIndex[attr]].varType], attr)
-                
-            for attr in data.domain:
-                if attr.name not in shownAttributes:
-                    self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-        else:
-            if self.showAllAttributes:
-                for attr in data.domain.attributes: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-            else:
-                for attr in data.domain.attributes[:10]: self.shownAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-                if len(data.domain.attributes) > 10:
-                    for attr in data.domain.attributes[10:]: self.hiddenAttribsLB.insertItem(self.icons[attr.varType], attr.name)
-            if data.domain.classVar: self.hiddenAttribsLB.insertItem(self.icons[data.domain.classVar.varType], data.domain.classVar.name)
-        self.sendShownAttributes()
-    
-    # move selected attribute in "Attribute Order" list one place up
-    def moveAttrUP(self):
-        self.graph.removeAllSelections()
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        for i in range(1, self.shownAttribsLB.count()):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i-1)
-                self.shownAttribsLB.removeItem(i+1)
-                self.shownAttribsLB.setSelected(i-1, TRUE)
-        self.sendShownAttributes()
-        self.graph.potentialsBmp = None
-        self.updateGraph(1)
-
-    # move selected attribute in "Attribute Order" list one place down  
-    def moveAttrDOWN(self):
-        self.graph.removeAllSelections()
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.shownAttribsLB.count()
-        for i in range(count-2,-1,-1):
-            if self.shownAttribsLB.isSelected(i):
-                self.shownAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), i+2)
-                self.shownAttribsLB.removeItem(i)
-                self.shownAttribsLB.setSelected(i+1, TRUE)
-        self.sendShownAttributes()
-        self.graph.potentialsBmp = None
-        self.updateGraph(1)
-
-    def cbShowAllAttributes(self):
-        if self.showAllAttributes:
-            self.addAttribute(True)
-        self.attrRemoveButton.setDisabled(self.showAllAttributes)
-        self.attrAddButton.setDisabled(self.showAllAttributes)
-
-    def addAttribute(self, addAll = False):
-        self.graph.removeAllSelections()
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.hiddenAttribsLB.count()
-        pos   = self.shownAttribsLB.count()
-        classVarName = self.data and self.data.domain.classVar.name
-        for i in range(count-1, -1, -1):
-            if addAll or self.hiddenAttribsLB.isSelected(i):
-                text = self.hiddenAttribsLB.text(i)
-                if text == classVarName: continue
-                self.shownAttribsLB.insertItem(self.hiddenAttribsLB.pixmap(i), self.hiddenAttribsLB.text(i), pos)
-                self.hiddenAttribsLB.removeItem(i)
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.sendShownAttributes()
-        self.updateGraph(1)
-        self.graph.replot()
-
-    def removeAttribute(self):
-        self.graph.removeAllSelections()
-        self.graph.insideColors = None; self.graph.clusterClosure = None
-        count = self.shownAttribsLB.count()
-        pos   = self.hiddenAttribsLB.count()
-        for i in range(count-1, -1, -1):
-            if self.shownAttribsLB.isSelected(i):
-                self.hiddenAttribsLB.insertItem(self.shownAttribsLB.pixmap(i), self.shownAttribsLB.text(i), pos)
-                self.shownAttribsLB.removeItem(i)
-                
-        if self.graph.globalValueScaling == 1:
-            self.graph.rescaleAttributesGlobaly(self.data, self.getShownAttributeList())
-        self.sendShownAttributes()
-        self.updateGraph(1)
-        self.graph.replot()
-
-    # #####################
-
-    def updateGraph(self, setAnchors = 0, *args):
-        self.graph.updateData(self.getShownAttributeList(), setAnchors)
-        self.graph.update()
-        self.repaint()
-
-    # #########################
-    # RADVIZ SIGNALS
-    # #########################    
-    
-    # ###### CDATA signal ################################
-    # receive new data and update all fields
-    def cdata(self, data, clearResults = 1, keepMinMaxVals = 0):
-        if data:
-            name = getattr(data, "name", "")
-            data = orange.Preprocessor_dropMissingClasses(data)
-            data.name = name
-        if self.data and data and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        exData = self.data
-        self.data = data
-        self.graph.setData(self.data, keepMinMaxVals)
-        self.optimizationDlg.setData(data)  
-        self.clusterDlg.setData(data, clearResults)
-        self.freeVizDlg.setData(data)
-        self.graph.clusterClosure = None
-        self.graph.insideColors = self.classificationResults            
-        
-        if not (data and exData and str(exData.domain.attributes) == str(data.domain.attributes)): # preserve attribute choice if the domain is the same
-            self.setShownAttributeList(self.data, self.attributeSelectionList)
-            self.updateGraph(1)            
-        else:        
-            self.updateGraph(0)
-            
-        self.sendSelections()
-
-    def subsetdata(self, data, update = 1):
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.graph.subsetData = data
-        if update: self.updateGraph()
-        self.optimizationDlg.setSubsetData(data)
-        self.clusterDlg.setSubsetData(data)
-       
-
-    # ###### SELECTION signal ################################
-    # receive info about which attributes to show
-    def attributeSelection(self, attributeSelectionList):
-        self.attributeSelectionList = attributeSelectionList
-        if self.data and self.attributeSelectionList:
-            for attr in self.attributeSelectionList:
-                if not self.graph.attributeNameIndex.has_key(attr):  # this attribute list belongs to a new dataset that has not come yet
-                    return
-
-            self.setShownAttributeList(self.data, self.attributeSelectionList)
-            self.selectionChanged()
-    
-        self.updateGraph(1)
-
-    # ###########################################################
-    # visualize the results of the classification
-    def test_results(self, results):
-        self.classificationResults = None
-        if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
-            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
-                
-        self.showAttributes(self.getShownAttributeList(), self.classificationResults, clusterClosure = self.graph.clusterClosure)
-
-    
-    # ###########################################################
-    # set the learning method to be used in VizRank
-    def vizRankLearner(self, learner):
-        self.optimizationDlg.externalLearner = learner        
-        
-    # ################################################
-
-    # #########################
-    # RADVIZ EVENTS
-    # #########################
-    def resetBmpUpdateValues(self):
-        self.graph.potentialsBmp = None
-        self.updateGraph()
-
-    def setActiveLearner(self, idx):
-        self.send("Learner", self.learnersArray[self.learnerIndex])
-        
-    def setManualPosition(self):
-        self.graph.manualPositioning = self.manualPositioningButton.isOn()
-        
-    def resetGraphData(self):
-        self.graph.setData(self.data)
-        self.updateGraph()
-        
-    def setValueScaling(self):
-        self.graph.insideColors = self.graph.clusterClosure = None
-        if self.valueScalingType == 0:
-            self.graph.globalValueScaling = self.graph.scalingByVariance = 0
-        elif self.valueScalingType == 1:
-            self.graph.globalValueScaling = 1
-            self.graph.scalingByVariance = 0
-        else:
-            self.graph.globalValueScaling = 0
-            self.graph.scalingByVariance = 1
-        self.graph.setData(self.data)
-        self.graph.potentialsBmp = None
-        self.updateGraph()
-        
-
-    def selectionChanged(self):
-        if self.autoSendSelection:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(0)
-            self.sendSelections()
-        else:
-            self.zoomSelectToolbar.buttonSendSelections.setEnabled(1)
-        
-
-    def setGraphCanvasColor(self):
-        newColor = QColorDialog.getColor(QColor(self.graphCanvasColor))
-        if newColor.isValid():
-            self.graphCanvasColor = str(newColor.name())
-            self.graph.setCanvasColor(QColor(newColor))
-
-
-    # ######################################################
-    # functions used by OWClusterOptimization class
-    # ######################################################
-    def setMinimalGraphProperties(self):
-        attrs = ["graph.pointWidth", "graph.showLegend", "graph.showClusters", "autoSendSelection"]
-        self.oldSettings = dict([(attr, mygetattr(self, attr)) for attr in attrs])
-        self.graph.pointWidth = 3
-        self.graph.showLegend = 0
-        self.graph.showClusters = 0
-        self.autoSendSelection = 0
-        self.graph.showAttributeNames = 0
-        self.graph.setAxisScale(QwtPlot.xBottom, -1.05, 1.05, 1)
-        self.graph.setAxisScale(QwtPlot.yLeft, -1.05, 1.05, 1)
-
-
-    def restoreGraphProperties(self):
-        if hasattr(self, "oldSettings"):
-            for key in self.oldSettings:
-                self.__setattr__(key, self.oldSettings[key])
-        self.graph.showAttributeNames = 1
-        self.graph.setAxisScale(QwtPlot.xBottom, -1.22, 1.22, 1)
-        self.graph.setAxisScale(QwtPlot.yLeft, -1.13, 1.13, 1)
-
-    def destroy(self, dw = 1, dsw = 1):
-        self.clusterDlg.hide()
-        self.optimizationDlg.hide()
-        self.freeVizDlg.hide()
-        OWWidget.destroy(self, dw, dsw)
 
     
 #test widget appearance

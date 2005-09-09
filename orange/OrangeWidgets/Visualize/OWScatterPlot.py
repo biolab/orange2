@@ -44,6 +44,7 @@ class OWScatterPlot(OWWidget):
         self.graphCanvasColor = str(Qt.white.name())
         self.graphGridColor = str(Qt.black.name())
         self.classificationResults = None
+        self.outlierValues = None
         self.learnerIndex = 0
         self.learnersArray = [None, None]   # VizRank, Cluster
 
@@ -70,11 +71,11 @@ class OWScatterPlot(OWWidget):
 
         #x attribute
         self.attrX = ""
-        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X Axis Attribute ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrXCombo = OWGUI.comboBox(self.GeneralTab, self, "attrX", " X Axis Attribute ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
 
         # y attribute
         self.attrY = ""
-        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y Axis Attribute ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrYCombo = OWGUI.comboBox(self.GeneralTab, self, "attrY", " Y Axis Attribute ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
 
         # coloring
         self.showColorLegend = 0
@@ -85,7 +86,7 @@ class OWScatterPlot(OWWidget):
         
         # labelling
         self.attrLabel = ""
-        self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.removeSelectionsAndUpdateGraph, sendSelectedValue = 1, valueType = str)
+        self.attrLabelCombo = OWGUI.comboBox(self.GeneralTab, self, "attrLabel", " Point labelling ", callback = self.updateGraph, sendSelectedValue = 1, valueType = str)
 
         # shaping
         self.attrShape = ""
@@ -181,9 +182,7 @@ class OWScatterPlot(OWWidget):
         self.activateLoadedSettings()
         self.resize(900, 700)
 
-    # #########################
-    # OPTIONS
-    # #########################
+    
     def activateLoadedSettings(self):
         self.graph.enableGridXB(self.showVerticalGridlines)
         self.graph.enableGridYL(self.showHorizontalGridlines)
@@ -196,12 +195,79 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.changeLearnerName(self.clusterClassifierName)
         self.setActiveLearner(self.learnerIndex)
 
+    # ##############################################################################################################################################################
+    # SCATTERPLOT SIGNALS
+    # ##############################################################################################################################################################
+
+    # receive new data and update all fields
+    def cdata(self, data, clearResults = 1):
+        if data:
+            name = ""
+            if hasattr(data, "name"): name = data.name
+            data = orange.Preprocessor_dropMissingClasses(data)
+            data.name = name
+        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        exData = self.data
+        self.data = data
+        self.graph.setData(data)
+        self.graph.insideColors = None
+        self.graph.clusterClosure = None
+        
+        self.optimizationDlg.setData(data)
+        self.clusterDlg.setData(data, clearResults)
+        
+        if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
+            self.initAttrValues()
+
+        self.updateGraph()
+        self.sendSelections()
+
+    # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
+    def subsetdata(self, data, update = 1):
+        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
+        self.graph.subsetData = data
+        qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
+        if update: self.updateGraph()
+        self.optimizationDlg.setSubsetData(data)
+        self.clusterDlg.setSubsetData(data)
+       
+
+    # receive information about which attributes we want to show on x and y axis
+    def attributeSelection(self, list):
+        if not self.data or not list or len(list) < 2: return
+        self.attrX = list[0]
+        self.attrY = list[1]
+        self.updateGraph()
+
+
+    # visualize the results of the classification
+    def test_results(self, results):        
+        self.classificationResults = None
+        if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
+            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
+            self.classificationResults = (self.classificationResults, "Probability of correct classificatioin = %.2f%%")
+
+        self.updateGraph()
+
+
+    # set the learning method to be used in VizRank
+    def vizRankLearner(self, learner):
+        self.optimizationDlg.externalLearner = learner
+
+    # send signals with selected and unselected examples as two datasets
+    def sendSelections(self):
+        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables([self.attrX, self.attrY])
+        self.send("Selected Examples",selected)
+        self.send("Unselected Examples",unselected)
+        self.send("Example Distribution", merged)
+
+
+    # ##############################################################################################################################################################
+    # KNN OPTIMIZATION BUTTON EVENTS
+    # ##############################################################################################################################################################
+
     def setActiveLearner(self, idx):
         self.send("Learner", self.learnersArray[self.learnerIndex])
-
-    # #######################################################################################################
-    # KNN OPTIMIZATION BUTTON EVENTS
-    # #######################################################################################################
    
     # evaluate knn accuracy on current projection
     def evaluateCurrentProjection(self):
@@ -265,7 +331,8 @@ class OWScatterPlot(OWWidget):
         self.clusterDlg.enableControls()
         self.clusterDlg.finishedAddingResults()
 
-
+    # ################################################################################################
+    # try to improve best projections by replacing one of the attributes in the projections with a different one
     def optimizeGivenProjectionClick(self, numOfBestAttrs = -1):
         if numOfBestAttrs == -1:
             if self.data and len(self.data.domain.attributes) > 1000:
@@ -289,63 +356,38 @@ class OWScatterPlot(OWWidget):
         self.optimizationDlg.finishedAddingResults()
         self.showSelectedAttributes()
 
-        
-
-    #update status on progress bar - gets called by OWScatterplotGraph
-    def updateProgress(self, current, total):
-        self.progressBar.setTotalSteps(total)
-        self.progressBar.setProgress(current)
 
     def showSelectedAttributes(self):
-        self.graph.removeAllSelections()
         val = self.optimizationDlg.getSelectedProjection()
         if not val: return
         (accuracy, other_results, tableLen, attrs, tryIndex, strList) = val
 
-        values = self.classificationResults
-        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
-            values = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
-            if self.optimizationDlg.showKNNCorrectButton.isOn(): values = [1.0 - val for val in values]
-            clusterClosure = self.graph.clusterClosure
-        else: clusterClosure = None
+        if self.data.domain.classVar:
+            self.attrColor = self.data.domain.classVar.name
 
-        self.showAttributes(attrs, values, clusterClosure)
+        self.updateGraph(attrs)
         
 
     def showSelectedCluster(self):
-        self.graph.removeAllSelections()
         val = self.clusterDlg.getSelectedCluster()
         if not val: return
         (value, closure, vertices, attrList, classValue, enlargedClosure, other, strList) = val
 
         if self.clusterDlg.clusterStabilityButton.isOn():
             validData = self.graph.getValidList([self.graph.attributeNames.index(self.attrX), self.graph.attributeNames.index(self.attrY)])
-            insideColors = Numeric.compress(validData, self.clusterDlg.pointStability)
+            insideColors = (Numeric.compress(validData, self.clusterDlg.pointStability), "Point inside a cluster in %.2f%%")
         else: insideColors = None
 
-        self.showAttributes(attrList, insideColors, clusterClosure = (closure, enlargedClosure, classValue))
+        self.updateGraph(attrList, insideColors, (closure, enlargedClosure, classValue))
 
-        if type(other) == dict:
-            for vals in other.values():
-                print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[vals[0]], vals[1], vals[2], vals[3], vals[5])
-        else:
-            print "class = %s\nvalue = %.2f   points = %d\ndist = %.4f   averageDist = %.4f\n-------" % (self.data.domain.classVar.values[other[0]], other[1], other[2], other[3], other[5])
-        print "---------------------------"
-        
-        
-    def showAttributes(self, attrList, insideColors = None, clusterClosure = None):
-        if not self.data: return
-        self.attrX = attrList[0]; self.attrY = attrList[1]
-        if self.data.domain.classVar:
-            self.attrColor = self.data.domain.classVar.name
-
-        self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, insideColors = insideColors, clusterClosure = clusterClosure)
-        self.graph.repaint()        
-
-        
-    # #############################
+       
+    # ##############################################################################################################################################################
     # ATTRIBUTE SELECTION
-    # #############################
+    # ##############################################################################################################################################################
+
+    def getShownAttributeList(self):
+        return [self.attrX, self.attrY]
+
     def initAttrValues(self):
         self.attrXCombo.clear()
         self.attrYCombo.clear()
@@ -384,91 +426,41 @@ class OWScatterPlot(OWWidget):
         self.attrShape = "(One shape)"
         self.attrSize= "(One size)"
 
-    def removeSelectionsAndUpdateGraph(self, *args):
-        self.graph.removeAllSelections()
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
-        self.updateGraph()
 
-    def updateGraph(self, *args):
+    def updateGraph(self, attrList = None, insideColors = None, clusterClosure = None, *args):
+        self.graph.removeAllSelections()
+        
+        if not self.data: return
+    
+        if attrList:
+            self.attrX = attrList[0]
+            self.attrY = attrList[1]
+
+        if self.optimizationDlg.showKNNCorrectButton.isOn() or self.optimizationDlg.showKNNWrongButton.isOn():
+            kNNExampleAccuracy, probabilities = self.optimizationDlg.kNNClassifyData(self.graph.createProjectionAsExampleTable([self.graph.attributeNameIndex[self.attrX], self.graph.attributeNameIndex[self.attrY]]))
+            if self.optimizationDlg.showKNNCorrectButton.isOn(): kNNExampleAccuracy = ([1.0 - val for val in kNNExampleAccuracy], "Probability of wrong classification = %.2f%%")
+            else: kNNExampleAccuracy = (kNNExampleAccuracy, "Probability of correct classification = %.2f%%")
+        else:
+            kNNExampleAccuracy = None
+            
+        self.graph.insideColors = insideColors or self.classificationResults or kNNExampleAccuracy or self.outlierValues
+        self.graph.clusterClosure = clusterClosure
+
         self.graph.updateData(self.attrX, self.attrY, self.attrColor, self.attrShape, self.attrSize, self.showColorLegend, self.attrLabel)
-        self.graph.update()  # don't know if this is necessary
+        #self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
 
-    # send signals with selected and unselected examples as two datasets
-    def sendSelections(self):
-        (selected, unselected, merged) = self.graph.getSelectionsAsExampleTables(self.attrX, self.attrY)
-        self.send("Selected Examples",selected)
-        self.send("Unselected Examples",unselected)
-        self.send("Example Distribution", merged)
-
-
-    # #######################################
-    # SCATTERPLOT SIGNALS
-    # #######################################
-
-    # receive new data and update all fields
-    def cdata(self, data, clearResults = 1):
-        if data:
-            name = ""
-            if hasattr(data, "name"): name = data.name
-            data = orange.Preprocessor_dropMissingClasses(data)
-            data.name = name
-        if self.data != None and data != None and self.data.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        exData = self.data
-        self.data = data
-        self.graph.setData(data)
-        self.graph.insideColors = None
-        self.graph.clusterClosure = None
-        
-        self.optimizationDlg.setData(data)
-        self.clusterDlg.setData(data, clearResults)
-        
-        if not (self.data and exData and str(exData.domain.variables) == str(self.data.domain.variables)): # preserve attribute choice if the domain is the same
-            self.initAttrValues()
-
-        self.showAttributes([self.attrX, self.attrY], self.classificationResults, clusterClosure = self.graph.clusterClosure)
-        self.sendSelections()
-
-    # ###########################################################
-    # set an example table with a data subset subset of the data. if called by a visual classifier, the update parameter will be 0
-    def subsetdata(self, data, update = 1):
-        if self.graph.subsetData != None and data != None and self.graph.subsetData.checksum() == data.checksum(): return    # check if the new data set is the same as the old one
-        self.graph.subsetData = data
-        qApp.processEvents()            # TODO: find out why scatterplot crashes if we remove this line and send a subset of data that is not in self.rawdata - as in cluster argumentation
-        if update: self.updateGraph()
-        self.optimizationDlg.setSubsetData(data)
-        self.clusterDlg.setSubsetData(data)
-       
-
-    # ###########################################################
-    # receive information about which attributes we want to show on x and y axis
-    def attributeSelection(self, list):
-        if not self.data or not list or len(list) < 2: return
-        self.attrX = list[0]
-        self.attrY = list[1]
-        self.updateGraph()
-
-    # ###########################################################
-    # visualize the results of the classification
-    def test_results(self, results):        
-        self.classificationResults = None
-        if isinstance(results, orngTest.ExperimentResults) and len(results.results) > 0 and len(results.results[0].probabilities) > 0:
-            self.classificationResults = [results.results[i].probabilities[0][results.results[i].actualClass] for i in range(len(results.results))]
-
-        self.showAttributes([self.attrX, self.attrY], self.classificationResults, clusterClosure = self.graph.clusterClosure)
-
-    # ###########################################################
-    # set the learning method to be used in VizRank
-    def vizRankLearner(self, learner):
-        self.optimizationDlg.externalLearner = learner
-        
-        
-    # ################################################
-
-    # #######################################
+    
+    # ##############################################################################################################################################################
     # SCATTERPLOT SETTINGS
-    # ######################################
+    # ##############################################################################################################################################################
+
+    #update status on progress bar - gets called by OWScatterplotGraph
+    def updateProgress(self, current, total):
+        self.progressBar.setTotalSteps(total)
+        self.progressBar.setProgress(current)
+
+
     def replotCurves(self):
         for key in self.graph.curveKeys():
             symbol = self.graph.curveSymbol(key)

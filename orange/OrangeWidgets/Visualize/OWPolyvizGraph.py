@@ -254,7 +254,7 @@ class OWPolyvizGraph(OWVisGraph):
                 if validData[i]:
                     table.append(orange.Example(domain, [x_positions[i], y_positions[i], self.rawdata[i].getclass()]))
 
-            kNNValues = self.kNNOptimization.kNNClassifyData(table)
+            kNNValues, probabilities = self.kNNOptimization.kNNClassifyData(table)
             accuracy = copy(kNNValues)
             measure = self.kNNOptimization.getQualityMeasure()
             if self.rawdata.domain.classVar.varType == orange.VarTypes.Discrete:
@@ -571,6 +571,30 @@ class OWPolyvizGraph(OWVisGraph):
         if len(unselected) == 0: unselected = None
         merged = self.changeClassAttr(selected, unselected)
         return (selected, unselected, merged)
+
+    def getSelectionsAsIndices(self, attrList, attributeReverse):
+        if not self.rawdata: return (None, None, None)
+        selected = orange.ExampleTable(self.rawdata.domain)
+        unselected = orange.ExampleTable(self.rawdata.domain)
+
+        attrIndices = [self.attributeNameIndex[attr] for attr in attrList]
+        validData = self.getValidList(attrIndices)
+        proj = self.createProjectionAsNumericArray(attrIndices, [attributeReverse[attr] for attr in attrList], validData = validData, scaleFactor = self.scaleFactor)
+
+        if useAnchorData: indices = [self.attributeNameIndex[val[2]] for val in self.anchorData]
+        else:             indices = [self.attributeNameIndex[label] for label in attrList]
+        validData = self.getValidList(indices)
+        
+        array = self.createProjectionAsNumericArray(attrList, scaleFactor = self.scaleFactor, useAnchorData = useAnchorData, removeMissingData = 0)
+                 
+        indices = []
+        for i in range(len(validData)):
+            if not validData[i]: continue
+            
+            if self.isPointSelected(array[i][0], array[i][1]): indices.append(i)
+
+        return indices
+
 
     """
     def createCombinations(self, currCombination, count, attrList, combinations):
