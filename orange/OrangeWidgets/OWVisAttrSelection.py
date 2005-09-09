@@ -347,13 +347,15 @@ def evaluateAttributes(data, contMeasure, discMeasure):
     for attr in data.domain.attributes:
         #if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((corr(attr.name, data), attr.name))
         if data.domain.classVar.varType == orange.VarTypes.Continuous and attr.varType == orange.VarTypes.Continuous: attrs.append((1, attr.name))
-        elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.1, attr.name))
-        elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.1, attr.name))
-        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.1, attr.name))
+        elif data.domain.classVar.varType == orange.VarTypes.Continuous:            attrs.append((0.0, attr.name))
+        elif discMeasure == None and attr.varType == orange.VarTypes.Discrete:      attrs.append((0.0, attr.name))
+        elif contMeasure == None and attr.varType == orange.VarTypes.Continuous:    attrs.append((0.0, attr.name))
         elif attr.varType == orange.VarTypes.Continuous:                            attrs.append((contMeasure(attr.name, data), attr.name))
         else:                                                                       attrs.append((discMeasure(attr.name, data), attr.name))
-    attrs.sort()
-    attrs.reverse()
+
+    if discMeasure or contMeasure:
+        attrs.sort()
+        attrs.reverse()
 
     return [attr for (val, attr) in attrs]  # return only the ordered list of attributes and not also their values
         

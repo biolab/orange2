@@ -824,7 +824,7 @@ class ClusterOptimization(OWBaseWidget):
                         pic = None
                         if snapshots:
                             # if the point lies inside a cluster -> save this figure into a pixmap
-                            self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                            self.parentWidget.updateGraph(attrList, clusterClosure = closure)
                             pic = QPixmap(QSize(120,120))
                             painter = QPainter(); painter.begin(pic);
                             painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
@@ -866,7 +866,7 @@ class ClusterOptimization(OWBaseWidget):
                 pic = None
                 if snapshots:
                     # if the point lies inside a cluster -> save this figure into a pixmap
-                    self.parentWidget.showAttributes(attrList, clusterClosure = closure)
+                    self.parentWidget.updateGraph(attrList, clusterClosure = closure)
                     pic = QPixmap(QSize(120,120))
                     painter = QPainter(); painter.begin(pic)
                     painter.fillRect(pic.rect(), QBrush(Qt.white)) # make background same color as the widget's background
@@ -964,7 +964,7 @@ class ClusterOptimization(OWBaseWidget):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
         clusterClosure = (self.allResults[self.arguments[classInd][ind][3]][CLOSURE], self.allResults[self.arguments[classInd][ind][3]][ENL_CLOSURE], self.allResults[self.arguments[classInd][ind][3]][CLASS])
-        self.parentWidget.showAttributes(self.arguments[classInd][ind][2], clusterClosure = clusterClosure)
+        self.parentWidget.updateGraph(self.arguments[classInd][ind][2], clusterClosure = clusterClosure)
         
 
 class clusterClassifier(orange.Classifier):
