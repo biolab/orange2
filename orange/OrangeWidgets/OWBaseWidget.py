@@ -51,14 +51,11 @@ class OWBaseWidget(QDialog):
     parent = None,
     signalManager = None,
     title="Qt Orange BaseWidget",
-    wantGraph = FALSE,
-    modal=FALSE
-    ):
+    modal=FALSE):
         """
         Initialization
         Parameters: 
             title - The title of the\ widget, including a "&" (for shortcut in about box)
-            wantGraph - displays a save graph button or not
         """
         # directories are better defined this way, otherwise .ini files get written in many places
         self.widgetDir = os.path.dirname(__file__) + "/"
@@ -105,8 +102,6 @@ class OWBaseWidget(QDialog):
         #the title
         self.setCaption(self.captionTitle)
         
-        self.buttonBackground=QVBox(self)
-        if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 
     def setWidgetIcon(self, iconName):
         if os.path.exists(iconName):
