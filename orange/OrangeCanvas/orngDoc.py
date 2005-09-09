@@ -644,7 +644,7 @@ if os.path.exists(widgetDir):
         buttons += "frameSpace = QFrame(self);  frameSpace.setMinimumHeight(20); frameSpace.setMaximumHeight(20)\n"+t+t
         buttons += "exitButton = QPushButton(\"E&xit\",self)\n"+t+t + "self.connect(exitButton,SIGNAL(\"clicked()\"), application, SLOT(\"quit()\"))\n"+t+t
 
-        classname = os.path.basename(appName)[:-3]
+        classname = os.path.splitext(os.path.basename(appName))[0]
         classname = classname.replace(" ", "_")
 
         classinit = """
