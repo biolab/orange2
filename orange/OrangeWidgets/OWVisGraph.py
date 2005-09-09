@@ -352,6 +352,11 @@ class OWVisGraph(OWGraph):
         selectedArray = Numeric.take(self.validDataArray, indices)
         arr = Numeric.add.reduce(selectedArray) - len(indices)
         return Numeric.equal(arr, 0)
+
+    # get array with numbers that represent the example indices that have a valid data value
+    def getValidIndices(self, indices):
+        validList = self.getValidList(indices)
+        return Numeric.nonzero(validList)
         
     # returns a number from -max to max
     def rndCorrection(self, max):
