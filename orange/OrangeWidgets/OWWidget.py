@@ -7,7 +7,7 @@
 from OWBaseWidget import *
 
 class OWWidget(OWBaseWidget):
-    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE):
+    def __init__( self, parent = None, signalManager = None, title = "Qt Orange Widget", wantGraph = FALSE, wantStatusBar = FALSE):
         """
         Initialization
         Parameters: 
@@ -15,15 +15,16 @@ class OWWidget(OWBaseWidget):
             wantGraph - displays a save graph button or not
         """
 
-        apply(OWBaseWidget.__init__, (self, parent, signalManager, title, wantGraph))
+        apply(OWBaseWidget.__init__, (self, parent, signalManager, title))
 
         self.mainArea=QWidget(self)
         self.controlArea=QVBox(self)
-        #self.widgetStatusArea = QHBox(self)
+        self.buttonBackground=QVBox(self)
         self.space = self.controlArea
         #self.controlArea.setMaximumWidth(250)
         #self.space=QVBox(self)
-        self.grid=QGridLayout(self,2,2,5)
+        #self.grid=QGridLayout(self,2,2,5)
+        self.grid=QGridLayout(self,3,2,5)
         self.grid.addWidget(self.controlArea,0,0)
         #self.grid.addWidget(self.space,1,0)
         self.grid.addWidget(self.buttonBackground,1,0)
@@ -31,12 +32,16 @@ class OWWidget(OWBaseWidget):
         self.grid.setColStretch(0,10)
         self.grid.setColStretch(1,50)
         self.grid.addMultiCellWidget(self.mainArea,0,2,1,1)
-        #self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
+        
+        if wantGraph:    self.graphButton=QPushButton("&Save Graph",self.buttonBackground)
 
-        #self.widgetStatus = QStatusBar(self.widgetStatusArea, )
-        #self.widgetStatus.setSizeGripEnabled(0)
-        #self.widgetStatus.setWFlags( Qt.WStyle_DialogBorder)
-        #self.widgetStatus.hide()
+        if wantStatusBar:
+            self.widgetStatusArea = QHBox(self)
+            self.grid.addMultiCellWidget(self.widgetStatusArea, 3, 3, 0, 1)
+            self.statusBar = QStatusBar(self.widgetStatusArea, )
+            self.statusBar.setSizeGripEnabled(1)
+            #self.statusBar.setWFlags( Qt.WStyle_DialogBorder)
+            #self.statusBar.hide()
         
         self.resize(640,480)
 
