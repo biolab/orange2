@@ -136,8 +136,10 @@ Section "Genomic Data" SECGENOMIC
 	File "various\Orange Genomics.pdf"
 
 	SetOutPath $INSTDIR
+	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets For Functional Genomics.lnk" "$INSTDIR\doc\Orange Genomics.pdf"
+	SetShellVarContext current
 
 	SetOutPath "$INSTDIR\OrangeCanvas"
 	File various\bi-visprog\*.tab
@@ -154,12 +156,15 @@ Section "Documentation" SECDOC
 	File "various\Orange White Paper.pdf"
 	File "various\Orange Widgets White Paper.pdf"
 
+;   make shortcuts for all users	
+	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange White Paper.lnk" "$INSTDIR\doc\Orange White Paper.pdf"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Widgets White Paper.lnk" "$INSTDIR\doc\Orange Widgets White Paper.pdf"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange for Beginners.lnk" "$INSTDIR\doc\ofb\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Modules Reference.lnk" "$INSTDIR\doc\modules\default.htm"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Reference Guide.lnk" "$INSTDIR\doc\reference\default.htm"
+	SetShellVarContext current
 SectionEnd
 !endif
   
@@ -195,6 +200,8 @@ Section ""
 	
 	SetOutPath $INSTDIR
 	
+;   make shortcuts for all users	
+	SetShellVarContext all
 	CreateDirectory "$SMPROGRAMS\Orange"
 	CreateShortCut "$SMPROGRAMS\Orange\Orange.lnk" "$INSTDIR\"
 	CreateShortCut "$SMPROGRAMS\Orange\Uninstall Orange.lnk" "$INSTDIR\uninst.exe"
@@ -202,8 +209,9 @@ Section ""
 	SetOutPath $INSTDIR\OrangeCanvas
 	CreateShortCut "$DESKTOP\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\icons\Orange.ico 0
 	CreateShortCut "$SMPROGRAMS\Orange\Orange Canvas.lnk" "$INSTDIR\OrangeCanvas\orngCanvas.pyw" "" $INSTDIR\icons\Orange.ico 0
+	SetShellVarContext current
 
-	${If} $SingleUser S!= 0
+	${If} $SingleUser != 0
 		WriteRegStr HKCU "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange" "" "$INSTDIR;$INSTDIR\OrangeWidgets;$INSTDIR\OrangeCanvas"
 		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "DisplayName" "Orange (remove only)"
 		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Orange" "UninstallString" '"$INSTDIR\uninst.exe"'
@@ -224,10 +232,12 @@ SectionEnd
 Section Uninstall
 	MessageBox MB_YESNO "Are you sure you want to remove Orange?$\r$\n$\r$\nThis won't remove any 3rd party software possibly installed with Orange, such as Python or Qt,$\r$\n$\r$\nbut make sure you have not left any of your files in Orange's directories!" IDNO abort
 	RmDir /R "$INSTDIR"
+	SetShellVarContext all
 	RmDir /R "$SMPROGRAMS\Orange"
+	SetShellVarContext current
 	
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
-	${If} $PythonDir S!= ""
+	${If} $PythonDir != ""
 		DeleteRegKey HKLM "SOFTWARE\Python\PythonCore\2.3\PythonPath\Orange"
 		DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Orange"
 	${Else}
@@ -276,14 +286,14 @@ Function .onGUIInit
 	StrCpy $PythonOnDesktop 0
 
 	ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
-	${If} $PythonDir S== ""
+	${If} $PythonDir == ""
 		ReadRegStr $PythonDir HKCU Software\Python\PythonCore\2.3\InstallPath ""
-               	StrCpy $SingleUser 1
+        StrCpy $SingleUser 1
 	${Else}
 		StrCpy $SingleUser 0
 	${EndIf}
 		
-	${If} $PythonDir S== ""
+	${If} $PythonDir == ""
 		!ifdef INCLUDEPYTHON
 		  askpython:
 			MessageBox MB_OKCANCEL "Orange installer will first launch installation of Python (ver 2.3.2-1)$\r$\nOrange installation will continue after you finish installing Python." IDOK installpython
@@ -297,11 +307,11 @@ Function .onGUIInit
 			ExecWait "$DESKTOP\Python-2.3.2-1.exe"
 
 			ReadRegStr $PythonDir HKLM Software\Python\PythonCore\2.3\InstallPath ""
-			${If} $PythonDir S== ""
+			${If} $PythonDir == ""
 				MessageBox MB_OK "Python installation failed.$\r$\nOrange installation cannot continue."
 				Quit
 			${EndIf}
-			
+			StrCpy $SingleUser 0
 		!else
 			MessageBox MB_OK "Cannot find Python 2.3.$\r$\nDownload it from www.python.org and install, or$\r$\nget an Orange distribution that includes Python"
 			Quit
@@ -343,7 +353,7 @@ Function .onGUIInit
 
 	!ifdef INCLUDEPYTHONWIN
 		ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
-		${If} $8 S== ""
+		${If} $8 == ""
 			MessageBox MB_YESNO "Do you want to install PythonWin?$\r$\n(recommended if you plan programming scripts)" IDNO dontinstallpythonwin
 			SetOutPath $DESKTOP
 			File various\win32all-163.exe
@@ -351,7 +361,7 @@ Function .onGUIInit
 			ExecWait "$DESKTOP\win32all-163.exe"
 
 			ReadRegStr $8 HKLM Software\Python\PythonCore\2.3\PythonPath\PythonWin ""
-			${If} $8 S== ""
+			${If} $8 == ""
 				MessageBox MB_OK "PythonWin installation failed.$\r$\nOrange installation will now resume."
 			${EndIf}
 
