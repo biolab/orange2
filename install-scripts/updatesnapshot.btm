@@ -3,11 +3,12 @@ call updateSetConstants__.btm
 set DOCUMENTATION=orange-doc-snap-%daystr.zip
 set WIN_SNAPSHOT=orange-win-snap-%daystr.exe
 set WIN_GENOMICS_SNAPSHOT=orange-win-genomics-snap-%daystr.exe
-set SOURCE_SNAPSHOT=orange-source-snap-%daystr.zip
-set SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.zip
+set PLINK_SOURCE_SNAPSHOT=orange-source-snap-%daystr.tgz
+set PLINK_SOURCE_GENOMICS_SNAPSHOT=orange-source-genomics-snap-%daystr.tgz
 
 set PLINK_LINUX_SNAPSHOT=orange-linux-snap-%daystr.tgz
 set PLINK_LINUX_GENOMICS_SNAPSHOT=orange-linux-genomics-snap-%daystr.tgz
+
 set PLINK_MACINTOSH_SNAPSHOT=orange-mac-snap-%daystr.dmg
 set PLINK_MACINTOSH_GENOMICS_SNAPSHOT=orange-mac-genomics-snap-%daystr.dmg
 
@@ -58,20 +59,20 @@ nsis /Onsis_snapshot.log /DSTANDARD /DOUTFILENAME="%DOWNLOADDIR\%WIN_SNAPSHOT" /
 nsis /Onsis_snapshot.log /DSTANDARD /DINCLUDEGENOMICS /DOUTFILENAME="%DOWNLOADDIR\%WIN_GENOMICS_SNAPSHOT" /DORANGEDIR=%SNAPSHOTDIR\orange /DCWD=%SCRIPTDIR /DINCLUDEPREFIX=snapshotfiles install3.nsi
 rem del snapshotfiles_*.inc
 
-del %DOWNLOADDIR\orange-source-snap-*.zip
-cdd %SNAPSHOTDIR
-winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/OrangeCanvas orange/OrangeWidgets orange/doc
-winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
-winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source
-winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
+rem del %DOWNLOADDIR\orange-source-snap-*.zip
+rem cdd %SNAPSHOTDIR
+rem winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/OrangeCanvas orange/OrangeWidgets orange/doc
+rem winrar d "%DOWNLOADDIR\%SOURCE_SNAPSHOT" @orange\exclude.lst
+rem winrar a -r "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/source
+rem winrar a "%DOWNLOADDIR\%SOURCE_SNAPSHOT" orange/*.py orange/COPYING orange/ensemble.c
 
 rem *** copy sources file and add genomics part
-del %DOWNLOADDIR\orange-source-genomics-snap-*.zip
-copy "%DOWNLOADDIR\%SOURCE_SNAPSHOT" "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT"
-md orange\OrangeWidgets\Genomics
-xcopy /S Genomics orange\OrangeWidgets\Genomics
-winrar a -r "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" orange/OrangeWidgets/Genomics
-winrar d "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" @orange\exclude.lst
+rem del %DOWNLOADDIR\orange-source-genomics-snap-*.zip
+rem copy "%DOWNLOADDIR\%SOURCE_SNAPSHOT" "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT"
+rem md orange\OrangeWidgets\Genomics
+rem xcopy /S Genomics orange\OrangeWidgets\Genomics
+rem winrar a -r "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" orange/OrangeWidgets/Genomics
+rem winrar d "%DOWNLOADDIR\%SOURCE_GENOMICS_SNAPSHOT" @orange\exclude.lst
 
 cdd %SNAPSHOTDIR
 if errorlevel == 0 goto changedirok2
@@ -87,8 +88,9 @@ call updateVersionsPy__.btm
 
 popd
 
-start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT
+rem start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_SNAPSHOT normal %daystr LINUX_SNAPSHOT 1; bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_LINUX_GENOMICS_SNAPSHOT genomics %daystr LINUX_GENOMICS_SNAPSHOT 1
 
+rem start plink -i "C:\Documents and Settings\Administrator\george.ppk" orange@george.fri.uni-lj.si bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_SNAPSHOT normal %daystr SOURCE_SNAPSHOT 0;bash --login ~/install-scripts/linux/createSnapshot.sh stable %PLINK_SOURCE_GENOMICS_SNAPSHOT genomics %daystr SOURCE_GENOMICS_SNAPSHOT 0
 rem start plink -i "C:\Documents and Settings\Administrator\morty.ppk" blaz@morty.fri.uni-lj.si bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_SNAPSHOT MACINTOSH_SNAPSHOT 0 1;  bash --login ~/install-scripts/mac/callmacinstallation.sh stable %PLINK_MACINTOSH_GENOMICS_SNAPSHOT MACINTOSH_GENOMICS_SNAPSHOT 1 0
 
 
