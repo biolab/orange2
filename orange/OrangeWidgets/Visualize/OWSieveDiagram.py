@@ -43,6 +43,7 @@ class OWSieveDiagram(OWWidget):
         self.attrConditionValue = None
         self.showLines = 1
         self.attributeSelectionList = None
+        self.stopCalculating = 0
 
         #load settings
         self.loadSettings()
@@ -55,7 +56,7 @@ class OWSieveDiagram(OWWidget):
         self.canvas.resize(self.canvasView.size().width()-5, self.canvasView.size().height()-5)
         
         #GUI
-        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = " Shown attributes ")
+        self.attrSelGroup = OWGUI.widgetBox(self.controlArea, box = " Shown Attributes ")
 
         self.attrXCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrX", "X Attribute:", tooltip = "Select an attribute to be shown on the X axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
         self.attrYCombo = OWGUI.comboBoxWithCaption(self.attrSelGroup, self, "attrY", "Y Attribute:", tooltip = "Select an attribute to be shown on the Y axis", callback = self.updateData, sendSelectedValue = 1, valueType = str, labelWidth = 70)
@@ -66,11 +67,16 @@ class OWSieveDiagram(OWWidget):
 
         OWGUI.checkBox(self.controlArea, self, "showLines", "Show Lines", box = " Visual Settings ", callback = self.updateData)
         
-        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = "Interesting Attribute Pairs")
-        self.calculateButton = QPushButton("Calculate Chi Squares", self.interestingGroupBox)
-        self.connect(self.calculateButton, SIGNAL("clicked()"),self.calculatePairs)
+        self.interestingGroupBox = OWGUI.widgetBox(self.controlArea, box = " Interesting Attribute Pairs ")
+        
+        self.calculateButton = OWGUI.button(self.interestingGroupBox, self, "Calculate Chi Squares", callback = self.calculatePairs)
+        self.stopCalculateButton = OWGUI.button(self.interestingGroupBox, self, "Stop Evaluation", callback = self.stopCalculateClick)
+        self.stopCalculateButton.hide()
+        
         self.interestingList = QListBox(self.interestingGroupBox)
         self.connect(self.interestingList, SIGNAL("selectionChanged()"),self.showSelectedPair)
+
+        
 
         self.connect(self.graphButton, SIGNAL("clicked()"), self.saveToFileCanvas)
         self.icons = self.createAttributeIconDict()
@@ -88,15 +94,81 @@ class OWSieveDiagram(OWWidget):
     def calculatePairs(self):
         self.chisquares = []
         self.interestingList.clear()
-        data = self.getConditionalData()
-        if not data: return
+        self.stopCalculating = 0
+        if not self.data: return
 
+        self.calculateButton.hide()
+        self.stopCalculateButton.show()
+
+        discAttrs = []
+        for attr in self.data.domain:
+            if self.data.domain[attr].varType == orange.VarTypes.Discrete: discAttrs.append(attr)
+
+        discData = self.data.select(discAttrs)
+
+        self.progressBarInit()
+
+        total = len(discData.domain)* len(discData.domain) / 2.0
+        current = 0
+
+        #for attrX in range(len(data.domain)):
+        for attr1 in range(len(discData.domain)):
+            attrX = discData.domain[attr1].name
+
+            #for attrY in range(attrX+1, len(data.domain)):
+            for attr2 in range(attr1+1, len(discData.domain)):
+                attrY = discData.domain[attr2].name
+                current += 1
+                if self.stopCalculating:
+                    self.calculateButton.show()
+                    self.stopCalculateButton.hide()
+                    return
+
+                data = self.getConditionalData(attrX, attrY)
+                if len(data) == 0: continue
+
+                dcX = orange.ContingencyAttrAttr(attrX, attrX, data)    # distribution of X attribute
+                valsX = [sum(dcX[key]) for key in dcX.keys()]          # compute contingency of x attribute
+
+                dcY = orange.ContingencyAttrAttr(attrY, attrY, data)    # distribution of X attribute
+                valsY = [sum(dcY[key]) for key in dcY.keys()]          # compute contingency of x attribute
+                
+                # create cartesian product of selected attributes and compute contingency 
+                (cart, profit) = FeatureByCartesianProduct(data, [data.domain[attrX], data.domain[attrY]])
+                tempData = data.select(list(data.domain) + [cart])
+                contXY = orange.ContingencyAttrAttr(cart, cart, tempData)   # distribution of the merged attribute
+
+                # compute chi-square
+                chisquare = 0.0
+                for i in range(len(valsX)):
+                    valx = valsX[i]
+                    for j in range(len(valsY)):
+                        valy = valsY[j]
+
+                        actual = 0
+                        try:
+                            for val in contXY['%s-%s' %(dcX.keys()[i], dcY.keys()[j])]: actual += val
+                        except:
+                            actual = 0
+                        
+                        expected = float(valx * valy) / float(len(data))
+                        if expected == 0: continue
+                        pearson2 = (actual - expected)*(actual - expected) / expected
+                        chisquare += pearson2
+
+                i = 0
+                while i < len(self.chisquares) and self.chisquares[i][0] > chisquare: i += 1
+                self.chisquares.insert(i, (chisquare, "%s - %s" % (attrX, attrY), attrX, attrY))
+                self.interestingList.insertItem("%s - %s (%.3f)" % (attrX, attrY, chisquare), i)
+
+                self.progressBarSet(100.0*current/float(total))
+                qApp.processEvents()
+                
+
+                
+        """
         conts = {}
-        #dc = orange.DomainContingency(data)
-        dc = []
-        for i in range(len(data.domain)):
-            dc.append(orange.ContingencyAttrAttr(data.domain[i], data.domain[i], data))
-                      
+        
         for attr in data.domain:
             if attr.varType == orange.VarTypes.Continuous: continue      # we can only check discrete attributes
 
@@ -143,14 +215,32 @@ class OWSieveDiagram(OWWidget):
         for (chisquare, attrs, x, y) in self.chisquares:
             str = "%s (%.3f)" % (attrs, chisquare)
             self.interestingList.insertItem(str)
-        
+        """
+
+        self.progressBarFinished()
+        self.calculateButton.show()
+        self.stopCalculateButton.hide()
+
+
+    def stopCalculateClick(self):
+        self.stopCalculating = 1
 
     ######################################
     # create data subset depending on conditional attribute and value
-    def getConditionalData(self):
+    def getConditionalData(self, xAttr = None, yAttr = None, dropMissingData = 1):
         if not self.data: return None
-        if self.attrCondition == "[None]":  return self.data
-        else:                               return self.data.select({self.attrCondition:self.attrConditionValue})
+
+        if not xAttr: xAttr = self.attrX
+        if not yAttr: yAttr = self.attrY
+        
+        if self.attrCondition == "[None]":
+            data = self.data.select([xAttr, yAttr])
+        else:
+            data = orange.Preprocessor_dropMissing(self.data.select([xAttr, yAttr, self.attrCondition]))
+            data = data.select({self.attrCondition:self.attrConditionValue})
+            
+        if dropMissingData: return orange.Preprocessor_dropMissing(data)
+        else: return data
 
     ######################################
     # new conditional attribute was set - update graph
@@ -198,8 +288,9 @@ class OWSieveDiagram(OWWidget):
     def cdata(self, data):
         self.interestingList.clear()
         exData = self.data
-        self.data = None
-        if data: self.data = orange.Preprocessor_dropMissing(data)
+        #self.data = None
+        #if data: self.data = orange.Preprocessor_dropMissing(data)
+        if data: self.data = data
 
         if not (self.data and exData and str(exData.domain.attributes) == str(self.data.domain.attributes)):  # preserve attribute choice if the domain is the same
             self.initCombos()

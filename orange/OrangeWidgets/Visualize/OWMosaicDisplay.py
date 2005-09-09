@@ -136,7 +136,8 @@ class OWMosaicDisplay(OWWidget):
     def cdata(self, data):
         self.data = None
         if data:
-            self.data = orange.Preprocessor_dropMissing(data)
+            #self.data = orange.Preprocessor_dropMissing(data)
+            self.data = data
             if data.domain.classVar and data.domain.classVar.varType == orange.VarTypes.Discrete:
                 self.colorPalette = OWGraphTools.ColorPaletteBrewer(len(data.domain.classVar.values))
             
@@ -160,14 +161,19 @@ class OWMosaicDisplay(OWWidget):
         attrList = [self.attr1, self.attr2, self.attr3, self.attr4]
         while "(None)" in attrList:
             attrList.remove("(None)")
+
+        selectList = attrList
+        if self.data.domain.classVar: data = self.data.select(attrList + [self.data.domain.classVar.name])
+        else: data = self.data.select(attrList)
+        data = orange.Preprocessor_dropMissing(data)
         
         # get the maximum width of rectangle
-        text = QCanvasText(self.data.domain[attrList[1]].name, self.canvas);
+        text = QCanvasText(attrList[1], self.canvas);
         font = text.font(); font.setBold(1); text.setFont(font)
         width = text.boundingRect().right() - text.boundingRect().left() + 30 + 20
         xOff = width
         if len(attrList) == 4:
-            text = QCanvasText(self.data.domain[attrList[3]].name, self.canvas);
+            text = QCanvasText(attrList[3], self.canvas);
             font = text.font(); font.setBold(1); text.setFont(font)
             width += text.boundingRect().right() - text.boundingRect().left() + 30 + 20
         
@@ -181,13 +187,13 @@ class OWMosaicDisplay(OWWidget):
         for attr in attrList: self.legend[attr] = 0
 
         # draw rectangles
-        self.DrawData(self.data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 1)
+        self.DrawData(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize), 1)
 
         # draw labels
-        self.DrawText(self.data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
+        self.DrawText(data, attrList, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
 
         # draw class legend
-        self.DrawClasses(self.data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
+        self.DrawClasses(data, (xOff, xOff+squareSize), (yOff, yOff+squareSize))
        
         self.canvas.update()
 
