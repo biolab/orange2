@@ -5,6 +5,7 @@ import OWGUI, OWDlgs, OWVisAttrSelection, OWVisTools
 from copy import copy
 from math import sqrt
 from OWVisGraph import *
+import Numeric
 
 # quality measure
 CLASS_ACCURACY = 0
@@ -89,7 +90,7 @@ class kNNOptimization(OWBaseWidget):
         self.evaluationAlgorithm = 0
         self.maxResultListLen = self.resultsListLenNums[len(self.resultsListLenNums)-1]
         self.onlyOnePerSubset = 1    # used in radviz and polyviz
-        self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
+        #self.widgetDir = os.path.realpath(os.path.dirname(__file__)) + "/"
         self.lastSaveDirName = os.getcwd()
         self.attrCont = 1
         self.attrDisc = 1
@@ -145,7 +146,7 @@ class kNNOptimization(OWBaseWidget):
         # ###########################
         # MAIN TAB
         self.optimizationBox = OWGUI.widgetBox(self.MainTab, " Evaluate ")
-        self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting First ")
+        self.resultsBox = OWGUI.widgetBox(self.MainTab, " Projection List, Most Interesting Projections First ")
         self.resultsDetailsBox = OWGUI.widgetBox(self.MainTab, " Shown Details in Projections List " , orientation = "horizontal")
         self.buttonBox = OWGUI.widgetBox(self.optimizationBox, orientation = "horizontal")
         
@@ -169,14 +170,18 @@ class kNNOptimization(OWBaseWidget):
         self.resultList.setMinimumSize(200,200)
 
         self.showRankCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showRank', 'Rank', callback = self.updateShownProjections, tooltip = "Show projection ranks")
-        self.showAccuracyCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showAccuracy', 'Predicted Accuracy', callback = self.updateShownProjections, tooltip = "Show prediction accuracy of a k-NN classifier on the projection")
+        self.showAccuracyCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showAccuracy', 'Score', callback = self.updateShownProjections, tooltip = "Show prediction accuracy of a k-NN classifier on the projection")
         self.showInstancesCheck = OWGUI.checkBox(self.resultsDetailsBox, self, 'showInstances', '# Instances', callback = self.updateShownProjections, tooltip = "Show number of instances in the projection")
 
         # ##########################
         # SETTINGS TAB
         self.optimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " VizRank Evaluation Settings ")
         self.methodTypeCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "evaluationAlgorithm", "Projection Evaluation Method", tooltip = "Which learning method to use to use to evaluate given projections.", items = ["k-Nearest Neighbor", "Fisher Discriminant Analysis", "Heuristic (very fast)"])
-        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ordering ")
+        self.heuristicsSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Heuristics for Attribute Ranking ")
+
+        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
+        self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
+        
         self.localOptimizationSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Local Optimization Settings ")
         self.miscSettingsBox = OWGUI.widgetBox(self.SettingsTab, " Length of the Projection List ")
         #self.miscSettingsBox.hide()
@@ -184,11 +189,8 @@ class kNNOptimization(OWBaseWidget):
         self.attrKNeighboursCombo = OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "kValue", "Number of neighbors (k):                ", tooltip = "Number of neighbors used in k-NN algorithm to evaluate the projection", callback = self.createkNNLearner, items = self.kNeighboursNums, sendSelectedValue = 1, valueType = int)
         self.percentDataUsedCombo= OWGUI.comboBoxWithCaption(self.optimizationSettingsBox, self, "percentDataUsed", "Percent of data used in evaluation: ", items = self.percentDataNums, callback = self.createkNNLearner, sendSelectedValue = 1, valueType = int)
 
-        self.measureCombo = OWGUI.comboBox(self.SettingsTab, self, "qualityMeasure", box = " Measure of Classification Success ", items = ["Classification accuracy", "Average probability assigned to the correct class", "Brier score"], tooltip = "Measure to evaluate prediction accuracy of k-NN method on the projected data set.")
-        self.testingCombo = OWGUI.comboBox(self.SettingsTab, self, "testingMethod", box = " Testing Method ", items = ["Leave one out (slowest, most accurate)", "10 fold cross validation", "Test on learning set (fastest, least accurate)"], tooltip = "Method for evaluating the classifier. Slower are more accurate while faster give only a rough approximation.")
-
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ordering of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
-        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ordering of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrCont", " Ranking of Continuous Attributes: ", items = [val for (val, m) in contMeasures], callback = self.removeEvaluatedAttributes)
+        OWGUI.comboBoxWithCaption(self.heuristicsSettingsBox, self, "attrDisc", " Ranking of Discrete Attributes: ", items = [val for (val, m) in discMeasures], callback = self.removeEvaluatedAttributes)
 
         self.localOptimizationProjCountCombo = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeProjectionCount", "Number of best projections to optimize:           ", items = range(1,30), tooltip = "Specify the number of best projections in the list that you want to try to locally optimize.\nIf you select 1 only the currently selected projection will be optimized.", sendSelectedValue = 1, valueType = int)
         self.localOptimizationProjMaxAttr    = OWGUI.comboBoxWithCaption(self.localOptimizationSettingsBox , self, "localOptimizeMaxAttrs", "Maximum number of attributes in a projection: ", items = range(5,50), tooltip = "What is the number of attributes when local optimization should stop optimizing projections?", sendSelectedValue = 1, valueType = int)
@@ -220,16 +222,16 @@ class kNNOptimization(OWBaseWidget):
         # CLASSIFICATION TAB
         self.classifierNameEdit = OWGUI.lineEdit(self.ClassificationTab, self, 'parentWidget.VizRankClassifierName', box = ' Learner / Classifier Name ', tooltip='Name to be used by other widgets to identify your learner/classifier.')
 
-        self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 * Projection Value", "0.5 * Projection Value + 0.5 * Predicted Example Probability", "1.0 * Predicted Example Probability"], tooltip=None)
+        self.argumentValueFormulaIndex = OWGUI.comboBox(self.ClassificationTab, self, "argumentValueFormula", box="Argument Value is Computed As ...", items=["1.0 x Projection Value", "0.5 x Projection Value + 0.5 x Predicted Example Probability", "1.0 x Predicted Example Probability"], tooltip=None)
 
         b = OWGUI.widgetBox(self.ClassificationTab, " Evaluating Time ")
         self.evaluationTimeEdit = OWGUI.comboBoxWithCaption(b, self, "evaluationTimeIndex", "Time for evaluating projections (minutes):                ", tooltip = "What is the maximum time that the classifier is allowed for evaluating projections (learning)", items = self.evaluationTimeList)
         b2 = OWGUI.widgetBox(b, orientation = "horizontal")
         self.optimizeBestProjectionCheck = OWGUI.checkBox(b2, self, "optimizeBestProjection", "Afterwards use local optimization for (minutes): ", tooltip = "Do you want to try to locally optimize the best projection when the time for evaluating projections runs out?")
         self.optimizeBestProjectionCombo = OWGUI.comboBox(b2, self, "optimizeBestProjectionIndex", items = self.evaluationTimeList)
-        self.reevaluateProjectionsCheck = OWGUI.checkBox(b, self, "reevaluateProjections", "Only reevaluate projections for each learning data set", tooltip = "Do you want to compute projections from start for each data fold or do you just want to reevaluate projections from the list?")
-        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Argument Count ")
-        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Number of arguments used when classifying:                ", tooltip = "What is the maximum number of arguments that will be used when classifying an example.", items = [str(x) for x in self.argumentCounts])
+        self.reevaluateProjectionsCheck = OWGUI.checkBox(b, self, "reevaluateProjections", "Only reevaluate projections for each learning fold", tooltip = "Do you want to compute projections from start for each data fold or do you just want to reevaluate projections from the list?")
+        projCountBox = OWGUI.widgetBox(self.ClassificationTab, " Projection Count ")
+        self.argumentCountEdit = OWGUI.comboBoxWithCaption(projCountBox, self, "argumentCountIndex", "Number of projections used when classifying:                ", tooltip = "What is the maximum number of projections (arguments) that will be used when classifying an example.", items = [str(x) for x in self.argumentCounts])
         projCountBox2 = OWGUI.widgetBox(projCountBox, orientation = "horizontal")
         self.canUseMoreArgumentsCheck = OWGUI.checkBox(projCountBox2, self, "canUseMoreArguments", "Use additional projections until probability at least: ", tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
         self.moreArgumentsCombo = OWGUI.comboBox(projCountBox2, self, "moreArgumentsIndex", items = self.moreArgumentsList, tooltip = "If checked, it will allow the classifier to use more arguments when it is not confident enough in the prediction.\nIt will use additional arguments until the predicted probability of one class value will be at least as much as specified in the combo box")
@@ -237,7 +239,8 @@ class kNNOptimization(OWBaseWidget):
         # ##########################
         # SAVE & MANAGE TAB
         self.classesBox = OWGUI.widgetBox(self.ManageTab, " Select Class Values You Wish to Separate ")
-        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")        
+        self.visualizedAttributesBox = OWGUI.widgetBox(self.ManageTab, " Number of Concurrently Visualized Attributes ")
+        self.dialogsBox = OWGUI.widgetBox(self.ManageTab, " Dialogs ")        
         self.manageResultsBox = OWGUI.widgetBox(self.ManageTab, " Manage Projections ")        
         
         self.classesList = QListBox(self.classesBox)
@@ -253,17 +256,21 @@ class kNNOptimization(OWBaseWidget):
         #self.removeSelectedButton = OWGUI.button(self.buttonBox5, self, "Remove selection", self.removeSelected)
         #self.filterButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
 
+        self.buttonBox7 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")
+        OWGUI.button(self.buttonBox7, self, "Attribute Analysis", self.attributeAnalysis)
+        OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
+
+        self.buttonBox8 = OWGUI.widgetBox(self.dialogsBox, orientation = "horizontal")    
+        OWGUI.button(self.buttonBox8, self, "Graph projections", self.graphProjectionQuality)
+        OWGUI.button(self.buttonBox8, self, "Identify outliers", self.identifyOutliers)
+
         self.buttonBox6 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.loadButton = OWGUI.button(self.buttonBox6, self, "Load", self.load)
         self.saveButton = OWGUI.button(self.buttonBox6, self, "Save", self.save)
 
-        self.buttonBox7 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        OWGUI.button(self.buttonBox7, self, "Attribute Analysis", self.attributeAnalysis)
-        OWGUI.button(self.buttonBox7, self, "Interaction Analysis", self.interactionAnalysis)
-
-        self.buttonBox8 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        OWGUI.button(self.buttonBox8, self, "Graph projections", self.graphProjectionQuality)
-        OWGUI.button(self.buttonBox8, self, "Remove similar projections", callback = self.removeTooSimilarProjections)
+        self.buttonBox9 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
+        self.saveBestButton = OWGUI.button(self.buttonBox9, self, "Save best graphs", self.exportMultipleGraphs)
+        OWGUI.button(self.buttonBox9, self, "Remove similar projections", callback = self.removeTooSimilarProjections)
 
         self.buttonBox3 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
         self.evaluateProjectionButton = OWGUI.button(self.buttonBox3, self, 'Evaluate projection')
@@ -275,7 +282,6 @@ class kNNOptimization(OWBaseWidget):
         self.showKNNCorrectButton.setToggleButton(1); self.showKNNWrongButton.setToggleButton(1)
 
         self.buttonBox5 = OWGUI.widgetBox(self.manageResultsBox, orientation = "horizontal")
-        self.saveBestButton = OWGUI.button(self.buttonBox5, self, "Save best graphs", self.exportMultipleGraphs)
         self.clearButton = OWGUI.button(self.buttonBox5, self, "Clear results", self.clearResults)
             
         # ###########################
@@ -670,7 +676,7 @@ class kNNOptimization(OWBaseWidget):
                 for res in results.results:  val += res.probabilities[0].density(res.actualClass)
                 val/= float(len(results.results))
                 if self.percentDataUsed != 100: del testTable
-                del knn, results
+                del results
                 return 100.0*val, (100.0*val)
 
         
@@ -718,31 +724,42 @@ class kNNOptimization(OWBaseWidget):
     def kNNClassifyData(self, table):
         qApp.processEvents()        # allow processing of other events
         
-        knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
-        results = apply(testingMethods[self.testingMethod], [[knn], table])
+        #knn = orange.kNNLearner(k=self.kValue, rankWeight = 0, distanceConstructor = orange.ExamplesDistanceConstructor_Euclidean(normalize=0))
+        #results = apply(testingMethods[self.testingMethod], [[knn], table])
+        if self.externalLearner: learner = self.externalLearner
+        else:                    learner = self.learner
+        results = apply(testingMethods[self.testingMethod], [[learner], table])
             
         returnTable = []
+        
         if table.domain.classVar.varType == orange.VarTypes.Discrete:
+            probabilities = Numeric.zeros((len(table), len(table.domain.classVar.values)), Numeric.Float)
             lenClassValues = len(list(table.domain.classVar.values))
             if self.qualityMeasure == AVERAGE_CORRECT:
-                for res in results.results:
+                for i in range(len(results.results)):
+                    res = results.results[i]
                     returnTable.append(res.probabilities[0][res.actualClass])
+                    probabilities[i] = res.probabilities[0]
             elif self.qualityMeasure == BRIER_SCORE:
-                for res in results.results:
-                    sum = 0
-                    for val in res.probabilities[0]: sum += val*val
-                    returnTable.append((sum + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+                for i in range(len(results.results)):
+                    res = results.results[i]
+                    s = sum([val*val for val in res.probabilities[0]])
+                    returnTable.append((s + 1 - 2*res.probabilities[0][res.actualClass])/float(lenClassValues))
+                    probabilities[i] = res.probabilities[0]
             elif self.qualityMeasure == CLASS_ACCURACY:
-                for res in results.results:
+                for i in range(len(results.results)):
+                    res = results.results[i]
                     returnTable.append(res.probabilities[0][res.actualClass] == max(res.probabilities[0]))
+                    probabilities[i] = res.probabilities[0]
         else:
+            probabilities = None
             # for continuous class we can't compute brier score and classification accuracy
             for res in results.results:
                 if not res.probabilities[0]: returnTable.append(0)
                 else:                        returnTable.append(res.probabilities[0].density(res.actualClass))
 
-        del knn, results
-        return returnTable
+        del results
+        return returnTable, probabilities
 
 
     # reevaluate projections in result list with the current VizRank settings (different k value, different measure of classification succes, ...)
@@ -948,6 +965,11 @@ class kNNOptimization(OWBaseWidget):
         dialog.setResults(self.allResults, VIZRANK)
         dialog.show()
 
+    def identifyOutliers(self):
+        dialog = OWGraphIdentifyOutliers(self, signalManager = self.signalManager, widget = self.parentWidget, graph = self.graph)
+        dialog.setData(self.allResults, self.rawdata, VIZRANK)
+        dialog.show()
+
     # ######################################################
     # Auxiliary functions
     # ######################################################
@@ -1075,7 +1097,7 @@ class kNNOptimization(OWBaseWidget):
             pic = None
             if snapshots:            
                 # if the point lies inside a cluster -> save this figure into a pixmap
-                self.parentWidget.showAttributes(attrList, clusterClosure = None)
+                self.parentWidget.updateGraph(attrList)
                 painter = QPainter()
                 pic = QPixmap(QSize(120,120))
                 painter.begin(pic)
@@ -1158,7 +1180,7 @@ class kNNOptimization(OWBaseWidget):
     def argumentSelected(self):
         ind = self.argumentList.currentItem()
         classInd = self.classValueList.currentItem()
-        self.parentWidget.showAttributes(self.arguments[classInd][ind][5], clusterClosure = None)
+        self.parentWidget.updateGraph(self.arguments[classInd][ind][5])
         
     def setStatusBarText(self, text):
         self.statusBar.message(text)
@@ -1576,6 +1598,290 @@ class OWGraphProjectionQuality(OWWidget):
         if yVals2 != []:
             c = colors.getColor(1)
             self.graph.addCurve("", c, c, 1, QwtCurve.Lines, QwtSymbol.None, xData = range(len(yVals2)), yData = yVals2, lineWidth = self.lineWidth)
+
+        self.graph.update()  # don't know if this is necessary
+        self.graph.repaint()
+            
+
+# #############################################################################
+# draw a graph for all the evaluated projections that shows how is the classification accuracy falling when we are moving from the best to the worst evaluated projections
+class OWGraphIdentifyOutliers(OWWidget):
+    settingsList = ["projectionCountList", "projectionCount", "lineWidth"]
+    def __init__(self,parent=None, signalManager = None, widget = None, graph = None):
+        OWWidget.__init__(self, parent, signalManager, "Outlier Identification", wantGraph = 1, wantStatusBar = 1)
+
+        self.projectionCountList = ["5", "10", "50", "100", "200", "500", "1000", "2000", "5000", "10000", "Other..."]
+        self.projectionCount = "100"
+        self.selectedExampleIndex = 0
+        self.showGraph = 0
+        self.lineWidth = 1
+        self.showAllClasses = 0
+        self.matrixOfPredictions = None
+        self.projectionGraph = graph
+        self.VizRankDialog = parent
+        self.widget = widget
+        self.graphMatrix = None
+        self.results = None
+        self.data = None
+        self.dialogType = -1
+        self.evaluatedExamples = []
+
+        self.loadSettings()
+        
+        b1 = OWGUI.widgetBox(self.controlArea, ' Projection Count ')
+        self.projectionCountEdit = OWGUI.comboBoxWithCaption(b1, self, "projectionCount", "Number of best projections to consider: ", tooltip = "How many projections do you want to consider when computing probabilities of correct classification?", items = self.projectionCountList, callback = self.projectionCountChanged, sendSelectedValue = 1, valueType = str)
+        
+        b2 = OWGUI.widgetBox(self.controlArea, ' Show Predictions for All Examples ')
+        #OWGUI.button(b2, self, "Update", self.updateProjectionCount)
+        self.showPredictionsButton = OWGUI.button(b2, self, "Show predictions in graph", self.toggleShowPredictions); self.showPredictionsButton.setToggleButton(1)
+        
+        b3 = OWGUI.widgetBox(self.controlArea, ' Show Predictions for Selected Example ')
+        self.showGraphCheck = OWGUI.checkBox(b3, self, 'showGraph', 'Show graph of predicted probabilities', tooltip = "Show the graph of probabilities for the selected example over the selected set of top ranked projections", callback = self.showGraphUpdate)
+        self.showAllClassesCheck = OWGUI.checkBox(b3, self, 'showAllClasses', 'Show predicted probabilities for all classes', tooltip = "Show predicted probabilities for each class value", callback = self.updateGraph)
+        self.selectedExampleCombo = OWGUI.comboBoxWithCaption(b3, self, "selectedExampleIndex", "Index of selected example: ", tooltip = "Select the index of the example whose predictions you wish to analyse in the graph?", callback = self.selectedExampleChanged, sendSelectedValue = 1, valueType = int)
+        OWGUI.button(b3, self, "Update index from the graph", self.updateIndexFromGraph)
+
+        b4 = OWGUI.widgetBox(self.controlArea, ' Graph Settings')
+        OWGUI.comboBoxWithCaption(b4, self, "lineWidth", 'Line width: ', items = range(5), callback = self.updateGraph, sendSelectedValue = 1, valueType = int)
+
+        b5 = OWGUI.widgetBox(self.controlArea, ' Examples by Their Uncertain Predictions ')
+        OWGUI.button(b5, self, "Evaluate predictions for all examples", self.evaluateAllExamples)
+        self.exampleList = QListBox(b5)
+        self.connect(self.exampleList, SIGNAL("selectionChanged()"),self.exampleListSelectionChanged) 
+        #self.exampleList.setMinimumSize(100,100)
+
+        #b1.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        #b2.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+        #b3.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.Fixed ))
+
+        #box = OWGUI.widgetBox(self.controlArea, "")
+        #box.setSizePolicy(QSizePolicy(QSizePolicy.Minimum , QSizePolicy.MinimumExpanding ))
+
+        self.box = QVBoxLayout(self.mainArea)
+        self.graph = OWVisGraph(self.mainArea)
+        self.graph.setXaxisTitle("Top projections")
+        self.box.addWidget(self.graph)
+        self.box.activate()
+
+        self.connect(self.graphButton, SIGNAL("clicked()"), self.graph.saveToFile)
+        self.showGraphUpdate()
+        
+    def closeEvent(self,ce):
+        if self.widget: self.widget.outlierValues = None
+        self.saveSettings()
+        ce.accept()
+        QDialog.closeEvent(self, ce)
+
+    def setData(self, results, data, dialogType):
+        self.results = results
+        self.data = data
+        self.dialogType = dialogType
+        self.matrixOfPredictions = None
+
+        # example index combo
+        self.selectedExampleCombo.clear()
+        if self.data:
+            for i in range(len(self.data)):
+                self.selectedExampleCombo.insertItem(str(i))
+
+        self.updateGraph()
+
+    def projectionCountChanged(self):
+        self.exampleList.clear()
+        self.evaluatedExamples = []
+        
+        if self.projectionCount == "Other...":
+            (text, ok) = QInputDialog.getText('Qt Projection count', 'How many of the best projections do you wish to consider?')
+            if ok and str(text).isdigit():
+                text = str(text)
+                if text not in self.projectionCountList:
+                    i = 0
+                    while i < len(self.projectionCountList)-1 and int(self.projectionCountList[i]) < int(text): i+=1
+                    self.projectionCountList.insert(i, text)
+                    self.projectionCountEdit.insertItem(text, i)
+                self.projectionCount = text
+            else:
+                self.projectionCount = "100"
+        self.toggleShowPredictions()    # update changes
+
+
+    def evaluateProjections(self):
+        # compute predictions
+        self.widget.progressBarInit()
+
+        projCount = min(int(self.projectionCount), len(self.results))
+        classCount = len(self.data.domain.classVar.values)
+        existing = 0
+        if self.matrixOfPredictions:
+            existing = Numeric.shape(self.matrixOfPredictions)[0]/classCount
+            if existing < projCount:
+                self.matrixOfPredictions = Numeric.resize(self.matrixOfPredictions, (projCount*classCount, len(self.data)))
+            elif existing > projCount:
+                self.matrixOfPredictions = self.matrixOfPredictions[0:classCount*projCount,:]
+                
+        else:
+            self.matrixOfPredictions = -1 * Numeric.ones((projCount*classCount, len(self.data)), Numeric.Float)
+
+
+        # compute the matrix of predictions
+        results = self.results[existing:min(len(self.results),projCount)]
+        index = 0
+        for (acc, other, tableLen, attrList, tryIndex, attrReverseList) in results:
+            attrIndices = [self.projectionGraph.attributeNameIndex[attr] for attr in attrList]
+            validDataIndices = self.projectionGraph.getValidIndices(attrIndices)
+            if attrReverseList != []: table = self.projectionGraph.createProjectionAsExampleTable(attrIndices, attrReverseList)
+            else:                     table = self.projectionGraph.createProjectionAsExampleTable(attrIndices) 
+            acc, probabilities = self.VizRankDialog.kNNClassifyData(table)
+
+            #self.matrixOfPredictions[(existing + index)*classCount:(existing + index +1)*classCount] = Numeric.transpose(probabilities)
+            probabilities = Numeric.transpose(probabilities)
+            for i in range(classCount):
+                Numeric.put(self.matrixOfPredictions[(existing + index)*classCount + i], validDataIndices, probabilities[i])            
+
+            index += 1
+            self.statusBar.message("Evaluated %s/%s projections..." % (createStringFromNumber(existing + index), projCount))
+            self.widget.progressBarSet(100.0*(index)/float(projCount-existing))
+
+        self.widget.progressBarFinished()
+
+
+    def toggleShowPredictions(self):
+        if not self.widget: return
+        if self.showPredictionsButton.isOn():
+            self.evaluateProjections()
+            
+            self.statusBar.message("Computing averages...")
+
+            projCount = min(int(self.projectionCount), len(self.results))
+            classCount = len(self.data.domain.classVar.values)
+    
+            # compute the average probability of correct classification over the selected number of top projections
+            values = [0.0 for i in range(len(self.data))]
+            for i in range(len(self.data)):
+                corrClass = int(self.data[i].getclass())
+                predictions = self.matrixOfPredictions[corrClass::classCount,i]
+                predictions = Numeric.compress(predictions != -1, predictions)
+                values[i] = Numeric.sum(predictions) / float(len(predictions))
+
+            self.widget.outlierValues = (values, "Probability of correct class value = %.2f%%")
+        else:
+            self.widget.outlierValues = None
+
+        self.widget.updateGraph()
+            
+        self.statusBar.message("")
+        self.widget.showSelectedAttributes()
+
+
+    def showGraphUpdate(self):
+        if self.showGraph:
+            self.evaluateProjections()
+            self.graph.show()
+            self.resize(self.controlArea.size().width() + 400, self.size().height())
+            self.selectedExampleChanged()
+        else:
+            self.graph.hide()
+            self.resize(self.controlArea.size().width(), self.size().height())
+        
+
+    def selectedExampleChanged(self):
+        if self.showGraph and self.results:
+            projCount = min(int(self.projectionCount), len(self.results))
+            classCount = len(self.data.domain.classVar.values)
+            self.graphMatrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, self.selectedExampleIndex], (projCount, classCount)))
+            self.updateGraph()
+        
+
+    def updateIndexFromGraph(self):
+        if self.VizRankDialog.parentName == "Polyviz":
+            indices = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList(), self.widget.attributeReverse)
+        else:            
+            indices = self.projectionGraph.getSelectionsAsIndices(self.widget.getShownAttributeList())
+
+        if len(indices) != 1:
+            QMessageBox.information( None, "Outlier Identification", 'Exactly one example must be selected in the graph in order to complete this operation.', QMessageBox.Ok + QMessageBox.Default)
+            return
+        self.selectedExampleIndex = indices[0]
+        self.selectedExampleChanged()
+
+    def evaluateAllExamples(self):
+        if not self.data: return
+
+        self.evaluateProjections()
+
+        projCount = min(int(self.projectionCount), len(self.results))
+        classCount = len(self.data.domain.classVar.values)
+
+        for i in range(len(self.data)):
+            matrix = Numeric.transpose(Numeric.reshape(self.matrixOfPredictions[:, i], (projCount, classCount)))
+            valid = Numeric.where(matrix[int(self.data[i].getclass())] != -1, 1, 0)
+            data = Numeric.compress(valid, matrix[int(self.data[i].getclass())])
+            ave_acc = Numeric.sum(data) / float(len(data))
+            self.insertItemToExampleList(ave_acc, i)
+            
+            
+    # insert new result - give parameters: accuracy of projection, number of examples in projection and list of attributes.
+    # parameter attrReverseList can be a list used by polyviz
+    def insertItemToExampleList(self, val, exampleIndex):
+        top = 0; bottom = len(self.evaluatedExamples)
+        index = 0
+
+        while (bottom-top) > 1:
+            mid  = (bottom + top)/2
+            if min(val, self.evaluatedExamples[mid][0]) == val: bottom = mid
+            else: top = mid
+
+        if len(self.evaluatedExamples) == 0: index = 0
+        elif min(val, self.evaluatedExamples[top][0]) == val:
+            index = top
+        else: 
+            index = bottom
+        
+        self.evaluatedExamples.insert(index, (val, exampleIndex))
+        self.exampleList.insertItem("%.2f - %d" % (val, exampleIndex), index)
+
+
+    def exampleListSelectionChanged(self):
+        (val, exampleIndex) = self.evaluatedExamples[self.exampleList.currentItem()]
+        self.selectedExampleIndex = exampleIndex
+        self.selectedExampleChanged()
+
+
+    def updateGraph(self):
+        self.graph.clear()
+        if not self.data or not self.graphMatrix: return
+        
+        classColors = ColorPaletteHSV(len(self.data.domain.classVar.values))
+        
+        if self.graphMatrix == None: return
+
+        self.graph.setAxisScale(QwtPlot.xBottom, 0, len(self.graphMatrix[0]), len(self.graphMatrix[0])/5)
+        self.graph.setAxisScale(QwtPlot.yLeft, 0, 1, 0.2)
+
+        valid = Numeric.where(self.graphMatrix[0] != -1, 1, 0)
+        allValid = Numeric.sum(valid) == len(valid)
+
+        for i in range(len(self.data.domain.classVar.values)):
+            if not self.showAllClasses and int(self.data[self.selectedExampleIndex].getclass()) != i: continue
+
+            c = classColors.getColor(i)
+            yData = self.graphMatrix[i].tolist()
+           
+            if allValid:
+                self.graph.addCurve(self.data.domain.classVar.values[i], c, c, 1, QwtCurve.Lines, QwtSymbol.None, enableLegend = 1, xData = range(len(yData)), yData = yData, lineWidth = self.lineWidth)
+            else:
+                self.graph.addCurve(self.data.domain.classVar.values[i], c, c, 1, QwtCurve.Lines, QwtSymbol.Ellipse, enableLegend = 1, xData = [], yData = [], lineWidth = self.lineWidth)
+                currData = []
+                xData = []
+                for j in range(len(yData)):
+                    if yData[j] != -1:
+                        currData.append(yData[j])
+                        xData.append(j)
+                    else:
+                        if currData != []:
+                            self.graph.addCurve("",  c, c, 1, QwtCurve.Lines, QwtSymbol.Ellipse, enableLegend = 1, xData = xData, yData = currData, lineWidth = self.lineWidth)
+                            xData = []
+                            currData = []
 
         self.graph.update()  # don't know if this is necessary
         self.graph.repaint()
