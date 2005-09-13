@@ -800,6 +800,9 @@ bool TRuleStoppingCriteria_NegativeDistribution::operator()(PRuleList ruleList, 
 {
   if (rule && rule->classifier) 
   {
+    PDistribution aprioriDist = getClassDistribution(data, weightID);
+    TDiscDistribution *apriori = aprioriDist.AS(TDiscDistribution);
+
     const TDefaultClassifier *clsf = rule->classifier.AS(TDefaultClassifier);
     if (!clsf)
       return false;
@@ -807,12 +810,10 @@ bool TRuleStoppingCriteria_NegativeDistribution::operator()(PRuleList ruleList, 
     const int classVal = clsf->defaultVal.intV;
     if (classVal<0 || classVal>=dist->size())
       return false;
-    float defProb = dist->atint(clsf->defaultVal.intV);
-
-    for(TDiscDistribution::const_iterator di(dist->begin()), de(dist->end());
-        (di!=de); di++)
-      if ((*di > defProb))
-        return true;
+    float acc = dist->atint(clsf->defaultVal.intV)/dist->abs;
+    float accApriori = apriori->atint(clsf->defaultVal.intV)/apriori->abs;
+    if (accApriori>acc)
+      return true;
   }
   return false;
 }
