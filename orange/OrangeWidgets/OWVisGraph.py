@@ -11,21 +11,12 @@ import qtcanvas
 import Numeric, RandomArray, MA
 from MA import transpose
 from OWTools import *
-
+import OWVisFuncts
 
 NOTHING = 0
 ZOOMING = 1
 SELECT_RECTANGLE = 2
 SELECT_POLYGON = 3
-
-# take a number and return a formated string, eg: 2341232 -> "2,341,232"
-def createStringFromNumber(num):
-    s = str(num)
-    arr = range(len(s)-2)[:0:-3]
-    for i in arr:
-        s = s[:i] + "," + s[i:]
-    return s
-        
 
 # ####################################################################    
 # return a list of sorted values for attribute at index index
