@@ -18,6 +18,7 @@ from OWkNNOptimization import *
 from time import time
 from math import pow
 import OWToolbars
+import OWVisFuncts
 
 ###########################################################################################
 ##### WIDGET : Polyviz visualization
@@ -263,7 +264,7 @@ class OWPolyviz(OWWidget):
                 self.graph.triedPossibilities = 0
 
                 if self.graph.totalPossibilities > 200000:
-                    print "Warning: There are %s possible polyviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities))
+                    print "Warning: There are %s possible polyviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities))
 
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, reverseList, self.optimizationDlg.addResult)
 

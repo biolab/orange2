@@ -8,7 +8,7 @@ from operator import add
 from math import *
 from OWkNNOptimization import *
 from OWClusterOptimization import *
-import OWVisFuncts
+
 
 # build a list (in currList) of different permutations of elements in list of elements
 # elements contains a list of indices [1,2..., n]
@@ -37,16 +37,6 @@ def buildPermutationIndexList(elements, tempPerm, currList):
             temp.insert(0, el)
             if str(temp) in currList: return
         currList[str(tempPerm)] = copy(tempPerm)
-
-# factoriela
-def fact(i):
-        ret = 1
-        for j in range(2, i+1): ret*= j
-        return ret
-    
-# return number of combinations where we select "select" from "total"
-def combinations(select, total):
-    return fact(total)/ (fact(total-select)*fact(select))
 
 
 # indices in curveData
@@ -821,7 +811,7 @@ class OWRadvizGraph(OWVisGraph):
                         permutation = [attrs[val] for val in ind]
                         if self.kNNOptimization.isOptimizationCanceled():
                             secs = time.time() - startTime
-                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                             self.radvizWidget.progressBarFinished()
                             return
 
@@ -839,8 +829,8 @@ class OWRadvizGraph(OWVisGraph):
                         del permutation, table
                             
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    #self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z))
-                    self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (createStringFromNumber(self.triedPossibilities)))
+                    #self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z))
+                    self.kNNOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
 
                     if self.kNNOptimization.onlyOnePerSubset:   # return only the best attribute placements
                         (acc, other_results, lenTable, attrList) = self.kNNOptimization.getMaxFunct()(tempList)
@@ -850,7 +840,7 @@ class OWRadvizGraph(OWVisGraph):
                 del combinations
                 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.radvizWidget.progressBarFinished()
 
 
@@ -902,7 +892,7 @@ class OWRadvizGraph(OWVisGraph):
                     for proj in projs:
                         if self.kNNOptimization.isOptimizationCanceled():
                             secs = time.time() - startTime
-                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                            self.kNNOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                             return
                         try:
                             permutation = [attrList[i][j] for (i,j) in proj]
@@ -916,7 +906,7 @@ class OWRadvizGraph(OWVisGraph):
                                 tempList.append((accuracy, other_results, len(table), [self.attributeNames[i] for i in permutation]))
 
                             self.triedPossibilities += 1
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (createStringFromNumber(self.triedPossibilities), z+1))
+                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (%d attributes)..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), z+1))
                             qApp.processEvents()        # allow processing of other events
                             del permutation, table
                         except:
@@ -930,7 +920,7 @@ class OWRadvizGraph(OWVisGraph):
                 del projs, combinations
                 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.radvizWidget.progressBarFinished()
 
 
@@ -966,7 +956,7 @@ class OWRadvizGraph(OWVisGraph):
                 for iteration in range(2):
                     if (maxProjectionLen != -1 and len(projection) + iteration > maxProjectionLen): continue    
                     if iteration == 1 and optimizedProjection: continue # if we already found a better projection with replacing an attribute then don't try to add a new atribute
-                    strTotalAtts = createStringFromNumber(lenOfAttributes)
+                    strTotalAtts = OWVisFuncts.createStringFromNumber(lenOfAttributes)
                     listOfCanditates = []
                     for (attrIndex, attr) in enumerate(attributes):
                         if attr in projection: continue
@@ -1012,7 +1002,7 @@ class OWRadvizGraph(OWVisGraph):
                             listOfCanditates.append((acc, attrList))
                             if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
                         else:
-                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
+                            self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                             if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                                 addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
 
@@ -1024,7 +1014,7 @@ class OWRadvizGraph(OWVisGraph):
                         self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
 
 
 
@@ -1079,7 +1069,7 @@ class OWRadvizGraph(OWVisGraph):
                         permutationAttributes = [self.attributeNames[i] for i in permutation]                        
                         if self.clusterOptimization.isOptimizationCanceled():
                             secs = time.time() - startTime
-                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+                            self.clusterOptimization.setStatusBarText("Evaluation stopped (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
                             self.radvizWidget.progressBarFinished()
                             return
 
@@ -1105,7 +1095,7 @@ class OWRadvizGraph(OWVisGraph):
                         del permutation, data, graph, valueDict, closureDict, polygonVerticesDict, enlargedClosureDict, otherDict, classesDict,
                         
                     self.radvizWidget.progressBarSet(100.0*self.triedPossibilities/float(self.totalPossibilities))
-                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (createStringFromNumber(self.triedPossibilities)))
+                    self.clusterOptimization.setStatusBarText("Evaluated %s projections..." % (OWVisFuncts.createStringFromNumber(self.triedPossibilities)))
 
                     if self.clusterOptimization.onlyOnePerSubset:
                         (value, valueDict, closureDict, polygonVerticesDict, attrs, enlargedClosureDict, otherDict) = max(tempList)
@@ -1121,7 +1111,7 @@ class OWRadvizGraph(OWVisGraph):
                 del combinations
 
         secs = time.time() - startTime
-        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.clusterOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
         self.radvizWidget.progressBarFinished()
 
     # ####################################################################

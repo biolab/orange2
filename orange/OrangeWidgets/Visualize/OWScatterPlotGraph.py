@@ -6,6 +6,7 @@ import time
 from orngCI import FeatureByCartesianProduct
 import OWkNNOptimization, OWClusterOptimization
 import RandomArray
+import OWVisFuncts
 
 class QwtPlotCurvePieChart(QwtPlotCurve):
     def __init__(self, parent = None, text = None):
@@ -688,7 +689,7 @@ class OWScatterPlotGraph(OWVisGraph):
         self.scatterWidget.progressBarInit()  # init again, in case that the attribute ordering took too much time
         startTime = time.time()
         count = len(attributeNameOrder)*(len(attributeNameOrder)-1)/2
-        strCount = createStringFromNumber(count)
+        strCount = OWVisFuncts.createStringFromNumber(count)
         testIndex = 0
 
         for i in range(len(attributeNameOrder)):
@@ -707,7 +708,7 @@ class OWScatterPlotGraph(OWVisGraph):
                 table = table.select(list(valid))
                 
                 accuracy, other_results = self.kNNOptimization.kNNComputeAccuracy(table)
-                self.kNNOptimization.setStatusBarText("Evaluated %s/%s projections..." % (createStringFromNumber(testIndex), strCount))
+                self.kNNOptimization.setStatusBarText("Evaluated %s/%s projections..." % (OWVisFuncts.createStringFromNumber(testIndex), strCount))
                 addResultFunct(accuracy, other_results, len(table), [self.rawdata.domain[attr1].name, self.rawdata.domain[attr2].name], testIndex)
                 
                 self.scatterWidget.progressBarSet(100.0*testIndex/float(count))
@@ -787,7 +788,7 @@ class OWScatterPlotGraph(OWVisGraph):
             while optimizedProjection:
                 significantImprovement = 0
                 
-                strTotalAtts = createStringFromNumber(lenOfAttributes)
+                strTotalAtts = OWVisFuncts.createStringFromNumber(lenOfAttributes)
                 listOfCanditates = []
                 for (attrIndex, attr) in enumerate(attributes):
                     if attr in projection: continue
@@ -818,7 +819,7 @@ class OWScatterPlotGraph(OWVisGraph):
                         listOfCanditates.append((acc, attrList))
                         if max(acc, accuracy)/min(acc, accuracy) > 1.005: significantImprovement = 1
                     else:
-                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (createStringFromNumber(self.triedPossibilities), createStringFromNumber(attrIndex), strTotalAtts, acc))
+                        self.kNNOptimization.setStatusBarText("Evaluated %s projections (attribute %s/%s). Last accuracy was: %2.2f%%" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), OWVisFuncts.createStringFromNumber(attrIndex), strTotalAtts, acc))
                         if min(acc, accuracy)/max(acc, accuracy) > 0.98:  # if the found projection is at least 98% as good as the one optimized, add it to the list of projections anyway
                             addResultFunct(acc, other_results, lenTable, [self.attributeNames[i] for i in attrList], 1)
 
@@ -830,7 +831,7 @@ class OWScatterPlotGraph(OWVisGraph):
                     self.kNNOptimization.setStatusBarText("Increased accuracy to %2.2f%%" % (accuracy))
 
         secs = time.time() - startTime
-        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
+        self.kNNOptimization.setStatusBarText("Finished evaluation (evaluated %s projections in %d min, %d sec)" % (OWVisFuncts.createStringFromNumber(self.triedPossibilities), secs/60, secs%60))
 
 
            

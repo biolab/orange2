@@ -18,7 +18,7 @@ from OWClusterOptimization import *
 from OWFreeVizOptimization import *
 import time
 import OWToolbars, OWGUI, orngTest, orangeom
-
+import OWVisFuncts
 
 ###########################################################################################
 ##### WIDGET : Radviz visualization
@@ -322,13 +322,13 @@ class OWRadviz(OWWidget):
                 listOfAttributes = self.optimizationDlg.getEvaluatedAttributes(self.data)
                 possibilities = 0
                 for i in range(minLen, maxLen+1):
-                    possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+                    possibilities += OWVisFuncts.combinationsCount(i, len(listOfAttributes)) * OWVisFuncts.fact(i-1)/2
                     
                 self.graph.totalPossibilities = possibilities
                 self.graph.triedPossibilities = 0
             
                 if self.graph.totalPossibilities > 200000:
-                    print "Warning: There are %s possible radviz projections with this set of attributes"% (createStringFromNumber(self.graph.totalPossibilities))
+                    print "Warning: There are %s possible radviz projections with this set of attributes"% (OWVisFuncts.createStringFromNumber(self.graph.totalPossibilities))
                                 
                 self.graph.getOptimalSeparation(listOfAttributes, minLen, maxLen, self.optimizationDlg.addResult)
         except:
@@ -362,7 +362,7 @@ class OWRadviz(OWWidget):
             else: minLen = 3
                         
             possibilities = 0
-            for i in range(minLen, maxLen+1): possibilities += combinations(i, len(listOfAttributes))*fact(i-1)/2
+            for i in range(minLen, maxLen+1): possibilities += OWVisFuncts.combinationsCount(i, len(listOfAttributes))* OWVisFuncts.fact(i-1)/2
                 
             self.graph.totalPossibilities = possibilities
             self.graph.triedPossibilities = 0
